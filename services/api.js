@@ -67,10 +67,14 @@ api.interceptors.response.use(
           return Promise.reject(error);
         }
 
+
         const res = await axios.post(
           `${Config.baseUrl}/api-auth/token/refresh/`,
           { refresh }
         );
+        
+        console.log('refreshing token')
+        console.log(res.data)
 
         await saveTokens(res.data);
 

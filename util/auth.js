@@ -5,7 +5,7 @@ import { Config } from "../constants/config";
 
 
 const authenticate = async (mode, email, password) => {
-  const url = `${Config.baseUrl}/api-auth/`;
+  const url = `${Config.baseUrl}/api-auth`;
 
   try {
     const response = await axios.post(
