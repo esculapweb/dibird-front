@@ -1,14 +1,15 @@
 import axios from "axios";
+import * as SecureStore from "expo-secure-store";
 
-const BASE_URL = "http://192.168.0.102:8000";
-const API_KEY = "AIzaSyDkZ0TKEdtQSZz0riWfxiZQchDkLcVEpC8";
+import { Config } from "../constants/config";
+
 
 const authenticate = async (mode, email, password) => {
-  const url = `${BASE_URL}/dj-rest-auth/login/`;
+  const url = `${Config.baseUrl}/api-auth/`;
 
   try {
     const response = await axios.post(
-      url,
+      `${url}/${mode}/`,
       {
         email: email,
         password: password,
@@ -18,18 +19,19 @@ const authenticate = async (mode, email, password) => {
       }
     );
     const token = response?.data?.access;
+    await SecureStore.setItemAsync("refreshToken", response?.data?.refresh);
     return token;
   } catch (e) {
     console.log("error");
-    console.log(e)
+    console.log(e);
     console.log(e.response.data);
   }
 };
 
 export const CreateUser = (email, password) => {
-  return authenticate("signUp", email, password);
+  return authenticate("registration", email, password);
 };
 
 export const Login = (email, password) => {
-  return authenticate("signInWithPassword", email, password);
+  return authenticate("login", email, password);
 };

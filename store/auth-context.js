@@ -1,16 +1,19 @@
 import * as SecureStore from "expo-secure-store";
+import { createContext, useState, useEffect } from "react";
 
-import { createContext, useState } from "react";
+import { setOnTokenUpdate } from "../services/authService";
 
 export const AuthContext = createContext({
   token: "",
   isAuthenticated: false,
+  isInitializing: true,
   authenticate: () => {},
   logout: () => {},
 });
 
 const AuthContextProvider = ({ children }) => {
   const [authToken, setAuthToken] = useState();
+  const [isInitializing, setIsInitializing] = useState(true);
 
   const authenticate = async (token) => {
     setAuthToken(token);
@@ -22,9 +25,29 @@ const AuthContextProvider = ({ children }) => {
     await SecureStore.deleteItemAsync("token");
   };
 
+  useEffect(() => {
+    const restoreToken = async () => {
+      try {
+        const storedToken = await SecureStore.getItemAsync("token");
+        if (storedToken) {
+          setAuthToken(storedToken);
+        }
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+
+    restoreToken();
+  }, []);
+
+  useEffect(() => {
+    setOnTokenUpdate(authenticate);
+  }, []);
+
   const value = {
     token: authToken,
     isAuthenticated: !!authToken,
+    isInitializing,
     authenticate: authenticate,
     logout: logout,
   };

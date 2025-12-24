@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "RNC5",
-    "slug": "RNC5",
+    "name": "DiBird",
+    "slug": "dibird",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

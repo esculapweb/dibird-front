@@ -1,8 +1,10 @@
 import { StyleSheet, Text, View } from "react-native";
 import axios from "axios";
 import { useContext, useEffect, useState } from "react";
+
 import { AuthContext } from "../store/auth-context";
 import Profile from "./Profile";
+import { Config } from "../constants/config";
 
 const WelcomeScreen = () => {
   const [fetchedMessage, setFetchedMessage] = useState();
@@ -13,7 +15,7 @@ const WelcomeScreen = () => {
     const fetchResponse = async () => {
       try {
         const response = await axios.get(
-          "http://192.168.0.102:8000/myapi/profile/me/",
+          `${Config.baseUrl}/myapi/profile/me/`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
