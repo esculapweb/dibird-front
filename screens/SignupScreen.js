@@ -6,15 +6,19 @@ import AuthContent from "../components/Auth/AuthContent";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import { CreateUser } from "../util/auth";
 
-const SignupScreen = () => {
+const SignupScreen = ({ navigation }) => {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const authCtx = useContext(AuthContext);
 
-  const signUpHandler = async ({ email, password }) => {
+  const signUpHandler = async ({ email, password, userName }) => {
     setIsAuthenticating(true);
     try {
-      const token = await CreateUser(email, password);
-      authCtx.authenticate(token);
+      await CreateUser(email, password, userName);
+      Alert.alert(
+        "Email confirmation",
+        "Please check your email to finish registration"
+      );
+      navigation.replace("Login");
     } catch (error) {
       Alert.alert(
         "Authentication failed",

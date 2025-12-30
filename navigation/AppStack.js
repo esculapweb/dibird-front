@@ -3,6 +3,7 @@ import { useContext } from "react";
 import WelcomeScreen from "../screens/WelcomeScreen";
 import IconButton from "../components/ui/IconButton";
 import { AuthContext } from "../store/auth-context";
+import { Colors } from "../constants/styles";
 
 const Stack = createNativeStackNavigator();
 
@@ -11,7 +12,7 @@ const AppStack = () => {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: "olive" },
+        headerStyle: { backgroundColor: Colors.primary500},
         headerTintColor: "#fff",
         // contentStyle: { backgroundColor: Colors.primary100 },
       }}

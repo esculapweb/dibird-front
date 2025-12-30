@@ -12,7 +12,7 @@ function AuthContent({ isLogin, onAuthenticate }) {
   const [credentialsInvalid, setCredentialsInvalid] = useState({
     email: false,
     password: false,
-    confirmEmail: false,
+    userName: false,
     confirmPassword: false,
   });
 
@@ -22,31 +22,33 @@ function AuthContent({ isLogin, onAuthenticate }) {
   }
 
   function submitHandler(credentials) {
-    let { email, confirmEmail, password, confirmPassword } = credentials;
+    let { email, userName, password, confirmPassword } = credentials;
 
     email = email.trim();
     password = password.trim();
 
     const emailIsValid = email.includes("@");
     const passwordIsValid = password.length > 6;
-    const emailsAreEqual = email === confirmEmail;
+    const userNameIsValid = userName !== email;
     const passwordsAreEqual = password === confirmPassword;
+    const authData = isLogin ? { email, password } : { email, password, userName }
 
     if (
       !emailIsValid ||
       !passwordIsValid ||
-      (!isLogin && (!emailsAreEqual || !passwordsAreEqual))
+      (!isLogin && (!userNameIsValid || !passwordsAreEqual))
     ) {
       Alert.alert("Invalid input", "Please check your entered credentials.");
       setCredentialsInvalid({
         email: !emailIsValid,
-        confirmEmail: !emailIsValid || !emailsAreEqual,
+        userName: !userNameIsValid,
         password: !passwordIsValid,
         confirmPassword: !passwordIsValid || !passwordsAreEqual,
       });
       return;
     }
-    onAuthenticate({ email, password });
+    
+    onAuthenticate(authData);
   }
 
   return (
@@ -69,16 +71,16 @@ export default AuthContent;
 
 const styles = StyleSheet.create({
   authContent: {
-    marginTop: 64,
-    marginHorizontal: 32,
+    marginTop: 32,
+    marginHorizontal: 24,
     padding: 16,
     borderRadius: 8,
-    backgroundColor: Colors.primary800,
+    backgroundColor:  Colors.primary100,
     elevation: 2,
-    shadowColor: "black",
-    shadowOffset: { width: 1, height: 1 },
-    shadowOpacity: 0.35,
-    shadowRadius: 4,
+    shadowColor: Colors.textMain,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 2,
   },
   buttons: {
     marginTop: 8,
