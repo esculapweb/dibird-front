@@ -18,6 +18,7 @@ const SelectListModal = ({
   onSelect,
   onClose,
   title = "Select",
+  placeholder,
   search,
   setSearch,
 }) => {
@@ -68,7 +69,7 @@ const SelectListModal = ({
           <Pressable onPress={onClose}>
             <Text style={styles.cancel}>Cancel</Text>
           </Pressable>
-          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.title}>{placeholder}</Text>
           <View style={{ width: 60 }} />
         </View>
 

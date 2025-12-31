@@ -58,6 +58,7 @@ const DropdownInput = ({
 
       <SelectListModal
         title={title}
+        placeholder={placeholder}
         visible={modalVisible}
         options={options}
         selected={value}
