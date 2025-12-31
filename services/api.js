@@ -73,8 +73,8 @@ api.interceptors.response.use(
           { refresh }
         );
         
-        console.log('refreshing token')
-        console.log(res.data)
+        // console.log('refreshing token')
+        // console.log(res.data)
 
         await saveTokens(res.data);
 

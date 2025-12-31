@@ -1,32 +1,25 @@
 import { useState, useEffect } from "react";
-import { StyleSheet, View, Image, ScrollView, Pressable } from "react-native";
+import { StyleSheet, View, Image, ScrollView } from "react-native";
 
 import Input from "../Auth/Input";
 import Button from "../ui/Button";
+import DropdownInput from "../ui/DropdownInput";
 import { Config } from "../../constants/config";
 import api from "../../services/api";
-
-import SelectListModal from "../../screens/SelectListModal";
 
 const ProfileForm = ({ data, submitHandler }) => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [username, setUsername] = useState("");
 
-  const [territoryModalVisible, setTerritoryModalVisible] = useState(false);
   const [territoryOptions, setTerritoryOptions] = useState([]);
   const [territoryValue, setTerritoryValue] = useState("");
-  const [territoryLabel, setTerritoryLabel] = useState("");
 
   const [privateProfile, setPrivateProfile] = useState(false);
   const [privateDiaries, setPrivateDiaries] = useState(false);
 
   const [timezoneOptions, setTimezoneOptions] = useState([]);
-  const [timezoneModalVisible, setTimezoneModalVisible] = useState(false);
   const [timezoneValue, setTimezoneValue] = useState("");
-  const [timezoneLabel, setTimezoneLabel] = useState("");
-
-  const [search, setSearch] = useState("");
 
   const [invalid, setInvalid] = useState({
     firstName: false,
@@ -45,17 +38,10 @@ const ProfileForm = ({ data, submitHandler }) => {
       }));
 
       setTimezoneOptions(formattedTimezones);
-
-      if (data?.timezone) {
-        const tzOption = formattedTimezones.find(
-          (tz) => tz.value === data.timezone
-        );
-        setTimezoneValue(data.timezone);
-        setTimezoneLabel(tzOption?.label || data.timezone);
-      }
     };
     fetchTimezones();
   }, [data]);
+
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -66,18 +52,11 @@ const ProfileForm = ({ data, submitHandler }) => {
       }));
 
       setTerritoryOptions(formattedCountries);
-
-      if (data?.territory) {
-        const countryOption = formattedCountries.find(
-          (c) => c.value === data.territory
-        );
-        setTerritoryValue(data.territory);
-        setTerritoryLabel(countryOption?.label || data.territory);
-      }
     };
     fetchCountries();
   }, [data]);
 
+  
   useEffect(() => {
     if (data?.user_data) {
       setFirstName(data.user_data.first_name || "");
@@ -87,30 +66,6 @@ const ProfileForm = ({ data, submitHandler }) => {
       setPrivateDiaries(data.private_diary || false);
     }
   }, [data]);
-
-  const openTimezoneModal = () => {
-    setSearch("");
-    setTimezoneModalVisible(true);
-  };
-
-  const onSelectTimezone = (selectedValue) => {
-    const tzOption = timezoneOptions.find((tz) => tz.value === selectedValue);
-    setTimezoneValue(selectedValue);
-    setTimezoneLabel(tzOption?.label || selectedValue);
-    setTimezoneModalVisible(false);
-  };
-
-  const openTerritoryModal = () => {
-    setSearch("");
-    setTerritoryModalVisible(true);
-  };
-
-  const onSelectTerritory = (selectedValue) => {
-    const tOption = territoryOptions.find((t) => t.value === selectedValue);
-    setTerritoryValue(selectedValue);
-    setTerritoryLabel(tOption?.label || selectedValue);
-    setTerritoryModalVisible(false);
-  };
 
   const validateForm = () => {
     const newInvalid = {
@@ -173,23 +128,26 @@ const ProfileForm = ({ data, submitHandler }) => {
           onUpdateValue={setUsername}
           isInvalid={invalid.username}
         />
-        <Pressable onPress={openTerritoryModal}>
-            <Input
-            label="My country"
-            value={territoryLabel}
-            editable={false}
-            pointerEvents="none"
-            />
-        </Pressable>
 
-        <Pressable onPress={openTimezoneModal}>
-          <Input
-            label="Timezone"
-            value={timezoneLabel}
-            editable={false}
-            pointerEvents="none"
-          />
-        </Pressable>
+        <DropdownInput
+          title="My country"
+          placeholder="Select country"
+          initial={data?.territory}
+          value={territoryValue}
+          setValue={setTerritoryValue}
+          options={territoryOptions}
+          error={invalid?.territory}
+        />
+
+        <DropdownInput
+          title="Timezone"
+          placeholder="Select timezone"
+          initial={data?.timezone}
+          value={timezoneValue}
+          setValue={setTimezoneValue}
+          options={timezoneOptions}
+          error={invalid?.timezone}
+        />
 
         <Input
           label="Only I can see my profile"
@@ -209,28 +167,6 @@ const ProfileForm = ({ data, submitHandler }) => {
           <Button onPress={onSubmit}>Save</Button>
         </View>
       </ScrollView>
-
-      <SelectListModal
-        title="Timezone"
-        visible={timezoneModalVisible}
-        options={timezoneOptions}
-        selected={timezoneValue}
-        search={search}
-        setSearch={setSearch}
-        onClose={() => setTimezoneModalVisible(false)}
-        onSelect={onSelectTimezone}
-      />
-
-      <SelectListModal
-        title="Country"
-        visible={territoryModalVisible}
-        options={territoryOptions}
-        selected={territoryValue}
-        search={search}
-        setSearch={setSearch}
-        onClose={() => setTerritoryModalVisible(false)}
-        onSelect={onSelectTerritory}
-      />
     </>
   );
 };

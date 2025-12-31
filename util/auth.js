@@ -15,8 +15,8 @@ const post = async (url, data) => {
     const response = await authApi.post(url, data, { withCredentials: false });
     return response.data;
   } catch (error) {
-    console.log("AUTH API ERROR:", url);
-    console.log(error.response?.data || error.message);
+    console.error("AUTH API ERROR:", url);
+    console.error(error.response?.data || error.message);
     throw error;
   }
 };

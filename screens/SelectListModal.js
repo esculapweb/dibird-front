@@ -11,9 +11,17 @@ import { useEffect, useRef, useState, useMemo } from "react";
 
 const ITEM_HEIGHT = 56;
 
-const SelectListModal = ({ visible, options, selected, onSelect, onClose, title = "Select" }) => {
+const SelectListModal = ({
+  visible,
+  options,
+  selected,
+  onSelect,
+  onClose,
+  title = "Select",
+  search,
+  setSearch,
+}) => {
   const flatListRef = useRef(null);
-  const [search, setSearch] = useState("");
   const [hasScrolled, setHasScrolled] = useState(false);
 
   const filteredOptions = useMemo(() => {
@@ -25,7 +33,9 @@ const SelectListModal = ({ visible, options, selected, onSelect, onClose, title 
 
   useEffect(() => {
     if (visible && !hasScrolled && flatListRef.current) {
-      const selectedIndex = filteredOptions.findIndex((o) => o.value === selected);
+      const selectedIndex = filteredOptions.findIndex(
+        (o) => o.value === selected
+      );
 
       if (selectedIndex >= 0 && selectedIndex < filteredOptions.length) {
         setTimeout(() => {
@@ -54,7 +64,6 @@ const SelectListModal = ({ visible, options, selected, onSelect, onClose, title 
       onRequestClose={onClose}
     >
       <View style={styles.container}>
-        {/* Header */}
         <View style={styles.header}>
           <Pressable onPress={onClose}>
             <Text style={styles.cancel}>Cancel</Text>
@@ -63,7 +72,6 @@ const SelectListModal = ({ visible, options, selected, onSelect, onClose, title 
           <View style={{ width: 60 }} />
         </View>
 
-        {/* Search */}
         <TextInput
           style={styles.search}
           placeholder={`Search ${title.toLowerCase()}...`}
@@ -71,7 +79,6 @@ const SelectListModal = ({ visible, options, selected, onSelect, onClose, title 
           onChangeText={setSearch}
         />
 
-        {/* List */}
         <FlatList
           ref={flatListRef}
           data={filteredOptions}
