@@ -17,6 +17,7 @@ const DropdownInput = ({
   const [search, setSearch] = useState("");
   const [label, setLabel] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
+  const [icon, setIcon] = useState("");
 
   useEffect(() => {
     onSelectValue(initial);
@@ -26,6 +27,7 @@ const DropdownInput = ({
     const option = options.find((o) => o.value === selectedValue);
     setValue(selectedValue);
     setLabel(option?.label || selectedValue);
+    setIcon(option?.icon);
     setModalVisible(false);
   };
 
@@ -43,12 +45,16 @@ const DropdownInput = ({
           onPress={openModal}
           style={[styles.input, error && { borderColor: "#ef4444" }]}
         >
-          <Text
-            style={[styles.text, !label && { color: "#9ca3af" }]}
-            numberOfLines={1}
-          >
-            {label || placeholder}
-          </Text>
+          <View style={styles.row}>
+            {icon && <Text style={styles.icon}>{icon}</Text>}
+
+            <Text
+              style={[styles.text, !label && { color: "#9ca3af" }]}
+              numberOfLines={1}
+            >
+              {label || placeholder}
+            </Text>
+          </View>
 
           <Ionicons name="chevron-down" size={20} color="#9ca3af" />
         </Pressable>
@@ -93,10 +99,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
   text: {
     fontSize: 16,
-    flex: 1,
-    marginRight: 8,
+    // flex: 1,
+    // marginRight: 8,
+  },
+  icon: {
+    fontSize: 18,
+    marginRight: 6,
   },
   error: {
     marginTop: 4,

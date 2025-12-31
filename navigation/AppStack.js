@@ -17,14 +17,10 @@ const AppStack = () => {
           backgroundColor: Colors.primary500,
           elevation: 0,
         },
-        headerShadowVisible: false,
-        headerTintColor: Platform.select({
-          ios: Colors.primary500,
-          android: Colors.primary100,
-        }),
-        headerTitleStyle: {
-          fontWeight: "600",
-        },
+        headerTintColor: Colors.primary100,
+        // headerTitleStyle: {
+        //   fontWeight: "600",
+        // },
         // contentStyle: { backgroundColor: Colors.primary100 },
       }}
     >
@@ -35,7 +31,10 @@ const AppStack = () => {
           headerRight: ({ tintColor }) => (
             <IconButton
               icon="log-out-outline"
-              color={tintColor}
+              color={Platform.select({
+                ios: Colors.primary500,
+                android: Colors.primary100,
+              })}
               size={24}
               onPress={authCtx.logout}
               style={{ marginTop: -2 }}

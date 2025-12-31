@@ -104,14 +104,17 @@ const SelectListModal = ({
                   backgroundColor: isActive ? "#eef2ff" : "#fff",
                 }}
               >
-                <Text
-                  style={{
-                    fontSize: 16,
-                    fontWeight: isActive ? "600" : "400",
-                  }}
-                >
-                  {item.label}
-                </Text>
+                <View style={styles.row}>
+                  {item.icon && <Text style={styles.icon}>{item.icon}</Text>}
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontWeight: isActive ? "600" : "400",
+                    }}
+                  >
+                    {item.label}
+                  </Text>
+                </View>
               </Pressable>
             );
           }}
@@ -145,5 +148,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderWidth: 1,
     borderColor: "#ccc",
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  icon: {
+    fontSize: 18,
+    marginRight: 6,
   },
 });

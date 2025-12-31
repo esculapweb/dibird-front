@@ -29,6 +29,15 @@ const ProfileForm = ({ data, submitHandler }) => {
     timezone: false,
   });
 
+  const isoToFlagEmoji = (isoCode) => {
+    if (!isoCode) return "";
+    return isoCode
+      .toUpperCase()
+      .replace(/./g, (char) =>
+        String.fromCodePoint(127397 + char.charCodeAt())
+      );
+  };
+
   useEffect(() => {
     const fetchTimezones = async () => {
       const res = await api.get("/api/timezones/");
@@ -42,13 +51,13 @@ const ProfileForm = ({ data, submitHandler }) => {
     fetchTimezones();
   }, [data]);
 
-
   useEffect(() => {
     const fetchCountries = async () => {
       const res = await api.get("/api/territory-dropdown-my/");
       const formattedCountries = res.data.map(([value, label]) => ({
         value,
         label: label.label,
+        icon: isoToFlagEmoji(label['data-code']),
       }));
 
       setTerritoryOptions(formattedCountries);
@@ -56,7 +65,6 @@ const ProfileForm = ({ data, submitHandler }) => {
     fetchCountries();
   }, [data]);
 
-  
   useEffect(() => {
     if (data?.user_data) {
       setFirstName(data.user_data.first_name || "");
