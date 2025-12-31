@@ -9,6 +9,8 @@ function Input({
   onUpdateValue,
   value,
   isInvalid,
+  editable,
+  pointerEvents,
 }) {
   return (
     <View style={styles.inputContainer}>
@@ -22,6 +24,8 @@ function Input({
         secureTextEntry={secure}
         onChangeText={onUpdateValue}
         value={value}
+        editable={editable}
+        pointerEvents={pointerEvents}
       />
     </View>
   );

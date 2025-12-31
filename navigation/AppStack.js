@@ -12,13 +12,13 @@ const AppStack = () => {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: Colors.primary500},
+        headerStyle: { backgroundColor: Colors.primary500 },
         headerTintColor: "#fff",
         // contentStyle: { backgroundColor: Colors.primary100 },
       }}
     >
       <Stack.Screen
-        name="Welcome"
+        name="Profile"
         component={WelcomeScreen}
         options={{
           headerRight: ({ tintColor }) => (

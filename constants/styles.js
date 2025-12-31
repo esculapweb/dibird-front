@@ -7,4 +7,5 @@ export const Colors = {
   border: '#ced4da',
   textMain: '#333',
   link: '#d93b2e',
+  logoText: '#224895',
 }

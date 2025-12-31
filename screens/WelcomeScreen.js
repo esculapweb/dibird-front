@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet } from "react-native";
 import { useEffect, useState } from "react";
 
 import Profile from "./Profile";
@@ -7,18 +7,21 @@ import api from "../services/api";
 const WelcomeScreen = () => {
   const [fetchedMessage, setFetchedMessage] = useState();
 
-  useEffect(() => {
-    const fetchResponse = async () => {
+  const fetchResponse = async () => {
       const response = await api.get("/myapi/profile/me/");
-      console.log("fetched");
-      console.log(response.data);
       setFetchedMessage(response.data);
     };
+
+  useEffect(() => {
     fetchResponse();
   }, []);
+  
+  const submitHandler = async (updatedData) => {
+    console.log("Submit data:", updatedData);
+  };
 
   return (
-    <Profile data={fetchedMessage} />
+    <Profile data={fetchedMessage} submitHandler={submitHandler} />
   );
 };
 
