@@ -43,14 +43,15 @@ const DropdownInput = ({
 
         <Pressable
           onPress={openModal}
-          style={[styles.input, error && { borderColor: "#ef4444" }]}
+          style={[styles.select, error && { borderColor: "#ef4444" }]}
         >
-          <View style={styles.row}>
+          <View style={styles.left}>
             {icon && <Text style={styles.icon}>{icon}</Text>}
 
             <Text
               style={[styles.text, !label && { color: "#9ca3af" }]}
               numberOfLines={1}
+              ellipsizeMode="tail"
             >
               {label || placeholder}
             </Text>
@@ -88,7 +89,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textMain,
   },
-  input: {
+
+  select: {
     height: 40,
     paddingHorizontal: 6,
     borderWidth: 1,
@@ -99,19 +101,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  row: {
+  left: {
     flexDirection: "row",
     alignItems: "center",
-  },
-  text: {
-    fontSize: 16,
-    // flex: 1,
-    // marginRight: 8,
+    flex: 1,
+    marginRight: 8,
   },
   icon: {
     fontSize: 18,
     marginRight: 6,
   },
+  text: {
+    fontSize: 16,
+    flex: 1,
+  },
+
   error: {
     marginTop: 4,
     fontSize: 12,
