@@ -17,6 +17,7 @@ const WelcomeScreen = () => {
   }, []);
   
   const submitHandler = async (updatedData) => {
+    const response = await api.put("/myapi/profile/");
     console.log("Submit data:", updatedData);
   };
 

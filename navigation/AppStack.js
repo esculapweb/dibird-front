@@ -18,10 +18,6 @@ const AppStack = () => {
           elevation: 0,
         },
         headerTintColor: Colors.primary100,
-        // headerTitleStyle: {
-        //   fontWeight: "600",
-        // },
-        // contentStyle: { backgroundColor: Colors.primary100 },
       }}
     >
       <Stack.Screen

@@ -6,6 +6,7 @@ import Button from "../ui/Button";
 import DropdownInput from "../ui/DropdownInput";
 import { Config } from "../../constants/config";
 import api from "../../services/api";
+import RadioGroup from "../ui/RadioGroup";
 
 const ProfileForm = ({ data, submitHandler }) => {
   const [firstName, setFirstName] = useState("");
@@ -57,7 +58,7 @@ const ProfileForm = ({ data, submitHandler }) => {
       const formattedCountries = res.data.map(([value, label]) => ({
         value,
         label: label.label,
-        icon: isoToFlagEmoji(label['data-code']),
+        icon: isoToFlagEmoji(label["data-code"]),
       }));
 
       setTerritoryOptions(formattedCountries);
@@ -157,18 +158,28 @@ const ProfileForm = ({ data, submitHandler }) => {
           error={invalid?.timezone}
         />
 
-        <Input
+        <RadioGroup
           label="Only I can see my profile"
           value={privateProfile}
-          onUpdateValue={setPrivateProfile}
+          onChange={setPrivateProfile}
+          direction="row"
           isInvalid={invalid.privateProfile}
+          options={[
+            { label: "Yes", value: true },
+            { label: "No", value: false },
+          ]}
         />
 
-        <Input
+        <RadioGroup
           label="Diaries are private by default"
           value={privateDiaries}
-          onUpdateValue={setPrivateDiaries}
+          onChange={setPrivateDiaries}
+          direction="row"
           isInvalid={invalid.privateDiaries}
+          options={[
+            { label: "Yes", value: true },
+            { label: "No", value: false },
+          ]}
         />
 
         <View style={styles.buttons}>
