@@ -1,14 +1,19 @@
 import { useState, useEffect } from "react";
-import { StyleSheet, View, Image, ScrollView } from "react-native";
+import {
+  StyleSheet,
+  View,
+  Image,
+  ScrollView,
+} from "react-native";
 
 import Input from "../Auth/Input";
-import Button from "../ui/Button";
+import AnimatedLoadingButton from "../ui/AnimatedLoadingButton";
 import DropdownInput from "../ui/DropdownInput";
 import { Config } from "../../constants/config";
 import api from "../../services/api";
 import RadioGroup from "../ui/RadioGroup";
 
-const ProfileForm = ({ data, submitHandler }) => {
+const ProfileForm = ({ data, submitHandler, loading }) => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [username, setUsername] = useState("");
@@ -102,7 +107,7 @@ const ProfileForm = ({ data, submitHandler }) => {
       private_diary: privateDiaries,
     };
 
-    submitHandler(formData);
+    submitHandler(formData, data.user);
   };
 
   return (
@@ -183,7 +188,9 @@ const ProfileForm = ({ data, submitHandler }) => {
         />
 
         <View style={styles.buttons}>
-          <Button onPress={onSubmit}>Save</Button>
+          <AnimatedLoadingButton onPress={onSubmit} loading={loading}>
+            Save
+          </AnimatedLoadingButton>
         </View>
       </ScrollView>
     </>

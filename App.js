@@ -2,6 +2,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useContext } from "react";
 import * as SplashScreen from "expo-splash-screen";
 import AuthContextProvider, { AuthContext } from "./store/auth-context";
+import Toast from "react-native-toast-message";
 
 import Navigation from "./navigation/Navigation";
 
@@ -31,6 +32,7 @@ export default function App() {
       <StatusBar style="light" />
       <AuthContextProvider>
         <Root />
+        <Toast />
       </AuthContextProvider>
     </>
   );
