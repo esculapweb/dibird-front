@@ -1,17 +1,20 @@
 import { useState, useEffect } from "react";
-import { StyleSheet, View, Image } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 import Input from "../Auth/Input";
 import AnimatedLoadingButton from "../ui/AnimatedLoadingButton";
 import DropdownInput from "../ui/DropdownInput";
-import { Config } from "../../constants/config";
 import api from "../../services/api";
 import RadioGroup from "../ui/RadioGroup";
+import Avatar from "./Avatar";
+
+
 
 const ProfileForm = ({ data, submitHandler, loading }) => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [username, setUsername] = useState("");
+  const [avatarName, setAvatarName] = useState("");
 
   const [territoryOptions, setTerritoryOptions] = useState([]);
   const [territoryValue, setTerritoryValue] = useState("");
@@ -76,6 +79,14 @@ const ProfileForm = ({ data, submitHandler, loading }) => {
     }
   }, [data]);
 
+  useEffect(() => {
+    const n =
+      firstName && lastName
+        ? `${firstName[0]}${lastName[0]}`
+        : username.slice(0, 2);
+    setAvatarName(n.toUpperCase());
+  }, [firstName, lastName, username]);
+
   const validateForm = () => {
     const newInvalid = {
       firstName: !firstName.trim(),
@@ -107,16 +118,7 @@ const ProfileForm = ({ data, submitHandler, loading }) => {
 
   return (
     <>
-      <View style={styles.imageContainer}>
-        {data?.avatar && (
-          <Image
-            source={{
-              uri: data.avatar_thumbnail ?? data.avatar,
-            }}
-            style={styles.image}
-          />
-        )}
-      </View>
+      <Avatar data={data} avatarName={avatarName} />
 
       <Input
         label="First name"
@@ -193,15 +195,6 @@ const ProfileForm = ({ data, submitHandler, loading }) => {
 export default ProfileForm;
 
 const styles = StyleSheet.create({
-  imageContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  image: {
-    width: 75,
-    height: 75,
-    resizeMode: "contain",
-  },
   buttons: {
     marginTop: 18,
   },

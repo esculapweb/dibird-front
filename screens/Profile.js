@@ -7,7 +7,6 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view
 
 
 import ProfileForm from "../components/Profile/ProfileForm";
-import Avatar from "../components/Profile/Avatar";
 import api from "../services/api";
 import { Put } from "../util/requests";
 
@@ -39,12 +38,11 @@ const Profile = () => {
       keyboardShouldPersistTaps="handled"
       extraScrollHeight={Platform.OS === "ios" ? 20 : 80}
     >
-        {/* <ProfileForm
+        <ProfileForm
           data={fetchedMessage}
           submitHandler={submitHandler}
           loading={loading}
-        /> */}
-        <Avatar data={fetchedMessage} />
+        />
     </KeyboardAwareScrollView>
   );
 };

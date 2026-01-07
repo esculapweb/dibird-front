@@ -1,19 +1,50 @@
 import { useState, useEffect } from "react";
-import { StyleSheet, View, Image } from "react-native";
+import {
+  StyleSheet,
+  View,
+  Image,
+  Text,
+  Pressable,
+  ActivityIndicator,
+} from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
-import AnimatedLoadingButton from "../ui/AnimatedLoadingButton";
+import { Ionicons } from "@expo/vector-icons";
+import { useActionSheet } from "@expo/react-native-action-sheet";
 
 import Toast from "react-native-toast-message";
-import api from "../../services/api";
+import { Colors } from "../../constants/styles";
+import { patchAvatar, deleteAvatar } from "../../util/requests";
 
-const Avatar = ({ data }) => {
+const AVATAR_SIZE = 100;
+
+const Avatar = ({ data, avatarName }) => {
+  const { showActionSheetWithOptions } = useActionSheet();
   const [avatar, setAvatar] = useState();
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setAvatar(data?.avatar_thumbnail ?? data?.avatar);
   }, [data]);
+
+  const onPress = () => {
+    if (!avatar) {
+        pickAvatar();
+        return;
+    }
+
+    showActionSheetWithOptions(
+      {
+        options: ["Change photo", "Remove photo", "Cancel"],
+        destructiveButtonIndex: 1,
+        cancelButtonIndex: 2,
+      },
+      (index) => {
+        if (index === 0) pickAvatar();
+        if (index === 1) removeAvatar();
+      }
+    );
+  };
 
   const pickAvatar = async () => {
     if (loading) return;
@@ -50,7 +81,8 @@ const Avatar = ({ data }) => {
         { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
       );
 
-      await uploadAvatar(manipulated);
+      const responseData = await patchAvatar(manipulated);
+      setAvatar(responseData.avatar_thumbnail);
     } catch (err) {
       console.log("Image manipulation error:", err);
       Toast.show({
@@ -61,65 +93,46 @@ const Avatar = ({ data }) => {
     setLoading(false);
   };
 
-  const uploadAvatar = async (image) => {
-    const formData = new FormData();
-    const message = "Avatar updated";
-
-    formData.append("avatar", {
-      uri: image.uri,
-      name: "avatar.jpg",
-      type: "image/jpeg",
-    });
-
-    try {
-      const response = await api.patch("/myapi/profile/avatar/", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      if (response.status === 200 || response.status === 204) {
-        setAvatar(response.data.avatar_thumbnail);
-        Toast.show({
-          type: "success",
-          text1: message,
-        });
-      }
-    } catch (error) {
-      if (error.response) {
-        console.log("Validation error:", error.response.data);
-        Toast.show({
-          type: "error",
-          text1: "Check entered data",
-        });
-      } else {
-        console.log("Network error:", error.message);
-        Toast.show({
-          type: "error",
-          text1: "Server unavailable",
-        });
-      }
-    }
+  const removeAvatar = async () => {
+    setLoading(true);
+    const res = await deleteAvatar();
+    if (res.status === 204) setAvatar(null);
+    setLoading(false);
   };
 
   return (
-    <>
-      <View style={styles.container}>
-        {avatar && (
-          <Image
-            source={{
-              uri: avatar,
-            }}
-            style={styles.image}
+    <Pressable style={styles.container} onPress={onPress} disabled={loading}>
+      {avatar ? (
+        <Image
+          source={{
+            uri: avatar,
+          }}
+          style={styles.avatar}
+        />
+      ) : (
+        !loading && (
+          <View style={styles.placeholder}>
+            <Text style={styles.avatarName}>{avatarName}</Text>
+          </View>
+        )
+      )}
+
+      {loading && (
+        <View style={styles.overlay}>
+          <ActivityIndicator
+            size="large"
+            color="#fff"
+            style={{ transform: [{ translateY: 1 }] }}
           />
-        )}
-      </View>
-      <View style={styles.buttons}>
-        <AnimatedLoadingButton onPress={pickAvatar} loading={loading}>
-          Update avatar
-        </AnimatedLoadingButton>
-      </View>
-    </>
+        </View>
+      )}
+
+      {!loading && (
+        <View style={styles.plusWrapper}>
+          <Ionicons name="pencil" size={16} color={Colors.accent} />
+        </View>
+      )}
+    </Pressable>
   );
 };
 
@@ -127,15 +140,47 @@ export default Avatar;
 
 const styles = StyleSheet.create({
   container: {
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_SIZE / 2,
+    alignSelf: "center",
+  },
+  avatar: {
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_SIZE / 2,
+  },
+  placeholder: {
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_SIZE / 2,
+    backgroundColor: Colors.primary500,
     justifyContent: "center",
     alignItems: "center",
   },
-  image: {
-    width: 150,
-    height: 150,
-    resizeMode: "contain",
+  avatarName: {
+    fontSize: 36,
+    color: Colors.primary100,
+    fontWeight: "bold",
   },
-  buttons: {
-    marginTop: 18,
+  plusWrapper: {
+    width: 26,
+    height: 26,
+    borderRadius: 15,
+    position: "absolute",
+    backgroundColor: Colors.primary100,
+    borderColor: Colors.border,
+    borderWidth: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    bottom: -2,
+    right: 2,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: AVATAR_SIZE / 2,
   },
 });
