@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   rowHorizontal: {
-    marginRight: 16,
+    marginRight: 24,
   },
   outer: {
     width: 20,

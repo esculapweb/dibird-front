@@ -111,7 +111,7 @@ const ProfileForm = ({ data, submitHandler, loading }) => {
         {data?.avatar && (
           <Image
             source={{
-              uri: `${Config.baseUrl}/media/${data.avatar}.150x150_q85_crop.jpg`,
+              uri: data.avatar_thumbnail ?? data.avatar,
             }}
             style={styles.image}
           />
