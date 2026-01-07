@@ -1,6 +1,7 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useContext } from "react";
 import WelcomeScreen from "../screens/WelcomeScreen";
+import Profile from "../screens/Profile";
 import IconButton from "../components/ui/IconButton";
 import { AuthContext } from "../store/auth-context";
 import { Colors } from "../constants/styles";
@@ -22,7 +23,7 @@ const AppStack = () => {
     >
       <Stack.Screen
         name="Profile"
-        component={WelcomeScreen}
+        component={Profile}
         options={{
           headerRight: ({ tintColor }) => (
             <IconButton
@@ -38,6 +39,7 @@ const AppStack = () => {
           ),
         }}
       />
+      <Stack.Screen name="Welcome" component={WelcomeScreen} />
     </Stack.Navigator>
   );
 };

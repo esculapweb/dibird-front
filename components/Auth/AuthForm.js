@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 
-import Button from "../ui/Button";
+import AnimatedLoadingButton from "../ui/AnimatedLoadingButton";
 import Input from "./Input";
 
-function AuthForm({ isLogin, onSubmit, credentialsInvalid }) {
+function AuthForm({ isLogin, onSubmit, credentialsInvalid, loading }) {
   const [enteredEmail, setEnteredEmail] = useState("");
   const [enteredUsername, setEnteredUsername] = useState("");
   const [enteredPassword, setEnteredPassword] = useState("");
@@ -77,9 +77,9 @@ function AuthForm({ isLogin, onSubmit, credentialsInvalid }) {
         />
       )}
       <View style={styles.buttons}>
-        <Button onPress={submitHandler}>
+        <AnimatedLoadingButton onPress={submitHandler} loading={loading}>
           {isLogin ? "Log In" : "Sign Up"}
-        </Button>
+        </AnimatedLoadingButton>
       </View>
     </View>
   );

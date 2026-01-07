@@ -6,7 +6,7 @@ import AuthForm from "./AuthForm";
 import { Colors } from "../../constants/styles";
 import { useNavigation } from "@react-navigation/native";
 
-function AuthContent({ isLogin, onAuthenticate }) {
+function AuthContent({ isLogin, onAuthenticate, loading }) {
   const navigation = useNavigation();
 
   const [credentialsInvalid, setCredentialsInvalid] = useState({
@@ -72,6 +72,7 @@ function AuthContent({ isLogin, onAuthenticate }) {
           isLogin={isLogin}
           onSubmit={submitHandler}
           credentialsInvalid={credentialsInvalid}
+          loading={loading}
         />
         <View style={styles.buttons}>
           <FlatButton onPress={switchAuthModeHandler}>

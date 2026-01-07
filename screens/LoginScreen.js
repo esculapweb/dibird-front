@@ -1,33 +1,43 @@
 import { useContext, useState } from "react";
-import { Alert } from "react-native";
+import Toast from "react-native-toast-message";
 
 import { AuthContext } from "../store/auth-context";
 import AuthContent from "../components/Auth/AuthContent";
-import LoadingOverlay from "../components/ui/LoadingOverlay";
 import { Login } from "../util/auth";
 
 const LoginScreen = () => {
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [loading, setLoading] = useState(false);
   const authCtx = useContext(AuthContext);
 
   const LoginHandler = async ({ email, password }) => {
-    setIsAuthenticating(true);
+    if (loading) return;
+
+    setLoading(true);
     try {
       const token = await Login(email, password);
       authCtx.authenticate(token);
     } catch (error) {
-      Alert.alert(
-        "Authentication failed",
-        error.response?.data?.error?.message ||
-          "Could not log you in. Please check your credentials or try again later."
-      );
-      setIsAuthenticating(false);
+      const message =
+        error.response?.data?.non_field_errors?.[0] ||
+        error.response?.data?.email?.[0] ||
+        error.response?.data?.password?.[0] ||
+        Object.values(data || {})
+          .flat()
+          .join("\n") ||
+        "Could not log you in. Please check your credentials or try again later.";
+
+      Toast.show({
+        type: "error",
+        text1: "Authentication failed",
+        text2: message,
+      });
     }
+    setLoading(false);
   };
 
-  if (isAuthenticating) return <LoadingOverlay message="Logging you in.." />;
-
-  return <AuthContent onAuthenticate={LoginHandler} isLogin />;
+  return (
+    <AuthContent onAuthenticate={LoginHandler} loading={loading} isLogin />
+  );
 };
 
 export default LoginScreen;

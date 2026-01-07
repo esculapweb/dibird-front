@@ -1,10 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  StyleSheet,
-  View,
-  Image,
-  ScrollView,
-} from "react-native";
+import { StyleSheet, View, Image } from "react-native";
 
 import Input from "../Auth/Input";
 import AnimatedLoadingButton from "../ui/AnimatedLoadingButton";
@@ -112,87 +107,85 @@ const ProfileForm = ({ data, submitHandler, loading }) => {
 
   return (
     <>
-      <ScrollView>
-        <View style={styles.imageContainer}>
-          {data?.avatar && (
-            <Image
-              source={{
-                uri: `${Config.baseUrl}/media/${data.avatar}.150x150_q85_crop.jpg`,
-              }}
-              style={styles.image}
-            />
-          )}
-        </View>
+      <View style={styles.imageContainer}>
+        {data?.avatar && (
+          <Image
+            source={{
+              uri: `${Config.baseUrl}/media/${data.avatar}.150x150_q85_crop.jpg`,
+            }}
+            style={styles.image}
+          />
+        )}
+      </View>
 
-        <Input
-          label="First name"
-          value={firstName}
-          onUpdateValue={setFirstName}
-          isInvalid={invalid.firstName}
-        />
-        <Input
-          label="Last name"
-          value={lastName}
-          onUpdateValue={setLastName}
-          isInvalid={invalid.lastName}
-        />
-        <Input
-          label="Username"
-          value={username}
-          onUpdateValue={setUsername}
-          isInvalid={invalid.username}
-        />
+      <Input
+        label="First name"
+        value={firstName}
+        onUpdateValue={setFirstName}
+        isInvalid={invalid.firstName}
+      />
+      <Input
+        label="Last name"
+        value={lastName}
+        onUpdateValue={setLastName}
+        isInvalid={invalid.lastName}
+      />
+      <Input
+        label="Username"
+        value={username}
+        onUpdateValue={setUsername}
+        isInvalid={invalid.username}
+      />
 
-        <DropdownInput
-          title="My country"
-          placeholder="Select country"
-          initial={data?.territory}
-          value={territoryValue}
-          setValue={setTerritoryValue}
-          options={territoryOptions}
-          error={invalid?.territory}
-        />
+      <DropdownInput
+        title="My country"
+        placeholder="Select country"
+        initial={data?.territory}
+        value={territoryValue}
+        setValue={setTerritoryValue}
+        options={territoryOptions}
+        error={invalid?.territory}
+      />
 
-        <DropdownInput
-          title="Timezone"
-          placeholder="Select timezone"
-          initial={data?.timezone}
-          value={timezoneValue}
-          setValue={setTimezoneValue}
-          options={timezoneOptions}
-          error={invalid?.timezone}
-        />
+      <DropdownInput
+        title="Timezone"
+        placeholder="Select timezone"
+        initial={data?.timezone}
+        value={timezoneValue}
+        setValue={setTimezoneValue}
+        options={timezoneOptions}
+        error={invalid?.timezone}
+      />
 
-        <RadioGroup
-          label="Only I can see my profile"
-          value={privateProfile}
-          onChange={setPrivateProfile}
-          direction="row"
-          isInvalid={invalid.privateProfile}
-          options={[
-            { label: "Yes", value: true },
-            { label: "No", value: false },
-          ]}
-        />
+      <RadioGroup
+        label="Only I can see my profile"
+        value={privateProfile}
+        onChange={setPrivateProfile}
+        direction="row"
+        isInvalid={invalid.privateProfile}
+        options={[
+          { label: "Yes", value: true },
+          { label: "No", value: false },
+        ]}
+      />
 
-        <RadioGroup
-          label="Diaries are private by default"
-          value={privateDiaries}
-          onChange={setPrivateDiaries}
-          direction="row"
-          isInvalid={invalid.privateDiaries}
-          options={[
-            { label: "Yes", value: true },
-            { label: "No", value: false },
-          ]}
-        />
+      <RadioGroup
+        label="Diaries are private by default"
+        value={privateDiaries}
+        onChange={setPrivateDiaries}
+        direction="row"
+        isInvalid={invalid.privateDiaries}
+        options={[
+          { label: "Yes", value: true },
+          { label: "No", value: false },
+        ]}
+      />
 
-        <View style={styles.buttons}>
-          <AnimatedLoadingButton onPress={onSubmit} loading={loading}>
-            Save
-          </AnimatedLoadingButton>
-        </View>
-      </ScrollView>
+      <View style={styles.buttons}>
+        <AnimatedLoadingButton onPress={onSubmit} loading={loading}>
+          Save
+        </AnimatedLoadingButton>
+      </View>
     </>
   );
 };
@@ -211,9 +204,5 @@ const styles = StyleSheet.create({
   },
   buttons: {
     marginTop: 18,
-  },
-  picker: {
-    height: 200,
-    width: "100%",
   },
 });
