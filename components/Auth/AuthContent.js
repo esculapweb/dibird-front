@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Alert, StyleSheet, View, Image, Text, ScrollView } from "react-native";
+import { Alert, StyleSheet, View, Image, Text, Platform } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+
 
 import FlatButton from "../ui/FlatButton";
 import AuthForm from "./AuthForm";
@@ -54,7 +56,12 @@ function AuthContent({ isLogin, onAuthenticate, loading }) {
   }
 
   return (
-    <ScrollView>
+     <KeyboardAwareScrollView
+          contentContainerStyle={styles.container}
+          enableOnAndroid
+          keyboardShouldPersistTaps="handled"
+          extraScrollHeight={Platform.OS === "ios" ? 20 : 80}
+        >
       <View style={styles.imageContainer}>
         <View style={styles.logo}>
           <Image
@@ -80,7 +87,7 @@ function AuthContent({ isLogin, onAuthenticate, loading }) {
           </FlatButton>
         </View>
       </View>
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 

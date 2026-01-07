@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { StyleSheet, ScrollView } from "react-native";
+import {
+  StyleSheet,
+  Platform,
+} from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+
 
 import ProfileForm from "../components/Profile/ProfileForm";
 import api from "../services/api";
@@ -27,13 +32,18 @@ const Profile = () => {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <ProfileForm
-        data={fetchedMessage}
-        submitHandler={submitHandler}
-        loading={loading}
-      />
-    </ScrollView>
+    <KeyboardAwareScrollView
+      contentContainerStyle={styles.container}
+      enableOnAndroid
+      keyboardShouldPersistTaps="handled"
+      extraScrollHeight={Platform.OS === "ios" ? 20 : 80}
+    >
+        <ProfileForm
+          data={fetchedMessage}
+          submitHandler={submitHandler}
+          loading={loading}
+        />
+    </KeyboardAwareScrollView>
   );
 };
 
@@ -41,6 +51,7 @@ export default Profile;
 
 const styles = StyleSheet.create({
   container: {
-    margin: 24,
+    flexGrow: 1,
+    padding: 24,
   },
 });
