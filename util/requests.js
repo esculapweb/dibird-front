@@ -6,21 +6,22 @@ export const Put = async (url, data, message) => {
     const response = await api.put(url, data);
 
     if (response.status === 200 || response.status === 204) {
-      console.log(message, response.data);
+      console.info(message, response.data);
       Toast.show({
         type: "success",
         text1: message,
       });
+      return response;
     }
   } catch (error) {
     if (error.response) {
-      console.log("Validation error:", error.response.data);
+      console.error("Validation error:", error.response.data);
       Toast.show({
         type: "error",
         text1: "Check entered data",
       });
     } else {
-      console.log("Network error:", error.message);
+      console.error("Network error:", error.message);
       Toast.show({
         type: "error",
         text1: "Server unavailable",
@@ -50,13 +51,13 @@ export const patchAvatar = async (image) => {
     }
   } catch (error) {
     if (error.response) {
-      console.log("Validation error:", error.response.data);
+      console.error("Validation error:", error.response.data);
       Toast.show({
         type: "error",
         text1: "Something went wrong",
       });
     } else {
-      console.log("Network error:", error.message);
+      console.error("Network error:", error.message);
       Toast.show({
         type: "error",
         text1: "Server unavailable",
@@ -67,9 +68,9 @@ export const patchAvatar = async (image) => {
 
 export const deleteAvatar = () => {
   try {
-    return api.delete("/myapi/profile/avatar/");;
+    return api.delete("/myapi/profile/avatar/");
   } catch (error) {
-    console.log(
+    console.error(
       "Delete Avatar error:",
       error?.response?.data
         ? JSON.stringify(error.response.data)

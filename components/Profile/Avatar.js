@@ -16,21 +16,40 @@ import Toast from "react-native-toast-message";
 import { Colors } from "../../constants/styles";
 import { patchAvatar, deleteAvatar } from "../../util/requests";
 
+import { useProfile } from "../../store/profile-context";
+
 const AVATAR_SIZE = 100;
 
-const Avatar = ({ data, avatarName }) => {
+const Avatar = () => {
   const { showActionSheetWithOptions } = useActionSheet();
   const [avatar, setAvatar] = useState();
+  const [avatarName, setAvatarName] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const profileCtx = useProfile();
+
+  console.log("profileCtx.profile:", profileCtx.profile);
+
   useEffect(() => {
-    setAvatar(data?.avatar_thumbnail ?? data?.avatar);
-  }, [data]);
+    setAvatar(profileCtx.profile.avatar_thumbnail);
+  }, [profileCtx.profile]);
+
+  useEffect(() => {
+    const user_data = profileCtx.profile?.user_data;
+    if (!user_data) return;
+    
+    const { first_name, last_name, username } = user_data;
+    const n =
+      first_name && last_name
+        ? `${first_name[0]}${last_name[0]}`
+        : username.slice(0, 2);
+    setAvatarName(n.toUpperCase());
+  }, [profileCtx.profile]);
 
   const onPress = () => {
     if (!avatar) {
-        pickAvatar();
-        return;
+      pickAvatar();
+      return;
     }
 
     showActionSheetWithOptions(
@@ -81,10 +100,11 @@ const Avatar = ({ data, avatarName }) => {
         { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
       );
 
-      const responseData = await patchAvatar(manipulated);
-      setAvatar(responseData.avatar_thumbnail);
+      const { avatar_thumbnail } = await patchAvatar(manipulated);
+      setAvatar(avatar_thumbnail);
+      profileCtx.refreshProfile();
     } catch (err) {
-      console.log("Image manipulation error:", err);
+      console.error("Image manipulation error:", err);
       Toast.show({
         type: "error",
         text1: "Image processing failed",
@@ -96,7 +116,10 @@ const Avatar = ({ data, avatarName }) => {
   const removeAvatar = async () => {
     setLoading(true);
     const res = await deleteAvatar();
-    if (res.status === 204) setAvatar(null);
+    if (res.status === 204) {
+      profileCtx.refreshProfile();
+      setAvatar(null);
+    }
     setLoading(false);
   };
 
@@ -129,7 +152,7 @@ const Avatar = ({ data, avatarName }) => {
 
       {!loading && (
         <View style={styles.plusWrapper}>
-          <Ionicons name="pencil" size={16} color={Colors.accent} />
+          <Ionicons name="pencil" size={16} color={Colors.primary500} />
         </View>
       )}
     </Pressable>

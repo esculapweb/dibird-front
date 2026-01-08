@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   StyleSheet,
   Platform,
@@ -7,27 +7,16 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view
 
 
 import ProfileForm from "../components/Profile/ProfileForm";
-import api from "../services/api";
-import { Put } from "../util/requests";
+import { useProfile } from "../store/profile-context";
 
 const Profile = () => {
-  const [fetchedMessage, setFetchedMessage] = useState();
   const [loading, setLoading] = useState(false);
+  const profileCtx = useProfile();
 
-  const fetchResponse = async () => {
-    const response = await api.get("/myapi/profile/me/");
-    setFetchedMessage(response.data);
-  };
-
-  useEffect(() => {
-    fetchResponse();
-  }, []);
-
-  const submitHandler = async (updatedData, userId) => {
+  const submitHandler = async (updatedData) => {
     if (loading) return;
     setLoading(true);
-    const url = `/myapi/profile/${userId}/`;
-    await Put(url, updatedData, "Profile updated");
+    await profileCtx.updateProfile(updatedData);
     setLoading(false);
   };
 
@@ -39,7 +28,6 @@ const Profile = () => {
       extraScrollHeight={Platform.OS === "ios" ? 20 : 80}
     >
         <ProfileForm
-          data={fetchedMessage}
           submitHandler={submitHandler}
           loading={loading}
         />

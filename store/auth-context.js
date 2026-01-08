@@ -23,6 +23,7 @@ const AuthContextProvider = ({ children }) => {
   const logout = async () => {
     setAuthToken();
     await SecureStore.deleteItemAsync("token");
+    await AsyncStorage.removeItem("profile");
   };
 
   useEffect(() => {

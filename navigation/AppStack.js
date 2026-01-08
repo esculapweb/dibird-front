@@ -1,13 +1,19 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList, DrawerItem  } from "@react-navigation/drawer";
+import {
+  createDrawerNavigator,
+  DrawerContentScrollView,
+  DrawerItemList,
+  DrawerItem,
+} from "@react-navigation/drawer";
 import { useContext } from "react";
-import { Ionicons } from '@expo/vector-icons';
+import { View, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 import WelcomeScreen from "../screens/WelcomeScreen";
 import Profile from "../screens/Profile";
 import { AuthContext } from "../store/auth-context";
 import { Colors } from "../constants/styles";
-import { View, Text} from "react-native";
+import Avatar from "../components/Profile/Avatar";
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -27,31 +33,32 @@ const AppStack = () => {
         name="ProfileScreen"
         component={Profile}
         options={{
-          headerShown: false
+          headerShown: false,
         }}
-      />  
+      />
     </Stack.Navigator>
   );
 };
-
 
 function CustomDrawerContent(props) {
   const authCtx = useContext(AuthContext);
 
   return (
     <View style={{ flex: 1 }}>
-      {/* <View >
-        <Text >Denis</Text>
-      </View> */}
-
-      <DrawerContentScrollView {...props} contentContainerStyle={{ flexGrow: 1 }}>
+      <DrawerContentScrollView
+        {...props}
+        contentContainerStyle={{ flexGrow: 1 }}
+      >
+        <View style={styles.header}>
+          <Avatar />
+        </View>
         <DrawerItemList {...props} />
         <View style={{ flex: 1 }} />
         <DrawerItem
           label="Logout"
           labelStyle={{ color: Colors.primary500 }}
           onPress={authCtx.logout}
-          icon={({color, size}) => (
+          icon={({ color, size }) => (
             <Ionicons name="log-out-outline" color={color} size={size} />
           )}
         />
@@ -59,7 +66,6 @@ function CustomDrawerContent(props) {
     </View>
   );
 }
-
 
 const AppDrawer = () => {
   return (
@@ -83,3 +89,12 @@ const AppDrawer = () => {
 };
 
 export default AppDrawer;
+
+const styles = StyleSheet.create({
+  header: {
+    paddingHorizontal: 16,
+    alignItems: "center",
+    marginBottom: 24,
+  },
+
+});

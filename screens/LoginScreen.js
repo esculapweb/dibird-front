@@ -4,10 +4,13 @@ import Toast from "react-native-toast-message";
 import { AuthContext } from "../store/auth-context";
 import AuthContent from "../components/Auth/AuthContent";
 import { Login } from "../util/auth";
+import api from "../services/api";
+import { useProfile } from "../store/profile-context";
 
 const LoginScreen = () => {
   const [loading, setLoading] = useState(false);
   const authCtx = useContext(AuthContext);
+  const profileCtx = useProfile();
 
   const LoginHandler = async ({ email, password }) => {
     if (loading) return;
@@ -16,6 +19,7 @@ const LoginScreen = () => {
     try {
       const token = await Login(email, password);
       authCtx.authenticate(token);
+      profileCtx.refreshProfile();
     } catch (error) {
       const message =
         error.response?.data?.non_field_errors?.[0] ||

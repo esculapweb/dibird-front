@@ -6,15 +6,13 @@ import AnimatedLoadingButton from "../ui/AnimatedLoadingButton";
 import DropdownInput from "../ui/DropdownInput";
 import api from "../../services/api";
 import RadioGroup from "../ui/RadioGroup";
+import { useProfile } from "../../store/profile-context";
 import Avatar from "./Avatar";
 
-
-
-const ProfileForm = ({ data, submitHandler, loading }) => {
+const ProfileForm = ({ submitHandler, loading }) => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [username, setUsername] = useState("");
-  const [avatarName, setAvatarName] = useState("");
+  const [userName, setUserName] = useState("");
 
   const [territoryOptions, setTerritoryOptions] = useState([]);
   const [territoryValue, setTerritoryValue] = useState("");
@@ -28,10 +26,12 @@ const ProfileForm = ({ data, submitHandler, loading }) => {
   const [invalid, setInvalid] = useState({
     firstName: false,
     lastName: false,
-    username: false,
+    userName: false,
     territory: false,
     timezone: false,
   });
+
+  const profileCtx = useProfile();
 
   const isoToFlagEmoji = (isoCode) => {
     if (!isoCode) return "";
@@ -53,7 +53,7 @@ const ProfileForm = ({ data, submitHandler, loading }) => {
       setTimezoneOptions(formattedTimezones);
     };
     fetchTimezones();
-  }, [data]);
+  }, []);
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -67,31 +67,21 @@ const ProfileForm = ({ data, submitHandler, loading }) => {
       setTerritoryOptions(formattedCountries);
     };
     fetchCountries();
-  }, [data]);
+  }, []);
 
   useEffect(() => {
-    if (data?.user_data) {
-      setFirstName(data.user_data.first_name || "");
-      setLastName(data.user_data.last_name || "");
-      setUsername(data.user_data.username || "");
-      setPrivateProfile(data.private || false);
-      setPrivateDiaries(data.private_diary || false);
-    }
-  }, [data]);
-
-  useEffect(() => {
-    const n =
-      firstName && lastName
-        ? `${firstName[0]}${lastName[0]}`
-        : username.slice(0, 2);
-    setAvatarName(n.toUpperCase());
-  }, [firstName, lastName, username]);
+      setFirstName(profileCtx.profile.user_data.first_name);
+      setLastName(profileCtx.profile.user_data.last_name);
+      setUserName(profileCtx.profile.user_data.username);
+      setPrivateProfile(profileCtx.profile.private);
+      setPrivateDiaries(profileCtx.profile.private_diary);
+  }, [profileCtx.profile]);
 
   const validateForm = () => {
     const newInvalid = {
-      firstName: !firstName.trim(),
-      lastName: !lastName.trim(),
-      username: !username.trim(),
+      // firstName: !firstName.trim(),
+      // lastName: !lastName.trim(),
+      userName: !userName.trim(),
       territory: !String(territoryValue ?? "").trim(),
       timezone: !String(timezoneValue ?? "").trim(),
     };
@@ -106,20 +96,18 @@ const ProfileForm = ({ data, submitHandler, loading }) => {
     const formData = {
       first_name: firstName,
       last_name: lastName,
-      username,
+      username: userName,
       territory: territoryValue,
       timezone: timezoneValue,
       private: privateProfile,
       private_diary: privateDiaries,
     };
 
-    submitHandler(formData, data.user);
+    submitHandler(formData);
   };
 
   return (
     <>
-      <Avatar data={data} avatarName={avatarName} />
-
       <Input
         label="First name"
         value={firstName}
@@ -134,15 +122,15 @@ const ProfileForm = ({ data, submitHandler, loading }) => {
       />
       <Input
         label="Username"
-        value={username}
-        onUpdateValue={setUsername}
-        isInvalid={invalid.username}
+        value={userName}
+        onUpdateValue={setUserName}
+        isInvalid={invalid.userName}
       />
 
       <DropdownInput
         title="My country"
         placeholder="Select country"
-        initial={data?.territory}
+        initial={profileCtx.profile.territory}
         value={territoryValue}
         setValue={setTerritoryValue}
         options={territoryOptions}
@@ -152,7 +140,7 @@ const ProfileForm = ({ data, submitHandler, loading }) => {
       <DropdownInput
         title="Timezone"
         placeholder="Select timezone"
-        initial={data?.timezone}
+        initial={profileCtx.profile.timezone}
         value={timezoneValue}
         setValue={setTimezoneValue}
         options={timezoneOptions}
