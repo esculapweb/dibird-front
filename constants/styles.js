@@ -8,4 +8,5 @@ export const Colors = {
   textMain: '#333',
   link: '#d93b2e',
   logoText: '#224895',
+  backgroundMain: '#f0f0f0',
 }

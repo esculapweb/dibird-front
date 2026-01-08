@@ -6,7 +6,7 @@ export const Put = async (url, data, message) => {
     const response = await api.put(url, data);
 
     if (response.status === 200 || response.status === 204) {
-      console.info(message, response.data);
+      // console.info(message, response.data);
       Toast.show({
         type: "success",
         text1: message,

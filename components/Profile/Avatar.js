@@ -28,8 +28,6 @@ const Avatar = () => {
 
   const profileCtx = useProfile();
 
-  console.log("profileCtx.profile:", profileCtx.profile);
-
   useEffect(() => {
     setAvatar(profileCtx.profile.avatar_thumbnail);
   }, [profileCtx.profile]);

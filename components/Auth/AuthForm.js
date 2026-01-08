@@ -2,7 +2,7 @@ import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 
 import AnimatedLoadingButton from "../ui/AnimatedLoadingButton";
-import Input from "./Input";
+import Input from "../ui/Input";
 
 function AuthForm({ isLogin, onSubmit, credentialsInvalid, loading }) {
   const [enteredEmail, setEnteredEmail] = useState("");

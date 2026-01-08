@@ -27,6 +27,7 @@ const AppStack = () => {
           elevation: 0,
         },
         headerTintColor: Colors.primary100,
+        contentStyle: { backgroundColor: Colors.backgroundMain }, 
       }}
     >
       <Stack.Screen
@@ -76,6 +77,13 @@ const AppDrawer = () => {
           backgroundColor: Colors.primary100,
         },
         drawerActiveTintColor: Colors.primary500,
+        headerStyle: {
+          backgroundColor: Colors.primary500, 
+          elevation: 0, 
+          shadowOpacity: 0, 
+        },
+        headerTintColor: Colors.primary100, 
+        sceneContainerStyle: { backgroundColor: Colors.backgroundMain }
       }}
     >
       <Drawer.Screen name="Welcome" component={WelcomeScreen} />
@@ -96,5 +104,4 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 24,
   },
-
 });

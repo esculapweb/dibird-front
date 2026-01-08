@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 
-import Input from "../Auth/Input";
+import Input from "../ui/Input";
 import AnimatedLoadingButton from "../ui/AnimatedLoadingButton";
 import DropdownInput from "../ui/DropdownInput";
 import api from "../../services/api";
 import RadioGroup from "../ui/RadioGroup";
 import { useProfile } from "../../store/profile-context";
-import Avatar from "./Avatar";
 
 const ProfileForm = ({ submitHandler, loading }) => {
   const [firstName, setFirstName] = useState("");
