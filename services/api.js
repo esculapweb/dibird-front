@@ -41,12 +41,20 @@ const clearTokens = async () => {
 
 api.interceptors.request.use(
   async (config) => {
+
     const lang = i18n.language || "en";
     const token = await getAccessToken();
 
-    if (lang !== "en") config.url = `/${lang}${config.url}`;
+    if (lang !== "en" && !config.url.startsWith(`/${lang}/`)) config.url = `/${lang}${config.url}`;
     if (token) config.headers.Authorization = `Bearer ${token}`;
-    
+
+    console.log(
+      "API request:",
+      config.method,
+      config.url,
+      config.headers.Authorization ? "with token" : "no token"
+    );
+
     return config;
   },
   (error) => Promise.reject(error)
