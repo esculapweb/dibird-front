@@ -17,6 +17,7 @@
     "axios": "^1.13.2",
     "babel-preset-expo": "~54.0.9",
     "expo": "~54.0.30",
+    "expo-dev-client": "~6.0.20",
     "expo-image-manipulator": "~14.0.8",
     "expo-image-picker": "~17.0.10",
     "expo-local-authentication": "~17.0.8",

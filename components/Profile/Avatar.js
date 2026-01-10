@@ -24,6 +24,7 @@ const Avatar = () => {
   const { showActionSheetWithOptions } = useActionSheet();
   const [avatar, setAvatar] = useState();
   const [avatarName, setAvatarName] = useState("");
+  const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
 
   const profileCtx = useProfile();
@@ -35,13 +36,17 @@ const Avatar = () => {
   useEffect(() => {
     const user_data = profileCtx.profile?.user_data;
     if (!user_data) return;
-    
+
     const { first_name, last_name, username } = user_data;
     const n =
       first_name && last_name
         ? `${first_name[0]}${last_name[0]}`
         : username.slice(0, 2);
     setAvatarName(n.toUpperCase());
+
+    first_name && last_name
+      ? setName(`${first_name} ${last_name}`)
+      : setName(username);
   }, [profileCtx.profile]);
 
   const onPress = () => {
@@ -122,38 +127,41 @@ const Avatar = () => {
   };
 
   return (
-    <Pressable style={styles.container} onPress={onPress} disabled={loading}>
-      {avatar ? (
-        <Image
-          source={{
-            uri: avatar,
-          }}
-          style={styles.avatar}
-        />
-      ) : (
-        !loading && (
-          <View style={styles.placeholder}>
-            <Text style={styles.avatarName}>{avatarName}</Text>
-          </View>
-        )
-      )}
-
-      {loading && (
-        <View style={styles.overlay}>
-          <ActivityIndicator
-            size="large"
-            color="#fff"
-            style={{ transform: [{ translateY: 1 }] }}
+    <>
+      <Pressable style={styles.container} onPress={onPress} disabled={loading}>
+        {avatar ? (
+          <Image
+            source={{
+              uri: avatar,
+            }}
+            style={styles.avatar}
           />
-        </View>
-      )}
+        ) : (
+          !loading && (
+            <View style={styles.placeholder}>
+              <Text style={styles.avatarName}>{avatarName}</Text>
+            </View>
+          )
+        )}
 
-      {!loading && (
-        <View style={styles.plusWrapper}>
-          <Ionicons name="pencil" size={16} color={Colors.primary500} />
-        </View>
-      )}
-    </Pressable>
+        {loading && (
+          <View style={styles.overlay}>
+            <ActivityIndicator
+              size="large"
+              color="#fff"
+              style={{ transform: [{ translateY: 1 }] }}
+            />
+          </View>
+        )}
+
+        {!loading && (
+          <View style={styles.plusWrapper}>
+            <Ionicons name="pencil" size={16} color={Colors.primary500} />
+          </View>
+        )}
+      </Pressable>
+      <Text style={styles.smallText}>{name}</Text>
+    </>
   );
 };
 
@@ -203,5 +211,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderRadius: AVATAR_SIZE / 2,
+  },
+  smallText: {
+    marginTop: 8,
+    textAlign: "center",
+    fontSize: 12,
+    color: Colors.primary500,
   },
 });

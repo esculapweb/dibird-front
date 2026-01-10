@@ -1,7 +1,9 @@
 import * as SecureStore from "expo-secure-store";
 import { createContext, useState, useEffect } from "react";
+import * as LocalAuthentication from "expo-local-authentication";
 
 import { setOnTokenUpdate } from "../services/authService";
+import { canUseBiometrics } from "../services/bio";
 
 export const AuthContext = createContext({
   token: "",
@@ -15,21 +17,22 @@ const AuthContextProvider = ({ children }) => {
   const [authToken, setAuthToken] = useState();
   const [isInitializing, setIsInitializing] = useState(true);
 
-  const authenticate = async (token) => {
-    setAuthToken(token);
-    await SecureStore.setItemAsync("token", token);
+  const authenticate = async (access) => {
+    setAuthToken(access);
+    if (access) await SecureStore.setItemAsync("access", access);
   };
 
   const logout = async () => {
-    setAuthToken();
-    await SecureStore.deleteItemAsync("token");
+    setAuthToken(null);
+    await SecureStore.deleteItemAsync("access");
+    await SecureStore.deleteItemAsync("refresh");
     await AsyncStorage.removeItem("profile");
   };
 
   useEffect(() => {
     const restoreToken = async () => {
       try {
-        const storedToken = await SecureStore.getItemAsync("token");
+        const storedToken = await SecureStore.getItemAsync("access");
         if (storedToken) {
           setAuthToken(storedToken);
         }
@@ -39,6 +42,23 @@ const AuthContextProvider = ({ children }) => {
     };
 
     restoreToken();
+  }, []);
+
+  useEffect(() => {
+    const unlockApp = async () => {
+      if (!await canUseBiometrics()) return;
+
+      const res = await LocalAuthentication.authenticateAsync({
+        promptMessage: "Unlock DiBird",
+        fallbackLabel: "Use device passcode",
+      });
+
+      if (!res.success) {
+        logout();
+      }
+    };
+
+    unlockApp();
   }, []);
 
   useEffect(() => {

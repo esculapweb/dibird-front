@@ -2,6 +2,7 @@ import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 
 import { Config } from "../constants/config";
+import { canUseBiometrics } from "../services/bio";
 
 const authApi = axios.create({
   baseURL: Config.baseUrl,
@@ -22,9 +23,14 @@ const post = async (url, data) => {
 };
 
 const saveRefreshToken = async (refresh) => {
-  if (refresh) {
-    await SecureStore.setItemAsync("refreshToken", refresh);
-  }
+  if (!refresh) return;
+  try{
+  await SecureStore.setItemAsync("refresh", refresh, {
+    requireAuthentication: await canUseBiometrics(),
+  });
+} catch (e) {
+  console.info(e.message)
+}
 };
 
 export const Login = async (email, password) => {

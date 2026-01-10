@@ -3,6 +3,7 @@ import * as SecureStore from "expo-secure-store";
 
 import { Config } from "../constants/config";
 import { notifyTokenUpdate } from "./authService";
+import { canUseBiometrics } from "./bio";
 
 const api = axios.create({
   baseURL: Config.baseUrl,
@@ -12,27 +13,30 @@ const api = axios.create({
 });
 
 const getAccessToken = async () => {
-  return await SecureStore.getItemAsync("token");
+  return await SecureStore.getItemAsync("access");
 };
 
 const getRefreshToken = async () => {
-  return await SecureStore.getItemAsync("refreshToken");
+    return await SecureStore.getItemAsync("refresh");
 };
 
 const saveTokens = async ({ access, refresh }) => {
   if (access) {
-    await SecureStore.setItemAsync("token", access);
+    await SecureStore.setItemAsync("access", access);
     notifyTokenUpdate(access);
   }
 
   if (refresh) {
-    await SecureStore.setItemAsync("refreshToken", refresh);
+    await SecureStore.setItemAsync("refresh", refresh, {
+      requireAuthentication: await canUseBiometrics(),
+    });
+
   }
 };
 
 const clearTokens = async () => {
-  await SecureStore.deleteItemAsync("token");
-  await SecureStore.deleteItemAsync("refreshToken");
+  await SecureStore.deleteItemAsync("access");
+  await SecureStore.deleteItemAsync("refresh");
 };
 
 api.interceptors.request.use(

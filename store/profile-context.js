@@ -10,7 +10,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../services/api";
 import { Put } from "../util/requests";
 
-const ProfileContext = createContext();
+const ProfileContext = createContext({
+  profile: {},
+  updateProfile: () => {},
+  refreshProfile: () => {},
+});
 
 export const ProfileProvider = ({ children }) => {
   const [profile, setProfile] = useState({});
