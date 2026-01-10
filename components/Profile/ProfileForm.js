@@ -44,7 +44,7 @@ const ProfileForm = ({ submitHandler, loading }) => {
         setTimezoneOptions(timezones);
         setTerritoryOptions(countries);
       } catch (e) {
-        console.error("Failed to load dictionaries", e);
+        console.warn("Failed to load dictionaries", e);
       }
     };
 

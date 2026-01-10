@@ -12,12 +12,12 @@ const api = axios.create({
   },
 });
 
-const getAccessToken = async () => {
-  return await SecureStore.getItemAsync("access");
+const getAccessToken = () => {
+  return SecureStore.getItemAsync("access");
 };
 
-const getRefreshToken = async () => {
-    return await SecureStore.getItemAsync("refresh");
+const getRefreshToken = () => {
+    return SecureStore.getItemAsync("refresh");
 };
 
 const saveTokens = async ({ access, refresh }) => {

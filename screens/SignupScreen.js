@@ -31,8 +31,9 @@ const SignupScreen = ({ navigation }) => {
         "Could not log you in. Please check your credentials or try again later.";
 
       Alert.alert("Could not create user", message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return <AuthContent onAuthenticate={signUpHandler} loading={loading} />;

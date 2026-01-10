@@ -35,8 +35,9 @@ const LoginScreen = () => {
         text1: "Authentication failed",
         text2: message,
       });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (

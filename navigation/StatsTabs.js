@@ -1,6 +1,5 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import SeenScreen from "../components/Stats/SeenScreen";
-import NotSeenScreen from "../components/Stats/NotSeenScreen";
+import Stats from "../components/Stats/Stats";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../constants/styles";
 
@@ -16,6 +15,8 @@ const StatsTabs = ({ seen, notSeen }) => {
     >
       <Tab.Screen
         name="Seen"
+        component={Stats}
+        initialParams={{ data: seen }}
         options={{
           title: `Seen (${seen.length})`,
           tabBarIcon: ({ focused, color, size }) => (
@@ -26,11 +27,11 @@ const StatsTabs = ({ seen, notSeen }) => {
             />
           ),
         }}
-      >
-        {() => <SeenScreen route={{ params: { seen } }} />}
-      </Tab.Screen>
+      />
       <Tab.Screen
         name="NotSeen"
+        component={Stats}
+        initialParams={{ data: notSeen }}
         options={{
           title: `Not seen (${notSeen.length})`,
           tabBarIcon: ({ focused, color, size }) => (
@@ -41,9 +42,7 @@ const StatsTabs = ({ seen, notSeen }) => {
             />
           ),
         }}
-      >
-        {() => <NotSeenScreen route={{ params: { notSeen } }} />}
-      </Tab.Screen>
+      />
     </Tab.Navigator>
   );
 };

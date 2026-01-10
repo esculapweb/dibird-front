@@ -30,7 +30,7 @@ const Avatar = () => {
   const profileCtx = useProfile();
 
   useEffect(() => {
-    setAvatar(profileCtx.profile.avatar_thumbnail);
+    setAvatar(profileCtx.profile?.avatar_thumbnail ?? null);
   }, [profileCtx.profile]);
 
   useEffect(() => {
@@ -107,7 +107,7 @@ const Avatar = () => {
       setAvatar(avatar_thumbnail);
       profileCtx.refreshProfile();
     } catch (err) {
-      console.error("Image manipulation error:", err);
+      console.warn("Image manipulation error:", err);
       Toast.show({
         type: "error",
         text1: "Image processing failed",
@@ -117,13 +117,17 @@ const Avatar = () => {
   };
 
   const removeAvatar = async () => {
+    if (loading) return;
     setLoading(true);
-    const res = await deleteAvatar();
-    if (res.status === 204) {
-      profileCtx.refreshProfile();
-      setAvatar(null);
+    try {
+      const res = await deleteAvatar();
+      if (res?.status === 204) {
+        profileCtx.refreshProfile();
+        setAvatar(null);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (

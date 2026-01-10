@@ -15,7 +15,7 @@ const StatScreen = () => {
         setSeen(seenList);
         setNotSeen(notSeenList);
       } catch (e) {
-        console.error("Failed to load data", e);
+        console.warn("Failed to load data", e);
       }
     };
     loadData();

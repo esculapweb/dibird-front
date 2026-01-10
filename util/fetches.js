@@ -24,8 +24,8 @@ export const fetchCountries = async () => {
   }));
 };
 
-const fetchSpeciesForTerritory = async () => {
-  return await api.get("/api/territory-species/?territory_id=68");
+const fetchSpeciesForTerritory = () => {
+  return api.get("/api/territory-species/?territory_id=68");
 };
 
 export const fetchSeen = async () => {

@@ -13,20 +13,22 @@ export const Put = async (url, data, message) => {
       });
       return response;
     }
+    throw new Error(`Unexpected status: ${response.status}`);
   } catch (error) {
     if (error.response) {
-      console.error("Validation error:", error.response.data);
+      console.warn("Validation error:", error.response.data);
       Toast.show({
         type: "error",
         text1: "Check entered data",
       });
     } else {
-      console.error("Network error:", error.message);
+      console.warn("Network error:", error.message);
       Toast.show({
         type: "error",
         text1: "Server unavailable",
       });
     }
+    return null; 
   }
 };
 
@@ -51,13 +53,13 @@ export const patchAvatar = async (image) => {
     }
   } catch (error) {
     if (error.response) {
-      console.error("Validation error:", error.response.data);
+      console.warn("Validation error:", error.response.data);
       Toast.show({
         type: "error",
         text1: "Something went wrong",
       });
     } else {
-      console.error("Network error:", error.message);
+      console.warn("Network error:", error.message);
       Toast.show({
         type: "error",
         text1: "Server unavailable",
@@ -70,7 +72,7 @@ export const deleteAvatar = () => {
   try {
     return api.delete("/myapi/profile/avatar/");
   } catch (error) {
-    console.error(
+    console.warn(
       "Delete Avatar error:",
       error?.response?.data
         ? JSON.stringify(error.response.data)

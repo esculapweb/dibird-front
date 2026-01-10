@@ -17,11 +17,11 @@ export const bioAuthenticate = async () => {
       cancelLabel: "Cancel",
       disableDeviceFallback: false,
     });
-    console.log("biometric auth result:", result);
+    console.info("biometric auth result:", result);
 
     return result.success;
   } catch (err) {
-    console.error("Biometric auth error:", err);
+    console.warn("Biometric auth error:", err);
     return false;
   }
 };
