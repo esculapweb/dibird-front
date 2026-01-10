@@ -39,11 +39,8 @@ const ProfileForm = ({ submitHandler, loading }) => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [timezones, countries] = await Promise.all([
-          fetchTimezones(),
-          fetchCountries(),
-        ]);
-
+        const timezones = await fetchTimezones();
+        const countries = await fetchCountries();
         setTimezoneOptions(timezones);
         setTerritoryOptions(countries);
       } catch (e) {
