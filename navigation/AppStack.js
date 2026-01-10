@@ -10,6 +10,7 @@ import { View, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import WelcomeScreen from "../screens/WelcomeScreen";
+import StatScreen from "../screens/StatScreen";
 import Profile from "../screens/Profile";
 import { AuthContext } from "../store/auth-context";
 import { Colors } from "../constants/styles";
@@ -86,6 +87,7 @@ const AppDrawer = () => {
         sceneContainerStyle: { backgroundColor: Colors.backgroundMain }
       }}
     >
+       <Drawer.Screen name="Statistics" component={StatScreen} />
       <Drawer.Screen name="Welcome" component={WelcomeScreen} />
       <Drawer.Screen
         name="Profile"

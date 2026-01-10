@@ -7,6 +7,7 @@ import DropdownInput from "../ui/DropdownInput";
 import api from "../../services/api";
 import RadioGroup from "../ui/RadioGroup";
 import { useProfile } from "../../store/profile-context";
+import { fetchTimezones, fetchCountries } from "../../util/fetches";
 
 const ProfileForm = ({ submitHandler, loading }) => {
   const [firstName, setFirstName] = useState("");
@@ -32,48 +33,30 @@ const ProfileForm = ({ submitHandler, loading }) => {
 
   const profileCtx = useProfile();
 
-  const isoToFlagEmoji = (isoCode) => {
-    if (!isoCode) return "";
-    return isoCode
-      .toUpperCase()
-      .replace(/./g, (char) =>
-        String.fromCodePoint(127397 + char.charCodeAt())
-      );
-  };
-
   useEffect(() => {
-    const fetchTimezones = async () => {
-      const res = await api.get("/api/timezones/");
-      const formattedTimezones = res.data.map(([value, label]) => ({
-        value,
-        label,
-      }));
+    const loadData = async () => {
+      try {
+        const [timezones, countries] = await Promise.all([
+          fetchTimezones(),
+          fetchCountries(),
+        ]);
 
-      setTimezoneOptions(formattedTimezones);
+        setTimezoneOptions(timezones);
+        setTerritoryOptions(countries);
+      } catch (e) {
+        console.error("Failed to load dictionaries", e);
+      }
     };
-    fetchTimezones();
+
+    loadData();
   }, []);
 
   useEffect(() => {
-    const fetchCountries = async () => {
-      const res = await api.get("/api/territory-dropdown-my/");
-      const formattedCountries = res.data.map(([value, label]) => ({
-        value,
-        label: label.label,
-        icon: isoToFlagEmoji(label["data-code"]),
-      }));
-
-      setTerritoryOptions(formattedCountries);
-    };
-    fetchCountries();
-  }, []);
-
-  useEffect(() => {
-      setFirstName(profileCtx.profile.user_data.first_name);
-      setLastName(profileCtx.profile.user_data.last_name);
-      setUserName(profileCtx.profile.user_data.username);
-      setPrivateProfile(profileCtx.profile.private);
-      setPrivateDiaries(profileCtx.profile.private_diary);
+    setFirstName(profileCtx.profile.user_data.first_name);
+    setLastName(profileCtx.profile.user_data.last_name);
+    setUserName(profileCtx.profile.user_data.username);
+    setPrivateProfile(profileCtx.profile.private);
+    setPrivateDiaries(profileCtx.profile.private_diary);
   }, [profileCtx.profile]);
 
   const validateForm = () => {
