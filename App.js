@@ -1,12 +1,14 @@
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useContext } from "react";
+import Navigation from "./navigation/Navigation";
 import * as SplashScreen from "expo-splash-screen";
-import AuthContextProvider, { AuthContext } from "./store/auth-context";
-import { ProfileProvider } from "./store/profile-context";
 import Toast from "react-native-toast-message";
 import { ActionSheetProvider } from "@expo/react-native-action-sheet";
+import "./i18n";
 
-import Navigation from "./navigation/Navigation";
+import AuthContextProvider, { AuthContext } from "./store/auth-context";
+import { ProfileProvider } from "./store/profile-context";
+import { LanguageProvider } from "./store/language-context";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -34,12 +36,14 @@ export default function App() {
   return (
     <>
       <StatusBar style="light" />
-      <AuthContextProvider>
-        <ProfileProvider>
-          <Root />
-          <Toast />
-        </ProfileProvider>
-      </AuthContextProvider>
+      <LanguageProvider>
+        <AuthContextProvider>
+          <ProfileProvider>
+            <Root />
+            <Toast />
+          </ProfileProvider>
+        </AuthContextProvider>
+      </LanguageProvider>
     </>
   );
 }

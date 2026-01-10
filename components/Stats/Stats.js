@@ -1,7 +1,6 @@
 import { FlatList, View, Text, StyleSheet } from "react-native";
 
-const Stats = ({ route }) => {
-  const { data } = route.params;
+const Stats = ({ data }) => {
   return (
     <FlatList
       data={data}

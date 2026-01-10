@@ -1,15 +1,18 @@
 import { useState, useEffect } from "react";
 import { StyleSheet, View } from "react-native";
+import { useTranslation } from "react-i18next";
 
 import Input from "../ui/Input";
 import AnimatedLoadingButton from "../ui/AnimatedLoadingButton";
 import DropdownInput from "../ui/DropdownInput";
-import api from "../../services/api";
 import RadioGroup from "../ui/RadioGroup";
 import { useProfile } from "../../store/profile-context";
 import { fetchTimezones, fetchCountries } from "../../util/fetches";
+import { useLanguage } from "../../store/language-context";
 
 const ProfileForm = ({ submitHandler, loading }) => {
+  const { language } = useLanguage();
+  const { t } = useTranslation();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [userName, setUserName] = useState("");
@@ -44,12 +47,12 @@ const ProfileForm = ({ submitHandler, loading }) => {
         setTimezoneOptions(timezones);
         setTerritoryOptions(countries);
       } catch (e) {
-        console.warn("Failed to load dictionaries", e);
+        console.warn(t('failed_to_load_data'), e);
       }
     };
 
     loadData();
-  }, []);
+  }, [language]);
 
   useEffect(() => {
     setFirstName(profileCtx.profile.user_data.first_name);

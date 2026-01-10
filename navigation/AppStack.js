@@ -8,18 +8,23 @@ import {
 import { useContext } from "react";
 import { View, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 
 import WelcomeScreen from "../screens/WelcomeScreen";
 import StatScreen from "../screens/StatScreen";
 import Profile from "../screens/Profile";
+import SettingsScreen from "../screens/SettingsScreen";
+
 import { AuthContext } from "../store/auth-context";
 import { Colors } from "../constants/styles";
 import Avatar from "../components/Profile/Avatar";
+import LanguageSwitcher from "../components/Language/LanguageSwitcher";
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
 
 const AppStack = () => {
+
   return (
     <Stack.Navigator
       screenOptions={{
@@ -44,6 +49,7 @@ const AppStack = () => {
 
 function CustomDrawerContent(props) {
   const authCtx = useContext(AuthContext);
+  const { t } = useTranslation();
 
   return (
     <View style={{ flex: 1 }}>
@@ -56,8 +62,9 @@ function CustomDrawerContent(props) {
         </View>
         <DrawerItemList {...props} />
         <View style={{ flex: 1 }} />
+        <LanguageSwitcher />
         <DrawerItem
-          label="Logout"
+          label={t("logout")}
           labelStyle={{ color: Colors.primary500 }}
           onPress={authCtx.logout}
           icon={({ color, size }) => (
@@ -70,6 +77,7 @@ function CustomDrawerContent(props) {
 }
 
 const AppDrawer = () => {
+  const { t } = useTranslation();
   return (
     <Drawer.Navigator
       drawerContent={(props) => <CustomDrawerContent {...props} />}
@@ -87,8 +95,8 @@ const AppDrawer = () => {
         sceneContainerStyle: { backgroundColor: Colors.backgroundMain }
       }}
     >
-       <Drawer.Screen name="Statistics" component={StatScreen} />
-      <Drawer.Screen name="Welcome" component={WelcomeScreen} />
+      <Drawer.Screen name="Statistics" component={StatScreen} />
+      {/* <Drawer.Screen name={t('settings')} component={SettingsScreen} /> */}
       <Drawer.Screen
         name="Profile"
         component={AppStack}

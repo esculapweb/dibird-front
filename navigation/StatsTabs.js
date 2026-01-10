@@ -15,8 +15,6 @@ const StatsTabs = ({ seen, notSeen }) => {
     >
       <Tab.Screen
         name="Seen"
-        component={Stats}
-        initialParams={{ data: seen }}
         options={{
           title: `Seen (${seen.length})`,
           tabBarIcon: ({ focused, color, size }) => (
@@ -27,11 +25,9 @@ const StatsTabs = ({ seen, notSeen }) => {
             />
           ),
         }}
-      />
+      >{() => <Stats data={seen} />}</Tab.Screen>
       <Tab.Screen
         name="NotSeen"
-        component={Stats}
-        initialParams={{ data: notSeen }}
         options={{
           title: `Not seen (${notSeen.length})`,
           tabBarIcon: ({ focused, color, size }) => (
@@ -42,7 +38,7 @@ const StatsTabs = ({ seen, notSeen }) => {
             />
           ),
         }}
-      />
+      >{() => <Stats data={notSeen} />}</Tab.Screen>
     </Tab.Navigator>
   );
 };

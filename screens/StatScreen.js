@@ -1,12 +1,16 @@
 import { useState, useEffect } from "react";
 import { Text } from "react-native";
+import { useTranslation } from "react-i18next";
 
 import StatsTabs from "../navigation/StatsTabs";
 import { fetchSeen } from "../util/fetches";
+import { useLanguage } from "../store/language-context";
 
 const StatScreen = () => {
   const [seen, setSeen] = useState([]);
   const [notSeen, setNotSeen] = useState([]);
+  const { language } = useLanguage();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const loadData = async () => {
@@ -15,13 +19,13 @@ const StatScreen = () => {
         setSeen(seenList);
         setNotSeen(notSeenList);
       } catch (e) {
-        console.warn("Failed to load data", e);
+        console.warn(t('failed_to_load_data'), e);
       }
     };
     loadData();
-  }, []);
+  }, [language]);
 
-  if (!seen.length && !notSeen.length) return <Text>Loading...</Text>;
+  if (!seen.length && !notSeen.length) return <Text>{t("loading_")}</Text>;
 
   return <StatsTabs seen={seen} notSeen={notSeen} />;
 };

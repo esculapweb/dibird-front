@@ -1,5 +1,6 @@
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
+import i18n from "../i18n";
 
 import { Config } from "../constants/config";
 import { notifyTokenUpdate } from "./authService";
@@ -17,7 +18,7 @@ const getAccessToken = () => {
 };
 
 const getRefreshToken = () => {
-    return SecureStore.getItemAsync("refresh");
+  return SecureStore.getItemAsync("refresh");
 };
 
 const saveTokens = async ({ access, refresh }) => {
@@ -30,7 +31,6 @@ const saveTokens = async ({ access, refresh }) => {
     await SecureStore.setItemAsync("refresh", refresh, {
       requireAuthentication: await canUseBiometrics(),
     });
-
   }
 };
 
@@ -41,11 +41,12 @@ const clearTokens = async () => {
 
 api.interceptors.request.use(
   async (config) => {
+    const lang = i18n.language || "en";
     const token = await getAccessToken();
 
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    if (lang !== "en") config.url = `/${lang}${config.url}`;
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    
     return config;
   },
   (error) => Promise.reject(error)
