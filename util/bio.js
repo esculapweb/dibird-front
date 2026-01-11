@@ -1,9 +1,8 @@
 import * as LocalAuthentication from "expo-local-authentication";
-import { useTranslation } from "react-i18next";
+
+import i18n from "../services/i18n";
 
 export const bioAuthenticate = async () => {
-  const { t } = useTranslation();
-
   try {
     const hasHardware = await LocalAuthentication.hasHardwareAsync();
     if (!hasHardware) return false;
@@ -15,9 +14,9 @@ export const bioAuthenticate = async () => {
     if (!enrolled) return false;
 
     const result = await LocalAuthentication.authenticateAsync({
-      promptMessage: t("unlock_fallback"),
-      fallbackLabel: t("unlock_fallback"),
-      cancelLabel: t("cancel"),
+      promptMessage: i18n.t("unlock_fallback"),
+      fallbackLabel: i18n.t("unlock_fallback"),
+      cancelLabel: i18n.t("cancel"),
       disableDeviceFallback: false,
     });
     console.info("biometric auth result:", result);

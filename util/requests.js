@@ -1,16 +1,13 @@
 import Toast from "react-native-toast-message";
-import { useTranslation } from "react-i18next";
 
+import i18n from "../services/i18n";
 import api from "../services/api";
 
 export const Put = async (url, data, message) => {
-  const { t } = useTranslation();
-
   try {
     const response = await api.put(url, data);
 
     if (response.status === 200 || response.status === 204) {
-      // console.info(message, response.data);
       Toast.show({
         type: "success",
         text1: message,
@@ -23,13 +20,13 @@ export const Put = async (url, data, message) => {
       console.warn("Validation error:", error.response.data);
       Toast.show({
         type: "error",
-        text1: t("check_entered_data"),
+        text1: i18n.t("check_entered_data"),
       });
     } else {
       console.warn("Network error:", error.message);
       Toast.show({
         type: "error",
-        text1: t("server_unavailable"),
+        text1: i18n.t("server_unavailable"),
       });
     }
     return null;
@@ -38,7 +35,6 @@ export const Put = async (url, data, message) => {
 
 export const patchAvatar = async (image) => {
   const formData = new FormData();
-  const { t } = useTranslation();
 
   formData.append("avatar", {
     uri: image.uri,
@@ -61,20 +57,19 @@ export const patchAvatar = async (image) => {
       console.warn("Validation error:", error.response.data);
       Toast.show({
         type: "error",
-        text1: t("something_went_wrong"),
+        text1: i18n.t("something_went_wrong"),
       });
     } else {
       console.warn("Network error:", error.message);
       Toast.show({
         type: "error",
-        text1: t("server_unavailable"),
+        text1: i18n.t("server_unavailable"),
       });
     }
   }
 };
 
 export const deleteAvatar = () => {
-  const { t } = useTranslation();
 
   try {
     return api.delete("/myapi/profile/avatar/");
@@ -88,7 +83,7 @@ export const deleteAvatar = () => {
 
     Toast.show({
       type: "error",
-      text1: t("failed_remove_avatar"),
+      text1: i18n.t("failed_remove_avatar"),
     });
   }
 };

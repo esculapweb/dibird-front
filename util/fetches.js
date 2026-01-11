@@ -29,10 +29,8 @@ const fetchSpeciesForTerritory = () => {
 };
 
 export const fetchSeen = async () => {
-  const [territorySpecies, ids] = await Promise.all([
-    fetchSpeciesForTerritory(),
-    api.get("/myapi/seen/?territory_id=68"),
-  ]);
+  const territorySpecies = await fetchSpeciesForTerritory();
+  const ids = await api.get("/myapi/seen/?territory_id=68");
 
   const idsSet = new Set(ids.data.map(String));
 

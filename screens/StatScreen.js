@@ -5,7 +5,6 @@ import { useTranslation } from "react-i18next";
 import StatsTabs from "../navigation/StatsTabs";
 import { fetchSeen } from "../util/fetches";
 import { useLanguage } from "../store/language-context";
-import { useProfile } from "../store/profile-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 
 const StatScreen = () => {
@@ -14,11 +13,8 @@ const StatScreen = () => {
   const { language } = useLanguage();
   const { t } = useTranslation();
 
-  const profileCtx = useProfile();
-
   useEffect(() => {
     const loadData = async () => {
-      if (!profileCtx.isTokenReady) return;
       try {
         const { seenList, notSeenList } = await fetchSeen();
         setSeen(seenList);
@@ -28,7 +24,7 @@ const StatScreen = () => {
       }
     };
     loadData();
-  }, [language, profileCtx.isTokenReady]);
+  }, [language]);
 
   if (!seen.length && !notSeen.length) return <LoadingOverlay />;
 

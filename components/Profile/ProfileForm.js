@@ -38,12 +38,9 @@ const ProfileForm = ({ submitHandler, loading }) => {
 
   useEffect(() => {
     const loadData = async () => {
-      if (!profileCtx.isTokenReady) return;
       try {
-        const [timezones, countries] = await Promise.all([
-          fetchTimezones(),
-          fetchCountries(),
-        ]);
+        const timezones = await fetchTimezones();
+        const countries = await fetchCountries();
         setTimezoneOptions(timezones);
         setTerritoryOptions(countries);
       } catch (e) {
@@ -52,7 +49,7 @@ const ProfileForm = ({ submitHandler, loading }) => {
     };
 
     loadData();
-  }, [language, profileCtx.isTokenReady]);
+  }, [language]);
 
   useEffect(() => {
     setFirstName(profileCtx.profile.user_data.first_name);
@@ -158,7 +155,7 @@ const ProfileForm = ({ submitHandler, loading }) => {
 
       <View style={styles.buttons}>
         <AnimatedLoadingButton onPress={onSubmit} loading={loading}>
-          Save
+          {t("save")}
         </AnimatedLoadingButton>
       </View>
     </>
