@@ -5,7 +5,7 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view
 import ProfileForm from "../components/Profile/ProfileForm";
 import { useProfile } from "../store/profile-context";
 
-const Profile = () => {
+const ProfileScreen = ({refreshKey}) => {
   const [loading, setLoading] = useState(false);
   const profileCtx = useProfile();
 
@@ -26,12 +26,12 @@ const Profile = () => {
       keyboardShouldPersistTaps="handled"
       extraScrollHeight={Platform.OS === "ios" ? 20 : 80}
     >
-      <ProfileForm submitHandler={submitHandler} loading={loading} />
+      <ProfileForm submitHandler={submitHandler} loading={loading} key={refreshKey} />
     </KeyboardAwareScrollView>
   );
 };
 
-export default Profile;
+export default ProfileScreen;
 
 const styles = StyleSheet.create({
   container: {

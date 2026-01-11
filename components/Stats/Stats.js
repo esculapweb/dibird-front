@@ -22,6 +22,6 @@ const styles = StyleSheet.create({
   item: {
     padding: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#ddd",
+    borderBottomColor: "#e4e4e4",
   },
 });

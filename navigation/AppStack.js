@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import {
   createDrawerNavigator,
@@ -12,10 +13,11 @@ import { useTranslation } from "react-i18next";
 
 import WelcomeScreen from "../screens/WelcomeScreen";
 import StatScreen from "../screens/StatScreen";
-import Profile from "../screens/Profile";
+import ProfileScreen from "../screens/ProfileScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 
 import { AuthContext } from "../store/auth-context";
+import { useProfile } from "../store/profile-context";
 import { Colors } from "../constants/styles";
 import Avatar from "../components/Profile/Avatar";
 import LanguageSwitcher from "../components/Language/LanguageSwitcher";
@@ -23,8 +25,7 @@ import LanguageSwitcher from "../components/Language/LanguageSwitcher";
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
 
-const AppStack = () => {
-
+const AppStack = ({ refreshKey }) => {
   return (
     <Stack.Navigator
       screenOptions={{
@@ -33,16 +34,17 @@ const AppStack = () => {
           elevation: 0,
         },
         headerTintColor: Colors.primary100,
-        contentStyle: { backgroundColor: Colors.backgroundMain }, 
+        contentStyle: { backgroundColor: Colors.backgroundMain },
       }}
     >
       <Stack.Screen
         name="ProfileScreen"
-        component={Profile}
         options={{
           headerShown: false,
         }}
-      />
+      >
+        {() => <ProfileScreen refreshKey={refreshKey} />}
+      </Stack.Screen>
     </Stack.Navigator>
   );
 };
@@ -78,6 +80,14 @@ function CustomDrawerContent(props) {
 
 const AppDrawer = () => {
   const { t } = useTranslation();
+  const profileCtx = useProfile();
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleRefresh = async () => {
+    await profileCtx.refreshProfile();
+    setRefreshKey((k) => k + 1);
+  };
+
   return (
     <Drawer.Navigator
       drawerContent={(props) => <CustomDrawerContent {...props} />}
@@ -87,21 +97,52 @@ const AppDrawer = () => {
         },
         drawerActiveTintColor: Colors.primary500,
         headerStyle: {
-          backgroundColor: Colors.primary500, 
-          elevation: 0, 
-          shadowOpacity: 0, 
+          backgroundColor: Colors.primary500,
+          elevation: 0,
+          shadowOpacity: 0,
         },
-        headerTintColor: Colors.primary100, 
-        sceneContainerStyle: { backgroundColor: Colors.backgroundMain }
+        headerTintColor: Colors.primary100,
+        sceneContainerStyle: { backgroundColor: Colors.backgroundMain },
       }}
     >
-      <Drawer.Screen name={t("statistics")} component={StatScreen} />
+      <Drawer.Screen
+        name={t("statistics")}
+        component={StatScreen}
+        options={{
+          drawerIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "stats-chart" : "stats-chart-outline"}
+              color={color}
+              size={size}
+            />
+          ),
+        }}
+      />
       {/* <Drawer.Screen name={t('settings')} component={SettingsScreen} /> */}
       <Drawer.Screen
         name="Profile"
-        component={AppStack}
-        options={{ title: t("profile") }}
-      />
+        options={{
+          title: t("profile"),
+          drawerIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "person-circle" : "person-circle-outline"}
+              color={color}
+              size={size}
+            />
+          ),
+          headerRight: () => (
+            <Ionicons
+              name="refresh-outline"
+              size={22}
+              color={Colors.primary100}
+              style={{ marginRight: 16 }}
+              onPress={handleRefresh}
+            />
+          ),
+        }}
+      >
+        {() => <AppStack refreshKey={refreshKey} />}
+      </Drawer.Screen>
     </Drawer.Navigator>
   );
 };

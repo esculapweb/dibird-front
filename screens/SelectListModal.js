@@ -18,7 +18,6 @@ const SelectListModal = ({
   selected,
   onSelect,
   onClose,
-  title,
   placeholder,
   search,
   setSearch,
@@ -78,7 +77,7 @@ const SelectListModal = ({
 
         <TextInput
           style={styles.search}
-          placeholder={`${t("search")} ${title.toLowerCase()}...`}
+          placeholder={`${t("search")}...`}
           value={search}
           onChangeText={setSearch}
         />

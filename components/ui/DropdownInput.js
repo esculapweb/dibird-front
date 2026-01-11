@@ -67,7 +67,6 @@ const DropdownInput = ({
       </View>
 
       <SelectListModal
-        title={title}
         placeholder={translatedPlaceholder}
         visible={modalVisible}
         options={options}
