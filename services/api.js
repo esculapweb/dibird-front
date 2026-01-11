@@ -13,7 +13,7 @@ const api = axios.create({
   },
 });
 
-const getAccessToken = () => {
+export const getAccessToken = () => {
   return SecureStore.getItemAsync("access");
 };
 

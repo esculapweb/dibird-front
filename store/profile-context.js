@@ -9,6 +9,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import api from "../services/api";
 import { Put } from "../util/requests";
+import { getAccessToken } from "../services/api";
 
 const EMPTY_PROFILE = {
   user_data: {
@@ -36,6 +37,7 @@ const ProfileContext = createContext({
 
 export const ProfileProvider = ({ children }) => {
   const [profile, setProfile] = useState(EMPTY_PROFILE);
+  const [isTokenReady, setIsTokenReady] = useState(false);
   const url = "/myapi/profile/me/";
 
   const loadProfile = useCallback(async () => {
@@ -55,8 +57,32 @@ export const ProfileProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    loadProfile().finally(refreshProfile);
-  }, [loadProfile, refreshProfile]);
+    loadProfile();
+  }, [loadProfile]);
+
+  useEffect(() => {
+    const init = async () => {
+      await getAccessToken();
+      setIsTokenReady(true);
+    };
+    init();
+  }, []);
+
+  const refreshProfile = useCallback(async () => {
+    if (!isTokenReady) return;
+    try {
+      const { data } = await api.get(url);
+      await saveProfile(data);
+    } catch (err) {
+      console.warn("Failed to refresh profile:", err);
+    }
+  }, [isTokenReady]);
+
+  useEffect(() => {
+    if (!isTokenReady) return;
+    refreshProfile();
+  }, [isTokenReady, refreshProfile]);
+
 
   const saveProfile = async (data) => {
     const safeProfile = {
@@ -73,17 +99,8 @@ export const ProfileProvider = ({ children }) => {
     await saveProfile(response.data);
   }, []);
 
-  const refreshProfile = useCallback(async () => {
-    try {
-      const { data } = await api.get(url);
-      await saveProfile(data);
-    } catch (err) {
-      console.warn("Failed to refresh profile:", err);
-    }
-  }, []);
-
   return (
-    <ProfileContext.Provider value={{ profile, updateProfile, refreshProfile }}>
+    <ProfileContext.Provider value={{ profile, updateProfile, refreshProfile, isTokenReady }}>
       {children}
     </ProfileContext.Provider>
   );
