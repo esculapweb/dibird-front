@@ -33,6 +33,7 @@ const ProfileContext = createContext({
   profile: EMPTY_PROFILE,
   updateProfile: async (updatedData) => {},
   refreshProfile: async () => {},
+  isTokenReady: false,
 });
 
 export const ProfileProvider = ({ children }) => {

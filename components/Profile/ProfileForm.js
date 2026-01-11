@@ -38,9 +38,12 @@ const ProfileForm = ({ submitHandler, loading }) => {
 
   useEffect(() => {
     const loadData = async () => {
+      if (!profileCtx.isTokenReady) return;
       try {
-        const timezones = await fetchTimezones();
-        const countries = await fetchCountries();
+        const [timezones, countries] = await Promise.all([
+          fetchTimezones(),
+          fetchCountries(),
+        ]);
         setTimezoneOptions(timezones);
         setTerritoryOptions(countries);
       } catch (e) {
@@ -49,7 +52,7 @@ const ProfileForm = ({ submitHandler, loading }) => {
     };
 
     loadData();
-  }, [language]);
+  }, [language, profileCtx.isTokenReady]);
 
   useEffect(() => {
     setFirstName(profileCtx.profile.user_data.first_name);
