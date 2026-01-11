@@ -1,11 +1,15 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import Stats from "../components/Stats/Stats";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
+
 import { Colors } from "../constants/styles";
 
 const Tab = createBottomTabNavigator();
 
 const StatsTabs = ({ seen, notSeen }) => {
+  const { t } = useTranslation();
+  
   return (
     <Tab.Navigator
       screenOptions={{
@@ -16,7 +20,7 @@ const StatsTabs = ({ seen, notSeen }) => {
       <Tab.Screen
         name="Seen"
         options={{
-          title: `Seen (${seen.length})`,
+          title: `${t("seen")} (${seen.length})`,
           tabBarIcon: ({ focused, color, size }) => (
             <Ionicons
               name={focused ? "eye" : "eye-outline"}
@@ -29,7 +33,7 @@ const StatsTabs = ({ seen, notSeen }) => {
       <Tab.Screen
         name="NotSeen"
         options={{
-          title: `Not seen (${notSeen.length})`,
+          title: `${t("not_seen")} (${notSeen.length})`,
           tabBarIcon: ({ focused, color, size }) => (
             <Ionicons
               name={focused ? "eye-off" : "eye-off-outline"}

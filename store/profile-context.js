@@ -6,6 +6,7 @@ import {
   useCallback,
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useTranslation } from "react-i18next";
 
 import api from "../services/api";
 import { Put } from "../util/requests";
@@ -39,7 +40,9 @@ const ProfileContext = createContext({
 export const ProfileProvider = ({ children }) => {
   const [profile, setProfile] = useState(EMPTY_PROFILE);
   const [isTokenReady, setIsTokenReady] = useState(false);
+  const { t } = useTranslation();
   const url = "/myapi/profile/me/";
+  
 
   const loadProfile = useCallback(async () => {
     try {
@@ -95,7 +98,7 @@ export const ProfileProvider = ({ children }) => {
   };
 
   const updateProfile = useCallback(async (updatedData) => {
-    const response = await Put(url, updatedData, "Profile updated");
+    const response = await Put(url, updatedData, t("profile_updated"));
     if (!response) return;
     await saveProfile(response.data);
   }, []);

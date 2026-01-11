@@ -1,7 +1,11 @@
 import Toast from "react-native-toast-message";
+import { useTranslation } from "react-i18next";
+
 import api from "../services/api";
 
 export const Put = async (url, data, message) => {
+  const { t } = useTranslation();
+
   try {
     const response = await api.put(url, data);
 
@@ -19,21 +23,22 @@ export const Put = async (url, data, message) => {
       console.warn("Validation error:", error.response.data);
       Toast.show({
         type: "error",
-        text1: "Check entered data",
+        text1: t("check_entered_data"),
       });
     } else {
       console.warn("Network error:", error.message);
       Toast.show({
         type: "error",
-        text1: "Server unavailable",
+        text1: t("server_unavailable"),
       });
     }
-    return null; 
+    return null;
   }
 };
 
 export const patchAvatar = async (image) => {
   const formData = new FormData();
+  const { t } = useTranslation();
 
   formData.append("avatar", {
     uri: image.uri,
@@ -56,19 +61,21 @@ export const patchAvatar = async (image) => {
       console.warn("Validation error:", error.response.data);
       Toast.show({
         type: "error",
-        text1: "Something went wrong",
+        text1: t("something_went_wrong"),
       });
     } else {
       console.warn("Network error:", error.message);
       Toast.show({
         type: "error",
-        text1: "Server unavailable",
+        text1: t("server_unavailable"),
       });
     }
   }
 };
 
 export const deleteAvatar = () => {
+  const { t } = useTranslation();
+
   try {
     return api.delete("/myapi/profile/avatar/");
   } catch (error) {
@@ -81,7 +88,7 @@ export const deleteAvatar = () => {
 
     Toast.show({
       type: "error",
-      text1: "Failed to remove avatar",
+      text1: t("failed_remove_avatar"),
     });
   }
 };

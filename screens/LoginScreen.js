@@ -1,16 +1,17 @@
 import { useContext, useState } from "react";
 import Toast from "react-native-toast-message";
+import { useTranslation } from "react-i18next";
 
 import { AuthContext } from "../store/auth-context";
 import AuthContent from "../components/Auth/AuthContent";
 import { Login } from "../util/auth";
-import api from "../services/api";
 import { useProfile } from "../store/profile-context";
 
 const LoginScreen = () => {
   const [loading, setLoading] = useState(false);
   const authCtx = useContext(AuthContext);
   const profileCtx = useProfile();
+  const { t } = useTranslation();
 
   const LoginHandler = async ({ email, password }) => {
     if (loading) return;
@@ -28,11 +29,11 @@ const LoginScreen = () => {
         Object.values(data || {})
           .flat()
           .join("\n") ||
-        "Could not log you in. Please check your credentials or try again later.";
+        t("could_not_login");
 
       Toast.show({
         type: "error",
-        text1: "Authentication failed",
+        text1: t("authentication_failed"),
         text2: message,
       });
     } finally {

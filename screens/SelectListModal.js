@@ -8,6 +8,7 @@ import {
   TextInput,
 } from "react-native";
 import { useEffect, useRef, useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 
 const ITEM_HEIGHT = 56;
 
@@ -17,13 +18,15 @@ const SelectListModal = ({
   selected,
   onSelect,
   onClose,
-  title = "Select",
+  title,
   placeholder,
   search,
   setSearch,
 }) => {
   const flatListRef = useRef(null);
   const [hasScrolled, setHasScrolled] = useState(false);
+  const { t } = useTranslation();
+
 
   const filteredOptions = useMemo(() => {
     if (!search) return options;
@@ -75,7 +78,7 @@ const SelectListModal = ({
 
         <TextInput
           style={styles.search}
-          placeholder={`Search ${title.toLowerCase()}...`}
+          placeholder={`${t("search")} ${title.toLowerCase()}...`}
           value={search}
           onChangeText={setSearch}
         />

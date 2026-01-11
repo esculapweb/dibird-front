@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
+import { useTranslation } from "react-i18next";
 
 import AnimatedLoadingButton from "../ui/AnimatedLoadingButton";
 import Input from "../ui/Input";
@@ -9,6 +10,7 @@ function AuthForm({ isLogin, onSubmit, credentialsInvalid, loading }) {
   const [enteredUsername, setEnteredUsername] = useState("");
   const [enteredPassword, setEnteredPassword] = useState("");
   const [enteredConfirmPassword, setEnteredConfirmPassword] = useState("");
+  const { t } = useTranslation();
 
   const {
     email: emailIsInvalid,
@@ -46,7 +48,7 @@ function AuthForm({ isLogin, onSubmit, credentialsInvalid, loading }) {
   return (
     <View>
       <Input
-        label="Email Address"
+        label={t("email_address")}
         onUpdateValue={updateInputValueHandler.bind(this, "email")}
         value={enteredEmail}
         keyboardType="email-address"
@@ -54,14 +56,14 @@ function AuthForm({ isLogin, onSubmit, credentialsInvalid, loading }) {
       />
       {!isLogin && (
         <Input
-          label="Username"
+          label={t("username")}
           onUpdateValue={updateInputValueHandler.bind(this, "userName")}
           value={enteredUsername}
           isInvalid={userNameIsInvalid}
         />
       )}
       <Input
-        label="Password"
+        label={t("password")}
         onUpdateValue={updateInputValueHandler.bind(this, "password")}
         secure
         value={enteredPassword}
@@ -69,7 +71,7 @@ function AuthForm({ isLogin, onSubmit, credentialsInvalid, loading }) {
       />
       {!isLogin && (
         <Input
-          label="Confirm Password"
+          label={t("confirm_password")}
           onUpdateValue={updateInputValueHandler.bind(this, "confirmPassword")}
           secure
           value={enteredConfirmPassword}
@@ -78,7 +80,7 @@ function AuthForm({ isLogin, onSubmit, credentialsInvalid, loading }) {
       )}
       <View style={styles.buttons}>
         <AnimatedLoadingButton onPress={submitHandler} loading={loading}>
-          {isLogin ? "Log In" : "Sign Up"}
+          {isLogin ? t("log_in") : t("sign_up")}
         </AnimatedLoadingButton>
       </View>
     </View>

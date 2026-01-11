@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { Pressable, Text, View, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/styles";
+import { useTranslation } from "react-i18next";
 
 import SelectListModal from "../../screens/SelectListModal";
 
 const DropdownInput = ({
   title,
-  placeholder = "Select",
+  placeholder,
   initial,
   value,
   setValue,
@@ -18,6 +19,8 @@ const DropdownInput = ({
   const [label, setLabel] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
   const [icon, setIcon] = useState("");
+  const { t } = useTranslation();
+  const translatedPlaceholder = placeholder || t("select");
 
   useEffect(() => {
     onSelectValue(initial);
@@ -53,7 +56,7 @@ const DropdownInput = ({
               numberOfLines={1}
               ellipsizeMode="tail"
             >
-              {label || placeholder}
+              {label || translatedPlaceholder}
             </Text>
           </View>
 
@@ -65,7 +68,7 @@ const DropdownInput = ({
 
       <SelectListModal
         title={title}
-        placeholder={placeholder}
+        placeholder={translatedPlaceholder}
         visible={modalVisible}
         options={options}
         selected={value}

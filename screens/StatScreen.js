@@ -6,6 +6,8 @@ import StatsTabs from "../navigation/StatsTabs";
 import { fetchSeen } from "../util/fetches";
 import { useLanguage } from "../store/language-context";
 import { useProfile } from "../store/profile-context";
+import LoadingOverlay from "../components/ui/LoadingOverlay";
+
 const StatScreen = () => {
   const [seen, setSeen] = useState([]);
   const [notSeen, setNotSeen] = useState([]);
@@ -28,7 +30,7 @@ const StatScreen = () => {
     loadData();
   }, [language, profileCtx.isTokenReady]);
 
-  if (!seen.length && !notSeen.length) return <Text>{t("loading_")}</Text>;
+  if (!seen.length && !notSeen.length) return <LoadingOverlay />;
 
   return <StatsTabs seen={seen} notSeen={notSeen} />;
 };

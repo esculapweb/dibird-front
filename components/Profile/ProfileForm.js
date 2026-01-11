@@ -47,7 +47,7 @@ const ProfileForm = ({ submitHandler, loading }) => {
         setTimezoneOptions(timezones);
         setTerritoryOptions(countries);
       } catch (e) {
-        console.warn(t('failed_to_load_data'), e);
+        console.warn(t("failed_to_load_data"), e);
       }
     };
 
@@ -94,27 +94,27 @@ const ProfileForm = ({ submitHandler, loading }) => {
   return (
     <>
       <Input
-        label="First name"
+        label={t("first_name")}
         value={firstName}
         onUpdateValue={setFirstName}
         isInvalid={invalid.firstName}
       />
       <Input
-        label="Last name"
+        label={t("last_name")}
         value={lastName}
         onUpdateValue={setLastName}
         isInvalid={invalid.lastName}
       />
       <Input
-        label="Username"
+        label={t("username")}
         value={userName}
         onUpdateValue={setUserName}
         isInvalid={invalid.userName}
       />
 
       <DropdownInput
-        title="My country"
-        placeholder="Select country"
+        title={t("my_country")}
+        placeholder={t("select_country")}
         initial={profileCtx.profile.territory}
         value={territoryValue}
         setValue={setTerritoryValue}
@@ -123,8 +123,8 @@ const ProfileForm = ({ submitHandler, loading }) => {
       />
 
       <DropdownInput
-        title="Timezone"
-        placeholder="Select timezone"
+        title={t("timezone")}
+        placeholder={t("select_timezone")}
         initial={profileCtx.profile.timezone}
         value={timezoneValue}
         setValue={setTimezoneValue}
@@ -133,26 +133,26 @@ const ProfileForm = ({ submitHandler, loading }) => {
       />
 
       <RadioGroup
-        label="Only I can see my profile"
+        label={t("only_i_can_see_my_profile")}
         value={privateProfile}
         onChange={setPrivateProfile}
         direction="row"
         isInvalid={invalid.privateProfile}
         options={[
-          { label: "Yes", value: true },
-          { label: "No", value: false },
+          { label: t("yes"), value: true },
+          { label: t("no"), value: false },
         ]}
       />
 
       <RadioGroup
-        label="Diaries are private by default"
+        label={t("diaries_are_private_by_default")}
         value={privateDiaries}
         onChange={setPrivateDiaries}
         direction="row"
         isInvalid={invalid.privateDiaries}
         options={[
-          { label: "Yes", value: true },
-          { label: "No", value: false },
+          { label: t("yes"), value: true },
+          { label: t("no"), value: false },
         ]}
       />
 

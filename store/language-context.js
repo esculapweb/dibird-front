@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import i18n from "../i18n";
+import i18n from "../services/i18n";
 import * as Localization from "expo-localization";
 
 const LanguageContext = createContext({

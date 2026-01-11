@@ -1,11 +1,14 @@
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useLanguage } from "../../store/language-context";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
+
 
 import { Colors } from "../../constants/styles";
 
 const LanguageSwitcher = () => {
   const { language, changeLanguage } = useLanguage();
+  const { t } = useTranslation();
 
   return (
     <View style={styles.container}>
@@ -16,7 +19,7 @@ const LanguageSwitcher = () => {
           // color={language === lang ? Colors.primary100 : Colors.primary500}
           style={styles.icon}
         />
-        <Text style={styles.title}>Language:</Text>
+        <Text style={styles.title}>{t("language")}:</Text>
       </View>
       <View style={styles.buttonsRight}>
         {["ru", "en"].map((lang) => (

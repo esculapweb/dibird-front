@@ -11,6 +11,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { Ionicons } from "@expo/vector-icons";
 import { useActionSheet } from "@expo/react-native-action-sheet";
+import { useTranslation } from "react-i18next";
 
 import Toast from "react-native-toast-message";
 import { Colors } from "../../constants/styles";
@@ -28,6 +29,7 @@ const Avatar = () => {
   const [loading, setLoading] = useState(false);
 
   const profileCtx = useProfile();
+  const { t } = useTranslation();
 
   useEffect(() => {
     setAvatar(profileCtx.profile?.avatar_thumbnail ?? null);
@@ -57,13 +59,22 @@ const Avatar = () => {
 
     showActionSheetWithOptions(
       {
-        options: ["Change photo", "Remove photo", "Cancel"],
+        options: [t("change_photo"), t("remove_photo"), t("cancel")],
         destructiveButtonIndex: 1,
         cancelButtonIndex: 2,
       },
       (index) => {
-        if (index === 0) pickAvatar();
-        if (index === 1) removeAvatar();
+        switch (index) {
+          case 0:
+            pickAvatar();
+            break;
+          case 1:
+            removeAvatar();
+            break;
+          case 2:
+          default:
+            break;
+        }
       }
     );
   };
@@ -77,8 +88,8 @@ const Avatar = () => {
     if (status !== "granted") {
       Toast.show({
         type: "error",
-        text1: "Permission denied",
-        text2: "Allow access to your photos",
+        text1: t("permission_denied"),
+        text2: t("allow_access_photo"),
       });
       setLoading(false);
       return;
@@ -110,7 +121,7 @@ const Avatar = () => {
       console.warn("Image manipulation error:", err);
       Toast.show({
         type: "error",
-        text1: "Image processing failed",
+        text1: t("image_processing_failed"),
       });
     }
     setLoading(false);

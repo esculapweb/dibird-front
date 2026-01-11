@@ -95,12 +95,12 @@ const AppDrawer = () => {
         sceneContainerStyle: { backgroundColor: Colors.backgroundMain }
       }}
     >
-      <Drawer.Screen name="Statistics" component={StatScreen} />
+      <Drawer.Screen name={t("statistics")} component={StatScreen} />
       {/* <Drawer.Screen name={t('settings')} component={SettingsScreen} /> */}
       <Drawer.Screen
         name="Profile"
         component={AppStack}
-        options={{ title: "Profile" }}
+        options={{ title: t("profile") }}
       />
     </Drawer.Navigator>
   );

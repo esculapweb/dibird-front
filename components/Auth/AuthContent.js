@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { Alert, StyleSheet, View, Image, Text, Platform } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-
+import { useTranslation } from "react-i18next";
 
 import FlatButton from "../ui/FlatButton";
 import AuthForm from "./AuthForm";
 import { Colors } from "../../constants/styles";
 import { useNavigation } from "@react-navigation/native";
 
+
 function AuthContent({ isLogin, onAuthenticate, loading }) {
   const navigation = useNavigation();
+  const { t } = useTranslation();
 
   const [credentialsInvalid, setCredentialsInvalid] = useState({
     email: false,
@@ -42,7 +44,7 @@ function AuthContent({ isLogin, onAuthenticate, loading }) {
       !passwordIsValid ||
       (!isLogin && (!userNameIsValid || !passwordsAreEqual))
     ) {
-      Alert.alert("Invalid input", "Please check your entered credentials.");
+      Alert.alert(t("invalid_input"), t("check_credentials"));
       setCredentialsInvalid({
         email: !emailIsValid,
         userName: !userNameIsValid,
@@ -56,12 +58,12 @@ function AuthContent({ isLogin, onAuthenticate, loading }) {
   }
 
   return (
-     <KeyboardAwareScrollView
-          contentContainerStyle={styles.container}
-          enableOnAndroid
-          keyboardShouldPersistTaps="handled"
-          extraScrollHeight={Platform.OS === "ios" ? 20 : 80}
-        >
+    <KeyboardAwareScrollView
+      contentContainerStyle={styles.container}
+      enableOnAndroid
+      keyboardShouldPersistTaps="handled"
+      extraScrollHeight={Platform.OS === "ios" ? 20 : 80}
+    >
       <View style={styles.imageContainer}>
         <View style={styles.logo}>
           <Image
@@ -71,19 +73,19 @@ function AuthContent({ isLogin, onAuthenticate, loading }) {
         </View>
         <Text style={styles.logoText}>
           <Text style={styles.logoAccent}>Di</Text>Bird
-          </Text>
+        </Text>
       </View>
 
       <View style={styles.authContent}>
         <AuthForm
           isLogin={isLogin}
           onSubmit={submitHandler}
-          credentialsInvalid={credentialsInvalid}
+          credentialsInvalid={credentialsInvalid}ƒ
           loading={loading}
         />
         <View style={styles.buttons}>
           <FlatButton onPress={switchAuthModeHandler}>
-            {isLogin ? "Create a new user" : "Log in instead"}
+            {isLogin ? t("create_new_user") : t("login_instead")}
           </FlatButton>
         </View>
       </View>
@@ -122,5 +124,5 @@ const styles = StyleSheet.create({
   },
   logoAccent: {
     color: Colors.link,
-  }
+  },
 });

@@ -4,7 +4,7 @@ import Navigation from "./navigation/Navigation";
 import * as SplashScreen from "expo-splash-screen";
 import Toast from "react-native-toast-message";
 import { ActionSheetProvider } from "@expo/react-native-action-sheet";
-import "./i18n";
+import "./services/i18n";
 
 import AuthContextProvider, { AuthContext } from "./store/auth-context";
 import { ProfileProvider } from "./store/profile-context";

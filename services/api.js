@@ -1,6 +1,6 @@
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
-import i18n from "../i18n";
+import i18n from "./i18n";
 
 import { Config } from "../constants/config";
 import { notifyTokenUpdate } from "./authService";
@@ -48,12 +48,12 @@ api.interceptors.request.use(
     if (lang !== "en" && !config.url.startsWith(`/${lang}/`)) config.url = `/${lang}${config.url}`;
     if (token) config.headers.Authorization = `Bearer ${token}`;
 
-    console.log(
-      "API request:",
-      config.method,
-      config.url,
-      config.headers.Authorization ? "with token" : "no token"
-    );
+    // console.log(
+    //   "API request:",
+    //   config.method,
+    //   config.url,
+    //   config.headers.Authorization ? "with token" : "no token"
+    // );
 
     return config;
   },

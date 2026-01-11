@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Alert } from "react-native";
+import { useTranslation } from "react-i18next";
 
 import AuthContent from "../components/Auth/AuthContent";
 import { CreateUser } from "../util/auth";
 
 const SignupScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslation();
 
   const signUpHandler = async ({ email, password, userName }) => {
     if (loading) return;
@@ -14,8 +16,8 @@ const SignupScreen = ({ navigation }) => {
     try {
       await CreateUser(email, password, userName);
       Alert.alert(
-        "Email confirmation",
-        "Please check your email to finish registration"
+        t("email_confirmation"),
+        t("check_email")
       );
       navigation.replace("Login");
     } catch (error) {
@@ -28,9 +30,9 @@ const SignupScreen = ({ navigation }) => {
         Object.values(data || {})
           .flat()
           .join("\n") ||
-        "Could not log you in. Please check your credentials or try again later.";
+        t("could_not_signup");
 
-      Alert.alert("Could not create user", message);
+      Alert.alert(t("could_not_create_user"), message);
     } finally {
       setLoading(false);
     }

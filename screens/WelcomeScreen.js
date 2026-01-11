@@ -1,7 +1,10 @@
 import { StyleSheet, View, Text } from "react-native";
+import { useTranslation } from "react-i18next";
 
 
 const WelcomeScreen = () => {
+  const { t } = useTranslation();
+
   return (
     <View style={styles.rootContainer}>
       <Text style={styles.title}>Welcome Screen</Text>

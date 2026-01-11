@@ -1,6 +1,7 @@
 import * as SecureStore from "expo-secure-store";
 import { createContext, useState, useEffect } from "react";
 import * as LocalAuthentication from "expo-local-authentication";
+import { useTranslation } from "react-i18next";
 
 import { setOnTokenUpdate } from "../services/authService";
 import { canUseBiometrics } from "../services/bio";
@@ -16,6 +17,7 @@ export const AuthContext = createContext({
 const AuthContextProvider = ({ children }) => {
   const [authToken, setAuthToken] = useState();
   const [isInitializing, setIsInitializing] = useState(true);
+  const { t } = useTranslation();
 
   const authenticate = async (access) => {
     setAuthToken(access);
@@ -49,8 +51,8 @@ const AuthContextProvider = ({ children }) => {
       if (!await canUseBiometrics()) return;
 
       const res = await LocalAuthentication.authenticateAsync({
-        promptMessage: "Unlock DiBird",
-        fallbackLabel: "Use device passcode",
+        promptMessage: t("unlock_message"),
+        fallbackLabel: t("unlock_fallback"),
       });
 
       if (!res.success) {
