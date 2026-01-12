@@ -29,7 +29,7 @@ const StatsTabs = ({ seen, notSeen }) => {
             />
           ),
         }}
-      >{() => <Stats data={seen} />}</Tab.Screen>
+      >{() => <Stats data={seen} seen={true}/>}</Tab.Screen>
       <Tab.Screen
         name="NotSeen"
         options={{

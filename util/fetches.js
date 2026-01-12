@@ -1,11 +1,19 @@
+import i18n from "../services/i18n";
 import api from "../services/api";
 
-const isoToFlagEmoji = (isoCode) => {
+export const isoToFlagEmoji = (isoCode) => {
   if (!isoCode) return "";
   return isoCode
     .toUpperCase()
     .replace(/./g, (char) => String.fromCodePoint(127397 + char.charCodeAt()));
 };
+
+export const formatDate = (isoDate) =>
+  new Intl.DateTimeFormat(i18n.language, {
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+  }).format(new Date(isoDate));
 
 export const fetchTimezones = async () => {
   const res = await api.get("/api/timezones/");
@@ -24,27 +32,29 @@ export const fetchCountries = async () => {
   }));
 };
 
-const fetchSpeciesForTerritory = () => {
-  return api.get("/api/territory-species/?territory_id=68");
+const fetchSpeciesForTerritory = (territory_id) => {
+  return api.get(`/api/territory-species/?territory_id=${territory_id}`);
 };
 
 export const fetchSeen = async () => {
-  const territorySpecies = await fetchSpeciesForTerritory();
-  const ids = await api.get("/myapi/seen/?territory_id=68");
+  const territorySpecies = await fetchSpeciesForTerritory(68);
+  const stat = await api.get('/myapi/stat/?per_page=20000&territory=68')
 
-  const idsSet = new Set(ids.data.map(String));
+  const idsSet = new Set(
+    stat?.data?.results.map(item => item.species)
+  );
 
-  const seenList = [];
-  const notSeenList = [];
+  const seenList = stat?.data?.results.map(item => ({
+    id: item.species,
+    ...item,
+  }));
 
-  Object.entries(territorySpecies.data).forEach(([id, value]) => {
-    const item = {
-      id,
-      ...value,
-    };
-
-    idsSet.has(id) ? seenList.push(item) : notSeenList.push(item);
-  });
+  const notSeenList = Object.entries(territorySpecies.data)
+  .filter(([speciesId]) => !idsSet.has(Number(speciesId)))
+  .map(([speciesId, sp]) => ({
+    id: Number(speciesId),
+    ...sp
+  }));
 
   return { seenList, notSeenList };
 };
