@@ -39,6 +39,6 @@ const styles = StyleSheet.create({
     color: Colors.logoText,
   },
   logoAccent: {
-    color: Colors.link,
+    color: Colors.logoAccent,
   },
 });

@@ -7,13 +7,22 @@ import { notifyTokenUpdate } from "./authService";
 import { canUseBiometrics } from "./bio";
 
 export const API_ERROR = {
+  TIMEOUT: "TIMEOUT",
   NETWORK: "NETWORK_ERROR",
   SERVER: "SERVER_ERROR",
   UNAUTHORIZED: "UNAUTHORIZED",
   UNKNOWN: "UNKNOWN",
 };
 
-const normalizeApiError = (error) => {
+export const normalizeApiError = (error) => {
+  if (error.code === "ECONNABORTED") {
+    return {
+      ...error,
+      code: API_ERROR.TIMEOUT,
+      isTimeout: true,
+    };
+  }
+
   if (!error.response) {
     return {
       ...error,
@@ -26,6 +35,7 @@ const normalizeApiError = (error) => {
     return {
       ...error,
       code: API_ERROR.SERVER,
+      status: error.response.status,
       isServerError: true,
     };
   }
@@ -40,11 +50,13 @@ const normalizeApiError = (error) => {
   return {
       ...error,
       code: API_ERROR.UNKNOWN,
+      status: error.response?.status,
     };
 };
 
 const api = axios.create({
   baseURL: Config.baseUrl,
+  timeout: 10000,
   headers: {
     "Content-Type": "application/json",
   },
@@ -54,11 +66,11 @@ export const getAccessToken = () => {
   return SecureStore.getItemAsync("access");
 };
 
-const getRefreshToken = () => {
+export const getRefreshToken = () => {
   return SecureStore.getItemAsync("refresh");
 };
 
-const saveTokens = async ({ access, refresh }) => {
+export const saveTokens = async ({ access, refresh }) => {
   if (access) {
     await SecureStore.setItemAsync("access", access);
     notifyTokenUpdate(access);
@@ -71,7 +83,7 @@ const saveTokens = async ({ access, refresh }) => {
   }
 };
 
-const clearTokens = async () => {
+export const clearTokens = async () => {
   await SecureStore.deleteItemAsync("access");
   await SecureStore.deleteItemAsync("refresh");
 };
@@ -83,7 +95,7 @@ api.interceptors.request.use(
     const token = await getAccessToken();
 
     if (lang !== "en" && !config.url.startsWith(`/${lang}/`)) config.url = `/${lang}${config.url}`;
-    if (token) config.headers.Authorization = `Bearer ${token}`;
+    if (!config.url.includes("/api-auth/login") && !config.url.includes("/api-auth/registration") && token) config.headers.Authorization = `Bearer ${token}`;
 
     console.log(
       "API request:",

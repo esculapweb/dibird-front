@@ -67,8 +67,8 @@ export const ProfileProvider = ({ children }) => {
 
   useEffect(() => {
     const init = async () => {
-      await getAccessToken();
-      setIsTokenReady(true);
+      const token = await getAccessToken();
+      if (token) setIsTokenReady(true);
     };
     init();
   }, []);

@@ -5,13 +5,14 @@ import { useTranslation } from "react-i18next";
 
 import { setOnTokenUpdate } from "../services/authService";
 import { canUseBiometrics } from "../services/bio";
+import { Logout } from "../util/auth";
 
 export const AuthContext = createContext({
   token: "",
   isAuthenticated: false,
   isInitializing: true,
-  authenticate: () => {},
-  logout: () => {},
+  authenticate: async (access) => {},
+  logout: async () => {},
 });
 
 const AuthContextProvider = ({ children }) => {
@@ -26,9 +27,7 @@ const AuthContextProvider = ({ children }) => {
 
   const logout = async () => {
     setAuthToken(null);
-    await SecureStore.deleteItemAsync("access");
-    await SecureStore.deleteItemAsync("refresh");
-    await AsyncStorage.removeItem("profile");
+    Logout();
   };
 
   useEffect(() => {

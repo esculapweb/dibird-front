@@ -36,7 +36,7 @@ const ErrorScreen = () => {
 
   return (
     <View style={styles.rootContainer}>
-      <Text style={styles.messageTitle}>{t("something_went_wrong")}</Text>;
+      <Text style={styles.messageTitle}>{t("something_went_wrong")}</Text>
     </View>
   );
 };

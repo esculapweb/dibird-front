@@ -19,7 +19,7 @@ const SignupScreen = ({ navigation }) => {
         t("email_confirmation"),
         t("check_email")
       );
-      navigation.replace("Login");
+      navigation.navigate("Login");
     } catch (error) {
       const message =
         error.response?.data?.non_field_errors?.[0] ||

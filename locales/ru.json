@@ -42,6 +42,7 @@
   "select": "Выбрать",
   "select_country": "Выберите страну",
   "select_timezone": "Выберите часовой пояс",
+  "server_timeout": "server_timeout",
   "server_unavailable": "Сервер временно недоступен",
   "settings": "Настройки",
   "sign_up": "Зарегистрироваться",

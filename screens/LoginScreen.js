@@ -19,7 +19,7 @@ const LoginScreen = () => {
     setLoading(true);
     try {
       const token = await Login(email, password);
-      authCtx.authenticate(token);
+      await authCtx.authenticate(token);
       profileCtx.refreshProfile();
     } catch (error) {
       const message =

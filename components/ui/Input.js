@@ -72,7 +72,7 @@ export default Input;
 
 const styles = StyleSheet.create({
   inputContainer: {
-    marginVertical: 8,
+    marginBottom: 16,
   },
   label: {
     color: Colors.textMain,

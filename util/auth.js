@@ -1,46 +1,35 @@
-import axios from "axios";
-import * as SecureStore from "expo-secure-store";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { Config } from "../constants/config";
-import { canUseBiometrics } from "../services/bio";
-
-const authApi = axios.create({
-  baseURL: Config.baseUrl,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
+import api, {
+  normalizeApiError,
+  saveTokens,
+  clearTokens,
+  getRefreshToken,
+} from "../services/api";
 
 const post = async (url, data) => {
   try {
-    const response = await authApi.post(url, data, { withCredentials: false });
-    return response.data;
+    const response = await api.post(url, data, { withCredentials: false });
+    return response?.data;
   } catch (error) {
     console.warn("AUTH API ERROR:", url);
     console.warn(error.response?.data || error.message);
-    throw error;
+    throw normalizeApiError(error);
   }
 };
 
-const saveRefreshToken = async (refresh) => {
-  if (!refresh) return;
-  try{
-  await SecureStore.setItemAsync("refresh", refresh, {
-    requireAuthentication: await canUseBiometrics(),
-  });
-} catch (e) {
-  console.info(e.message)
-}
-};
-
 export const Login = async (email, password) => {
-  const data = await post("/api-auth/login/", {
+  const { access, refresh } = await post("/api-auth/login/", {
     email,
     password,
   });
 
-  await saveRefreshToken(data.refresh);
-  return data.access;
+  await saveTokens({
+    access,
+    refresh,
+  });
+
+  return access;
 };
 
 export const CreateUser = async (email, password, username) => {
@@ -51,4 +40,21 @@ export const CreateUser = async (email, password, username) => {
     password2: password,
   });
   return data;
+};
+
+export const Logout = async () => {
+  try {
+    const data = { refresh: await getRefreshToken() };
+    const r = await api.post("/api-auth/logout/", data);
+    console.info(r.data);
+  } catch (error) {
+    console.warn(
+      "Logout request failed",
+      error.response?.status,
+      error.message
+    );
+  } finally {
+    clearTokens();
+    await AsyncStorage.removeItem("profile");
+  }
 };

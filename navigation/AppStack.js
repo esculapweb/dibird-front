@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { useNavigation } from "@react-navigation/native";
 import {
   createDrawerNavigator,
   DrawerContentScrollView,
@@ -53,6 +54,12 @@ const AppStack = ({ refreshKey }) => {
 function CustomDrawerContent(props) {
   const authCtx = useContext(AuthContext);
   const { t } = useTranslation();
+  const navigation = useNavigation();
+
+  const handleLogout = async () => {
+    props.navigation.closeDrawer?.();
+    await authCtx.logout();           
+  };
 
   return (
     <View style={{ flex: 1 }}>
@@ -69,7 +76,8 @@ function CustomDrawerContent(props) {
         <DrawerItem
           label={t("logout")}
           labelStyle={{ color: Colors.primary500 }}
-          onPress={authCtx.logout}
+          onPress={handleLogout}
+          style={styles.logout}
           icon={({ color, size }) => (
             <Ionicons name="log-out-outline" color={color} size={size} />
           )}
@@ -89,7 +97,10 @@ const AppDrawer = () => {
     setRefreshKey((k) => k + 1);
   };
 
-  if (profileCtx.error) return <ErrorScreen />;
+  if (profileCtx.error) {
+    console.log('profileCtx error', profileCtx.error)
+    return <ErrorScreen />;
+  }
 
   return (
     <Drawer.Navigator
@@ -109,9 +120,10 @@ const AppDrawer = () => {
       }}
     >
       <Drawer.Screen
-        name={t("statistics")}
+        name={"Statistics"}
         component={StatScreen}
         options={{
+          title: t("statistics"),
           drawerIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? "stats-chart" : "stats-chart-outline"}
@@ -158,4 +170,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 24,
   },
+  logout: {
+    borderTopWidth: 1,
+    borderColor: Colors.backgroundMain,
+  }
 });

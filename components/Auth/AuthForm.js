@@ -91,6 +91,6 @@ export default AuthForm;
 
 const styles = StyleSheet.create({
   buttons: {
-    marginTop: 18,
+    marginVertical: 8,
   },
 });
