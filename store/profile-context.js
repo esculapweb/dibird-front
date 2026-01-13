@@ -35,14 +35,15 @@ const ProfileContext = createContext({
   updateProfile: async (updatedData) => {},
   refreshProfile: async () => {},
   isTokenReady: false,
+  error: null,
 });
 
 export const ProfileProvider = ({ children }) => {
   const [profile, setProfile] = useState(EMPTY_PROFILE);
+  const [error, setError] = useState(null);
   const [isTokenReady, setIsTokenReady] = useState(false);
   const { t } = useTranslation();
   const url = "/myapi/profile/me/";
-  
 
   const loadProfile = useCallback(async () => {
     try {
@@ -75,10 +76,13 @@ export const ProfileProvider = ({ children }) => {
   const refreshProfile = useCallback(async () => {
     if (!isTokenReady) return;
     try {
+      setError(null);
+
       const { data } = await api.get(url);
       await saveProfile(data);
-    } catch (err) {
-      console.warn("Failed to refresh profile:", err);
+    } catch (e) {
+      setError(e.code);
+      console.warn("Failed to refresh profile:", e.code, e.message);
     }
   }, [isTokenReady]);
 
@@ -86,7 +90,6 @@ export const ProfileProvider = ({ children }) => {
     if (!isTokenReady) return;
     refreshProfile();
   }, [isTokenReady, refreshProfile]);
-
 
   const saveProfile = async (data) => {
     const safeProfile = {
@@ -104,7 +107,9 @@ export const ProfileProvider = ({ children }) => {
   }, []);
 
   return (
-    <ProfileContext.Provider value={{ profile, updateProfile, refreshProfile, isTokenReady }}>
+    <ProfileContext.Provider
+      value={{ profile, updateProfile, refreshProfile, isTokenReady, error }}
+    >
       {children}
     </ProfileContext.Provider>
   );

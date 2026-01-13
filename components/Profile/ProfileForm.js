@@ -44,7 +44,7 @@ const ProfileForm = ({ submitHandler, loading }) => {
         setTimezoneOptions(timezones);
         setTerritoryOptions(countries);
       } catch (e) {
-        console.warn(t("failed_to_load_data"), e);
+        console.warn(t("failed_to_load_data"), e.code, e.message);
       }
     };
 

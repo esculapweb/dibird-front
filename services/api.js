@@ -6,6 +6,43 @@ import { Config } from "../constants/config";
 import { notifyTokenUpdate } from "./authService";
 import { canUseBiometrics } from "./bio";
 
+export const API_ERROR = {
+  NETWORK: "NETWORK_ERROR",
+  SERVER: "SERVER_ERROR",
+  UNAUTHORIZED: "UNAUTHORIZED",
+  UNKNOWN: "UNKNOWN",
+};
+
+const normalizeApiError = (error) => {
+  if (!error.response) {
+    return {
+      ...error,
+      code: API_ERROR.NETWORK,
+      isNetworkError: true,
+    };
+  }
+
+  if (error.response.status >= 500) {
+    return {
+      ...error,
+      code: API_ERROR.SERVER,
+      isServerError: true,
+    };
+  }
+
+  if (error.response.status === 401) {
+    return {
+      ...error,
+      code: API_ERROR.UNAUTHORIZED,
+    };
+  }
+
+  return {
+      ...error,
+      code: API_ERROR.UNKNOWN,
+    };
+};
+
 const api = axios.create({
   baseURL: Config.baseUrl,
   headers: {
@@ -48,12 +85,12 @@ api.interceptors.request.use(
     if (lang !== "en" && !config.url.startsWith(`/${lang}/`)) config.url = `/${lang}${config.url}`;
     if (token) config.headers.Authorization = `Bearer ${token}`;
 
-    // console.log(
-    //   "API request:",
-    //   config.method,
-    //   config.url,
-    //   config.headers.Authorization ? "with token" : "no token"
-    // );
+    console.log(
+      "API request:",
+      config.method,
+      config.url,
+      config.headers.Authorization ? "with token" : "no token"
+    );
 
     return config;
   },
@@ -65,9 +102,9 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (originalRequest.url.endsWith("/api-auth/token/refresh/")) {
+    if (originalRequest?.url?.endsWith("/api-auth/token/refresh/")) {
       await clearTokens();
-      return Promise.reject(error);
+      return Promise.reject(normalizeApiError(error));
     }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
@@ -77,7 +114,7 @@ api.interceptors.response.use(
         const refresh = await getRefreshToken();
         if (!refresh) {
           await clearTokens();
-          return Promise.reject(error);
+          return Promise.reject(normalizeApiError(error));
         }
 
         const res = await axios.post(
@@ -92,11 +129,11 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         await clearTokens();
-        return Promise.reject(refreshError);
+        return Promise.reject(normalizeApiError(refreshError));
       }
     }
 
-    return Promise.reject(error);
+    return Promise.reject(normalizeApiError(error));
   }
 );
 

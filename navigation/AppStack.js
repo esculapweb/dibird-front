@@ -15,6 +15,7 @@ import WelcomeScreen from "../screens/WelcomeScreen";
 import StatScreen from "../screens/StatScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import SettingsScreen from "../screens/SettingsScreen";
+import ErrorScreen from "../screens/ErrorScreen";
 
 import { AuthContext } from "../store/auth-context";
 import { useProfile } from "../store/profile-context";
@@ -87,6 +88,8 @@ const AppDrawer = () => {
     await profileCtx.refreshProfile();
     setRefreshKey((k) => k + 1);
   };
+
+  if (profileCtx.error) return <ErrorScreen />;
 
   return (
     <Drawer.Navigator

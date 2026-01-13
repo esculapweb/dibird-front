@@ -1,13 +1,12 @@
 import { useState } from "react";
-import { Alert, StyleSheet, View, Image, Text, Platform } from "react-native";
+import { Alert, StyleSheet, View, Platform } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useTranslation } from "react-i18next";
 
 import FlatButton from "../ui/FlatButton";
 import AuthForm from "./AuthForm";
-import { Colors } from "../../constants/styles";
 import { useNavigation } from "@react-navigation/native";
-
+import Logo from "../ui/Logo";
 
 function AuthContent({ isLogin, onAuthenticate, loading }) {
   const navigation = useNavigation();
@@ -64,23 +63,14 @@ function AuthContent({ isLogin, onAuthenticate, loading }) {
       keyboardShouldPersistTaps="handled"
       extraScrollHeight={Platform.OS === "ios" ? 20 : 80}
     >
-      <View style={styles.imageContainer}>
-        <View style={styles.logo}>
-          <Image
-            source={require("../../assets/logo-dibird-512.png")}
-            style={styles.image}
-          />
-        </View>
-        <Text style={styles.logoText}>
-          <Text style={styles.logoAccent}>Di</Text>Bird
-        </Text>
-      </View>
+      <Logo style={styles.logo} imageSize={60} withText={true} />
 
       <View style={styles.authContent}>
         <AuthForm
           isLogin={isLogin}
           onSubmit={submitHandler}
-          credentialsInvalid={credentialsInvalid}ƒ
+          credentialsInvalid={credentialsInvalid}
+          ƒ
           loading={loading}
         />
         <View style={styles.buttons}>
@@ -103,26 +93,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   logo: {
-    flexDirection: "row",
-  },
-  imageContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
     marginTop: 16,
-  },
-  image: {
-    width: 50,
-    height: 50,
-    resizeMode: "contain",
-    marginRight: 8,
-  },
-  logoText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: Colors.logoText,
-  },
-  logoAccent: {
-    color: Colors.link,
   },
 });
