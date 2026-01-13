@@ -43,7 +43,7 @@
   "select": "Select",
   "select_country": "Select country",
   "select_timezone": "Select timezone",
-  "server_timeout": "server_timeout",
+  "server_timeout": "Server is taking too long to respond",
   "server_unavailable": "The server is temporarily unavailable",
   "settings": "Settings",
   "sign_up": "Sign Up",
