@@ -3,6 +3,7 @@ export const Colors = {
   primary500: "#2f3c43",
   error100: "#ffe9e7",
   error500: "#f1665a",
+  error600: "#d93b2e",
   accent: "#f0c24b",
   border: "#ced4da",
   textMain: "#333",

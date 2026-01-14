@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Alert, StyleSheet, View, Platform, Text} from "react-native";
+import { Alert, StyleSheet, View, Platform, Text } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useTranslation } from "react-i18next";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
 
 import FlatButton from "../ui/FlatButton";
 import AuthForm from "./AuthForm";
@@ -28,9 +29,9 @@ function AuthContent({ isLogin, onAuthenticate, loading }) {
     setError(null);
     // onAuthenticate.reset?.(); // если нужно сбросить форму
     nextPage && navigation?.navigate(nextPage);
-  }
+  };
 
-  const  submitHandler = async (credentials) => {
+  const submitHandler = async (credentials) => {
     let { email, userName, password, confirmPassword } = credentials;
 
     email = email.trim();
@@ -65,16 +66,31 @@ function AuthContent({ isLogin, onAuthenticate, loading }) {
       await onAuthenticate(authData);
     } catch (err) {
       if (err.code === API_ERROR.TIMEOUT) {
-        setError(t("server_timeout")); 
+        setError(t("server_timeout"));
       } else if (err.code === API_ERROR.NETWORK) {
         setError(t("unable_connect_server"));
       } else if (err.code === API_ERROR.SERVER) {
         setError(t("server_unavailable"));
+      } else if (err.response?.data) {
+        const data = err.response.data;
+        const eMessage =
+          data.non_field_errors?.[0] ||
+          data.email?.[0] ||
+          data.password?.[0] ||
+          Object.values(data).flat().join("\n") ||
+          t("could_not_login");
+        setError(eMessage);
       } else {
         setError(t("something_went_wrong"));
       }
+
+      // Toast.show({
+      //         type: "error",
+      //         text1: 'line1',
+      //         text2: 'line2',
+      //       });
     }
-  }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
@@ -142,7 +158,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   errorText: {
-    color: Colors.error,
+    color: Colors.error600,
     fontSize: 14,
     textAlign: "center",
     marginBottom: 8,

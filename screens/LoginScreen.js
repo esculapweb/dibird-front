@@ -22,20 +22,7 @@ const LoginScreen = () => {
       await authCtx.authenticate(token);
       profileCtx.refreshProfile();
     } catch (error) {
-      const message =
-        error.response?.data?.non_field_errors?.[0] ||
-        error.response?.data?.email?.[0] ||
-        error.response?.data?.password?.[0] ||
-        Object.values(data || {})
-          .flat()
-          .join("\n") ||
-        t("could_not_login");
-
-      Toast.show({
-        type: "error",
-        text1: t("authentication_failed"),
-        text2: message,
-      });
+      throw error;
     } finally {
       setLoading(false);
     }
