@@ -1,7 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import api, {
-  normalizeApiError,
   saveTokens,
   clearTokens,
   getRefreshToken,
@@ -11,10 +10,10 @@ const post = async (url, data) => {
   try {
     const response = await api.post(url, data, { withCredentials: false });
     return response?.data;
-  } catch (error) {
+  } catch (e) {
     console.warn("AUTH API ERROR:", url);
-    console.warn(error.response?.data || error.message);
-    throw normalizeApiError(error);
+    console.warn(e.response?.data || e.message);
+    throw e;
   }
 };
 
@@ -47,11 +46,11 @@ export const Logout = async () => {
     const data = { refresh: await getRefreshToken() };
     const r = await api.post("/api-auth/logout/", data);
     console.info(r.data);
-  } catch (error) {
+  } catch (e) {
     console.warn(
       "Logout request failed",
-      error.response?.status,
-      error.message
+      e.response?.status,
+      e.message
     );
   } finally {
     clearTokens();

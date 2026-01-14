@@ -17,8 +17,8 @@ const SignupScreen = ({ navigation }) => {
       await CreateUser(email, password, userName);
       Alert.alert(t("email_confirmation"), t("check_email"));
       navigation.navigate("Login");
-    } catch (error) {
-      throw error;
+    } catch (e) {
+      throw e;
     } finally {
       setLoading(false);
     }

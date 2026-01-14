@@ -6,11 +6,10 @@ import {
   useCallback,
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useTranslation } from "react-i18next";
 
-import api from "../services/api";
+import api, { getAccessToken } from "../services/api";
 import { Put } from "../util/requests";
-import { getAccessToken } from "../services/api";
+import i18n from "../services/i18n";
 
 const EMPTY_PROFILE = {
   user_data: {
@@ -42,7 +41,6 @@ export const ProfileProvider = ({ children }) => {
   const [profile, setProfile] = useState(EMPTY_PROFILE);
   const [error, setError] = useState(null);
   const [isTokenReady, setIsTokenReady] = useState(false);
-  const { t } = useTranslation();
   const url = "/myapi/profile/me/";
 
   const loadProfile = useCallback(async () => {
@@ -77,11 +75,10 @@ export const ProfileProvider = ({ children }) => {
     if (!isTokenReady) return;
     try {
       setError(null);
-
       const { data } = await api.get(url);
       await saveProfile(data);
     } catch (e) {
-      setError(e.code);
+      setError(e);
       console.warn("Failed to refresh profile:", e.code, e.message);
     }
   }, [isTokenReady]);
@@ -101,7 +98,7 @@ export const ProfileProvider = ({ children }) => {
   };
 
   const updateProfile = useCallback(async (updatedData) => {
-    const response = await Put(url, updatedData, t("profile_updated"));
+    const response = await Put(url, updatedData, i18n.t("profile_updated"));
     if (!response) return;
     await saveProfile(response.data);
   }, []);

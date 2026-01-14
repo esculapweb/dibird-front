@@ -98,7 +98,7 @@ const AppDrawer = () => {
   };
 
   if (profileCtx.error) {
-    console.log('profileCtx error', profileCtx.error)
+    console.warn('profileCtx error', profileCtx.error.code, profileCtx.error.message)
     return <ErrorScreen />;
   }
 

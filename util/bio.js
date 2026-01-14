@@ -22,8 +22,8 @@ export const bioAuthenticate = async () => {
     console.info("biometric auth result:", result);
 
     return result.success;
-  } catch (err) {
-    console.warn("Biometric auth error:", err);
+  } catch (e) {
+    console.warn("Biometric auth error:", e);
     return false;
   }
 };

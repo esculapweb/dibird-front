@@ -12,6 +12,7 @@
   "could_not_create_user": "Could not create user",
   "could_not_login": "Could not log you in. Please check your credentials or try again later.",
   "could_not_signup": "Could not sign up. Please check your credentials or try again later.",
+  "could_not_update_profile": "Could not update profile",
   "create_new_user": "Create a new user",
   "diaries_are_private_by_default": "Diaries are private by default",
   "email_address": "Email Address",
@@ -38,7 +39,7 @@
   "permission_denied": "Permission denied",
   "profile": "Profile",
   "profile_updated": "Profile updated",
-    "registration_failed": "Registration failed",
+  "registration_failed": "Registration failed",
   "remove_photo": "Remove photo",
   "retry": "Retry",
   "save": "Save",
@@ -61,6 +62,7 @@
   "unexpected_error": "Unexpected error",
   "unlock_fallback": "Use device passcode",
   "unlock_message": "Unlock DiBird",
+  "update_failed": "Update failed",
   "username": "Username",
   "yes": "Yes"
 }

@@ -2,41 +2,26 @@ import { StyleSheet, Text, View, Button } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import { useProfile } from "../store/profile-context";
-import { API_ERROR } from "../services/api";
+import { mapErrorToToast } from "../services/api";
 import Logo from "../components/ui/Logo";
 
 const ErrorScreen = () => {
-  const { error, refreshProfile } = useProfile();
   const { t } = useTranslation();
+  const { error, refreshProfile } = useProfile();
 
-  if (error === API_ERROR.NETWORK) {
-    return (
-      <View style={styles.rootContainer}>
-        <Logo style={styles.logo} />
-        <Text style={styles.messageTitle}>{t("unable_connect_server")}</Text>
-        <Text style={styles.messageDescription}>{t("check_internet")}</Text>
-        <View style={styles.buttonWrapper}>
-          <Button title={t("retry")} onPress={refreshProfile} />
-        </View>
-      </View>
-    );
-  }
-
-  if (error === API_ERROR.SERVER) {
-    return (
-      <View style={styles.rootContainer}>
-        <Logo style={styles.logo} />
-        <Text style={styles.messageTitle}>{t("server_unavailable")}</Text>
-        <View style={styles.buttonWrapper}>
-          <Button title={t("try_again")} onPress={refreshProfile} />
-        </View>
-      </View>
-    );
-  }
+  const {title, message} = mapErrorToToast(error);
 
   return (
     <View style={styles.rootContainer}>
-      <Text style={styles.messageTitle}>{t("something_went_wrong")}</Text>
+      <Logo style={styles.logo} />
+      <Text style={styles.messageTitle}>{title}</Text>
+      <Text style={styles.messageDescription}>{message}</Text>
+      <View style={styles.buttonWrapper}>
+        <Button
+          title={t("try_again")}
+          onPress={refreshProfile}
+        />
+      </View>
     </View>
   );
 };

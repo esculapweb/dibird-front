@@ -21,8 +21,8 @@ const LoginScreen = () => {
       const token = await Login(email, password);
       await authCtx.authenticate(token);
       profileCtx.refreshProfile();
-    } catch (error) {
-      throw error;
+    } catch (e) {
+      throw e;
     } finally {
       setLoading(false);
     }

@@ -80,8 +80,8 @@ const AuthContent = ({ isLogin, onAuthenticate, loading }) => {
 
     try {
       await onAuthenticate(authData);
-    } catch (err) {
-      const { title, message } = mapErrorToToast(err, extractApiError);
+    } catch (e) {
+      const { title, message } = mapErrorToToast(e, extractApiError);
       Toast.show({
         type: "error",
         text1: title,

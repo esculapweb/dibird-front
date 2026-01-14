@@ -117,8 +117,8 @@ const Avatar = () => {
       const { avatar_thumbnail } = await patchAvatar(manipulated);
       setAvatar(avatar_thumbnail);
       profileCtx.refreshProfile();
-    } catch (err) {
-      console.warn("Image manipulation error:", err);
+    } catch (e) {
+      console.warn("Image manipulation error:", e);
       Toast.show({
         type: "error",
         text1: t("image_processing_failed"),

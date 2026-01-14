@@ -6,7 +6,7 @@ import { Config } from "../constants/config";
 import { notifyTokenUpdate } from "./authService";
 import { canUseBiometrics } from "./bio";
 
-export const API_ERROR = {
+const API_ERROR = {
   TIMEOUT: "TIMEOUT",
   NETWORK: "NETWORK_ERROR",
   SERVER: "SERVER_ERROR",
@@ -14,7 +14,7 @@ export const API_ERROR = {
   UNKNOWN: "UNKNOWN",
 };
 
-export const normalizeApiError = (error) => {
+const normalizeApiError = (error) => {
   if (error.code === "ECONNABORTED") {
     return {
       ...error,
@@ -120,12 +120,12 @@ api.interceptors.request.use(
     )
       config.headers.Authorization = `Bearer ${token}`;
 
-    console.log(
-      "API request:",
-      config.method,
-      config.url,
-      config.headers.Authorization ? "with token" : "no token"
-    );
+    // console.log(
+    //   "API request:",
+    //   config.method,
+    //   config.url,
+    //   config.headers.Authorization ? "with token" : "no token"
+    // );
 
     return config;
   },
@@ -162,9 +162,9 @@ api.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${res.data.access}`;
 
         return api(originalRequest);
-      } catch (refreshError) {
+      } catch (e) {
         await clearTokens();
-        return Promise.reject(normalizeApiError(refreshError));
+        return Promise.reject(normalizeApiError(e));
       }
     }
 

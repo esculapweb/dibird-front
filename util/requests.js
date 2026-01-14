@@ -1,7 +1,7 @@
 import Toast from "react-native-toast-message";
 
 import i18n from "../services/i18n";
-import api from "../services/api";
+import api  from "../services/api";
 
 export const Put = async (url, data, message) => {
   try {
@@ -15,21 +15,8 @@ export const Put = async (url, data, message) => {
       return response;
     }
     throw new Error(`Unexpected status: ${response.status}`);
-  } catch (error) {
-    if (error.response) {
-      console.warn("Validation error:", error.response.data);
-      Toast.show({
-        type: "error",
-        text1: i18n.t("check_entered_data"),
-      });
-    } else {
-      console.warn("Network error:", error.message);
-      Toast.show({
-        type: "error",
-        text1: i18n.t("server_unavailable"),
-      });
-    }
-    return null;
+  } catch (e) {
+    throw e;
   }
 };
 
@@ -52,15 +39,15 @@ export const patchAvatar = async (image) => {
     if (response.status === 200 || response.status === 204) {
       return response.data;
     }
-  } catch (error) {
-    if (error.response) {
-      console.warn("Validation error:", error.response.data);
+  } catch (e) {
+    if (e.response) {
+      console.warn("Validation error:", e.response.data);
       Toast.show({
         type: "error",
         text1: i18n.t("something_went_wrong"),
       });
     } else {
-      console.warn("Network error:", error.message);
+      console.warn("Network error:", e.message);
       Toast.show({
         type: "error",
         text1: i18n.t("server_unavailable"),
@@ -73,12 +60,12 @@ export const deleteAvatar = () => {
 
   try {
     return api.delete("/myapi/profile/avatar/");
-  } catch (error) {
+  } catch (e) {
     console.warn(
       "Delete Avatar error:",
-      error?.response?.data
-        ? JSON.stringify(error.response.data)
-        : error?.message ?? error
+      e?.response?.data
+        ? JSON.stringify(e.response.data)
+        : e?.message ?? e
     );
 
     Toast.show({
