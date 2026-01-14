@@ -11,14 +11,14 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { Colors } from "../../constants/styles";
 
-function Input({
+const Input = ({
   label,
   keyboardType,
   secure,
   onUpdateValue,
   value,
   isInvalid,
-}) {
+}) => {
   const [isSecure, setIsSecure] = useState(secure);
 
   const iconOpacity = useRef(new Animated.Value(1)).current;

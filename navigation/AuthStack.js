@@ -5,7 +5,7 @@ import {
   DrawerItemList,
 } from "@react-navigation/drawer";
 
-import { View, StyleSheet } from "react-native";
+import { View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import LoginScreen from "../screens/LoginScreen";
@@ -53,13 +53,31 @@ const AuthDrawer = () => {
       <Drawer.Screen
         name="Login"
         component={LoginScreen}
-        options={{ title: t("login") }}
+        options={{ 
+          title: t("login"),
+          drawerIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "log-in" : "log-in-outline"}
+              color={color}
+              size={size}
+            />
+          ),
+         }}
       />
 
       <Drawer.Screen
         name={"Signup"}
         component={SignupScreen}
-        options={{ title: t("signup") }}
+        options={{ 
+          title: t("signup"),
+          drawerIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "person-add" : "person-add-outline"}
+              color={color}
+              size={size}
+            />
+          ),
+        }}
       />
     </Drawer.Navigator>
   );

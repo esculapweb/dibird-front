@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import AnimatedLoadingButton from "../ui/AnimatedLoadingButton";
 import Input from "../ui/Input";
 
-function AuthForm({ isLogin, onSubmit, credentialsInvalid, loading }) {
+const AuthForm = ({ isLogin, onSubmit, credentialsInvalid, loading }) => {
   const [enteredEmail, setEnteredEmail] = useState("");
   const [enteredUsername, setEnteredUsername] = useState("");
   const [enteredPassword, setEnteredPassword] = useState("");
@@ -19,7 +19,7 @@ function AuthForm({ isLogin, onSubmit, credentialsInvalid, loading }) {
     confirmPassword: passwordsDontMatch,
   } = credentialsInvalid;
 
-  function updateInputValueHandler(inputType, enteredValue) {
+  const updateInputValueHandler = (inputType, enteredValue) => {
     switch (inputType) {
       case "email":
         setEnteredEmail(enteredValue);
@@ -36,7 +36,7 @@ function AuthForm({ isLogin, onSubmit, credentialsInvalid, loading }) {
     }
   }
 
-  function submitHandler() {
+  const submitHandler = () => {
     onSubmit({
       email: enteredEmail,
       userName: enteredUsername,

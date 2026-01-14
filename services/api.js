@@ -48,10 +48,28 @@ export const normalizeApiError = (error) => {
   }
 
   return {
-      ...error,
-      code: API_ERROR.UNKNOWN,
-      status: error.response?.status,
-    };
+    ...error,
+    code: API_ERROR.UNKNOWN,
+    status: error.response?.status,
+  };
+};
+
+export const mapErrorToToast = (err, extractApiErrorFn = null) => {
+  if (err.code === API_ERROR.TIMEOUT)
+    return { title: i18n.t("connection_timeout"), message: i18n.t("server_timeout") };
+
+  if (err.code === API_ERROR.NETWORK)
+    return { title: i18n.t("no_connection"), message: i18n.t("unable_connect_server") };
+
+  if (err.code === API_ERROR.SERVER)
+    return { title: i18n.t("server_error"), message: i18n.t("server_unavailable") };
+
+  if (err?.response?.data && typeof extractApiErrorFn === "function") {
+    const result = extractApiErrorFn(err);
+    if (result?.title && result?.message) return result;
+  }
+
+  return { title: i18n.t("unexpected_error"), message: i18n.t("something_went_wrong") };
 };
 
 const api = axios.create({
@@ -90,12 +108,17 @@ export const clearTokens = async () => {
 
 api.interceptors.request.use(
   async (config) => {
-
     const lang = i18n.language || "en";
     const token = await getAccessToken();
 
-    if (lang !== "en" && !config.url.startsWith(`/${lang}/`)) config.url = `/${lang}${config.url}`;
-    if (!config.url.includes("/api-auth/login") && !config.url.includes("/api-auth/registration") && token) config.headers.Authorization = `Bearer ${token}`;
+    if (lang !== "en" && !config.url.startsWith(`/${lang}/`))
+      config.url = `/${lang}${config.url}`;
+    if (
+      !config.url.includes("/api-auth/login") &&
+      !config.url.includes("/api-auth/registration") &&
+      token
+    )
+      config.headers.Authorization = `Bearer ${token}`;
 
     console.log(
       "API request:",

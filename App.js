@@ -2,7 +2,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useContext } from "react";
 import Navigation from "./navigation/Navigation";
 import * as SplashScreen from "expo-splash-screen";
-import Toast from "react-native-toast-message";
+import Toast, { ErrorToast } from "react-native-toast-message";
 import { ActionSheetProvider } from "@expo/react-native-action-sheet";
 import "./services/i18n";
 
@@ -40,7 +40,14 @@ export default function App() {
         <AuthContextProvider>
           <ProfileProvider>
             <Root />
-            <Toast />
+            <Toast
+              config={{
+                error: (props) => (
+                  <ErrorToast {...props} text2NumberOfLines={6} />
+                ),
+              }}
+              position="bottom"
+            />
           </ProfileProvider>
         </AuthContextProvider>
       </LanguageProvider>

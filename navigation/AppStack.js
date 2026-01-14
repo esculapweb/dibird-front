@@ -51,7 +51,7 @@ const AppStack = ({ refreshKey }) => {
   );
 };
 
-function CustomDrawerContent(props) {
+const CustomDrawerContent = (props) => {
   const authCtx = useContext(AuthContext);
   const { t } = useTranslation();
   const navigation = useNavigation();

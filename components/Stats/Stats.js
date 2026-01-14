@@ -47,8 +47,9 @@ const Stats = ({ data, seen = false }) => {
       renderItem={({ item, index }) => (
         <View style={styles.item}>
           <Text>
-            {index + 1}. {item.sp_name}
+            {index + 1}. {item.sp_name_lang}
           </Text>
+          <Text>{item.sp_latin}</Text>
           {seen && item.sp_thumb && (
             <Image
               source={{

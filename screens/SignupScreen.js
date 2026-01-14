@@ -15,24 +15,10 @@ const SignupScreen = ({ navigation }) => {
     setLoading(true);
     try {
       await CreateUser(email, password, userName);
-      Alert.alert(
-        t("email_confirmation"),
-        t("check_email")
-      );
+      Alert.alert(t("email_confirmation"), t("check_email"));
       navigation.navigate("Login");
     } catch (error) {
-      const message =
-        error.response?.data?.non_field_errors?.[0] ||
-        error.response?.data?.email?.[0] ||
-        error.response?.data?.username?.[0] ||
-        error.response?.data?.password1?.[0] ||
-        error.response?.data?.password2?.[0] ||
-        Object.values(data || {})
-          .flat()
-          .join("\n") ||
-        t("could_not_signup");
-
-      Alert.alert(t("could_not_create_user"), message);
+      throw error;
     } finally {
       setLoading(false);
     }

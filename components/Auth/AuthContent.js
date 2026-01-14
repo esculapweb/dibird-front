@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, StyleSheet, View, Platform, Text } from "react-native";
+import { StyleSheet, View, Platform } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useTranslation } from "react-i18next";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -10,9 +10,9 @@ import AuthForm from "./AuthForm";
 import { useNavigation } from "@react-navigation/native";
 import Logo from "../ui/Logo";
 import { Colors } from "../../constants/styles";
-import { API_ERROR } from "../../services/api";
+import { mapErrorToToast } from "../../services/api";
 
-function AuthContent({ isLogin, onAuthenticate, loading }) {
+const AuthContent = ({ isLogin, onAuthenticate, loading }) => {
   const navigation = useNavigation();
   const { t } = useTranslation();
 
@@ -22,13 +22,27 @@ function AuthContent({ isLogin, onAuthenticate, loading }) {
     userName: false,
     confirmPassword: false,
   });
-  const [error, setError] = useState(null);
 
   const switchAuthModeHandler = () => {
     const nextPage = isLogin ? "Signup" : "Login";
-    setError(null);
     // onAuthenticate.reset?.(); // если нужно сбросить форму
     nextPage && navigation?.navigate(nextPage);
+  };
+
+  const extractApiError = (err) => {
+    const data = err.response.data;
+    if (!data) return null;
+    const apiMessage =
+      data?.non_field_errors?.[0] ||
+      data?.email?.[0] ||
+      data?.username?.[0] ||
+      data?.password?.[0] ||
+      Object.values(data).flat().join("\n");
+    return {
+      title: isLogin ? t("login_failed") : t("registration_failed"),
+      message: apiMessage ||
+      (isLogin ? t("could_not_login") : t("could_not_signup")),
+    };
   };
 
   const submitHandler = async (credentials) => {
@@ -50,7 +64,11 @@ function AuthContent({ isLogin, onAuthenticate, loading }) {
       !passwordIsValid ||
       (!isLogin && (!userNameIsValid || !passwordsAreEqual))
     ) {
-      Alert.alert(t("invalid_input"), t("check_credentials"));
+      Toast.show({
+        type: "error",
+        text1: t("invalid_input"),
+        text2: t("check_credentials"),
+      });
       setCredentialsInvalid({
         email: !emailIsValid,
         userName: !userNameIsValid,
@@ -60,35 +78,15 @@ function AuthContent({ isLogin, onAuthenticate, loading }) {
       return;
     }
 
-    setError(null);
-
     try {
       await onAuthenticate(authData);
     } catch (err) {
-      if (err.code === API_ERROR.TIMEOUT) {
-        setError(t("server_timeout"));
-      } else if (err.code === API_ERROR.NETWORK) {
-        setError(t("unable_connect_server"));
-      } else if (err.code === API_ERROR.SERVER) {
-        setError(t("server_unavailable"));
-      } else if (err.response?.data) {
-        const data = err.response.data;
-        const eMessage =
-          data.non_field_errors?.[0] ||
-          data.email?.[0] ||
-          data.password?.[0] ||
-          Object.values(data).flat().join("\n") ||
-          t("could_not_login");
-        setError(eMessage);
-      } else {
-        setError(t("something_went_wrong"));
-      }
-
-      // Toast.show({
-      //         type: "error",
-      //         text1: 'line1',
-      //         text2: 'line2',
-      //       });
+      const { title, message } = mapErrorToToast(err, extractApiError);
+      Toast.show({
+        type: "error",
+        text1: title,
+        text2: message,
+      });
     }
   };
 
@@ -111,11 +109,6 @@ function AuthContent({ isLogin, onAuthenticate, loading }) {
               credentialsInvalid={credentialsInvalid}
               loading={loading}
             />
-            {error && (
-              <View style={styles.errorContainer}>
-                <Text style={styles.errorText}>{error}</Text>
-              </View>
-            )}
           </View>
           <View style={styles.buttons}>
             <FlatButton onPress={switchAuthModeHandler}>
@@ -152,15 +145,5 @@ const styles = StyleSheet.create({
   },
   buttons: {
     marginTop: "auto",
-  },
-  errorContainer: {
-    marginTop: 16,
-    alignItems: "center",
-  },
-  errorText: {
-    color: Colors.error600,
-    fontSize: 14,
-    textAlign: "center",
-    marginBottom: 8,
   },
 });
