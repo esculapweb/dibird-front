@@ -32,6 +32,19 @@ export const fetchCountries = async () => {
   }));
 };
 
+export const fetchMyCountries = async (favOnly=false) => {
+  let url = "/myapi/territory/"
+  if (favOnly) url = `${url}?fav_only=${favOnly}`
+  const res = await api.get(url);
+  return Object.entries(res.data).map(([value, item]) => ({
+    value,
+    label: item.name,
+    icon: isoToFlagEmoji(item.code),
+  })).sort((a, b) =>
+  a.label.localeCompare(b.label, i18n.language)
+);
+};
+
 const fetchSpeciesForTerritory = (territory_id) => {
   return api.get(`/api/territory-species/?territory_id=${territory_id}`);
 };

@@ -188,12 +188,12 @@ export default ProfileForm;
 const styles = StyleSheet.create({
   outer: { flex: 1, justifyContent: "space-between" },
   container: {
-    padding: 24,
+    padding: 18,
   },
   buttons: {
     marginTop: 18,
   },
   flatButtonContainer: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 18,
   },
 });
