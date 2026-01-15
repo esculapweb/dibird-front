@@ -185,8 +185,12 @@ api.interceptors.response.use(
       try {
         const refresh = await getRefreshToken();
         if (!refresh) {
-          await clearTokens();
-          return Promise.reject(normalizeApiError(error));
+          // await clearTokens();
+          return Promise.reject({
+            ...normalizeApiError(error),
+            // code: API_ERROR.UNAUTHORIZED,
+            softLogout: true,
+          });
         }
 
         const res = await axios.post(
@@ -200,7 +204,8 @@ api.interceptors.response.use(
 
         return api(originalRequest);
       } catch (e) {
-        await clearTokens();
+        if (e?.response?.status === 400 || e?.response?.status === 401) 
+          await clearTokens();
         return Promise.reject(normalizeApiError(e));
       }
     }
