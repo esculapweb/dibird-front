@@ -38,7 +38,7 @@ const fetchSpeciesForTerritory = (territory_id) => {
 
 export const fetchSeen = async () => {
   const territorySpecies = await fetchSpeciesForTerritory(68);
-  const stat = await api.get('/myapi/stat/?per_page=20000&territory=68')
+  const stat = await api.get('/myapi/stat/?per_page=20000')
 
   const idsSet = new Set(
     stat?.data?.results.map(item => item.species)

@@ -1,7 +1,6 @@
 import Toast from "react-native-toast-message";
 
-import i18n from "../services/i18n";
-import api  from "../services/api";
+import api from "../services/api";
 
 export const Put = async (url, data, message) => {
   try {
@@ -36,41 +35,10 @@ export const patchAvatar = async (image) => {
       },
     });
 
-    if (response.status === 200 || response.status === 204) {
+    if (response.status === 200 || response.status === 204)
       return response.data;
-    }
+    throw new Error(`Unexpected status code: ${response.status}`);
   } catch (e) {
-    if (e.response) {
-      console.warn("Validation error:", e.response.data);
-      Toast.show({
-        type: "error",
-        text1: i18n.t("something_went_wrong"),
-      });
-    } else {
-      console.warn("Network error:", e.message);
-      Toast.show({
-        type: "error",
-        text1: i18n.t("server_unavailable"),
-      });
-    }
-  }
-};
-
-export const deleteAvatar = () => {
-
-  try {
-    return api.delete("/myapi/profile/avatar/");
-  } catch (e) {
-    console.warn(
-      "Delete Avatar error:",
-      e?.response?.data
-        ? JSON.stringify(e.response.data)
-        : e?.message ?? e
-    );
-
-    Toast.show({
-      type: "error",
-      text1: i18n.t("failed_remove_avatar"),
-    });
+    throw e;
   }
 };

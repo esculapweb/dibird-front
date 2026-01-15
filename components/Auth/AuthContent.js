@@ -10,7 +10,7 @@ import AuthForm from "./AuthForm";
 import { useNavigation } from "@react-navigation/native";
 import Logo from "../ui/Logo";
 import { Colors } from "../../constants/styles";
-import { mapErrorToToast } from "../../services/api";
+import { showError } from "../../services/api";
 
 const AuthContent = ({ isLogin, onAuthenticate, loading }) => {
   const navigation = useNavigation();
@@ -81,12 +81,7 @@ const AuthContent = ({ isLogin, onAuthenticate, loading }) => {
     try {
       await onAuthenticate(authData);
     } catch (e) {
-      const { title, message } = mapErrorToToast(e, extractApiError);
-      Toast.show({
-        type: "error",
-        text1: title,
-        text2: message,
-      });
+      showError(e, extractApiError);
     }
   };
 

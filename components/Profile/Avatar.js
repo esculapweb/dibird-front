@@ -12,12 +12,11 @@ import * as ImageManipulator from "expo-image-manipulator";
 import { Ionicons } from "@expo/vector-icons";
 import { useActionSheet } from "@expo/react-native-action-sheet";
 import { useTranslation } from "react-i18next";
-
-import Toast from "react-native-toast-message";
 import { Colors } from "../../constants/styles";
-import { patchAvatar, deleteAvatar } from "../../util/requests";
+import { patchAvatar } from "../../util/requests";
 
 import { useProfile } from "../../store/profile-context";
+import api, { showError } from "../../services/api";
 
 const AVATAR_SIZE = 100;
 
@@ -102,7 +101,7 @@ const Avatar = () => {
       quality: 0.8,
     });
 
-    if (result.canceled) {
+    if (result.canceled || !result.assets || result.assets.length === 0) {
       setLoading(false);
       return;
     }
@@ -118,24 +117,25 @@ const Avatar = () => {
       setAvatar(avatar_thumbnail);
       profileCtx.refreshProfile();
     } catch (e) {
-      console.warn("Image manipulation error:", e);
-      Toast.show({
-        type: "error",
-        text1: t("image_processing_failed"),
-      });
+      console.warn("Image manipulation error:", e.code, e.message);
+      showError(e);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const removeAvatar = async () => {
     if (loading) return;
     setLoading(true);
     try {
-      const res = await deleteAvatar();
+      const res = await api.delete("/myapi/profile/avatar/");
       if (res?.status === 204) {
         profileCtx.refreshProfile();
         setAvatar(null);
       }
+    } catch (e) {
+      console.warn("Delete Avatar error:", e.code, e.message);
+      showError(e);
     } finally {
       setLoading(false);
     }

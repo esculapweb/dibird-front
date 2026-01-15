@@ -1,6 +1,7 @@
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 import i18n from "./i18n";
+import Toast from "react-native-toast-message";
 
 import { Config } from "../constants/config";
 import { notifyTokenUpdate } from "./authService";
@@ -54,22 +55,43 @@ const normalizeApiError = (error) => {
   };
 };
 
-export const mapErrorToToast = (err, extractApiErrorFn = null) => {
-  if (err.code === API_ERROR.TIMEOUT)
-    return { title: i18n.t("connection_timeout"), message: i18n.t("server_timeout") };
+export const mapErrorToToast = (e, extractApiErrorFn = null) => {
+  if (e.code === API_ERROR.TIMEOUT)
+    return {
+      title: i18n.t("connection_timeout"),
+      message: i18n.t("server_timeout"),
+    };
 
-  if (err.code === API_ERROR.NETWORK)
-    return { title: i18n.t("no_connection"), message: i18n.t("unable_connect_server") };
+  if (e.code === API_ERROR.NETWORK)
+    return {
+      title: i18n.t("no_connection"),
+      message: i18n.t("unable_connect_server"),
+    };
 
-  if (err.code === API_ERROR.SERVER)
-    return { title: i18n.t("server_error"), message: i18n.t("server_unavailable") };
+  if (e.code === API_ERROR.SERVER)
+    return {
+      title: i18n.t("server_error"),
+      message: i18n.t("server_unavailable"),
+    };
 
-  if (err?.response?.data && typeof extractApiErrorFn === "function") {
-    const result = extractApiErrorFn(err);
+  if (e?.response?.data && typeof extractApiErrorFn === "function") {
+    const result = extractApiErrorFn(e);
     if (result?.title && result?.message) return result;
   }
 
-  return { title: i18n.t("unexpected_error"), message: i18n.t("something_went_wrong") };
+  return {
+    title: i18n.t("unexpected_error"),
+    message: i18n.t("something_went_wrong"),
+  };
+};
+
+export const showError = (e, extractApiErrorFn = null) => {
+  const { title, message } = mapErrorToToast(e, extractApiErrorFn);
+  Toast.show({
+    type: "error",
+    text1: title,
+    text2: message,
+  });
 };
 
 const api = axios.create({

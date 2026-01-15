@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { StyleSheet, Platform } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import Toast from "react-native-toast-message";
 import { useTranslation } from "react-i18next";
 
 import ProfileForm from "../components/Profile/ProfileForm";
 import { useProfile } from "../store/profile-context";
-import { mapErrorToToast } from "../services/api";
+import { showError } from "../services/api";
 
 const ProfileScreen = ({ refreshKey }) => {
   const [loading, setLoading] = useState(false);
@@ -34,12 +33,7 @@ const ProfileScreen = ({ refreshKey }) => {
     try {
       await profileCtx.updateProfile(updatedData);
     } catch (e) {
-      const { title, message } = mapErrorToToast(e, extractApiError);
-      Toast.show({
-        type: "error",
-        text1: title,
-        text2: message,
-      });
+      showError(e, extractApiError);
     } finally {
       setLoading(false);
     }

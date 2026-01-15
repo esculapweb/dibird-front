@@ -1,5 +1,4 @@
 import { useContext, useState } from "react";
-import Toast from "react-native-toast-message";
 import { useTranslation } from "react-i18next";
 
 import { AuthContext } from "../store/auth-context";
