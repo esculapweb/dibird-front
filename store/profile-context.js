@@ -9,7 +9,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import api, { getAccessToken } from "../services/api";
 import { Put } from "../util/requests";
-import i18n from "../services/i18n";
 
 const EMPTY_PROFILE = {
   user_data: {
@@ -98,9 +97,9 @@ export const ProfileProvider = ({ children }) => {
   };
 
   const updateProfile = useCallback(async (updatedData) => {
-    const response = await Put(url, updatedData, i18n.t("profile_updated"));
-    if (!response) return;
-    await saveProfile(response.data);
+    const response = await Put(url, updatedData);
+    if (!response) throw new Error("Profile update failed: empty response");;
+    return await saveProfile(response.data);
   }, []);
 
   return (

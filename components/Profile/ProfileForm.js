@@ -11,7 +11,7 @@ import { fetchTimezones, fetchCountries } from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
 import FlatButton from "../ui/FlatButton";
 
-const ProfileForm = ({ submitHandler, loading }) => {
+const ProfileForm = ({ submitHandler, loading, success }) => {
   const { language } = useLanguage();
   const { t } = useTranslation();
   const { profile } = useProfile();
@@ -162,7 +162,7 @@ const ProfileForm = ({ submitHandler, loading }) => {
         />
 
         <View style={styles.buttons}>
-          <AnimatedLoadingButton onPress={onSubmit} loading={loading}>
+          <AnimatedLoadingButton onPress={onSubmit} loading={loading} success={success}>
             {t("save")}
           </AnimatedLoadingButton>
         </View>

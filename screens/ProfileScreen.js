@@ -11,6 +11,7 @@ import { Colors } from "../constants/styles";
 
 const ProfileScreen = () => {
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const profileCtx = useProfile();
   const { t } = useTranslation();
 
@@ -31,9 +32,14 @@ const ProfileScreen = () => {
 
   const submitHandler = async (updatedData) => {
     if (loading) return;
+
     setLoading(true);
+    setSuccess(false);
+    
     try {
       await profileCtx.updateProfile(updatedData);
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 1500);
     } catch (e) {
       showError(e, extractApiError);
     } finally {
@@ -54,6 +60,7 @@ const ProfileScreen = () => {
           <ProfileForm
             submitHandler={submitHandler}
             loading={loading}
+            success={success}
           />
       </KeyboardAwareScrollView>
     </SafeAreaView>

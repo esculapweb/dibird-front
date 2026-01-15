@@ -7,10 +7,12 @@ import {
   StyleSheet,
   Animated,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/styles";
 
-const AnimatedLoadingButton = ({ onPress, loading, children }) => {
+const AnimatedLoadingButton = ({ onPress, loading, success, children }) => {
   const spinnerOpacity = useRef(new Animated.Value(0)).current;
+  const successOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(spinnerOpacity, {
@@ -19,6 +21,27 @@ const AnimatedLoadingButton = ({ onPress, loading, children }) => {
       useNativeDriver: true,
     }).start();
   }, [loading]);
+
+  useEffect(() => {
+    console.log('check success', success)
+    if (success) {
+      Animated.timing(successOpacity, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+
+      const timeout = setTimeout(() => {
+        Animated.timing(successOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }).start();
+      }, 1500);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [success]);
 
   return (
     <Pressable
@@ -36,6 +59,12 @@ const AnimatedLoadingButton = ({ onPress, loading, children }) => {
         {loading && (
           <Animated.View style={[styles.spinner, { opacity: spinnerOpacity }]}>
             <ActivityIndicator size="small" color={Colors.textMain} />
+          </Animated.View>
+        )}
+
+        {success && (
+          <Animated.View style={[styles.spinner, { opacity: successOpacity }]}>
+            <Ionicons name="checkmark" size={20} color={Colors.textMain} />
           </Animated.View>
         )}
       </View>

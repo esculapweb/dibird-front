@@ -1,19 +1,13 @@
-import Toast from "react-native-toast-message";
-
 import api from "../services/api";
 
-export const Put = async (url, data, message) => {
+export const Put = async (url, data) => {
   try {
     const response = await api.put(url, data);
 
-    if (response.status === 200 || response.status === 204) {
-      Toast.show({
-        type: "success",
-        text1: message,
-      });
-      return response;
-    }
-    throw new Error(`Unexpected status: ${response.status}`);
+    if (response.status !== 200 && response.status !== 204)
+      throw new Error(`Unexpected status: ${response.status}`);
+
+    return response;
   } catch (e) {
     throw e;
   }
@@ -35,9 +29,10 @@ export const patchAvatar = async (image) => {
       },
     });
 
-    if (response.status === 200 || response.status === 204)
-      return response.data;
-    throw new Error(`Unexpected status code: ${response.status}`);
+    if (response.status !== 200 && response.status !== 204)
+      throw new Error(`Unexpected status code: ${response.status}`);
+
+    return response.data;
   } catch (e) {
     throw e;
   }
