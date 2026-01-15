@@ -115,33 +115,6 @@ const AppDrawer = () => {
         sceneContainerStyle: { backgroundColor: Colors.backgroundMain },
       }}
     >
-      {/* <Drawer.Screen name={t('settings')} component={SettingsScreen} /> */}
-      <Drawer.Screen
-        name="Profile"
-        component={AppStack}
-        options={{
-          title: t("profile"),
-          drawerIcon: ({ color, size, focused }) => (
-            <Ionicons
-              name={focused ? "person-circle" : "person-circle-outline"}
-              color={color}
-              size={size}
-            />
-          ),
-          // headerRight: () =>
-          //   loading ? (
-          //     <ActivityIndicator size="small" color={Colors.primary100} style={{ marginRight: 16 }} />
-          //   ) : (
-          //     <Ionicons
-          //       name="refresh-outline"
-          //       size={22}
-          //       color={Colors.primary100}
-          //       style={{ marginRight: 16 }}
-          //       onPress={handleRefresh}
-          //     />
-          //   ),
-        }}
-      />
       <Drawer.Screen
         name={"Statistics"}
         component={StatScreen}
@@ -156,6 +129,34 @@ const AppDrawer = () => {
           ),
         }}
       />
+      <Drawer.Screen
+        name="Profile"
+        component={AppStack}
+        options={{
+          title: t("profile"),
+          drawerIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "person-circle" : "person-circle-outline"}
+              color={color}
+              size={size}
+            />
+          ),
+        }}
+      />
+      {/* <Drawer.Screen
+        name={t("settings")}
+        component={SettingsScreen}
+        options={{
+          title: t("settings"),
+          drawerIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "settings" : "settings-outline"}
+              color={color}
+              size={size}
+            />
+          ),
+        }}
+      /> */}
     </Drawer.Navigator>
   );
 };

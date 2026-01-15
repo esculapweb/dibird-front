@@ -1,16 +1,43 @@
 import { useState, useEffect } from "react";
+import { View, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
+import { Ionicons } from "@expo/vector-icons";
 
 import StatsTabs from "../navigation/StatsTabs";
 import { fetchSeen } from "../util/fetches";
 import { useLanguage } from "../store/language-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
+import { Colors } from "../constants/styles";
 
-const StatScreen = () => {
+const StatScreen = ({ navigation }) => {
+  const [filters, setFilters] = useState(null);
   const [seen, setSeen] = useState([]);
   const [notSeen, setNotSeen] = useState([]);
   const { language } = useLanguage();
   const { t } = useTranslation();
+
+  const handleFilterPress = () => {
+    // открыть modal / bottom sheet
+    // setFilterModalVisible(true);
+    console.log("filter open");
+  };
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <View style={styles.filterContainer}>
+          <Ionicons
+            name={filters ? "options" : "options-outline"}
+            size={22}
+            color={Colors.primary100}
+            onPress={handleFilterPress}
+          />
+
+          {filters && <View style={styles.dot} />}
+        </View>
+      ),
+    });
+  }, [navigation, filters]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -19,11 +46,11 @@ const StatScreen = () => {
         setSeen(seenList);
         setNotSeen(notSeenList);
       } catch (e) {
-        console.warn(t('failed_to_load_data'), e.code, e.message);
+        console.warn(t("failed_to_load_data"), e.code, e.message);
       }
     };
     loadData();
-  }, [language]);
+  }, [language, filters]);
 
   if (!seen.length && !notSeen.length) return <LoadingOverlay />;
 
@@ -31,3 +58,18 @@ const StatScreen = () => {
 };
 
 export default StatScreen;
+
+const styles = StyleSheet.create({
+  filterContainer: {
+    marginRight: 16
+  },
+  dot: {
+    position: "absolute",
+    top: -2,
+    right: -2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.accent,
+  },
+});

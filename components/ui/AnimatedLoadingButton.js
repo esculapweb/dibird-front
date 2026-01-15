@@ -23,7 +23,6 @@ const AnimatedLoadingButton = ({ onPress, loading, success, children }) => {
   }, [loading]);
 
   useEffect(() => {
-    console.log('check success', success)
     if (success) {
       Animated.timing(successOpacity, {
         toValue: 1,
