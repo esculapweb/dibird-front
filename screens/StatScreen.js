@@ -8,19 +8,17 @@ import { fetchSeen } from "../util/fetches";
 import { useLanguage } from "../store/language-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import { Colors } from "../constants/styles";
+import FilterModal from "../components/Filters/FilterModal";
 
 const StatScreen = ({ navigation }) => {
-  const [filters, setFilters] = useState(null);
+  const [filters, setFilters] = useState(false);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [seen, setSeen] = useState([]);
   const [notSeen, setNotSeen] = useState([]);
   const { language } = useLanguage();
   const { t } = useTranslation();
 
-  const handleFilterPress = () => {
-    // открыть modal / bottom sheet
-    // setFilterModalVisible(true);
-    console.log("filter open");
-  };
+  const handleFilterPress = () => setFilterModalVisible(true);
 
   useEffect(() => {
     navigation.setOptions({
@@ -54,14 +52,21 @@ const StatScreen = ({ navigation }) => {
 
   if (!seen.length && !notSeen.length) return <LoadingOverlay />;
 
-  return <StatsTabs seen={seen} notSeen={notSeen} />;
+  return <>
+    <StatsTabs seen={seen} notSeen={notSeen} />
+    <FilterModal
+        visible={filterModalVisible}
+        onClose={() => setFilterModalVisible(false)}
+        filters={filters}
+      />
+  </>;
 };
 
 export default StatScreen;
 
 const styles = StyleSheet.create({
   filterContainer: {
-    marginRight: 16
+    marginRight: 16,
   },
   dot: {
     position: "absolute",

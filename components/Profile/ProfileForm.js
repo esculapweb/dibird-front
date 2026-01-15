@@ -45,7 +45,11 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
         setTimezoneOptions(timezones);
         setTerritoryOptions(countries);
       } catch (e) {
-        console.warn(t("failed_to_load_data"), e.code, e.message);
+        console.warn(
+          `[${new Date().toLocaleString()}] Failed to load data`,
+          e.code,
+          e.message
+        );
       }
     };
 
@@ -162,7 +166,11 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
         />
 
         <View style={styles.buttons}>
-          <AnimatedLoadingButton onPress={onSubmit} loading={loading} success={success}>
+          <AnimatedLoadingButton
+            onPress={onSubmit}
+            loading={loading}
+            success={success}
+          >
             {t("save")}
           </AnimatedLoadingButton>
         </View>
@@ -187,5 +195,5 @@ const styles = StyleSheet.create({
   },
   flatButtonContainer: {
     paddingHorizontal: 24,
-  }
+  },
 });

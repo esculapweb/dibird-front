@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/styles";
 import { useTranslation } from "react-i18next";
 
-import SelectListModal from "../../screens/SelectListModal";
+import SelectListModal from "./SelectListModal";
 
 const DropdownInput = ({
   title,
