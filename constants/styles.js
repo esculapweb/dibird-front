@@ -1,5 +1,6 @@
 export const Colors = {
   primary100: "#fff",
+  primary200: "#cfd8dc",
   primary500: "#2f3c43",
   error100: "#ffe9e7",
   error500: "#f1665a",
@@ -11,4 +12,5 @@ export const Colors = {
   logoText: "#224895",
   logoAccent: "#d93b2e",
   backgroundMain: "#f0f0f0",
+  // inactive: "#6b7280",
 };

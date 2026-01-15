@@ -9,10 +9,13 @@ import RadioGroup from "../ui/RadioGroup";
 import { useProfile } from "../../store/profile-context";
 import { fetchTimezones, fetchCountries } from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
+import FlatButton from "../ui/FlatButton";
 
 const ProfileForm = ({ submitHandler, loading }) => {
   const { language } = useLanguage();
   const { t } = useTranslation();
+  const { profile } = useProfile();
+
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [userName, setUserName] = useState("");
@@ -34,8 +37,6 @@ const ProfileForm = ({ submitHandler, loading }) => {
     timezone: false,
   });
 
-  const profileCtx = useProfile();
-
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -51,13 +52,19 @@ const ProfileForm = ({ submitHandler, loading }) => {
     loadData();
   }, [language]);
 
+  const setInitialValues = () => {
+    setFirstName(profile.user_data.first_name);
+    setLastName(profile.user_data.last_name);
+    setUserName(profile.user_data.username);
+    setPrivateProfile(profile.private);
+    setPrivateDiaries(profile.private_diary);
+    setTerritoryValue(profile.territory);
+    setTimezoneValue(profile.timezone);
+  };
+
   useEffect(() => {
-    setFirstName(profileCtx.profile.user_data.first_name);
-    setLastName(profileCtx.profile.user_data.last_name);
-    setUserName(profileCtx.profile.user_data.username);
-    setPrivateProfile(profileCtx.profile.private);
-    setPrivateDiaries(profileCtx.profile.private_diary);
-  }, [profileCtx.profile]);
+    setInitialValues();
+  }, [profile]);
 
   const validateForm = () => {
     const newInvalid = {
@@ -89,83 +96,96 @@ const ProfileForm = ({ submitHandler, loading }) => {
   };
 
   return (
-    <>
-      <Input
-        label={t("first_name")}
-        value={firstName}
-        onUpdateValue={setFirstName}
-        isInvalid={invalid.firstName}
-      />
-      <Input
-        label={t("last_name")}
-        value={lastName}
-        onUpdateValue={setLastName}
-        isInvalid={invalid.lastName}
-      />
-      <Input
-        label={t("username")}
-        value={userName}
-        onUpdateValue={setUserName}
-        isInvalid={invalid.userName}
-      />
+    <View style={styles.outer}>
+      <View style={styles.container}>
+        <Input
+          label={t("first_name")}
+          value={firstName}
+          onUpdateValue={setFirstName}
+          isInvalid={invalid.firstName}
+        />
+        <Input
+          label={t("last_name")}
+          value={lastName}
+          onUpdateValue={setLastName}
+          isInvalid={invalid.lastName}
+        />
+        <Input
+          label={t("username")}
+          value={userName}
+          onUpdateValue={setUserName}
+          isInvalid={invalid.userName}
+        />
 
-      <DropdownInput
-        title={t("my_country")}
-        placeholder={t("select_country")}
-        initial={profileCtx.profile.territory}
-        value={territoryValue}
-        setValue={setTerritoryValue}
-        options={territoryOptions}
-        error={invalid?.territory}
-      />
+        <DropdownInput
+          title={t("my_country")}
+          placeholder={t("select_country")}
+          initial={profile.territory}
+          value={territoryValue}
+          setValue={setTerritoryValue}
+          options={territoryOptions}
+          error={invalid?.territory}
+        />
 
-      <DropdownInput
-        title={t("timezone")}
-        placeholder={t("select_timezone")}
-        initial={profileCtx.profile.timezone}
-        value={timezoneValue}
-        setValue={setTimezoneValue}
-        options={timezoneOptions}
-        error={invalid?.timezone}
-      />
+        <DropdownInput
+          title={t("timezone")}
+          placeholder={t("select_timezone")}
+          initial={profile.timezone}
+          value={timezoneValue}
+          setValue={setTimezoneValue}
+          options={timezoneOptions}
+          error={invalid?.timezone}
+        />
 
-      <RadioGroup
-        label={t("only_i_can_see_my_profile")}
-        value={privateProfile}
-        onChange={setPrivateProfile}
-        direction="row"
-        isInvalid={invalid.privateProfile}
-        options={[
-          { label: t("yes"), value: true },
-          { label: t("no"), value: false },
-        ]}
-      />
+        <RadioGroup
+          label={t("only_i_can_see_my_profile")}
+          value={privateProfile}
+          onChange={setPrivateProfile}
+          direction="row"
+          isInvalid={invalid.privateProfile}
+          options={[
+            { label: t("yes"), value: true },
+            { label: t("no"), value: false },
+          ]}
+        />
 
-      <RadioGroup
-        label={t("diaries_are_private_by_default")}
-        value={privateDiaries}
-        onChange={setPrivateDiaries}
-        direction="row"
-        isInvalid={invalid.privateDiaries}
-        options={[
-          { label: t("yes"), value: true },
-          { label: t("no"), value: false },
-        ]}
-      />
+        <RadioGroup
+          label={t("diaries_are_private_by_default")}
+          value={privateDiaries}
+          onChange={setPrivateDiaries}
+          direction="row"
+          isInvalid={invalid.privateDiaries}
+          options={[
+            { label: t("yes"), value: true },
+            { label: t("no"), value: false },
+          ]}
+        />
 
-      <View style={styles.buttons}>
-        <AnimatedLoadingButton onPress={onSubmit} loading={loading}>
-          {t("save")}
-        </AnimatedLoadingButton>
+        <View style={styles.buttons}>
+          <AnimatedLoadingButton onPress={onSubmit} loading={loading}>
+            {t("save")}
+          </AnimatedLoadingButton>
+        </View>
       </View>
-    </>
+
+      <View style={styles.flatButtonContainer}>
+        <FlatButton onPress={setInitialValues}>{t("reset_form")}</FlatButton>
+      </View>
+    </View>
   );
 };
 
 export default ProfileForm;
 
 const styles = StyleSheet.create({
+  outer: { flex: 1, justifyContent: "space-between" },
+  container: {
+    padding: 24,
+  },
   buttons: {
     marginTop: 18,
   },
+  flatButtonContainer: {
+    paddingHorizontal: 24,
+  }
 });

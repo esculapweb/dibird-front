@@ -24,6 +24,21 @@ const normalizeApiError = (error) => {
     };
   }
 
+  if (error.message === "Network Error" && !error.response) {
+    if (error.config && error.config.timeout) {
+      return {
+        ...error,
+        code: API_ERROR.TIMEOUT,
+        isTimeout: true,
+      };
+    }
+    return {
+      ...error,
+      code: API_ERROR.NETWORK,
+      isNetworkError: true,
+    };
+  }
+
   if (!error.response) {
     return {
       ...error,

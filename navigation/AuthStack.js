@@ -41,6 +41,7 @@ const AuthDrawer = () => {
           backgroundColor: Colors.primary100,
         },
         drawerActiveTintColor: Colors.primary500,
+        drawerActiveBackgroundColor: Colors.primary200, 
         headerStyle: {
           backgroundColor: Colors.primary500,
           elevation: 0,

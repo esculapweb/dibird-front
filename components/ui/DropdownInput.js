@@ -23,8 +23,12 @@ const DropdownInput = ({
   const translatedPlaceholder = placeholder || t("select");
 
   useEffect(() => {
-    onSelectValue(initial);
-  }, [options]);
+    const option =
+      options.find((o) => o.value === value) ||
+      options.find((o) => o.value === initial);
+    setLabel(option?.label || "");
+    setIcon(option?.icon);
+  }, [value, initial, options]);
 
   const onSelectValue = (selectedValue) => {
     const option = options.find((o) => o.value === selectedValue);
@@ -38,6 +42,7 @@ const DropdownInput = ({
     setSearch("");
     setModalVisible(true);
   };
+
 
   return (
     <>

@@ -1,6 +1,4 @@
-import { useState } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { useNavigation } from "@react-navigation/native";
 import {
   createDrawerNavigator,
   DrawerContentScrollView,
@@ -27,7 +25,7 @@ import LanguageSwitcher from "../components/Language/LanguageSwitcher";
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
 
-const AppStack = ({ refreshKey }) => {
+const AppStack = () => {
   return (
     <Stack.Navigator
       screenOptions={{
@@ -45,7 +43,7 @@ const AppStack = ({ refreshKey }) => {
           headerShown: false,
         }}
       >
-        {() => <ProfileScreen refreshKey={refreshKey} />}
+        {() => <ProfileScreen />}
       </Stack.Screen>
     </Stack.Navigator>
   );
@@ -54,11 +52,10 @@ const AppStack = ({ refreshKey }) => {
 const CustomDrawerContent = (props) => {
   const authCtx = useContext(AuthContext);
   const { t } = useTranslation();
-  const navigation = useNavigation();
 
   const handleLogout = async () => {
     props.navigation.closeDrawer?.();
-    await authCtx.logout();           
+    await authCtx.logout();
   };
 
   return (
@@ -85,20 +82,18 @@ const CustomDrawerContent = (props) => {
       </DrawerContentScrollView>
     </View>
   );
-}
+};
 
 const AppDrawer = () => {
   const { t } = useTranslation();
   const profileCtx = useProfile();
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  const handleRefresh = async () => {
-    await profileCtx.refreshProfile();
-    setRefreshKey((k) => k + 1);
-  };
 
   if (profileCtx.error) {
-    console.warn('profileCtx error', profileCtx.error.code, profileCtx.error.message)
+    console.warn(
+      "profileCtx error",
+      profileCtx.error.code,
+      profileCtx.error.message
+    );
     return <ErrorScreen />;
   }
 
@@ -110,6 +105,7 @@ const AppDrawer = () => {
           backgroundColor: Colors.primary100,
         },
         drawerActiveTintColor: Colors.primary500,
+        drawerActiveBackgroundColor: Colors.primary200,
         headerStyle: {
           backgroundColor: Colors.primary500,
           elevation: 0,
@@ -119,6 +115,33 @@ const AppDrawer = () => {
         sceneContainerStyle: { backgroundColor: Colors.backgroundMain },
       }}
     >
+      {/* <Drawer.Screen name={t('settings')} component={SettingsScreen} /> */}
+      <Drawer.Screen
+        name="Profile"
+        component={AppStack}
+        options={{
+          title: t("profile"),
+          drawerIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "person-circle" : "person-circle-outline"}
+              color={color}
+              size={size}
+            />
+          ),
+          // headerRight: () =>
+          //   loading ? (
+          //     <ActivityIndicator size="small" color={Colors.primary100} style={{ marginRight: 16 }} />
+          //   ) : (
+          //     <Ionicons
+          //       name="refresh-outline"
+          //       size={22}
+          //       color={Colors.primary100}
+          //       style={{ marginRight: 16 }}
+          //       onPress={handleRefresh}
+          //     />
+          //   ),
+        }}
+      />
       <Drawer.Screen
         name={"Statistics"}
         component={StatScreen}
@@ -133,31 +156,6 @@ const AppDrawer = () => {
           ),
         }}
       />
-      {/* <Drawer.Screen name={t('settings')} component={SettingsScreen} /> */}
-      <Drawer.Screen
-        name="Profile"
-        options={{
-          title: t("profile"),
-          drawerIcon: ({ color, size, focused }) => (
-            <Ionicons
-              name={focused ? "person-circle" : "person-circle-outline"}
-              color={color}
-              size={size}
-            />
-          ),
-          headerRight: () => (
-            <Ionicons
-              name="refresh-outline"
-              size={22}
-              color={Colors.primary100}
-              style={{ marginRight: 16 }}
-              onPress={handleRefresh}
-            />
-          ),
-        }}
-      >
-        {() => <AppStack refreshKey={refreshKey} />}
-      </Drawer.Screen>
     </Drawer.Navigator>
   );
 };
@@ -173,5 +171,5 @@ const styles = StyleSheet.create({
   logout: {
     borderTopWidth: 1,
     borderColor: Colors.backgroundMain,
-  }
+  },
 });

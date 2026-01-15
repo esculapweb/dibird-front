@@ -51,7 +51,7 @@ const Stats = ({ data, seen = false }) => {
               source={{ uri: `${Config.baseUrl}/media/${item.sp_thumb}` }}
               style={[
                 styles.image,
-                !seen && styles.imageSmall, // маленькое фото для неувиденных видов
+                !seen && styles.imageSmall,
               ]}
             />
           ) : (
@@ -68,7 +68,6 @@ const Stats = ({ data, seen = false }) => {
               {index + 1}. {item.sp_name_lang}
             </Text>
 
-            {/* Латинское название + флаги */}
             <View style={styles.latinRow}>
               <Text style={styles.latin}>{item.sp_latin}</Text>
               {seen && countriesText && (
@@ -76,7 +75,6 @@ const Stats = ({ data, seen = false }) => {
               )}
             </View>
 
-            {/* Дата и наблюдения только для увиденных */}
             {seen && (
               <View style={styles.meta}>
                 <View style={styles.metaLeft}>
@@ -152,7 +150,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#E5E7EB",
   },
 
-  // Новый стиль для маленьких фото
   imageSmall: {
     width: 40,
     height: 40,

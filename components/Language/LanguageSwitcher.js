@@ -3,7 +3,6 @@ import { useLanguage } from "../../store/language-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 
-
 import { Colors } from "../../constants/styles";
 
 const LanguageSwitcher = () => {
@@ -13,22 +12,17 @@ const LanguageSwitcher = () => {
   return (
     <View style={styles.container}>
       <View style={styles.left}>
-        <Ionicons
-          name="globe-outline"
-          size={22}
-          // color={language === lang ? Colors.primary100 : Colors.primary500}
-          style={styles.icon}
-        />
+        <Ionicons name="globe-outline" size={22} style={styles.icon} />
         <Text style={styles.title}>{t("language")}:</Text>
       </View>
       <View style={styles.buttonsRight}>
         {["ru", "en"].map((lang) => (
-          <Pressable
-            key={lang}
+          <Pressable            key={lang}
             onPress={() => changeLanguage(lang)}
-            style={[
+            style={({ pressed }) => [
               styles.button,
-              language === lang && { backgroundColor: Colors.accent },
+              language === lang && { backgroundColor: Colors.primary200 },
+              pressed && { opacity: 0.6 }, // мгновенный визуальный отклик
             ]}
           >
             <Text>{lang.toUpperCase()}</Text>
