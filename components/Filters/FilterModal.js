@@ -43,6 +43,7 @@ const FilterModal = ({ visible, onClose, filters }) => {
           setValue={setTerritoryValue}
           options={territoryOptions}
           error={false}
+          allowReset={true}
         />
         <Pressable
           onPress={onClose}

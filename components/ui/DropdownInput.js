@@ -5,6 +5,7 @@ import { Colors } from "../../constants/styles";
 import { useTranslation } from "react-i18next";
 
 import SelectListModal from "./SelectListModal";
+import { all } from "axios";
 
 const DropdownInput = ({
   title,
@@ -14,6 +15,7 @@ const DropdownInput = ({
   setValue,
   error,
   options,
+  allowReset=false
 }) => {
   const [search, setSearch] = useState("");
   const [label, setLabel] = useState("");
@@ -43,6 +45,11 @@ const DropdownInput = ({
     setModalVisible(true);
   };
 
+  const clearValue = () => {
+    setValue(null);
+    setLabel("");
+    setIcon(null);
+  };
 
   return (
     <>
@@ -51,7 +58,7 @@ const DropdownInput = ({
 
         <Pressable
           onPress={openModal}
-          style={[styles.select, error && { borderColor: "#ef4444" }]}
+          style={[styles.select, error && { borderColor: Colors.error500 }]}
         >
           <View style={styles.left}>
             {icon && <Text style={styles.icon}>{icon}</Text>}
@@ -65,7 +72,15 @@ const DropdownInput = ({
             </Text>
           </View>
 
-          <Ionicons name="chevron-down" size={20} color="#9ca3af" />
+          <View style={styles.right}>
+            {value && allowReset && (
+              <Pressable onPress={clearValue} hitSlop={10} style={styles.clear}>
+                <Ionicons name="close-circle" size={18} color="#9ca3af" />
+              </Pressable>
+            )}
+
+            <Ionicons name="chevron-down" size={20} color="#9ca3af" />
+          </View>
         </Pressable>
 
         {error && <Text style={styles.error}>{error}</Text>}
@@ -126,6 +141,15 @@ const styles = StyleSheet.create({
   error: {
     marginTop: 4,
     fontSize: 12,
-    color: "#ef4444",
+    color: Colors.error500,
+  },
+
+  right: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  clear: {
+    marginRight: 4,
   },
 });

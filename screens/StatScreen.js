@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { View, StyleSheet } from "react-native";
-import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 
 import StatsTabs from "../navigation/StatsTabs";
@@ -16,7 +15,6 @@ const StatScreen = ({ navigation }) => {
   const [seen, setSeen] = useState([]);
   const [notSeen, setNotSeen] = useState([]);
   const { language } = useLanguage();
-  const { t } = useTranslation();
 
   const handleFilterPress = () => setFilterModalVisible(true);
 
@@ -44,7 +42,7 @@ const StatScreen = ({ navigation }) => {
         setSeen(seenList);
         setNotSeen(notSeenList);
       } catch (e) {
-        console.warn(t("failed_to_load_data"), e.code, e.message);
+        console.warn("Failed to load data", e.code, e.message);
       }
     };
     loadData();
