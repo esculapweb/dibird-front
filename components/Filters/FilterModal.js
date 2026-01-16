@@ -8,29 +8,38 @@ import DropdownInput from "../ui/DropdownInput";
 import { fetchMyCountries } from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
 
-const FilterModal = ({ visible, onClose, filters }) => {
-    const { language } = useLanguage();
-    const { t } = useTranslation();
+const FilterModal = ({ visible, onClose, filters, setFilters }) => {
+  const { language } = useLanguage();
+  const { t } = useTranslation();
 
   const [territoryOptions, setTerritoryOptions] = useState([]);
   const [territoryValue, setTerritoryValue] = useState("");
 
-    useEffect(() => {
-      const loadData = async () => {
-        try {
-          const countries = await fetchMyCountries(true);
-          setTerritoryOptions(countries);
-        } catch (e) {
-          console.warn(
-            `[${new Date().toLocaleString()}] Failed to load data`,
-            e.code,
-            e.message
-          );
-        }
-      };
-  
-      loadData();
-    }, [language]);
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const countries = await fetchMyCountries(true);
+        setTerritoryOptions(countries);
+      } catch (e) {
+        console.warn(
+          `[${new Date().toLocaleString()}] Failed to load data`,
+          e.code,
+          e.message
+        );
+      }
+    };
+
+    loadData();
+  }, [language]);
+
+  const applyHandler = () => {
+    const newFilters = {
+      territory: territoryValue
+    }
+    setFilters(newFilters)
+
+    onClose()
+  }
 
   return (
     <ModalWrapper visible={visible} onClose={onClose} title={t("filters")}>
@@ -46,7 +55,7 @@ const FilterModal = ({ visible, onClose, filters }) => {
           allowReset={true}
         />
         <Pressable
-          onPress={onClose}
+          onPress={applyHandler}
           style={{
             marginTop: 16,
             padding: 12,
@@ -65,7 +74,7 @@ const FilterModal = ({ visible, onClose, filters }) => {
 export default FilterModal;
 
 const styles = StyleSheet.create({
-    container: {
-        padding: 18
-    }
-})
+  container: {
+    padding: 18,
+  },
+});

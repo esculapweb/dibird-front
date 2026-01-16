@@ -10,26 +10,29 @@ import { Colors } from "../constants/styles";
 import FilterModal from "../components/Filters/FilterModal";
 
 const StatScreen = ({ navigation }) => {
-  const [filters, setFilters] = useState(false);
+  const [filters, setFilters] = useState({});
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [seen, setSeen] = useState([]);
   const [notSeen, setNotSeen] = useState([]);
   const { language } = useLanguage();
 
   const handleFilterPress = () => setFilterModalVisible(true);
+  const hasActiveFilters = Object.values(filters).some(
+    (v) => v !== null && v !== undefined && v !== ""
+  );
 
   useEffect(() => {
     navigation.setOptions({
       headerRight: () => (
         <View style={styles.filterContainer}>
           <Ionicons
-            name={filters ? "options" : "options-outline"}
+            name={hasActiveFilters ? "options" : "options-outline"}
             size={22}
             color={Colors.primary100}
             onPress={handleFilterPress}
           />
 
-          {filters && <View style={styles.dot} />}
+          {hasActiveFilters && <View style={styles.dot} />}
         </View>
       ),
     });
@@ -38,7 +41,7 @@ const StatScreen = ({ navigation }) => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const { seenList, notSeenList } = await fetchSeen();
+        const { seenList, notSeenList } = await fetchSeen(filters);
         setSeen(seenList);
         setNotSeen(notSeenList);
       } catch (e) {
@@ -50,14 +53,17 @@ const StatScreen = ({ navigation }) => {
 
   if (!seen.length && !notSeen.length) return <LoadingOverlay />;
 
-  return <>
-    <StatsTabs seen={seen} notSeen={notSeen} />
-    <FilterModal
+  return (
+    <>
+      <StatsTabs seen={seen} notSeen={notSeen} />
+      <FilterModal
         visible={filterModalVisible}
         onClose={() => setFilterModalVisible(false)}
         filters={filters}
+        setFilters={setFilters}
       />
-  </>;
+    </>
+  );
 };
 
 export default StatScreen;

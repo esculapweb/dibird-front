@@ -5,7 +5,6 @@ import { Colors } from "../../constants/styles";
 import { useTranslation } from "react-i18next";
 
 import SelectListModal from "./SelectListModal";
-import { all } from "axios";
 
 const DropdownInput = ({
   title,
@@ -15,7 +14,7 @@ const DropdownInput = ({
   setValue,
   error,
   options,
-  allowReset=false
+  allowReset = false,
 }) => {
   const [search, setSearch] = useState("");
   const [label, setLabel] = useState("");
@@ -25,12 +24,24 @@ const DropdownInput = ({
   const translatedPlaceholder = placeholder || t("select");
 
   useEffect(() => {
+    if (value == null && initial != null) {
+      setValue(initial);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (value === null || value === undefined) {
+      setLabel("");
+      setIcon(null);
+      return;
+    }
+
     const option =
       options.find((o) => o.value === value) ||
       options.find((o) => o.value === initial);
     setLabel(option?.label || "");
     setIcon(option?.icon);
-  }, [value, initial, options]);
+  }, [value, options]);
 
   const onSelectValue = (selectedValue) => {
     const option = options.find((o) => o.value === selectedValue);
