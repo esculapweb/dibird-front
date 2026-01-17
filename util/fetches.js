@@ -54,8 +54,7 @@ const fetchSpeciesForTerritory = (territory_id) => {
 };
 
 export const fetchSeen = async (filters={}) => {
-  const territory = filters?.territory || 68
-  const territorySpecies = await fetchSpeciesForTerritory(territory);
+  let notSeenList = [];
   const stat = await api.get('/myapi/stat/', {
     params: {
       ...cleanFilters(filters),
@@ -72,12 +71,16 @@ export const fetchSeen = async (filters={}) => {
     ...item,
   }));
 
-  const notSeenList = Object.entries(territorySpecies.data)
-  .filter(([speciesId]) => !idsSet.has(Number(speciesId)))
-  .map(([speciesId, sp]) => ({
-    id: Number(speciesId),
-    ...sp
-  }));
-
+  const territory = filters?.territory
+  if (territory) {
+    const territorySpecies = await fetchSpeciesForTerritory(territory);
+    notSeenList = Object.entries(territorySpecies.data)
+    .filter(([speciesId]) => !idsSet.has(Number(speciesId)))
+    .map(([speciesId, sp]) => ({
+      id: Number(speciesId),
+      ...sp
+    }));
+  }
+  
   return { seenList, notSeenList };
 };

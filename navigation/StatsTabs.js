@@ -1,15 +1,34 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { Pressable } from "react-native";
 import Stats from "../components/Stats/Stats";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+import Toast from "react-native-toast-message";
 
 import { Colors } from "../constants/styles";
 
 const Tab = createBottomTabNavigator();
 
-const StatsTabs = ({ seen, notSeen }) => {
+const StatsTabs = ({ seen, notSeen, territory }) => {
   const { t } = useTranslation();
-  
+
+  const seenTitle = `${t("seen")} (${seen.length})`;
+  const notSeenTitle = `${t("not_seen")} (${notSeen.length})`;
+
+  const getNotSeenToast = () => {
+    if (!territory) {
+      return {
+        text1: t("no_data"),
+        text2: t("select_country_hint"),
+      };
+    }
+
+    return {
+      text1: t("no_data"),
+      text2: t("no_not_seen_empty"),
+    };
+  };
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -20,7 +39,7 @@ const StatsTabs = ({ seen, notSeen }) => {
       <Tab.Screen
         name="Seen"
         options={{
-          title: `${t("seen")} (${seen.length})`,
+          title: seenTitle,
           tabBarIcon: ({ focused, color, size }) => (
             <Ionicons
               name={focused ? "eye" : "eye-outline"}
@@ -29,11 +48,13 @@ const StatsTabs = ({ seen, notSeen }) => {
             />
           ),
         }}
-      >{() => <Stats data={seen} seen={true}/>}</Tab.Screen>
+      >
+        {() => <Stats data={seen} seen={true} />}
+      </Tab.Screen>
       <Tab.Screen
         name="NotSeen"
         options={{
-          title: `${t("not_seen")} (${notSeen.length})`,
+          title: notSeenTitle,
           tabBarIcon: ({ focused, color, size }) => (
             <Ionicons
               name={focused ? "eye-off" : "eye-off-outline"}
@@ -41,8 +62,26 @@ const StatsTabs = ({ seen, notSeen }) => {
               color={color}
             />
           ),
+          tabBarButton: (props) => (
+            <Pressable
+              {...props}
+              onPress={() => {
+                if (notSeen.length === 0) {
+                  Toast.show({
+                    type: "info",
+                    ...getNotSeenToast(),
+                  });
+                } else {
+                  props.onPress?.();
+                }
+              }}
+              style={[props.style, notSeen.length === 0 && { opacity: 0.4 }]}
+            />
+          ),
         }}
-      >{() => <Stats data={notSeen} />}</Tab.Screen>
+      >
+        {() => <Stats data={notSeen} />}
+      </Tab.Screen>
     </Tab.Navigator>
   );
 };

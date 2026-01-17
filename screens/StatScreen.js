@@ -55,7 +55,7 @@ const StatScreen = ({ navigation }) => {
 
   return (
     <>
-      <StatsTabs seen={seen} notSeen={notSeen} />
+      <StatsTabs seen={seen} notSeen={notSeen} territory={filters?.territory} />
       <FilterModal
         visible={filterModalVisible}
         onClose={() => setFilterModalVisible(false)}
