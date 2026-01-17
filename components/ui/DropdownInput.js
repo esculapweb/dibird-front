@@ -19,40 +19,40 @@ const DropdownInput = ({
   const [search, setSearch] = useState("");
   const [label, setLabel] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
-  const [icon, setIcon] = useState("");
+  const [icon, setIcon] = useState(null);
   const { t } = useTranslation();
   const translatedPlaceholder = placeholder || t("select");
 
   useEffect(() => {
-    if (value == null && initial != null) {
+    if ((value === null || value === undefined) && initial != null) {
       setValue(initial);
     }
   }, []);
 
   useEffect(() => {
-    if (value == null) {
-      setLabel("");
-      setIcon(null);
-      return;
-    }
+  if (value == null) {
+    setLabel("");
+    setIcon(null);
+    return;
+  }
 
-    const option = options.find((o) => o.value === value);
+  const option = options.find((o) => o.value === value);
 
-    if (option) {
-      setLabel(option.label);
-      setIcon(option.icon);
-    } else {
-      setValue(null);
-      setLabel("");
-      setIcon(null);
-    }
-  }, [value, options]);
+  if (option) {
+    setLabel(option.label);
+    setIcon(option.icon || null);
+  } else {
+    setValue(null);
+    setLabel("");
+    setIcon(null);
+  }
+}, [value, options]);
 
   const onSelectValue = (selectedValue) => {
     const option = options.find((o) => o.value === selectedValue);
     setValue(selectedValue);
     setLabel(option?.label || selectedValue);
-    setIcon(option?.icon);
+    setIcon(option?.icon || null);
     setModalVisible(false);
   };
 
@@ -119,15 +119,8 @@ const DropdownInput = ({
 export default DropdownInput;
 
 const styles = StyleSheet.create({
-  wrapper: {
-    marginBottom: 8,
-  },
-  title: {
-    marginVertical: 6,
-    fontSize: 14,
-    color: Colors.textMain,
-  },
-
+  wrapper: { marginBottom: 8 },
+  title: { marginVertical: 6, fontSize: 14, color: Colors.textMain },
   select: {
     height: 40,
     paddingHorizontal: 6,
@@ -139,33 +132,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  left: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-    marginRight: 8,
-  },
-  icon: {
-    fontSize: 18,
-    marginRight: 6,
-  },
-  text: {
-    fontSize: 16,
-    flex: 1,
-  },
-
-  error: {
-    marginTop: 4,
-    fontSize: 12,
-    color: Colors.error500,
-  },
-
-  right: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  clear: {
-    marginRight: 4,
-  },
+  left: { flexDirection: "row", alignItems: "center", flex: 1, marginRight: 8 },
+  icon: { fontSize: 18, marginRight: 6 },
+  text: { fontSize: 16, flex: 1 },
+  right: { flexDirection: "row", alignItems: "center" },
+  clear: { marginRight: 4 },
+  error: { marginTop: 4, fontSize: 12, color: Colors.error500 },
 });

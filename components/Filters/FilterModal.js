@@ -16,18 +16,20 @@ const FilterModal = ({ visible, onClose, filters, setFilters }) => {
   const { language } = useLanguage();
   const { t } = useTranslation();
 
-  const [loading, setLoading] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [territoryOptions, setTerritoryOptions] = useState([]);
-  const [territoryValue, setTerritoryValue] = useState("");
+  const [territoryValue, setTerritoryValue] = useState(
+    filters?.territory || null,
+  );
   const [placeOptions, setPlaceOptions] = useState([]);
-  const [placeValue, setPlaceValue] = useState("");
+  const [placeValue, setPlaceValue] = useState(filters?.place || null);
 
   useEffect(() => {
     const loadData = async () => {
       const countries = await fetchMyCountries(true);
       setTerritoryOptions(countries);
     };
-
+    
     loadDecorator(loadData);
   }, [language]);
 
@@ -35,18 +37,18 @@ const FilterModal = ({ visible, onClose, filters, setFilters }) => {
     const loadPlaces = async () => {
       const places = await fetchMyPlaces(territoryValue);
       setPlaceOptions(places);
+      if (placeValue && !places.some((p) => p.value === placeValue))
+        setPlaceValue(null);
     };
     loadDecorator(loadPlaces);
   }, [territoryValue]);
 
   const applyHandler = () => {
     setLoading(true);
-    const newFilters = {
+    setFilters({
       territory: territoryValue,
       place: placeValue,
-    };
-    setFilters(newFilters);
-
+    });
     onClose();
     setLoading(false);
   };
@@ -61,8 +63,7 @@ const FilterModal = ({ visible, onClose, filters, setFilters }) => {
           value={territoryValue}
           setValue={setTerritoryValue}
           options={territoryOptions}
-          error={false}
-          allowReset={true}
+          allowReset
         />
         <DropdownInput
           title={t("place")}
@@ -71,9 +72,9 @@ const FilterModal = ({ visible, onClose, filters, setFilters }) => {
           value={placeValue}
           setValue={setPlaceValue}
           options={placeOptions}
-          error={false}
-          allowReset={true}
+          allowReset
         />
+
         <View style={styles.buttonContainer}>
           <AnimatedLoadingButton onPress={applyHandler} loading={loading}>
             {t("apply")}
@@ -87,10 +88,6 @@ const FilterModal = ({ visible, onClose, filters, setFilters }) => {
 export default FilterModal;
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 18,
-  },
-  buttonContainer: {
-    marginTop: 18,
-  },
+  container: { padding: 18 },
+  buttonContainer: { marginTop: 18 },
 });
