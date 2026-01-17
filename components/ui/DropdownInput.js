@@ -30,17 +30,22 @@ const DropdownInput = ({
   }, []);
 
   useEffect(() => {
-    if (value === null || value === undefined) {
+    if (value == null) {
       setLabel("");
       setIcon(null);
       return;
     }
 
-    const option =
-      options.find((o) => o.value === value) ||
-      options.find((o) => o.value === initial);
-    setLabel(option?.label || "");
-    setIcon(option?.icon);
+    const option = options.find((o) => o.value === value);
+
+    if (option) {
+      setLabel(option.label);
+      setIcon(option.icon);
+    } else {
+      setValue(null);
+      setLabel("");
+      setIcon(null);
+    }
   }, [value, options]);
 
   const onSelectValue = (selectedValue) => {

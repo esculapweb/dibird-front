@@ -2,10 +2,13 @@ import { useState, useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
 
-import { Colors } from "../../constants/styles";
 import ModalWrapper from "../ui/ModalWrapper";
 import DropdownInput from "../ui/DropdownInput";
-import { fetchMyCountries } from "../../util/fetches";
+import {
+  loadDecorator,
+  fetchMyCountries,
+  fetchMyPlaces,
+} from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
 import AnimatedLoadingButton from "../ui/AnimatedLoadingButton";
 
@@ -16,28 +19,31 @@ const FilterModal = ({ visible, onClose, filters, setFilters }) => {
   const [loading, setLoading] = useState(null);
   const [territoryOptions, setTerritoryOptions] = useState([]);
   const [territoryValue, setTerritoryValue] = useState("");
+  const [placeOptions, setPlaceOptions] = useState([]);
+  const [placeValue, setPlaceValue] = useState("");
 
   useEffect(() => {
     const loadData = async () => {
-      try {
-        const countries = await fetchMyCountries(true);
-        setTerritoryOptions(countries);
-      } catch (e) {
-        console.warn(
-          `[${new Date().toLocaleString()}] Failed to load data`,
-          e.code,
-          e.message
-        );
-      }
+      const countries = await fetchMyCountries(true);
+      setTerritoryOptions(countries);
     };
 
-    loadData();
+    loadDecorator(loadData);
   }, [language]);
+
+  useEffect(() => {
+    const loadPlaces = async () => {
+      const places = await fetchMyPlaces(territoryValue);
+      setPlaceOptions(places);
+    };
+    loadDecorator(loadPlaces);
+  }, [territoryValue]);
 
   const applyHandler = () => {
     setLoading(true);
     const newFilters = {
       territory: territoryValue,
+      place: placeValue,
     };
     setFilters(newFilters);
 
@@ -55,6 +61,16 @@ const FilterModal = ({ visible, onClose, filters, setFilters }) => {
           value={territoryValue}
           setValue={setTerritoryValue}
           options={territoryOptions}
+          error={false}
+          allowReset={true}
+        />
+        <DropdownInput
+          title={t("place")}
+          placeholder={t("all_places")}
+          initial={filters?.place}
+          value={placeValue}
+          setValue={setPlaceValue}
+          options={placeOptions}
           error={false}
           allowReset={true}
         />
@@ -76,5 +92,5 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     marginTop: 18,
-  }
+  },
 });

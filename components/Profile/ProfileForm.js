@@ -7,7 +7,11 @@ import AnimatedLoadingButton from "../ui/AnimatedLoadingButton";
 import DropdownInput from "../ui/DropdownInput";
 import RadioGroup from "../ui/RadioGroup";
 import { useProfile } from "../../store/profile-context";
-import { fetchTimezones, fetchCountries } from "../../util/fetches";
+import {
+  loadDecorator,
+  fetchTimezones,
+  fetchCountries,
+} from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
 import FlatButton from "../ui/FlatButton";
 
@@ -39,21 +43,13 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
 
   useEffect(() => {
     const loadData = async () => {
-      try {
-        const timezones = await fetchTimezones();
-        const countries = await fetchCountries();
-        setTimezoneOptions(timezones);
-        setTerritoryOptions(countries);
-      } catch (e) {
-        console.warn(
-          `[${new Date().toLocaleString()}] Failed to load data`,
-          e.code,
-          e.message
-        );
-      }
+      const timezones = await fetchTimezones();
+      const countries = await fetchCountries();
+      setTimezoneOptions(timezones);
+      setTerritoryOptions(countries);
     };
 
-    loadData();
+    loadDecorator(loadData);
   }, [language]);
 
   const setInitialValues = () => {

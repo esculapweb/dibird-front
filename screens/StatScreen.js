@@ -3,7 +3,7 @@ import { View, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import StatsTabs from "../navigation/StatsTabs";
-import { fetchSeen } from "../util/fetches";
+import { loadDecorator, fetchSeen } from "../util/fetches";
 import { useLanguage } from "../store/language-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import { Colors } from "../constants/styles";
@@ -14,12 +14,18 @@ const StatScreen = ({ navigation }) => {
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [seen, setSeen] = useState([]);
   const [notSeen, setNotSeen] = useState([]);
+  const [isLoading, setIsLoading] = useState(true); // добавляем
+
   const { language } = useLanguage();
 
   const handleFilterPress = () => setFilterModalVisible(true);
-  const hasActiveFilters = Object.values(filters).some(
-    (v) => v !== null && v !== undefined && v !== ""
-  );
+
+  const hasActiveFilters = Object.values(filters).some((v) => {
+    if (Array.isArray(v)) {
+      return v.length > 0;
+    }
+    return v !== null && v !== undefined && v !== "";
+  });
 
   useEffect(() => {
     navigation.setOptions({
@@ -40,18 +46,20 @@ const StatScreen = ({ navigation }) => {
 
   useEffect(() => {
     const loadData = async () => {
+      setIsLoading(true); 
       try {
         const { seenList, notSeenList } = await fetchSeen(filters);
         setSeen(seenList);
         setNotSeen(notSeenList);
-      } catch (e) {
-        console.warn("Failed to load data", e.code, e.message);
+      } finally {
+        setIsLoading(false); 
       }
     };
-    loadData();
+    loadDecorator(loadData);
   }, [language, filters]);
 
-  if (!seen.length && !notSeen.length) return <LoadingOverlay />;
+
+  if (isLoading) return <LoadingOverlay />;
 
   return (
     <>
@@ -79,6 +87,6 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.error500,
   },
 });
