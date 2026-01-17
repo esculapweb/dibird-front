@@ -67,7 +67,7 @@ const FilterModal = ({ visible, onClose, filters, setFilters }) => {
         />
         <DropdownInput
           title={t("location")}
-          placeholder={t("choose_location_")}
+          placeholder={t("all_locations")}
           initial={filters?.place}
           value={placeValue}
           setValue={setPlaceValue}
