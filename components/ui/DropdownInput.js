@@ -23,35 +23,40 @@ const DropdownInput = ({
   const { t } = useTranslation();
   const translatedPlaceholder = placeholder || t("select");
 
-  useEffect(() => {
-    if ((value === null || value === undefined) && initial != null) {
+   useEffect(() => {
+    if (
+      (value === null || value === undefined || value === "") &&
+      initial != null &&
+      options.some((o) => o.value === initial)
+    ) {
       setValue(initial);
     }
-  }, []);
+  }, [initial, options]);
+
 
   useEffect(() => {
-  if (value == null) {
-    setLabel("");
-    setIcon(null);
-    return;
-  }
+    if (value === null || value === undefined || value === "") {
+      setLabel("");
+      setIcon(null);
+      return;
+    }
 
-  const option = options.find((o) => o.value === value);
+    const option = options.find((o) => o.value === value);
 
-  if (option) {
-    setLabel(option.label);
-    setIcon(option.icon || null);
-  } else {
-    setValue(null);
-    setLabel("");
-    setIcon(null);
-  }
-}, [value, options]);
+    if (option) {
+      setLabel(option.label);
+      setIcon(option.icon || null);
+    } else {
+      setValue(null);
+      setLabel("");
+      setIcon(null);
+    }
+  }, [value, options]);
 
   const onSelectValue = (selectedValue) => {
     const option = options.find((o) => o.value === selectedValue);
     setValue(selectedValue);
-    setLabel(option?.label || selectedValue);
+    setLabel(option?.label || "");
     setIcon(option?.icon || null);
     setModalVisible(false);
   };
@@ -94,7 +99,7 @@ const DropdownInput = ({
                 <Ionicons name="close-circle" size={18} color="#9ca3af" />
               </Pressable>
             )}
-
+            
             <Ionicons name="chevron-down" size={20} color="#9ca3af" />
           </View>
         </Pressable>
@@ -111,6 +116,7 @@ const DropdownInput = ({
         setSearch={setSearch}
         onClose={() => setModalVisible(false)}
         onSelect={onSelectValue}
+        title={title}
       />
     </>
   );

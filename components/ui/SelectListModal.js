@@ -23,6 +23,7 @@ const SelectListModal = ({
   placeholder,
   search,
   setSearch,
+  title
 }) => {
   const flatListRef = useRef(null);
   const [hasScrolled, setHasScrolled] = useState(false);
@@ -91,7 +92,7 @@ const SelectListModal = ({
   };
 
   return (
-    <ModalWrapper visible={visible} onClose={onClose} title={placeholder}>
+    <ModalWrapper visible={visible} onClose={onClose} title={title}>
       <TextInput
         style={styles.search}
         placeholder={`${t("search")}...`}

@@ -29,7 +29,7 @@ const FilterModal = ({ visible, onClose, filters, setFilters }) => {
       const countries = await fetchMyCountries(true);
       setTerritoryOptions(countries);
     };
-    
+
     loadDecorator(loadData);
   }, [language]);
 
@@ -66,8 +66,8 @@ const FilterModal = ({ visible, onClose, filters, setFilters }) => {
           allowReset
         />
         <DropdownInput
-          title={t("place")}
-          placeholder={t("all_places")}
+          title={t("location")}
+          placeholder={t("choose_location_")}
           initial={filters?.place}
           value={placeValue}
           setValue={setPlaceValue}
