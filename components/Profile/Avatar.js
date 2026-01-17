@@ -19,6 +19,7 @@ import { useProfile } from "../../store/profile-context";
 import api, { showError } from "../../services/api";
 
 const AVATAR_SIZE = 100;
+const INDICATOR_SIZE = 32; // примерно размер ActivityIndicator
 
 const Avatar = () => {
   const { showActionSheetWithOptions } = useActionSheet();
@@ -145,18 +146,11 @@ const Avatar = () => {
     <>
       <Pressable style={styles.container} onPress={onPress} disabled={loading}>
         {avatar ? (
-          <Image
-            source={{
-              uri: avatar,
-            }}
-            style={styles.avatar}
-          />
+          <Image source={{ uri: avatar }} style={styles.avatar} />
         ) : (
-          !loading && (
-            <View style={styles.placeholder}>
-              <Text style={styles.avatarName}>{avatarName}</Text>
-            </View>
-          )
+          <View style={styles.placeholder}>
+            <Text style={styles.avatarName}>{avatarName}</Text>
+          </View>
         )}
 
         {loading && (
@@ -164,7 +158,13 @@ const Avatar = () => {
             <ActivityIndicator
               size="large"
               color="#fff"
-              style={{ transform: [{ translateY: 1 }] }}
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                marginLeft: -INDICATOR_SIZE / 2,
+                marginTop: -INDICATOR_SIZE / 2,
+              }}
             />
           </View>
         )}
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
   plusWrapper: {
     width: 26,
     height: 26,
-    borderRadius: 15,
+    borderRadius: 13,
     position: "absolute",
     backgroundColor: Colors.primary100,
     borderColor: Colors.border,
@@ -223,8 +223,6 @@ const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "center",
-    alignItems: "center",
     borderRadius: AVATAR_SIZE / 2,
   },
   smallText: {
