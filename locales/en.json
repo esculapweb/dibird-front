@@ -75,5 +75,15 @@
   "unlock_message": "Unlock DiBird",
   "update_failed": "Update failed",
   "username": "Username",
-  "yes": "Yes"
+  "yes": "Yes",
+  "date": "Date",
+  "all_period": "All period",
+  "whole_year": "Whole year",
+  "date_range": "Date range",
+  "year": "Year",
+  "select_year": "Select year",
+  "from_date": "From date",
+  "to_date": "To date",
+  "not_selected": "Not selected",
+  "date_range_invalid": "Date «from» cannot be laне может быть позже даты «по»"
 }

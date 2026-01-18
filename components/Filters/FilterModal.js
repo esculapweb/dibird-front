@@ -11,6 +11,7 @@ import {
 } from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
 import AnimatedLoadingButton from "../ui/AnimatedLoadingButton";
+import DateRangeFilter from "../ui/DateRangeFilter";
 
 const FilterModal = ({ visible, onClose, filters, setFilters }) => {
   const { language } = useLanguage();
@@ -23,6 +24,13 @@ const FilterModal = ({ visible, onClose, filters, setFilters }) => {
   );
   const [placeOptions, setPlaceOptions] = useState([]);
   const [placeValue, setPlaceValue] = useState(filters?.place || null);
+
+  const [dateFilter, setDateFilter] = useState({
+    mode: "any",
+    from: null,
+    to: null,
+    year: null,
+  });
 
   useEffect(() => {
     const loadData = async () => {
@@ -48,6 +56,7 @@ const FilterModal = ({ visible, onClose, filters, setFilters }) => {
     setFilters({
       territory: territoryValue,
       place: placeValue,
+      date: dateFilter,
     });
     onClose();
     setLoading(false);
@@ -74,6 +83,8 @@ const FilterModal = ({ visible, onClose, filters, setFilters }) => {
           options={placeOptions}
           allowReset
         />
+
+        <DateRangeFilter value={filters.date} setDateFilter={setDateFilter} />
 
         <View style={styles.buttonContainer}>
           <AnimatedLoadingButton onPress={applyHandler} loading={loading}>

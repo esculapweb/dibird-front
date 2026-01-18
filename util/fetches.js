@@ -84,6 +84,8 @@ const fetchSpeciesForTerritory = (territory_id) => {
 };
 
 export const fetchSeen = async (filters = {}, order = "name") => {
+  console.log('filters', filters)
+
   let notSeenList = [];
   const stat = await api.get("/myapi/stat/", {
     params: {

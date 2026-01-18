@@ -75,5 +75,15 @@
   "unlock_message": "Разблокировать DiBird",
   "update_failed": "Не удалось сохранить изменения",
   "username": "Никнейм",
-  "yes": "Да"
+  "yes": "Да",
+  "date": "Дата",
+  "all_period": "Весь период",
+  "whole_year": "Весь год",
+  "date_range": "Диапазон дат",
+  "year": "Год",
+  "select_year": "Выберите год",
+  "from_date": "С даты",
+  "to_date": "По дату",
+  "not_selected": "Не выбрано",
+  "date_range_invalid": "Start date cannot be after end date"
 }
