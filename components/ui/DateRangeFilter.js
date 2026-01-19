@@ -79,10 +79,9 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
     mode === "range" && from && to && new Date(from) > new Date(to);
 
   return (
-    <View style={styles.wrapper}>
-      <Text style={styles.title}>{t("date")}</Text>
-      
+    <View style={styles.wrapper}>      
       <RadioGroup
+        label={t("date")}
         value={mode}
         onChange={setMode}
         direction="column"

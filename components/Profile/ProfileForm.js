@@ -43,8 +43,10 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
 
   useEffect(() => {
     const loadData = async () => {
-      const timezones = await fetchTimezones();
-      const countries = await fetchCountries();
+      const [timezones, countries] = await Promise.all([
+        fetchTimezones(),
+        fetchCountries(),
+      ]);
       setTimezoneOptions(timezones);
       setTerritoryOptions(countries);
     };
@@ -147,6 +149,7 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
             { label: t("yes"), value: true },
             { label: t("no"), value: false },
           ]}
+          style={styles.radioGroup}
         />
 
         <RadioGroup
@@ -159,6 +162,7 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
             { label: t("yes"), value: true },
             { label: t("no"), value: false },
           ]}
+          style={styles.radioGroup}
         />
 
         <View style={styles.buttons}>
@@ -192,4 +196,7 @@ const styles = StyleSheet.create({
   flatButtonContainer: {
     paddingHorizontal: 18,
   },
+  radioGroup: {
+    marginVertical: 8,
+  }
 });

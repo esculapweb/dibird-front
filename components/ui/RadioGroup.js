@@ -10,11 +10,12 @@ export const RadioGroup = ({
   direction = "column",
   disabled = false,
   isInvalid,
+  style
 }) => {
   const isRow = direction === "row";
 
   return (
-    <View style={styles.container}>
+    <View style={style}>
       <Text style={[styles.title, isInvalid && styles.titleInvalid]}>
         {label}
       </Text>
@@ -45,9 +46,6 @@ export const RadioGroup = ({
 export default RadioGroup;
 
 const styles = StyleSheet.create({
-  container: {
-    marginVertical: 8,
-  },
   row: {
     flexDirection: "row",
     alignItems: "center",
@@ -85,7 +83,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: Colors.textMain,
-    marginBottom: 4,
+    marginBottom: 8,
   },
   titleInvalid: {
     color: Colors.error500,
