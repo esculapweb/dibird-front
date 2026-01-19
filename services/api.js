@@ -15,6 +15,9 @@ const API_ERROR = {
   UNKNOWN: "UNKNOWN",
 };
 
+let isRefreshing = false;
+let refreshPromise = null;
+
 const normalizeApiError = (error) => {
   if (error.code === "ECONNABORTED") {
     return {
@@ -125,6 +128,18 @@ export const getRefreshToken = () => {
   return SecureStore.getItemAsync("refresh");
 };
 
+const refreshAccessToken = async () => {
+  const refresh = await getRefreshToken();
+  if (!refresh) throw new Error("No refresh token");
+
+  const res = await axios.post(`${Config.baseUrl}/api-auth/token/refresh/`, {
+    refresh,
+  });
+
+  await saveTokens(res.data);
+  return res.data.access;
+};
+
 export const saveTokens = async ({ access, refresh }) => {
   if (access) {
     await SecureStore.setItemAsync("access", access);
@@ -166,7 +181,7 @@ api.interceptors.request.use(
 
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 api.interceptors.response.use(
@@ -174,44 +189,38 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (originalRequest?.url?.endsWith("/api-auth/token/refresh/")) {
-      await clearTokens();
+    if (!originalRequest) {
       return Promise.reject(normalizeApiError(error));
     }
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url?.endsWith("/api-auth/token/refresh/")
+    ) {
       originalRequest._retry = true;
 
       try {
-        const refresh = await getRefreshToken();
-        if (!refresh) {
-          // await clearTokens();
-          return Promise.reject({
-            ...normalizeApiError(error),
-            // code: API_ERROR.UNAUTHORIZED,
-            softLogout: true,
+        if (!isRefreshing) {
+          isRefreshing = true;
+          refreshPromise = refreshAccessToken().finally(() => {
+            isRefreshing = false;
+            refreshPromise = null;
           });
         }
 
-        const res = await axios.post(
-          `${Config.baseUrl}/api-auth/token/refresh/`,
-          { refresh }
-        );
+        const newAccess = await refreshPromise;
 
-        await saveTokens(res.data);
-
-        originalRequest.headers.Authorization = `Bearer ${res.data.access}`;
-
+        originalRequest.headers.Authorization = `Bearer ${newAccess}`;
         return api(originalRequest);
       } catch (e) {
-        if (e?.response?.status === 400 || e?.response?.status === 401) 
-          await clearTokens();
+        await clearTokens();
         return Promise.reject(normalizeApiError(e));
       }
     }
 
     return Promise.reject(normalizeApiError(error));
-  }
+  },
 );
 
 export default api;

@@ -41,12 +41,12 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
      ========================= */
   useEffect(() => {
     if (mode === "all") {
-      onChange(null);
+      setDateFilter(null);
       return;
     }
 
     if (mode === "year" && year) {
-      onChange({
+      setDateFilter({
         type: "year",
         year,
       });
@@ -54,17 +54,13 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
     }
 
     if (mode === "range" && from && to) {
-      onChange({
+      setDateFilter({
         type: "range",
         from,
         to,
       });
     }
   }, [mode, year, from, to]);
-
-  const onChange = (dateFilter) => {
-    setDateFilter(dateFilter);
-  };
 
   /* =========================
      YEARS OPTIONS
@@ -85,7 +81,7 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
   return (
     <View style={styles.wrapper}>
       <Text style={styles.title}>{t("date")}</Text>
-
+      
       <RadioGroup
         value={mode}
         onChange={setMode}
