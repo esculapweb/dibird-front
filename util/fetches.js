@@ -36,14 +36,14 @@ const buildDateParams = (date) => {
   switch (date.type) {
     case "year":
       return {
-        date_time_min: `${date.year}-01-01`,
-        date_time_max: `${date.year}-12-31`,
+        date_time_min: `${date.year}-01-01 00:00:00`,
+        date_time_max: `${date.year}-12-31 23:59:59`,
       };
 
     case "range":
       return {
-        ...(date.from && { date_time_min: toDateOnly(date.from) }),
-        ...(date.to && { date_time_max: toDateOnly(date.to) }),
+        ...(date.from && { date_time_min: `${toDateOnly(date.from)} 00:00:00` }),
+        ...(date.to && { date_time_max: `${toDateOnly(date.to)} 23:59:59` }),
       };
 
     default:
