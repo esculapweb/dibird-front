@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { Colors } from "../../constants/styles";
 
-const ModalWrapper = ({ children, onClose, visible, title }) => {
+const ModalWrapper = ({ children, onClose, onApply, visible, title }) => {
   const { t } = useTranslation();
   return (
     <Modal
@@ -18,8 +18,15 @@ const ModalWrapper = ({ children, onClose, visible, title }) => {
             <Text style={styles.cancel}>{t("cancel")}</Text>
           </Pressable>
           <Text style={styles.title}>{title}</Text>
-          <View style={{ width: 60 }} />
+          {onApply ? (
+            <Pressable onPress={onApply}>
+              <Text style={styles.apply}>{t("apply")}</Text>
+            </Pressable>
+          ) : (
+            <View style={{ width: 60 }} />
+          )}
         </View>
+
         {children}
       </View>
     </Modal>
@@ -41,5 +48,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   title: { fontSize: 16, fontWeight: "600" },
-  cancel: { fontSize: 16, color: Colors.linkLight },
+  cancel: { fontSize: 16, fontWeight: "600", color: Colors.linkLight },
+  apply: { fontSize: 16, color: Colors.link, fontWeight: "600" },
 });

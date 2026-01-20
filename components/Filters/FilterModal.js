@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
+
+import { ScrollView, StyleSheet } from "react-native";
 
 import ModalWrapper from "../ui/ModalWrapper";
 import DropdownInput from "../ui/DropdownInput";
@@ -10,7 +11,6 @@ import {
   fetchMyPlaces,
 } from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
-import AnimatedLoadingButton from "../ui/AnimatedLoadingButton";
 import DateRangeFilter from "../ui/DateRangeFilter";
 
 const FilterModal = ({ visible, onClose, filters, setFilters }) => {
@@ -63,8 +63,16 @@ const FilterModal = ({ visible, onClose, filters, setFilters }) => {
   };
 
   return (
-    <ModalWrapper visible={visible} onClose={onClose} title={t("filters")}>
-      <View style={styles.container}>
+    <ModalWrapper
+      visible={visible}
+      onClose={onClose}
+      onApply={applyHandler}
+      title={t("filters")}
+    >
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
         <DropdownInput
           title={t("country")}
           placeholder={t("all_countries")}
@@ -85,13 +93,7 @@ const FilterModal = ({ visible, onClose, filters, setFilters }) => {
         />
 
         <DateRangeFilter value={filters.date} setDateFilter={setDateFilter} />
-
-        <View style={styles.buttonContainer}>
-          <AnimatedLoadingButton onPress={applyHandler} loading={loading}>
-            {t("apply")}
-          </AnimatedLoadingButton>
-        </View>
-      </View>
+      </ScrollView>
     </ModalWrapper>
   );
 };
@@ -99,6 +101,8 @@ const FilterModal = ({ visible, onClose, filters, setFilters }) => {
 export default FilterModal;
 
 const styles = StyleSheet.create({
-  container: { padding: 18 },
-  buttonContainer: { marginTop: 18 },
+  scrollContent: {
+    padding: 18,
+    paddingBottom: 40,
+  },
 });

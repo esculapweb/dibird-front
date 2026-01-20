@@ -5,27 +5,47 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { Colors } from "../../constants/styles";
 
-const formatDate = (date) => (date ? date.toISOString().slice(0, 10) : "");
+const getTodayEnd = () => {
+  const d = new Date();
+  d.setHours(23, 59, 59, 999);
+  return d;
+};
 
-const DateInput = ({ label, value, onChange, placeholder = "Select date", error, allowClear = true }) => {
+const formatDate = (date) => {
+  if (!date) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const DateInput = ({
+  label,
+  value,
+  onChange,
+  placeholder = "Select date",
+  error,
+  minimumDate,
+  allowClear = true,
+}) => {
+  const today = getTodayEnd();
+
   const [showPicker, setShowPicker] = useState(false);
-  const [tempValue, setTempValue] = useState(value || new Date());
+  const [tempValue, setTempValue] = useState(value || today);
 
   const openPicker = () => {
-    setTempValue(value || new Date());
+    setTempValue(value || today);
     setShowPicker(true);
   };
   const closePicker = () => setShowPicker(false);
 
   const handleChange = (event, selectedDate) => {
     if (Platform.OS === "android") {
-      // Android: сразу применяем и закрываем
       if (event.type === "set" && selectedDate) {
         onChange(selectedDate);
       }
       closePicker();
     } else {
-      // iOS: сохраняем временно, но не закрываем
       if (event.type === "set" && selectedDate) {
         setTempValue(selectedDate);
       }
@@ -36,11 +56,9 @@ const DateInput = ({ label, value, onChange, placeholder = "Select date", error,
   };
 
   const confirmDate = () => {
-    onChange(tempValue); // Подтверждаем выбранную дату
+    onChange(tempValue);
     closePicker();
   };
-
-  const formattedValue = value ? value.toISOString().slice(0, 10) : "";
 
   return (
     <View style={styles.wrapper}>
@@ -51,7 +69,7 @@ const DateInput = ({ label, value, onChange, placeholder = "Select date", error,
         style={[styles.input, error && styles.errorBorder]}
       >
         <Text style={[styles.text, !value && styles.placeholder]}>
-          {formattedValue || placeholder}
+          {value ? formatDate(value) : placeholder}
         </Text>
 
         <View style={styles.icons}>
@@ -69,8 +87,10 @@ const DateInput = ({ label, value, onChange, placeholder = "Select date", error,
           <DateTimePicker
             value={tempValue}
             mode="date"
+            maximumDate={today}
             display={Platform.OS === "ios" ? "spinner" : "default"}
             onChange={handleChange}
+            {...(minimumDate ? { minimumDate } : {})}
           />
 
           {Platform.OS === "ios" && (
@@ -85,7 +105,6 @@ const DateInput = ({ label, value, onChange, placeholder = "Select date", error,
     </View>
   );
 };
-
 
 export default DateInput;
 

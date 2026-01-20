@@ -124,6 +124,7 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
             onChange={setTo}
             placeholder={t("not_selected")}
             error={rangeInvalid}
+            minimumDate={from || undefined}
           />
 
           {rangeInvalid && (
