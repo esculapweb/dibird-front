@@ -42,8 +42,8 @@ const buildDateParams = (date) => {
 
     case "range":
       return {
-        date_time_min: toDateOnly(date.from),
-        date_time_max: toDateOnly(date.to),
+        ...(date.from && { date_time_min: toDateOnly(date.from) }),
+        ...(date.to && { date_time_max: toDateOnly(date.to) }),
       };
 
     default:
@@ -94,7 +94,7 @@ export const fetchMyPlaces = async (territory = null) => {
   return res.data.map(([value, item]) => ({
     value,
     label: item.label,
-    iconLabel: item["data-favourite"] && "star", 
+    iconLabel: item["data-favourite"] && "star",
   }));
 };
 

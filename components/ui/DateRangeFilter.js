@@ -15,6 +15,16 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
   const [from, setFrom] = useState(null);
   const [to, setTo] = useState(null);
 
+  const normalizeRange = ({ from, to }) => {
+    if (!from && !to) return null;
+    if (from && to && new Date(from) > new Date(to)) return null;
+
+    return {
+      ...(from && { from }),
+      ...(to && { to }),
+    };
+  };
+
   useEffect(() => {
     if (!value) {
       setMode("all");
@@ -45,20 +55,15 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
       return;
     }
 
-    if (mode === "year" && year) {
-      setDateFilter({
-        type: "year",
-        year,
-      });
+    if (mode === "year") {
+      setDateFilter(year ? { type: "year", year } : null);
       return;
     }
 
-    if (mode === "range" && from && to) {
-      setDateFilter({
-        type: "range",
-        from,
-        to,
-      });
+    if (mode === "range") {
+      const normalized = normalizeRange({ from, to });
+
+      setDateFilter(normalized ? { type: "range", ...normalized } : null);
     }
   }, [mode, year, from, to]);
 
@@ -79,7 +84,7 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
     mode === "range" && from && to && new Date(from) > new Date(to);
 
   return (
-    <View style={styles.wrapper}>      
+    <View style={styles.wrapper}>
       <RadioGroup
         label={t("date")}
         value={mode}
