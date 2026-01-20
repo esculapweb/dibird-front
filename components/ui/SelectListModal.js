@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { Ionicons } from "@expo/vector-icons";
 
 import ModalWrapper from "./ModalWrapper";
 import { Colors } from "../../constants/styles";
@@ -23,7 +24,7 @@ const SelectListModal = ({
   placeholder,
   search,
   setSearch,
-  title
+  title,
 }) => {
   const flatListRef = useRef(null);
   const [hasScrolled, setHasScrolled] = useState(false);
@@ -32,14 +33,14 @@ const SelectListModal = ({
   const filteredOptions = useMemo(() => {
     if (!search) return options;
     return options.filter((o) =>
-      o.label.toLowerCase().includes(search.toLowerCase())
+      o.label.toLowerCase().includes(search.toLowerCase()),
     );
   }, [options, search]);
 
   useEffect(() => {
     if (visible && !hasScrolled && flatListRef.current) {
       const selectedIndex = filteredOptions.findIndex(
-        (o) => o.value === selected
+        (o) => o.value === selected,
       );
 
       if (selectedIndex >= 0 && selectedIndex < filteredOptions.length) {
@@ -77,6 +78,11 @@ const SelectListModal = ({
         }}
       >
         <View style={styles.row}>
+          {item.iconLabel && (
+            <View style={styles.icon}>
+              <Ionicons name={item.iconLabel} size={14} color={Colors.accent} />
+            </View>
+          )}
           {item.icon && <Text style={styles.icon}>{item.icon}</Text>}
           <Text
             style={{

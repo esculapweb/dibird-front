@@ -1,8 +1,5 @@
 import i18n from "../services/i18n";
 import api from "../services/api";
-import { Ionicons } from "@expo/vector-icons";
-
-import { Colors } from "../constants/styles";
 
 export const loadDecorator = async (loaderFn) => {
   try {
@@ -29,6 +26,30 @@ export const formatDate = (isoDate) =>
     month: "numeric",
     day: "numeric",
   }).format(new Date(isoDate));
+
+const toDateOnly = (value) =>
+  value ? new Date(value).toISOString().slice(0, 10) : null;
+
+const buildDateParams = (date) => {
+  if (!date || date.type === "any") return {};
+
+  switch (date.type) {
+    case "year":
+      return {
+        date_time_min: `${date.year}-01-01`,
+        date_time_max: `${date.year}-12-31`,
+      };
+
+    case "range":
+      return {
+        date_time_min: toDateOnly(date.from),
+        date_time_max: toDateOnly(date.to),
+      };
+
+    default:
+      return {};
+  }
+};
 
 const cleanFilters = (filters) =>
   Object.fromEntries(Object.entries(filters).filter(([_, v]) => v != null));
@@ -73,9 +94,7 @@ export const fetchMyPlaces = async (territory = null) => {
   return res.data.map(([value, item]) => ({
     value,
     label: item.label,
-    icon: item["data-favourite"] && (
-      <Ionicons name="star" size={14} color={Colors.accent} />
-    ),
+    iconLabel: item["data-favourite"] && "star", 
   }));
 };
 
@@ -84,15 +103,22 @@ const fetchSpeciesForTerritory = (territory_id) => {
 };
 
 export const fetchSeen = async (filters = {}, order = "name") => {
-  console.log('filters', filters)
+  const { date, ...restFilters } = filters;
+
+  const apiFilters = {
+    ...restFilters,
+    ...buildDateParams(date),
+  };
+
+  const params = {
+    ...cleanFilters(apiFilters),
+    per_page: 20000,
+    o: order,
+  };
 
   let notSeenList = [];
   const stat = await api.get("/myapi/stat/", {
-    params: {
-      ...cleanFilters(filters),
-      per_page: 20000,
-      o: order,
-    },
+    params,
   });
 
   const idsSet = new Set(stat?.data?.results.map((item) => item.species));
@@ -102,7 +128,7 @@ export const fetchSeen = async (filters = {}, order = "name") => {
     ...item,
   }));
 
-  const territory = filters?.territory;
+  const territory = restFilters?.territory;
   if (territory) {
     const territorySpecies = await fetchSpeciesForTerritory(territory);
     notSeenList = Object.entries(territorySpecies.data)
@@ -111,7 +137,9 @@ export const fetchSeen = async (filters = {}, order = "name") => {
         id: Number(speciesId),
         ...sp,
       }))
-      .sort((a, b) => a.sp_name_lang.localeCompare(b.sp_name_lang, i18n.language));
+      .sort((a, b) =>
+        a.sp_name_lang.localeCompare(b.sp_name_lang, i18n.language),
+      );
   }
 
   return { seenList, notSeenList };

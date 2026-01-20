@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { Pressable, Text, View, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Colors } from "../../constants/styles";
 import { useTranslation } from "react-i18next";
 
+import { Colors } from "../../constants/styles";
 import SelectListModal from "./SelectListModal";
 
 const DropdownInput = ({
@@ -14,16 +14,17 @@ const DropdownInput = ({
   setValue,
   error,
   options,
-  allowReset = false,
+  allowReset,
 }) => {
   const [search, setSearch] = useState("");
   const [label, setLabel] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
   const [icon, setIcon] = useState(null);
+  const [iconLabel, setIconLabel] = useState(null);
   const { t } = useTranslation();
   const translatedPlaceholder = placeholder || t("select");
 
-   useEffect(() => {
+  useEffect(() => {
     if (
       (value === null || value === undefined || value === "") &&
       initial != null &&
@@ -33,11 +34,11 @@ const DropdownInput = ({
     }
   }, [initial, options]);
 
-
   useEffect(() => {
     if (value === null || value === undefined || value === "") {
       setLabel("");
       setIcon(null);
+      setIconLabel(null);
       return;
     }
 
@@ -46,10 +47,12 @@ const DropdownInput = ({
     if (option) {
       setLabel(option.label);
       setIcon(option.icon || null);
+      setIconLabel(option.iconLabel || null);
     } else {
       setValue(null);
       setLabel("");
       setIcon(null);
+      setIconLabel(null);
     }
   }, [value, options]);
 
@@ -58,6 +61,7 @@ const DropdownInput = ({
     setValue(selectedValue);
     setLabel(option?.label || "");
     setIcon(option?.icon || null);
+    setIconLabel(option?.iconLabel || null);
     setModalVisible(false);
   };
 
@@ -70,6 +74,7 @@ const DropdownInput = ({
     setValue(null);
     setLabel("");
     setIcon(null);
+    setIconLabel(null);
   };
 
   return (
@@ -83,12 +88,18 @@ const DropdownInput = ({
         >
           <View style={styles.left}>
             {icon && <Text style={styles.icon}>{icon}</Text>}
+            {iconLabel && (
+                <View style={styles.icon}>
+                  <Ionicons name={iconLabel} size={14} color={Colors.accent} />
+                </View>
+              )}
 
             <Text
               style={[styles.text, !label && { color: "#9ca3af" }]}
               numberOfLines={1}
               ellipsizeMode="tail"
             >
+              
               {label || translatedPlaceholder}
             </Text>
           </View>
@@ -99,7 +110,7 @@ const DropdownInput = ({
                 <Ionicons name="close-circle" size={18} color="#9ca3af" />
               </Pressable>
             )}
-            
+
             <Ionicons name="chevron-down" size={20} color="#9ca3af" />
           </View>
         </Pressable>
