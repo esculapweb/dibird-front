@@ -8,24 +8,36 @@ import { useLanguage } from "../store/language-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import { Colors } from "../constants/styles";
 import FilterModal from "../components/Filters/FilterModal";
+import { loadFilters } from "../util/filtersStorage";
 
 const StatScreen = ({ navigation }) => {
-  const [filters, setFilters] = useState({});
+  const [filters, setFilters] = useState(null);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [seen, setSeen] = useState([]);
   const [notSeen, setNotSeen] = useState([]);
-  const [isLoading, setIsLoading] = useState(true); // добавляем
+  const [isLoading, setIsLoading] = useState(true);
 
   const { language } = useLanguage();
 
   const handleFilterPress = () => setFilterModalVisible(true);
 
-  const hasActiveFilters = Object.values(filters).some((v) => {
-    if (Array.isArray(v)) {
-      return v.length > 0;
-    }
-    return v !== null && v !== undefined && v !== "";
-  });
+  const hasActiveFilters = filters
+    ? Object.values(filters).some((v) => {
+        if (Array.isArray(v)) {
+          return v.length > 0;
+        }
+        return v !== null && v !== undefined && v !== "";
+      })
+    : false;
+
+  useEffect(() => {
+    const initFilters = async () => {
+      const storedFilters = await loadFilters();
+      setFilters(storedFilters ?? {});
+    };
+
+    initFilters();
+  }, []);
 
   useEffect(() => {
     navigation.setOptions({
@@ -45,21 +57,22 @@ const StatScreen = ({ navigation }) => {
   }, [navigation, filters]);
 
   useEffect(() => {
+    if (!filters) return;
+
     const loadData = async () => {
-      setIsLoading(true); 
+      setIsLoading(true);
       try {
         const { seenList, notSeenList } = await fetchSeen(filters);
         setSeen(seenList);
         setNotSeen(notSeenList);
       } finally {
-        setIsLoading(false); 
+        setIsLoading(false);
       }
     };
     loadDecorator(loadData);
   }, [language, filters]);
 
-
-  if (isLoading) return <LoadingOverlay />;
+  if (isLoading || !filters) return <LoadingOverlay />;
 
   return (
     <>
@@ -81,14 +94,14 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   dot: {
-      position: "absolute",
-  top: -2,
-  right: -2,
-  width: 8,
-  height: 8,
-  borderRadius: 4,
-  backgroundColor: Colors.logoAccent,
-  borderWidth: 1,
-  borderColor: Colors.primary100,
+    position: "absolute",
+    top: -2,
+    right: -2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.logoAccent,
+    borderWidth: 1,
+    borderColor: Colors.primary100,
   },
 });
