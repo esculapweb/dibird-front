@@ -1,4 +1,10 @@
-import { Modal, Pressable, Text, View, StyleSheet } from "react-native";
+import {
+  Modal,
+  Pressable,
+  Text,
+  View,
+  StyleSheet,
+} from "react-native";
 import { useTranslation } from "react-i18next";
 
 import { Colors } from "../../constants/styles";

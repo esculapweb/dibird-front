@@ -17,7 +17,6 @@ const FilterModal = ({ visible, onClose, filters, setFilters }) => {
   const { language } = useLanguage();
   const { t } = useTranslation();
 
-  const [loading, setLoading] = useState(false);
   const [territoryOptions, setTerritoryOptions] = useState([]);
   const [territoryValue, setTerritoryValue] = useState(
     filters?.territory || null,
@@ -34,7 +33,7 @@ const FilterModal = ({ visible, onClose, filters, setFilters }) => {
 
   useEffect(() => {
     const loadData = async () => {
-      const countries = await fetchMyCountries(true);
+      const countries = await fetchMyCountries();
       setTerritoryOptions(countries);
     };
 
@@ -52,14 +51,12 @@ const FilterModal = ({ visible, onClose, filters, setFilters }) => {
   }, [territoryValue]);
 
   const applyHandler = () => {
-    setLoading(true);
     setFilters({
       territory: territoryValue,
       place: placeValue,
       date: dateFilter,
     });
     onClose();
-    setLoading(false);
   };
 
   return (

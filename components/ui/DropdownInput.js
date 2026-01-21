@@ -87,12 +87,13 @@ const DropdownInput = ({
           style={[styles.select, error && { borderColor: Colors.error500 }]}
         >
           <View style={styles.left}>
-            {icon && <Text style={styles.icon}>{icon}</Text>}
             {iconLabel && (
                 <View style={styles.icon}>
                   <Ionicons name={iconLabel} size={14} color={Colors.accent} />
                 </View>
               )}
+
+            {icon && <Text style={styles.icon}>{icon}</Text>}
 
             <Text
               style={[styles.text, !label && { color: "#9ca3af" }]}

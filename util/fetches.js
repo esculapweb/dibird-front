@@ -42,7 +42,9 @@ const buildDateParams = (date) => {
 
     case "range":
       return {
-        ...(date.from && { date_time_min: `${toDateOnly(date.from)} 00:00:00` }),
+        ...(date.from && {
+          date_time_min: `${toDateOnly(date.from)} 00:00:00`,
+        }),
         ...(date.to && { date_time_max: `${toDateOnly(date.to)} 23:59:59` }),
       };
 
@@ -72,16 +74,14 @@ export const fetchCountries = async () => {
 };
 
 export const fetchMyCountries = async (favOnly = false) => {
-  let url = "/myapi/territory/";
-  if (favOnly) url = `${url}?fav_only=${favOnly}`;
-  const res = await api.get(url);
-  return Object.entries(res.data)
-    .map(([value, item]) => ({
-      value,
-      label: item.name,
-      icon: isoToFlagEmoji(item.code),
-    }))
-    .sort((a, b) => a.label.localeCompare(b.label, i18n.language));
+  const params = favOnly ? { fav_only: favOnly } : {};
+  const res = await api.get("/myapi/territory2/", { params });
+  return res.data.map((item) => ({
+    value: item.territory_id,
+    label: item.name,
+    icon: isoToFlagEmoji(item.code),
+    iconLabel: item.favourite && "star",
+  }));
 };
 
 export const fetchMyPlaces = async (territory = null) => {
