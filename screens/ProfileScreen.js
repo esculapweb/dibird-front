@@ -1,17 +1,18 @@
 import { useState } from "react";
 import { StyleSheet, Platform, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 
 import ProfileForm from "../components/Profile/ProfileForm";
 import { useProfile } from "../store/profile-context";
 import { showError } from "../services/api";
 import { Colors } from "../constants/styles";
+import FlatButton from "../components/ui/FlatButton";
 
 const ProfileScreen = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [formKey, setFormKey] = useState(0);
   const profileCtx = useProfile();
   const { t } = useTranslation();
 
@@ -35,7 +36,7 @@ const ProfileScreen = () => {
 
     setLoading(true);
     setSuccess(false);
-    
+
     try {
       await profileCtx.updateProfile(updatedData);
       setSuccess(true);
@@ -47,23 +48,31 @@ const ProfileScreen = () => {
     }
   };
 
-
   return (
-    <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
-      <KeyboardAwareScrollView
-        contentContainerStyle={styles.container}
-        enableOnAndroid
-        keyboardShouldPersistTaps="handled"
-        extraScrollHeight={Platform.OS === "ios" ? 20 : 80}
-        style={{ flex: 1 }}
-      >
+    <View style={styles.safeArea}>
+      <View style={{ flex: 1 }}>
+        <KeyboardAwareScrollView
+          contentContainerStyle={styles.container}
+          enableOnAndroid
+          keyboardShouldPersistTaps="handled"
+          extraScrollHeight={Platform.OS === "ios" ? 20 : 80}
+          style={{ flex: 1 }}
+        >
           <ProfileForm
+            key={formKey}
             submitHandler={submitHandler}
             loading={loading}
             success={success}
           />
-      </KeyboardAwareScrollView>
-    </SafeAreaView>
+        </KeyboardAwareScrollView>
+
+        <View style={styles.flatButtonContainer}>
+          <FlatButton onPress={() => setFormKey((k) => k + 1)}>
+            {t("reset_form")}
+          </FlatButton>
+        </View>
+      </View>
+    </View>
   );
 };
 
@@ -76,5 +85,12 @@ const styles = StyleSheet.create({
   },
   container: {
     flexGrow: 1,
+    paddingBottom: 80,
+  },
+  flatButtonContainer: {
+    padding: 18,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    backgroundColor: Colors.primary100,
   },
 });

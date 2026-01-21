@@ -13,7 +13,6 @@ import {
   fetchCountries,
 } from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
-import FlatButton from "../ui/FlatButton";
 
 const ProfileForm = ({ submitHandler, loading, success }) => {
   const { language } = useLanguage();
@@ -174,10 +173,6 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
             {t("save")}
           </AnimatedLoadingButton>
         </View>
-      </View>
-
-      <View style={styles.flatButtonContainer}>
-        <FlatButton onPress={setInitialValues}>{t("reset_form")}</FlatButton>
       </View>
     </View>
   );

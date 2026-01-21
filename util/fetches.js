@@ -110,8 +110,6 @@ export const fetchSeen = async (filters = {}, order = "name") => {
     ...buildDateParams(date),
   };
 
-  console.log(apiFilters)
-
   const params = {
     ...cleanFilters(apiFilters),
     per_page: 20000,

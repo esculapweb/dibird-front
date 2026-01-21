@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { ScrollView, StyleSheet } from "react-native";
+import { View, ScrollView, StyleSheet } from "react-native";
 
 import ModalWrapper from "../ui/ModalWrapper";
 import DropdownInput from "../ui/DropdownInput";
@@ -11,9 +11,17 @@ import {
 } from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
 import DateRangeFilter from "../ui/DateRangeFilter";
-import { saveFilters, clearFilters } from "../../util/filtersStorage";
+import { saveFilters } from "../../util/filtersStorage";
+import FlatButton from "../ui/FlatButton";
+import { Colors } from "../../constants/styles";
 
-const FilterModal = ({ visible, onClose, filters, setFilters }) => {
+const FilterModal = ({
+  visible,
+  onClose,
+  filters,
+  setFilters,
+  clearFilters,
+}) => {
   const { language } = useLanguage();
   const { t } = useTranslation();
   const dateFilterInitial = {
@@ -69,11 +77,6 @@ const FilterModal = ({ visible, onClose, filters, setFilters }) => {
     onClose();
   };
 
-  const handleClearFilters = async () => {
-    setFilters({}); // очищаем состояние React
-    await clearFilters(); // очищаем сохранённые фильтры
-  };
-
   return (
     <ModalWrapper
       visible={visible}
@@ -81,31 +84,37 @@ const FilterModal = ({ visible, onClose, filters, setFilters }) => {
       onApply={applyHandler}
       title={t("filters")}
     >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
-        <DropdownInput
-          title={t("country")}
-          placeholder={t("all_countries")}
-          initial={filters?.territory}
-          value={territoryValue}
-          setValue={setTerritoryValue}
-          options={territoryOptions}
-          allowReset
-        />
-        <DropdownInput
-          title={t("location")}
-          placeholder={t("all_locations")}
-          initial={filters?.place}
-          value={placeValue}
-          setValue={setPlaceValue}
-          options={placeOptions}
-          allowReset
-        />
+      <View style={styles.container}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <DropdownInput
+            title={t("country")}
+            placeholder={t("all_countries")}
+            initial={filters?.territory}
+            value={territoryValue}
+            setValue={setTerritoryValue}
+            options={territoryOptions}
+            allowReset
+          />
+          <DropdownInput
+            title={t("location")}
+            placeholder={t("all_locations")}
+            initial={filters?.place}
+            value={placeValue}
+            setValue={setPlaceValue}
+            options={placeOptions}
+            allowReset
+          />
 
-        <DateRangeFilter value={dateFilter} setDateFilter={setDateFilter} />
-      </ScrollView>
+          <DateRangeFilter value={dateFilter} setDateFilter={setDateFilter} />
+        </ScrollView>
+
+        <View style={styles.flatButtonContainer}>
+          <FlatButton onPress={clearFilters}>{t("reset_filters")}</FlatButton>
+        </View>
+      </View>
     </ModalWrapper>
   );
 };
@@ -116,5 +125,14 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 18,
     paddingBottom: 40,
+  },
+  container: {
+    flex: 1,
+  },
+  flatButtonContainer: {
+    padding: 18,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    backgroundColor: Colors.primary100,
   },
 });

@@ -8,7 +8,7 @@ import { useLanguage } from "../store/language-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import { Colors } from "../constants/styles";
 import FilterModal from "../components/Filters/FilterModal";
-import { loadFilters } from "../util/filtersStorage";
+import { loadFilters, clearFilters } from "../util/filtersStorage";
 
 const StatScreen = ({ navigation }) => {
   const [filters, setFilters] = useState(null);
@@ -29,6 +29,11 @@ const StatScreen = ({ navigation }) => {
         return v !== null && v !== undefined && v !== "";
       })
     : false;
+
+  const handleClearFilters = async () => {
+    setFilters({});
+    await clearFilters();
+  };
 
   useEffect(() => {
     const initFilters = async () => {
@@ -82,6 +87,7 @@ const StatScreen = ({ navigation }) => {
         onClose={() => setFilterModalVisible(false)}
         filters={filters}
         setFilters={setFilters}
+        clearFilters={clearFilters}
       />
     </>
   );
