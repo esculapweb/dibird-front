@@ -1,10 +1,11 @@
 import i18n from "../services/i18n";
-import api from "../services/api";
+import api, {showError} from "../services/api";
 
 export const loadDecorator = async (loaderFn) => {
   try {
     await loaderFn();
   } catch (e) {
+    showError(e)
     console.warn(
       `[${new Date().toLocaleString()}] Failed to load data`,
       e.code,

@@ -116,6 +116,20 @@ const AppDrawer = () => {
       }}
     >
       <Drawer.Screen
+        name={t("settings")}
+        component={SettingsScreen}
+        options={{
+          title: t("settings"),
+          drawerIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "settings" : "settings-outline"}
+              color={color}
+              size={size}
+            />
+          ),
+        }}
+      />
+      <Drawer.Screen
         name={"Statistics"}
         component={StatScreen}
         options={{
@@ -143,20 +157,7 @@ const AppDrawer = () => {
           ),
         }}
       />
-      {/* <Drawer.Screen
-        name={t("settings")}
-        component={SettingsScreen}
-        options={{
-          title: t("settings"),
-          drawerIcon: ({ color, size, focused }) => (
-            <Ionicons
-              name={focused ? "settings" : "settings-outline"}
-              color={color}
-              size={size}
-            />
-          ),
-        }}
-      /> */}
+      
     </Drawer.Navigator>
   );
 };
