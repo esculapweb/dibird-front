@@ -12,8 +12,7 @@ import {
 import { useLanguage } from "../../store/language-context";
 import DateRangeFilter from "../ui/DateRangeFilter";
 import { saveFilters } from "../../util/filtersStorage";
-import FlatButton from "../ui/FlatButton";
-import { Colors } from "../../constants/styles";
+import FlatButtonBottom from "../ui/FlatButtonBottom";
 
 const FilterModal = ({
   visible,
@@ -111,9 +110,9 @@ const FilterModal = ({
           <DateRangeFilter value={dateFilter} setDateFilter={setDateFilter} />
         </ScrollView>
 
-        <View style={styles.flatButtonContainer}>
-          <FlatButton onPress={clearFilters}>{t("reset_filters")}</FlatButton>
-        </View>
+        <FlatButtonBottom onPress={clearFilters}>
+          {t("reset_filters")}
+        </FlatButtonBottom>
       </View>
     </ModalWrapper>
   );
@@ -128,11 +127,5 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-  },
-  flatButtonContainer: {
-    padding: 18,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    backgroundColor: Colors.primary100,
   },
 });

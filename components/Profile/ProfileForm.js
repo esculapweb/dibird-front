@@ -54,16 +54,18 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
   }, [language]);
 
   const setInitialValues = () => {
-    setFirstName(profile.user_data.first_name);
-    setLastName(profile.user_data.last_name);
-    setUserName(profile.user_data.username);
-    setPrivateProfile(profile.private);
-    setPrivateDiaries(profile.private_diary);
-    setTerritoryValue(profile.territory);
-    setTimezoneValue(profile.timezone);
+    setFirstName(profile.user_data.first_name ?? "");
+    setLastName(profile.user_data.last_name ?? "");
+    setUserName(profile.user_data.username ?? "" );
+    setPrivateProfile(profile.private ?? false);
+    setPrivateDiaries(profile.private_diary ?? false);
+    setTerritoryValue(profile.territory ?? "");
+    setTimezoneValue(profile.timezone ?? "");
   };
 
   useEffect(() => {
+    if (!profile?.user_data) return;
+
     setInitialValues();
   }, [profile]);
 

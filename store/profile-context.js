@@ -29,7 +29,7 @@ const EMPTY_PROFILE = {
 };
 
 const ProfileContext = createContext({
-  profile: EMPTY_PROFILE,
+  profile: null,
   updateProfile: async (updatedData) => {},
   refreshProfile: async () => {},
   isTokenReady: false,
@@ -37,55 +37,47 @@ const ProfileContext = createContext({
 });
 
 export const ProfileProvider = ({ children }) => {
-  const [profile, setProfile] = useState(EMPTY_PROFILE);
+  const [profile, setProfile] = useState(null);
   const [error, setError] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(true);
   const [isTokenReady, setIsTokenReady] = useState(false);
   const url = "/myapi/profile/me/";
 
   const loadProfile = useCallback(async () => {
     try {
       const stored = await AsyncStorage.getItem("profile");
-      if (!stored) return;
-      const parsed = JSON.parse(stored);
-      if (!parsed || typeof parsed !== "object") return;
-
-      setProfile({
-        ...EMPTY_PROFILE,
-        ...parsed,
-      });
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && typeof parsed === "object")
+          setProfile(parsed);
+      }
     } catch (e) {
       console.warn("Failed to load profile from storage", e);
+    } finally {
+      setProfileLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    loadProfile();
-  }, [loadProfile]);
-
-  useEffect(() => {
-    const init = async () => {
-      const token = await getAccessToken();
-      if (token) setIsTokenReady(true);
-    };
-    init();
   }, []);
 
   const refreshProfile = useCallback(async () => {
-    if (!isTokenReady) return;
-    try {
-      setError(null);
-      const { data } = await api.get(url);
-      await saveProfile(data);
-    } catch (e) {
-      setError(e);
-      console.warn("Failed to refresh profile:", e.code, e.message);
-    }
-  }, [isTokenReady]);
+  try {
+    setProfileLoading(true);
+    setError(null);
 
-  useEffect(() => {
-    if (!isTokenReady) return;
-    refreshProfile();
-  }, [isTokenReady, refreshProfile]);
+    const token = await getAccessToken();
+    if (!token) return;
+
+    const { data } = await api.get(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    await saveProfile(data);
+  } catch (e) {
+    setError(e);
+    console.warn("Failed to refresh profile:", e.code, e.message);
+  } finally {
+    setProfileLoading(false);
+  }
+}, []);
 
   const saveProfile = async (data) => {
     const safeProfile = {
@@ -98,13 +90,42 @@ export const ProfileProvider = ({ children }) => {
 
   const updateProfile = useCallback(async (updatedData) => {
     const response = await Put(url, updatedData);
-    if (!response) throw new Error("Profile update failed: empty response");;
+    if (!response) throw new Error("Profile update failed: empty response");
     return await saveProfile(response.data);
   }, []);
 
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
+
+  useEffect(() => {
+    const init = async () => {
+      const token = await getAccessToken();
+      if (token) {
+        setIsTokenReady(true);
+      } else {
+        setProfileLoading(false);
+      }
+    };
+    init();
+  }, []);
+
+  // useEffect(() => {
+  //   if (isTokenReady) {
+  //     refreshProfile();
+  //   }
+  // }, [isTokenReady, refreshProfile]);
+
   return (
     <ProfileContext.Provider
-      value={{ profile, updateProfile, refreshProfile, isTokenReady, error }}
+      value={{
+        profile,
+        profileLoading,
+        updateProfile,
+        refreshProfile,
+        isTokenReady,
+        error,
+      }}
     >
       {children}
     </ProfileContext.Provider>

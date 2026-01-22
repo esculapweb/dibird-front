@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { StyleSheet, Platform, View } from "react-native";
+import { StyleSheet, Platform, View, Text } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useTranslation } from "react-i18next";
 
@@ -7,13 +7,14 @@ import ProfileForm from "../components/Profile/ProfileForm";
 import { useProfile } from "../store/profile-context";
 import { showError } from "../services/api";
 import { Colors } from "../constants/styles";
-import FlatButton from "../components/ui/FlatButton";
+import FlatButtonBottom from "../components/ui/FlatButtonBottom";
+import LoadingOverlay from "../components/ui/LoadingOverlay";
 
 const ProfileScreen = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [formKey, setFormKey] = useState(0);
-  const profileCtx = useProfile();
+  const { profile, profileLoading, updateProfile } = useProfile();
   const { t } = useTranslation();
 
   const extractApiError = (err) => {
@@ -38,7 +39,7 @@ const ProfileScreen = () => {
     setSuccess(false);
 
     try {
-      await profileCtx.updateProfile(updatedData);
+      await updateProfile(updatedData);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 1500);
     } catch (e) {
@@ -47,6 +48,15 @@ const ProfileScreen = () => {
       setLoading(false);
     }
   };
+
+  if (profileLoading) return <LoadingOverlay />;
+
+  if (!profile)
+    return (
+      <View>
+        <Text>Profile not loaded</Text>
+      </View>
+    );
 
   return (
     <View style={styles.safeArea}>
@@ -66,11 +76,9 @@ const ProfileScreen = () => {
           />
         </KeyboardAwareScrollView>
 
-        <View style={styles.flatButtonContainer}>
-          <FlatButton onPress={() => setFormKey((k) => k + 1)}>
-            {t("reset_form")}
-          </FlatButton>
-        </View>
+        <FlatButtonBottom onPress={() => setFormKey((k) => k + 1)}>
+          {t("reset_form")}
+        </FlatButtonBottom>
       </View>
     </View>
   );
@@ -86,11 +94,5 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     paddingBottom: 80,
-  },
-  flatButtonContainer: {
-    padding: 18,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    backgroundColor: Colors.primary100,
   },
 });

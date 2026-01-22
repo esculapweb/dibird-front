@@ -2,10 +2,9 @@ import { useState } from "react";
 import { StyleSheet, View, Platform } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useTranslation } from "react-i18next";
-import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
-import FlatButton from "../ui/FlatButton";
+import FlatButtonBottom from "../ui/FlatButtonBottom";
 import AuthForm from "./AuthForm";
 import { useNavigation } from "@react-navigation/native";
 import Logo from "../ui/Logo";
@@ -24,9 +23,7 @@ const AuthContent = ({ isLogin, onAuthenticate, loading }) => {
   });
 
   const switchAuthModeHandler = () => {
-    const nextPage = isLogin ? "Signup" : "Login";
-    // onAuthenticate.reset?.(); // если нужно сбросить форму
-    nextPage && navigation?.navigate(nextPage);
+    navigation.navigate(isLogin ? "Signup" : "Login");
   };
 
   const extractApiError = (err) => {
@@ -40,8 +37,8 @@ const AuthContent = ({ isLogin, onAuthenticate, loading }) => {
       Object.values(data).flat().join("\n");
     return {
       title: isLogin ? t("login_failed") : t("registration_failed"),
-      message: apiMessage ||
-      (isLogin ? t("could_not_login") : t("could_not_signup")),
+      message:
+        apiMessage || (isLogin ? t("could_not_login") : t("could_not_signup")),
     };
   };
 
@@ -86,35 +83,36 @@ const AuthContent = ({ isLogin, onAuthenticate, loading }) => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
-      <KeyboardAwareScrollView
-        contentContainerStyle={styles.container}
-        enableOnAndroid
-        keyboardShouldPersistTaps="handled"
-        extraScrollHeight={Platform.OS === "ios" ? 20 : 80}
-        style={{ flex: 1 }}
-      >
-        <View style={styles.inner}>
-          <Logo style={styles.logo} imageSize={60} withText={true} />
+    <View style={styles.safeArea}>
+      <View style={{ flex: 1 }}>
+        <KeyboardAwareScrollView
+          contentContainerStyle={styles.container}
+          enableOnAndroid
+          keyboardShouldPersistTaps="handled"
+          extraScrollHeight={Platform.OS === "ios" ? 20 : 80}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.inner}>
+            <Logo style={styles.logo} imageSize={60} withText={true} />
 
-          <View style={styles.authContent}>
-            <AuthForm
-              isLogin={isLogin}
-              onSubmit={submitHandler}
-              credentialsInvalid={credentialsInvalid}
-              loading={loading}
-            />
+            <View style={styles.authContent}>
+              <AuthForm
+                isLogin={isLogin}
+                onSubmit={submitHandler}
+                credentialsInvalid={credentialsInvalid}
+                loading={loading}
+              />
+            </View>
           </View>
-          <View style={styles.buttons}>
-            <FlatButton onPress={switchAuthModeHandler}>
-              {isLogin ? t("create_new_user") : t("login_instead")}
-            </FlatButton>
-          </View>
-        </View>
-      </KeyboardAwareScrollView>
-    </SafeAreaView>
+        </KeyboardAwareScrollView>
+
+        <FlatButtonBottom onPress={switchAuthModeHandler}>
+          {isLogin ? t("create_new_user") : t("login_instead")}
+        </FlatButtonBottom>
+      </View>
+    </View>
   );
-}
+};
 
 export default AuthContent;
 
@@ -137,8 +135,5 @@ const styles = StyleSheet.create({
   authContent: {
     marginTop: 24,
     flex: 1,
-  },
-  buttons: {
-    marginTop: "auto",
-  },
+    },
 });
