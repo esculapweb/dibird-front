@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { StyleSheet, Platform, View, Text } from "react-native";
+import { StyleSheet, Platform, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useTranslation } from "react-i18next";
 
@@ -9,12 +9,14 @@ import { showError } from "../services/api";
 import { Colors } from "../constants/styles";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
+import ErrorOverlay from "../components/Error/ErrorOverlay";
 
 const ProfileScreen = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [formKey, setFormKey] = useState(0);
-  const { profile, profileLoading, updateProfile } = useProfile();
+  const { profile, profileLoading, updateProfile, refreshProfile } =
+    useProfile();
   const { t } = useTranslation();
 
   const extractApiError = (err) => {
@@ -51,12 +53,8 @@ const ProfileScreen = () => {
 
   if (profileLoading) return <LoadingOverlay />;
 
-  if (!profile)
-    return (
-      <View>
-        <Text>Profile not loaded</Text>
-      </View>
-    );
+  if (!profile) 
+    return <ErrorOverlay title={t("profile_unavailable")} message={t("could_not_load_your_profile")} onPress={refreshProfile}/>;
 
   return (
     <View style={styles.safeArea}>

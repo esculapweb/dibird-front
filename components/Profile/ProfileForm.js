@@ -7,11 +7,7 @@ import AnimatedLoadingButton from "../ui/AnimatedLoadingButton";
 import DropdownInput from "../ui/DropdownInput";
 import RadioGroup from "../ui/RadioGroup";
 import { useProfile } from "../../store/profile-context";
-import {
-  loadDecorator,
-  fetchTimezones,
-  fetchCountries,
-} from "../../util/fetches";
+import { fetchTimezones, fetchCountries } from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
 
 const ProfileForm = ({ submitHandler, loading, success }) => {
@@ -23,13 +19,9 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
   const [lastName, setLastName] = useState("");
   const [userName, setUserName] = useState("");
 
-  const [territoryOptions, setTerritoryOptions] = useState([]);
   const [territoryValue, setTerritoryValue] = useState("");
-
   const [privateProfile, setPrivateProfile] = useState(false);
   const [privateDiaries, setPrivateDiaries] = useState(false);
-
-  const [timezoneOptions, setTimezoneOptions] = useState([]);
   const [timezoneValue, setTimezoneValue] = useState("");
 
   const [invalid, setInvalid] = useState({
@@ -40,34 +32,15 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
     timezone: false,
   });
 
-  useEffect(() => {
-    const loadData = async () => {
-      const [timezones, countries] = await Promise.all([
-        fetchTimezones(),
-        fetchCountries(),
-      ]);
-      setTimezoneOptions(timezones);
-      setTerritoryOptions(countries);
-    };
-
-    loadDecorator(loadData);
-  }, [language]);
-
   const setInitialValues = () => {
     setFirstName(profile.user_data.first_name ?? "");
     setLastName(profile.user_data.last_name ?? "");
-    setUserName(profile.user_data.username ?? "" );
+    setUserName(profile.user_data.username ?? "");
     setPrivateProfile(profile.private ?? false);
     setPrivateDiaries(profile.private_diary ?? false);
     setTerritoryValue(profile.territory ?? "");
     setTimezoneValue(profile.timezone ?? "");
   };
-
-  useEffect(() => {
-    if (!profile?.user_data) return;
-
-    setInitialValues();
-  }, [profile]);
 
   const validateForm = () => {
     const newInvalid = {
@@ -98,6 +71,11 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
     submitHandler(formData);
   };
 
+  useEffect(() => {
+    if (!profile?.user_data) return;
+    setInitialValues();
+  }, [profile]);
+
   return (
     <View style={styles.outer}>
       <View style={styles.container}>
@@ -126,8 +104,9 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
           initial={profile.territory}
           value={territoryValue}
           setValue={setTerritoryValue}
-          options={territoryOptions}
           error={invalid?.territory}
+          loadOptions={fetchCountries}
+          loadDependencies={[language]}
         />
 
         <DropdownInput
@@ -136,8 +115,8 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
           initial={profile.timezone}
           value={timezoneValue}
           setValue={setTimezoneValue}
-          options={timezoneOptions}
           error={invalid?.timezone}
+          loadOptions={fetchTimezones}
         />
 
         <RadioGroup
@@ -195,5 +174,5 @@ const styles = StyleSheet.create({
   },
   radioGroup: {
     marginVertical: 8,
-  }
+  },
 });

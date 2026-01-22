@@ -7,6 +7,7 @@ export const Colors = {
   error600: "#d93b2e",
   accent: "#f0c24b",
   border: "#ced4da",
+  dropdownIcon: "#9ca3af",
   textMain: "#333",
   link: "#007AFF",
   linkLight: "#4e8cff",

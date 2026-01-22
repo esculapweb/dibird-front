@@ -5,6 +5,7 @@ import {
   useEffect,
   useCallback,
 } from "react";
+import { AppState } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import api, { getAccessToken } from "../services/api";
@@ -48,8 +49,7 @@ export const ProfileProvider = ({ children }) => {
       const stored = await AsyncStorage.getItem("profile");
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (parsed && typeof parsed === "object")
-          setProfile(parsed);
+        if (parsed && typeof parsed === "object") setProfile(parsed);
       }
     } catch (e) {
       console.warn("Failed to load profile from storage", e);
@@ -59,25 +59,25 @@ export const ProfileProvider = ({ children }) => {
   }, []);
 
   const refreshProfile = useCallback(async () => {
-  try {
-    setProfileLoading(true);
-    setError(null);
+    try {
+      setProfileLoading(true);
+      setError(null);
 
-    const token = await getAccessToken();
-    if (!token) return;
+      const token = await getAccessToken();
+      if (!token) return;
 
-    const { data } = await api.get(url, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+      const { data } = await api.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-    await saveProfile(data);
-  } catch (e) {
-    setError(e);
-    console.warn("Failed to refresh profile:", e.code, e.message);
-  } finally {
-    setProfileLoading(false);
-  }
-}, []);
+      await saveProfile(data);
+    } catch (e) {
+      setError(e);
+      console.warn("Failed to refresh profile:", e.code, e.message);
+    } finally {
+      setProfileLoading(false);
+    }
+  }, []);
 
   const saveProfile = async (data) => {
     const safeProfile = {
@@ -101,20 +101,31 @@ export const ProfileProvider = ({ children }) => {
   useEffect(() => {
     const init = async () => {
       const token = await getAccessToken();
-      if (token) {
-        setIsTokenReady(true);
-      } else {
-        setProfileLoading(false);
-      }
+      setIsTokenReady(!!token);
+      // if (token) {
+      //   setIsTokenReady(true);
+      // } else {
+      //   setProfileLoading(false);
+      // }
     };
     init();
   }, []);
 
-  // useEffect(() => {
-  //   if (isTokenReady) {
-  //     refreshProfile();
-  //   }
-  // }, [isTokenReady, refreshProfile]);
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active" && isTokenReady) {
+        refreshProfile();
+      }
+    });
+
+    return () => sub.remove();
+  }, [isTokenReady]);
+
+  useEffect(() => {
+    if (isTokenReady) {
+      refreshProfile();
+    }
+  }, [isTokenReady, refreshProfile]);
 
   return (
     <ProfileContext.Provider

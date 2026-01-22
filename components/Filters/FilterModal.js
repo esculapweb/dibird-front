@@ -4,15 +4,11 @@ import { View, ScrollView, StyleSheet } from "react-native";
 
 import ModalWrapper from "../ui/ModalWrapper";
 import DropdownInput from "../ui/DropdownInput";
-import {
-  loadDecorator,
-  fetchMyCountries,
-  fetchMyPlaces,
-} from "../../util/fetches";
-import { useLanguage } from "../../store/language-context";
+import { fetchMyCountries, fetchMyPlaces } from "../../util/fetches";
 import DateRangeFilter from "../ui/DateRangeFilter";
 import { saveFilters } from "../../util/filtersStorage";
 import FlatButtonBottom from "../ui/FlatButtonBottom";
+import { useLanguage } from "../../store/language-context";
 
 const FilterModal = ({
   visible,
@@ -30,32 +26,18 @@ const FilterModal = ({
     year: null,
   };
 
-  const [territoryOptions, setTerritoryOptions] = useState([]);
   const [territoryValue, setTerritoryValue] = useState(
     filters?.territory || null,
   );
-  const [placeOptions, setPlaceOptions] = useState([]);
   const [placeValue, setPlaceValue] = useState(filters?.place || null);
   const [dateFilter, setDateFilter] = useState(dateFilterInitial);
 
-  useEffect(() => {
-    const loadData = async () => {
-      const countries = await fetchMyCountries();
-      setTerritoryOptions(countries);
-    };
-
-    loadDecorator(loadData);
-  }, [language]);
-
-  useEffect(() => {
-    const loadPlaces = async () => {
-      const places = await fetchMyPlaces(territoryValue);
-      setPlaceOptions(places);
-      if (placeValue && !places.some((p) => p.value === placeValue))
-        setPlaceValue(null);
-    };
-    loadDecorator(loadPlaces);
-  }, [territoryValue]);
+  const loadPlaces = async () => {
+    const places = await fetchMyPlaces(territoryValue);
+    if (placeValue && !places.some((p) => p.value === placeValue))
+      setPlaceValue(null);
+    return places;
+  };
 
   useEffect(() => {
     if (!visible) return;
@@ -94,7 +76,8 @@ const FilterModal = ({
             initial={filters?.territory}
             value={territoryValue}
             setValue={setTerritoryValue}
-            options={territoryOptions}
+            loadOptions={fetchMyCountries}
+            loadDependencies={[language]}
             allowReset
           />
           <DropdownInput
@@ -103,7 +86,8 @@ const FilterModal = ({
             initial={filters?.place}
             value={placeValue}
             setValue={setPlaceValue}
-            options={placeOptions}
+            loadOptions={loadPlaces}
+            loadDependencies={[territoryValue]}
             allowReset
           />
 
