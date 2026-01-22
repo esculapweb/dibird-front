@@ -27,10 +27,10 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
 
   useEffect(() => {
     if (!value) {
-      setMode("all");
-      setYear(null);
-      setFrom(null);
-      setTo(null);
+      // setMode("all");
+      // setYear(null);
+      // setFrom(null);
+      // setTo(null);
       return;
     }
 

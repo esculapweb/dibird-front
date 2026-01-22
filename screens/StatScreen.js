@@ -33,6 +33,7 @@ const StatScreen = ({ navigation }) => {
   const handleClearFilters = async () => {
     setFilters({});
     await clearFilters();
+    setFilterModalVisible(false);
   };
 
   useEffect(() => {
@@ -87,7 +88,7 @@ const StatScreen = ({ navigation }) => {
         onClose={() => setFilterModalVisible(false)}
         filters={filters}
         setFilters={setFilters}
-        clearFilters={clearFilters}
+        clearFilters={handleClearFilters}
       />
     </>
   );
