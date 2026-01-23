@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
   },
   left: { flexDirection: "row", alignItems: "center", flex: 1, marginRight: 8 },
   icon: { fontSize: 18, marginRight: 6 },
-  text: { fontSize: 16, flex: 1 },
+  text: { fontSize: 16, flex: 1, color: Colors.textMain},
   right: { flexDirection: "row", alignItems: "center" },
   clear: { marginRight: 4 },
   error: { marginTop: 4, fontSize: 12, color: Colors.error500 },

@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: Colors.statIcon,
+    borderColor: Colors.radioBorder,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 6,
@@ -77,6 +77,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
+    color: Colors.textMain
   },
   disabled: {
     opacity: 0.5,

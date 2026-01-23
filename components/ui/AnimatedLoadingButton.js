@@ -57,13 +57,13 @@ const AnimatedLoadingButton = ({ onPress, loading, success, children }) => {
 
         {loading && (
           <Animated.View style={[styles.spinner, { opacity: spinnerOpacity }]}>
-            <ActivityIndicator size="small" color={Colors.textMain} />
+            <ActivityIndicator size="small" color={Colors.buttonPrimaryText} />
           </Animated.View>
         )}
 
         {success && (
           <Animated.View style={[styles.spinner, { opacity: successOpacity }]}>
-            <Ionicons name="checkmark-done-sharp" size={20} color={Colors.textMain} />
+            <Ionicons name="checkmark-done-sharp" size={20} color={Colors.buttonPrimarySpinner} />
           </Animated.View>
         )}
       </View>
@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   pressed: { opacity: 0.7 },
-  disabled: { opacity: 0.6 },
+  disabled: { opacity: 0.6},
   content: {
     width: "100%",
     alignItems: "center",
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   text: {
-    color: Colors.textMain,
+    color: Colors.buttonPrimaryText,
     fontWeight: "600",
     fontSize: 16,
     position: "absolute",

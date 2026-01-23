@@ -94,6 +94,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 8,
     fontSize: 16,
+    color: Colors.textMain,
   },
   inputInvalid: {
     backgroundColor: Colors.error100,

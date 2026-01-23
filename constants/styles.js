@@ -22,9 +22,15 @@ export const Colors = {
   toastSuccess: "rgba(0,128,0,0.7)",
   toastError: "rgba(255,0,0,0.7)",
   toastInfo: "rgba(0,0,255,0.7)",
+
+  buttonPrimaryText: "#1f2937",
+  buttonPrimarySpinner: "#1f2937",
+
+  radioBorder: "#9ca3af",
+  radioDisabled: "#d1d5db",
 };
 
-export const DarkColors = {
+export const Colors1 = {
   primary100: "#121212",
   primary200: "#1e293b",
   primary300: "#1f2937",
@@ -60,4 +66,10 @@ export const DarkColors = {
   toastSuccess: "rgba(34,197,94,0.8)",
   toastError: "rgba(239,68,68,0.8)",
   toastInfo: "rgba(59,130,246,0.8)",
+
+  buttonPrimaryText: "#1f2937",
+  buttonPrimarySpinner: "#1f2937",
+
+  radioBorder: "#4b5563",
+  radioDisabled: "#374151",
 };
