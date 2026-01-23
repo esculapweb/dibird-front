@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import StatsTabs from "../navigation/StatsTabs";
@@ -48,16 +48,22 @@ const StatScreen = ({ navigation }) => {
   useEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <View style={styles.filterContainer}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.filterContainer,
+            pressed && styles.pressed,
+          ]}
+          onPress={handleFilterPress}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
           <Ionicons
             name={hasActiveFilters ? "options" : "options-outline"}
             size={22}
             color={Colors.primary100}
-            onPress={handleFilterPress}
           />
 
           {hasActiveFilters && <View style={styles.dot} />}
-        </View>
+        </Pressable>
       ),
     });
   }, [navigation, filters]);
@@ -110,5 +116,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.logoAccent,
     borderWidth: 1,
     borderColor: Colors.primary100,
+  },
+  pressed: {
+    opacity: 0.7,
   },
 });

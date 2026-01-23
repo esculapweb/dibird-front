@@ -22,7 +22,7 @@ const LanguageSwitcher = () => {
             style={({ pressed }) => [
               styles.button,
               language === lang && { backgroundColor: Colors.primary200 },
-              pressed && { opacity: 0.6 }, // мгновенный визуальный отклик
+              pressed && styles.pressed, 
             ]}
           >
             <Text>{lang.toUpperCase()}</Text>
@@ -65,4 +65,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     marginLeft: "auto",
   },
+  pressed: {
+    opacity: 0.7
+  }
 });

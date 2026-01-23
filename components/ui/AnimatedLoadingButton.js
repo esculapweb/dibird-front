@@ -36,7 +36,7 @@ const AnimatedLoadingButton = ({ onPress, loading, success, children }) => {
           duration: 200,
           useNativeDriver: true,
         }).start();
-      }, 1500);
+      }, 3000);
 
       return () => clearTimeout(timeout);
     }
@@ -63,7 +63,7 @@ const AnimatedLoadingButton = ({ onPress, loading, success, children }) => {
 
         {success && (
           <Animated.View style={[styles.spinner, { opacity: successOpacity }]}>
-            <Ionicons name="checkmark" size={20} color={Colors.textMain} />
+            <Ionicons name="checkmark-done-sharp" size={20} color={Colors.textMain} />
           </Animated.View>
         )}
       </View>
@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  pressed: { opacity: 0.8 },
+  pressed: { opacity: 0.7 },
   disabled: { opacity: 0.6 },
   content: {
     width: "100%",
