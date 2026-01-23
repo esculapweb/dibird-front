@@ -19,7 +19,7 @@ import { useProfile } from "../../store/profile-context";
 import api, { showError } from "../../services/api";
 
 const AVATAR_SIZE = 100;
-const INDICATOR_SIZE = 32; // примерно размер ActivityIndicator
+const INDICATOR_SIZE = 32; 
 
 const Avatar = () => {
   const { showActionSheetWithOptions } = useActionSheet();
@@ -157,7 +157,7 @@ const Avatar = () => {
           <View style={styles.overlay}>
             <ActivityIndicator
               size="large"
-              color="#fff"
+              color={Colors.primary100}
               style={{
                 position: "absolute",
                 top: "50%",
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor: Colors.overlay,
     borderRadius: AVATAR_SIZE / 2,
   },
   smallText: {

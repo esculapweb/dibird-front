@@ -74,7 +74,7 @@ const SelectListModal = ({
           height: ITEM_HEIGHT,
           justifyContent: "center",
           paddingHorizontal: 16,
-          backgroundColor: isActive ? "#eef2ff" : "#fff",
+          backgroundColor: isActive ? Colors.primary300 : Colors.primary100,
         }}
       >
         <View style={styles.row}>

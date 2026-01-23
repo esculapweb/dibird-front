@@ -75,10 +75,10 @@ const DateInput = ({
         <View style={styles.icons}>
           {allowClear && value && (
             <Pressable onPress={() => onChange(null)} hitSlop={8}>
-              <Ionicons name="close-circle" size={18} color="#9ca3af" />
+              <Ionicons name="close-circle" size={18} color={Colors.dropdownIcon} />
             </Pressable>
           )}
-          <Ionicons name="calendar" size={20} color="#9ca3af" />
+          <Ionicons name="calendar" size={20} color={Colors.dropdownIcon} />
         </View>
       </Pressable>
 
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
 
   text: { fontSize: 16 },
 
-  placeholder: { color: "#9ca3af" },
+  placeholder: { color: Colors.dropdownIcon },
 
   icons: {
     flexDirection: "row",
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
 
   pickerWrapper: {
     marginTop: 8,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.primary100,
     borderRadius: 8,
     padding: 8,
   },

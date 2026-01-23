@@ -17,7 +17,7 @@ const MetaItem = ({ icon, text }) => {
 
   return (
     <View style={styles.metaItem}>
-      {icon && <Ionicons name={icon} size={11} color="#6B7280" />}
+      {icon && <Ionicons name={icon} size={11} color={Colors.statIcon} />}
       <Text style={styles.metaText}>{text}</Text>
     </View>
   );
@@ -83,7 +83,7 @@ const Stats = ({ data, seen = false }) => {
 
                 <View style={styles.metaRight}>
                   <View style={styles.observations}>
-                    <Ionicons name="eye-outline" size={11} color="#374151" />
+                    <Ionicons name="eye-outline" size={11} color={Colors.textMain} />
                     <Text style={styles.observationsText}>
                       {item.qty_observations}
                     </Text>
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 12,
     marginRight: 8,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: Colors.imageBg,
   },
 
   imagePlaceholder: {
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 12,
     marginRight: 8,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: Colors.imageBg,
   },
 
   imageSmall: {
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
   latin: {
     fontSize: 12,
     fontStyle: "italic",
-    color: "#6B7280",
+    color: Colors.statIcon,
   },
 
   flags: {
@@ -209,13 +209,13 @@ const styles = StyleSheet.create({
   metaText: {
     marginLeft: 2,
     fontSize: 11,
-    color: "#374151",
+    color: Colors.textMain,
   },
 
   observations: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: Colors.backgroundMain,
     paddingHorizontal: 5,
     paddingVertical: 2,
     borderRadius: 10,
@@ -226,6 +226,6 @@ const styles = StyleSheet.create({
     marginLeft: 2,
     fontSize: 11,
     fontWeight: "600",
-    color: "#111827",
+    color: Colors.textMain,
   },
 });
