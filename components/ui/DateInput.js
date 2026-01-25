@@ -2,6 +2,7 @@ import { useState } from "react";
 import { View, Text, Pressable, StyleSheet, Platform } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 
 import { useTheme } from "../../store/theme-context";
 
@@ -28,6 +29,7 @@ const DateInput = ({
   minimumDate,
   allowClear = true,
 }) => {
+  const { t } = useTranslation();
   const { Colors, theme } = useTheme();
   const styles = stylesFn(Colors);
   const today = getTodayEnd();
@@ -107,7 +109,7 @@ const DateInput = ({
 
           {Platform.OS === "ios" && (
             <Pressable style={styles.doneBtn} onPress={confirmDate}>
-              <Text style={styles.doneText}>Done</Text>
+              <Text style={styles.doneText}>{t('done')}</Text>
             </Pressable>
           )}
         </View>

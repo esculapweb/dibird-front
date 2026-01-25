@@ -34,13 +34,13 @@ export const DarkColors = {
   toastError: "rgba(239,68,68,0.8)",
   toastInfo: "rgba(59,130,246,0.8)",
 
-  buttonBg: "#374151",
+  buttonBg: "#1e293b",
   buttonPrimaryText: "#e5e7eb",
   buttonPrimarySpinner: "#e5e7eb",
   buttonPrimaryBorder: "#4b5563",
 
   radioChecked: "#69768a",
-  radioBorder: "#4b5563",
+  radioBorder: "#69768a",
   radioDisabled: "#374151",
 
   divider: "#374151",
