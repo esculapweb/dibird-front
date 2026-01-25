@@ -10,10 +10,12 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { formatDate, isoToFlagEmoji } from "../../util/fetches";
 import { Config } from "../../constants/config";
-import { Colors } from "../../constants/styles";
+import { useTheme } from "../../store/theme-context";
 
 const MetaItem = ({ icon, text }) => {
   if (!text) return null;
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
 
   return (
     <View style={styles.metaItem}>
@@ -24,6 +26,8 @@ const MetaItem = ({ icon, text }) => {
 };
 
 const Stats = ({ data, seen = false }) => {
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
   const renderItem = ({ item, index }) => {
     const minDate = item?.min_date && formatDate(item.min_date);
     const maxDate = item?.max_date && formatDate(item.max_date);
@@ -49,17 +53,11 @@ const Stats = ({ data, seen = false }) => {
           {item.sp_thumb ? (
             <Image
               source={{ uri: `${Config.baseUrl}/media/${item.sp_thumb}` }}
-              style={[
-                styles.image,
-                !seen && styles.imageSmall,
-              ]}
+              style={[styles.image, !seen && styles.imageSmall]}
             />
           ) : (
             <View
-              style={[
-                styles.imagePlaceholder,
-                !seen && styles.imageSmall,
-              ]}
+              style={[styles.imagePlaceholder, !seen && styles.imageSmall]}
             />
           )}
 
@@ -83,7 +81,11 @@ const Stats = ({ data, seen = false }) => {
 
                 <View style={styles.metaRight}>
                   <View style={styles.observations}>
-                    <Ionicons name="eye-outline" size={11} color={Colors.textMain} />
+                    <Ionicons
+                      name="eye-outline"
+                      size={11}
+                      color={Colors.textMain}
+                    />
                     <Text style={styles.observationsText}>
                       {item.qty_observations}
                     </Text>
@@ -109,123 +111,124 @@ const Stats = ({ data, seen = false }) => {
 
 export default Stats;
 
-const styles = StyleSheet.create({
-  list: {
-    padding: 8,
-  },
+const stylesFn = (Colors) =>
+  StyleSheet.create({
+    list: {
+      padding: 8,
+    },
 
-  card: {
-    backgroundColor: Colors.primary100,
-    borderRadius: 12,
-    padding: 6,
-    marginBottom: 6,
-    shadowColor: Colors.textMain,
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
+    card: {
+      backgroundColor: Colors.primary100,
+      borderRadius: 12,
+      padding: 6,
+      marginBottom: 6,
+      shadowColor: Colors.textMain,
+      shadowOpacity: 0.05,
+      shadowRadius: 5,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 2,
+    },
 
-  pressedCard: {
-    opacity: 0.9,
-  },
+    pressedCard: {
+      opacity: 0.9,
+    },
 
-  row: {
-    flexDirection: "row",
-  },
+    row: {
+      flexDirection: "row",
+    },
 
-  image: {
-    width: 56,
-    height: 56,
-    borderRadius: 12,
-    marginRight: 8,
-    backgroundColor: Colors.imageBg,
-  },
+    image: {
+      width: 56,
+      height: 56,
+      borderRadius: 12,
+      marginRight: 8,
+      backgroundColor: Colors.imageBg,
+    },
 
-  imagePlaceholder: {
-    width: 56,
-    height: 56,
-    borderRadius: 12,
-    marginRight: 8,
-    backgroundColor: Colors.imageBg,
-  },
+    imagePlaceholder: {
+      width: 56,
+      height: 56,
+      borderRadius: 12,
+      marginRight: 8,
+      backgroundColor: Colors.imageBg,
+    },
 
-  imageSmall: {
-    width: 40,
-    height: 40,
-  },
+    imageSmall: {
+      width: 40,
+      height: 40,
+    },
 
-  content: {
-    flex: 1,
-    justifyContent: "flex-start",
-  },
+    content: {
+      flex: 1,
+      justifyContent: "flex-start",
+    },
 
-  title: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: Colors.textMain,
-    lineHeight: 20,
-  },
+    title: {
+      fontSize: 15,
+      fontWeight: "600",
+      color: Colors.textMain,
+      lineHeight: 20,
+    },
 
-  latinRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 1,
-  },
+    latinRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginTop: 1,
+    },
 
-  latin: {
-    fontSize: 12,
-    fontStyle: "italic",
-    color: Colors.statIcon,
-  },
+    latin: {
+      fontSize: 12,
+      fontStyle: "italic",
+      color: Colors.statIcon,
+    },
 
-  flags: {
-    fontSize: 13,
-  },
+    flags: {
+      fontSize: 13,
+    },
 
-  meta: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginTop: 3,
-  },
+    meta: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      marginTop: 3,
+    },
 
-  metaLeft: {
-    flex: 1,
-  },
+    metaLeft: {
+      flex: 1,
+    },
 
-  metaRight: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-  },
+    metaRight: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+    },
 
-  metaItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginRight: 8,
-    marginTop: 1,
-  },
+    metaItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginRight: 8,
+      marginTop: 1,
+    },
 
-  metaText: {
-    marginLeft: 2,
-    fontSize: 11,
-    color: Colors.textMain,
-  },
+    metaText: {
+      marginLeft: 2,
+      fontSize: 11,
+      color: Colors.textMain,
+    },
 
-  observations: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.backgroundMain,
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    borderRadius: 10,
-    marginBottom: 1,
-  },
+    observations: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: Colors.backgroundMain,
+      paddingHorizontal: 5,
+      paddingVertical: 2,
+      borderRadius: 10,
+      marginBottom: 1,
+    },
 
-  observationsText: {
-    marginLeft: 2,
-    fontSize: 11,
-    fontWeight: "600",
-    color: Colors.textMain,
-  },
-});
+    observationsText: {
+      marginLeft: 2,
+      fontSize: 11,
+      fontWeight: "600",
+      color: Colors.textMain,
+    },
+  });

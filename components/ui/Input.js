@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { Colors } from "../../constants/styles";
+import { useTheme } from "../../store/theme-context";
 
 const Input = ({
   label,
@@ -19,6 +19,9 @@ const Input = ({
   value,
   isInvalid,
 }) => {
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
+
   const [isSecure, setIsSecure] = useState(secure);
 
   const iconOpacity = useRef(new Animated.Value(1)).current;
@@ -28,7 +31,7 @@ const Input = ({
       duration: 100,
       useNativeDriver: true,
     }).start(() => {
-      setIsSecure(prev => !prev);
+      setIsSecure((prev) => !prev);
       Animated.timing(iconOpacity, {
         toValue: 1,
         duration: 100,
@@ -36,7 +39,6 @@ const Input = ({
       }).start();
     });
   };
-
 
   return (
     <View style={styles.inputContainer}>
@@ -54,7 +56,7 @@ const Input = ({
         />
         {secure && (
           <TouchableOpacity onPress={toggleSecure} style={styles.icon}>
-            <Animated.View style={{opacity: iconOpacity}}>
+            <Animated.View style={{ opacity: iconOpacity }}>
               <Ionicons
                 name={isSecure ? "eye-off-outline" : "eye-outline"}
                 size={24}
@@ -66,41 +68,42 @@ const Input = ({
       </View>
     </View>
   );
-}
+};
 
 export default Input;
 
-const styles = StyleSheet.create({
-  inputContainer: {
-    marginBottom: 16,
-  },
-  label: {
-    color: Colors.textMain,
-    marginBottom: 4,
-  },
-  labelInvalid: {
-    color: Colors.error500,
-  },
-  inputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderColor: Colors.border,
-    borderWidth: 1,
-    backgroundColor: Colors.primary100,
-    borderRadius: 4,
-    paddingHorizontal: 10,
-  },
-  input: {
-    flex: 1,
-    paddingVertical: 8,
-    fontSize: 16,
-    color: Colors.textMain,
-  },
-  inputInvalid: {
-    backgroundColor: Colors.error100,
-    borderColor: Colors.error500,
-  },
-  icon: {
-    marginLeft: 8,
-  },
-});
+const stylesFn = (Colors) =>
+  StyleSheet.create({
+    inputContainer: {
+      marginBottom: 16,
+    },
+    label: {
+      color: Colors.textMain,
+      marginBottom: 4,
+    },
+    labelInvalid: {
+      color: Colors.error500,
+    },
+    inputWrapper: {
+      flexDirection: "row",
+      alignItems: "center",
+      borderColor: Colors.border,
+      borderWidth: 1,
+      backgroundColor: Colors.primary100,
+      borderRadius: 4,
+      paddingHorizontal: 10,
+    },
+    input: {
+      flex: 1,
+      paddingVertical: 8,
+      fontSize: 16,
+      color: Colors.textMain,
+    },
+    inputInvalid: {
+      backgroundColor: Colors.error100,
+      borderColor: Colors.error500,
+    },
+    icon: {
+      marginLeft: 8,
+    },
+  });

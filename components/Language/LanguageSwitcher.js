@@ -3,11 +3,13 @@ import { useLanguage } from "../../store/language-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 
-import { Colors } from "../../constants/styles";
+import { useTheme } from "../../store/theme-context";
 
 const LanguageSwitcher = () => {
   const { language, changeLanguage } = useLanguage();
   const { t } = useTranslation();
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
 
   return (
     <View style={styles.container}>
@@ -17,12 +19,13 @@ const LanguageSwitcher = () => {
       </View>
       <View style={styles.buttonsRight}>
         {["ru", "en"].map((lang) => (
-          <Pressable            key={lang}
+          <Pressable
+            key={lang}
             onPress={() => changeLanguage(lang)}
             style={({ pressed }) => [
               styles.button,
               language === lang && { backgroundColor: Colors.primary200 },
-              pressed && styles.pressed, 
+              pressed && styles.pressed,
             ]}
           >
             <Text>{lang.toUpperCase()}</Text>
@@ -35,37 +38,38 @@ const LanguageSwitcher = () => {
 
 export default LanguageSwitcher;
 
-const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    borderTopWidth: 1,
-    borderColor: Colors.backgroundMain,
-  },
-  title: {
-    paddingVertical: 8,
-    marginRight: 16,
-    fontSize: 14,
-  },
-  button: {
-    padding: 8,
-    marginRight: 8,
-    borderRadius: 16,
-    backgroundColor: Colors.primary100,
-  },
-  icon: {
-    marginRight: 16,
-  },
-  left: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  buttonsRight: {
-    flexDirection: "row",
-    marginLeft: "auto",
-  },
-  pressed: {
-    opacity: 0.7
-  }
-});
+const stylesFn = (Colors) =>
+  StyleSheet.create({
+    container: {
+      padding: 16,
+      flexDirection: "row",
+      alignItems: "center",
+      borderTopWidth: 1,
+      borderColor: Colors.backgroundMain,
+    },
+    title: {
+      paddingVertical: 8,
+      marginRight: 16,
+      fontSize: 14,
+    },
+    button: {
+      padding: 8,
+      marginRight: 8,
+      borderRadius: 16,
+      backgroundColor: Colors.primary100,
+    },
+    icon: {
+      marginRight: 16,
+    },
+    left: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    buttonsRight: {
+      flexDirection: "row",
+      marginLeft: "auto",
+    },
+    pressed: {
+      opacity: 0.7,
+    },
+  });

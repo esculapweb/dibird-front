@@ -8,12 +8,14 @@ import FlatButtonBottom from "../ui/FlatButtonBottom";
 import AuthForm from "./AuthForm";
 import { useNavigation } from "@react-navigation/native";
 import Logo from "../ui/Logo";
-import { Colors } from "../../constants/styles";
 import { showError } from "../../services/api";
+import { useTheme } from "../../store/theme-context";
 
 const AuthContent = ({ isLogin, onAuthenticate, loading }) => {
   const navigation = useNavigation();
   const { t } = useTranslation();
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
 
   const [credentialsInvalid, setCredentialsInvalid] = useState({
     email: false,
@@ -116,24 +118,25 @@ const AuthContent = ({ isLogin, onAuthenticate, loading }) => {
 
 export default AuthContent;
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: Colors.backgroundMain,
-  },
-  container: {
-    flexGrow: 1,
-  },
-  inner: {
-    flex: 1,
-    paddingHorizontal: 24,
-  },
-  logo: {
-    marginTop: 24,
-    alignSelf: "center",
-  },
-  authContent: {
-    marginTop: 24,
-    flex: 1,
+const stylesFn = (Colors) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: Colors.backgroundMain,
     },
-});
+    container: {
+      flexGrow: 1,
+    },
+    inner: {
+      flex: 1,
+      paddingHorizontal: 24,
+    },
+    logo: {
+      marginTop: 24,
+      alignSelf: "center",
+    },
+    authContent: {
+      marginTop: 24,
+      flex: 1,
+    },
+  });

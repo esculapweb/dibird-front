@@ -18,14 +18,15 @@ import ErrorScreen from "../screens/ErrorScreen";
 
 import { AuthContext } from "../store/auth-context";
 import { useProfile } from "../store/profile-context";
-import { Colors } from "../constants/styles";
 import Avatar from "../components/Profile/Avatar";
 import LanguageSwitcher from "../components/Language/LanguageSwitcher";
+import { useTheme } from "../store/theme-context";
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
 
 const AppStack = () => {
+  const { Colors } = useTheme();
   return (
     <Stack.Navigator
       screenOptions={{
@@ -52,6 +53,8 @@ const AppStack = () => {
 const CustomDrawerContent = (props) => {
   const authCtx = useContext(AuthContext);
   const { t } = useTranslation();
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
 
   const handleLogout = async () => {
     props.navigation.closeDrawer?.();
@@ -87,12 +90,13 @@ const CustomDrawerContent = (props) => {
 const AppDrawer = () => {
   const { t } = useTranslation();
   const profileCtx = useProfile();
+  const { Colors } = useTheme();
 
   if (profileCtx.error) {
     console.warn(
       "profileCtx error",
       profileCtx.error.code,
-      profileCtx.error.message
+      profileCtx.error.message,
     );
     return <ErrorScreen />;
   }
@@ -115,7 +119,7 @@ const AppDrawer = () => {
         sceneContainerStyle: { backgroundColor: Colors.backgroundMain },
       }}
     >
-      <Drawer.Screen
+      {/* <Drawer.Screen
         name={t("settings")}
         component={SettingsScreen}
         options={{
@@ -128,7 +132,7 @@ const AppDrawer = () => {
             />
           ),
         }}
-      />
+      /> */}
       <Drawer.Screen
         name={"Statistics"}
         component={StatScreen}
@@ -157,21 +161,21 @@ const AppDrawer = () => {
           ),
         }}
       />
-      
     </Drawer.Navigator>
   );
 };
 
 export default AppDrawer;
 
-const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: 16,
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  logout: {
-    borderTopWidth: 1,
-    borderColor: Colors.backgroundMain,
-  },
-});
+const stylesFn = (Colors) =>
+  StyleSheet.create({
+    header: {
+      paddingHorizontal: 16,
+      alignItems: "center",
+      marginBottom: 24,
+    },
+    logout: {
+      borderTopWidth: 1,
+      borderColor: Colors.backgroundMain,
+    },
+  });

@@ -10,8 +10,8 @@ import { Ionicons } from "@expo/vector-icons";
 
 import LoginScreen from "../screens/LoginScreen";
 import SignupScreen from "../screens/SignupScreen";
-import { Colors } from "../constants/styles";
 import LanguageSwitcher from "../components/Language/LanguageSwitcher";
+import { useTheme } from "../store/theme-context";
 
 const Drawer = createDrawerNavigator();
 
@@ -32,6 +32,7 @@ const CustomDrawerContent = (props) => {
 
 const AuthDrawer = () => {
   const { t } = useTranslation();
+  const { Colors } = useTheme();
 
   return (
     <Drawer.Navigator
@@ -41,7 +42,7 @@ const AuthDrawer = () => {
           backgroundColor: Colors.primary100,
         },
         drawerActiveTintColor: Colors.primary500,
-        drawerActiveBackgroundColor: Colors.primary200, 
+        drawerActiveBackgroundColor: Colors.primary200,
         headerStyle: {
           backgroundColor: Colors.primary500,
           elevation: 0,
@@ -54,7 +55,7 @@ const AuthDrawer = () => {
       <Drawer.Screen
         name="Login"
         component={LoginScreen}
-        options={{ 
+        options={{
           title: t("login"),
           drawerIcon: ({ color, size, focused }) => (
             <Ionicons
@@ -63,13 +64,13 @@ const AuthDrawer = () => {
               size={size}
             />
           ),
-         }}
+        }}
       />
 
       <Drawer.Screen
         name={"Signup"}
         component={SignupScreen}
-        options={{ 
+        options={{
           title: t("signup"),
           drawerIcon: ({ color, size, focused }) => (
             <Ionicons

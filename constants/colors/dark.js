@@ -1,36 +1,4 @@
-export const Colors = {
-  primary100: "#fff",
-  primary200: "#cfd8dc",
-  primary300: "#eef2ff",
-  primary500: "#2f3c43",
-  error100: "#ffe9e7",
-  error500: "#f1665a",
-  error600: "#d93b2e",
-  accent: "#f0c24b",
-  border: "#ced4da",
-  dropdownIcon: "#9ca3af",
-  textMain: "#333",
-  link: "#007AFF",
-  linkLight: "#4e8cff",
-  logoText: "#224895",
-  logoAccent: "#d93b2e",
-  backgroundMain: "#f0f0f0",
-  statIcon: "#6b7280",
-  imageBg: "#E5E7EB",
-  shadow: "#000",
-  overlay: "rgba(0,0,0,0.4)",
-  toastSuccess: "rgba(0,128,0,0.7)",
-  toastError: "rgba(255,0,0,0.7)",
-  toastInfo: "rgba(0,0,255,0.7)",
-
-  buttonPrimaryText: "#1f2937",
-  buttonPrimarySpinner: "#1f2937",
-
-  radioBorder: "#9ca3af",
-  radioDisabled: "#d1d5db",
-};
-
-export const Colors1 = {
+export const DarkColors = {
   primary100: "#121212",
   primary200: "#1e293b",
   primary300: "#1f2937",

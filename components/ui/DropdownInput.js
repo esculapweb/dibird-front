@@ -9,8 +9,8 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 
-import { Colors } from "../../constants/styles";
 import SelectListModal from "./SelectListModal";
+import { useTheme } from "../../store/theme-context";
 
 const DropdownInput = ({
   title,
@@ -25,6 +25,8 @@ const DropdownInput = ({
   loadDependencies = [],
 }) => {
   const { t } = useTranslation();
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
   const translatedPlaceholder = placeholder || t("select");
 
   const [options, setOptions] = useState([]);
@@ -105,7 +107,7 @@ const DropdownInput = ({
       setIcon(option.icon || null);
       setIconLabel(option.iconLabel || null);
     } else {
-      // setValue(null); 
+      // setValue(null);
       setLabel("");
       setIcon(null);
       setIconLabel(null);
@@ -211,7 +213,6 @@ const DropdownInput = ({
       </View>
 
       <SelectListModal
-        placeholder={translatedPlaceholder}
         visible={modalVisible}
         options={options}
         selected={value}
@@ -227,25 +228,31 @@ const DropdownInput = ({
 
 export default DropdownInput;
 
-const styles = StyleSheet.create({
-  wrapper: { marginBottom: 8 },
-  title: { marginVertical: 6, fontSize: 14, color: Colors.textMain },
-  select: {
-    height: 40,
-    paddingHorizontal: 6,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 4,
-    backgroundColor: Colors.primary100,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  left: { flexDirection: "row", alignItems: "center", flex: 1, marginRight: 8 },
-  icon: { fontSize: 18, marginRight: 6 },
-  text: { fontSize: 16, flex: 1, color: Colors.textMain},
-  right: { flexDirection: "row", alignItems: "center" },
-  clear: { marginRight: 4 },
-  error: { marginTop: 4, fontSize: 12, color: Colors.error500 },
-  retryIcon: { marginRight: 6 },
-});
+const stylesFn = (Colors) =>
+  StyleSheet.create({
+    wrapper: { marginBottom: 8 },
+    title: { marginVertical: 6, fontSize: 14, color: Colors.textMain },
+    select: {
+      height: 40,
+      paddingHorizontal: 6,
+      borderWidth: 1,
+      borderColor: Colors.border,
+      borderRadius: 4,
+      backgroundColor: Colors.primary100,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    left: {
+      flexDirection: "row",
+      alignItems: "center",
+      flex: 1,
+      marginRight: 8,
+    },
+    icon: { fontSize: 18, marginRight: 6 },
+    text: { fontSize: 16, flex: 1, color: Colors.textMain },
+    right: { flexDirection: "row", alignItems: "center" },
+    clear: { marginRight: 4 },
+    error: { marginTop: 4, fontSize: 12, color: Colors.error500 },
+    retryIcon: { marginRight: 6 },
+  });

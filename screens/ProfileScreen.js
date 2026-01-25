@@ -6,10 +6,10 @@ import { useTranslation } from "react-i18next";
 import ProfileForm from "../components/Profile/ProfileForm";
 import { useProfile } from "../store/profile-context";
 import { showError } from "../services/api";
-import { Colors } from "../constants/styles";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
+import { useTheme } from "../store/theme-context";
 
 const ProfileScreen = () => {
   const [loading, setLoading] = useState(false);
@@ -18,6 +18,8 @@ const ProfileScreen = () => {
   const { profile, profileLoading, updateProfile, refreshProfile } =
     useProfile();
   const { t } = useTranslation();
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
 
   const extractApiError = (err) => {
     const data = err.response.data;
@@ -53,8 +55,14 @@ const ProfileScreen = () => {
 
   if (profileLoading) return <LoadingOverlay />;
 
-  if (!profile) 
-    return <ErrorOverlay title={t("profile_unavailable")} message={t("could_not_load_your_profile")} onPress={refreshProfile}/>;
+  if (!profile)
+    return (
+      <ErrorOverlay
+        title={t("profile_unavailable")}
+        message={t("could_not_load_your_profile")}
+        onPress={refreshProfile}
+      />
+    );
 
   return (
     <View style={styles.safeArea}>
@@ -84,13 +92,14 @@ const ProfileScreen = () => {
 
 export default ProfileScreen;
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: Colors.backgroundMain,
-  },
-  container: {
-    flexGrow: 1,
-    paddingBottom: 80,
-  },
-});
+const stylesFn = (Colors) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: Colors.backgroundMain,
+    },
+    container: {
+      flexGrow: 1,
+      paddingBottom: 80,
+    },
+  });

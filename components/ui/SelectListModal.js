@@ -11,7 +11,7 @@ import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 
 import ModalWrapper from "./ModalWrapper";
-import { Colors } from "../../constants/styles";
+import { useTheme } from "../../store/theme-context";
 
 const ITEM_HEIGHT = 46;
 
@@ -21,11 +21,13 @@ const SelectListModal = ({
   selected,
   onSelect,
   onClose,
-  placeholder,
   search,
   setSearch,
   title,
 }) => {
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
+
   const flatListRef = useRef(null);
   const [hasScrolled, setHasScrolled] = useState(false);
   const { t } = useTranslation();
@@ -123,7 +125,7 @@ const SelectListModal = ({
 
 export default SelectListModal;
 
-const styles = StyleSheet.create({
+const stylesFn = (Colors) => StyleSheet.create({
   search: {
     height: 40,
     margin: 12,

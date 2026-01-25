@@ -1,16 +1,13 @@
-import {
-  Modal,
-  Pressable,
-  Text,
-  View,
-  StyleSheet,
-} from "react-native";
+import { Modal, Pressable, Text, View, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 
-import { Colors } from "../../constants/styles";
+import { useTheme } from "../../store/theme-context";
 
 const ModalWrapper = ({ children, onClose, onApply, visible, title }) => {
   const { t } = useTranslation();
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
+
   return (
     <Modal
       visible={visible}
@@ -41,19 +38,20 @@ const ModalWrapper = ({ children, onClose, onApply, visible, title }) => {
 
 export default ModalWrapper;
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.backgroundMain },
-  header: {
-    height: 56,
-    backgroundColor: Colors.primary100,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-  },
-  title: { fontSize: 16, fontWeight: "600" },
-  cancel: { fontSize: 16, fontWeight: "600", color: Colors.linkLight },
-  apply: { fontSize: 16, color: Colors.link, fontWeight: "600" },
-});
+const stylesFn = (Colors) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.backgroundMain },
+    header: {
+      height: 56,
+      backgroundColor: Colors.primary100,
+      borderBottomWidth: 1,
+      borderBottomColor: Colors.border,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 16,
+    },
+    title: { fontSize: 16, fontWeight: "600" },
+    cancel: { fontSize: 16, fontWeight: "600", color: Colors.linkLight },
+    apply: { fontSize: 16, color: Colors.link, fontWeight: "600" },
+  });

@@ -5,10 +5,12 @@ import { useTranslation } from "react-i18next";
 import RadioGroup from "./RadioGroup";
 import DropdownInput from "./DropdownInput";
 import DateInput from "./DateInput";
-import { Colors } from "../../constants/styles";
+import { useTheme } from "../../store/theme-context";
 
 const DateRangeFilter = ({ value, setDateFilter }) => {
   const { t } = useTranslation();
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
 
   const [mode, setMode] = useState("all"); // all | year | range
   const [year, setYear] = useState(null);
@@ -138,17 +140,18 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
 
 export default DateRangeFilter;
 
-const styles = StyleSheet.create({
-  wrapper: {
-    marginTop: 12,
-  },
-  title: {
-    fontSize: 14,
-    color: Colors.textMain,
-  },
-  error: {
-    marginTop: 4,
-    fontSize: 12,
-    color: Colors.error500,
-  },
-});
+const stylesFn = (Colors) =>
+  StyleSheet.create({
+    wrapper: {
+      marginTop: 12,
+    },
+    title: {
+      fontSize: 14,
+      color: Colors.textMain,
+    },
+    error: {
+      marginTop: 4,
+      fontSize: 12,
+      color: Colors.error500,
+    },
+  });

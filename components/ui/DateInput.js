@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet, Platform } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Ionicons } from "@expo/vector-icons";
 
-import { Colors } from "../../constants/styles";
+import { useTheme } from "../../store/theme-context";
 
 const getTodayEnd = () => {
   const d = new Date();
@@ -28,6 +28,8 @@ const DateInput = ({
   minimumDate,
   allowClear = true,
 }) => {
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
   const today = getTodayEnd();
 
   const [showPicker, setShowPicker] = useState(false);
@@ -75,7 +77,11 @@ const DateInput = ({
         <View style={styles.icons}>
           {allowClear && value && (
             <Pressable onPress={() => onChange(null)} hitSlop={8}>
-              <Ionicons name="close-circle" size={18} color={Colors.dropdownIcon} />
+              <Ionicons
+                name="close-circle"
+                size={18}
+                color={Colors.dropdownIcon}
+              />
             </Pressable>
           )}
           <Ionicons name="calendar" size={20} color={Colors.dropdownIcon} />
@@ -108,71 +114,72 @@ const DateInput = ({
 
 export default DateInput;
 
-const styles = StyleSheet.create({
-  wrapper: { marginBottom: 12 },
+const stylesFn = (Colors) =>
+  StyleSheet.create({
+    wrapper: { marginBottom: 12 },
 
-  label: {
-    fontSize: 14,
-    marginBottom: 4,
-    color: Colors.textMain,
-  },
+    label: {
+      fontSize: 14,
+      marginBottom: 4,
+      color: Colors.textMain,
+    },
 
-  input: {
-    height: 40,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 4,
-    paddingHorizontal: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: Colors.primary100,
-  },
+    input: {
+      height: 40,
+      borderWidth: 1,
+      borderColor: Colors.border,
+      borderRadius: 4,
+      paddingHorizontal: 8,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      backgroundColor: Colors.primary100,
+    },
 
-  text: { fontSize: 16 },
+    text: { fontSize: 16 },
 
-  placeholder: { color: Colors.dropdownIcon },
+    placeholder: { color: Colors.dropdownIcon },
 
-  icons: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
+    icons: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
 
-  pickerWrapper: {
-    marginTop: 8,
-    backgroundColor: Colors.primary100,
-    borderRadius: 8,
-    padding: 8,
-  },
+    pickerWrapper: {
+      marginTop: 8,
+      backgroundColor: Colors.primary100,
+      borderRadius: 8,
+      padding: 8,
+    },
 
-  currentValue: {
-    textAlign: "center",
-    fontSize: 14,
-    color: Colors.textSecondary,
-    marginBottom: 4,
-  },
+    currentValue: {
+      textAlign: "center",
+      fontSize: 14,
+      color: Colors.textSecondary,
+      marginBottom: 4,
+    },
 
-  doneBtn: {
-    marginTop: 8,
-    alignSelf: "flex-end",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
+    doneBtn: {
+      marginTop: 8,
+      alignSelf: "flex-end",
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+    },
 
-  doneText: {
-    fontSize: 16,
-    color: Colors.accent,
-    fontWeight: "600",
-  },
+    doneText: {
+      fontSize: 16,
+      color: Colors.accent,
+      fontWeight: "600",
+    },
 
-  error: {
-    marginTop: 4,
-    fontSize: 12,
-    color: Colors.error500,
-  },
+    error: {
+      marginTop: 4,
+      fontSize: 12,
+      color: Colors.error500,
+    },
 
-  errorBorder: {
-    borderColor: Colors.error500,
-  },
-});
+    errorBorder: {
+      borderColor: Colors.error500,
+    },
+  });

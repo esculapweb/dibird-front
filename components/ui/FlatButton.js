@@ -1,8 +1,10 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Colors } from '../../constants/styles';
+import { useTheme } from "../../store/theme-context";
 
 const FlatButton = ({ children, onPress }) => {
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
   return (
     <Pressable
       style={({ pressed }) => [styles.button, pressed && styles.pressed]}
@@ -13,21 +15,22 @@ const FlatButton = ({ children, onPress }) => {
       </View>
     </Pressable>
   );
-}
+};
 
 export default FlatButton;
 
-const styles = StyleSheet.create({
-  button: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    fontSize: 16,
-    textAlign: 'center',
-    color: Colors.link,
-  },
-});
+const stylesFn = (Colors) =>
+  StyleSheet.create({
+    button: {
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+    },
+    pressed: {
+      opacity: 0.7,
+    },
+    buttonText: {
+      fontSize: 16,
+      textAlign: "center",
+      color: Colors.link,
+    },
+  });

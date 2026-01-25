@@ -6,9 +6,9 @@ import StatsTabs from "../navigation/StatsTabs";
 import { loadDecorator, fetchSeen } from "../util/fetches";
 import { useLanguage } from "../store/language-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
-import { Colors } from "../constants/styles";
 import FilterModal from "../components/Filters/FilterModal";
 import { loadFilters, clearFilters } from "../util/filtersStorage";
+import { useTheme } from "../store/theme-context";
 
 const StatScreen = ({ navigation }) => {
   const [filters, setFilters] = useState(null);
@@ -18,6 +18,8 @@ const StatScreen = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   const { language } = useLanguage();
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
 
   const handleFilterPress = () => setFilterModalVisible(true);
 
@@ -102,22 +104,23 @@ const StatScreen = ({ navigation }) => {
 
 export default StatScreen;
 
-const styles = StyleSheet.create({
-  filterContainer: {
-    marginRight: 16,
-  },
-  dot: {
-    position: "absolute",
-    top: -2,
-    right: -2,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.logoAccent,
-    borderWidth: 1,
-    borderColor: Colors.primary100,
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-});
+const stylesFn = (Colors) =>
+  StyleSheet.create({
+    filterContainer: {
+      marginRight: 16,
+    },
+    dot: {
+      position: "absolute",
+      top: -2,
+      right: -2,
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: Colors.logoAccent,
+      borderWidth: 1,
+      borderColor: Colors.primary100,
+    },
+    pressed: {
+      opacity: 0.7,
+    },
+  });

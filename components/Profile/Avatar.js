@@ -12,14 +12,14 @@ import * as ImageManipulator from "expo-image-manipulator";
 import { Ionicons } from "@expo/vector-icons";
 import { useActionSheet } from "@expo/react-native-action-sheet";
 import { useTranslation } from "react-i18next";
-import { Colors } from "../../constants/styles";
+import { useTheme } from "../../store/theme-context";
 import { patchAvatar } from "../../util/requests";
 
 import { useProfile } from "../../store/profile-context";
 import api, { showError } from "../../services/api";
 
 const AVATAR_SIZE = 100;
-const INDICATOR_SIZE = 32; 
+const INDICATOR_SIZE = 32;
 
 const Avatar = () => {
   const { showActionSheetWithOptions } = useActionSheet();
@@ -30,6 +30,8 @@ const Avatar = () => {
 
   const profileCtx = useProfile();
   const { t } = useTranslation();
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
 
   useEffect(() => {
     setAvatar(profileCtx.profile?.avatar_thumbnail ?? null);
@@ -75,7 +77,7 @@ const Avatar = () => {
           default:
             break;
         }
-      }
+      },
     );
   };
 
@@ -111,7 +113,7 @@ const Avatar = () => {
       const manipulated = await ImageManipulator.manipulateAsync(
         result.assets[0].uri,
         [],
-        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG },
       );
 
       const { avatar_thumbnail } = await patchAvatar(manipulated);
@@ -182,53 +184,54 @@ const Avatar = () => {
 
 export default Avatar;
 
-const styles = StyleSheet.create({
-  container: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_SIZE / 2,
-    alignSelf: "center",
-  },
-  avatar: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_SIZE / 2,
-  },
-  placeholder: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_SIZE / 2,
-    backgroundColor: Colors.primary500,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  avatarName: {
-    fontSize: 36,
-    color: Colors.primary100,
-    fontWeight: "bold",
-  },
-  plusWrapper: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    position: "absolute",
-    backgroundColor: Colors.primary100,
-    borderColor: Colors.border,
-    borderWidth: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    bottom: -2,
-    right: 2,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: Colors.overlay,
-    borderRadius: AVATAR_SIZE / 2,
-  },
-  smallText: {
-    marginTop: 8,
-    textAlign: "center",
-    fontSize: 12,
-    color: Colors.primary500,
-  },
-});
+const stylesFn = (Colors) =>
+  StyleSheet.create({
+    container: {
+      width: AVATAR_SIZE,
+      height: AVATAR_SIZE,
+      borderRadius: AVATAR_SIZE / 2,
+      alignSelf: "center",
+    },
+    avatar: {
+      width: AVATAR_SIZE,
+      height: AVATAR_SIZE,
+      borderRadius: AVATAR_SIZE / 2,
+    },
+    placeholder: {
+      width: AVATAR_SIZE,
+      height: AVATAR_SIZE,
+      borderRadius: AVATAR_SIZE / 2,
+      backgroundColor: Colors.primary500,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    avatarName: {
+      fontSize: 36,
+      color: Colors.primary100,
+      fontWeight: "bold",
+    },
+    plusWrapper: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      position: "absolute",
+      backgroundColor: Colors.primary100,
+      borderColor: Colors.border,
+      borderWidth: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      bottom: -2,
+      right: 2,
+    },
+    overlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: Colors.overlay,
+      borderRadius: AVATAR_SIZE / 2,
+    },
+    smallText: {
+      marginTop: 8,
+      textAlign: "center",
+      fontSize: 12,
+      color: Colors.primary500,
+    },
+  });

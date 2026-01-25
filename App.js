@@ -9,6 +9,7 @@ import "./services/i18n";
 import AuthContextProvider, { AuthContext } from "./store/auth-context";
 import { ProfileProvider } from "./store/profile-context";
 import { LanguageProvider } from "./store/language-context";
+import { ThemeProvider } from "@react-navigation/native";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -37,19 +38,21 @@ export default function App() {
     <>
       <StatusBar style="light" />
       <LanguageProvider>
-        <AuthContextProvider>
-          <ProfileProvider>
-            <Root />
-            <Toast
-              config={{
-                error: (props) => (
-                  <ErrorToast {...props} text2NumberOfLines={6} />
-                ),
-              }}
-              position="bottom"
-            />
-          </ProfileProvider>
-        </AuthContextProvider>
+        <ThemeProvider>
+          <AuthContextProvider>
+            <ProfileProvider>
+              <Root />
+              <Toast
+                config={{
+                  error: (props) => (
+                    <ErrorToast {...props} text2NumberOfLines={6} />
+                  ),
+                }}
+                position="bottom"
+              />
+            </ProfileProvider>
+          </AuthContextProvider>
+        </ThemeProvider>
       </LanguageProvider>
     </>
   );

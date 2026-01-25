@@ -8,9 +8,11 @@ import {
   Animated,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Colors } from "../../constants/styles";
+import { useTheme } from "../../store/theme-context";
 
 const AnimatedLoadingButton = ({ onPress, loading, success, children }) => {
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
   const spinnerOpacity = useRef(new Animated.Value(0)).current;
   const successOpacity = useRef(new Animated.Value(0)).current;
 
@@ -63,7 +65,11 @@ const AnimatedLoadingButton = ({ onPress, loading, success, children }) => {
 
         {success && (
           <Animated.View style={[styles.spinner, { opacity: successOpacity }]}>
-            <Ionicons name="checkmark-done-sharp" size={20} color={Colors.buttonPrimarySpinner} />
+            <Ionicons
+              name="checkmark-done-sharp"
+              size={20}
+              color={Colors.buttonPrimarySpinner}
+            />
           </Animated.View>
         )}
       </View>
@@ -73,37 +79,38 @@ const AnimatedLoadingButton = ({ onPress, loading, success, children }) => {
 
 export default AnimatedLoadingButton;
 
-const BUTTON_HEIGHT = 48; 
+const BUTTON_HEIGHT = 48;
 
-const styles = StyleSheet.create({
-  button: {
-    backgroundColor: Colors.accent,
-    borderRadius: 8,
-    height: BUTTON_HEIGHT,
-    paddingHorizontal: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  pressed: { opacity: 0.7 },
-  disabled: { opacity: 0.6},
-  content: {
-    width: "100%",
-    alignItems: "center",
-    justifyContent: "center",
-    position: "relative",
-    flex: 1,
-  },
-  text: {
-    color: Colors.buttonPrimaryText,
-    fontWeight: "600",
-    fontSize: 16,
-    position: "absolute",
-    alignSelf: "center",
-  },
-  spinner: {
-    position: "absolute",
-    right: 0, 
-    top: "50%",
-    marginTop: -9, 
-  },
-});
+const stylesFn = (Colors) =>
+  StyleSheet.create({
+    button: {
+      backgroundColor: Colors.accent,
+      borderRadius: 8,
+      height: BUTTON_HEIGHT,
+      paddingHorizontal: 20,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    pressed: { opacity: 0.7 },
+    disabled: { opacity: 0.6 },
+    content: {
+      width: "100%",
+      alignItems: "center",
+      justifyContent: "center",
+      position: "relative",
+      flex: 1,
+    },
+    text: {
+      color: Colors.buttonPrimaryText,
+      fontWeight: "600",
+      fontSize: 16,
+      position: "absolute",
+      alignSelf: "center",
+    },
+    spinner: {
+      position: "absolute",
+      right: 0,
+      top: "50%",
+      marginTop: -9,
+    },
+  });

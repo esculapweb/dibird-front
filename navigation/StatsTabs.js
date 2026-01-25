@@ -5,12 +5,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
 
-import { Colors } from "../constants/styles";
+import { useTheme } from "../store/theme-context";
 
 const Tab = createBottomTabNavigator();
 
 const StatsTabs = ({ seen, notSeen, territory }) => {
   const { t } = useTranslation();
+  const { Colors } = useTheme();
 
   const seenTitle = `${t("seen")} (${seen.length})`;
   const notSeenTitle = `${t("not_seen")} (${notSeen.length})`;

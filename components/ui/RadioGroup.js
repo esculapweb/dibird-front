@@ -1,6 +1,6 @@
 import { View, Text, Pressable, StyleSheet } from "react-native";
 
-import { Colors } from "../../constants/styles";
+import { useTheme } from "../../store/theme-context";
 
 export const RadioGroup = ({
   value,
@@ -10,8 +10,10 @@ export const RadioGroup = ({
   direction = "column",
   disabled = false,
   isInvalid,
-  style
+  style,
 }) => {
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
   const isRow = direction === "row";
 
   return (
@@ -27,9 +29,13 @@ export const RadioGroup = ({
             <Pressable
               key={option.value}
               onPress={() => !disabled && onChange(option.value)}
-              style={[styles.row, disabled && styles.disabled, isRow
-                ? index < options.length - 1 && styles.rowHorizontal
-                : styles.rowVertical]}
+              style={[
+                styles.row,
+                disabled && styles.disabled,
+                isRow
+                  ? index < options.length - 1 && styles.rowHorizontal
+                  : styles.rowVertical,
+              ]}
             >
               <View style={[styles.outer, checked && styles.outerChecked]}>
                 {checked && <View style={styles.inner} />}
@@ -45,48 +51,49 @@ export const RadioGroup = ({
 
 export default RadioGroup;
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  rowVertical: {
-    marginBottom: 12,
-  },
-  rowHorizontal: {
-    marginRight: 24,
-  },
-  outer: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: Colors.radioBorder,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 6,
-  },
-  outerChecked: {
-    borderColor: Colors.accent,
-  },
-  inner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: Colors.accent,
-  },
-  label: {
-    fontSize: 16,
-    color: Colors.textMain
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-  title: {
-    color: Colors.textMain,
-    marginBottom: 8,
-  },
-  titleInvalid: {
-    color: Colors.error500,
-  },
-});
+const stylesFn = (Colors) =>
+  StyleSheet.create({
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    rowVertical: {
+      marginBottom: 12,
+    },
+    rowHorizontal: {
+      marginRight: 24,
+    },
+    outer: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      borderWidth: 2,
+      borderColor: Colors.radioBorder,
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: 6,
+    },
+    outerChecked: {
+      borderColor: Colors.accent,
+    },
+    inner: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: Colors.accent,
+    },
+    label: {
+      fontSize: 16,
+      color: Colors.textMain,
+    },
+    disabled: {
+      opacity: 0.5,
+    },
+    title: {
+      color: Colors.textMain,
+      marginBottom: 8,
+    },
+    titleInvalid: {
+      color: Colors.error500,
+    },
+  });
