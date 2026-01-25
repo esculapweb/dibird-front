@@ -1,0 +1,12 @@
+{
+  "authentication_failed": "Authentication failed",
+  "check_entered_data": "Check entered data",
+  "check_internet": "Check your internet connection or try again later",
+  "choose_location_": "Choose location...",
+  "could_not_create_user": "Could not create user",
+  "failed_remove_avatar": "Failed to remove avatar",
+  "image_processing_failed": "Image processing failed",
+  "retry": "Retry",
+  "serer_error": "Service unavailable",
+  "settings": "Settings"
+}
