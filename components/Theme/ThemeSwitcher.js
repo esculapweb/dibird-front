@@ -1,34 +1,41 @@
 import { View, Text, Pressable, StyleSheet } from "react-native";
-import { useLanguage } from "../../store/language-context";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../../store/theme-context";
 import { useTranslation } from "react-i18next";
 
-import { useTheme } from "../../store/theme-context";
-
-const LanguageSwitcher = () => {
-  const { language, changeLanguage } = useLanguage();
+const ThemeSwitcher = () => {
+  const { theme, toggleTheme, Colors } = useTheme();
   const { t } = useTranslation();
-  const { Colors } = useTheme();
+  const isDark = theme === "dark";
   const styles = stylesFn(Colors);
 
   return (
     <View style={styles.container}>
       <View style={styles.left}>
-        <Ionicons name="globe-outline" size={22} style={styles.icon} />
-        <Text style={styles.title}>{t("language")}:</Text>
+        <Ionicons
+          name="contrast-outline"
+          size={22}
+          style={styles.icon}
+        />
+        <Text style={styles.title}>{t("theme")}:</Text>
       </View>
       <View style={styles.buttonsRight}>
-        {["ru", "en"].map((lang) => (
+        {[
+          { value: "light", icon: "sunny-outline" },
+          { value: "dark", icon: "moon-outline" },
+        ].map((option) => (
           <Pressable
-            key={lang}
-            onPress={() => changeLanguage(lang)}
+            key={option.value}
+            onPress={() => toggleTheme(option.value)}
             style={({ pressed }) => [
               styles.button,
-              language === lang && { backgroundColor: Colors.primary200 },
+              isDark === (option.value === "dark") && {
+                backgroundColor: Colors.primary200,
+              },
               pressed && styles.pressed,
             ]}
           >
-            <Text style={styles.buttonText}>{lang.toUpperCase()}</Text>
+            <Ionicons name={option.icon} size={20} color={Colors.textMain} />
           </Pressable>
         ))}
       </View>
@@ -36,7 +43,7 @@ const LanguageSwitcher = () => {
   );
 };
 
-export default LanguageSwitcher;
+export default ThemeSwitcher;
 
 const stylesFn = (Colors) =>
   StyleSheet.create({
@@ -59,9 +66,8 @@ const stylesFn = (Colors) =>
       marginRight: 8,
       borderRadius: 16,
       backgroundColor: Colors.primary100,
-    },
-    buttonText: {
-      color: Colors.textMain,
+      alignItems: "center",
+      justifyContent: "center",
     },
     icon: {
       marginRight: 16,

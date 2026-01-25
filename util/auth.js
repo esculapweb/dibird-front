@@ -55,5 +55,6 @@ export const Logout = async () => {
   } finally {
     clearTokens();
     await AsyncStorage.removeItem("profile");
+    await AsyncStorage.removeItem("filters");
   }
 };

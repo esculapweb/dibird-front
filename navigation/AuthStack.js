@@ -12,6 +12,7 @@ import LoginScreen from "../screens/LoginScreen";
 import SignupScreen from "../screens/SignupScreen";
 import LanguageSwitcher from "../components/Language/LanguageSwitcher";
 import { useTheme } from "../store/theme-context";
+import ThemeSwitcher from "../components/Theme/ThemeSwitcher";
 
 const Drawer = createDrawerNavigator();
 
@@ -25,6 +26,7 @@ const CustomDrawerContent = (props) => {
         <DrawerItemList {...props} />
         <View style={{ flex: 1 }} />
         <LanguageSwitcher />
+        <ThemeSwitcher />
       </DrawerContentScrollView>
     </View>
   );

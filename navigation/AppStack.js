@@ -20,6 +20,7 @@ import { AuthContext } from "../store/auth-context";
 import { useProfile } from "../store/profile-context";
 import Avatar from "../components/Profile/Avatar";
 import LanguageSwitcher from "../components/Language/LanguageSwitcher";
+import ThemeSwitcher from "../components/Theme/ThemeSwitcher";
 import { useTheme } from "../store/theme-context";
 
 const Stack = createNativeStackNavigator();
@@ -73,6 +74,7 @@ const CustomDrawerContent = (props) => {
         <DrawerItemList {...props} />
         <View style={{ flex: 1 }} />
         <LanguageSwitcher />
+        <ThemeSwitcher />
         <DrawerItem
           label={t("logout")}
           labelStyle={{ color: Colors.primary500 }}

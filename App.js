@@ -9,12 +9,13 @@ import "./services/i18n";
 import AuthContextProvider, { AuthContext } from "./store/auth-context";
 import { ProfileProvider } from "./store/profile-context";
 import { LanguageProvider } from "./store/language-context";
-import { ThemeProvider } from "./store/theme-context";
+import { ThemeProvider, useTheme } from "./store/theme-context";
 
 SplashScreen.preventAutoHideAsync();
 
 const Root = () => {
   const { isInitializing } = useContext(AuthContext);
+  const { theme } = useTheme();
 
   useEffect(() => {
     if (!isInitializing) {
@@ -27,29 +28,29 @@ const Root = () => {
   }
 
   return (
-    <ActionSheetProvider>
-      <Navigation />
-    </ActionSheetProvider>
+    <>
+      <StatusBar style={theme === "dark" ? "light" : "dark"} />
+      <ActionSheetProvider>
+        <Navigation />
+      </ActionSheetProvider>
+      <Toast
+        config={{
+          error: (props) => <ErrorToast {...props} text2NumberOfLines={6} />,
+        }}
+        position="bottom"
+      />
+    </>
   );
 };
 
 export default function App() {
   return (
     <>
-      <StatusBar style="light" />
       <LanguageProvider>
         <ThemeProvider>
           <AuthContextProvider>
             <ProfileProvider>
               <Root />
-              <Toast
-                config={{
-                  error: (props) => (
-                    <ErrorToast {...props} text2NumberOfLines={6} />
-                  ),
-                }}
-                position="bottom"
-              />
             </ProfileProvider>
           </AuthContextProvider>
         </ThemeProvider>

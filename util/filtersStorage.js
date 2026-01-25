@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const FILTERS_KEY = "@filters";
+const FILTERS_KEY = "filters";
 
 export const saveFilters = async (filters) => {
   try {
