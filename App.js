@@ -9,7 +9,7 @@ import "./services/i18n";
 import AuthContextProvider, { AuthContext } from "./store/auth-context";
 import { ProfileProvider } from "./store/profile-context";
 import { LanguageProvider } from "./store/language-context";
-import { ThemeProvider } from "@react-navigation/native";
+import { ThemeProvider } from "./store/theme-context";
 
 SplashScreen.preventAutoHideAsync();
 

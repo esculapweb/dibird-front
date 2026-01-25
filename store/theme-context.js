@@ -3,13 +3,13 @@ import { Appearance } from "react-native";
 import { LightColors } from "../constants/colors/light";
 import { DarkColors } from "../constants/colors/dark";
 
-export const ThemeContext = createContext({
+const ThemeContext = createContext({
   theme: "light",
   Colors: LightColors,
   toggleTheme: () => {},
 });
 
-const ThemeProvider = ({ children }) => {
+export const ThemeProvider = ({ children }) => {
   const systemTheme = Appearance.getColorScheme() || "light";
   const [theme, setTheme] = useState(systemTheme);
 
