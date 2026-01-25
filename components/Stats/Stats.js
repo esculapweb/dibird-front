@@ -218,7 +218,7 @@ const stylesFn = (Colors) =>
     observations: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: Colors.backgroundMain,
+      backgroundColor: Colors.observationBadgeBg,
       paddingHorizontal: 5,
       paddingVertical: 2,
       borderRadius: 10,

@@ -28,7 +28,7 @@ const DateInput = ({
   minimumDate,
   allowClear = true,
 }) => {
-  const { Colors } = useTheme();
+  const { Colors, theme } = useTheme();
   const styles = stylesFn(Colors);
   const today = getTodayEnd();
 
@@ -68,7 +68,11 @@ const DateInput = ({
 
       <Pressable
         onPress={openPicker}
-        style={[styles.input, error && styles.errorBorder]}
+        style={[
+          styles.input,
+          showPicker && styles.inputActive,
+          error && styles.errorBorder,
+        ]}
       >
         <Text style={[styles.text, !value && styles.placeholder]}>
           {value ? formatDate(value) : placeholder}
@@ -84,7 +88,7 @@ const DateInput = ({
               />
             </Pressable>
           )}
-          <Ionicons name="calendar" size={20} color={Colors.dropdownIcon} />
+          <Ionicons name="calendar" size={20} color={Colors.textSecondary} />
         </View>
       </Pressable>
 
@@ -95,8 +99,10 @@ const DateInput = ({
             mode="date"
             maximumDate={today}
             display={Platform.OS === "ios" ? "spinner" : "default"}
+            themeVariant={theme === "dark" ? "dark" : "light"}
             onChange={handleChange}
             {...(minimumDate ? { minimumDate } : {})}
+            style={{ color: Colors.textMain }}
           />
 
           {Platform.OS === "ios" && (
@@ -133,12 +139,12 @@ const stylesFn = (Colors) =>
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      backgroundColor: Colors.primary100,
+      backgroundColor: Colors.backgroundColor,
     },
 
-    text: { fontSize: 16 },
+    text: { fontSize: 16, color: Colors.textMain },
 
-    placeholder: { color: Colors.dropdownIcon },
+    placeholder: { color: Colors.textSecondary },
 
     icons: {
       flexDirection: "row",
@@ -151,6 +157,8 @@ const stylesFn = (Colors) =>
       backgroundColor: Colors.primary100,
       borderRadius: 8,
       padding: 8,
+      borderWidth: 1,
+      borderColor: Colors.border,
     },
 
     currentValue: {
@@ -169,7 +177,7 @@ const stylesFn = (Colors) =>
 
     doneText: {
       fontSize: 16,
-      color: Colors.accent,
+      color: Colors.done,
       fontWeight: "600",
     },
 
@@ -181,5 +189,9 @@ const stylesFn = (Colors) =>
 
     errorBorder: {
       borderColor: Colors.error500,
+    },
+
+    inputActive: {
+      backgroundColor: Colors.primary100,
     },
   });

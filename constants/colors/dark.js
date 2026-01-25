@@ -8,7 +8,7 @@ export const DarkColors = {
   error500: "#f87171",
   error600: "#ef4444",
 
-  accent: "#fbbf24",
+  accent: "#f0c24b",
 
   border: "#374151",
   dropdownIcon: "#9ca3af",
@@ -23,7 +23,6 @@ export const DarkColors = {
   logoAccent: "#d93b2e",
 
   backgroundMain: "#121212",
-  backgroundCard: "#1f2937",
 
   statIcon: "#9ca3af",
   imageBg: "#374151",
@@ -35,11 +34,17 @@ export const DarkColors = {
   toastError: "rgba(239,68,68,0.8)",
   toastInfo: "rgba(59,130,246,0.8)",
 
-  buttonPrimaryText: "#1f2937",
-  buttonPrimarySpinner: "#1f2937",
+  buttonBg: "#374151",
+  buttonPrimaryText: "#e5e7eb",
+  buttonPrimarySpinner: "#e5e7eb",
+  buttonPrimaryBorder: "#4b5563",
 
+  radioChecked: "#69768a",
   radioBorder: "#4b5563",
   radioDisabled: "#374151",
 
   divider: "#374151",
+  dotBorder: "#e5e7eb",
+  observationBadgeBg: "#232323",
+  done: "#60a5fa"
 };

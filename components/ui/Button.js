@@ -27,7 +27,7 @@ const stylesFn = (Colors) =>
       paddingVertical: 8,
       paddingHorizontal: 12,
       marginBottom: 8,
-      backgroundColor: Colors.accent,
+      backgroundColor: Colors.buttonBg,
       // elevation: 2,
       // shadowColor: 'black',
       // shadowOffset: { width: 1, height: 1 },

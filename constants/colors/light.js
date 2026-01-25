@@ -24,11 +24,17 @@ export const LightColors = {
   toastError: "rgba(255,0,0,0.7)",
   toastInfo: "rgba(0,0,255,0.7)",
 
+  buttonBg: "#f0c24b",
   buttonPrimaryText: "#1f2937",
   buttonPrimarySpinner: "#1f2937",
+  buttonPrimaryBorder: "#eab308",
 
+  radioChecked: "#f0c24b",
   radioBorder: "#9ca3af",
   radioDisabled: "#d1d5db",
 
   divider: "#e5e7eb",
+  dotBorder: "#ffe9e7",
+  observationBadgeBg: "#f0f0f0",
+  done: "#f0c24b"
 };

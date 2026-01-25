@@ -84,7 +84,7 @@ const BUTTON_HEIGHT = 48;
 const stylesFn = (Colors) =>
   StyleSheet.create({
     button: {
-      backgroundColor: Colors.accent,
+      backgroundColor: Colors.buttonBg,
       borderRadius: 8,
       height: BUTTON_HEIGHT,
       paddingHorizontal: 20,

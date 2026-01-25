@@ -118,7 +118,7 @@ const stylesFn = (Colors) =>
       borderRadius: 4,
       backgroundColor: Colors.logoAccent,
       borderWidth: 1,
-      borderColor: Colors.primary100,
+      borderColor: Colors.dotBorder,
     },
     pressed: {
       opacity: 0.7,
