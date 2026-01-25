@@ -10,6 +10,7 @@ export const LightColors = {
   border: "#ced4da",
   dropdownIcon: "#9ca3af",
   textMain: "#333",
+  textSecondary: "#6b7280",
   link: "#007AFF",
   linkLight: "#4e8cff",
   logoText: "#224895",
@@ -28,4 +29,6 @@ export const LightColors = {
 
   radioBorder: "#9ca3af",
   radioDisabled: "#d1d5db",
+
+  divider: "#e5e7eb",
 };

@@ -19,8 +19,8 @@ export const DarkColors = {
   link: "#60a5fa",
   linkLight: "#93c5fd",
 
-  logoText: "#e5e7eb",
-  logoAccent: "#f87171",
+  logoText: "#224895",
+  logoAccent: "#d93b2e",
 
   backgroundMain: "#121212",
   backgroundCard: "#1f2937",
@@ -40,4 +40,6 @@ export const DarkColors = {
 
   radioBorder: "#4b5563",
   radioDisabled: "#374151",
+
+  divider: "#374151",
 };

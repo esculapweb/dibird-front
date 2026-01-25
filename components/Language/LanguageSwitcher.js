@@ -46,7 +46,7 @@ const stylesFn = (Colors) =>
       flexDirection: "row",
       alignItems: "center",
       borderTopWidth: 1,
-      borderColor: Colors.backgroundMain,
+      borderColor: Colors.divider,
     },
     title: {
       paddingVertical: 8,

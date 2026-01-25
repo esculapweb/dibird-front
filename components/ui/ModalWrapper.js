@@ -51,7 +51,7 @@ const stylesFn = (Colors) =>
       justifyContent: "space-between",
       paddingHorizontal: 16,
     },
-    title: { fontSize: 16, fontWeight: "600" },
+    title: { fontSize: 16, fontWeight: "600", color: Colors.textMain },
     cancel: { fontSize: 16, fontWeight: "600", color: Colors.linkLight },
     apply: { fontSize: 16, color: Colors.link, fontWeight: "600" },
   });

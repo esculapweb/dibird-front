@@ -49,7 +49,7 @@ const StatScreen = ({ navigation }) => {
 
   useEffect(() => {
     navigation.setOptions({
-      headerRight: () => (
+      headerRight: ({tintColor}) => (
         <Pressable
           style={({ pressed }) => [
             styles.filterContainer,
@@ -61,7 +61,7 @@ const StatScreen = ({ navigation }) => {
           <Ionicons
             name={hasActiveFilters ? "options" : "options-outline"}
             size={22}
-            color={Colors.primary100}
+            color={tintColor}
           />
 
           {hasActiveFilters && <View style={styles.dot} />}

@@ -90,6 +90,7 @@ const SelectListModal = ({
             style={{
               fontSize: 16,
               fontWeight: isActive ? "600" : "400",
+              color: Colors.textMain
             }}
           >
             {item.label}
@@ -104,6 +105,7 @@ const SelectListModal = ({
       <TextInput
         style={styles.search}
         placeholder={`${t("search")}...`}
+        placeholderTextColor={Colors.textSecondary}
         value={search}
         onChangeText={setSearch}
       />

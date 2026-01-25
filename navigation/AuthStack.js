@@ -40,18 +40,8 @@ const AuthDrawer = () => {
     <Drawer.Navigator
       drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={{
-        drawerStyle: {
-          backgroundColor: Colors.primary100,
-        },
         drawerActiveTintColor: Colors.primary500,
         drawerActiveBackgroundColor: Colors.primary200,
-        headerStyle: {
-          backgroundColor: Colors.primary500,
-          elevation: 0,
-          shadowOpacity: 0,
-        },
-        headerTintColor: Colors.primary100,
-        sceneContainerStyle: { backgroundColor: Colors.backgroundMain },
       }}
     >
       <Drawer.Screen

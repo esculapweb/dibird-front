@@ -27,18 +27,8 @@ const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
 
 const AppStack = () => {
-  const { Colors } = useTheme();
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: Colors.primary500,
-          elevation: 0,
-        },
-        headerTintColor: Colors.primary100,
-        contentStyle: { backgroundColor: Colors.backgroundMain },
-      }}
-    >
+    <Stack.Navigator>
       <Stack.Screen
         name="ProfileScreen"
         options={{
@@ -107,19 +97,9 @@ const AppDrawer = () => {
     <Drawer.Navigator
       drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={{
-        drawerStyle: {
-          backgroundColor: Colors.primary100,
-        },
         drawerActiveTintColor: Colors.primary500,
         drawerActiveBackgroundColor: Colors.primary200,
-        headerStyle: {
-          backgroundColor: Colors.primary500,
-          elevation: 0,
-          shadowOpacity: 0,
-        },
-        headerTintColor: Colors.primary100,
-        sceneContainerStyle: { backgroundColor: Colors.backgroundMain },
-      }}
+        }}
     >
       {/* <Drawer.Screen
         name={t("settings")}
@@ -178,6 +158,6 @@ const stylesFn = (Colors) =>
     },
     logout: {
       borderTopWidth: 1,
-      borderColor: Colors.backgroundMain,
+      borderColor: Colors.divider,
     },
   });
