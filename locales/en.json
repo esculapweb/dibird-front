@@ -37,6 +37,8 @@
   "login_failed": "Login failed",
   "login_instead": "Log in instead",
   "logout": "Logout",
+  "logout_message": "Do you really want to log out?",
+  "logout_title": "Logout",
   "my_country": "My country",
   "no": "No",
   "no_connection": "No internet connection",

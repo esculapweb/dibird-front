@@ -1,6 +1,4 @@
 import { useState, useEffect } from "react";
-import { View, StyleSheet, Pressable } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 
 import StatsTabs from "../navigation/StatsTabs";
 import { loadDecorator, fetchSeen } from "../util/fetches";
@@ -8,7 +6,7 @@ import { useLanguage } from "../store/language-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import FilterModal from "../components/Filters/FilterModal";
 import { loadFilters, clearFilters } from "../util/filtersStorage";
-import { useTheme } from "../store/theme-context";
+import IconButton from "../components/ui/IconButton";
 
 const StatScreen = ({ navigation }) => {
   const [filters, setFilters] = useState(null);
@@ -18,8 +16,6 @@ const StatScreen = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   const { language } = useLanguage();
-  const { Colors } = useTheme();
-  const styles = stylesFn(Colors);
 
   const handleFilterPress = () => setFilterModalVisible(true);
 
@@ -49,23 +45,21 @@ const StatScreen = ({ navigation }) => {
 
   useEffect(() => {
     navigation.setOptions({
-      headerRight: ({tintColor}) => (
-        <Pressable
-          style={({ pressed }) => [
-            styles.filterContainer,
-            pressed && styles.pressed,
-          ]}
-          onPress={handleFilterPress}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons
-            name={hasActiveFilters ? "options" : "options-outline"}
-            size={22}
-            color={tintColor}
+      headerRight: ({ tintColor }) => (
+        <>
+          <IconButton
+            tintColor={tintColor}
+            onPress={()=>{}}
+            icon="swap-vertical"
           />
 
-          {hasActiveFilters && <View style={styles.dot} />}
-        </Pressable>
+          <IconButton
+            tintColor={tintColor}
+            onPress={handleFilterPress}
+            icon={hasActiveFilters ? "options" : "options-outline"}
+            active={hasActiveFilters}
+          />
+        </>
       ),
     });
   }, [navigation, filters]);
@@ -103,24 +97,3 @@ const StatScreen = ({ navigation }) => {
 };
 
 export default StatScreen;
-
-const stylesFn = (Colors) =>
-  StyleSheet.create({
-    filterContainer: {
-      marginRight: 16,
-    },
-    dot: {
-      position: "absolute",
-      top: -2,
-      right: -2,
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-      backgroundColor: Colors.logoAccent,
-      borderWidth: 1,
-      borderColor: Colors.dotBorder,
-    },
-    pressed: {
-      opacity: 0.7,
-    },
-  });

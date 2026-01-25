@@ -6,7 +6,7 @@ import {
   DrawerItem,
 } from "@react-navigation/drawer";
 import { useContext } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 
@@ -47,9 +47,26 @@ const CustomDrawerContent = (props) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
 
-  const handleLogout = async () => {
-    props.navigation.closeDrawer?.();
-    await authCtx.logout();
+  const handleLogout = () => {
+    Alert.alert(
+      t("logout_title"),
+      t("logout_message"),
+      [
+        {
+          text: t("cancel"),
+          style: "cancel",
+        },
+        {
+          text: t("logout"),
+          style: "destructive",
+          onPress: async () => {
+            await authCtx.logout();
+            props.navigation.closeDrawer?.();
+          },
+        },
+      ],
+      { cancelable: true },
+    );
   };
 
   return (
@@ -99,7 +116,7 @@ const AppDrawer = () => {
       screenOptions={{
         drawerActiveTintColor: Colors.primary500,
         drawerActiveBackgroundColor: Colors.primary200,
-        }}
+      }}
     >
       {/* <Drawer.Screen
         name={t("settings")}
