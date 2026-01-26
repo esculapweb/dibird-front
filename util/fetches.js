@@ -1,11 +1,11 @@
 import i18n from "../services/i18n";
-import api, {showError} from "../services/api";
+import api, { showError } from "../services/api";
 
 export const loadDecorator = async (loaderFn) => {
   try {
     await loaderFn();
   } catch (e) {
-    showError(e)
+    showError(e);
     console.warn(
       `[${new Date().toLocaleString()}] Failed to load data`,
       e.code,
@@ -19,6 +19,13 @@ export const isoToFlagEmoji = (isoCode) => {
   return isoCode
     .toUpperCase()
     .replace(/./g, (char) => String.fromCodePoint(127397 + char.charCodeAt()));
+};
+
+export const normalizeValue = (value, allowed_values) => {
+  if (!value) return allowed_values[0];
+  if (!allowed_values.includes(value.replace(/^-/, "")))
+    return allowed_values[0];
+  return value;
 };
 
 export const formatDate = (isoDate) =>
@@ -99,11 +106,19 @@ export const fetchMyPlaces = async (territory = null) => {
   }));
 };
 
-const fetchSpeciesForTerritory = (territory_id) => {
-  return api.get(`/api/territory-species/?territory_id=${territory_id}`);
+const fetchSpeciesForTerritory = (territory_id, order) => {
+  const orderAllowed = ["ioc_id", "name"];
+  const params = {
+    territory_id: territory_id,
+    o: normalizeValue(order, orderAllowed),
+  };
+
+  return api.get("/api/territory-species2/", {
+    params,
+  });
 };
 
-export const fetchSeen = async (filters = {}, order = "name") => {
+export const fetchSeen = async (filters = {}, order = "ioc_id") => {
   const { date, ...restFilters } = filters;
 
   const apiFilters = {
@@ -131,16 +146,13 @@ export const fetchSeen = async (filters = {}, order = "name") => {
 
   const territory = restFilters?.territory;
   if (territory) {
-    const territorySpecies = await fetchSpeciesForTerritory(territory);
-    notSeenList = Object.entries(territorySpecies.data)
-      .filter(([speciesId]) => !idsSet.has(Number(speciesId)))
-      .map(([speciesId, sp]) => ({
-        id: Number(speciesId),
-        ...sp,
-      }))
-      .sort((a, b) =>
-        a.sp_name_lang.localeCompare(b.sp_name_lang, i18n.language),
-      );
+    const territorySpecies = await fetchSpeciesForTerritory(territory, order);
+    notSeenList = territorySpecies.data
+      .filter((item) => !idsSet.has(item.taxon_pk))
+      .map((item) => ({
+        id: item.taxon_pk,
+        ...item,
+      }));
   }
 
   return { seenList, notSeenList };

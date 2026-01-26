@@ -1,16 +1,22 @@
 import { useState, useEffect } from "react";
 
 import StatsTabs from "../navigation/StatsTabs";
-import { loadDecorator, fetchSeen } from "../util/fetches";
+import { loadDecorator, normalizeValue, fetchSeen } from "../util/fetches";
 import { useLanguage } from "../store/language-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import FilterModal from "../components/Filters/FilterModal";
+import SortModal from "../components/Sort/SortModal";
 import { loadFilters, clearFilters } from "../util/filtersStorage";
+import { loadSort } from "../util/sortStorage";
 import IconButton from "../components/ui/IconButton";
+
+const ALLOWED_SORT_FIELDS = ["ioc_id", "date_time", "name"];
 
 const StatScreen = ({ navigation }) => {
   const [filters, setFilters] = useState(null);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [sort, setSort] = useState(null);
+  const [sortModalVisible, setSortModalVisible] = useState(false);
   const [seen, setSeen] = useState([]);
   const [notSeen, setNotSeen] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -18,6 +24,7 @@ const StatScreen = ({ navigation }) => {
   const { language } = useLanguage();
 
   const handleFilterPress = () => setFilterModalVisible(true);
+  const handleSortPress = () => setSortModalVisible(true);
 
   const hasActiveFilters = filters
     ? Object.values(filters).some((v) => {
@@ -34,6 +41,8 @@ const StatScreen = ({ navigation }) => {
     setFilterModalVisible(false);
   };
 
+ 
+
   useEffect(() => {
     const initFilters = async () => {
       const storedFilters = await loadFilters();
@@ -44,12 +53,21 @@ const StatScreen = ({ navigation }) => {
   }, []);
 
   useEffect(() => {
+    const initSort = async () => {
+      const storedSort = await loadSort();
+      setSort(normalizeValue(storedSort, ALLOWED_SORT_FIELDS));
+    };
+
+    initSort();
+  }, []);
+
+  useEffect(() => {
     navigation.setOptions({
       headerRight: ({ tintColor }) => (
         <>
           <IconButton
             tintColor={tintColor}
-            onPress={()=>{}}
+            onPress={handleSortPress}
             icon="swap-vertical"
           />
 
@@ -62,7 +80,7 @@ const StatScreen = ({ navigation }) => {
         </>
       ),
     });
-  }, [navigation, filters]);
+  }, [navigation, filters, sort]);
 
   useEffect(() => {
     if (!filters) return;
@@ -70,7 +88,7 @@ const StatScreen = ({ navigation }) => {
     const loadData = async () => {
       setIsLoading(true);
       try {
-        const { seenList, notSeenList } = await fetchSeen(filters);
+        const { seenList, notSeenList } = await fetchSeen(filters, sort);
         setSeen(seenList);
         setNotSeen(notSeenList);
       } finally {
@@ -78,13 +96,19 @@ const StatScreen = ({ navigation }) => {
       }
     };
     loadDecorator(loadData);
-  }, [language, filters]);
+  }, [language, filters, sort]);
 
-  if (isLoading || !filters) return <LoadingOverlay />;
+  if (isLoading || !filters || !sort) return <LoadingOverlay />;
 
   return (
     <>
       <StatsTabs seen={seen} notSeen={notSeen} territory={filters?.territory} />
+      <SortModal
+        visible={sortModalVisible}
+        onClose={() => setSortModalVisible(false)}
+        sort={sort}
+        setSort={setSort}
+      />
       <FilterModal
         visible={filterModalVisible}
         onClose={() => setFilterModalVisible(false)}

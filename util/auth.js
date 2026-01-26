@@ -56,5 +56,6 @@ export const Logout = async () => {
     clearTokens();
     await AsyncStorage.removeItem("profile");
     await AsyncStorage.removeItem("filters");
+    await AsyncStorage.removeItem("sorting");
   }
 };
