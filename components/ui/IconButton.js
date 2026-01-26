@@ -14,7 +14,7 @@ const IconButton = ({ tintColor, onPress, icon, active }) => {
         pressed && styles.pressed,
       ]}
       onPress={onPress}
-      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      hitSlop={12}
     >
       <Ionicons name={icon} size={22} color={tintColor} />
 

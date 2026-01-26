@@ -17,12 +17,12 @@ const ModalWrapper = ({ children, onClose, onApply, visible, title }) => {
     >
       <View style={styles.container}>
         <View style={styles.header}>
-          <Pressable onPress={onClose}>
+          <Pressable onPress={onClose} hitSlop={16}>
             <Text style={styles.cancel}>{t("cancel")}</Text>
           </Pressable>
           <Text style={styles.title}>{title}</Text>
           {onApply ? (
-            <Pressable onPress={onApply}>
+            <Pressable onPress={onApply} hitSlop={16}>
               <Text style={styles.apply}>{t("apply")}</Text>
             </Pressable>
           ) : (
