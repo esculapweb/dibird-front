@@ -18,9 +18,11 @@ export const RadioGroup = ({
 
   return (
     <View style={style}>
-      <Text style={[styles.title, isInvalid && styles.titleInvalid]}>
-        {label}
-      </Text>
+      {label && (
+        <Text style={[styles.title, isInvalid && styles.titleInvalid]}>
+          {label}
+        </Text>
+      )}
       <View style={{ flexDirection: direction }}>
         {options.map((option, index) => {
           const checked = option.value === value;

@@ -6,23 +6,19 @@ import { saveSort } from "../../util/sortStorage";
 import ModalWrapper from "../ui/ModalWrapper";
 import RadioGroup from "../ui/RadioGroup";
 
-const SORT_OPTIONS = [
-  ["ioc_id", "taxonomic"],
-  ["-ioc_id", "taxonomic_desc"],
-  ["date_time", "date"],
-  ["-date_time", "date_desc"],
-  ["name", "alphabetic"],
-  ["-name", "alphabetic_desc"],
-];
-
 const SortModal = ({ visible, onClose, sort, setSort }) => {
   const { t } = useTranslation();
+
   const [sortInternal, setSortInternal] = useState(null);
 
-  const options = SORT_OPTIONS.map(([value, key]) => ({
-    value,
-    label: t(key),
-  }));
+  const options = [
+    { label: t("taxonomic"), value: "ioc_id" },
+    { label: t("taxonomic_desc"), value: "-ioc_id" },
+    { label: t("date_sort"), value: "date_time" },
+    { label: t("date_sort_desc"), value: "-date_time" },
+    { label: t("alphabetic"), value: "name" },
+    { label: t("alphabetic_desc"), value: "-name" },
+  ];
 
   const applyHandler = async () => {
     setSort(sortInternal);
@@ -48,7 +44,7 @@ const SortModal = ({ visible, onClose, sort, setSort }) => {
           keyboardShouldPersistTaps="handled"
         >
           <RadioGroup
-            label={t("what_is_first")}
+            label={`${t("sort_by")}:`}
             value={sortInternal}
             onChange={setSortInternal}
             direction="column"
