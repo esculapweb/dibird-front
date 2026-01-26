@@ -10,12 +10,17 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../store/theme-context";
 
+const BUTTON_HEIGHT = 48;
+const SUCCESS_DISPLAY_TIME = 3000; // 10 секунд
+
 const AnimatedLoadingButton = ({ onPress, loading, success, children }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
+
   const spinnerOpacity = useRef(new Animated.Value(0)).current;
   const successOpacity = useRef(new Animated.Value(0)).current;
 
+  // Анимация спиннера при loading
   useEffect(() => {
     Animated.timing(spinnerOpacity, {
       toValue: loading ? 1 : 0,
@@ -24,23 +29,23 @@ const AnimatedLoadingButton = ({ onPress, loading, success, children }) => {
     }).start();
   }, [loading]);
 
+  // Анимация галочки при success
   useEffect(() => {
     if (success) {
-      Animated.timing(successOpacity, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
-
-      const timeout = setTimeout(() => {
+      // Запускаем последовательность: показать → задержка → скрыть
+      Animated.sequence([
+        Animated.timing(successOpacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.delay(SUCCESS_DISPLAY_TIME),
         Animated.timing(successOpacity, {
           toValue: 0,
           duration: 200,
           useNativeDriver: true,
-        }).start();
-      }, 3000);
-
-      return () => clearTimeout(timeout);
+        }),
+      ]).start();
     }
   }, [success]);
 
@@ -57,29 +62,25 @@ const AnimatedLoadingButton = ({ onPress, loading, success, children }) => {
       <View style={styles.content}>
         <Text style={styles.text}>{children}</Text>
 
-        {loading && (
-          <Animated.View style={[styles.spinner, { opacity: spinnerOpacity }]}>
-            <ActivityIndicator size="small" color={Colors.buttonPrimaryText} />
-          </Animated.View>
-        )}
+        {/** Спиннер */}
+        <Animated.View style={[styles.spinner, { opacity: spinnerOpacity }]}>
+          <ActivityIndicator size="small" color={Colors.buttonPrimaryText} />
+        </Animated.View>
 
-        {success && (
-          <Animated.View style={[styles.spinner, { opacity: successOpacity }]}>
-            <Ionicons
-              name="checkmark-done-sharp"
-              size={20}
-              color={Colors.buttonPrimarySpinner}
-            />
-          </Animated.View>
-        )}
+        {/** Галочка */}
+        <Animated.View style={[styles.spinner, { opacity: successOpacity }]}>
+          <Ionicons
+            name="checkmark"
+            size={20}
+            color={Colors.buttonPrimarySpinner}
+          />
+        </Animated.View>
       </View>
     </Pressable>
   );
 };
 
 export default AnimatedLoadingButton;
-
-const BUTTON_HEIGHT = 48;
 
 const stylesFn = (Colors) =>
   StyleSheet.create({
