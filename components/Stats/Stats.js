@@ -11,19 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { formatDate, isoToFlagEmoji } from "../../util/fetches";
 import { Config } from "../../constants/config";
 import { useTheme } from "../../store/theme-context";
-
-const MetaItem = ({ icon, text }) => {
-  if (!text) return null;
-  const { Colors } = useTheme();
-  const styles = stylesFn(Colors);
-
-  return (
-    <View style={styles.metaItem}>
-      {icon && <Ionicons name={icon} size={11} color={Colors.statIcon} />}
-      <Text style={styles.metaText}>{text}</Text>
-    </View>
-  );
-};
+import MetaItem from "../ui/MetaItem";
 
 const Stats = ({ data, seen = false }) => {
   const { Colors } = useTheme();
@@ -122,7 +110,7 @@ const stylesFn = (Colors) =>
       borderRadius: 12,
       padding: 6,
       marginBottom: 6,
-      shadowColor: Colors.textMain,
+      shadowColor: Colors.shadow,
       shadowOpacity: 0.05,
       shadowRadius: 5,
       shadowOffset: { width: 0, height: 2 },
@@ -202,23 +190,10 @@ const stylesFn = (Colors) =>
       justifyContent: "flex-end",
     },
 
-    metaItem: {
-      flexDirection: "row",
-      alignItems: "center",
-      marginRight: 8,
-      marginTop: 1,
-    },
-
-    metaText: {
-      marginLeft: 2,
-      fontSize: 11,
-      color: Colors.textMain,
-    },
-
     observations: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: Colors.observationBadgeBg,
+      backgroundColor: Colors.badgeBg,
       paddingHorizontal: 5,
       paddingVertical: 2,
       borderRadius: 10,

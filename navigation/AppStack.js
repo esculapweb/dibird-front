@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 
 import WelcomeScreen from "../screens/WelcomeScreen";
 import StatScreen from "../screens/StatScreen";
+import PlacesScreen from "../screens/PlacesScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import ErrorScreen from "../screens/ErrorScreen";
@@ -140,6 +141,20 @@ const AppDrawer = () => {
           drawerIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? "stats-chart" : "stats-chart-outline"}
+              color={color}
+              size={size}
+            />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name={"Places"}
+        component={PlacesScreen}
+        options={{
+          title: t("places"),
+          drawerIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "location" : "location-outline"}
               color={color}
               size={size}
             />

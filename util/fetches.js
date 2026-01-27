@@ -157,3 +157,16 @@ export const fetchSeen = async (filters = {}, order = "ioc_id") => {
 
   return { seenList, notSeenList };
 };
+
+export const fetchPlaces = async (filters = {}, order = "name", search="", page=1) => {
+   let params = {
+    ...cleanFilters(filters),
+    per_page: 100,
+    o: order,
+  };
+  if (search) params.name = search;
+  if (page>1) params.page = page
+
+  const res = await api.get("/myapi/place/", { params });
+  return res.data
+};

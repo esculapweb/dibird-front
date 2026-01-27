@@ -35,6 +35,6 @@ export const LightColors = {
 
   divider: "#e5e7eb",
   dotBorder: "#ffe9e7",
-  observationBadgeBg: "#f0f0f0",
-  done: "#f0c24b"
+  badgeBg: "#f0f0f0",
+  done: "#f0c24b",
 };

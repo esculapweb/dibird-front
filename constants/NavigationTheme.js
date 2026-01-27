@@ -18,7 +18,6 @@ export const DarkNavigationTheme = {
   colors: {
     ...DarkTheme.colors,
     primary: "#e5e7eb",
-    // primary: "#2f3c43",  
     background: "#121212",
     card: "#121212",
     text: "#e5e7eb",

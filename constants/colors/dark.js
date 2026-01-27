@@ -1,5 +1,5 @@
 export const DarkColors = {
-  primary100: "#121212",
+  primary100: "#1b1b1b",
   primary200: "#1e293b",
   primary300: "#1f2937",
   primary500: "#e5e7eb",
@@ -45,6 +45,6 @@ export const DarkColors = {
 
   divider: "#374151",
   dotBorder: "#e5e7eb",
-  observationBadgeBg: "#232323",
-  done: "#60a5fa"
+  badgeBg: "#121212",
+  done: "#60a5fa",
 };
