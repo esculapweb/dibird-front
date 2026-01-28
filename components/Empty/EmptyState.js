@@ -1,44 +1,28 @@
-import { View, Text, Pressable, StyleSheet } from "react-native";
-import { useTranslation } from "react-i18next";
+import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useTheme } from "../../store/theme-context";
 import FlatButton from "../ui/FlatButton";
 
-const EmptyState = ({ type, onAdd, onClear }) => {
-  const { t } = useTranslation();
+
+const EmptyState = ({
+  icon = "alert-circle-outline",
+  message = "Пусто",
+  actions = [],
+}) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
 
-  if (type === "filtered") {
-    return (
-      <View style={styles.container}>
-        <Ionicons
-          name="search-outline"
-          size={48}
-          color={Colors.textSecondary}
-        />
-        <Text style={styles.message}>Ничего не найдено</Text>
-
-        <FlatButton onPress={onClear} style={{ marginTop: 12 }}>
-          Сбросить фильтры
-        </FlatButton>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
-      <Ionicons
-        name="location-outline"
-        size={48}
-        color={Colors.textSecondary}
-      />
-      <Text style={styles.message}>Здесь пока нет мест</Text>
+      <Ionicons name={icon} size={48} color={Colors.textSecondary} />
+      <Text style={styles.message}>{message}</Text>
 
-      <FlatButton onPress={onAdd} style={{ marginTop: 12 }}>
-        Добавить первое место
-      </FlatButton>
+      {actions.map((action, i) => (
+        <FlatButton key={i} onPress={action.onPress} style={{ marginTop: 12 }}>
+          {action.label}
+        </FlatButton>
+      ))}
     </View>
   );
 };
@@ -54,5 +38,6 @@ const stylesFn = (Colors) =>
     message: {
       marginTop: 12,
       color: Colors.textSecondary,
+      textAlign: "center",
     },
   });

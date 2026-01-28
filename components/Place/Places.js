@@ -1,12 +1,12 @@
-import { useCallback } from "react";
 import {
   FlatList,
   StyleSheet,
   Pressable,
   ActivityIndicator,
 } from "react-native";
-
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
+
 import { useTheme } from "../../store/theme-context";
 import PlaceCard from "./PlaceCard";
 import EmptyState from "../Empty/EmptyState";
@@ -21,8 +21,29 @@ const Places = ({
 }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
+  const { t } = useTranslation();
 
-  const renderPlace = useCallback(({ item }) => <PlaceCard item={item} />, []);
+  const renderPlace = ({ item }) => <PlaceCard item={item} />;
+
+  const getEmptyProps = () => {
+    if (!emptyType) return null;
+
+    if (emptyType === "filtered") {
+      return {
+        icon: "search-outline",
+        message: "Ничего не найдено",
+        actions: [{ label: "Сбросить фильтры", onPress: onClear }],
+      };
+    }
+
+    return {
+      icon: "location-outline",
+      message: "Здесь пока нет мест",
+      actions: [{ label: "Добавить первое место", onPress: onAddPlace }],
+    };
+  };
+
+  const emptyProps = getEmptyProps();
 
   return (
     <>
@@ -36,15 +57,7 @@ const Places = ({
         ]}
         onEndReached={onEndReached}
         onEndReachedThreshold={0.5}
-        ListEmptyComponent={
-          emptyType && (
-            <EmptyState
-              type={emptyType}
-              onAdd={onAddPlace}
-              onClear={onClear}
-            />
-          )
-        }
+        ListEmptyComponent={emptyProps ? <EmptyState {...emptyProps} /> : null}
         ListFooterComponent={
           isLoadingMore && (
             <ActivityIndicator
@@ -67,9 +80,7 @@ export default Places;
 
 const stylesFn = (Colors) =>
   StyleSheet.create({
-    list: {
-      padding: 12,
-    },
+    list: { padding: 12 },
     fab: {
       position: "absolute",
       bottom: 20,

@@ -20,8 +20,8 @@ const PlacesScreen = ({ navigation }) => {
   const { t } = useTranslation();
 
   const [filters, setFilters] = useState(null);
-  const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [sort, setSort] = useState(null);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [sortModalVisible, setSortModalVisible] = useState(false);
 
   const [places, setPlaces] = useState([]);
@@ -31,50 +31,49 @@ const PlacesScreen = ({ navigation }) => {
   const [page, setPage] = useState(1);
   const [finalPage, setFinalPage] = useState(1);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
-  const [isRefetching, setIsRefetching] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  const handleFilterPress = () => setFilterModalVisible(true);
-  const handleSortPress = () => setSortModalVisible(true);
-
+  // --- UI helpers ---
   const hasActiveFilters = filters
-    ? Object.values(filters).some((v) => {
-        if (Array.isArray(v)) {
-          return v.length > 0;
-        }
-        return v !== null && v !== undefined && v !== "";
-      })
+    ? Object.values(filters).some((v) =>
+        Array.isArray(v) ? v.length > 0 : v != null && v !== "",
+      )
     : false;
 
   const isEmpty = places.length === 0;
-  const isSearchActive = debouncedSearch?.length > 0;
+  const isSearchActive = debouncedSearch.length > 0;
+
+  // --- empty state type ---
   const emptyType =
-    isEmpty && !isRefetching
+    !isInitialLoad && isEmpty
       ? isSearchActive || hasActiveFilters
         ? "filtered"
         : "initial"
       : null;
 
+  // --- actions ---
   const handleClearFilters = () => {
-    // setPlaces([]);
     setFilters({});
     clearFilters();
     setFilterModalVisible(false);
   };
 
-  const handleClearSearch = () => {
-    setSearch("");
-  };
+  const handleClearSearch = () => setSearch("");
 
   const handleClearFiltersSearch = () => {
     handleClearSearch();
     handleClearFilters();
   };
 
+  const handleFilterPress = () => setFilterModalVisible(true);
+  const handleSortPress = () => setSortModalVisible(true);
+  const handleAddPlace = () => console.log("Add place");
+
+  // --- fetch places ---
   const loadPlaces = async (pageNum = 1) => {
     if (pageNum > finalPage) return;
 
-    if (pageNum > 1) setIsLoadingMore(true);
+    pageNum === 1 ? null : setIsLoadingMore(true);
 
     try {
       const response = await fetchPlaces(
@@ -90,7 +89,7 @@ const PlacesScreen = ({ navigation }) => {
       setFinalPage(pagination.final);
     } finally {
       setIsLoadingMore(false);
-      if (isInitialLoading) setIsInitialLoading(false);
+      if (isInitialLoad) setIsInitialLoad(false);
     }
   };
 
@@ -100,16 +99,12 @@ const PlacesScreen = ({ navigation }) => {
     }
   };
 
-  const handleAddPlace = () => {
-    console.log("Add place");
-  };
-
+  // --- init filters & sort ---
   useEffect(() => {
     const initFilters = async () => {
       const storedFilters = await loadFilters();
       setFilters(storedFilters ?? {});
     };
-
     initFilters();
   }, []);
 
@@ -118,10 +113,10 @@ const PlacesScreen = ({ navigation }) => {
       const storedSort = await loadSort();
       setSort(normalizeValue(storedSort, ALLOWED_SORT_FIELDS));
     };
-
     initSort();
   }, []);
 
+  // --- header buttons ---
   useEffect(() => {
     navigation.setOptions({
       headerRight: ({ tintColor }) => (
@@ -131,7 +126,6 @@ const PlacesScreen = ({ navigation }) => {
             onPress={handleSortPress}
             icon="swap-vertical"
           />
-
           <IconButton
             tintColor={tintColor}
             onPress={handleFilterPress}
@@ -143,16 +137,14 @@ const PlacesScreen = ({ navigation }) => {
     });
   }, [navigation, filters, sort]);
 
+  // --- fetch on filters/sort/search change ---
   useEffect(() => {
-    if (!filters) return;
-    setIsRefetching(true);
-    loadDecorator(async () => {
-      await loadPlaces(1);
-      setIsRefetching(false);
-    });
+    if (!filters || !sort) return;
+    loadDecorator(() => loadPlaces(1));
   }, [language, filters, sort, debouncedSearch]);
 
-  if (isInitialLoading || !filters || !sort) return <LoadingOverlay />;
+  // --- initial loader ---
+  if (isInitialLoad || !filters || !sort) return <LoadingOverlay />;
 
   return (
     <>
@@ -162,6 +154,7 @@ const PlacesScreen = ({ navigation }) => {
         onClear={handleClearSearch}
         placeholder={t("search_by_name")}
       />
+
       <Places
         data={places}
         onEndReached={handleLoadMore}
