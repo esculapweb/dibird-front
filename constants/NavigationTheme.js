@@ -7,9 +7,9 @@ export const LightNavigationTheme = {
     primary: "#1f2937",        // кнопки / акценты
     background: "#f0f0f0",     // общий фон
     card: "#ffffff",            // фон header / drawer
-    // text: "#1f2937",            // цвет текста
-    // border: "#ced4da",          // бордеры
-    // notification: "#f0c24b",    // уведомления
+    text: "#1f2937",            // цвет текста
+    border: "#ced4da",          // бордеры
+    notification: "#f0c24b",    // уведомления
   },
 };
 
@@ -21,7 +21,7 @@ export const DarkNavigationTheme = {
     background: "#121212",
     card: "#121212",
     text: "#e5e7eb",
-    // border: "#374151",
-    // notification: "#fbbf24",
+    border: "#374151",
+    notification: "#1e293b",
   },
 };

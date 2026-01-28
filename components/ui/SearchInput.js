@@ -54,6 +54,7 @@ const stylesFn = (Colors) =>
       paddingHorizontal: 12,
       marginHorizontal: 8,
       marginTop: 8,
+      // marginBottom: 4,
 
       borderRadius: 12,
       backgroundColor: Colors.primary100,

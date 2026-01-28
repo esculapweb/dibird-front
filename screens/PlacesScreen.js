@@ -80,6 +80,10 @@ const PlacesScreen = ({ navigation }) => {
     }
   };
 
+  const handleAddPlace = () => {
+    console.log('Add place')
+  }
+
   useEffect(() => {
     const initFilters = async () => {
       const storedFilters = await loadFilters();
@@ -137,6 +141,7 @@ const PlacesScreen = ({ navigation }) => {
         data={places}
         onEndReached={handleLoadMore}
         isLoadingMore={isLoadingMore}
+        onAddPlace={handleAddPlace}
       />
 
       <SortModal
