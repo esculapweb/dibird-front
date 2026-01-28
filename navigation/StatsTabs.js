@@ -7,7 +7,7 @@ import Toast from "react-native-toast-message";
 
 const Tab = createBottomTabNavigator();
 
-const StatsTabs = ({ seen, notSeen, territory }) => {
+const StatsTabs = ({ seen, notSeen, territory, emptyType, onAdd, onClear }) => {
   const { t } = useTranslation();
 
   const seenTitle = `${t("seen")} (${seen.length})`;
@@ -46,7 +46,15 @@ const StatsTabs = ({ seen, notSeen, territory }) => {
           ),
         }}
       >
-        {() => <Stats data={seen} seen={true} />}
+        {() => (
+          <Stats
+            data={seen}
+            seen={true}
+            onAdd={onAdd}
+            emptyType={emptyType}
+            onClear={onClear}
+          />
+        )}
       </Tab.Screen>
       <Tab.Screen
         name="NotSeen"

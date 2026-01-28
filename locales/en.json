@@ -1,4 +1,5 @@
 {
+  "add_first_observation": "Add first observation",
   "add_first_place": "Add first location",
   "all_countries": "All countries",
   "all_locations": "All locations",
@@ -51,6 +52,7 @@
   "no_data": "No data",
   "no_not_seen_empty": "All species are already marked as seen",
   "no_places_yet": "No locations yet",
+  "no_stat_yet": "No statistics yet",
   "not_seen": "Not seen",
   "not_selected": "Not selected",
   "nothing_found": "Nothing found",

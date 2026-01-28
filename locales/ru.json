@@ -1,4 +1,5 @@
 {
+  "add_first_observation": "Добавить первое наблюдение",
   "add_first_place": "Добавить первое место",
   "all_countries": "Все страны",
   "all_locations": "Все места",
@@ -51,6 +52,7 @@
   "no_data": "Нет данных",
   "no_not_seen_empty": "Все виды уже отмечены как увиденные",
   "no_places_yet": "Здесь пока нет мест",
+  "no_stat_yet": "Здесь пока нет статистики",
   "not_seen": "Не отмеченные",
   "not_selected": "Не выбрано",
   "nothing_found": "Ничего не найдено",

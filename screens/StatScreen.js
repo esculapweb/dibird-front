@@ -35,13 +35,15 @@ const StatScreen = ({ navigation }) => {
       })
     : false;
 
+  const emptyType = hasActiveFilters ? "filtered" : "initial";
+
   const handleClearFilters = async () => {
     setFilters({});
     await clearFilters();
     setFilterModalVisible(false);
   };
 
- 
+  const handleAddObservation = () => console.log("add observation");
 
   useEffect(() => {
     const initFilters = async () => {
@@ -102,7 +104,14 @@ const StatScreen = ({ navigation }) => {
 
   return (
     <>
-      <StatsTabs seen={seen} notSeen={notSeen} territory={filters?.territory} />
+      <StatsTabs
+        seen={seen}
+        notSeen={notSeen}
+        onAdd={handleAddObservation}
+        emptyType={emptyType}
+        onClear={handleClearFilters}
+        territory={filters?.territory}
+      />
       <SortModal
         visible={sortModalVisible}
         onClose={() => setSortModalVisible(false)}
