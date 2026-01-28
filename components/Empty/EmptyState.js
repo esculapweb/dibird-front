@@ -1,13 +1,11 @@
 import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-
 import { useTheme } from "../../store/theme-context";
 import FlatButton from "../ui/FlatButton";
 
-
 const EmptyState = ({
   icon = "alert-circle-outline",
-  message = "Пусто",
+  message,
   actions = [],
 }) => {
   const { Colors } = useTheme();

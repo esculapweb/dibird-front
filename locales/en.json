@@ -1,4 +1,5 @@
 {
+  "add_first_place": "Add first location",
   "all_countries": "All countries",
   "all_locations": "All locations",
   "all_period": "All time",
@@ -49,8 +50,10 @@
   "no_connection": "No internet connection",
   "no_data": "No data",
   "no_not_seen_empty": "All species are already marked as seen",
+  "no_places_yet": "No locations yet",
   "not_seen": "Not seen",
   "not_selected": "Not selected",
+  "nothing_found": "Nothing found",
   "only_i_can_see_my_profile": "Only I can see my profile",
   "password": "Password",
   "permission_denied": "Permission denied",

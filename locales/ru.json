@@ -1,4 +1,5 @@
 {
+  "add_first_place": "Добавить первое место",
   "all_countries": "Все страны",
   "all_locations": "Все места",
   "all_period": "За всё время",
@@ -49,8 +50,10 @@
   "no_connection": "Нет подключения к интернету",
   "no_data": "Нет данных",
   "no_not_seen_empty": "Все виды уже отмечены как увиденные",
+  "no_places_yet": "Здесь пока нет мест",
   "not_seen": "Не отмеченные",
   "not_selected": "Не выбрано",
+  "nothing_found": "Ничего не найдено",
   "only_i_can_see_my_profile": "Только я могу видеть мой профиль",
   "password": "Пароль",
   "permission_denied": "Доступ запрещён",

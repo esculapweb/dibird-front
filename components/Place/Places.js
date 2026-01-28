@@ -31,15 +31,15 @@ const Places = ({
     if (emptyType === "filtered") {
       return {
         icon: "search-outline",
-        message: "Ничего не найдено",
-        actions: [{ label: "Сбросить фильтры", onPress: onClear }],
+        message: t("nothing_found"),
+        actions: [{ label: t("reset_filters"), onPress: onClear }],
       };
     }
 
     return {
       icon: "location-outline",
-      message: "Здесь пока нет мест",
-      actions: [{ label: "Добавить первое место", onPress: onAddPlace }],
+      message: t("no_places_yet"),
+      actions: [{ label: t("add_first_place"), onPress: onAddPlace }],
     };
   };
 
