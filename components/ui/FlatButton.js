@@ -2,12 +2,12 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useTheme } from "../../store/theme-context";
 
-const FlatButton = ({ children, onPress }) => {
+const FlatButton = ({ children, onPress, style }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   return (
     <Pressable
-      style={({ pressed }) => [styles.button, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.button, style && style, pressed && styles.pressed]}
       onPress={onPress}
     >
       <View>

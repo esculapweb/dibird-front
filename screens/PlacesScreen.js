@@ -30,8 +30,9 @@ const PlacesScreen = ({ navigation }) => {
 
   const [page, setPage] = useState(1);
   const [finalPage, setFinalPage] = useState(1);
-  const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isRefetching, setIsRefetching] = useState(false);
 
   const handleFilterPress = () => setFilterModalVisible(true);
   const handleSortPress = () => setSortModalVisible(true);
@@ -45,16 +46,35 @@ const PlacesScreen = ({ navigation }) => {
       })
     : false;
 
-  const handleClearFilters = async () => {
+  const isEmpty = places.length === 0;
+  const isSearchActive = debouncedSearch?.length > 0;
+  const emptyType =
+    isEmpty && !isRefetching
+      ? isSearchActive || hasActiveFilters
+        ? "filtered"
+        : "initial"
+      : null;
+
+  const handleClearFilters = () => {
+    // setPlaces([]);
     setFilters({});
-    await clearFilters();
+    clearFilters();
     setFilterModalVisible(false);
+  };
+
+  const handleClearSearch = () => {
+    setSearch("");
+  };
+
+  const handleClearFiltersSearch = () => {
+    handleClearSearch();
+    handleClearFilters();
   };
 
   const loadPlaces = async (pageNum = 1) => {
     if (pageNum > finalPage) return;
 
-    pageNum === 1 ? setIsLoading(true) : setIsLoadingMore(true);
+    if (pageNum > 1) setIsLoadingMore(true);
 
     try {
       const response = await fetchPlaces(
@@ -69,8 +89,8 @@ const PlacesScreen = ({ navigation }) => {
       setPage(pagination.current);
       setFinalPage(pagination.final);
     } finally {
-      setIsLoading(false);
       setIsLoadingMore(false);
+      if (isInitialLoading) setIsInitialLoading(false);
     }
   };
 
@@ -81,8 +101,8 @@ const PlacesScreen = ({ navigation }) => {
   };
 
   const handleAddPlace = () => {
-    console.log('Add place')
-  }
+    console.log("Add place");
+  };
 
   useEffect(() => {
     const initFilters = async () => {
@@ -125,16 +145,21 @@ const PlacesScreen = ({ navigation }) => {
 
   useEffect(() => {
     if (!filters) return;
-    loadDecorator(() => loadPlaces(1));
+    setIsRefetching(true);
+    loadDecorator(async () => {
+      await loadPlaces(1);
+      setIsRefetching(false);
+    });
   }, [language, filters, sort, debouncedSearch]);
 
-  if (isLoading || !filters || !sort) return <LoadingOverlay />;
+  if (isInitialLoading || !filters || !sort) return <LoadingOverlay />;
 
   return (
     <>
       <SearchInput
         value={search}
         onChange={setSearch}
+        onClear={handleClearSearch}
         placeholder={t("search_by_name")}
       />
       <Places
@@ -142,6 +167,8 @@ const PlacesScreen = ({ navigation }) => {
         onEndReached={handleLoadMore}
         isLoadingMore={isLoadingMore}
         onAddPlace={handleAddPlace}
+        emptyType={emptyType}
+        onClear={handleClearFiltersSearch}
       />
 
       <SortModal

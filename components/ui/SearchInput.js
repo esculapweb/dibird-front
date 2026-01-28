@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { useTheme } from "../../store/theme-context";
 
-const SearchInput = ({ value, onChange, placeholder }) => {
+const SearchInput = ({ value, onChange, placeholder, onClear }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -26,7 +26,7 @@ const SearchInput = ({ value, onChange, placeholder }) => {
 
       {showClear && (
         <Pressable
-          onPress={() => onChange("")}
+          onPress={onClear}
           hitSlop={10}
           accessibilityLabel={t("clear_search")}
           accessibilityRole="button"

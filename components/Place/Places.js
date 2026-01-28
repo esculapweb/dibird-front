@@ -9,8 +9,16 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../store/theme-context";
 import PlaceCard from "./PlaceCard";
+import EmptyState from "../Empty/EmptyState";
 
-const Places = ({ data, onEndReached, isLoadingMore, onAddPlace }) => {
+const Places = ({
+  data,
+  onEndReached,
+  isLoadingMore,
+  onAddPlace,
+  emptyType,
+  onClear,
+}) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
 
@@ -22,9 +30,21 @@ const Places = ({ data, onEndReached, isLoadingMore, onAddPlace }) => {
         data={data}
         keyExtractor={(item) => String(item.id)}
         renderItem={renderPlace}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[
+          styles.list,
+          data.length === 0 && { flexGrow: 1 },
+        ]}
         onEndReached={onEndReached}
         onEndReachedThreshold={0.5}
+        ListEmptyComponent={
+          emptyType && (
+            <EmptyState
+              type={emptyType}
+              onAdd={onAddPlace}
+              onClear={onClear}
+            />
+          )
+        }
         ListFooterComponent={
           isLoadingMore && (
             <ActivityIndicator
