@@ -10,6 +10,7 @@ import AuthContextProvider, { AuthContext } from "./store/auth-context";
 import { ProfileProvider } from "./store/profile-context";
 import { LanguageProvider } from "./store/language-context";
 import { ThemeProvider, useTheme } from "./store/theme-context";
+import ThemedToast from "./components/ui/ThemedToast";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -34,9 +35,10 @@ const Root = () => {
         <Navigation />
       </ActionSheetProvider>
       <Toast
-        config={{
-          error: (props) => <ErrorToast {...props} text2NumberOfLines={6} />,
-        }}
+        // config={{
+        //   error: (props) => <ErrorToast {...props} text2NumberOfLines={6} />,
+        // }}
+        config={ThemedToast}
         position="bottom"
       />
     </>

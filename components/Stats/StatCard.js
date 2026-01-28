@@ -7,9 +7,11 @@ import { Config } from "../../constants/config";
 import { useTheme } from "../../store/theme-context";
 import MetaItem from "../ui/MetaItem";
 
+const useStyles = (Colors) => React.useMemo(() => stylesFn(Colors), [Colors]);
+
 const StatCard = React.memo(({ item, index, seen }) => {
   const { Colors } = useTheme();
-  const styles = stylesFn(Colors);
+  const styles = useStyles(Colors);
 
   const minDate = item?.min_date && formatDate(item.min_date);
   const maxDate = item?.max_date && formatDate(item.max_date);

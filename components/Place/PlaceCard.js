@@ -6,6 +6,8 @@ import { useTheme } from "../../store/theme-context";
 import { isoToFlagEmoji } from "../../util/fetches";
 import { BirdSVG } from "../ui/Svgs";
 
+const useStyles = (Colors) => React.useMemo(() => stylesFn(Colors), [Colors]);
+
 const StatIconWrapper = ({ children }) => (
   <View
     style={{
@@ -21,7 +23,7 @@ const StatIconWrapper = ({ children }) => (
 
 const PlaceCard = React.memo(({ item }) => {
   const { Colors } = useTheme();
-  const styles = stylesFn(Colors);
+  const styles = useStyles(Colors);
 
   const territoryText = item.territory_data
     ? isoToFlagEmoji(item.territory_data.code)

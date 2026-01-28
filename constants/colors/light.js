@@ -20,9 +20,9 @@ export const LightColors = {
   imageBg: "#E5E7EB",
   shadow: "#000",
   overlay: "rgba(0,0,0,0.4)",
-  toastSuccess: "rgba(0,128,0,0.7)",
-  toastError: "rgba(255,0,0,0.7)",
-  toastInfo: "rgba(0,0,255,0.7)",
+  toastSuccess: "rgba(34,197,94,0.9)",
+  toastError: "rgba(239,68,68,0.9)",
+  toastInfo: "rgba(59,130,246,0.9)",
 
   buttonBg: "#f0c24b",
   buttonPrimaryText: "#1f2937",
