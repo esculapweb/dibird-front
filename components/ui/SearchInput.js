@@ -49,30 +49,25 @@ const stylesFn = (Colors) =>
     container: {
       flexDirection: "row",
       alignItems: "center",
-
       height: 44,
       paddingHorizontal: 12,
-      marginHorizontal: 8,
-      marginTop: 8,
-      // marginBottom: 4,
-
+      marginHorizontal: 12,
+      marginTop: 12,
       borderRadius: 12,
       backgroundColor: Colors.primary100,
+      shadowColor: Colors.shadow,
+      shadowOpacity: 0.08,
+      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 2,
     },
 
     input: {
       flex: 1,
       marginHorizontal: 4,
       paddingVertical: 0,
-
       fontSize: 16,
       color: Colors.textMain,
-
-      shadowColor: Colors.shadow,
-      shadowOpacity: 0.05,
-      shadowRadius: 5,
-      shadowOffset: { width: 0, height: 2 },
-      elevation: 2,
     },
 
     clearButton: {
