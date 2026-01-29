@@ -34,6 +34,8 @@ const StatScreen = ({ route, navigation }) => {
     { label: t("date_sort_desc"), value: "-date_time" },
   ];
 
+  const ALLOWED_FILTERS = ['territory', 'place', 'date']
+
   const hasActiveFilters = filters
     ? Object.values(filters).some((v) => {
         if (Array.isArray(v)) {
@@ -138,6 +140,7 @@ const StatScreen = ({ route, navigation }) => {
         visible={filterModalVisible}
         onClose={() => setFilterModalVisible(false)}
         filters={filters}
+        allowed={ALLOWED_FILTERS}
         setFilters={setFilters}
         clearFilters={handleClearFilters}
       />

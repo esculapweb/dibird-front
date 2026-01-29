@@ -31,6 +31,8 @@ const PlacesScreen = ({ route, navigation }) => {
     { label: t("diary_count_desc"), value: "-diary_count" },
   ];
 
+  const ALLOWED_FILTERS = ['territory', 'favourite']
+
   const [filters, setFilters] = useState(null);
   const [sort, setSort] = useState(null);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
@@ -194,6 +196,7 @@ const PlacesScreen = ({ route, navigation }) => {
         visible={filterModalVisible}
         onClose={() => setFilterModalVisible(false)}
         filters={filters}
+        allowed={ALLOWED_FILTERS}
         setFilters={setFilters}
         clearFilters={handleClearFilters}
       />
