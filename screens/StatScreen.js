@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 import StatsTabs from "../navigation/StatsTabs";
 import { loadDecorator, normalizeValue, fetchSeen } from "../util/fetches";
@@ -10,9 +11,10 @@ import { loadFilters, clearFilters } from "../util/filtersStorage";
 import { loadSort } from "../util/sortStorage";
 import IconButton from "../components/ui/IconButton";
 
-const ALLOWED_SORT_FIELDS = ["ioc_id", "date_time", "name"];
+const StatScreen = ({ route, navigation }) => {
+  const { t } = useTranslation();
+  const { language } = useLanguage();
 
-const StatScreen = ({ navigation }) => {
   const [filters, setFilters] = useState(null);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [sort, setSort] = useState(null);
@@ -21,10 +23,17 @@ const StatScreen = ({ navigation }) => {
   const [notSeen, setNotSeen] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const { language } = useLanguage();
-
   const handleFilterPress = () => setFilterModalVisible(true);
   const handleSortPress = () => setSortModalVisible(true);
+
+  const SORT_OPTIONS = [
+    { label: t("taxonomic"), value: "ioc_id" },
+    { label: t("taxonomic_desc"), value: "-ioc_id" },
+    { label: t("alphabetic"), value: "name" },
+    { label: t("alphabetic_desc"), value: "-name" },
+    { label: t("date_sort"), value: "date_time" },
+    { label: t("date_sort_desc"), value: "-date_time" },
+  ];
 
   const hasActiveFilters = filters
     ? Object.values(filters).some((v) => {
@@ -56,8 +65,13 @@ const StatScreen = ({ navigation }) => {
 
   useEffect(() => {
     const initSort = async () => {
-      const storedSort = await loadSort();
-      setSort(normalizeValue(storedSort, ALLOWED_SORT_FIELDS));
+      const storedSort = await loadSort(route.name);
+      setSort(
+        normalizeValue(
+          storedSort,
+          SORT_OPTIONS.map((item) => item.value),
+        ),
+      );
     };
 
     initSort();
@@ -113,6 +127,8 @@ const StatScreen = ({ navigation }) => {
         territory={filters?.territory}
       />
       <SortModal
+        screen={route.name}
+        options={SORT_OPTIONS}
         visible={sortModalVisible}
         onClose={() => setSortModalVisible(false)}
         sort={sort}

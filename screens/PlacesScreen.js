@@ -13,11 +13,24 @@ import SearchInput from "../components/ui/SearchInput";
 import { useDebounce } from "../util/useDebounce";
 import { useLanguage } from "../store/language-context";
 
-const ALLOWED_SORT_FIELDS = ["name"];
-
-const PlacesScreen = ({ navigation }) => {
+const PlacesScreen = ({ route, navigation }) => {
   const { language } = useLanguage();
   const { t } = useTranslation();
+
+  const SORT_OPTIONS = [
+    { label: t("alphabetic"), value: "name" },
+    { label: t("alphabetic_desc"), value: "-name" },
+    { label: t("favourite"), value: "favourite,name" },
+    { label: t("favourite_desc"), value: "-favourite,name" },
+    { label: t("territory"), value: "territory,name" },
+    { label: t("territory_desc"), value: "-territory,name" },
+    { label: t("species_count"), value: "species_count" },
+    { label: t("species_count_desc"), value: "-species_count" },
+    { label: t("observation_count"), value: "observation_count" },
+    { label: t("observation_count_desc"), value: "-observation_count" },
+    { label: t("diary_count"), value: "diary_count" },
+    { label: t("diary_count_desc"), value: "-diary_count" },
+  ];
 
   const [filters, setFilters] = useState(null);
   const [sort, setSort] = useState(null);
@@ -110,8 +123,13 @@ const PlacesScreen = ({ navigation }) => {
 
   useEffect(() => {
     const initSort = async () => {
-      const storedSort = await loadSort();
-      setSort(normalizeValue(storedSort, ALLOWED_SORT_FIELDS));
+      const storedSort = await loadSort(route.name);
+      setSort(
+        normalizeValue(
+          storedSort,
+          SORT_OPTIONS.map((item) => item.value),
+        ),
+      );
     };
     initSort();
   }, []);
@@ -165,6 +183,8 @@ const PlacesScreen = ({ navigation }) => {
       />
 
       <SortModal
+        screen={route.name}
+        options={SORT_OPTIONS}
         visible={sortModalVisible}
         onClose={() => setSortModalVisible(false)}
         sort={sort}

@@ -23,8 +23,7 @@ export const isoToFlagEmoji = (isoCode) => {
 
 export const normalizeValue = (value, allowed_values) => {
   if (!value) return allowed_values[0];
-  if (!allowed_values.includes(value.replace(/^-/, "")))
-    return allowed_values[0];
+  if (!allowed_values.includes(value)) return allowed_values[0];
   return value;
 };
 
@@ -158,15 +157,20 @@ export const fetchSeen = async (filters = {}, order = "ioc_id") => {
   return { seenList, notSeenList };
 };
 
-export const fetchPlaces = async (filters = {}, order = "name", search="", page=1) => {
-   let params = {
+export const fetchPlaces = async (
+  filters = {},
+  order = "name",
+  search = "",
+  page = 1,
+) => {
+  let params = {
     ...cleanFilters(filters),
     per_page: 100,
     o: order,
   };
   if (search) params.name = search;
-  if (page>1) params.page = page
+  if (page > 1) params.page = page;
 
   const res = await api.get("/myapi/place/", { params });
-  return res.data
+  return res.data;
 };

@@ -25,8 +25,7 @@ const AuthContextProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    setAuthToken(null);
-    Logout();
+    await Logout(() => setAuthToken(null));
   };
 
   useEffect(() => {

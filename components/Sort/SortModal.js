@@ -6,23 +6,14 @@ import { saveSort } from "../../util/sortStorage";
 import ModalWrapper from "../ui/ModalWrapper";
 import RadioGroup from "../ui/RadioGroup";
 
-const SortModal = ({ visible, onClose, sort, setSort }) => {
+const SortModal = ({ screen, options, visible, onClose, sort, setSort }) => {
   const { t } = useTranslation();
 
   const [sortInternal, setSortInternal] = useState(null);
 
-  const options = [
-    { label: t("taxonomic"), value: "ioc_id" },
-    { label: t("taxonomic_desc"), value: "-ioc_id" },
-    { label: t("date_sort"), value: "date_time" },
-    { label: t("date_sort_desc"), value: "-date_time" },
-    { label: t("alphabetic"), value: "name" },
-    { label: t("alphabetic_desc"), value: "-name" },
-  ];
-
   const applyHandler = async () => {
     setSort(sortInternal);
-    await saveSort(sortInternal);
+    await saveSort(screen, sortInternal);
     onClose();
   };
 

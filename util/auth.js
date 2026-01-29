@@ -1,10 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import api, {
-  saveTokens,
-  clearTokens,
-  getRefreshToken,
-} from "../services/api";
+import api, { saveTokens, clearTokens, getRefreshToken } from "../services/api";
 
 const post = async (url, data) => {
   try {
@@ -41,21 +37,24 @@ export const CreateUser = async (email, password, username) => {
   return data;
 };
 
-export const Logout = async () => {
+export const Logout = async (onLogoutCallback) => {
   try {
-    const data = { refresh: await getRefreshToken() };
-    const r = await api.post("/api-auth/logout/", data);
-    console.info(r.data);
-  } catch (e) {
-    console.warn(
-      "Logout request failed",
-      e.response?.status,
-      e.message
-    );
+    const refresh = await getRefreshToken();
+    if (refresh) {
+      try {
+        const r = await api.post("/api-auth/logout/", { refresh });
+        console.info(r.data);
+      } catch (e) {
+        if (e.response?.status !== 401)
+          console.warn("Logout request failed", e.response?.status, e.message);
+      }
+    }
   } finally {
     clearTokens();
     await AsyncStorage.removeItem("profile");
     await AsyncStorage.removeItem("filters");
     await AsyncStorage.removeItem("sorting");
+
+    if (typeof onLogoutCallback === "function") onLogoutCallback();
   }
 };
