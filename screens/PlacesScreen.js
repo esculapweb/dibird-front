@@ -5,8 +5,7 @@ import LoadingOverlay from "../components/ui/LoadingOverlay";
 import IconButton from "../components/ui/IconButton";
 import FilterModal from "../components/Filters/FilterModal";
 import SortModal from "../components/Sort/SortModal";
-import { loadFilters, clearFilters } from "../util/filtersStorage";
-import { loadSort } from "../util/sortStorage";
+import { loadFilters, clearFilters, loadSort } from "../util/storageHelper";
 import { fetchPlaces, loadDecorator, normalizeValue } from "../util/fetches";
 import Places from "../components/Place/Places";
 import SearchInput from "../components/ui/SearchInput";
@@ -65,9 +64,9 @@ const PlacesScreen = ({ route, navigation }) => {
       : null;
 
   // --- actions ---
-  const handleClearFilters = () => {
+  const handleClearFilters = async () => {
     setFilters({});
-    clearFilters();
+    await clearFilters(route.name);
     setFilterModalVisible(false);
   };
 
@@ -115,7 +114,7 @@ const PlacesScreen = ({ route, navigation }) => {
   // --- init filters & sort ---
   useEffect(() => {
     const initFilters = async () => {
-      const storedFilters = await loadFilters();
+      const storedFilters = await loadFilters(route.name);
       setFilters(storedFilters ?? {});
     };
     initFilters();
@@ -191,6 +190,7 @@ const PlacesScreen = ({ route, navigation }) => {
         setSort={setSort}
       />
       <FilterModal
+        screen={route.name}
         visible={filterModalVisible}
         onClose={() => setFilterModalVisible(false)}
         filters={filters}

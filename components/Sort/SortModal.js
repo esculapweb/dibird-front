@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { View, ScrollView, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 
-import { saveSort } from "../../util/sortStorage";
+import { saveSort } from "../../util/storageHelper";
 import ModalWrapper from "../ui/ModalWrapper";
 import RadioGroup from "../ui/RadioGroup";
 

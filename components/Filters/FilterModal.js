@@ -6,11 +6,12 @@ import ModalWrapper from "../ui/ModalWrapper";
 import DropdownInput from "../ui/DropdownInput";
 import { fetchMyCountries, fetchMyPlaces } from "../../util/fetches";
 import DateRangeFilter from "../ui/DateRangeFilter";
-import { saveFilters } from "../../util/filtersStorage";
+import { saveFilters } from "../../util/storageHelper";
 import FlatButtonBottom from "../ui/FlatButtonBottom";
 import { useLanguage } from "../../store/language-context";
 
 const FilterModal = ({
+  screen,
   visible,
   onClose,
   filters,
@@ -54,7 +55,7 @@ const FilterModal = ({
       date: dateFilter,
     };
     setFilters(newFilters);
-    await saveFilters(newFilters);
+    await saveFilters(screen, newFilters);
     onClose();
   };
 

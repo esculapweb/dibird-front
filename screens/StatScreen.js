@@ -7,8 +7,7 @@ import { useLanguage } from "../store/language-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import FilterModal from "../components/Filters/FilterModal";
 import SortModal from "../components/Sort/SortModal";
-import { loadFilters, clearFilters } from "../util/filtersStorage";
-import { loadSort } from "../util/sortStorage";
+import { loadFilters, clearFilters, loadSort } from "../util/storageHelper";
 import IconButton from "../components/ui/IconButton";
 
 const StatScreen = ({ route, navigation }) => {
@@ -48,7 +47,7 @@ const StatScreen = ({ route, navigation }) => {
 
   const handleClearFilters = async () => {
     setFilters({});
-    await clearFilters();
+    await clearFilters(route.name);
     setFilterModalVisible(false);
   };
 
@@ -56,7 +55,7 @@ const StatScreen = ({ route, navigation }) => {
 
   useEffect(() => {
     const initFilters = async () => {
-      const storedFilters = await loadFilters();
+      const storedFilters = await loadFilters(route.name);
       setFilters(storedFilters ?? {});
     };
 
@@ -135,6 +134,7 @@ const StatScreen = ({ route, navigation }) => {
         setSort={setSort}
       />
       <FilterModal
+        screen={route.name}
         visible={filterModalVisible}
         onClose={() => setFilterModalVisible(false)}
         filters={filters}
