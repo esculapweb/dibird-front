@@ -19,16 +19,16 @@ const PlacesScreen = ({ route, navigation }) => {
   const SORT_OPTIONS = [
     { label: t("alphabetic"), value: "name" },
     { label: t("alphabetic_desc"), value: "-name" },
-    { label: t("favourite"), value: "favourite,name" },
-    { label: t("favourite_desc"), value: "-favourite,name" },
-    { label: t("territory"), value: "territory,name" },
-    { label: t("territory_desc"), value: "-territory,name" },
+    // { label: t("favourite_asc"), value: "favourite,name" },
+    // { label: t("favourite_desc"), value: "-favourite,name" },
+    // { label: t("territory_asc"), value: "territory,name" },
+    // { label: t("territory_desc"), value: "-territory,name" },
     { label: t("species_count"), value: "species_count" },
     { label: t("species_count_desc"), value: "-species_count" },
     { label: t("observation_count"), value: "observation_count" },
     { label: t("observation_count_desc"), value: "-observation_count" },
-    { label: t("diary_count"), value: "diary_count" },
-    { label: t("diary_count_desc"), value: "-diary_count" },
+    // { label: t("diary_count"), value: "diary_count" },
+    // { label: t("diary_count_desc"), value: "-diary_count" },
   ];
 
   const ALLOWED_FILTERS = ['territory', 'favourite']

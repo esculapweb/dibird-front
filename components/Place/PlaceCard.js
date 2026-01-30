@@ -8,18 +8,22 @@ import { BirdSVG } from "../ui/Svgs";
 
 const useStyles = (Colors) => React.useMemo(() => stylesFn(Colors), [Colors]);
 
-const StatIconWrapper = ({ children }) => (
-  <View
-    style={{
-      width: 24,
-      height: 24,
-      justifyContent: "center",
-      alignItems: "center",
-    }}
-  >
-    {children}
-  </View>
-);
+const StatItem = React.memo(({ icon, txt, children }) => {
+  const { Colors } = useTheme();
+  const styles = useStyles(Colors);
+  return (
+    <View style={styles.statItem}>
+      <View style={styles.statItemInner}>
+        {icon ? (
+          <Ionicons name={icon} size={16} color={Colors.textMain} />
+        ) : (
+          children
+        )}
+      </View>
+      <Text style={styles.statValue}>{txt}</Text>
+    </View>
+  );
+});
 
 const PlaceCard = React.memo(({ item }) => {
   const { Colors } = useTheme();
@@ -31,9 +35,12 @@ const PlaceCard = React.memo(({ item }) => {
 
   const [lng, lat] = item.location.coordinates;
 
+  const handlePlacePress = () => console.log("Place press");
+
   return (
     <Pressable
       style={({ pressed }) => [styles.card, pressed && styles.pressedCard]}
+      onPress={handlePlacePress}
     >
       <View style={styles.main}>
         <View style={styles.titleRow}>
@@ -73,32 +80,11 @@ const PlaceCard = React.memo(({ item }) => {
           </View>
 
           <View style={styles.statsBlock}>
-            <View style={styles.statItem}>
-              <StatIconWrapper>
-                <Ionicons
-                  name="book-outline"
-                  size={16}
-                  color={Colors.textMain}
-                />
-              </StatIconWrapper>
-              <Text style={styles.statValue}>{item.diary_count}</Text>
-            </View>
-            <View style={styles.statItem}>
-              <StatIconWrapper>
-                <Ionicons
-                  name="eye-outline"
-                  size={16}
-                  color={Colors.textMain}
-                />
-              </StatIconWrapper>
-              <Text style={styles.statValue}>{item.observation_count}</Text>
-            </View>
-            <View style={styles.statItem}>
-              <StatIconWrapper>
-                <BirdSVG size={16} color={Colors.textMain} />
-              </StatIconWrapper>
-              <Text style={styles.statValue}>{item.species_count}</Text>
-            </View>
+            {/* <StatItem icon="book-outline" txt={item.diary_count} /> */}
+            <StatItem icon="eye-outline" txt={item.observation_count} />
+            <StatItem txt={item.species_count}>
+              <BirdSVG size={16} color={Colors.textMain} />
+            </StatItem>
           </View>
         </View>
       </View>
@@ -181,6 +167,13 @@ const stylesFn = (Colors) =>
       backgroundColor: Colors.badgeBg,
       borderRadius: 6,
       paddingHorizontal: 4,
+    },
+
+    statItemInner: {
+      width: 24,
+      height: 24,
+      justifyContent: "center",
+      alignItems: "center",
     },
 
     statValue: {

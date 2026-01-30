@@ -24,9 +24,9 @@ const FilterModal = ({
   const { t } = useTranslation();
 
   const favouriteOptions = [
-    { label: t("all"), value: "" },
-    { label: t("yes"), value: true },
-    { label: t("no"), value: false },
+    { label: t("all"), value: null },
+    { label: t("favourites_only"), value: true },
+    { label: t("non_favourites_only"), value: false },
   ];
 
   const dateFilterInitial = {
@@ -117,7 +117,7 @@ const FilterModal = ({
           {allowed.includes("favourite") && (
             <View style={{ marginTop: 12 }}>
               <RadioGroup
-                label={`${t("favourite")}:`}
+                label={`${t("favourites")}:`}
                 value={favouriteValue}
                 onChange={setFavouriteValue}
                 direction="column"

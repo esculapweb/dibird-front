@@ -5,8 +5,10 @@
   "choose_location_": "Choose location...",
   "could_not_create_user": "Could not create user",
   "failed_remove_avatar": "Failed to remove avatar",
+  "favourite": "",
   "image_processing_failed": "Image processing failed",
   "retry": "Retry",
   "serer_error": "Service unavailable",
-  "settings": "Settings"
+  "settings": "Settings",
+  "territory": ""
 }

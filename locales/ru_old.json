@@ -5,8 +5,10 @@
   "choose_location_": "Выберите местоположение...",
   "could_not_create_user": "Не удалось создать пользователя",
   "failed_remove_avatar": "Не удалось удалить аватар",
+  "favourite": "",
   "image_processing_failed": "Ошибка обработки изображения",
   "retry": "Повторить",
   "serer_error": "Сервис недоступен",
-  "settings": "Настройки"
+  "settings": "Настройки",
+  "territory": ""
 }
