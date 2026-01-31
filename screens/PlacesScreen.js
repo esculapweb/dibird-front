@@ -47,7 +47,6 @@ const PlacesScreen = ({ route, navigation }) => {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  // --- UI helpers ---
   const hasActiveFilters = filters
     ? Object.values(filters).some((v) =>
         Array.isArray(v) ? v.length > 0 : v != null && v !== "",
@@ -57,7 +56,6 @@ const PlacesScreen = ({ route, navigation }) => {
   const isEmpty = places.length === 0;
   const isSearchActive = debouncedSearch.length > 0;
 
-  // --- empty state type ---
   const emptyType =
     !isInitialLoad && isEmpty
       ? isSearchActive || hasActiveFilters
@@ -65,7 +63,6 @@ const PlacesScreen = ({ route, navigation }) => {
         : "initial"
       : null;
 
-  // --- actions ---
   const handleClearFilters = async () => {
     setFilters({});
     await clearFilters(route.name);
@@ -83,7 +80,6 @@ const PlacesScreen = ({ route, navigation }) => {
   const handleSortPress = () => setSortModalVisible(true);
   const handleAddPlace = () => console.log("Add place");
 
-  // --- fetch places ---
   const loadPlaces = async (pageNum = 1) => {
     if (pageNum > finalPage) return;
 
@@ -113,7 +109,6 @@ const PlacesScreen = ({ route, navigation }) => {
     }
   };
 
-  // --- init filters & sort ---
   useEffect(() => {
     const initFilters = async () => {
       const storedFilters = await loadFilters(route.name);
@@ -135,7 +130,6 @@ const PlacesScreen = ({ route, navigation }) => {
     initSort();
   }, []);
 
-  // --- header buttons ---
   useEffect(() => {
     navigation.setOptions({
       headerRight: ({ tintColor }) => (
@@ -156,13 +150,11 @@ const PlacesScreen = ({ route, navigation }) => {
     });
   }, [navigation, filters, sort]);
 
-  // --- fetch on filters/sort/search change ---
   useEffect(() => {
     if (!filters || !sort) return;
     loadDecorator(() => loadPlaces(1));
   }, [language, filters, sort, debouncedSearch]);
 
-  // --- initial loader ---
   if (isInitialLoad || !filters || !sort) return <LoadingOverlay />;
 
   return (

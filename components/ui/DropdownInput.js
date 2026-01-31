@@ -184,7 +184,7 @@ const DropdownInput = ({
             )}
 
             {loadError && (
-              <Pressable onPress={fetchOptions} style={styles.retryIcon}>
+              <Pressable onPress={fetchOptions} style={styles.retryIcon} hitSlop={12}>
                 <Ionicons name="refresh" size={18} color={Colors.link} />
               </Pressable>
             )}

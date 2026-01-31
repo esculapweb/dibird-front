@@ -30,11 +30,11 @@ const StatScreen = ({ route, navigation }) => {
     { label: t("taxonomic_desc"), value: "-ioc_id" },
     { label: t("alphabetic"), value: "name" },
     { label: t("alphabetic_desc"), value: "-name" },
-    { label: t("date_sort"), value: "date_time" },
     { label: t("date_sort_desc"), value: "-date_time" },
+    { label: t("date_sort"), value: "date_time" },
   ];
 
-  const ALLOWED_FILTERS = ['territory', 'place', 'date']
+  const ALLOWED_FILTERS = ["territory", "place", "date"];
 
   const hasActiveFilters = filters
     ? Object.values(filters).some((v) => {

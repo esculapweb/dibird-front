@@ -1,10 +1,11 @@
-import { Modal, Pressable, Text, View, StyleSheet } from "react-native";
-import { useTranslation } from "react-i18next";
-
+import { Modal, Pressable, View, Text, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../store/theme-context";
 
+const ICON_SIZE = 24;
+const BUTTON_SIZE = 40;
+
 const ModalWrapper = ({ children, onClose, onApply, visible, title }) => {
-  const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
 
@@ -17,16 +18,37 @@ const ModalWrapper = ({ children, onClose, onApply, visible, title }) => {
     >
       <View style={styles.container}>
         <View style={styles.header}>
-          <Pressable onPress={onClose} hitSlop={16}>
-            <Text style={styles.cancel}>{t("cancel")}</Text>
+          <Pressable
+            onPress={onClose}
+            style={({ pressed }) => [
+              styles.iconButton,
+              styles.leftButton,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Ionicons name="close" size={ICON_SIZE} color={Colors.textMain} />
           </Pressable>
-          <Text style={styles.title}>{title}</Text>
-          {onApply ? (
-            <Pressable onPress={onApply} hitSlop={16}>
-              <Text style={styles.apply}>{t("apply")}</Text>
+
+          <Text style={styles.title} numberOfLines={1}>
+            {title}
+          </Text>
+
+          {onApply && (
+            <Pressable
+              onPress={onApply}
+              style={({ pressed }) => [
+                styles.iconButton,
+                styles.rightButton,
+                styles.applyButton,
+                pressed && styles.pressed,
+              ]}
+            >
+              <Ionicons
+                name="checkmark"
+                size={ICON_SIZE}
+                color={Colors.textMain}
+              />
             </Pressable>
-          ) : (
-            <View style={{ width: 60 }} />
           )}
         </View>
 
@@ -40,18 +62,55 @@ export default ModalWrapper;
 
 const stylesFn = (Colors) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: Colors.backgroundMain },
+    container: {
+      flex: 1,
+      backgroundColor: Colors.backgroundMain,
+    },
+
     header: {
       height: 56,
+      paddingVertical: 8,
       backgroundColor: Colors.primary100,
       borderBottomWidth: 1,
       borderBottomColor: Colors.border,
-      flexDirection: "row",
       alignItems: "center",
-      justifyContent: "space-between",
-      paddingHorizontal: 16,
+      justifyContent: "center",
     },
-    title: { fontSize: 16, fontWeight: "600", color: Colors.textMain },
-    cancel: { fontSize: 16, fontWeight: "600", color: Colors.linkLight },
-    apply: { fontSize: 16, color: Colors.link, fontWeight: "600" },
+
+    title: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: Colors.textMain,
+      maxWidth: "70%",
+    },
+
+    iconButton: {
+      position: "absolute",
+      width: BUTTON_SIZE,
+      height: BUTTON_SIZE,
+      borderRadius: BUTTON_SIZE / 2,
+      alignItems: "center",
+      justifyContent: "center",
+      top: 8,
+    },
+
+    leftButton: {
+      left: 16,
+      backgroundColor: Colors.primary200,
+      borderWidth: 1,
+      borderColor: Colors.border,
+    },
+
+    rightButton: {
+      right: 16,
+    },
+
+    applyButton: {
+      backgroundColor: Colors.done,
+    },
+
+    pressed: {
+      opacity: 0.8,
+      transform: [{ scale: 0.96 }],
+    },
   });

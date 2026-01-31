@@ -80,7 +80,7 @@ export default Places;
 
 const stylesFn = (Colors) =>
   StyleSheet.create({
-    list: { padding: 12 },
+    list: { paddingHorizontal: 12, paddingVertical: 8 },
     fab: {
       position: "absolute",
       bottom: 20,

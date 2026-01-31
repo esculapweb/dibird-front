@@ -89,7 +89,7 @@ const stylesFn = (Colors) =>
       backgroundColor: Colors.primary100,
       borderRadius: 12,
       padding: 6,
-      marginBottom: 8,
+      marginBottom: 4,
       shadowColor: Colors.shadow,
       shadowOpacity: 0.08,
       shadowRadius: 4,

@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import React from "react";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 
 import { useTheme } from "../../store/theme-context";
 import { isoToFlagEmoji } from "../../util/fetches";
@@ -28,6 +29,7 @@ const StatItem = React.memo(({ icon, txt, children }) => {
 const PlaceCard = React.memo(({ item }) => {
   const { Colors } = useTheme();
   const styles = useStyles(Colors);
+  const navigation = useNavigation();
 
   const territoryText = item.territory_data
     ? isoToFlagEmoji(item.territory_data.code)
@@ -35,8 +37,9 @@ const PlaceCard = React.memo(({ item }) => {
 
   const [lng, lat] = item.location.coordinates;
 
-  const handlePlacePress = () => console.log("Place press");
-
+  const handlePlacePress = () => {
+    navigation.navigate("PlaceDetail");
+  };
   return (
     <Pressable
       style={({ pressed }) => [styles.card, pressed && styles.pressedCard]}
@@ -100,7 +103,7 @@ const stylesFn = (Colors) =>
       backgroundColor: Colors.primary100,
       borderRadius: 12,
       padding: 10,
-      marginBottom: 8,
+      marginBottom: 4,
       shadowColor: Colors.shadow,
       shadowOpacity: 0.08,
       shadowRadius: 4,

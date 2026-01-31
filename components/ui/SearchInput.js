@@ -52,7 +52,7 @@ const stylesFn = (Colors) =>
       height: 44,
       paddingHorizontal: 12,
       marginHorizontal: 12,
-      marginTop: 12,
+      marginTop: 8,
       borderRadius: 12,
       backgroundColor: Colors.primary100,
       shadowColor: Colors.shadow,

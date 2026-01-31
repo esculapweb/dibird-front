@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import WelcomeScreen from "../screens/WelcomeScreen";
 import StatScreen from "../screens/StatScreen";
 import PlacesScreen from "../screens/PlacesScreen";
+import PlaceDetailScreen from "../screens/PlaceDetailScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import ErrorScreen from "../screens/ErrorScreen";
@@ -24,24 +25,21 @@ import LanguageSwitcher from "../components/Language/LanguageSwitcher";
 import ThemeSwitcher from "../components/Theme/ThemeSwitcher";
 import { useTheme } from "../store/theme-context";
 
-const Stack = createNativeStackNavigator();
+const RootStack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
 
+// --- AppStack (Profile stack) ---
 const AppStack = () => {
   return (
-    <Stack.Navigator>
-      <Stack.Screen
-        name="ProfileScreen"
-        options={{
-          headerShown: false,
-        }}
-      >
+    <RootStack.Navigator>
+      <RootStack.Screen name="ProfileScreen" options={{ headerShown: false }}>
         {() => <ProfileScreen />}
-      </Stack.Screen>
-    </Stack.Navigator>
+      </RootStack.Screen>
+    </RootStack.Navigator>
   );
 };
 
+// --- Custom Drawer ---
 const CustomDrawerContent = (props) => {
   const authCtx = useContext(AuthContext);
   const { t } = useTranslation();
@@ -53,10 +51,7 @@ const CustomDrawerContent = (props) => {
       t("logout_title"),
       t("logout_message"),
       [
-        {
-          text: t("cancel"),
-          style: "cancel",
-        },
+        { text: t("cancel"), style: "cancel" },
         {
           text: t("logout"),
           style: "destructive",
@@ -97,19 +92,13 @@ const CustomDrawerContent = (props) => {
   );
 };
 
+// --- Drawer navigator ---
 const AppDrawer = () => {
   const { t } = useTranslation();
   const profileCtx = useProfile();
   const { Colors } = useTheme();
 
-  if (profileCtx.error) {
-    console.warn(
-      "profileCtx error",
-      profileCtx.error.code,
-      profileCtx.error.message,
-    );
-    return <ErrorScreen />;
-  }
+  if (profileCtx.error) return <ErrorScreen />;
 
   return (
     <Drawer.Navigator
@@ -119,22 +108,8 @@ const AppDrawer = () => {
         drawerActiveBackgroundColor: Colors.primary200,
       }}
     >
-      {/* <Drawer.Screen
-        name={t("settings")}
-        component={SettingsScreen}
-        options={{
-          title: t("settings"),
-          drawerIcon: ({ color, size, focused }) => (
-            <Ionicons
-              name={focused ? "settings" : "settings-outline"}
-              color={color}
-              size={size}
-            />
-          ),
-        }}
-      /> */}
       <Drawer.Screen
-        name={"Statistics"}
+        name="Statistics"
         component={StatScreen}
         options={{
           title: t("statistics"),
@@ -148,7 +123,7 @@ const AppDrawer = () => {
         }}
       />
       <Drawer.Screen
-        name={"Places"}
+        name="Places"
         component={PlacesScreen}
         options={{
           title: t("places"),
@@ -175,21 +150,42 @@ const AppDrawer = () => {
           ),
         }}
       />
+      {/* Здесь PlaceDetail НЕ добавляем в Drawer */}
     </Drawer.Navigator>
   );
 };
 
-export default AppDrawer;
+// --- Root navigator ---
+const RootNavigator = () => {
+  const { t } = useTranslation();
+  const { Colors } = useTheme();
 
+  return (
+    <RootStack.Navigator>
+      <RootStack.Screen
+        name="Main"
+        component={AppDrawer}
+        options={{ headerShown: false }}
+      />
+
+      <RootStack.Screen
+        name="PlaceDetail"
+        component={PlaceDetailScreen}
+        options={{
+          title: "Place",
+          // headerBackTitleVisible: false,
+          // headerBackTitle: "",
+        }}
+      />
+    </RootStack.Navigator>
+  );
+};
+
+export default RootNavigator;
+
+// --- Styles ---
 const stylesFn = (Colors) =>
   StyleSheet.create({
-    header: {
-      paddingHorizontal: 16,
-      alignItems: "center",
-      marginBottom: 24,
-    },
-    logout: {
-      borderTopWidth: 1,
-      borderColor: Colors.divider,
-    },
+    header: { paddingHorizontal: 16, alignItems: "center", marginBottom: 24 },
+    logout: { borderTopWidth: 1, borderColor: Colors.divider },
   });
