@@ -1,7 +1,9 @@
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import React from "react";
+import { useActionSheet } from "@expo/react-native-action-sheet";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 
 import { useTheme } from "../../store/theme-context";
 import { isoToFlagEmoji } from "../../util/fetches";
@@ -29,7 +31,9 @@ const StatItem = React.memo(({ icon, txt, children }) => {
 const PlaceCard = React.memo(({ item }) => {
   const { Colors } = useTheme();
   const styles = useStyles(Colors);
+  const { t } = useTranslation();
   const navigation = useNavigation();
+  const { showActionSheetWithOptions } = useActionSheet();
 
   const territoryText = item.territory_data
     ? isoToFlagEmoji(item.territory_data.code)
@@ -38,8 +42,37 @@ const PlaceCard = React.memo(({ item }) => {
   const [lng, lat] = item.location.coordinates;
 
   const handlePlacePress = () => {
-    navigation.navigate("PlaceDetail");
+
+    const options = [
+      t("place_details"),
+      t("all_observations"),
+      t("all_diaries"),
+      t("cancel"),
+    ];
+
+    const cancelButtonIndex = 3;
+
+    showActionSheetWithOptions(
+      {
+        options,
+        cancelButtonIndex,
+      },
+      (buttonIndex) => {
+        if (buttonIndex === 0) {
+          navigation.navigate("PlaceDetail", { place: item });
+        }
+        if (buttonIndex === 1) {
+          // navigation.navigate("Observations", { placeId: item.id });
+          console.log('observations')
+        }
+        if (buttonIndex === 2) {
+          console.log('diaries')
+          // navigation.navigate("Diaries", { placeId: item.id });
+        }
+      },
+    );
   };
+
   return (
     <Pressable
       style={({ pressed }) => [styles.card, pressed && styles.pressedCard]}

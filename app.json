@@ -34,7 +34,8 @@
     "plugins": [
       "expo-secure-store",
       "expo-localization",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "@maplibre/maplibre-react-native"
     ],
     "extra": {
       "eas": {

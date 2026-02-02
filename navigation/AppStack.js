@@ -165,16 +165,20 @@ const RootNavigator = () => {
       <RootStack.Screen
         name="Main"
         component={AppDrawer}
-        options={{ headerShown: false }}
+        options={{ 
+          headerShown: false,
+          headerBackTitleVisible: false,
+          headerBackTitle: "",
+        }}
       />
 
       <RootStack.Screen
         name="PlaceDetail"
         component={PlaceDetailScreen}
         options={{
-          title: "Place",
-          // headerBackTitleVisible: false,
-          // headerBackTitle: "",
+          title: t("place"),
+          headerBackTitleVisible: false,
+          headerBackTitle: t("places"),
         }}
       />
     </RootStack.Navigator>
