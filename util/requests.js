@@ -1,18 +1,5 @@
 import api from "../services/api";
 
-export const Put = async (url, data) => {
-  try {
-    const response = await api.put(url, data);
-
-    if (response.status !== 200 && response.status !== 204)
-      throw new Error(`Unexpected status: ${response.status}`);
-
-    return response;
-  } catch (e) {
-    throw e;
-  }
-};
-
 export const patchAvatar = async (image) => {
   const formData = new FormData();
 

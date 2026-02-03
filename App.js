@@ -35,9 +35,6 @@ const Root = () => {
         <Navigation />
       </ActionSheetProvider>
       <Toast
-        // config={{
-        //   error: (props) => <ErrorToast {...props} text2NumberOfLines={6} />,
-        // }}
         config={ThemedToast}
         position="bottom"
       />

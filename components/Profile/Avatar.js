@@ -14,6 +14,8 @@ import { useActionSheet } from "@expo/react-native-action-sheet";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../../store/theme-context";
 import { patchAvatar } from "../../util/requests";
+import Toast from "react-native-toast-message";
+
 
 import { useProfile } from "../../store/profile-context";
 import api, { showError } from "../../services/api";

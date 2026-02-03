@@ -1,25 +1,88 @@
-import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
+import { useState, useEffect } from "react";
+import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import {
-  MapView,
-  Camera,
-  RasterSource,
-  RasterLayer,
-  MarkerView,
-} from "@maplibre/maplibre-react-native";
+import Toast from "react-native-toast-message";
+import { useTranslation } from "react-i18next";
 
 import { useTheme } from "../store/theme-context";
 import { isoToFlagEmoji } from "../util/fetches";
 import { StatBig } from "../components/Place/StatBig";
 import { MetaRow } from "../components/Place/MetaRow";
 import { formatDate } from "../util/fetches";
+import IconButton from "../components/ui/IconButton";
+import MapPreview from "../components/Map/MapPreview";
+import api from "../services/api";
 
 const PlaceDetailScreen = ({ route, navigation }) => {
   const { place } = route.params;
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
-
+  const { t } = useTranslation();
   const [lng, lat] = place.location.coordinates;
+
+  const [favourite, setFavourite] = useState(place.favourite);
+  const [loadingFav, setLoadingFav] = useState(false);
+
+  
+
+  const handleFavourite = async () => {
+    if (loadingFav) return;
+    const newFav = !favourite;
+    setFavourite(newFav);
+    setLoadingFav(true);
+
+    try {
+      await api.patch(`/myapi/place2/${place.id}/`, {
+        favourite: newFav,
+      });
+    } catch (err) {
+      setFavourite(favourite);
+      Toast.show({
+        type: "error",
+        text1: t("update_failed"),
+        text2: t("failed_to_update_favourite"),
+      });
+    } finally {
+      setLoadingFav(false);
+    }
+  };
+
+  const handleObservationsPress = () => {
+    console.log("show observations");
+    // navigation.navigate("Observations", { placeId: place.id });
+  };
+
+  const handleSpeciesPress = () => {
+    // console.log("show stat");
+    navigation.navigate("Main", {
+      screen: "Statistics",
+      params: { placeId: place.id },
+    });
+  };
+
+  const handleDiariesPress = () => {
+    console.log("show diaries");
+    // navigation.navigate("Diary", { placeId: place.id });
+  };
+
+  useEffect(() => {
+    navigation.setOptions({
+      title: "",
+      headerShadowVisible: false,
+      headerRight: () => (
+        <>
+          <IconButton
+            tintColor={Colors.accent}
+            icon={favourite ? "star" : "star-outline"}
+            onPress={handleFavourite}
+            style={styles.iconButton}
+            size={24}
+            disabled={loadingFav}
+          />
+        </>
+      ),
+    });
+  }, [navigation, favourite, loadingFav]);
 
   return (
     <ScrollView style={styles.container}>
@@ -28,69 +91,50 @@ const PlaceDetailScreen = ({ route, navigation }) => {
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>{place.name}</Text>
           <Text style={styles.subtitle}>
-            {place.territory_data.name}{" "}
-            {isoToFlagEmoji(place.territory_data.code)}
+            {isoToFlagEmoji(place.territory_data.code)}{" "}
+            {place.territory_data.name}
           </Text>
         </View>
-
-        <Ionicons
-          name={place.favourite ? "star" : "star-outline"}
-          size={26}
-          color={Colors.accent}
-        />
       </View>
 
       {/* MAP PREVIEW */}
       <View style={styles.mapWrapper}>
-        <MapView
-          style={styles.map}
-          scrollEnabled={false}
-          rotateEnabled={false}
-          pitchEnabled={false}
-        >
-          <Camera
-            centerCoordinate={[lng, lat]}
-            zoomLevel={12}
-            animationDuration={0}
+        <MapPreview coordinates={[lng, lat]} />
+
+        <View style={styles.coordsRow}>
+          <Ionicons
+            name="navigate-outline"
+            size={14}
+            color={Colors.textSecondary}
+            style={{ marginRight: 4 }}
           />
-
-          <RasterSource
-            id="osmTiles"
-            tileUrlTemplates={[
-              "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-            ]}
-            tileSize={256}
-          >
-            <RasterLayer id="osmLayer" sourceID="osmTiles" />
-          </RasterSource>
-
-          <MarkerView coordinate={[lng, lat]}>
-            <Ionicons
-              name="location-sharp"
-              size={32}
-              color={Colors.error600} 
-              style={styles.marker}
-            />
-          </MarkerView>
-        </MapView>
-
-        <Text style={styles.coords}>
-          {lat.toFixed(4)}, {lng.toFixed(4)}
-        </Text>
+          <Text style={styles.coords}>
+            {lat.toFixed(4)}, {lng.toFixed(4)}
+          </Text>
+        </View>
       </View>
 
       {/* STATS */}
       <View style={styles.stats}>
         <StatBig
           icon="eye-outline"
+          ß
           value={place.observation_count}
           label="Observations"
-          onPress={() =>
-            navigation.navigate("Observations", { placeId: place.id })
-          }
+          onPress={handleObservationsPress}
         />
-        <StatBig value={place.species_count} label="Species" bird />
-        <StatBig icon="book-outline" value={place.diary_count} label="Diary" />
+        <StatBig
+          value={place.species_count}
+          label="Species"
+          bird
+          onPress={handleSpeciesPress}
+        />
+        <StatBig
+          icon="book-outline"
+          value={place.diary_count}
+          label="Diary"
+          onPress={handleDiariesPress}
+        />
       </View>
 
       {/* META */}
@@ -137,15 +181,15 @@ const stylesFn = (Colors) =>
       marginBottom: 16,
     },
 
-    map: {
-      height: 200,
-      width: "100%",
+    coordsRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      padding: 8,
     },
 
     coords: {
       fontSize: 12,
       color: Colors.textSecondary,
-      padding: 8,
     },
 
     stats: {
@@ -160,9 +204,10 @@ const stylesFn = (Colors) =>
       paddingTop: 12,
     },
 
-    marker: {
-      textShadowColor: "rgba(0,0,0,0.3)",
-      textShadowOffset: { width: 0, height: 1 },
-      textShadowRadius: 2,
+    iconButton: {
+      width: 36,
+      marginRight: 0,
+      justifyContent: "center",
+      alignItems: "center",
     },
   });

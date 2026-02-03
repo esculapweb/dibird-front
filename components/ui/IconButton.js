@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { useTheme } from "../../store/theme-context";
 
-const IconButton = ({ tintColor, onPress, icon, active }) => {
+const IconButton = ({ tintColor, onPress, icon, active, style, size=22, disabled }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
 
@@ -11,12 +11,15 @@ const IconButton = ({ tintColor, onPress, icon, active }) => {
     <Pressable
       style={({ pressed }) => [
         styles.container,
-        pressed && styles.pressed,
+        pressed && !disabled && styles.pressed,
+        style,
+        disabled &&  styles.disabled
       ]}
-      onPress={onPress}
+      onPress={disabled ? undefined : onPress}
       hitSlop={12}
+
     >
-      <Ionicons name={icon} size={22} color={tintColor} />
+      <Ionicons name={icon} size={size} color={tintColor} />
 
       {active && <View style={styles.dot} />}
     </Pressable>
@@ -43,5 +46,8 @@ const stylesFn = (Colors) =>
     },
     pressed: {
       opacity: 0.7,
+    },
+    disabled: {
+      opacity: 0.4,
     },
   });

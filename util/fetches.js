@@ -171,8 +171,7 @@ export const fetchPlaces = async (
   if (search) params.name = search;
   if (page > 1) params.page = page;
 
-  // console.log(params)
 
-  const res = await api.get("/myapi/place/", { params });
+  const res = await api.get("/myapi/place2/", { params });
   return res.data;
 };
