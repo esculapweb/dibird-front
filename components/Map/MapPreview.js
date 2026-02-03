@@ -18,8 +18,8 @@ const MapPreview = ({ coordinates }) => {
     <MapView
       style={styles.map}
     //   scrollEnabled={false}
-    //   rotateEnabled={false}
-    //   pitchEnabled={false}
+      rotateEnabled={false}
+      pitchEnabled={false}
     >
       <Camera
         centerCoordinate={[lng, lat]}
@@ -51,7 +51,7 @@ export default MapPreview;
 
 const styles = StyleSheet.create({
   map: {
-    height: 200,
+    height: 300,
     width: "100%",
   },
   marker: {

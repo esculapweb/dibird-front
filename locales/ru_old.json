@@ -1,9 +1,12 @@
 {
+  "apply": "Принять",
   "authentication_failed": "Ошибка аутентификации",
   "check_entered_data": "Проверьте введённые данные",
   "check_internet": "Проверьте интернет или попробуйте позже",
   "choose_location_": "Выберите местоположение...",
   "could_not_create_user": "Не удалось создать пользователя",
+  "diary_count": "Количеству дневников",
+  "diary_count_desc": "Количеству дневников (убыв.)",
   "failed_remove_avatar": "Не удалось удалить аватар",
   "favourite": "",
   "image_processing_failed": "Ошибка обработки изображения",

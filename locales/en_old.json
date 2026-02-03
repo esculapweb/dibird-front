@@ -1,9 +1,12 @@
 {
+  "apply": "Apply",
   "authentication_failed": "Authentication failed",
   "check_entered_data": "Check entered data",
   "check_internet": "Check your internet connection or try again later",
   "choose_location_": "Choose location...",
   "could_not_create_user": "Could not create user",
+  "diary_count": "Number of diaries",
+  "diary_count_desc": "Number of diaries (desc)",
   "failed_remove_avatar": "Failed to remove avatar",
   "favourite": "",
   "image_processing_failed": "Image processing failed",

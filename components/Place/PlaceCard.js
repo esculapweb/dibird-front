@@ -119,7 +119,7 @@ const PlaceCard = React.memo(({ item }) => {
 
           <View style={styles.statsBlock}>
             {/* <StatItem icon="book-outline" txt={item.diary_count} /> */}
-            <StatItem icon="eye-outline" txt={item.observation_count} />
+            <StatItem icon="binoculars" txt={item.observation_count} />
             <StatItem txt={item.species_count}>
               <BirdSVG size={16} color={Colors.textMain} />
             </StatItem>

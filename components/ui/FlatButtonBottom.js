@@ -1,8 +1,9 @@
 import { Pressable, StyleSheet, View, Text } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 import { useTheme } from "../../store/theme-context";
 
-const FlatButtonBottom = ({ children, onPress }) => {
+const FlatButtonBottom = ({ children, onPress, textColor, icon }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
 
@@ -14,8 +15,12 @@ const FlatButtonBottom = ({ children, onPress }) => {
         pressed && styles.pressed,
       ]}
     >
-      <View>
-        <Text style={styles.buttonText}>{children}</Text>
+      <View >
+        
+        <Text style={[styles.buttonText, textColor && { color: textColor }]}>
+          {icon && <Ionicons name={icon} size={22} color={textColor ? textColor: Colors.link} />}{" "}
+          {children}
+        </Text>
       </View>
     </Pressable>
   );

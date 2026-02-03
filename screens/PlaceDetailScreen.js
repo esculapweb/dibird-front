@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import Toast from "react-native-toast-message";
+// import Toast from "react-native-toast-message";
 import { useTranslation } from "react-i18next";
 
 import { useTheme } from "../store/theme-context";
@@ -11,7 +11,8 @@ import { MetaRow } from "../components/Place/MetaRow";
 import { formatDate } from "../util/fetches";
 import IconButton from "../components/ui/IconButton";
 import MapPreview from "../components/Map/MapPreview";
-import api from "../services/api";
+import api, { showError } from "../services/api";
+import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 
 const PlaceDetailScreen = ({ route, navigation }) => {
   const { place } = route.params;
@@ -19,11 +20,10 @@ const PlaceDetailScreen = ({ route, navigation }) => {
   const styles = stylesFn(Colors);
   const { t } = useTranslation();
   const [lng, lat] = place.location.coordinates;
+  const url = `/myapi/place2/${place.id}/`;
 
   const [favourite, setFavourite] = useState(place.favourite);
   const [loadingFav, setLoadingFav] = useState(false);
-
-  
 
   const handleFavourite = async () => {
     if (loadingFav) return;
@@ -32,19 +32,49 @@ const PlaceDetailScreen = ({ route, navigation }) => {
     setLoadingFav(true);
 
     try {
-      await api.patch(`/myapi/place2/${place.id}/`, {
+      await api.patch(url, {
         favourite: newFav,
       });
     } catch (err) {
       setFavourite(favourite);
-      Toast.show({
-        type: "error",
-        text1: t("update_failed"),
-        text2: t("failed_to_update_favourite"),
-      });
+      showError(err);
+      // Toast.show({
+      //   type: "error",
+      //   text1: t("update_failed"),
+      //   text2: t("failed_to_update_favourite"),
+      // });
     } finally {
       setLoadingFav(false);
     }
+  };
+
+  const handleDelete = () => {
+    Alert.alert(
+      t("delete_title"),
+      t("delete_place_message"),
+      [
+        { text: t("cancel"), style: "cancel" },
+        {
+          text: t("delete"),
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const res = await api.delete(url);
+              if (res?.status === 204) {
+                navigation.navigate("Main", {
+                  screen: "Places",
+                });
+              } else {
+                showError({ response: res });
+              }
+            } catch (e) {
+              showError(e);
+            }
+          },
+        },
+      ],
+      { cancelable: true },
+    );
   };
 
   const handleObservationsPress = () => {
@@ -85,64 +115,72 @@ const PlaceDetailScreen = ({ route, navigation }) => {
   }, [navigation, favourite, loadingFav]);
 
   return (
-    <ScrollView style={styles.container}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title}>{place.name}</Text>
-          <Text style={styles.subtitle}>
-            {isoToFlagEmoji(place.territory_data.code)}{" "}
-            {place.territory_data.name}
-          </Text>
+    <View style={{ flex: 1 }}>
+      <ScrollView style={styles.container}>
+        <View style={styles.header}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>{place.name}</Text>
+            <Text style={styles.subtitle}>
+              {isoToFlagEmoji(place.territory_data.code)}{" "}
+              {place.territory_data.name}
+            </Text>
+          </View>
         </View>
-      </View>
 
-      {/* MAP PREVIEW */}
-      <View style={styles.mapWrapper}>
-        <MapPreview coordinates={[lng, lat]} />
+        <View style={styles.mapWrapper}>
+          <MapPreview coordinates={[lng, lat]} />
 
-        <View style={styles.coordsRow}>
-          <Ionicons
-            name="navigate-outline"
-            size={14}
-            color={Colors.textSecondary}
-            style={{ marginRight: 4 }}
+          <View style={styles.coordsRow}>
+            <Ionicons
+              name="navigate-outline"
+              size={14}
+              color={Colors.textSecondary}
+              style={{ marginRight: 4 }}
+            />
+            <Text style={styles.coords}>
+              {lat.toFixed(4)}, {lng.toFixed(4)}
+            </Text>
+          </View>
+        </View>
+
+        {/* STATS */}
+        <View style={styles.stats}>
+          <StatBig
+            icon="binoculars"
+            ß
+            value={place.observation_count}
+            label="Observations"
+            onPress={handleObservationsPress}
           />
-          <Text style={styles.coords}>
-            {lat.toFixed(4)}, {lng.toFixed(4)}
-          </Text>
+          <StatBig
+            value={place.species_count}
+            label="Species"
+            bird
+            onPress={handleSpeciesPress}
+          />
+          <StatBig
+            icon="book-outline"
+            value={place.diary_count}
+            label="Diary"
+            onPress={handleDiariesPress}
+          />
         </View>
-      </View>
 
-      {/* STATS */}
-      <View style={styles.stats}>
-        <StatBig
-          icon="eye-outline"
-          ß
-          value={place.observation_count}
-          label="Observations"
-          onPress={handleObservationsPress}
-        />
-        <StatBig
-          value={place.species_count}
-          label="Species"
-          bird
-          onPress={handleSpeciesPress}
-        />
-        <StatBig
-          icon="book-outline"
-          value={place.diary_count}
-          label="Diary"
-          onPress={handleDiariesPress}
-        />
-      </View>
+        {/* META */}
+        <View style={styles.meta}>
+          <MetaRow label="Created" value={formatDate(place.created_at)} />
+          <MetaRow label="Updated" value={formatDate(place.updated_at)} />
+        </View>
+      </ScrollView>
 
-      {/* META */}
-      <View style={styles.meta}>
-        <MetaRow label="Created" value={formatDate(place.created_at)} />
-        <MetaRow label="Updated" value={formatDate(place.updated_at)} />
-      </View>
-    </ScrollView>
+      <FlatButtonBottom
+        textColor={Colors.error600}
+        onPress={handleDelete}
+        icon="trash-outline"
+      >
+        {t("delete")}
+      </FlatButtonBottom>
+    </View>
   );
 };
 
@@ -154,6 +192,7 @@ const stylesFn = (Colors) =>
       flex: 1,
       backgroundColor: Colors.backgroundMain,
       padding: 16,
+      paddingBottom: 40,
     },
 
     header: {

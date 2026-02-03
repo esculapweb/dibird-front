@@ -143,7 +143,7 @@ export default FilterModal;
 
 const styles = StyleSheet.create({
   scrollContent: {
-    padding: 18,
+    padding: 16,
     paddingBottom: 40,
   },
   container: {
