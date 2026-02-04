@@ -20,6 +20,7 @@ import ErrorScreen from "../screens/ErrorScreen";
 
 import { AuthContext } from "../store/auth-context";
 import { useProfile } from "../store/profile-context";
+import { PlacesProvider } from "../store/places-context";
 import Avatar from "../components/Profile/Avatar";
 import LanguageSwitcher from "../components/Language/LanguageSwitcher";
 import ThemeSwitcher from "../components/Theme/ThemeSwitcher";
@@ -27,17 +28,6 @@ import { useTheme } from "../store/theme-context";
 
 const RootStack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
-
-// --- AppStack (Profile stack) ---
-const AppStack = () => {
-  return (
-    <RootStack.Navigator>
-      <RootStack.Screen name="ProfileScreen" options={{ headerShown: false }}>
-        {() => <ProfileScreen />}
-      </RootStack.Screen>
-    </RootStack.Navigator>
-  );
-};
 
 // --- Custom Drawer ---
 const CustomDrawerContent = (props) => {
@@ -138,7 +128,7 @@ const AppDrawer = () => {
       />
       <Drawer.Screen
         name="Profile"
-        component={AppStack}
+        component={ProfileScreen}
         options={{
           title: t("profile"),
           drawerIcon: ({ color, size, focused }) => (
@@ -150,7 +140,6 @@ const AppDrawer = () => {
           ),
         }}
       />
-      {/* Здесь PlaceDetail НЕ добавляем в Drawer */}
     </Drawer.Navigator>
   );
 };
@@ -158,30 +147,33 @@ const AppDrawer = () => {
 // --- Root navigator ---
 const RootNavigator = () => {
   const { t } = useTranslation();
-  const { Colors } = useTheme();
 
   return (
-    <RootStack.Navigator>
-      <RootStack.Screen
-        name="Main"
-        component={AppDrawer}
-        options={{ 
-          headerShown: false,
-          headerBackTitleVisible: false,
-          headerBackTitle: "",
-        }}
-      />
+    <PlacesProvider>
+      <RootStack.Navigator>
+        {/* <RootStack.Screen
+        name="Welcome"
+        component={WelcomeScreen}
+        options={{ headerShown: false }}
+      /> */}
 
-      <RootStack.Screen
-        name="PlaceDetail"
-        component={PlaceDetailScreen}
-        options={{
-          title: t("place"),
-          headerBackTitleVisible: false,
-          headerBackTitle: t("places"),
-        }}
-      />
-    </RootStack.Navigator>
+        <RootStack.Screen
+          name="Main"
+          component={AppDrawer}
+          options={{ headerShown: false }}
+        />
+
+        <RootStack.Screen
+          name="PlaceDetail"
+          component={PlaceDetailScreen}
+          options={{
+            title: t("place"),
+            headerBackTitleVisible: false,
+            headerBackTitle: t("places"),
+          }}
+        />
+      </RootStack.Navigator>
+    </PlacesProvider>
   );
 };
 

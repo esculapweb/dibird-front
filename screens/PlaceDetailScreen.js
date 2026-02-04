@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { View, Text, StyleSheet, ScrollView, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 // import Toast from "react-native-toast-message";
@@ -13,6 +13,7 @@ import IconButton from "../components/ui/IconButton";
 import MapPreview from "../components/Map/MapPreview";
 import api, { showError } from "../services/api";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
+import { usePlaces } from "../store/places-context";
 
 const PlaceDetailScreen = ({ route, navigation }) => {
   const { place } = route.params;
@@ -22,31 +23,32 @@ const PlaceDetailScreen = ({ route, navigation }) => {
   const [lng, lat] = place.location.coordinates;
   const url = `/myapi/place2/${place.id}/`;
 
-  const [favourite, setFavourite] = useState(place.favourite);
+  const { setFavouriteUpdate, favouriteUpdates } = usePlaces();
   const [loadingFav, setLoadingFav] = useState(false);
 
-  const handleFavourite = async () => {
+  const currentFavourite =
+    favouriteUpdates[place.id] !== undefined
+      ? favouriteUpdates[place.id]
+      : place.favourite;
+
+  const handleFavourite = useCallback(async () => {
     if (loadingFav) return;
-    const newFav = !favourite;
-    setFavourite(newFav);
+
+    const prevFav = currentFavourite;
+    const newFav = !prevFav;
+
+    setFavouriteUpdate(place.id, newFav);
     setLoadingFav(true);
 
     try {
-      await api.patch(url, {
-        favourite: newFav,
-      });
-    } catch (err) {
-      setFavourite(favourite);
-      showError(err);
-      // Toast.show({
-      //   type: "error",
-      //   text1: t("update_failed"),
-      //   text2: t("failed_to_update_favourite"),
-      // });
+      await api.patch(url, { favourite: newFav });
+    } catch (e) {
+      setFavouriteUpdate(place.id, prevFav);
+      showError(e);
     } finally {
       setLoadingFav(false);
     }
-  };
+  }, [currentFavourite, loadingFav, place.id, url, setFavouriteUpdate]);
 
   const handleDelete = () => {
     Alert.alert(
@@ -103,7 +105,7 @@ const PlaceDetailScreen = ({ route, navigation }) => {
         <>
           <IconButton
             tintColor={Colors.accent}
-            icon={favourite ? "star" : "star-outline"}
+            icon={currentFavourite ? "star" : "star-outline"}
             onPress={handleFavourite}
             style={styles.iconButton}
             size={24}
@@ -112,7 +114,7 @@ const PlaceDetailScreen = ({ route, navigation }) => {
         </>
       ),
     });
-  }, [navigation, favourite, loadingFav]);
+  }, [navigation, currentFavourite, loadingFav, handleFavourite]);
 
   return (
     <View style={{ flex: 1 }}>
@@ -147,7 +149,6 @@ const PlaceDetailScreen = ({ route, navigation }) => {
         <View style={styles.stats}>
           <StatBig
             icon="binoculars"
-            ß
             value={place.observation_count}
             label="Observations"
             onPress={handleObservationsPress}

@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { useTheme } from "../../store/theme-context";
 import { isoToFlagEmoji } from "../../util/fetches";
 import { BirdSVG } from "../ui/Svgs";
+import { usePlaces } from "../../store/places-context";
 
 const useStyles = (Colors) => React.useMemo(() => stylesFn(Colors), [Colors]);
 
@@ -29,6 +30,12 @@ const StatItem = React.memo(({ icon, txt, children }) => {
 });
 
 const PlaceCard = React.memo(({ item }) => {
+  const { favouriteUpdates } = usePlaces();
+  const currentFavourite = 
+    favouriteUpdates[item.id] !== undefined
+      ? favouriteUpdates[item.id]
+      : item.favourite;
+
   const { Colors } = useTheme();
   const styles = useStyles(Colors);
   const { t } = useTranslation();
@@ -89,7 +96,7 @@ const PlaceCard = React.memo(({ item }) => {
               flexShrink: 1,
             }}
           >
-            {item.favourite && (
+            {currentFavourite && (
               <Ionicons
                 name="star"
                 size={18}
