@@ -6,14 +6,14 @@ import IconButton from "../components/ui/IconButton";
 import FilterModal from "../components/Filters/FilterModal";
 import SortModal from "../components/Sort/SortModal";
 import { loadFilters, clearFilters, loadSort } from "../util/storageHelper";
-import { fetchPlaces, loadDecorator, normalizeValue } from "../util/fetches";
+import { normalizeValue } from "../util/fetches";
 import Places from "../components/Place/Places";
 import SearchInput from "../components/ui/SearchInput";
 import { useDebounce } from "../util/useDebounce";
-import { useLanguage } from "../store/language-context";
+import { usePlaces } from "../hooks/usePlaces";
+import ErrorOverlay from "../components/Error/ErrorOverlay";
 
 const PlacesScreen = ({ route, navigation }) => {
-  const { language } = useLanguage();
   const { t } = useTranslation();
 
   const SORT_OPTIONS = [
@@ -31,21 +31,15 @@ const PlacesScreen = ({ route, navigation }) => {
     // { label: t("diary_count_desc"), value: "-diary_count" },
   ];
 
-  const ALLOWED_FILTERS = ['territory', 'favourite']
+  const ALLOWED_FILTERS = ["territory", "favourite"];
 
   const [filters, setFilters] = useState(null);
   const [sort, setSort] = useState(null);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [sortModalVisible, setSortModalVisible] = useState(false);
 
-  const [places, setPlaces] = useState([]);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 400);
-
-  const [page, setPage] = useState(1);
-  const [finalPage, setFinalPage] = useState(1);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const hasActiveFilters = filters
     ? Object.values(filters).some((v) =>
@@ -53,15 +47,37 @@ const PlacesScreen = ({ route, navigation }) => {
       )
     : false;
 
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isError,
+    error,
+    refetch
+  } = usePlaces({
+    filters,
+    sort,
+    search: debouncedSearch,
+  });
+  const places = data?.pages.flatMap((page) => page.results) ?? [];
+
   const isEmpty = places.length === 0;
   const isSearchActive = debouncedSearch.length > 0;
 
   const emptyType =
-    !isInitialLoad && isEmpty
+    !isLoading && isEmpty
       ? isSearchActive || hasActiveFilters
         ? "filtered"
         : "initial"
       : null;
+
+  const handleLoadMore = () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  };
 
   const handleClearFilters = async () => {
     setFilters({});
@@ -79,35 +95,6 @@ const PlacesScreen = ({ route, navigation }) => {
   const handleFilterPress = () => setFilterModalVisible(true);
   const handleSortPress = () => setSortModalVisible(true);
   const handleAddPlace = () => console.log("Add place");
-
-  const loadPlaces = async (pageNum = 1) => {
-    if (pageNum > finalPage) return;
-
-    pageNum === 1 ? null : setIsLoadingMore(true);
-
-    try {
-      const response = await fetchPlaces(
-        filters,
-        sort,
-        debouncedSearch,
-        pageNum,
-      );
-      const { results, pagination } = response;
-
-      setPlaces((prev) => (pageNum === 1 ? results : [...prev, ...results]));
-      setPage(pagination.current);
-      setFinalPage(pagination.final);
-    } finally {
-      setIsLoadingMore(false);
-      if (isInitialLoad) setIsInitialLoad(false);
-    }
-  };
-
-  const handleLoadMore = () => {
-    if (!isLoadingMore && page < finalPage) {
-      loadPlaces(page + 1);
-    }
-  };
 
   useEffect(() => {
     const initFilters = async () => {
@@ -150,12 +137,16 @@ const PlacesScreen = ({ route, navigation }) => {
     });
   }, [navigation, filters, sort]);
 
-  useEffect(() => {
-    if (!filters || !sort) return;
-    loadDecorator(() => loadPlaces(1));
-  }, [language, filters, sort, debouncedSearch]);
+  if (isLoading || !filters || !sort) return <LoadingOverlay />;
 
-  if (isInitialLoad || !filters || !sort) return <LoadingOverlay />;
+  if (isError)
+    return (
+      <ErrorOverlay
+        title={t("places_unavailable")}
+        message={error.message}
+        onPress={refetch}
+      />
+    );
 
   return (
     <>
@@ -169,7 +160,7 @@ const PlacesScreen = ({ route, navigation }) => {
       <Places
         data={places}
         onEndReached={handleLoadMore}
-        isLoadingMore={isLoadingMore}
+        isLoadingMore={isFetchingNextPage}
         onAddPlace={handleAddPlace}
         emptyType={emptyType}
         onClear={handleClearFiltersSearch}

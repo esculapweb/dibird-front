@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 // import Toast from "react-native-toast-message";
@@ -11,44 +11,30 @@ import { MetaRow } from "../components/Place/MetaRow";
 import { formatDate } from "../util/fetches";
 import IconButton from "../components/ui/IconButton";
 import MapPreview from "../components/Map/MapPreview";
-import api, { showError } from "../services/api";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
-import { usePlaces } from "../store/places-context";
+import { usePlace } from "../hooks/usePlace";
+import { useToggleFavourite, useDeletePlace } from "../hooks/usePlaceMutation";
+import LoadingOverlay from "../components/ui/LoadingOverlay";
 
 const PlaceDetailScreen = ({ route, navigation }) => {
-  const { place } = route.params;
+  const { placeId } = route.params;
+  const { data: place, isLoading } = usePlace(placeId);
+  const toggleFavourite = useToggleFavourite(placeId);
+  const deletePlace = useDeletePlace();
+
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const { t } = useTranslation();
+
+  if (isLoading || !place) {
+    return <LoadingOverlay />;
+  }
+
   const [lng, lat] = place.location.coordinates;
-  const url = `/myapi/place2/${place.id}/`;
 
-  const { setFavouriteUpdate, favouriteUpdates } = usePlaces();
-  const [loadingFav, setLoadingFav] = useState(false);
-
-  const currentFavourite =
-    favouriteUpdates[place.id] !== undefined
-      ? favouriteUpdates[place.id]
-      : place.favourite;
-
-  const handleFavourite = useCallback(async () => {
-    if (loadingFav) return;
-
-    const prevFav = currentFavourite;
-    const newFav = !prevFav;
-
-    setFavouriteUpdate(place.id, newFav);
-    setLoadingFav(true);
-
-    try {
-      await api.patch(url, { favourite: newFav });
-    } catch (e) {
-      setFavouriteUpdate(place.id, prevFav);
-      showError(e);
-    } finally {
-      setLoadingFav(false);
-    }
-  }, [currentFavourite, loadingFav, place.id, url, setFavouriteUpdate]);
+  const handleFavourite = () => {
+    toggleFavourite.mutate(!place.favourite);
+  };
 
   const handleDelete = () => {
     Alert.alert(
@@ -59,19 +45,14 @@ const PlaceDetailScreen = ({ route, navigation }) => {
         {
           text: t("delete"),
           style: "destructive",
-          onPress: async () => {
-            try {
-              const res = await api.delete(url);
-              if (res?.status === 204) {
+          onPress: () => {
+            deletePlace.mutate(placeId, {
+              onSuccess: () => {
                 navigation.navigate("Main", {
                   screen: "Places",
                 });
-              } else {
-                showError({ response: res });
-              }
-            } catch (e) {
-              showError(e);
-            }
+              },
+            });
           },
         },
       ],
@@ -105,16 +86,16 @@ const PlaceDetailScreen = ({ route, navigation }) => {
         <>
           <IconButton
             tintColor={Colors.accent}
-            icon={currentFavourite ? "star" : "star-outline"}
+            icon={place.favourite ? "star" : "star-outline"}
             onPress={handleFavourite}
             style={styles.iconButton}
             size={24}
-            disabled={loadingFav}
+            disabled={toggleFavourite.isLoading}
           />
         </>
       ),
     });
-  }, [navigation, currentFavourite, loadingFav, handleFavourite]);
+  }, [navigation, place.favourite, toggleFavourite.isLoading]);
 
   return (
     <View style={{ flex: 1 }}>

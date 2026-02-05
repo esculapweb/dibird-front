@@ -20,7 +20,6 @@ import ErrorScreen from "../screens/ErrorScreen";
 
 import { AuthContext } from "../store/auth-context";
 import { useProfile } from "../store/profile-context";
-import { PlacesProvider } from "../store/places-context";
 import Avatar from "../components/Profile/Avatar";
 import LanguageSwitcher from "../components/Language/LanguageSwitcher";
 import ThemeSwitcher from "../components/Theme/ThemeSwitcher";
@@ -149,37 +148,34 @@ const RootNavigator = () => {
   const { t } = useTranslation();
 
   return (
-    <PlacesProvider>
-      <RootStack.Navigator>
-        {/* <RootStack.Screen
+    <RootStack.Navigator>
+      {/* <RootStack.Screen
         name="Welcome"
         component={WelcomeScreen}
         options={{ headerShown: false }}
       /> */}
 
-        <RootStack.Screen
-          name="Main"
-          component={AppDrawer}
-          options={{ headerShown: false }}
-        />
+      <RootStack.Screen
+        name="Main"
+        component={AppDrawer}
+        options={{ headerShown: false }}
+      />
 
-        <RootStack.Screen
-          name="PlaceDetail"
-          component={PlaceDetailScreen}
-          options={{
-            title: t("place"),
-            headerBackTitleVisible: false,
-            headerBackTitle: t("places"),
-          }}
-        />
-      </RootStack.Navigator>
-    </PlacesProvider>
+      <RootStack.Screen
+        name="PlaceDetail"
+        component={PlaceDetailScreen}
+        options={{
+          title: t("place"),
+          headerBackTitleVisible: false,
+          headerBackTitle: t("places"),
+        }}
+      />
+    </RootStack.Navigator>
   );
 };
 
 export default RootNavigator;
 
-// --- Styles ---
 const stylesFn = (Colors) =>
   StyleSheet.create({
     header: { paddingHorizontal: 16, alignItems: "center", marginBottom: 24 },

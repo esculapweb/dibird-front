@@ -55,17 +55,21 @@ const Places = ({
           styles.list,
           data.length === 0 && { flexGrow: 1 },
         ]}
-        onEndReached={onEndReached}
+        onEndReached={() => {
+          if (!isLoadingMore) {
+            onEndReached?.();
+          }
+        }}
         onEndReachedThreshold={0.5}
         ListEmptyComponent={emptyProps ? <EmptyState {...emptyProps} /> : null}
         ListFooterComponent={
-          isLoadingMore && (
+          data.length > 0 && isLoadingMore ? (
             <ActivityIndicator
               size="small"
               color={Colors.textMain}
               style={{ marginVertical: 10 }}
             />
-          )
+          ) : null
         }
       />
 
