@@ -112,6 +112,31 @@ export const showError = (e, extractApiErrorFn = null) => {
   });
 };
 
+const createTranslatedError = (error) => {
+  const normalizedError = normalizeApiError(error);
+
+  // Используем существующую логику mapErrorToToast для получения перевода
+  const { title, message } = mapErrorToToast(normalizedError, null);
+
+  // Создаем новую ошибку с переведенным сообщением
+  const translatedError = new Error(message);
+
+  // Сохраняем все оригинальные данные
+  translatedError.title = title;
+  translatedError.message = message;
+  translatedError.code = normalizedError.code;
+  translatedError.status = normalizedError.status;
+  translatedError.originalError = error;
+  translatedError.response = error.response;
+
+  // Добавляем флаги для удобства
+  translatedError.isTimeout = normalizedError.isTimeout;
+  translatedError.isNetworkError = normalizedError.isNetworkError;
+  translatedError.isServerError = normalizedError.isServerError;
+
+  return translatedError;
+};
+
 const api = axios.create({
   baseURL: Config.baseUrl,
   timeout: 10000,
@@ -190,7 +215,7 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     if (!originalRequest) {
-      return Promise.reject(normalizeApiError(error));
+      return Promise.reject(createTranslatedError(error));
     }
 
     if (
@@ -211,17 +236,36 @@ api.interceptors.response.use(
         }
 
         const newAccess = await refreshPromise;
-
         originalRequest.headers.Authorization = `Bearer ${newAccess}`;
         return api(originalRequest);
       } catch (e) {
         await clearTokens();
-        return Promise.reject(normalizeApiError(e));
+        return Promise.reject(createTranslatedError(e));
       }
     }
 
-    return Promise.reject(normalizeApiError(error));
+    return Promise.reject(createTranslatedError(error));
   },
 );
+
+export const getErrorDetails = (error) => {
+  if (error?.title && error?.message) {
+    return {
+      title: error.title,
+      message: error.message,
+      code: error.code,
+      status: error.status,
+    };
+  }
+
+  // Fallback для старых ошибок
+  const { title, message } = mapErrorToToast(error);
+  return {
+    title,
+    message,
+    code: error.code,
+    status: error.status,
+  };
+};
 
 export default api;
