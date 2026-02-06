@@ -11,11 +11,11 @@ import { BirdSVG } from "../ui/Svgs";
 
 const useStyles = (Colors) => React.useMemo(() => stylesFn(Colors), [Colors]);
 
-const StatItem = React.memo(({ icon, txt, children }) => {
+const StatItem = React.memo(({ icon, txt, children, style }) => {
   const { Colors } = useTheme();
   const styles = useStyles(Colors);
   return (
-    <View style={styles.statItem}>
+    <View style={[styles.statItem, style]}>
       <View style={styles.statItemInner}>
         {icon ? (
           <Ionicons name={icon} size={16} color={Colors.textMain} />
@@ -119,8 +119,8 @@ const PlaceCard = React.memo(({ item }) => {
 
           <View style={styles.statsBlock}>
             {/* <StatItem icon="book-outline" txt={item.diary_count} /> */}
-            <StatItem icon="binoculars" txt={item.observation_count} />
-            <StatItem txt={item.species_count}>
+            <StatItem icon="binoculars" txt={item.observation_count} style={{minWidth: 80}} />
+            <StatItem txt={item.species_count} style={{minWidth: 56}}>
               <BirdSVG size={16} color={Colors.textMain} />
             </StatItem>
           </View>
@@ -202,6 +202,7 @@ const stylesFn = (Colors) =>
     statItem: {
       flexDirection: "row",
       alignItems: "center",
+      justifyContent: "space-around",
       backgroundColor: Colors.badgeBg,
       borderRadius: 6,
       paddingHorizontal: 4,
