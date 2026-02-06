@@ -132,19 +132,21 @@ const PlaceDetailScreen = ({ route, navigation }) => {
     });
   }, [navigation, headerRight, place]);
 
-  if (isLoading || !place) {
-    return <LoadingOverlay />;
-  }
   if (isError) {
-    // error.message уже содержит переведенный текст!
     return (
       <ErrorOverlay
         title={t("places_unavailable")}
-        message={error.message} // ← Уже переведено!
+        message={error.message}
         onPress={refetch}
+        logo
       />
     );
   }
+
+  if (isLoading || !place) {
+    return <LoadingOverlay />;
+  }
+
 
   const [lng, lat] = place.location.coordinates;
 

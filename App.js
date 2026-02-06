@@ -19,21 +19,18 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: (failureCount, error) => {
-        // не ретраим при 401
         if (error.code === "UNAUTHORIZED") return false;
 
-        // сервер умер — не долбим
         if (error.isServerError) return false;
 
-        // сеть / таймаут — можно попробовать 1–2 раза
-        return failureCount < 2;
+        return failureCount < 1;
       },
 
       onError: (error) => {
         showError(error);
       },
-      staleTime: 15_000, // 30 секунд
-      cacheTime: 5 * 60_000, // 5 минут
+      staleTime: 10_000, 
+      cacheTime: 5 * 60_000,
       refetchOnFocus: false,
       refetchOnReconnect: true,
 

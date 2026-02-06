@@ -55,7 +55,7 @@ const PlacesScreen = ({ route, navigation }) => {
     isLoading,
     isError,
     error,
-    refetch
+    refetch,
   } = usePlaces({
     filters,
     sort,
@@ -137,16 +137,16 @@ const PlacesScreen = ({ route, navigation }) => {
     });
   }, [navigation, filters, sort]);
 
-  if (isLoading || !filters || !sort) return <LoadingOverlay />;
-
   if (isError)
     return (
       <ErrorOverlay
         title={t("places_unavailable")}
         message={error.message}
         onPress={refetch}
+        logo
       />
     );
+  if (isLoading || !filters || !sort) return <LoadingOverlay />;
 
   return (
     <>

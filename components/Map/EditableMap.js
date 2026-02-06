@@ -1,4 +1,5 @@
-import { StyleSheet, View } from "react-native";
+// components/Map/EditableMap.js
+import { StyleSheet, Dimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
   MapView,
@@ -7,24 +8,41 @@ import {
   RasterLayer,
   MarkerView,
 } from "@maplibre/maplibre-react-native";
-
 import { useTheme } from "../../store/theme-context";
 
-const MapPreview = ({ coordinates }) => {
+const { width, height } = Dimensions.get("window");
+
+const EditableMap = ({ 
+  coordinates, 
+  onCoordinateChange, 
+  editable = true,
+  fullScreen = false // Новый проп
+}) => {
   const { Colors } = useTheme();
   const [lng, lat] = coordinates;
 
+  const handleMapPress = (event) => {
+    if (!editable) return;
+    
+    const { geometry } = event;
+    if (geometry && geometry.coordinates) {
+      onCoordinateChange(geometry.coordinates);
+    }
+  };
+
   return (
     <MapView
-      style={styles.map}
-      //   scrollEnabled={false}
+      style={[styles.map, fullScreen && styles.fullScreenMap]}
+      onPress={handleMapPress}
+      scrollEnabled={editable}
+      zoomEnabled={editable}
       rotateEnabled={false}
       pitchEnabled={false}
     >
       <Camera
         centerCoordinate={[lng, lat]}
-        zoomLevel={12}
-        animationDuration={0}
+        zoomLevel={fullScreen ? 14 : 12} // Больший zoom при полноэкранном режиме
+        animationDuration={300}
       />
 
       <RasterSource
@@ -35,10 +53,10 @@ const MapPreview = ({ coordinates }) => {
         <RasterLayer id="osmLayer" sourceID="osmTiles" />
       </RasterSource>
 
-      <MarkerView coordinate={[lng, lat]} anchor={{ x: 0.5, y: 0.92 }}>
+      <MarkerView coordinate={[lng, lat]}>
         <Ionicons
           name="location-sharp"
-          size={32}
+          size={fullScreen ? 40 : 32}
           color={Colors.error600}
           style={styles.marker}
         />
@@ -47,17 +65,20 @@ const MapPreview = ({ coordinates }) => {
   );
 };
 
-export default MapPreview;
+export default EditableMap;
 
 const styles = StyleSheet.create({
   map: {
-    height: 300,
+    height: 200,
+    width: "100%",
+  },
+  fullScreenMap: {
+    height: height * 0.6, // 60% высоты экрана
     width: "100%",
   },
   marker: {
     textShadowColor: "rgba(0,0,0,0.3)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
-    marginBottom: -8
   },
 });

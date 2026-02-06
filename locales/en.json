@@ -115,5 +115,16 @@
   "username": "Username",
   "whole_year": "By year",
   "year": "Year",
-  "yes": "Yes"
+  "yes": "Yes",
+  "place_name": "Place Name",
+  "name_required": "Name is required",
+  "name_too_long": "Name is too long (max 100 characters)",
+  "coordinates": "Coordinates",
+  "latitude": "Latitude",
+  "longitude": "Longitude",
+  "invalid_latitude": "Latitude must be between -90 and 90",
+  "invalid_longitude": "Longitude must be between -180 and 180",
+  "enter_place_name": "Enter place name",
+  "coordinates_hint": "You can change coordinates by tapping on the map or editing the fields below. Coordinates must be in decimal degrees format.",
+  "tap_map_to_change": "Tap on the map to change location"
 }
