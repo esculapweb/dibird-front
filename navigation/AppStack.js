@@ -17,6 +17,7 @@ import PlaceDetailScreen from "../screens/PlaceDetailScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import ErrorScreen from "../screens/ErrorScreen";
+import AddPlaceScreen from "../screens/AddPlaceScreen";
 
 import { AuthContext } from "../store/auth-context";
 import { useProfile } from "../store/profile-context";
@@ -169,6 +170,12 @@ const RootNavigator = () => {
           headerBackTitleVisible: false,
           headerBackTitle: t("places"),
         }}
+      />
+
+      <RootStack.Screen
+        name="AddPlace"
+        component={AddPlaceScreen}
+        options={{ headerShown: true }}
       />
     </RootStack.Navigator>
   );

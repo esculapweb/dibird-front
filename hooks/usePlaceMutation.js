@@ -126,3 +126,24 @@ export const useDeletePlace = () => {
     },
   });
 };
+
+export const useCreatePlace = () => {
+  const queryClient = useQueryClient();
+
+  return useMutationWithTranslation({
+    mutationFn: (data) => api.post(`/myapi/place2/`, data),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["places"], (old) => {
+        if (!old?.results) return old;
+        return {
+          ...old,
+          results: [data.data, ...old.results],
+          count: old.count ? old.count + 1 : old.count,
+        };
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries(["places"]);
+    },
+  });
+};

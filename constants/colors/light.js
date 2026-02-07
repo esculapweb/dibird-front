@@ -37,4 +37,6 @@ export const LightColors = {
   dotBorder: "#ffe9e7",
   badgeBg: "#f0f0f0",
   done: "#f0c24b",
+
+  markerBorder: "#fff",
 };

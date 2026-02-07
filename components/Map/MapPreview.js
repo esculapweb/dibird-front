@@ -12,15 +12,11 @@ import { useTheme } from "../../store/theme-context";
 
 const MapPreview = ({ coordinates }) => {
   const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
   const [lng, lat] = coordinates;
 
   return (
-    <MapView
-      style={styles.map}
-      //   scrollEnabled={false}
-      rotateEnabled={false}
-      pitchEnabled={false}
-    >
+    <MapView style={styles.map} rotateEnabled={false} pitchEnabled={false}>
       <Camera
         centerCoordinate={[lng, lat]}
         zoomLevel={12}
@@ -35,13 +31,14 @@ const MapPreview = ({ coordinates }) => {
         <RasterLayer id="osmLayer" sourceID="osmTiles" />
       </RasterSource>
 
-      <MarkerView coordinate={[lng, lat]} anchor={{ x: 0.5, y: 0.92 }}>
-        <Ionicons
-          name="location-sharp"
-          size={32}
-          color={Colors.error600}
-          style={styles.marker}
-        />
+      <MarkerView coordinate={[lng, lat]} anchor={{ x: 0.5, y: 1 }}>
+        <View style={styles.markerContainer}>
+          <Ionicons name="location-sharp" size={32} color={Colors.error600} />
+        </View>
+      </MarkerView>
+
+      <MarkerView coordinate={[lng, lat]} anchor={{ x: 0.5, y: 0.5 }}>
+        <View style={styles.exactPoint} />
       </MarkerView>
     </MapView>
   );
@@ -49,15 +46,21 @@ const MapPreview = ({ coordinates }) => {
 
 export default MapPreview;
 
-const styles = StyleSheet.create({
-  map: {
-    height: 300,
-    width: "100%",
-  },
-  marker: {
-    textShadowColor: "rgba(0,0,0,0.3)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-    marginBottom: -8
-  },
-});
+const stylesFn = (Colors) =>
+  StyleSheet.create({
+    map: {
+      height: 300,
+      width: "100%",
+    },
+    markerContainer: {
+      marginBottom: 36,
+    },
+    exactPoint: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: Colors.error600,
+      borderWidth: 1,
+      borderColor: Colors.markerBorder,
+    },
+  });

@@ -16,6 +16,9 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSFaceIDUsageDescription": "Used to sign in to the app using Face ID",
+        "NSLocationWhenInUseUsageDescription": "This app uses your location to show and save places on the map.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses your location to show and save places on the map.",
+        "NSLocationAlwaysUsageDescription": "This app uses your location to show and save places on the map.",
         "ITSAppUsesNonExemptEncryption": false
       },
       "bundleIdentifier": "com.esculapweb.dibird"
@@ -26,12 +29,18 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.esculapweb.dibird"
+      "package": "com.esculapweb.dibird",
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      "expo-location",
       "expo-secure-store",
       "expo-localization",
       "@react-native-community/datetimepicker",

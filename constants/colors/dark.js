@@ -47,4 +47,6 @@ export const DarkColors = {
   dotBorder: "#e5e7eb",
   badgeBg: "#121212",
   done: "#60a5fa",
+
+  markerBorder: "#fff",
 };
