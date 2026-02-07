@@ -48,5 +48,9 @@ export const DarkColors = {
   badgeBg: "#121212",
   done: "#60a5fa",
 
+  buttonBrightBg: "#f0c24b",
+  buttonBrightColor: "#1f2937",
+
+
   markerBorder: "#fff",
 };

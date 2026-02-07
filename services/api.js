@@ -112,7 +112,7 @@ export const showError = (e, extractApiErrorFn = null) => {
   });
 };
 
-const createTranslatedError = (error) => {
+export const createTranslatedError = (error) => {
   const normalizedError = normalizeApiError(error);
 
   // Используем существующую логику mapErrorToToast для получения перевода

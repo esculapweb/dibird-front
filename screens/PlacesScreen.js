@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 import LoadingOverlay from "../components/ui/LoadingOverlay";
-import IconButton from "../components/ui/IconButton";
 import FilterModal from "../components/Filters/FilterModal";
 import SortModal from "../components/Sort/SortModal";
 import { loadFilters, clearFilters, loadSort } from "../util/storageHelper";
@@ -12,6 +11,7 @@ import SearchInput from "../components/ui/SearchInput";
 import { useDebounce } from "../util/useDebounce";
 import { usePlaces } from "../hooks/usePlaces";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
+import FiltersHeader from "../components/ui/FiltersHeader";
 
 const PlacesScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
@@ -119,20 +119,12 @@ const PlacesScreen = ({ route, navigation }) => {
 
   useEffect(() => {
     navigation.setOptions({
-      headerRight: ({ tintColor }) => (
-        <>
-          <IconButton
-            tintColor={tintColor}
-            onPress={handleSortPress}
-            icon="swap-vertical"
-          />
-          <IconButton
-            tintColor={tintColor}
-            onPress={handleFilterPress}
-            icon={hasActiveFilters ? "options" : "options-outline"}
-            active={hasActiveFilters}
-          />
-        </>
+      headerRight: () => (
+        <FiltersHeader
+          hasActiveFilters={hasActiveFilters}
+          onSortPress={handleSortPress}
+          onFilterPress={handleFilterPress}
+        />
       ),
     });
   }, [navigation, filters, sort]);

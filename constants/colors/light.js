@@ -38,5 +38,8 @@ export const LightColors = {
   badgeBg: "#f0f0f0",
   done: "#f0c24b",
 
+  buttonBrightBg: "#f0c24b",
+  buttonBrightColor: "#1f2937",
+
   markerBorder: "#fff",
 };

@@ -8,7 +8,7 @@ import LoadingOverlay from "../components/ui/LoadingOverlay";
 import FilterModal from "../components/Filters/FilterModal";
 import SortModal from "../components/Sort/SortModal";
 import { loadFilters, clearFilters, loadSort } from "../util/storageHelper";
-import IconButton from "../components/ui/IconButton";
+import FiltersHeader from "../components/ui/FiltersHeader";
 
 const StatScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
@@ -80,21 +80,12 @@ const StatScreen = ({ route, navigation }) => {
 
   useEffect(() => {
     navigation.setOptions({
-      headerRight: ({ tintColor }) => (
-        <>
-          <IconButton
-            tintColor={tintColor}
-            onPress={handleSortPress}
-            icon="swap-vertical"
-          />
-
-          <IconButton
-            tintColor={tintColor}
-            onPress={handleFilterPress}
-            icon={hasActiveFilters ? "options" : "options-outline"}
-            active={hasActiveFilters}
-          />
-        </>
+      headerRight: () => (
+        <FiltersHeader
+          hasActiveFilters={hasActiveFilters}
+          onSortPress={handleSortPress}
+          onFilterPress={handleFilterPress}
+        />
       ),
     });
   }, [navigation, filters, sort]);

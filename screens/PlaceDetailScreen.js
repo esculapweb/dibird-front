@@ -96,7 +96,7 @@ const PlaceDetailScreen = ({ route, navigation }) => {
           onPress: () =>
             deletePlace.mutate(placeId, {
               onSuccess: () =>
-                navigation.navigate("Main", { screen: "Places" }),
+                navigation.navigate("Places"),
               onError: (error) => {
                 Alert.alert(t("error"), error.message || t("delete_failed"));
               },
@@ -113,10 +113,7 @@ const PlaceDetailScreen = ({ route, navigation }) => {
 
   const handleSpeciesPress = useCallback(() => {
     if (place) {
-      navigation.navigate("Main", {
-        screen: "Statistics",
-        params: { placeId },
-      });
+      navigation.navigate("Statistics", { placeId });
     }
   }, [place, placeId, navigation]);
 

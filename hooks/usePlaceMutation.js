@@ -131,13 +131,34 @@ export const useCreatePlace = () => {
   const queryClient = useQueryClient();
 
   return useMutationWithTranslation({
-    mutationFn: (data) => api.post(`/myapi/place2/`, data),
-    onSuccess: (data) => {
+    mutationFn: (data) => {
+      // Проверяем и форматируем данные для Django/PostGIS
+      const formattedData = {
+        name: data.name,
+        favourite: data.favourite || false,
+        territory: 68,
+      };
+      
+      // Если есть location, форматируем его для GeoJSON
+      if (data.location && data.location.coordinates) {
+        formattedData.location = {
+          type: "Point",
+          coordinates: [
+            Number(data.location.coordinates[0]), // longitude
+            Number(data.location.coordinates[1])  // latitude
+          ]
+        };
+      }
+      
+      console.log('Sending to API:', formattedData);
+      return api.post(`/myapi/place2/`, formattedData);
+    },
+    onSuccess: (response) => {
       queryClient.setQueryData(["places"], (old) => {
         if (!old?.results) return old;
         return {
           ...old,
-          results: [data.data, ...old.results],
+          results: [response.data, ...old.results],
           count: old.count ? old.count + 1 : old.count,
         };
       });

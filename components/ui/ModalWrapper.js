@@ -46,7 +46,7 @@ const ModalWrapper = ({ children, onClose, onApply, visible, title }) => {
               <Ionicons
                 name="checkmark"
                 size={ICON_SIZE}
-                color={Colors.textMain}
+                color={Colors.buttonBrightColor}
               />
             </Pressable>
           )}
@@ -106,7 +106,7 @@ const stylesFn = (Colors) =>
     },
 
     applyButton: {
-      backgroundColor: Colors.done,
+      backgroundColor: Colors.buttonBrightBg,
     },
 
     pressed: {

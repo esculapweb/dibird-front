@@ -21,7 +21,7 @@ const IconButton = ({ tintColor, onPress, icon, active, style, size=22, disabled
     >
       <Ionicons name={icon} size={size} color={tintColor} />
 
-      {active && <View style={styles.dot} />}
+      {active && <View style={styles.active} />}
     </Pressable>
   );
 };
@@ -33,10 +33,10 @@ const stylesFn = (Colors) =>
     container: {
       marginRight: 12,
     },
-    dot: {
+    active: {
       position: "absolute",
-      top: -2,
-      right: -2,
+      top: 0,
+      right: 2,
       width: 8,
       height: 8,
       borderRadius: 4,

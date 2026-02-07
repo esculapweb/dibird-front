@@ -49,32 +49,46 @@ const Places = ({
     <>
       <FlatList
         data={data}
-        keyExtractor={(item) => String(item.id)}
+        keyExtractor={(item, index) => {
+          if (item?.id) {
+            return `place-${item.id}`;
+          }
+          return `place-${index}-${Date.now()}`;
+        }}
         renderItem={renderPlace}
         contentContainerStyle={[
           styles.list,
           data.length === 0 && { flexGrow: 1 },
         ]}
         onEndReached={() => {
-          if (!isLoadingMore) {
+          if (!isLoadingMore && data.length > 0) {
             onEndReached?.();
           }
         }}
         onEndReachedThreshold={0.5}
-        ListEmptyComponent={emptyProps ? <EmptyState {...emptyProps} /> : null}
+        ListEmptyComponent={
+          data.length === 0 && emptyProps ? (
+            <EmptyState key="empty-state" {...emptyProps} />
+          ) : null
+        }
         ListFooterComponent={
-          data.length > 0 && isLoadingMore ? (
+          isLoadingMore ? (
             <ActivityIndicator
+              key="footer-loader"
               size="small"
               color={Colors.textMain}
               style={{ marginVertical: 10 }}
             />
           ) : null
         }
+        // Дополнительные пропсы для стабильности
+        removeClippedSubviews={false} // Может помочь в некоторых случаях
+        maxToRenderPerBatch={10} // Ограничить batch рендеринг
+        windowSize={5} // Уменьшить window size
       />
 
       <Pressable style={styles.fab} onPress={onAddPlace}>
-        <Ionicons name="add" size={28} color={Colors.buttonPrimaryText} />
+        <Ionicons name="add" size={28} color={Colors.buttonBrightColor} />
       </Pressable>
     </>
   );
@@ -94,7 +108,7 @@ const stylesFn = (Colors) =>
       borderRadius: 28,
       justifyContent: "center",
       alignItems: "center",
-      backgroundColor: Colors.buttonBg,
+      backgroundColor: Colors.buttonBrightBg,
       shadowColor: Colors.shadow,
       shadowOpacity: 0.3,
       shadowRadius: 6,
