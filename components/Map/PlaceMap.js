@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -16,6 +16,8 @@ import {
 } from "@maplibre/maplibre-react-native";
 import { useTheme } from "../../store/theme-context";
 
+const iconSize = 32;
+
 export const PlaceMap = ({
   coords,
   onCoordsChange,
@@ -25,7 +27,7 @@ export const PlaceMap = ({
   style,
 }) => {
   const { Colors, theme } = useTheme();
-  const styles = stylesFn(Colors, theme);
+  const styles = stylesFn(Colors, theme, iconSize);
 
   const [currentCoords, setCurrentCoords] = useState(coords);
   const [currentZoom, setCurrentZoom] = useState(zoomLevel);
@@ -45,7 +47,7 @@ export const PlaceMap = ({
   );
 
   const animateCamera = useCallback(
-    (newCoords, newZoom = 14) => {
+    (newCoords, newZoom = currentZoom) => {
       if (isAnimatingRef.current) return;
       isAnimatingRef.current = true;
 
@@ -55,10 +57,20 @@ export const PlaceMap = ({
 
       setTimeout(() => (isAnimatingRef.current = false), 300);
     },
-    [onCoordsChange],
+    [onCoordsChange, currentZoom],
   );
 
   const [lng, lat] = currentCoords;
+
+  useEffect(() => {
+    if (
+      coords &&
+      (coords[0] !== currentCoords[0] || coords[1] !== currentCoords[1])
+    ) {
+      setCurrentCoords(coords);
+      animateCamera(coords, currentZoom);
+    }
+  }, [coords]);
 
   return (
     <View style={[styles.container, style]}>
@@ -78,7 +90,11 @@ export const PlaceMap = ({
 
         <PointAnnotation id="selected-point" coordinate={[lng, lat]}>
           <View style={styles.markerContainer}>
-            <Ionicons name="location-sharp" size={32} color={Colors.error600} />
+            <Ionicons
+              name="location-sharp"
+              size={iconSize}
+              color={Colors.error600}
+            />
           </View>
         </PointAnnotation>
       </MapView>
@@ -113,11 +129,15 @@ export const PlaceMap = ({
   );
 };
 
-const stylesFn = (Colors, theme) =>
+const stylesFn = (Colors, theme, iconSize) =>
   StyleSheet.create({
     container: { flex: 1, position: "relative" },
     map: { flex: 1 },
-    markerContainer: { alignItems: "center", justifyContent: "center" },
+    markerContainer: {
+      alignItems: "center",
+      justifyContent: "center",
+      transform: [{ translateY: -iconSize / 2 }],
+    },
     myLocationButton: {
       position: "absolute",
       bottom: 20,
