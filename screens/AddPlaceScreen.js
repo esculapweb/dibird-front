@@ -44,6 +44,7 @@ const AddPlaceScreen = ({ navigation }) => {
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [locationDetails, setLocationDetails] = useState(null);
   const [currentCoords, setCurrentCoords] = useState(defaultCoords);
+  const [accuracy, setAccuracy] = useState(null);
 
   const [zoomLevel, setZoomLevel] = useState(12);
 
@@ -153,6 +154,7 @@ const AddPlaceScreen = ({ navigation }) => {
       });
       handleCoordsChange([loc.coords.longitude, loc.coords.latitude]);
       setZoomLevel(14);
+      setAccuracy(loc.coords.accuracy);
     } catch (err) {
       console.error("Location error:", err);
       Alert.alert(t("error"), t("location_error"));
@@ -162,6 +164,10 @@ const AddPlaceScreen = ({ navigation }) => {
       setIsGettingLocation(false);
     }
   }, [handleCoordsChange]);
+
+  useEffect(() => {
+    handleUseMyLocation();
+  }, []);
 
   const HeaderRight = useCallback(
     () =>
@@ -210,6 +216,7 @@ const AddPlaceScreen = ({ navigation }) => {
             onCoordsChange={handleCoordsChange}
             onUseMyLocation={handleUseMyLocation}
             isGeocoding={isGeocoding || isGettingLocation}
+            accuracy={accuracy}
           />
         </View>
 

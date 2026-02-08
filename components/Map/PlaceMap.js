@@ -29,6 +29,7 @@ export const PlaceMap = ({
   onUseMyLocation,
   zoomLevel = 12,
   style,
+  accuracy = 0,
 }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors, iconSize);
@@ -105,7 +106,7 @@ export const PlaceMap = ({
         <Camera
           centerCoordinate={currentCoords}
           zoomLevel={Math.min(currentZoom, 19)}
-          animationDuration={0} 
+          animationDuration={0}
         />
 
         <RasterSource
@@ -117,15 +118,28 @@ export const PlaceMap = ({
         </RasterSource>
 
         {Platform.OS === "ios" ? (
-          <PointAnnotation id="selected-point" coordinate={[lng, lat]}>
-            <View style={styles.markerContainer}>
-              <Ionicons
-                name="location-sharp"
-                size={iconSize}
-                color={Colors.error600}
+          <>
+            <PointAnnotation id="selected-point" coordinate={[lng, lat]}>
+              <View style={styles.markerContainer}>
+                <Ionicons
+                  name="location-sharp"
+                  size={iconSize}
+                  color={Colors.error600}
+                />
+              </View>
+            </PointAnnotation>
+            {accuracy > 0 && (
+              <View
+                style={{
+                  position: "absolute",
+                  width: accuracy / 2, // пример, нужно подогнать размер под пиксели карты
+                  height: accuracy / 2,
+                  borderRadius: accuracy / 4,
+                  backgroundColor: "rgba(0,150,255,0.2)",
+                }}
               />
-            </View>
-          </PointAnnotation>
+            )}
+          </>
         ) : (
           <ShapeSource
             id="selectedPoint"
