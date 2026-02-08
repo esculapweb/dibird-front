@@ -37,15 +37,18 @@ export const PlaceMap = ({
   const [currentZoom, setCurrentZoom] = useState(zoomLevel);
 
   const animationRef = useRef(null);
-
   const [lng, lat] = currentCoords;
 
-  // Функция плавного перехода
+  const easeInOutQuad = (t) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t);
+
   const animateTo = useCallback(
-    (targetCoords, duration = 1000) => {
+    (targetCoords, targetZoom = currentZoom, duration = 500) => {
       if (!targetCoords) return;
+
       const [startLng, startLat] = currentCoords;
       const [endLng, endLat] = targetCoords;
+      const startZoom = currentZoom;
+      const endZoom = targetZoom;
 
       const startTime = Date.now();
 
@@ -53,11 +56,15 @@ export const PlaceMap = ({
 
       const step = () => {
         const now = Date.now();
-        const t = Math.min(1, (now - startTime) / duration); // 0..1
+        let t = Math.min(1, (now - startTime) / duration);
+        t = easeInOutQuad(t);
+
         const lngNow = startLng + (endLng - startLng) * t;
         const latNow = startLat + (endLat - startLat) * t;
+        const zoomNow = startZoom + (endZoom - startZoom) * t;
 
         setCurrentCoords([lngNow, latNow]);
+        setCurrentZoom(zoomNow);
 
         if (t < 1) {
           animationRef.current = requestAnimationFrame(step);
@@ -66,25 +73,24 @@ export const PlaceMap = ({
 
       step();
     },
-    [currentCoords],
+    [currentCoords, currentZoom],
   );
 
   const handlePress = useCallback(
     (event) => {
       const [lng, lat] = event.geometry.coordinates;
-      animateTo([lng, lat], 500);
+      animateTo([lng, lat], Math.min(currentZoom, 19), 500);
       onCoordsChange?.([lng, lat]);
     },
-    [animateTo, onCoordsChange],
+    [animateTo, onCoordsChange, currentZoom],
   );
 
-  // Когда внешние coords меняются
   useEffect(() => {
     if (
       coords &&
       (coords[0] !== currentCoords[0] || coords[1] !== currentCoords[1])
     ) {
-      animateTo(coords, 1000);
+      animateTo(coords, Math.min(currentZoom, 19), 500);
     }
   }, [coords]);
 
@@ -99,7 +105,7 @@ export const PlaceMap = ({
         <Camera
           centerCoordinate={currentCoords}
           zoomLevel={Math.min(currentZoom, 19)}
-          animationDuration={0} // отключаем стандартную анимацию, т.к. делаем JS-анимацию
+          animationDuration={0} 
         />
 
         <RasterSource
@@ -179,6 +185,11 @@ const stylesFn = (Colors, iconSize) =>
       alignItems: "center",
       justifyContent: "center",
       transform: [{ translateY: -iconSize / 2 }],
+      borderRadius: iconSize / 2,
+      shadowColor: "#fff",
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 1,
+      shadowRadius: 2,
     },
     myLocationButton: {
       position: "absolute",
