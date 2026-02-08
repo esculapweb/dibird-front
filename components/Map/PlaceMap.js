@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -12,6 +13,8 @@ import {
   Camera,
   RasterSource,
   RasterLayer,
+  ShapeSource,
+  SymbolLayer,
   PointAnnotation,
 } from "@maplibre/maplibre-react-native";
 import { useTheme } from "../../store/theme-context";
@@ -60,8 +63,6 @@ export const PlaceMap = ({
     [onCoordsChange, currentZoom],
   );
 
-  const [lng, lat] = currentCoords;
-
   useEffect(() => {
     if (
       coords &&
@@ -72,14 +73,22 @@ export const PlaceMap = ({
     }
   }, [coords]);
 
+  const [lng, lat] = currentCoords;
+
   return (
     <View style={[styles.container, style]}>
-      <MapView style={styles.map} onPress={handlePress}>
+      <MapView
+        style={styles.map}
+        onPress={handlePress}
+        minZoomLevel={1}
+        maxZoomLevel={19}
+      >
         <Camera
           centerCoordinate={currentCoords}
-          zoomLevel={currentZoom}
+          zoomLevel={Math.min(currentZoom, 19)}
           animationDuration={1000}
         />
+
         <RasterSource
           id="osmTiles"
           tileUrlTemplates={["https://tile.openstreetmap.org/{z}/{x}/{y}.png"]}
@@ -88,15 +97,35 @@ export const PlaceMap = ({
           <RasterLayer id="osmLayer" sourceID="osmTiles" />
         </RasterSource>
 
-        <PointAnnotation id="selected-point" coordinate={[lng, lat]}>
-          <View style={styles.markerContainer}>
-            <Ionicons
-              name="location-sharp"
-              size={iconSize}
-              color={Colors.error600}
+        {Platform.OS === "ios" ? (
+          <PointAnnotation id="selected-point" coordinate={[lng, lat]}>
+            <View style={styles.markerContainer}>
+              <Ionicons
+                name="location-sharp"
+                size={iconSize}
+                color={Colors.error600}
+              />
+            </View>
+          </PointAnnotation>
+        ) : (
+          <ShapeSource
+            id="selectedPoint"
+            shape={{
+              type: "Feature",
+              geometry: { type: "Point", coordinates: [lng, lat] },
+            }}
+          >
+            <SymbolLayer
+              id="selectedPointIcon"
+              style={{
+                iconImage: require("../../assets/marker.png"), // PNG маркер
+                iconSize: 1, // подбираем размер
+                iconAnchor: "bottom",
+                iconAllowOverlap: true,
+              }}
             />
-          </View>
-        </PointAnnotation>
+          </ShapeSource>
+        )}
       </MapView>
 
       <TouchableOpacity
