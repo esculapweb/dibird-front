@@ -11,6 +11,7 @@ const nominatimApi = axios.create({
 nominatimApi.interceptors.request.use(
   (config) => {
     config.headers["Accept-Language"] = i18n.language || "en";
+    config.headers["User-Agent"] = "DiBird/1.0 (dibird.com@gmail.com)";
     return config;
   },
   (error) => Promise.reject(error),
