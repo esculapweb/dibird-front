@@ -51,6 +51,6 @@ export const DarkColors = {
   buttonBrightBg: "#f0c24b",
   buttonBrightColor: "#1f2937",
 
-
   markerBorder: "#fff",
+  overlayBg: "rgba(0,0,0,0.8)",
 };

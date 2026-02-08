@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import {
   SymbolLayer,
   PointAnnotation,
 } from "@maplibre/maplibre-react-native";
+
 import { useTheme } from "../../store/theme-context";
 
 const iconSize = 32;
@@ -29,51 +30,63 @@ export const PlaceMap = ({
   zoomLevel = 12,
   style,
 }) => {
-  const { Colors, theme } = useTheme();
-  const styles = stylesFn(Colors, theme, iconSize);
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors, iconSize);
 
   const [currentCoords, setCurrentCoords] = useState(coords);
   const [currentZoom, setCurrentZoom] = useState(zoomLevel);
 
-  const isAnimatingRef = useRef(false);
+  const animationRef = useRef(null);
+
+  const [lng, lat] = currentCoords;
+
+  // Функция плавного перехода
+  const animateTo = useCallback(
+    (targetCoords, duration = 1000) => {
+      if (!targetCoords) return;
+      const [startLng, startLat] = currentCoords;
+      const [endLng, endLat] = targetCoords;
+
+      const startTime = Date.now();
+
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+
+      const step = () => {
+        const now = Date.now();
+        const t = Math.min(1, (now - startTime) / duration); // 0..1
+        const lngNow = startLng + (endLng - startLng) * t;
+        const latNow = startLat + (endLat - startLat) * t;
+
+        setCurrentCoords([lngNow, latNow]);
+
+        if (t < 1) {
+          animationRef.current = requestAnimationFrame(step);
+        }
+      };
+
+      step();
+    },
+    [currentCoords],
+  );
 
   const handlePress = useCallback(
     (event) => {
-      const { geometry } = event;
-      if (geometry?.coordinates) {
-        const [lng, lat] = geometry.coordinates;
-        setCurrentCoords([lng, lat]);
-        onCoordsChange?.([lng, lat]);
-      }
+      const [lng, lat] = event.geometry.coordinates;
+      animateTo([lng, lat], 500);
+      onCoordsChange?.([lng, lat]);
     },
-    [onCoordsChange],
+    [animateTo, onCoordsChange],
   );
 
-  const animateCamera = useCallback(
-    (newCoords, newZoom = currentZoom) => {
-      if (isAnimatingRef.current) return;
-      isAnimatingRef.current = true;
-
-      setCurrentCoords(newCoords);
-      setCurrentZoom(newZoom);
-      onCoordsChange?.(newCoords);
-
-      setTimeout(() => (isAnimatingRef.current = false), 300);
-    },
-    [onCoordsChange, currentZoom],
-  );
-
+  // Когда внешние coords меняются
   useEffect(() => {
     if (
       coords &&
       (coords[0] !== currentCoords[0] || coords[1] !== currentCoords[1])
     ) {
-      setCurrentCoords(coords);
-      animateCamera(coords, currentZoom);
+      animateTo(coords, 1000);
     }
   }, [coords]);
-
-  const [lng, lat] = currentCoords;
 
   return (
     <View style={[styles.container, style]}>
@@ -86,7 +99,7 @@ export const PlaceMap = ({
         <Camera
           centerCoordinate={currentCoords}
           zoomLevel={Math.min(currentZoom, 19)}
-          animationDuration={1000}
+          animationDuration={0} // отключаем стандартную анимацию, т.к. делаем JS-анимацию
         />
 
         <RasterSource
@@ -118,8 +131,8 @@ export const PlaceMap = ({
             <SymbolLayer
               id="selectedPointIcon"
               style={{
-                iconImage: require("../../assets/marker.png"), // PNG маркер
-                iconSize: 1, // подбираем размер
+                iconImage: require("../../assets/marker.png"),
+                iconSize: 1,
                 iconAnchor: "bottom",
                 iconAllowOverlap: true,
               }}
@@ -158,7 +171,7 @@ export const PlaceMap = ({
   );
 };
 
-const stylesFn = (Colors, theme, iconSize) =>
+const stylesFn = (Colors, iconSize) =>
   StyleSheet.create({
     container: { flex: 1, position: "relative" },
     map: { flex: 1 },
@@ -186,8 +199,7 @@ const stylesFn = (Colors, theme, iconSize) =>
       alignSelf: "center",
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor:
-        theme === "dark" ? "rgba(0,0,0,0.8)" : "rgba(255,255,255,0.9)",
+      backgroundColor: Colors.overlayBg,
       paddingHorizontal: 16,
       paddingVertical: 10,
       borderRadius: 25,
@@ -202,8 +214,7 @@ const stylesFn = (Colors, theme, iconSize) =>
       left: 20,
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor:
-        theme === "dark" ? "rgba(0,0,0,0.7)" : "rgba(255,255,255,0.85)",
+      backgroundColor: Colors.overlayBg,
       paddingHorizontal: 12,
       paddingVertical: 8,
       borderRadius: 16,
