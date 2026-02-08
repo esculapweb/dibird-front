@@ -45,7 +45,6 @@ const PlaceForm = ({
 
   return (
     <View style={styles.formSection}>
-      {/* Название */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <Ionicons
@@ -63,7 +62,6 @@ const PlaceForm = ({
           onChangeText={onChangeName}
           placeholder={t("enter_place_name")}
           placeholderTextColor={Colors.dropdownIcon}
-          maxLength={100}
         />
         {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
       </View>

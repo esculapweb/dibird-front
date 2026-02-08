@@ -37,18 +37,26 @@ const AddPlaceScreen = ({ navigation }) => {
 
   const createPlaceMutation = useCreatePlace();
 
-  const [formData, setFormData] = useState({
-    name: "",
-  });
-  const latitude = coords ? coords[1].toFixed(4) : "";
-  const longitude = coords ? coords[0].toFixed(4) : "";
-
+  const [formData, setFormData] = useState({ name: "" });
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    useMyLocation();
+  }, [useMyLocation]);
+
+  useEffect(() => {
+    if (!details) return;
+    const suggestedName = details.city || details.address || "";
+    if (!suggestedName) return;
+
+    if (!formData.name.trim())
+      setFormData((prev) => ({ ...prev, name: suggestedName }));
+  }, [details]);
 
   const validateForm = useCallback(() => {
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = t("name_required");
-    else if (formData.name.trim().length > 100)
+    else if (formData.name.trim().length > 254)
       newErrors.name = t("name_too_long");
 
     const [lng, lat] = coords ?? [];
@@ -93,10 +101,6 @@ const AddPlaceScreen = ({ navigation }) => {
       },
     });
   }, [formData, coords, validateForm, createPlaceMutation, navigation]);
-
-  useEffect(() => {
-    useMyLocation();
-  }, [useMyLocation]);
 
   const HeaderRight = useCallback(
     () =>

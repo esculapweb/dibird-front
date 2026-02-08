@@ -58,9 +58,7 @@ export const usePlaceLocation = () => {
       setAccuracy(loc.coords.accuracy);
       setZoom(14);
 
-      updateCoords([loc.coords.longitude, loc.coords.latitude], {
-        withGeocode: false,
-      });
+      updateCoords([loc.coords.longitude, loc.coords.latitude]);
     } finally {
       setIsLoading(false);
     }
