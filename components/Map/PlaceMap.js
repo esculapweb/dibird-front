@@ -8,6 +8,7 @@ import {
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import {
   MapView,
   Camera,
@@ -16,6 +17,7 @@ import {
   ShapeSource,
   SymbolLayer,
   PointAnnotation,
+  CircleLayer,
 } from "@maplibre/maplibre-react-native";
 
 import { useTheme } from "../../store/theme-context";
@@ -33,12 +35,20 @@ export const PlaceMap = ({
 }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors, iconSize);
+  const { t } = useTranslation();
 
   const [currentCoords, setCurrentCoords] = useState(coords);
   const [currentZoom, setCurrentZoom] = useState(zoomLevel);
 
   const animationRef = useRef(null);
-  const [lng, lat] = currentCoords;
+  const [lng, lat] = currentCoords ?? [];
+
+  const metersToPixels = (meters, latitude, zoom) => {
+    const earthCircumference = 40075016.686;
+    const latRad = (latitude * Math.PI) / 180;
+    const mapWidth = 512 * Math.pow(2, zoom);
+    return (meters / (earthCircumference * Math.cos(latRad))) * mapWidth;
+  };
 
   const easeInOutQuad = (t) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t);
 
@@ -67,9 +77,7 @@ export const PlaceMap = ({
         setCurrentCoords([lngNow, latNow]);
         setCurrentZoom(zoomNow);
 
-        if (t < 1) {
-          animationRef.current = requestAnimationFrame(step);
-        }
+        if (t < 1) animationRef.current = requestAnimationFrame(step);
       };
 
       step();
@@ -96,29 +104,64 @@ export const PlaceMap = ({
   }, [coords]);
 
   return (
-    <View style={[styles.container, style]}>
-      <MapView
-        style={styles.map}
-        onPress={handlePress}
-        minZoomLevel={1}
-        maxZoomLevel={19}
-      >
-        <Camera
-          centerCoordinate={currentCoords}
-          zoomLevel={Math.min(currentZoom, 19)}
-          animationDuration={0}
-        />
-
-        <RasterSource
-          id="osmTiles"
-          tileUrlTemplates={["https://tile.openstreetmap.org/{z}/{x}/{y}.png"]}
-          tileSize={256}
+    <View style={styles.mapSection}>
+      <View style={[styles.container, style]}>
+        <MapView
+          style={styles.map}
+          onPress={handlePress}
+          minZoomLevel={1}
+          maxZoomLevel={19}
         >
-          <RasterLayer id="osmLayer" sourceID="osmTiles" />
-        </RasterSource>
+          <Camera
+            centerCoordinate={currentCoords}
+            zoomLevel={Math.min(currentZoom, 19)}
+            animationDuration={0}
+          />
+          <RasterSource
+            id="osmTiles"
+            tileUrlTemplates={[
+              "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+            ]}
+            tileSize={256}
+          >
+            <RasterLayer id="osmLayer" sourceID="osmTiles" />
+          </RasterSource>
 
-        {Platform.OS === "ios" ? (
-          <>
+          <ShapeSource
+            id="selectedPoint"
+            shape={{
+              type: "Feature",
+              geometry: { type: "Point", coordinates: [lng, lat] },
+            }}
+          >
+            {Platform.OS !== "ios" && accuracy > 0 && (
+              <CircleLayer
+                id="accuracyCircleLayer"
+                sourceID="selectedPoint"
+                style={{
+                  circleRadius: metersToPixels(accuracy, lat, currentZoom),
+                  circleColor: "rgba(0,150,255,0.2)",
+                  circleStrokeColor: "rgba(0,150,255,0.3)",
+                  circleStrokeWidth: 1,
+                }}
+              />
+            )}
+
+            {Platform.OS !== "ios" && (
+              <SymbolLayer
+                id="selectedPointIcon"
+                sourceID="selectedPoint"
+                style={{
+                  iconImage: require("../../assets/marker.png"),
+                  iconSize: 1,
+                  iconAnchor: "bottom",
+                  iconAllowOverlap: true,
+                }}
+              />
+            )}
+          </ShapeSource>
+
+          {Platform.OS === "ios" && (
             <PointAnnotation id="selected-point" coordinate={[lng, lat]}>
               <View style={styles.markerContainer}>
                 <Ionicons
@@ -128,64 +171,35 @@ export const PlaceMap = ({
                 />
               </View>
             </PointAnnotation>
-            {accuracy > 0 && (
-              <View
-                style={{
-                  position: "absolute",
-                  width: accuracy / 2, // пример, нужно подогнать размер под пиксели карты
-                  height: accuracy / 2,
-                  borderRadius: accuracy / 4,
-                  backgroundColor: "rgba(0,150,255,0.2)",
-                }}
-              />
-            )}
-          </>
-        ) : (
-          <ShapeSource
-            id="selectedPoint"
-            shape={{
-              type: "Feature",
-              geometry: { type: "Point", coordinates: [lng, lat] },
-            }}
-          >
-            <SymbolLayer
-              id="selectedPointIcon"
-              style={{
-                iconImage: require("../../assets/marker.png"),
-                iconSize: 1,
-                iconAnchor: "bottom",
-                iconAllowOverlap: true,
-              }}
-            />
-          </ShapeSource>
-        )}
-      </MapView>
+          )}
+        </MapView>
 
-      <TouchableOpacity
-        style={styles.myLocationButton}
-        onPress={onUseMyLocation}
-      >
-        {isGeocoding ? (
-          <ActivityIndicator size="small" color={Colors.textMain} />
-        ) : (
-          <Ionicons name="navigate" size={22} color={Colors.textMain} />
-        )}
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.myLocationButton}
+          onPress={onUseMyLocation}
+        >
+          {isGeocoding ? (
+            <ActivityIndicator size="small" color={Colors.textMain} />
+          ) : (
+            <Ionicons name="navigate" size={22} color={Colors.textMain} />
+          )}
+        </TouchableOpacity>
 
-      {isGeocoding && (
-        <View style={styles.geocodingOverlay}>
-          <ActivityIndicator size="small" color={Colors.accent} />
-          <Text style={styles.geocodingText}>Detecting location...</Text>
+        {isGeocoding && (
+          <View style={styles.geocodingOverlay}>
+            <ActivityIndicator size="small" color={Colors.accent} />
+            <Text style={styles.geocodingText}>{t("detecting_location")}</Text>
+          </View>
+        )}
+
+        <View style={styles.mapHintContainer}>
+          <Ionicons
+            name="hand-left-outline"
+            size={14}
+            color={Colors.textSecondary}
+          />
+          <Text style={styles.mapHintText}>{t("tap_to_select_location")}</Text>
         </View>
-      )}
-
-      <View style={styles.mapHintContainer}>
-        <Ionicons
-          name="hand-left-outline"
-          size={14}
-          color={Colors.textSecondary}
-        />
-        <Text style={styles.mapHintText}>Tap to select location</Text>
       </View>
     </View>
   );
@@ -193,6 +207,7 @@ export const PlaceMap = ({
 
 const stylesFn = (Colors, iconSize) =>
   StyleSheet.create({
+    mapSection: { height: 400, position: "relative" },
     container: { flex: 1, position: "relative" },
     map: { flex: 1 },
     markerContainer: {

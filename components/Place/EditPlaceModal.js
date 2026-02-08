@@ -317,7 +317,6 @@ const stylesFn = (Colors) =>
     coordsText: {
       marginLeft: 8,
       fontSize: 14,
-      fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
       color: Colors.textMain,
       fontWeight: "500",
     },
