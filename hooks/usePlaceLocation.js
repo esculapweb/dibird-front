@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import * as Location from "expo-location";
 import { cachedReverseGeocode } from "../services/geocoding";
 import { Config } from "../constants/config";
@@ -12,21 +12,35 @@ export const usePlaceLocation = () => {
   const [details, setDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const [latText, setLatText] = useState(defaultCoords[1].toFixed(4));
+  const [lngText, setLngText] = useState(defaultCoords[0].toFixed(4));
+
+  const geocodeTimeout = useRef(null);
+
   const updateCoords = useCallback(
-    async ([lng, lat], { withGeocode = true } = {}) => {
+    async ([lng, lat], { withGeocode = true, fromManual = false } = {}) => {
       setCoords([lng, lat]);
 
-      try {
-        if (withGeocode) {
-          setIsLoading(true);
-          const res = await cachedReverseGeocode(lat, lng);
-          if (res) setDetails(res);
-        }
-      } catch (e) {
-        console.warn("Reverse geocode failed", e);
-      } finally {
-        if (withGeocode) setIsLoading(false);
+      if (!fromManual) {
+        setLatText(lat.toFixed(4));
+        setLngText(lng.toFixed(4));
       }
+
+      if (!withGeocode) return;
+
+      if (geocodeTimeout.current) clearTimeout(geocodeTimeout.current);
+
+      geocodeTimeout.current = setTimeout(async () => {
+        try {
+            setIsLoading(true);
+            const res = await cachedReverseGeocode(lat, lng);
+            if (res) setDetails(res);
+        } catch (e) {
+            console.warn("Reverse geocode failed", e);
+        } finally {
+            setIsLoading(false);
+        }
+      }, 400);
     },
     [],
   );
@@ -43,6 +57,7 @@ export const usePlaceLocation = () => {
 
       setAccuracy(loc.coords.accuracy);
       setZoom(14);
+
       updateCoords([loc.coords.longitude, loc.coords.latitude], {
         withGeocode: false,
       });
@@ -57,6 +72,10 @@ export const usePlaceLocation = () => {
     accuracy,
     details,
     isLoading,
+    latText,
+    lngText,
+    setLatText,
+    setLngText,
     setZoom,
     updateCoords,
     useMyLocation,

@@ -26,6 +26,10 @@ const AddPlaceScreen = ({ navigation }) => {
     zoom,
     accuracy,
     details,
+    latText,
+    setLatText,
+    lngText,
+    setLngText,
     isLoading: isLocating,
     updateCoords,
     useMyLocation,
@@ -146,6 +150,10 @@ const AddPlaceScreen = ({ navigation }) => {
           onCoordsChange={updateCoords}
           formData={formData}
           coords={coords}
+          latText={latText}
+          setLatText={setLatText}
+          lngText={lngText}
+          setLngText={setLngText}
           setFormData={setFormData}
           errors={errors}
           setErrors={setErrors}

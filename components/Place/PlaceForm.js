@@ -1,8 +1,6 @@
-import { useState, useEffect } from "react";
 import { StyleSheet, Text, View, TextInput } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-
 import { useTheme } from "../../store/theme-context";
 import { Config } from "../../constants/config";
 
@@ -11,6 +9,10 @@ const PlaceForm = ({
   formData,
   setFormData,
   coords,
+  latText,
+  lngText,
+  setLatText,
+  setLngText,
   errors,
   setErrors,
   locationDetails,
@@ -19,16 +21,6 @@ const PlaceForm = ({
   const { t } = useTranslation();
   const styles = stylesFn(Colors);
   const defaultCoords = Config.defaultCoords;
-
-  const [latText, setLatText] = useState(coords ? coords[1].toString() : "");
-  const [lngText, setLngText] = useState(coords ? coords[0].toString() : "");
-
-  useEffect(() => {
-    if (coords) {
-      setLatText(coords[1].toString());
-      setLngText(coords[0].toString());
-    }
-  }, [coords]);
 
   const onChangeName = (text) => {
     setFormData((prev) => ({ ...prev, name: text }));
@@ -39,7 +31,7 @@ const PlaceForm = ({
     setLatText(text);
     const newLat = parseFloat(text);
     if (!isNaN(newLat) && newLat >= -90 && newLat <= 90)
-      onCoordsChange?.([coords[0] ?? 0, newLat]);
+      onCoordsChange([coords[0] ?? 0, newLat], { fromManual: true });
     setErrors((prev) => ({ ...prev, latitude: undefined }));
   };
 
@@ -47,12 +39,13 @@ const PlaceForm = ({
     setLngText(text);
     const newLng = parseFloat(text);
     if (!isNaN(newLng) && newLng >= -180 && newLng <= 180)
-      onCoordsChange?.([newLng, coords[1] ?? 0]);
+      onCoordsChange([newLng, coords[1] ?? 0], { fromManual: true });
     setErrors((prev) => ({ ...prev, longitude: undefined }));
   };
 
   return (
     <View style={styles.formSection}>
+      {/* Название */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <Ionicons
@@ -75,6 +68,7 @@ const PlaceForm = ({
         {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
       </View>
 
+      {/* Координаты */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <Ionicons
@@ -130,6 +124,8 @@ const PlaceForm = ({
           </View>
         </View>
       </View>
+
+      {/* Детали */}
       {locationDetails && (
         <View style={styles.card}>
           {locationDetails.city && (
@@ -160,7 +156,6 @@ const PlaceForm = ({
 };
 
 export default PlaceForm;
-
 const stylesFn = (Colors) =>
   StyleSheet.create({
     formSection: { padding: 16, paddingTop: 20 },
