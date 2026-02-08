@@ -1,6 +1,7 @@
 import { Modal, Pressable, View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../store/theme-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const ICON_SIZE = 24;
 const BUTTON_SIZE = 40;
@@ -17,42 +18,45 @@ const ModalWrapper = ({ children, onClose, onApply, visible, title }) => {
       onRequestClose={onClose}
     >
       <View style={styles.container}>
-        <View style={styles.header}>
-          <Pressable
-            onPress={onClose}
-            style={({ pressed }) => [
-              styles.iconButton,
-              styles.leftButton,
-              pressed && styles.pressed,
-            ]}
-          >
-            <Ionicons name="close" size={ICON_SIZE} color={Colors.textMain} />
-          </Pressable>
-
-          <Text style={styles.title} numberOfLines={1}>
-            {title}
-          </Text>
-
-          {onApply && (
+        <SafeAreaView edges={['top']}
+          style={{ flex: 1, backgroundColor: Colors.backgroundMain }}
+        >
+          <View style={styles.header}>
             <Pressable
-              onPress={onApply}
+              onPress={onClose}
               style={({ pressed }) => [
                 styles.iconButton,
-                styles.rightButton,
-                styles.applyButton,
+                styles.leftButton,
                 pressed && styles.pressed,
               ]}
             >
-              <Ionicons
-                name="checkmark"
-                size={ICON_SIZE}
-                color={Colors.buttonBrightColor}
-              />
+              <Ionicons name="close" size={ICON_SIZE} color={Colors.textMain} />
             </Pressable>
-          )}
-        </View>
 
-        {children}
+            <Text style={styles.title} numberOfLines={1}>
+              {title}
+            </Text>
+
+            {onApply && (
+              <Pressable
+                onPress={onApply}
+                style={({ pressed }) => [
+                  styles.iconButton,
+                  styles.rightButton,
+                  styles.applyButton,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Ionicons
+                  name="checkmark"
+                  size={ICON_SIZE}
+                  color={Colors.buttonBrightColor}
+                />
+              </Pressable>
+            )}
+          </View>
+          {children}
+        </SafeAreaView>
       </View>
     </Modal>
   );

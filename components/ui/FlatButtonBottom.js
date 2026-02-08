@@ -40,6 +40,7 @@ const stylesFn = (Colors) =>
     },
     flatButtonContainer: {
       padding: 18,
+      paddingBottom: 28,
       borderTopWidth: 1,
       borderTopColor: Colors.border,
       backgroundColor: Colors.primary100,
