@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import {
   View,
   Text,
@@ -18,6 +18,7 @@ const Input = ({
   onUpdateValue,
   value,
   isInvalid,
+  error
 }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -66,6 +67,7 @@ const Input = ({
           </TouchableOpacity>
         )}
       </View>
+      {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
   );
 };
@@ -105,5 +107,11 @@ const stylesFn = (Colors) =>
     },
     icon: {
       marginLeft: 8,
+    },
+    errorText: {
+      fontSize: 13,
+      color: Colors.error500,
+      marginTop: 6,
+      marginLeft: 4,
     },
   });

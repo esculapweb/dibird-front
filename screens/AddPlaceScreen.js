@@ -1,13 +1,16 @@
 import { useState, useCallback, useEffect } from "react";
 import {
-  ScrollView,
-  KeyboardAvoidingView,
   Platform,
   Alert,
   ActivityIndicator,
   StyleSheet,
+  View,
+  Text,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+
 import { useTranslation } from "react-i18next";
+import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../store/theme-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import { useCreatePlace } from "../hooks/usePlaceMutation";
@@ -61,9 +64,9 @@ const AddPlaceScreen = ({ navigation }) => {
 
     const [lng, lat] = coords ?? [];
 
-    if (isNaN(lat) || lat < -90 || lat > 90)
+    if (lat === null || isNaN(lat) || lat < -90 || lat > 90)
       newErrors.latitude = t("invalid_latitude");
-    if (isNaN(lng) || lng < -180 || lng > 180)
+    if (lng === null || isNaN(lng) || lng < -180 || lng > 180)
       newErrors.longitude = t("invalid_longitude");
 
     setErrors(newErrors);
@@ -130,41 +133,46 @@ const AddPlaceScreen = ({ navigation }) => {
   if (createPlaceMutation.isLoading) return <LoadingOverlay />;
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    <KeyboardAwareScrollView
+      contentContainerStyle={styles.container}
+      enableOnAndroid
+      keyboardShouldPersistTaps="handled"
+      extraScrollHeight={Platform.OS === "ios" ? 20 : 80}
       style={styles.container}
     >
-      <ScrollView
-        style={styles.scrollView}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <PlaceMap
-          style={styles.map}
-          coords={coords}
-          zoomLevel={zoom}
-          accuracy={accuracy}
-          isGeocoding={isLocating}
-          onCoordsChange={updateCoords}
-          onUseMyLocation={useMyLocation}
-        />
+      <PlaceMap
+        style={styles.map}
+        coords={coords}
+        zoomLevel={zoom}
+        accuracy={accuracy}
+        isGeocoding={isLocating}
+        onCoordsChange={updateCoords}
+        onUseMyLocation={useMyLocation}
+      />
 
-        <PlaceForm
-          onCoordsChange={updateCoords}
-          formData={formData}
-          coords={coords}
-          latText={latText}
-          setLatText={setLatText}
-          lngText={lngText}
-          setLngText={setLngText}
-          setFormData={setFormData}
-          errors={errors}
-          setErrors={setErrors}
-          locationDetails={details}
+      <View style={styles.tapHintContainer}>
+        <Ionicons
+          name="hand-left-outline"
+          size={14}
+          color={Colors.textSecondary}
         />
-      </ScrollView>
-    </KeyboardAvoidingView>
+        <Text style={styles.tapHintText}>{t("tap_to_select_location")}</Text>
+      </View>
+
+      <PlaceForm
+        onCoordsChange={updateCoords}
+        formData={formData}
+        coords={coords}
+        latText={latText}
+        setLatText={setLatText}
+        lngText={lngText}
+        setLngText={setLngText}
+        setFormData={setFormData}
+        errors={errors}
+        setErrors={setErrors}
+        locationDetails={details}
+      />
+    </KeyboardAwareScrollView>
   );
 };
 
@@ -184,5 +192,17 @@ const stylesFn = (Colors) =>
       marginRight: 0,
       justifyContent: "center",
       alignItems: "center",
+    },
+    tapHintContainer: {
+      backgroundColor: Colors.imageBg,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 4,
+      paddingVertical: 8,
+    },
+    tapHintText: {
+      fontSize: 12,
+      color: Colors.textSecondary,
     },
   });

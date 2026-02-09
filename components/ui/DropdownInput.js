@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
   Pressable,
   Text,
@@ -230,8 +230,8 @@ export default DropdownInput;
 
 const stylesFn = (Colors) =>
   StyleSheet.create({
-    wrapper: { marginBottom: 8 },
-    title: { marginVertical: 6, fontSize: 14, color: Colors.textMain },
+    wrapper: { marginBottom: 16 },
+    title: { marginBottom: 4, fontSize: 14, color: Colors.textMain },
     select: {
       height: 40,
       paddingHorizontal: 6,

@@ -1,8 +1,12 @@
-import { StyleSheet, Text, View, TextInput } from "react-native";
+import { useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../../store/theme-context";
-import { Config } from "../../constants/config";
+import Input from "../ui/Input";
+import DropdownInput from "../ui/DropdownInput";
+import { fetchCountries } from "../../util/fetches";
+import { useLanguage } from "../../store/language-context";
 
 const PlaceForm = ({
   onCoordsChange,
@@ -20,7 +24,16 @@ const PlaceForm = ({
   const { Colors } = useTheme();
   const { t } = useTranslation();
   const styles = stylesFn(Colors);
-  const defaultCoords = Config.defaultCoords;
+  const { language } = useLanguage();
+  const [country, setCountry] = useState(null);
+
+  //   console.log(locationDetails.countryCode)
+  //   const countryValue =
+  // countries.find(
+  //   (c) => c.code.toLowerCase() === locationDetails.countryCode?.toLowerCase()
+  // )?.value ?? null;
+
+  // console.log(countryValue)
 
   const onChangeName = (text) => {
     setFormData((prev) => ({ ...prev, name: text }));
@@ -28,137 +41,99 @@ const PlaceForm = ({
   };
 
   const onChangeLat = (text) => {
-    setLatText(text);
-    const newLat = parseFloat(text);
-    if (!isNaN(newLat) && newLat >= -90 && newLat <= 90)
+    const sanitized = text.replace(",", ".");
+    setLatText(sanitized);
+    const newLat = parseFloat(sanitized);
+    if (sanitized === "") {
+      onCoordsChange([coords[0] ?? 0, null], { fromManual: true });
+    } else if (!isNaN(newLat) && newLat >= -90 && newLat <= 90)
       onCoordsChange([coords[0] ?? 0, newLat], { fromManual: true });
     setErrors((prev) => ({ ...prev, latitude: undefined }));
   };
 
   const onChangeLng = (text) => {
-    setLngText(text);
-    const newLng = parseFloat(text);
-    if (!isNaN(newLng) && newLng >= -180 && newLng <= 180)
+    const sanitized = text.replace(",", ".");
+    setLngText(sanitized);
+    const newLng = parseFloat(sanitized);
+    if (sanitized === "") {
+      onCoordsChange([null, coords[1] ?? 0], { fromManual: true });
+    } else if (!isNaN(newLng) && newLng >= -180 && newLng <= 180)
       onCoordsChange([newLng, coords[1] ?? 0], { fromManual: true });
     setErrors((prev) => ({ ...prev, longitude: undefined }));
   };
 
   return (
     <View style={styles.formSection}>
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Ionicons
-            name="pricetag-outline"
-            size={18}
-            color={Colors.textSecondary}
-          />
-          <Text style={styles.cardTitle}>
-            {t("place_name")} <Text style={styles.required}>*</Text>
-          </Text>
-        </View>
-        <TextInput
-          style={[styles.input, errors.name && styles.inputError]}
-          value={formData.name}
-          onChangeText={onChangeName}
-          placeholder={t("enter_place_name")}
-          placeholderTextColor={Colors.dropdownIcon}
-        />
-        {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
-      </View>
+      <Input
+        label={t("place_name")}
+        value={formData.name}
+        onUpdateValue={onChangeName}
+        isInvalid={errors.name}
+        error={errors.name}
+      />
 
-      {/* Координаты */}
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Ionicons
-            name="globe-outline"
-            size={18}
-            color={Colors.textSecondary}
+      <View style={styles.coordsContainer}>
+        <View style={styles.coordInputWrapper}>
+          <Input
+            label={t("latitude")}
+            value={latText}
+            onUpdateValue={onChangeLat}
+            keyboardType="numbers-and-punctuation"
+            isInvalid={errors.latitude}
+            error={errors.latitude}
           />
-          <Text style={styles.cardTitle}>{t("coordinates")}</Text>
         </View>
-        <View style={styles.coordsContainer}>
-          <View style={styles.coordInputWrapper}>
-            <View style={styles.coordLabelRow}>
-              <Ionicons
-                name="arrow-up-outline"
-                size={14}
-                color={Colors.textSecondary}
-              />
-              <Text style={styles.coordLabel}>{t("latitude")}</Text>
-            </View>
-            <TextInput
-              style={[styles.coordInput, errors.latitude && styles.inputError]}
-              value={latText}
-              onChangeText={onChangeLat}
-              placeholder={defaultCoords[1]}
-              placeholderTextColor={Colors.dropdownIcon}
-              keyboardType="decimal-pad"
-            />
-            {errors.latitude && (
-              <Text style={styles.errorText}>{errors.latitude}</Text>
-            )}
-          </View>
-
-          <View style={styles.coordInputWrapper}>
-            <View style={styles.coordLabelRow}>
-              <Ionicons
-                name="arrow-forward-outline"
-                size={14}
-                color={Colors.textSecondary}
-              />
-              <Text style={styles.coordLabel}>{t("longitude")}</Text>
-            </View>
-            <TextInput
-              style={[styles.coordInput, errors.longitude && styles.inputError]}
-              value={lngText}
-              onChangeText={onChangeLng}
-              placeholder={defaultCoords[0]}
-              placeholderTextColor={Colors.dropdownIcon}
-              keyboardType="decimal-pad"
-            />
-            {errors.longitude && (
-              <Text style={styles.errorText}>{errors.longitude}</Text>
-            )}
-          </View>
+        <View style={styles.coordInputWrapper}>
+          <Input
+            label={t("longitude")}
+            value={lngText}
+            onUpdateValue={onChangeLng}
+            keyboardType="numbers-and-punctuation"
+            isInvalid={errors.longitude}
+            error={errors.longitude}
+          />
         </View>
       </View>
+      <DropdownInput
+        title={t("country")}
+        placeholder={t("select_country")}
+        value={country}
+        setValue={setCountry}
+        error={errors?.territory}
+        loadOptions={fetchCountries}
+        loadDependencies={[language]}
+      />
 
       {/* Детали */}
-      {locationDetails && (
-        <View style={styles.card}>
-          {locationDetails.city && (
-            <DetailItem
-              label={t("city")}
-              value={locationDetails.city}
-              icon="business-outline"
-            />
-          )}
-          {locationDetails.country && (
+      {/* {locationDetails && (
+        <View> */}
+          {/* {locationDetails.country && (
             <DetailItem
               label={t("country")}
               value={locationDetails.country}
               icon="flag-outline"
             />
-          )}
-          {locationDetails.address && (
+          )} */}
+          {/* {locationDetails.address && (
             <DetailItem
               label={t("address")}
               value={locationDetails.address}
               icon="navigate-outline"
             />
-          )}
-        </View>
-      )}
+          )} */}
+        {/* </View>
+      )} */}
     </View>
   );
 };
 
 export default PlaceForm;
+
 const stylesFn = (Colors) =>
   StyleSheet.create({
-    formSection: { padding: 16, paddingTop: 20 },
+    formSection: { padding: 16 },
     card: {
-      backgroundColor: Colors.primary200,
+      // backgroundColor: Colors.primary200,
       borderRadius: 16,
       padding: 16,
       marginBottom: 16,
@@ -172,49 +147,8 @@ const stylesFn = (Colors) =>
       gap: 8,
     },
     cardTitle: { fontSize: 16, fontWeight: "600", color: Colors.textMain },
-    required: { color: Colors.error600 },
-
-    input: {
-      backgroundColor: Colors.primary100,
-      borderWidth: 1,
-      borderColor: Colors.border,
-      borderRadius: 12,
-      paddingHorizontal: 16,
-      paddingVertical: 14,
-      fontSize: 16,
-      color: Colors.textMain,
-    },
-    inputError: { borderColor: Colors.error600 },
-    errorText: {
-      fontSize: 13,
-      color: Colors.error600,
-      marginTop: 6,
-      marginLeft: 4,
-    },
-    coordsContainer: { flexDirection: "row", gap: 12, marginBottom: 12 },
+    coordsContainer: { flexDirection: "row", gap: 12 },
     coordInputWrapper: { flex: 1 },
-    coordLabelRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      marginBottom: 6,
-      gap: 4,
-    },
-    coordLabel: {
-      fontSize: 13,
-      fontWeight: "500",
-      color: Colors.textSecondary,
-    },
-    coordInput: {
-      backgroundColor: Colors.primary100,
-      borderWidth: 1,
-      borderColor: Colors.border,
-      borderRadius: 12,
-      paddingHorizontal: 14,
-      paddingVertical: 12,
-      fontSize: 16,
-      color: Colors.textMain,
-      textAlign: "center",
-    },
   });
 
 const DetailItem = ({ label, value, icon }) => {
@@ -222,7 +156,7 @@ const DetailItem = ({ label, value, icon }) => {
   const styles = detailStyles(Colors);
   return (
     <View style={styles.detailItem}>
-      <Ionicons name={icon} size={16} color={Colors.accent} />
+      <Ionicons name={icon} size={16} color={Colors.textSecondary} />
       <View style={styles.detailContent}>
         <Text style={styles.detailLabel}>{label}</Text>
         <Text style={styles.detailValue}>{value}</Text>

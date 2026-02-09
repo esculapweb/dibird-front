@@ -76,6 +76,7 @@ export const fetchCountries = async () => {
   return res.data.map(([value, label]) => ({
     value,
     label: label.label,
+    code: label['data-code'],
     icon: isoToFlagEmoji(label["data-code"]),
   }));
 };

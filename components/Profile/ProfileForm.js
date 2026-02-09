@@ -167,12 +167,12 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   buttons: {
-    marginTop: 18,
+    marginTop: 10,
   },
   flatButtonContainer: {
     paddingHorizontal: 18,
   },
   radioGroup: {
-    marginVertical: 8,
+    marginBottom: 16,
   },
 });

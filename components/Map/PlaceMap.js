@@ -19,6 +19,7 @@ import {
   PointAnnotation,
   CircleLayer,
 } from "@maplibre/maplibre-react-native";
+import { Dimensions } from "react-native";
 
 import { useTheme } from "../../store/theme-context";
 
@@ -33,9 +34,13 @@ export const PlaceMap = ({
   style,
   accuracy = 0,
 }) => {
+  const screenHeight = Dimensions.get("window").height;
+  const mapHeight = Math.min(Math.max(screenHeight * 0.45, 200), 500);
+
   const { Colors } = useTheme();
-  const styles = stylesFn(Colors, iconSize);
+  const styles = stylesFn(Colors, iconSize, mapHeight);
   const { t } = useTranslation();
+
 
   const [currentCoords, setCurrentCoords] = useState(coords);
   const [currentZoom, setCurrentZoom] = useState(zoomLevel);
@@ -191,23 +196,14 @@ export const PlaceMap = ({
             <Text style={styles.geocodingText}>{t("detecting_location")}</Text>
           </View>
         )}
-
-        <View style={styles.mapHintContainer}>
-          <Ionicons
-            name="hand-left-outline"
-            size={14}
-            color={Colors.textSecondary}
-          />
-          <Text style={styles.mapHintText}>{t("tap_to_select_location")}</Text>
-        </View>
       </View>
     </View>
   );
 };
 
-const stylesFn = (Colors, iconSize) =>
+const stylesFn = (Colors, iconSize, mapHeight) =>
   StyleSheet.create({
-    mapSection: { height: 400, position: "relative" },
+    mapSection: { height: mapHeight, position: "relative" },
     container: { flex: 1, position: "relative" },
     map: { flex: 1 },
     markerContainer: {
@@ -248,19 +244,4 @@ const stylesFn = (Colors, iconSize) =>
       gap: 8,
     },
     geocodingText: { fontSize: 14, color: Colors.textMain, fontWeight: "500" },
-    mapHintContainer: {
-      position: "absolute",
-      bottom: 20,
-      left: 20,
-      flexDirection: "row",
-      alignItems: "center",
-      backgroundColor: Colors.overlayBg,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      borderRadius: 16,
-      borderWidth: 1,
-      borderColor: Colors.border,
-      gap: 6,
-    },
-    mapHintText: { fontSize: 12, color: Colors.textMain },
   });
