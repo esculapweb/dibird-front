@@ -136,7 +136,7 @@ export const useCreatePlace = () => {
       const formattedData = {
         name: data.name,
         favourite: data.favourite || false,
-        territory: 68,
+        territory: data.territory,
       };
       
       // Если есть location, форматируем его для GeoJSON

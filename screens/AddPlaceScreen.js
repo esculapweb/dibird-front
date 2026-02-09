@@ -82,6 +82,7 @@ const AddPlaceScreen = ({ navigation }) => {
       name: formData.name.trim(),
       location: { type: "Point", coordinates: [lng, lat] },
       favourite: false,
+      territory: null,
     };
 
     createPlaceMutation.mutate(placeData, {
