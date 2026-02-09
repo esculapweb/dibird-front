@@ -15,60 +15,62 @@ import { useTheme } from "../../store/theme-context";
 const DropdownInput = ({
   title,
   placeholder,
-  initial,
+  // initial,
   value,
   setValue,
   error,
   allowReset,
-  staticOptions,
-  loadOptions,
-  loadDependencies = [],
+
+  options = [],
+  loading = false,
+  loadError = null,
+  onRetry,
+  // staticOptions,
+  // loadOptions,
+  // loadDependencies = [],
 }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const translatedPlaceholder = placeholder || t("select");
 
-  const [options, setOptions] = useState([]);
   const [search, setSearch] = useState("");
   const [label, setLabel] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
   const [icon, setIcon] = useState(null);
   const [iconLabel, setIconLabel] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [loadError, setLoadError] = useState(null);
 
-  const fetchOptions = async () => {
-    if (Array.isArray(staticOptions)) {
-      setOptions(staticOptions);
-      return;
-    }
+  // const fetchOptions = async () => {
+  //   if (Array.isArray(staticOptions)) {
+  //     setOptions(staticOptions);
+  //     return;
+  //   }
 
-    if (!loadOptions) return;
-    setLoading(true);
-    setLoadError(null);
-    try {
-      const data = await loadOptions();
-      setOptions(Array.isArray(data) ? data : []);
-      setLoadError(null);
+  //   if (!loadOptions) return;
+  //   setLoading(true);
+  //   setLoadError(null);
+  //   try {
+  //     const data = await loadOptions();
+  //     setOptions(Array.isArray(data) ? data : []);
+  //     setLoadError(null);
 
-      if (initial != null && data.some((o) => o.value === initial)) {
-        setValue(initial);
-      }
-    } catch (e) {
-      setLoadError(t("failed_to_load_data"));
-      console.warn(
-        `[${new Date().toLocaleString()}] Dropdown options load failed`,
-        e.code,
-        e.message,
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  //     if (initial != null && data.some((o) => o.value === initial)) {
+  //       setValue(initial);
+  //     }
+  //   } catch (e) {
+  //     setLoadError(t("failed_to_load_data"));
+  //     console.warn(
+  //       `[${new Date().toLocaleString()}] Dropdown options load failed`,
+  //       e.code,
+  //       e.message,
+  //     );
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const onSelectValue = (selectedValue) => {
-    if (!Array.isArray(options)) return;
+    // if (!Array.isArray(options)) return;
 
     const option = options.find((o) => o.value === selectedValue);
     setValue(selectedValue);
@@ -114,14 +116,14 @@ const DropdownInput = ({
     }
   }, [value, options]);
 
-  useEffect(() => {
-    fetchOptions();
-  }, loadDependencies);
+  // useEffect(() => {
+  //   fetchOptions();
+  // }, loadDependencies);
 
   return (
     <>
       <View style={styles.wrapper}>
-        {title && <Text style={styles.title}>{title}</Text>}
+        {title && <Text style={[styles.title, error && styles.titleError]}>{title}</Text>}
 
         <Pressable
           onPress={openModal}
@@ -183,8 +185,12 @@ const DropdownInput = ({
               />
             )}
 
-            {loadError && (
-              <Pressable onPress={fetchOptions} style={styles.retryIcon} hitSlop={12}>
+            {loadError && onRetry && (
+              <Pressable
+                onPress={onRetry}
+                style={styles.retryIcon}
+                hitSlop={12}
+              >
                 <Ionicons name="refresh" size={18} color={Colors.link} />
               </Pressable>
             )}
@@ -209,7 +215,7 @@ const DropdownInput = ({
           </View>
         </Pressable>
 
-        {error && <Text style={styles.error}>{error}</Text>}
+        {error && <Text style={styles.errorText}>{error}</Text>}
       </View>
 
       <SelectListModal
@@ -232,6 +238,7 @@ const stylesFn = (Colors) =>
   StyleSheet.create({
     wrapper: { marginBottom: 16 },
     title: { marginBottom: 4, fontSize: 14, color: Colors.textMain },
+    titleError: {color: Colors.error500},
     select: {
       height: 40,
       paddingHorizontal: 6,
@@ -253,6 +260,11 @@ const stylesFn = (Colors) =>
     text: { fontSize: 16, flex: 1, color: Colors.textMain },
     right: { flexDirection: "row", alignItems: "center" },
     clear: { marginRight: 4 },
-    error: { marginTop: 4, fontSize: 12, color: Colors.error500 },
+    errorText: {
+      fontSize: 13,
+      color: Colors.error500,
+      marginTop: 6,
+      marginLeft: 4,
+    },
     retryIcon: { marginRight: 6 },
   });

@@ -1,11 +1,10 @@
-import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { useState, useEffect } from "react";
+import { StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../../store/theme-context";
 import Input from "../ui/Input";
 import DropdownInput from "../ui/DropdownInput";
-import { fetchCountries } from "../../util/fetches";
+import { useCountries } from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
 
 const PlaceForm = ({
@@ -25,15 +24,28 @@ const PlaceForm = ({
   const { t } = useTranslation();
   const styles = stylesFn(Colors);
   const { language } = useLanguage();
-  const [country, setCountry] = useState(null);
+  const [territory, setTerritory] = useState(null);
 
-  //   console.log(locationDetails.countryCode)
-  //   const countryValue =
-  // countries.find(
-  //   (c) => c.code.toLowerCase() === locationDetails.countryCode?.toLowerCase()
-  // )?.value ?? null;
+  const {
+    data: territories = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useCountries(language);
 
-  // console.log(countryValue)
+  useEffect(() => {
+    if (!territories.length || !locationDetails?.countryCode) return;
+
+    const countryValue = territories.find(
+      (c) => c.code.toLowerCase() === locationDetails.countryCode.toLowerCase(),
+    )?.value;
+
+    if (countryValue) {
+      setTerritory(countryValue);
+      setFormData((prev) => ({ ...prev, territory: countryValue }));
+      setErrors((prev) => ({ ...prev, territory: undefined }));
+    }
+  }, [territories, locationDetails?.countryCode, coords]);
 
   const onChangeName = (text) => {
     setFormData((prev) => ({ ...prev, name: text }));
@@ -60,6 +72,12 @@ const PlaceForm = ({
     } else if (!isNaN(newLng) && newLng >= -180 && newLng <= 180)
       onCoordsChange([newLng, coords[1] ?? 0], { fromManual: true });
     setErrors((prev) => ({ ...prev, longitude: undefined }));
+  };
+
+  const onChangeTerritory = (value) => {
+    setTerritory(value);
+    setFormData((prev) => ({ ...prev, territory: value }));
+    setErrors((prev) => ({ ...prev, territory: undefined }));
   };
 
   return (
@@ -94,35 +112,18 @@ const PlaceForm = ({
           />
         </View>
       </View>
+
       <DropdownInput
         title={t("country")}
         placeholder={t("select_country")}
-        value={country}
-        setValue={setCountry}
+        value={territory}
+        setValue={onChangeTerritory}
+        options={territories}
+        loading={isLoading}
+        loadError={isError ? t("failed_to_load_data") : null}
+        onRetry={refetch}
         error={errors?.territory}
-        loadOptions={fetchCountries}
-        loadDependencies={[language]}
       />
-
-      {/* Детали */}
-      {/* {locationDetails && (
-        <View> */}
-          {/* {locationDetails.country && (
-            <DetailItem
-              label={t("country")}
-              value={locationDetails.country}
-              icon="flag-outline"
-            />
-          )} */}
-          {/* {locationDetails.address && (
-            <DetailItem
-              label={t("address")}
-              value={locationDetails.address}
-              icon="navigate-outline"
-            />
-          )} */}
-        {/* </View>
-      )} */}
     </View>
   );
 };
@@ -149,39 +150,4 @@ const stylesFn = (Colors) =>
     cardTitle: { fontSize: 16, fontWeight: "600", color: Colors.textMain },
     coordsContainer: { flexDirection: "row", gap: 12 },
     coordInputWrapper: { flex: 1 },
-  });
-
-const DetailItem = ({ label, value, icon }) => {
-  const { Colors } = useTheme();
-  const styles = detailStyles(Colors);
-  return (
-    <View style={styles.detailItem}>
-      <Ionicons name={icon} size={16} color={Colors.textSecondary} />
-      <View style={styles.detailContent}>
-        <Text style={styles.detailLabel}>{label}</Text>
-        <Text style={styles.detailValue}>{value}</Text>
-      </View>
-    </View>
-  );
-};
-
-const detailStyles = (Colors) =>
-  StyleSheet.create({
-    detailItem: {
-      flexDirection: "row",
-      alignItems: "flex-start",
-      paddingVertical: 10,
-      gap: 12,
-      borderBottomWidth: 1,
-      borderBottomColor: Colors.divider,
-    },
-    detailContent: { flex: 1 },
-    detailLabel: {
-      fontSize: 12,
-      color: Colors.textSecondary,
-      marginBottom: 2,
-      textTransform: "uppercase",
-      letterSpacing: 0.5,
-    },
-    detailValue: { fontSize: 15, color: Colors.textMain, lineHeight: 20 },
   });

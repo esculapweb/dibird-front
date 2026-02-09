@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import {
   View,
-  Text,
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
@@ -35,12 +34,11 @@ export const PlaceMap = ({
   accuracy = 0,
 }) => {
   const screenHeight = Dimensions.get("window").height;
-  const mapHeight = Math.min(Math.max(screenHeight * 0.45, 200), 500);
+  const mapHeight = Math.min(Math.max(screenHeight * 0.5, 200), 500);
 
   const { Colors } = useTheme();
   const styles = stylesFn(Colors, iconSize, mapHeight);
   const { t } = useTranslation();
-
 
   const [currentCoords, setCurrentCoords] = useState(coords);
   const [currentZoom, setCurrentZoom] = useState(zoomLevel);
@@ -92,11 +90,12 @@ export const PlaceMap = ({
 
   const handlePress = useCallback(
     (event) => {
+      if (isGeocoding) return;
       const [lng, lat] = event.geometry.coordinates;
       animateTo([lng, lat], Math.min(currentZoom, 19), 500);
       onCoordsChange?.([lng, lat]);
     },
-    [animateTo, onCoordsChange, currentZoom],
+    [animateTo, onCoordsChange, currentZoom, isGeocoding],
   );
 
   useEffect(() => {
@@ -110,12 +109,14 @@ export const PlaceMap = ({
 
   return (
     <View style={styles.mapSection}>
-      <View style={[styles.container, style]}>
+      <View style={[styles.container, style]} pointerEvents="box-none">
         <MapView
           style={styles.map}
           onPress={handlePress}
           minZoomLevel={1}
           maxZoomLevel={19}
+          rotateEnabled={false}
+          pitchEnabled={false}
         >
           <Camera
             centerCoordinate={currentCoords}
@@ -186,16 +187,9 @@ export const PlaceMap = ({
           {isGeocoding ? (
             <ActivityIndicator size="small" color={Colors.textMain} />
           ) : (
-            <Ionicons name="navigate" size={22} color={Colors.textMain} />
+            <Ionicons name="navigate" size={22} color={Colors.primary500} />
           )}
         </TouchableOpacity>
-
-        {isGeocoding && (
-          <View style={styles.geocodingOverlay}>
-            <ActivityIndicator size="small" color={Colors.accent} />
-            <Text style={styles.geocodingText}>{t("detecting_location")}</Text>
-          </View>
-        )}
       </View>
     </View>
   );
@@ -220,28 +214,16 @@ const stylesFn = (Colors, iconSize, mapHeight) =>
       position: "absolute",
       bottom: 20,
       right: 20,
-      width: 48,
-      height: 48,
-      borderRadius: 24,
-      backgroundColor: Colors.buttonBg,
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: Colors.primary100,
       alignItems: "center",
       justifyContent: "center",
-      borderWidth: 1,
-      borderColor: Colors.border,
+      hadowColor: Colors.shadow,
+      shadowOpacity: 0.3,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 3 },
+      elevation: 6,
     },
-    geocodingOverlay: {
-      position: "absolute",
-      top: 20,
-      alignSelf: "center",
-      flexDirection: "row",
-      alignItems: "center",
-      backgroundColor: Colors.overlayBg,
-      paddingHorizontal: 16,
-      paddingVertical: 10,
-      borderRadius: 25,
-      borderWidth: 1,
-      borderColor: Colors.border,
-      gap: 8,
-    },
-    geocodingText: { fontSize: 14, color: Colors.textMain, fontWeight: "500" },
   });

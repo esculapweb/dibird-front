@@ -131,8 +131,7 @@ const MainDrawer = () => {
   );
 };
 
-// --- Root navigator ---
-const RootNavigator = () => {
+const AppNavigator = () => {
   const { t } = useTranslation();
 
   return (
@@ -146,10 +145,10 @@ const RootNavigator = () => {
       <Stack.Screen
         name="Stat"
         component={StatScreen}
-        options={{ 
+        options={{
           title: t("statistics"),
           headerBackTitleVisible: false,
-          headerBackTitle: "", 
+          headerBackTitle: "",
         }}
       />
 
@@ -181,7 +180,7 @@ const RootNavigator = () => {
   );
 };
 
-export default RootNavigator;
+export default AppNavigator;
 
 const stylesFn = (Colors) =>
   StyleSheet.create({

@@ -1,6 +1,44 @@
-import { useMutationWithTranslation } from './useMutationWithTranslation';
+import { useMutationWithTranslation } from "./useMutationWithTranslation";
 import { useQueryClient } from "@tanstack/react-query";
 import api from "../services/api";
+
+export const useCreatePlace = () => {
+  const queryClient = useQueryClient();
+
+  return useMutationWithTranslation({
+    mutationFn: (data) => {
+      const formattedData = {
+        name: data.name,
+        favourite: data.favourite || false,
+        territory: data.territory,
+      };
+
+      if (data.location && data.location.coordinates) {
+        formattedData.location = {
+          type: "Point",
+          coordinates: [
+            Number(data.location.coordinates[0]), // longitude
+            Number(data.location.coordinates[1]), // latitude
+          ],
+        };
+      }
+      return api.post(`/myapi/place2/`, formattedData);
+    },
+    onSuccess: (response) => {
+      queryClient.setQueryData(["places"], (old) => {
+        if (!old?.results) return old;
+        return {
+          ...old,
+          results: [response.data, ...old.results],
+          count: old.count ? old.count + 1 : old.count,
+        };
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries(["places"]);
+    },
+  });
+};
 
 export const useUpdatePlace = (id) => {
   const queryClient = useQueryClient();
@@ -67,11 +105,11 @@ export const useUpdatePlace = (id) => {
 
       if (ctx?.prevPlace) {
         queryClient.setQueryData(["place", id], ctx.prevPlace);
-        console.log("Rolled back place data");
+        console.info("Rolled back place data");
       }
       if (ctx?.prevPlaces) {
         queryClient.setQueryData(["places"], ctx.prevPlaces);
-        console.log("Rolled back places list");
+        console.info("Rolled back places list");
       }
     },
     onSettled: () => {
@@ -86,85 +124,46 @@ export const useDeletePlace = () => {
 
   return useMutationWithTranslation({
     mutationFn: (id) => api.delete(`/myapi/place2/${id}/`),
-    onMutate: async (deletedId) => {
-      await queryClient.cancelQueries(["places"]);
+    // onMutate: async (deletedId) => {
+    //   await queryClient.cancelQueries(["places"]);
 
-      await Promise.all([
-        queryClient.cancelQueries(["place", deletedId]),
-        queryClient.cancelQueries(["places"]),
-      ]);
+    //   await Promise.all([
+    //     queryClient.cancelQueries(["place", deletedId]),
+    //     queryClient.cancelQueries(["places"]),
+    //   ]);
 
-      const prev = queryClient.getQueryData(["places"]);
+    //   const prev = queryClient.getQueryData(["places"]);
 
-      const prevPlace = queryClient.getQueryData(["place", deletedId]);
-      const prevPlaces = queryClient.getQueryData(["places"]);
+    //   const prevPlace = queryClient.getQueryData(["place", deletedId]);
+    //   const prevPlaces = queryClient.getQueryData(["places"]);
 
-      queryClient.removeQueries(["place", deletedId]);
+    //   queryClient.removeQueries(["place", deletedId]);
 
-      queryClient.setQueryData(["places"], (old) => {
-        if (!old?.results) return old;
-        return {
-          ...old,
-          results: old.results.filter((place) => place.id !== deletedId),
-          count: old.count ? old.count - 1 : old.count,
-        };
-      });
+    //   queryClient.setQueryData(["places"], (old) => {
+    //     if (!old?.results) return old;
+    //     return {
+    //       ...old,
+    //       results: old.results.filter((place) => place.id !== deletedId),
+    //       count: old.count ? old.count - 1 : old.count,
+    //     };
+    //   });
 
-      return { prevPlace, prevPlaces };
-    },
-    onError: (err, deletedId, ctx) => {
-      console.error("Delete place error:", err);
-      if (ctx?.prevPlace) {
-        queryClient.setQueryData(["place", deletedId], ctx.prevPlace);
-      }
-      if (ctx?.prevPlaces) {
-        queryClient.setQueryData(["places"], ctx.prevPlaces);
-      }
-    },
+    //   return { prevPlace, prevPlaces };
+    // },
+    // onError: (err, deletedId, ctx) => {
+    //   console.error("Delete place error:", err);
+    //   if (ctx?.prevPlace) {
+    //     queryClient.setQueryData(["place", deletedId], ctx.prevPlace);
+    //   }
+    //   if (ctx?.prevPlaces) {
+    //     queryClient.setQueryData(["places"], ctx.prevPlaces);
+    //   }
+    // },
     onSettled: () => {
-      queryClient.invalidateQueries(["places"]);
-    },
-  });
-};
-
-export const useCreatePlace = () => {
-  const queryClient = useQueryClient();
-
-  return useMutationWithTranslation({
-    mutationFn: (data) => {
-      // Проверяем и форматируем данные для Django/PostGIS
-      const formattedData = {
-        name: data.name,
-        favourite: data.favourite || false,
-        territory: data.territory,
-      };
-      
-      // Если есть location, форматируем его для GeoJSON
-      if (data.location && data.location.coordinates) {
-        formattedData.location = {
-          type: "Point",
-          coordinates: [
-            Number(data.location.coordinates[0]), // longitude
-            Number(data.location.coordinates[1])  // latitude
-          ]
-        };
-      }
-      
-      console.log('Sending to API:', formattedData);
-      return api.post(`/myapi/place2/`, formattedData);
-    },
-    onSuccess: (response) => {
-      queryClient.setQueryData(["places"], (old) => {
-        if (!old?.results) return old;
-        return {
-          ...old,
-          results: [response.data, ...old.results],
-          count: old.count ? old.count + 1 : old.count,
-        };
+      queryClient.invalidateQueries({
+        queryKey: ["places"],
+        exact: false,
       });
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries(["places"]);
     },
   });
 };

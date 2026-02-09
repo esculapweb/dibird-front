@@ -4,13 +4,10 @@ import {
   Alert,
   ActivityIndicator,
   StyleSheet,
-  View,
-  Text,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 import { useTranslation } from "react-i18next";
-import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../store/theme-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import { useCreatePlace } from "../hooks/usePlaceMutation";
@@ -52,8 +49,11 @@ const AddPlaceScreen = ({ navigation }) => {
     const suggestedName = details.city || details.address || "";
     if (!suggestedName) return;
 
-    if (!formData.name.trim())
+    // if (!formData.name.trim()) {
       setFormData((prev) => ({ ...prev, name: suggestedName }));
+      setErrors((prev) => ({ ...prev, name: undefined }));
+    // }
+   
   }, [details]);
 
   const validateForm = useCallback(() => {
@@ -61,6 +61,8 @@ const AddPlaceScreen = ({ navigation }) => {
     if (!formData.name.trim()) newErrors.name = t("name_required");
     else if (formData.name.trim().length > 254)
       newErrors.name = t("name_too_long");
+
+    if (!formData?.territory) newErrors.territory = t("territory_required");
 
     const [lng, lat] = coords ?? [];
 
@@ -82,7 +84,7 @@ const AddPlaceScreen = ({ navigation }) => {
       name: formData.name.trim(),
       location: { type: "Point", coordinates: [lng, lat] },
       favourite: false,
-      territory: null,
+      territory: formData.territory,
     };
 
     createPlaceMutation.mutate(placeData, {
@@ -115,7 +117,7 @@ const AddPlaceScreen = ({ navigation }) => {
           icon="checkmark"
           onPress={handleCreatePlace}
           style={styles.createHeaderButton}
-          size={24}
+          size={28}
           disabled={createPlaceMutation.isLoading || isLocating}
           color={Colors.buttonBrightColor}
         />
@@ -151,15 +153,6 @@ const AddPlaceScreen = ({ navigation }) => {
         onUseMyLocation={useMyLocation}
       />
 
-      <View style={styles.tapHintContainer}>
-        <Ionicons
-          name="hand-left-outline"
-          size={14}
-          color={Colors.textSecondary}
-        />
-        <Text style={styles.tapHintText}>{t("tap_to_select_location")}</Text>
-      </View>
-
       <PlaceForm
         onCoordsChange={updateCoords}
         formData={formData}
@@ -193,17 +186,5 @@ const stylesFn = (Colors) =>
       marginRight: 0,
       justifyContent: "center",
       alignItems: "center",
-    },
-    tapHintContainer: {
-      backgroundColor: Colors.imageBg,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 4,
-      paddingVertical: 8,
-    },
-    tapHintText: {
-      fontSize: 12,
-      color: Colors.textSecondary,
     },
   });

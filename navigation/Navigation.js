@@ -3,7 +3,7 @@ import { NavigationContainer } from "@react-navigation/native";
 
 import { AuthContext } from "../store/auth-context";
 import AuthDrawer from "./AuthStack";
-import AppDrawer from "./AppStack";
+import AppNavigator from "./AppStack";
 import { useTheme } from "../store/theme-context";
 import {
   LightNavigationTheme,
@@ -18,7 +18,7 @@ const Navigation = () => {
     <NavigationContainer
       theme={theme === "dark" ? DarkNavigationTheme : LightNavigationTheme}
     >
-      {authCtx.isAuthenticated ? <AppDrawer /> : <AuthDrawer />}
+      {authCtx.isAuthenticated ? <AppNavigator /> : <AuthDrawer />}
     </NavigationContainer>
   );
 };

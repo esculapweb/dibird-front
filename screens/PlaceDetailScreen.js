@@ -95,8 +95,7 @@ const PlaceDetailScreen = ({ route, navigation }) => {
           style: "destructive",
           onPress: () =>
             deletePlace.mutate(placeId, {
-              onSuccess: () =>
-                navigation.navigate("Places"),
+              onSuccess: () => navigation.goBack(),
               onError: (error) => {
                 Alert.alert(t("error"), error.message || t("delete_failed"));
               },
@@ -144,7 +143,6 @@ const PlaceDetailScreen = ({ route, navigation }) => {
     return <LoadingOverlay />;
   }
 
-
   const [lng, lat] = place.location.coordinates;
 
   return (
@@ -181,37 +179,38 @@ const PlaceDetailScreen = ({ route, navigation }) => {
             </View>
           </View>
 
-          <View style={styles.stats}>
-            <StatBig
-              icon="binoculars"
-              value={place.observation_count}
-              label={t("observations")}
-              onPress={handleObservationsPress}
-            />
-            <StatBig
-              value={place.species_count}
-              label={t("species")}
-              bird
-              onPress={handleSpeciesPress}
-            />
-            <StatBig
-              icon="book-outline"
-              value={place.diary_count}
-              label={t("diary")}
-              onPress={handleDiariesPress}
-            />
-          </View>
+          <View style={styles.footer}>
+            <View style={styles.stats}>
+              <StatBig
+                icon="binoculars"
+                value={place.observation_count}
+                label={t("observations")}
+                onPress={handleObservationsPress}
+              />
+              <StatBig
+                value={place.species_count}
+                label={t("species")}
+                bird
+                onPress={handleSpeciesPress}
+              />
+              <StatBig
+                icon="book-outline"
+                value={place.diary_count}
+                label={t("diary")}
+                onPress={handleDiariesPress}
+              />
+            </View>
 
-          {/* Meta */}
-          <View style={styles.meta}>
-            <MetaRow
-              label={t("created")}
-              value={formatDate(place.created_at)}
-            />
-            <MetaRow
-              label={t("updated")}
-              value={formatDate(place.updated_at)}
-            />
+            <View style={styles.meta}>
+              <MetaRow
+                label={t("created")}
+                value={formatDate(place.created_at)}
+              />
+              <MetaRow
+                label={t("updated")}
+                value={formatDate(place.updated_at)}
+              />
+            </View>
           </View>
         </ScrollView>
 
@@ -241,13 +240,12 @@ const stylesFn = (Colors) =>
     container: {
       flex: 1,
       backgroundColor: Colors.backgroundMain,
-      padding: 16,
       paddingBottom: 40,
     },
     header: {
       flexDirection: "row",
       alignItems: "center",
-      marginBottom: 16,
+      padding: 16,
     },
     title: {
       fontSize: 22,
@@ -258,26 +256,37 @@ const stylesFn = (Colors) =>
       fontSize: 14,
       color: Colors.textSecondary,
       marginTop: 2,
+      lineHeight: 28
     },
     mapWrapper: {
-      borderRadius: 12,
       overflow: "hidden",
       backgroundColor: Colors.imageBg,
+      borderRadius: 16,
+      marginHorizontal: 16,
       marginBottom: 16,
+      shadowColor: "#000",
+      shadowOpacity: 0.08,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 4,
     },
     coordsRow: {
       flexDirection: "row",
       alignItems: "center",
-      padding: 8,
+      paddingVertical: 8,
+      paddingHorizontal: 16,
     },
     coords: {
       fontSize: 12,
       color: Colors.textSecondary,
     },
+    footer: {
+      paddingHorizontal: 16,
+    },
     stats: {
       flexDirection: "row",
       justifyContent: "space-between",
-      marginVertical: 16,
+      marginBottom: 16,
     },
     meta: {
       borderTopWidth: 1,

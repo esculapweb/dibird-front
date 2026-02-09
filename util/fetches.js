@@ -1,3 +1,4 @@
+import { useQueryWithTranslation } from "../hooks/useQueryWithTranslation";
 import i18n from "../services/i18n";
 import api, { showError } from "../services/api";
 
@@ -76,10 +77,21 @@ export const fetchCountries = async () => {
   return res.data.map(([value, label]) => ({
     value,
     label: label.label,
-    code: label['data-code'],
+    code: label["data-code"],
     icon: isoToFlagEmoji(label["data-code"]),
   }));
 };
+
+export const useCountries = (language) =>
+  useQueryWithTranslation({
+    queryKey: ["countriesDropdown", language],
+    queryFn: fetchCountries,
+    staleTime: 1000 * 60 * 60 * 24, 
+    cacheTime: 1000 * 60 * 60 * 24,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+  });
 
 export const fetchMyCountries = async (favOnly = false) => {
   const params = favOnly ? { fav_only: favOnly } : {};
@@ -171,7 +183,6 @@ export const fetchPlaces = async (
   };
   if (search) params.name = search;
   if (page > 1) params.page = page;
-
 
   const res = await api.get("/myapi/place2/", { params });
   return res.data;
