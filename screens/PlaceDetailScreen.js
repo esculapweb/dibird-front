@@ -1,7 +1,17 @@
 import { useState, useEffect, useCallback } from "react";
-import { View, Text, StyleSheet, ScrollView, Alert } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  TouchableOpacity,
+  Clipboard
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+import Toast from "react-native-toast-message";
+// import Clipboard from "@react-native-clipboard/clipboard";
 
 import { useTheme } from "../store/theme-context";
 import { isoToFlagEmoji, formatDate } from "../util/fetches";
@@ -166,17 +176,31 @@ const PlaceDetailScreen = ({ route, navigation }) => {
 
           <View style={styles.mapWrapper}>
             <MapPreview coordinates={[lng, lat]} />
-            <View style={styles.coordsRow}>
-              <Ionicons
-                name="navigate-outline"
-                size={14}
-                color={Colors.textSecondary}
-                style={{ marginRight: 4 }}
-              />
-              <Text style={styles.coords}>
+
+            <TouchableOpacity
+              style={styles.coordsOverlay}
+              onPress={() => {
+                const coordsText = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                Clipboard.setString(coordsText);
+                Toast.show({
+                  type: "success",
+                  text1: t("coordinates_copied"),
+                  text2: coordsText,
+                  position: "bottom",
+                  visibilityTime: 1500,
+                });
+              }}
+            >
+              <Text style={styles.coordsOverlayText}>
                 {lat.toFixed(4)}, {lng.toFixed(4)}
               </Text>
-            </View>
+              <Ionicons
+                name="copy-outline"
+                size={16}
+                color={Colors.textSecondary}
+                style={{ marginLeft: 6 }}
+              />
+            </TouchableOpacity>
           </View>
 
           <View style={styles.footer}>
@@ -245,7 +269,8 @@ const stylesFn = (Colors) =>
     header: {
       flexDirection: "row",
       alignItems: "center",
-      padding: 16,
+      paddingHorizontal: 16,
+      marginBottom: 8,
     },
     title: {
       fontSize: 22,
@@ -256,7 +281,7 @@ const stylesFn = (Colors) =>
       fontSize: 14,
       color: Colors.textSecondary,
       marginTop: 2,
-      lineHeight: 28
+      lineHeight: 28,
     },
     mapWrapper: {
       overflow: "hidden",
@@ -264,21 +289,11 @@ const stylesFn = (Colors) =>
       borderRadius: 16,
       marginHorizontal: 16,
       marginBottom: 16,
-      shadowColor: "#000",
+      shadowColor: Colors.shadow,
       shadowOpacity: 0.08,
       shadowRadius: 8,
       shadowOffset: { width: 0, height: 4 },
       elevation: 4,
-    },
-    coordsRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingVertical: 8,
-      paddingHorizontal: 16,
-    },
-    coords: {
-      fontSize: 12,
-      color: Colors.textSecondary,
     },
     footer: {
       paddingHorizontal: 16,
@@ -314,5 +329,21 @@ const stylesFn = (Colors) =>
       justifyContent: "center",
       alignItems: "center",
       zIndex: 1000,
+    },
+    coordsOverlay: {
+      position: "absolute",
+      bottom: 16,
+      right: 16,
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      backgroundColor: Colors.overlayBg,
+      borderRadius: 12,
+    },
+    coordsOverlayText: {
+      fontSize: 12,
+      color: Colors.textSecondary,
+      fontWeight: "500",
     },
   });

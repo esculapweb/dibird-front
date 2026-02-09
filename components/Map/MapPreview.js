@@ -49,7 +49,7 @@ export default MapPreview;
 const stylesFn = (Colors) =>
   StyleSheet.create({
     map: {
-      height: 300,
+      height: 340,
       width: "100%",
     },
     markerContainer: {

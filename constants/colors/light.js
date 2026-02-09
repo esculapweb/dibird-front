@@ -42,5 +42,5 @@ export const LightColors = {
   buttonBrightColor: "#1f2937",
 
   markerBorder: "#fff",
-  overlayBg: "rgba(255,255,255,0.9)",
+  overlayBg: "rgba(255,255,255,0.85)",
 };

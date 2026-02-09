@@ -4,40 +4,49 @@ import { useTheme } from "../../store/theme-context";
 import { useTranslation } from "react-i18next";
 
 const ThemeSwitcher = () => {
-  const { theme, toggleTheme, Colors } = useTheme();
+  const { theme, manualTheme, toggleTheme, Colors } = useTheme();
   const { t } = useTranslation();
-  const isDark = theme === "dark";
   const styles = stylesFn(Colors);
+
+  const options = [
+    { value: null, text: t("auto"), label: t("auto") },
+    { value: "light", icon: "sunny-outline", label: t("light") },
+    { value: "dark", icon: "moon-outline", label: t("dark") },
+  ];
 
   return (
     <View style={styles.container}>
       <View style={styles.left}>
-        <Ionicons
-          name="contrast-outline"
-          size={22}
-          style={styles.icon}
-        />
+        <Ionicons name="contrast-outline" size={22} style={styles.icon} />
         <Text style={styles.title}>{t("theme")}:</Text>
       </View>
       <View style={styles.buttonsRight}>
-        {[
-          { value: "light", icon: "sunny-outline" },
-          { value: "dark", icon: "moon-outline" },
-        ].map((option) => (
-          <Pressable
-            key={option.value}
-            onPress={() => toggleTheme(option.value)}
-            style={({ pressed }) => [
-              styles.button,
-              isDark === (option.value === "dark") && {
-                backgroundColor: Colors.primary200,
-              },
-              pressed && styles.pressed,
-            ]}
-          >
-            <Ionicons name={option.icon} size={20} color={Colors.textMain} />
-          </Pressable>
-        ))}
+        {options.map((option) => {
+          const isSelected = option.value === manualTheme;
+
+          return (
+            <Pressable
+              key={option.value ?? "auto"}
+              onPress={() => toggleTheme(option.value)}
+              style={({ pressed }) => [
+                styles.button,
+                isSelected && { backgroundColor: Colors.primary200 },
+                pressed && styles.pressed,
+              ]}
+            >
+              {option?.icon && (
+                <Ionicons
+                  name={option.icon}
+                  size={20}
+                  color={Colors.textMain}
+                />
+              )}
+              {option?.text && (
+                <Text style={{ color: Colors.textMain }}>{option.text}</Text>
+              )}
+            </Pressable>
+          );
+        })}
       </View>
     </View>
   );

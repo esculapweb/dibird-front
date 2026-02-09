@@ -9,9 +9,9 @@ const ThemeContext = createContext(null);
 const THEME_KEY = "theme";
 
 export const ThemeProvider = ({ children }) => {
-  const systemScheme = useColorScheme(); 
+  const systemScheme = useColorScheme();
   const [manualTheme, setManualTheme] = useState(null);
-  const [ready, setReady] = useState(false); 
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -34,7 +34,7 @@ export const ThemeProvider = ({ children }) => {
     if (newTheme === null) {
       setManualTheme(null);
       AsyncStorage.removeItem(THEME_KEY).catch(() =>
-        console.warn("Failed to remove theme from storage")
+        console.warn("Failed to remove theme from storage"),
       );
       return;
     }
@@ -43,22 +43,25 @@ export const ThemeProvider = ({ children }) => {
 
     setManualTheme(newTheme);
     AsyncStorage.setItem(THEME_KEY, newTheme).catch(() =>
-      console.warn("Failed to save theme to storage")
+      console.warn("Failed to save theme to storage"),
     );
   };
 
   const value = useMemo(
     () => ({
       theme,
+      manualTheme,
       Colors: theme === "dark" ? DarkColors : LightColors,
       toggleTheme,
     }),
-    [theme]
+    [theme, manualTheme, systemScheme],
   );
 
   if (!ready) return null;
 
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  return (
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+  );
 };
 
 export const useTheme = () => useContext(ThemeContext);
