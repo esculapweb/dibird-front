@@ -105,7 +105,7 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
           placeholder={t("select_year")}
           value={year}
           setValue={setYear}
-          staticOptions={yearOptions}
+          query={{ data: yearOptions }}
           allowReset
         />
       )}

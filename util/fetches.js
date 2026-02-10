@@ -82,17 +82,6 @@ export const fetchCountries = async () => {
   }));
 };
 
-export const useCountries = (language) =>
-  useQueryWithTranslation({
-    queryKey: ["countriesDropdown", language],
-    queryFn: fetchCountries,
-    staleTime: 1000 * 60 * 60 * 24, 
-    cacheTime: 1000 * 60 * 60 * 24,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
-  });
-
 export const fetchMyCountries = async (favOnly = false) => {
   const params = favOnly ? { fav_only: favOnly } : {};
   const res = await api.get("/myapi/territory2/", { params });

@@ -4,8 +4,9 @@ import { useTranslation } from "react-i18next";
 import { useTheme } from "../../store/theme-context";
 import Input from "../ui/Input";
 import DropdownInput from "../ui/DropdownInput";
-import { useCountries } from "../../util/fetches";
+import { fetchCountries } from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
+import { useTranslatedQuery } from "../../hooks/useQueryWithTranslation";
 
 const PlaceForm = ({
   onCoordsChange,
@@ -26,12 +27,12 @@ const PlaceForm = ({
   const { language } = useLanguage();
   const [territory, setTerritory] = useState(null);
 
-  const {
-    data: territories = [],
-    isLoading,
-    isError,
-    refetch,
-  } = useCountries(language);
+  const queryTerritories = useTranslatedQuery({
+    queryFn: fetchCountries,
+    params: [language],
+  });
+
+  const territories = queryTerritories.data ?? [];
 
   useEffect(() => {
     if (!territories.length || !locationDetails?.countryCode) return;
@@ -118,10 +119,7 @@ const PlaceForm = ({
         placeholder={t("select_country")}
         value={territory}
         setValue={onChangeTerritory}
-        options={territories}
-        loading={isLoading}
-        loadError={isError ? t("failed_to_load_data") : null}
-        onRetry={refetch}
+        query={queryTerritories}
         error={errors?.territory}
       />
     </View>

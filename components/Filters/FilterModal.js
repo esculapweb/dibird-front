@@ -10,6 +10,7 @@ import { saveFilters } from "../../util/storageHelper";
 import FlatButtonBottom from "../ui/FlatButtonBottom";
 import { useLanguage } from "../../store/language-context";
 import RadioGroup from "../ui/RadioGroup";
+import { useTranslatedQuery } from "../../hooks/useQueryWithTranslation";
 
 const FilterModal = ({
   screen,
@@ -45,12 +46,17 @@ const FilterModal = ({
     filters?.favourite ?? null,
   );
 
-  const loadPlaces = async () => {
-    const places = await fetchMyPlaces(territoryValue);
-    if (placeValue && !places.some((p) => p.value === placeValue))
+  const queryPlaces = useTranslatedQuery({
+    queryFn: () => fetchMyPlaces(territoryValue),
+    params: [territoryValue],
+  });
+
+  useEffect(() => {
+    if (!queryPlaces.data) return;
+    if (placeValue && !queryPlaces.data.some((p) => p.value === placeValue)) {
       setPlaceValue(null);
-    return places;
-  };
+    }
+  }, [queryPlaces.data, placeValue]);
 
   useEffect(() => {
     if (!visible) return;
@@ -93,11 +99,12 @@ const FilterModal = ({
             <DropdownInput
               title={t("country")}
               placeholder={t("all_countries")}
-              initial={filters?.territory}
               value={territoryValue}
               setValue={setTerritoryValue}
-              loadOptions={fetchMyCountries}
-              loadDependencies={[language]}
+              query={useTranslatedQuery({
+                queryFn: fetchMyCountries,
+                params: [language],
+              })}
               allowReset
             />
           )}
@@ -105,11 +112,9 @@ const FilterModal = ({
             <DropdownInput
               title={t("location")}
               placeholder={t("all_locations")}
-              initial={filters?.place}
               value={placeValue}
               setValue={setPlaceValue}
-              loadOptions={loadPlaces}
-              loadDependencies={[territoryValue]}
+              query={queryPlaces}
               allowReset
             />
           )}

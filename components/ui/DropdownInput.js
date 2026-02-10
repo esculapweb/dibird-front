@@ -15,19 +15,11 @@ import { useTheme } from "../../store/theme-context";
 const DropdownInput = ({
   title,
   placeholder,
-  // initial,
   value,
   setValue,
   error,
   allowReset,
-
-  options = [],
-  loading = false,
-  loadError = null,
-  onRetry,
-  // staticOptions,
-  // loadOptions,
-  // loadDependencies = [],
+  query
 }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -40,39 +32,10 @@ const DropdownInput = ({
   const [icon, setIcon] = useState(null);
   const [iconLabel, setIconLabel] = useState(null);
 
-  // const fetchOptions = async () => {
-  //   if (Array.isArray(staticOptions)) {
-  //     setOptions(staticOptions);
-  //     return;
-  //   }
 
-  //   if (!loadOptions) return;
-  //   setLoading(true);
-  //   setLoadError(null);
-  //   try {
-  //     const data = await loadOptions();
-  //     setOptions(Array.isArray(data) ? data : []);
-  //     setLoadError(null);
-
-  //     if (initial != null && data.some((o) => o.value === initial)) {
-  //       setValue(initial);
-  //     }
-  //   } catch (e) {
-  //     setLoadError(t("failed_to_load_data"));
-  //     console.warn(
-  //       `[${new Date().toLocaleString()}] Dropdown options load failed`,
-  //       e.code,
-  //       e.message,
-  //     );
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
   const onSelectValue = (selectedValue) => {
-    // if (!Array.isArray(options)) return;
-
-    const option = options.find((o) => o.value === selectedValue);
+    const option = query.data.find((o) => o.value === selectedValue);
     setValue(selectedValue);
     setLabel(option?.label || "");
     setIcon(option?.icon || null);
@@ -93,7 +56,7 @@ const DropdownInput = ({
   };
 
   useEffect(() => {
-    if (!Array.isArray(options)) return;
+    if (!Array.isArray(query.data)) return;
 
     if (value === null || value === undefined || value === "") {
       setLabel("");
@@ -102,35 +65,34 @@ const DropdownInput = ({
       return;
     }
 
-    const option = options.find((o) => o.value === value);
+    const option = query.data.find((o) => o.value === value);
 
     if (option) {
       setLabel(option.label);
       setIcon(option.icon || null);
       setIconLabel(option.iconLabel || null);
     } else {
-      // setValue(null);
       setLabel("");
       setIcon(null);
       setIconLabel(null);
     }
-  }, [value, options]);
-
-  // useEffect(() => {
-  //   fetchOptions();
-  // }, loadDependencies);
+  }, [value, query.data]);
 
   return (
     <>
       <View style={styles.wrapper}>
-        {title && <Text style={[styles.title, error && styles.titleError]}>{title}</Text>}
+        {title && (
+          <Text style={[styles.title, error && styles.titleError]}>
+            {title}
+          </Text>
+        )}
 
         <Pressable
           onPress={openModal}
           style={[styles.select, error && { borderColor: Colors.error500 }]}
         >
           <View style={styles.left}>
-            {loading && (
+            {query.isLoading && (
               <Text
                 style={[styles.text, !label && { color: Colors.dropdownIcon }]}
                 numberOfLines={1}
@@ -139,16 +101,16 @@ const DropdownInput = ({
                 {t("loading_")}
               </Text>
             )}
-            {loadError && (
+            {query.isError && (
               <Text
                 style={[styles.text, { color: Colors.error500 }]}
                 numberOfLines={1}
                 ellipsizeMode="tail"
               >
-                {loadError}
+                {t("failed_to_load_data")}
               </Text>
             )}
-            {!loading && !loadError && (
+            {!query.isLoading && !query.isError && (
               <>
                 {iconLabel && (
                   <View style={styles.icon}>
@@ -177,7 +139,7 @@ const DropdownInput = ({
           </View>
 
           <View style={styles.right}>
-            {loading && (
+            {query.isLoading && (
               <ActivityIndicator
                 size="small"
                 color={Colors.dropdownIcon}
@@ -185,9 +147,9 @@ const DropdownInput = ({
               />
             )}
 
-            {loadError && onRetry && (
+            {query.isError && query.refetch && (
               <Pressable
-                onPress={onRetry}
+                onPress={query.refetch}
                 style={styles.retryIcon}
                 hitSlop={12}
               >
@@ -195,7 +157,7 @@ const DropdownInput = ({
               </Pressable>
             )}
 
-            {value && allowReset && !loading && !loadError && (
+            {value && allowReset && !query.isLoading && !query.isError && (
               <Pressable onPress={clearValue} hitSlop={10} style={styles.clear}>
                 <Ionicons
                   name="close-circle"
@@ -205,7 +167,7 @@ const DropdownInput = ({
               </Pressable>
             )}
 
-            {!loading && !loadError && (
+            {!query.isLoading && !query.isError && (
               <Ionicons
                 name="chevron-down"
                 size={20}
@@ -220,7 +182,7 @@ const DropdownInput = ({
 
       <SelectListModal
         visible={modalVisible}
-        options={options}
+        options={query.data}
         selected={value}
         search={search}
         setSearch={setSearch}
@@ -238,7 +200,7 @@ const stylesFn = (Colors) =>
   StyleSheet.create({
     wrapper: { marginBottom: 16 },
     title: { marginBottom: 4, fontSize: 14, color: Colors.textMain },
-    titleError: {color: Colors.error500},
+    titleError: { color: Colors.error500 },
     select: {
       height: 40,
       paddingHorizontal: 6,

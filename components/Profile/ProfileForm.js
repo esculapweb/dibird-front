@@ -9,6 +9,7 @@ import RadioGroup from "../ui/RadioGroup";
 import { useProfile } from "../../store/profile-context";
 import { fetchTimezones, fetchCountries } from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
+import { useTranslatedQuery } from "../../hooks/useQueryWithTranslation";
 
 const ProfileForm = ({ submitHandler, loading, success }) => {
   const { language } = useLanguage();
@@ -44,8 +45,6 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
 
   const validateForm = () => {
     const newInvalid = {
-      // firstName: !firstName.trim(),
-      // lastName: !lastName.trim(),
       userName: !userName.trim(),
       territory: !String(territoryValue ?? "").trim(),
       timezone: !String(timezoneValue ?? "").trim(),
@@ -101,22 +100,20 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
         <DropdownInput
           title={t("my_country")}
           placeholder={t("select_country")}
-          initial={profile.territory}
           value={territoryValue}
           setValue={setTerritoryValue}
-          error={invalid?.territory}
-          loadOptions={fetchCountries}
-          loadDependencies={[language]}
+          query={useTranslatedQuery({
+            queryFn: fetchCountries,
+            params: [language],
+          })}
         />
 
         <DropdownInput
           title={t("timezone")}
           placeholder={t("select_timezone")}
-          initial={profile.timezone}
           value={timezoneValue}
           setValue={setTimezoneValue}
-          error={invalid?.timezone}
-          loadOptions={fetchTimezones}
+          query={useTranslatedQuery({ queryFn: fetchTimezones })}
         />
 
         <RadioGroup
