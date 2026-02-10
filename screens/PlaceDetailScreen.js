@@ -117,7 +117,6 @@ const PlaceDetailScreen = ({ route, navigation }) => {
 
     navigation.setOptions({
       title: "",
-      headerShadowVisible: false,
       headerRight,
     });
   }, [navigation, headerRight, place]);
@@ -154,7 +153,7 @@ const PlaceDetailScreen = ({ route, navigation }) => {
           </View>
 
           <View style={styles.mapSection}>
-            <View style={styles.container} pointerEvents="box-none">
+            <View style={styles.mapWrap} pointerEvents="box-none">
               <Map
                 currentCoords={[lng, lat]}
               />
@@ -246,8 +245,8 @@ const stylesFn = (Colors) =>
       flexDirection: "row",
       alignItems: "center",
       paddingHorizontal: 16,
-      marginTop: 16,
-      marginBottom: 8,
+      paddingTop: 16,
+      paddingBottom: 8,
     },
     title: {
       fontSize: 22,
@@ -261,7 +260,7 @@ const stylesFn = (Colors) =>
       lineHeight: 28,
     },
     mapSection: { height: 340, position: "relative" },
-    container: { flex: 1, position: "relative" },
+    mapWrap: { flex: 1, position: "relative" },
 
     coordsOverlay: {
       flexDirection: "row",
@@ -282,7 +281,7 @@ const stylesFn = (Colors) =>
     },
 
     footer: {
-      paddingHorizontal: 16,
+      padding: 16,
     },
     stats: {
       flexDirection: "row",

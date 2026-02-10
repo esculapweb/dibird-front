@@ -166,7 +166,6 @@ const PlaceEditorScreen = ({ navigation, route }) => {
   useEffect(() => {
     navigation.setOptions({
       title: isEditMode ? t("edit_place") : t("new_place"),
-      headerShadowVisible: false,
       headerRight: HeaderRight,
     });
   }, [navigation, HeaderRight, isEditMode]);
