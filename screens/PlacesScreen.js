@@ -94,7 +94,7 @@ const PlacesScreen = ({ route, navigation }) => {
 
   const handleFilterPress = () => setFilterModalVisible(true);
   const handleSortPress = () => setSortModalVisible(true);
-  const handleAddPlace = () => navigation.navigate("AddPlace");
+  const handleAddPlace = () => navigation.navigate("PlaceEditor");
 
   useEffect(() => {
     const initFilters = async () => {

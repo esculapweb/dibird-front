@@ -1,25 +1,24 @@
 import { useState, useCallback, useEffect } from "react";
-import {
-  Platform,
-  Alert,
-  ActivityIndicator,
-  StyleSheet,
-} from "react-native";
+import { Platform, Alert, ActivityIndicator, StyleSheet } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../store/theme-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
-import { useCreatePlace } from "../hooks/usePlaceMutation";
+import { useCreatePlace, useUpdatePlace } from "../hooks/usePlaceMutation";
 import { PlaceMap } from "../components/Map/PlaceMap";
 import IconButton from "../components/ui/IconButton";
 import PlaceForm from "../components/Place/PlaceForm";
 import { usePlaceLocation } from "../hooks/usePlaceLocation";
 
-const AddPlaceScreen = ({ navigation }) => {
+const PlaceEditorScreen = ({ navigation, route }) => {
   const { Colors } = useTheme();
   const { t } = useTranslation();
   const styles = stylesFn(Colors);
+
+  // Если есть place — режим редактирования
+  const { place } = route.params || {};
+  const isEditMode = !!place;
 
   const {
     coords,
@@ -36,25 +35,38 @@ const AddPlaceScreen = ({ navigation }) => {
   } = usePlaceLocation();
 
   const createPlaceMutation = useCreatePlace();
+  const updatePlaceMutation = useUpdatePlace(place?.id);
 
-  const [formData, setFormData] = useState({ name: "" });
+  const [formData, setFormData] = useState({
+    name: place?.name ?? "",
+    territory: place?.territory ?? "",
+  });
   const [errors, setErrors] = useState({});
 
-  useEffect(() => {
-    useMyLocation();
-  }, [useMyLocation]);
+  // Инициализация координат
+  const [initialCoords, setInitialCoords] = useState(
+    place?.location?.coordinates ?? [0, 0],
+  );
 
   useEffect(() => {
-    if (!details) return;
+    if (!isEditMode) {
+      useMyLocation();
+    } else {
+      updateCoords(initialCoords);
+      setLatText(initialCoords[1]?.toString() ?? "");
+      setLngText(initialCoords[0]?.toString() ?? "");
+    }
+  }, []);
+
+  // Предложение имени по locationDetails
+  useEffect(() => {
+    if (!details || isEditMode) return;
     const suggestedName = details.city || details.address || "";
     if (!suggestedName) return;
 
-    // if (!formData.name.trim()) {
-      setFormData((prev) => ({ ...prev, name: suggestedName }));
-      setErrors((prev) => ({ ...prev, name: undefined }));
-    // }
-   
-  }, [details]);
+    setFormData((prev) => ({ ...prev, name: suggestedName }));
+    setErrors((prev) => ({ ...prev, name: undefined }));
+  }, [details, isEditMode]);
 
   const validateForm = useCallback(() => {
     const newErrors = {};
@@ -75,65 +87,80 @@ const AddPlaceScreen = ({ navigation }) => {
     return Object.keys(newErrors).length === 0;
   }, [formData, coords, t]);
 
-  const handleCreatePlace = useCallback(() => {
+  const handleSavePlace = useCallback(() => {
     if (!validateForm()) return;
 
     const [lng, lat] = coords ?? [];
-
     const placeData = {
       name: formData.name.trim(),
       location: { type: "Point", coordinates: [lng, lat] },
-      favourite: false,
       territory: formData.territory,
+      favourite: place?.favourite ?? false,
     };
 
-    createPlaceMutation.mutate(placeData, {
-      onSuccess: (res) =>
-        requestAnimationFrame(() =>
+    if (isEditMode) {
+      updatePlaceMutation.mutate(placeData, {
+        onSuccess: () => navigation.goBack(),
+        onError: (err) =>
+          Alert.alert(t("error"), err.message || t("update_failed")),
+      });
+    } else {
+      createPlaceMutation.mutate(placeData, {
+        onSuccess: (res) =>
           navigation.replace("PlaceDetail", { placeId: res.data.id }),
-        ),
-      onError: (err) => {
-        console.error("Create place error:", err);
-        let message = t("create_failed");
-        if (err.response?.data) {
-          message =
-            typeof err.response.data === "string"
-              ? err.response.data
-              : Object.entries(err.response.data)
-                  .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
-                  .join("\n");
-        }
-        Alert.alert(t("error"), message);
-      },
-    });
-  }, [formData, coords, validateForm, createPlaceMutation, navigation]);
+        onError: (err) =>
+          Alert.alert(t("error"), err.message || t("create_failed")),
+      });
+    }
+  }, [
+    formData,
+    coords,
+    isEditMode,
+    place,
+    createPlaceMutation,
+    updatePlaceMutation,
+  ]);
 
   const HeaderRight = useCallback(
     () =>
-      createPlaceMutation.isLoading ? (
+      (
+        isEditMode
+          ? updatePlaceMutation.isLoading
+          : createPlaceMutation.isLoading
+      ) ? (
         <ActivityIndicator size="small" color={Colors.textMain} />
       ) : (
         <IconButton
           icon="checkmark"
-          onPress={handleCreatePlace}
+          onPress={handleSavePlace}
           style={styles.createHeaderButton}
           size={28}
-          disabled={createPlaceMutation.isLoading || isLocating}
+          disabled={isLocating}
           color={Colors.buttonBrightColor}
         />
       ),
-    [handleCreatePlace, isLocating, createPlaceMutation.isLoading, Colors],
+    [
+      handleSavePlace,
+      isLocating,
+      isEditMode,
+      createPlaceMutation.isLoading,
+      updatePlaceMutation.isLoading,
+      Colors,
+    ],
   );
 
   useEffect(() => {
     navigation.setOptions({
-      title: t("new_place"),
+      title: isEditMode ? t("edit_place") : t("new_place"),
       headerShadowVisible: false,
       headerRight: HeaderRight,
     });
-  }, [navigation, HeaderRight]);
+  }, [navigation, HeaderRight, isEditMode]);
 
-  if (createPlaceMutation.isLoading) return <LoadingOverlay />;
+  if (
+    isEditMode ? updatePlaceMutation.isLoading : createPlaceMutation.isLoading
+  )
+    return <LoadingOverlay />;
 
   return (
     <KeyboardAwareScrollView
@@ -170,13 +197,11 @@ const AddPlaceScreen = ({ navigation }) => {
   );
 };
 
-export default AddPlaceScreen;
+export default PlaceEditorScreen;
 
 const stylesFn = (Colors) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.backgroundMain },
-    scrollView: { flex: 1 },
-    scrollContent: { flexGrow: 1 },
     map: { flex: 1 },
     createHeaderButton: {
       backgroundColor: Colors.buttonBrightBg,

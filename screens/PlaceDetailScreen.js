@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -6,7 +6,7 @@ import {
   ScrollView,
   Alert,
   TouchableOpacity,
-  Clipboard
+  Clipboard,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
@@ -25,13 +25,10 @@ import ErrorOverlay from "../components/Error/ErrorOverlay";
 
 import { usePlace } from "../hooks/usePlace";
 import { useUpdatePlace, useDeletePlace } from "../hooks/usePlaceMutation";
-import EditPlaceModal from "../components/Place/EditPlaceModal";
 
 const PlaceDetailScreen = ({ route, navigation }) => {
   const { placeId } = route.params;
   const { data: place, isLoading, isError, error, refetch } = usePlace(placeId);
-
-  const [editModalVisible, setEditModalVisible] = useState(false);
 
   const updateMutation = useUpdatePlace(placeId);
   const deletePlace = useDeletePlace();
@@ -54,28 +51,13 @@ const PlaceDetailScreen = ({ route, navigation }) => {
     );
   }, [place, updateMutation]);
 
-  const handleSaveEdit = useCallback(
-    (updateData) => {
-      updateMutation.mutate(updateData, {
-        onSuccess: () => {
-          setEditModalVisible(false);
-          // Можно показать уведомление об успехе
-        },
-        onError: (error) => {
-          Alert.alert(t("error"), error.message || t("update_failed"));
-        },
-      });
-    },
-    [updateMutation, t],
-  );
-
   const headerRight = useCallback(
     () => (
       <View style={styles.headerButtons}>
         <IconButton
           tintColor={Colors.textSecondary}
           icon="create-outline"
-          onPress={() => setEditModalVisible(true)}
+          onPress={() => navigation.navigate("PlaceEditor", { place })}
           style={styles.iconButton}
           size={24}
           disabled={!place || updateMutation.isLoading}
@@ -131,10 +113,13 @@ const PlaceDetailScreen = ({ route, navigation }) => {
   }, []);
 
   useEffect(() => {
+    if (!place) return;
+
     navigation.setOptions({
       title: "",
       headerShadowVisible: false,
-      headerRight: place ? headerRight : undefined,
+      headerRight,
+      
     });
   }, [navigation, headerRight, place]);
 
@@ -149,7 +134,7 @@ const PlaceDetailScreen = ({ route, navigation }) => {
     );
   }
 
-  if (isLoading || !place) {
+  if (isLoading || !place || updateMutation.isLoading) {
     return <LoadingOverlay />;
   }
 
@@ -157,11 +142,6 @@ const PlaceDetailScreen = ({ route, navigation }) => {
 
   return (
     <>
-      {updateMutation.isLoading && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="small" color={Colors.primary} />
-        </View>
-      )}
       <View style={{ flex: 1 }}>
         <ScrollView style={styles.container}>
           <View style={styles.header}>
@@ -246,13 +226,6 @@ const PlaceDetailScreen = ({ route, navigation }) => {
           {t("delete")}
         </FlatButtonBottom>
       </View>
-      <EditPlaceModal
-        visible={editModalVisible}
-        place={place}
-        onClose={() => setEditModalVisible(false)}
-        onSave={handleSaveEdit}
-        isLoading={updateMutation.isLoading}
-      />
     </>
   );
 };
@@ -263,13 +236,14 @@ const stylesFn = (Colors) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: Colors.backgroundMain,
+      backgroundColor: Colors.primary100,
       paddingBottom: 40,
     },
     header: {
       flexDirection: "row",
       alignItems: "center",
       paddingHorizontal: 16,
+      marginTop: 16,
       marginBottom: 8,
     },
     title: {
@@ -318,17 +292,6 @@ const stylesFn = (Colors) =>
       marginRight: 0,
       justifyContent: "center",
       alignItems: "center",
-    },
-    loadingOverlay: {
-      position: "absolute",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: "rgba(255,255,255,0.7)",
-      justifyContent: "center",
-      alignItems: "center",
-      zIndex: 1000,
     },
     coordsOverlay: {
       position: "absolute",

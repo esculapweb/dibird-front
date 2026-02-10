@@ -14,7 +14,7 @@ import MainScreen from "../screens/MainScreen";
 import StatScreen from "../screens/StatScreen";
 import PlacesScreen from "../screens/PlacesScreen";
 import PlaceDetailScreen from "../screens/PlaceDetailScreen";
-import AddPlaceScreen from "../screens/AddPlaceScreen";
+import PlaceEditorScreen from "../screens/PlaceEditorScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import ErrorScreen from "../screens/ErrorScreen";
 // import SettingsScreen from "../screens/SettingsScreen";
@@ -169,8 +169,8 @@ const AppNavigator = () => {
       />
 
       <Stack.Screen
-        name="AddPlace"
-        component={AddPlaceScreen}
+        name="PlaceEditor"
+        component={PlaceEditorScreen}
         options={{
           title: t("new_place"),
           headerBackTitleVisible: false,
