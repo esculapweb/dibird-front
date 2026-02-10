@@ -136,6 +136,7 @@ const stylesFn = (Colors) => StyleSheet.create({
     backgroundColor: Colors.primary100,
     borderWidth: 1,
     borderColor: Colors.border,
+    color: Colors.textMain
   },
   row: {
     flexDirection: "row",
