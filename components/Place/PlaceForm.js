@@ -25,6 +25,7 @@ const PlaceForm = ({
   const { t } = useTranslation();
   const styles = stylesFn(Colors);
   const { language } = useLanguage();
+
   const [territory, setTerritory] = useState(null);
 
   const queryTerritories = useTranslatedQuery({
@@ -34,6 +35,7 @@ const PlaceForm = ({
 
   const territories = queryTerritories.data ?? [];
 
+  // Авто-установка страны
   useEffect(() => {
     if (!territories.length || !locationDetails?.countryCode) return;
 
@@ -56,23 +58,13 @@ const PlaceForm = ({
   const onChangeLat = (text) => {
     const sanitized = text.replace(",", ".");
     setLatText(sanitized);
-    const newLat = parseFloat(sanitized);
-    if (sanitized === "") {
-      onCoordsChange([coords[0] ?? 0, null], { fromManual: true });
-    } else if (!isNaN(newLat) && newLat >= -90 && newLat <= 90)
-      onCoordsChange([coords[0] ?? 0, newLat], { fromManual: true });
-    setErrors((prev) => ({ ...prev, latitude: undefined }));
+    onCoordsChange([lngText, sanitized], { fromManual: true });
   };
 
   const onChangeLng = (text) => {
     const sanitized = text.replace(",", ".");
     setLngText(sanitized);
-    const newLng = parseFloat(sanitized);
-    if (sanitized === "") {
-      onCoordsChange([null, coords[1] ?? 0], { fromManual: true });
-    } else if (!isNaN(newLng) && newLng >= -180 && newLng <= 180)
-      onCoordsChange([newLng, coords[1] ?? 0], { fromManual: true });
-    setErrors((prev) => ({ ...prev, longitude: undefined }));
+    onCoordsChange([sanitized, latText], { fromManual: true });
   };
 
   const onChangeTerritory = (value) => {
@@ -131,21 +123,6 @@ export default PlaceForm;
 const stylesFn = (Colors) =>
   StyleSheet.create({
     formSection: { padding: 16 },
-    card: {
-      // backgroundColor: Colors.primary200,
-      borderRadius: 16,
-      padding: 16,
-      marginBottom: 16,
-      borderWidth: 1,
-      borderColor: Colors.border,
-    },
-    cardHeader: {
-      flexDirection: "row",
-      alignItems: "center",
-      marginBottom: 12,
-      gap: 8,
-    },
-    cardTitle: { fontSize: 16, fontWeight: "600", color: Colors.textMain },
     coordsContainer: { flexDirection: "row", gap: 12 },
     coordInputWrapper: { flex: 1 },
   });

@@ -1,15 +1,22 @@
+// PlaceEditorScreen.js
 import { useState, useCallback, useEffect } from "react";
-import { Platform, Alert, ActivityIndicator, StyleSheet } from "react-native";
+import {
+  Platform,
+  Alert,
+  ActivityIndicator,
+  StyleSheet,
+  Dimensions,
+} from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../store/theme-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import { useCreatePlace, useUpdatePlace } from "../hooks/usePlaceMutation";
-import { PlaceMap } from "../components/Map/PlaceMap";
 import IconButton from "../components/ui/IconButton";
 import PlaceForm from "../components/Place/PlaceForm";
-import { usePlaceLocation } from "../hooks/usePlaceLocation";
+import { usePlaceLocation, normalizeCoords } from "../hooks/usePlaceLocation";
+import Map from "../components/Map/Map";
 
 const PlaceEditorScreen = ({ navigation, route }) => {
   const { Colors } = useTheme();
@@ -18,6 +25,8 @@ const PlaceEditorScreen = ({ navigation, route }) => {
 
   const { place } = route.params || {};
   const isEditMode = !!place;
+
+  const screenHeight = Dimensions.get("window").height;
 
   const {
     coords,
@@ -42,24 +51,57 @@ const PlaceEditorScreen = ({ navigation, route }) => {
   });
   const [errors, setErrors] = useState({});
 
-  const initialCoords= place?.location?.coordinates ?? [0, 0];
+  const initialCoords = place?.location?.coordinates ?? [0, 0];
+
+  // --- обработка клика по карте ---
+  const handleMapPress = useCallback(
+    (e) => {
+      if (isLocating) return;
+      const [lng, lat] = e.geometry.coordinates;
+      const normalized = normalizeCoords(lng, lat);
+      if (!normalized) return;
+
+      const {
+        lngText: newLngText,
+        latText: newLatText,
+        lng: newLng,
+        lat: newLat,
+      } = normalized;
+      updateCoords([newLng, newLat], { fromManual: true });
+      setLatText(newLatText);
+      setLngText(newLngText);
+
+      // сбрасываем ошибки, координаты теперь валидны
+      setErrors((prev) => ({
+        ...prev,
+        latitude: undefined,
+        longitude: undefined,
+      }));
+    },
+    [updateCoords, isLocating],
+  );
 
   useEffect(() => {
     if (!isEditMode) {
       useMyLocation();
     } else {
-      updateCoords(initialCoords);
-      setLatText(initialCoords[1]?.toString() ?? "");
-      setLngText(initialCoords[0]?.toString() ?? "");
+      const normalized = normalizeCoords(initialCoords[0], initialCoords[1]);
+      if (normalized) {
+        const { lngText, latText, lng, lat } = normalized;
+        updateCoords([lng, lat]);
+        setLatText(latText);
+        setLngText(lngText);
+      }
     }
   }, []);
 
   const getSuggestedName = (details) => {
-    if (details?.city && details?.raw?.county) return `${details.city}, ${details?.raw?.county}`;
+    if (details?.city && details?.raw?.county)
+      return `${details.city}, ${details?.raw?.county}`;
     if (details?.city) return details.city;
     if (details?.address) return details.address;
     return "";
-  }
+  };
 
   useEffect(() => {
     if (!details || isEditMode) return;
@@ -70,6 +112,7 @@ const PlaceEditorScreen = ({ navigation, route }) => {
     setErrors((prev) => ({ ...prev, name: undefined }));
   }, [details, isEditMode]);
 
+  // --- валидация формы ---
   const validateForm = useCallback(() => {
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = t("name_required");
@@ -78,16 +121,16 @@ const PlaceEditorScreen = ({ navigation, route }) => {
 
     if (!formData?.territory) newErrors.territory = t("territory_required");
 
-    const [lng, lat] = coords ?? [];
+    const normalized = normalizeCoords(lngText, latText);
 
-    if (lat === null || isNaN(lat) || lat < -90 || lat > 90)
+    if (!latText || !normalized?.lat)
       newErrors.latitude = t("invalid_latitude");
-    if (lng === null || isNaN(lng) || lng < -180 || lng > 180)
+    if (!lngText || !normalized?.lng)
       newErrors.longitude = t("invalid_longitude");
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [formData, coords, t]);
+  }, [formData, latText, lngText, t]);
 
   const handleMutateError = (err, message) => {
     if (err.response?.data) {
@@ -101,10 +144,50 @@ const PlaceEditorScreen = ({ navigation, route }) => {
     Alert.alert(t("error"), message);
   };
 
+  // --- обработка изменения координат ---
+  const handleCoordsChange = ([lngInput, latInput], options) => {
+    const normalized = normalizeCoords(lngInput, latInput);
+
+    if (normalized) {
+      const { lngText: newLngText, latText: newLatText, lng, lat } = normalized;
+
+      updateCoords([lng, lat], options);
+      setLatText(newLatText);
+      setLngText(newLngText);
+
+      setErrors((prev) => ({
+        ...prev,
+        latitude: undefined,
+        longitude: undefined,
+      }));
+    } else {
+      // частично введенные значения
+      setLatText(latInput ?? "");
+      setLngText(lngInput ?? "");
+      setErrors((prev) => ({
+        ...prev,
+        latitude: latInput ? undefined : t("invalid_latitude"),
+        longitude: lngInput ? undefined : t("invalid_longitude"),
+      }));
+    }
+  };
+
+  // --- сохранение ---
   const handleSavePlace = useCallback(() => {
     if (!validateForm()) return;
 
-    const [lng, lat] = coords ?? [];
+    const normalized = normalizeCoords(lngText, latText);
+    if (!normalized) return;
+
+    const { lng, lat, lngText: newLngText, latText: newLatText } = normalized;
+    updateCoords([lng, lat], {
+      fromManual: true,
+      normalizeOnSave: true,
+      withGeocode: false,
+    });
+    setLatText(newLatText);
+    setLngText(newLngText);
+
     const placeData = {
       name: formData.name.trim(),
       location: { type: "Point", coordinates: [lng, lat] },
@@ -126,14 +209,7 @@ const PlaceEditorScreen = ({ navigation, route }) => {
         onError: (err) => handleMutateError(err, t("create_failed")),
       });
     }
-  }, [
-    formData,
-    coords,
-    isEditMode,
-    place,
-    createPlaceMutation,
-    updatePlaceMutation,
-  ]);
+  }, [formData, lngText, latText, isEditMode, place]);
 
   const HeaderRight = useCallback(
     () =>
@@ -159,7 +235,6 @@ const PlaceEditorScreen = ({ navigation, route }) => {
       isEditMode,
       createPlaceMutation.isLoading,
       updatePlaceMutation.isLoading,
-      Colors,
     ],
   );
 
@@ -183,17 +258,18 @@ const PlaceEditorScreen = ({ navigation, route }) => {
       extraScrollHeight={Platform.OS === "ios" ? 20 : 80}
       style={styles.container}
     >
-      <PlaceMap
-        coords={coords}
-        zoomLevel={zoom}
+      <Map
+        onPress={handleMapPress}
+        currentCoords={coords}
+        currentZoom={zoom}
         accuracy={accuracy}
-        isGeocoding={isLocating}
-        onCoordsChange={updateCoords}
+        mapHeight={Math.min(Math.max(screenHeight * 0.5, 200), 500)}
         onUseMyLocation={useMyLocation}
+        isLocating={isLocating}
       />
 
       <PlaceForm
-        onCoordsChange={updateCoords}
+        onCoordsChange={handleCoordsChange}
         formData={formData}
         coords={coords}
         latText={latText}

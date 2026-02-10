@@ -5,13 +5,8 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
-  TouchableOpacity,
-  Clipboard,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import Toast from "react-native-toast-message";
-// import Clipboard from "@react-native-clipboard/clipboard";
 
 import { useTheme } from "../store/theme-context";
 import { isoToFlagEmoji, formatDate } from "../util/fetches";
@@ -152,38 +147,12 @@ const PlaceDetailScreen = ({ route, navigation }) => {
             </View>
           </View>
 
-          <View style={styles.mapSection}>
-            <View style={styles.mapWrap} pointerEvents="box-none">
-              <Map
-                currentCoords={[lng, lat]}
-              />
+            <Map
+              currentCoords={[lng, lat]}
+              mapHeight={340}
+              showCoords={true}
+            />
 
-              <TouchableOpacity
-                style={styles.coordsOverlay}
-                onPress={() => {
-                  const coordsText = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-                  Clipboard.setString(coordsText);
-                  Toast.show({
-                    type: "success",
-                    text1: t("coordinates_copied"),
-                    text2: coordsText,
-                    position: "bottom",
-                    visibilityTime: 1500,
-                  });
-                }}
-              >
-                <Text style={styles.coordsOverlayText}>
-                  {lat.toFixed(4)}, {lng.toFixed(4)}
-                </Text>
-                <Ionicons
-                  name="copy-outline"
-                  size={16}
-                  color={Colors.textSecondary}
-                  style={{ marginLeft: 6 }}
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
 
           <View style={styles.footer}>
             <View style={styles.stats}>
@@ -259,27 +228,6 @@ const stylesFn = (Colors) =>
       marginTop: 2,
       lineHeight: 28,
     },
-    mapSection: { height: 340, position: "relative" },
-    mapWrap: { flex: 1, position: "relative" },
-
-    coordsOverlay: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      position: "absolute",
-      bottom: 16,
-      right: 16,
-      paddingVertical: 6,
-      paddingHorizontal: 12,
-      backgroundColor: Colors.overlayBg,
-      borderRadius: 12,
-    },
-    coordsOverlayText: {
-      fontSize: 12,
-      color: Colors.textSecondary,
-      fontWeight: "500",
-    },
-
     footer: {
       padding: 16,
     },
