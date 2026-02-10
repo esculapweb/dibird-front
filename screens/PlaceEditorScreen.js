@@ -87,6 +87,18 @@ const PlaceEditorScreen = ({ navigation, route }) => {
     return Object.keys(newErrors).length === 0;
   }, [formData, coords, t]);
 
+  const handleMutateError = (err, message) => {
+    if (err.response?.data) {
+      message =
+        typeof err.response.data === "string"
+          ? err.response.data
+          : Object.entries(err.response.data)
+              .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
+              .join("\n");
+    }
+    Alert.alert(t("error"), message);
+  };
+
   const handleSavePlace = useCallback(() => {
     if (!validateForm()) return;
 
@@ -101,15 +113,15 @@ const PlaceEditorScreen = ({ navigation, route }) => {
     if (isEditMode) {
       updatePlaceMutation.mutate(placeData, {
         onSuccess: () => navigation.goBack(),
-        onError: (err) =>
-          Alert.alert(t("error"), err.message || t("update_failed")),
+        onError: (err) => handleMutateError(err, t("update_failed")),
       });
     } else {
       createPlaceMutation.mutate(placeData, {
         onSuccess: (res) =>
-          navigation.replace("PlaceDetail", { placeId: res.data.id }),
-        onError: (err) =>
-          Alert.alert(t("error"), err.message || t("create_failed")),
+          requestAnimationFrame(() =>
+            navigation.replace("PlaceDetail", { placeId: res.data.id }),
+          ),
+        onError: (err) => handleMutateError(err, t("create_failed")),
       });
     }
   }, [

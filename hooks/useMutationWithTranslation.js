@@ -7,11 +7,11 @@ export const useMutationWithTranslation = (options) => {
   return useMutation({
     ...options,
     onError: (error, variables, context) => {
-      console.error('Mutation error:', {
-        mutationKey: options.mutationKey,
-        error: getTranslatedError(error),
-        variables,
-      });
+      // console.error('Mutation error:', {
+      //   mutationKey: options.mutationKey,
+      //   error: getTranslatedError(error),
+      //   variables,
+      // });
 
       if (options.showErrorToast !== false) {
         showErrorToast(error);
