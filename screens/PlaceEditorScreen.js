@@ -58,10 +58,17 @@ const PlaceEditorScreen = ({ navigation, route }) => {
     }
   }, []);
 
+  const getSuggestedName = (details) => {
+    if (details?.city && details?.raw?.county) return `${details.city}, ${details?.raw?.county}`;
+    if (details?.city) return details.city;
+    if (details?.address) return details.address;
+    return "";
+  }
+
   // Предложение имени по locationDetails
   useEffect(() => {
     if (!details || isEditMode) return;
-    const suggestedName = details.city || details.address || "";
+    const suggestedName = getSuggestedName(details);
     if (!suggestedName) return;
 
     setFormData((prev) => ({ ...prev, name: suggestedName }));
