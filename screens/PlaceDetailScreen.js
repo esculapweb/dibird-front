@@ -18,10 +18,10 @@ import { isoToFlagEmoji, formatDate } from "../util/fetches";
 import { StatBig } from "../components/Place/StatBig";
 import { MetaRow } from "../components/Place/MetaRow";
 import IconButton from "../components/ui/IconButton";
-import MapPreview from "../components/Map/MapPreview";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
+import Map from "../components/Map/Map";
 
 import { usePlace } from "../hooks/usePlace";
 import { useUpdatePlace, useDeletePlace } from "../hooks/usePlaceMutation";
@@ -119,7 +119,6 @@ const PlaceDetailScreen = ({ route, navigation }) => {
       title: "",
       headerShadowVisible: false,
       headerRight,
-      
     });
   }, [navigation, headerRight, place]);
 
@@ -154,33 +153,37 @@ const PlaceDetailScreen = ({ route, navigation }) => {
             </View>
           </View>
 
-          <View style={styles.mapWrapper}>
-            <MapPreview coordinates={[lng, lat]} />
-
-            <TouchableOpacity
-              style={styles.coordsOverlay}
-              onPress={() => {
-                const coordsText = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-                Clipboard.setString(coordsText);
-                Toast.show({
-                  type: "success",
-                  text1: t("coordinates_copied"),
-                  text2: coordsText,
-                  position: "bottom",
-                  visibilityTime: 1500,
-                });
-              }}
-            >
-              <Text style={styles.coordsOverlayText}>
-                {lat.toFixed(4)}, {lng.toFixed(4)}
-              </Text>
-              <Ionicons
-                name="copy-outline"
-                size={16}
-                color={Colors.textSecondary}
-                style={{ marginLeft: 6 }}
+          <View style={styles.mapSection}>
+            <View style={styles.container} pointerEvents="box-none">
+              <Map
+                currentCoords={[lng, lat]}
               />
-            </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.coordsOverlay}
+                onPress={() => {
+                  const coordsText = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                  Clipboard.setString(coordsText);
+                  Toast.show({
+                    type: "success",
+                    text1: t("coordinates_copied"),
+                    text2: coordsText,
+                    position: "bottom",
+                    visibilityTime: 1500,
+                  });
+                }}
+              >
+                <Text style={styles.coordsOverlayText}>
+                  {lat.toFixed(4)}, {lng.toFixed(4)}
+                </Text>
+                <Ionicons
+                  name="copy-outline"
+                  size={16}
+                  color={Colors.textSecondary}
+                  style={{ marginLeft: 6 }}
+                />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <View style={styles.footer}>
@@ -257,18 +260,27 @@ const stylesFn = (Colors) =>
       marginTop: 2,
       lineHeight: 28,
     },
-    mapWrapper: {
-      overflow: "hidden",
-      backgroundColor: Colors.imageBg,
-      borderRadius: 16,
-      marginHorizontal: 16,
-      marginBottom: 16,
-      shadowColor: Colors.shadow,
-      shadowOpacity: 0.08,
-      shadowRadius: 8,
-      shadowOffset: { width: 0, height: 4 },
-      elevation: 4,
+    mapSection: { height: 340, position: "relative" },
+    container: { flex: 1, position: "relative" },
+
+    coordsOverlay: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      position: "absolute",
+      bottom: 16,
+      right: 16,
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      backgroundColor: Colors.overlayBg,
+      borderRadius: 12,
     },
+    coordsOverlayText: {
+      fontSize: 12,
+      color: Colors.textSecondary,
+      fontWeight: "500",
+    },
+
     footer: {
       paddingHorizontal: 16,
     },
@@ -292,21 +304,5 @@ const stylesFn = (Colors) =>
       marginRight: 0,
       justifyContent: "center",
       alignItems: "center",
-    },
-    coordsOverlay: {
-      position: "absolute",
-      bottom: 16,
-      right: 16,
-      flexDirection: "row",
-      alignItems: "center",
-      paddingVertical: 6,
-      paddingHorizontal: 12,
-      backgroundColor: Colors.overlayBg,
-      borderRadius: 12,
-    },
-    coordsOverlayText: {
-      fontSize: 12,
-      color: Colors.textSecondary,
-      fontWeight: "500",
     },
   });

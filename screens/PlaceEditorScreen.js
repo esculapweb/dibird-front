@@ -185,7 +185,6 @@ const PlaceEditorScreen = ({ navigation, route }) => {
       style={styles.container}
     >
       <PlaceMap
-        style={styles.map}
         coords={coords}
         zoomLevel={zoom}
         accuracy={accuracy}
@@ -216,7 +215,6 @@ export default PlaceEditorScreen;
 const stylesFn = (Colors) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.backgroundMain },
-    map: { flex: 1 },
     createHeaderButton: {
       backgroundColor: Colors.buttonBrightBg,
       borderRadius: 20,
