@@ -16,7 +16,6 @@ const PlaceEditorScreen = ({ navigation, route }) => {
   const { t } = useTranslation();
   const styles = stylesFn(Colors);
 
-  // Если есть place — режим редактирования
   const { place } = route.params || {};
   const isEditMode = !!place;
 
@@ -43,10 +42,7 @@ const PlaceEditorScreen = ({ navigation, route }) => {
   });
   const [errors, setErrors] = useState({});
 
-  // Инициализация координат
-  const [initialCoords, setInitialCoords] = useState(
-    place?.location?.coordinates ?? [0, 0],
-  );
+  const initialCoords= place?.location?.coordinates ?? [0, 0];
 
   useEffect(() => {
     if (!isEditMode) {
@@ -65,7 +61,6 @@ const PlaceEditorScreen = ({ navigation, route }) => {
     return "";
   }
 
-  // Предложение имени по locationDetails
   useEffect(() => {
     if (!details || isEditMode) return;
     const suggestedName = getSuggestedName(details);
