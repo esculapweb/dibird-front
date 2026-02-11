@@ -9,7 +9,7 @@ const Logo = ({ style, imageSize = 100, withText = false }) => {
     <View style={[styles.imageContainer, style]}>
       <View style={styles.logo}>
         <Image
-          source={require("../../assets/logo-dibird-512.png")}
+          source={require("../../assets/icon.png")}
           style={styles.image}
         />
       </View>
