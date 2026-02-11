@@ -182,7 +182,11 @@ const PlaceEditorScreen = ({ navigation, route }) => {
   };
 
   const handleSavePlace = useCallback(() => {
+
+    console.log('handleSave')
+    
     if (!validateForm()) return;
+    
 
     const normalized = normalizeCoords(lngText, latText, 4);
     if (!normalized) return;
@@ -220,29 +224,27 @@ const PlaceEditorScreen = ({ navigation, route }) => {
   }, [formData, lngText, latText, isEditMode, place]);
 
   const HeaderRight = useCallback(
-    () =>
-      (
-        isEditMode
-          ? updatePlaceMutation.isLoading
-          : createPlaceMutation.isLoading
-      ) ? (
-        <ActivityIndicator size="small" color={Colors.textMain} />
-      ) : (
-        <IconButton
-          icon="checkmark"
-          onPress={handleSavePlace}
-          style={styles.createHeaderButton}
-          size={28}
-          disabled={isLocating}
-          color={Colors.buttonBrightColor}
-        />
-      ),
+    () => (
+      <IconButton
+        icon="checkmark"
+        onPress={handleSavePlace}
+        style={styles.createHeaderButton}
+        size={28}
+        disabled={isLocating}
+        color={Colors.buttonBrightColor}
+        loading={
+          isEditMode
+            ? updatePlaceMutation.isPending
+            : createPlaceMutation.isPending
+        }
+      />
+    ),
     [
       handleSavePlace,
       isLocating,
       isEditMode,
-      createPlaceMutation.isLoading,
-      updatePlaceMutation.isLoading,
+      createPlaceMutation.isPending,
+      updatePlaceMutation.isPending,
     ],
   );
 

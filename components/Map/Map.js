@@ -49,6 +49,9 @@ const Map = ({
     <View style={styles.mapSection}>
       <View style={styles.container} pointerEvents="box-none">
         <MapView
+          // attributionEnabled={false}
+          // logoEnabled={false}
+          attributionPosition={{ bottom: 16, left: 16 }}
           style={{ flex: 1 }}
           onPress={onPress}
           minZoomLevel={1}
@@ -171,7 +174,7 @@ const stylesFn = (Colors, mapHeight) =>
       justifyContent: "center",
       position: "absolute",
       bottom: 16,
-      left: 16,
+      right: 16,
       paddingVertical: 6,
       paddingHorizontal: 12,
       backgroundColor: Colors.overlayBg,

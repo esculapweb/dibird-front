@@ -1,11 +1,27 @@
-import { View, StyleSheet, Pressable } from "react-native";
+import { View, StyleSheet, Pressable, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useTheme } from "../../store/theme-context";
 
-const IconButton = ({ tintColor, onPress, icon, active, style, size=22, disabled }) => {
+const IconButton = ({
+  tintColor,
+  onPress,
+  icon,
+  active,
+  style,
+  size = 22,
+  disabled,
+  loading,
+}) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
+
+  if (loading)
+    return (
+      <View style={style}>
+        <ActivityIndicator size="small" color={Colors.textMain} />
+      </View>
+    );
 
   return (
     <Pressable
@@ -13,11 +29,10 @@ const IconButton = ({ tintColor, onPress, icon, active, style, size=22, disabled
         styles.container,
         pressed && !disabled && styles.pressed,
         style,
-        disabled &&  styles.disabled
+        disabled && styles.disabled,
       ]}
       onPress={disabled ? undefined : onPress}
       hitSlop={12}
-
     >
       <Ionicons name={icon} size={size} color={tintColor} />
 
