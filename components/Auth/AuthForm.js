@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
+import { LinearGradient } from "expo-linear-gradient";
+import { useTheme } from "../../store/theme-context";
 
 import AnimatedLoadingButton from "../ui/AnimatedLoadingButton";
 import Input from "../ui/Input";
@@ -11,6 +13,8 @@ const AuthForm = ({ isLogin, onSubmit, credentialsInvalid, loading }) => {
   const [enteredPassword, setEnteredPassword] = useState("");
   const [enteredConfirmPassword, setEnteredConfirmPassword] = useState("");
   const { t } = useTranslation();
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
 
   const {
     email: emailIsInvalid,
@@ -34,7 +38,7 @@ const AuthForm = ({ isLogin, onSubmit, credentialsInvalid, loading }) => {
         setEnteredConfirmPassword(enteredValue);
         break;
     }
-  }
+  };
 
   const submitHandler = () => {
     onSubmit({
@@ -43,7 +47,7 @@ const AuthForm = ({ isLogin, onSubmit, credentialsInvalid, loading }) => {
       password: enteredPassword,
       confirmPassword: enteredConfirmPassword,
     });
-  }
+  };
 
   return (
     <View>
@@ -78,19 +82,32 @@ const AuthForm = ({ isLogin, onSubmit, credentialsInvalid, loading }) => {
           isInvalid={passwordsDontMatch}
         />
       )}
-      <View style={styles.buttons}>
-        <AnimatedLoadingButton onPress={submitHandler} loading={loading}>
-          {isLogin ? t("log_in") : t("sign_up")}
-        </AnimatedLoadingButton>
+      <View style={styles.buttonContainer}>
+        <LinearGradient
+          colors={[Colors.mainCardAccent + "20", Colors.mainCardAccent + "05"]}
+          start={[0, 0]}
+          end={[1, 1]}
+          style={styles.buttonGradient}
+        >
+          <AnimatedLoadingButton onPress={submitHandler} loading={loading}>
+            {isLogin ? t("log_in") : t("sign_up")}
+          </AnimatedLoadingButton>
+        </LinearGradient>
       </View>
     </View>
   );
-}
+};
 
 export default AuthForm;
 
-const styles = StyleSheet.create({
-  buttons: {
-    marginVertical: 8,
-  },
-});
+const stylesFn = (Colors) =>
+  StyleSheet.create({
+    buttonContainer: {
+      marginVertical: 16,
+      borderRadius: 16,
+      overflow: "hidden",
+    },
+    buttonGradient: {
+      padding: 1,
+    },
+  });
