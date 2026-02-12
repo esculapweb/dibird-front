@@ -16,7 +16,8 @@
       "backgroundColor": "#ffffff",
       "dark": {
         "image": "./assets/splash-dark.png",
-        "backgroundColor": "#121212"
+        "resizeMode": "cover",
+        "backgroundColor": "#0f0f0f"
       }
     },
 
