@@ -181,12 +181,8 @@ const PlaceEditorScreen = ({ navigation, route }) => {
     }
   };
 
-  const handleSavePlace = useCallback(() => {
-
-    console.log('handleSave')
-    
+  const handleSavePlace = useCallback(() => {  
     if (!validateForm()) return;
-    
 
     const normalized = normalizeCoords(lngText, latText, 4);
     if (!normalized) return;

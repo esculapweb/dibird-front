@@ -1,4 +1,5 @@
-import { StyleSheet, View, Text, TouchableOpacity, Dimensions, Animated } from "react-native";
+import { useEffect } from "react";
+import { StyleSheet, View, Text, TouchableOpacity, Dimensions, Animated, ScrollView } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -13,63 +14,169 @@ const MainScreen = ({ navigation }) => {
   const buttonData = [
     { title: t("statistics"), icon: "stats-chart", screen: "Stat" },
     { title: t("places"), icon: "location", screen: "Places" },
-    
+    { title: t("observations"), icon: "binoculars", screen: "Observations" },
+    { title: t("diaries"), icon: "book", screen: "Diaries" },
   ];
+
+  // Получаем текущую дату
+  const today = new Date();
+  const dateOptions = { weekday: 'long', day: 'numeric', month: 'long' };
+  const formattedDate = today.toLocaleDateString('ru-RU', dateOptions);
+  const capitalizedDate = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
 
   return (
     <View style={[styles.rootContainer, { backgroundColor: Colors.backgroundMain }]}>
-      <View style={styles.buttonsContainer}>
-        {buttonData.map((btn) => (
-          <PressableCard
-            key={btn.screen}
-            title={btn.title}
-            icon={btn.icon}
-            onPress={() => navigation.navigate(btn.screen)}
-            Colors={Colors}
-          />
-        ))}
-      </View>
+      {/* Органические фоновые элементы - новые названия цветов */}
+      <View style={[styles.backgroundBlob1, { backgroundColor: Colors.mainBlob1 }]} />
+      <View style={[styles.backgroundBlob2, { backgroundColor: Colors.mainBlob2 }]} />
+      <View style={[styles.backgroundBlob3, { backgroundColor: Colors.mainBlob3 }]} />
+      
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.welcomeSection}>
+          <Text style={[styles.welcomeEmoji]}>🦩</Text>
+          <View>
+            <Text style={[styles.welcomeText, { color: Colors.textSecondary }]}>
+              {t("hello")}
+            </Text>
+            <Text style={[styles.dateText, { color: Colors.mainTextDate }]}>
+              {capitalizedDate}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.quoteContainer}>
+          <LinearGradient
+            colors={[Colors.mainQuoteBg1, Colors.mainQuoteBg2]}
+            start={[0, 0]}
+            end={[1, 1]}
+            style={[styles.quoteCard, { borderColor: Colors.mainQuoteBorder }]}
+          >
+            <Ionicons name="leaf" size={24} color={Colors.mainCardAccent} style={styles.quoteIcon} />
+            <Text style={[styles.quoteText, { color: Colors.textSecondary }]}>
+              {t("daily_quote") || "Каждое наблюдение — это маленькое открытие"}
+            </Text>
+          </LinearGradient>
+        </View>
+
+        <Text style={[styles.sectionTitle, { color: Colors.textMain }]}>
+          {t("your_tools") || "Ваши инструменты"}
+        </Text>
+
+        <View style={styles.organicContainer}>
+          {buttonData.map((btn, index) => (
+            <PressableCardOrganic
+              key={btn.screen}
+              title={btn.title}
+              icon={btn.icon}
+              index={index}
+              onPress={() => navigation.navigate(btn.screen)}
+              Colors={Colors}
+            />
+          ))}
+        </View>
+      </ScrollView>
     </View>
   );
 };
 
 export default MainScreen;
 
-// --- Отдельный компонент кнопки с анимацией ---
-const PressableCard = ({ title, icon, onPress, Colors }) => {
+const PressableCardOrganic = ({ title, icon, index, onPress, Colors }) => {
   const scale = new Animated.Value(1);
-
-  const handlePressIn = () => {
-    Animated.spring(scale, {
-      toValue: 0.95,
-      useNativeDriver: true,
-    }).start();
+  const translateY = new Animated.Value(0);
+  
+  // Разные формы для каждой карточки
+  const getBorderRadius = (idx) => {
+    const radii = [
+      { tl: 30, tr: 50, br: 30, bl: 50 }, // statistics
+      { tl: 50, tr: 30, bl: 30, br: 50 }, // places
+      { tl: 40, tr: 40, br: 60, bl: 30 }, // observations
+      { tl: 60, tr: 30, br: 40, bl: 40 }, // diaries
+    ];
+    return radii[idx % radii.length];
   };
 
-  const handlePressOut = () => {
-    Animated.spring(scale, {
-      toValue: 1,
-      friction: 4,
-      useNativeDriver: true,
-    }).start();
-  };
+  const radiusStyle = getBorderRadius(index);
+  
+  // Разные задержки для анимации
+  const delay = index * 100;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(translateY, {
+          toValue: -6,
+          duration: 2000,
+          delay,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
 
   return (
-    <Animated.View style={{ transform: [{ scale }], marginBottom: 24 }}>
+    <Animated.View style={{ 
+      transform: [{ scale }, { translateY }],
+      marginBottom: 20,
+    }}>
       <TouchableOpacity
         activeOpacity={0.9}
         onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
+        onPressIn={() => {
+          Animated.spring(scale, {
+            toValue: 0.92,
+            useNativeDriver: true,
+          }).start();
+        }}
+        onPressOut={() => {
+          Animated.spring(scale, {
+            toValue: 1,
+            friction: 5,
+            useNativeDriver: true,
+          }).start();
+        }}
       >
         <LinearGradient
-          colors={[Colors.primary300, Colors.primary200]}
+          colors={[Colors.mainCardBg1, Colors.mainCardBg2]}
           start={[0, 0]}
           end={[1, 1]}
-          style={[styles.buttonCard, { backgroundColor: Colors.primary200 }]}
+          style={[
+            styles.organicCard,
+            {
+              backgroundColor: Colors.mainCardBg1,
+              shadowColor: Colors.shadow,
+              borderTopLeftRadius: radiusStyle.tl,
+              borderTopRightRadius: radiusStyle.tr,
+              borderBottomRightRadius: radiusStyle.br,
+              borderBottomLeftRadius: radiusStyle.bl,
+            }
+          ]}
         >
-          <Ionicons name={icon} size={48} color={Colors.accent} style={styles.buttonIcon} />
-          <Text style={[styles.buttonText, { color: Colors.textMain }]}>{title}</Text>
+          {/* Декоративный элемент - точка */}
+          <View style={[styles.organicDot, { backgroundColor: Colors.mainCardDot }]} />
+          
+          {/* Иконка с градиентным фоном */}
+          <LinearGradient
+            colors={[Colors.mainCardIconBg1, Colors.mainCardIconBg2]}
+            start={[0, 0]}
+            end={[1, 1]}
+            style={styles.organicIconContainer}
+          >
+            <Ionicons name={icon} size={42} color={Colors.mainCardAccent} />
+          </LinearGradient>
+          
+          {/* Текст карточки */}
+          <Text style={[styles.organicTitle, { color: Colors.mainTextPrimary }]}>
+            {title}
+          </Text>
+          
+          {/* Декоративная волна */}
+          <View style={[styles.organicWave, { backgroundColor: Colors.mainCardWave }]} />
         </LinearGradient>
       </TouchableOpacity>
     </Animated.View>
@@ -79,39 +186,139 @@ const PressableCard = ({ title, icon, onPress, Colors }) => {
 const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
-    padding: 24,
-    justifyContent: "center",
   },
-  title: {
-    fontSize: 32,
-    fontWeight: "700",
-    marginBottom: 32,
-    textAlign: "center",
+  scrollContent: {
+    paddingBottom: 30,
   },
-  buttonsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-around",
+  backgroundBlob1: {
+    position: 'absolute',
+    width: 250,
+    height: 250,
+    borderRadius: 100,
+    top: -50,
+    right: -80,
+    opacity: 0.6,
+    transform: [{ rotate: '25deg' }],
   },
-  buttonCard: {
+  backgroundBlob2: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 60,
+    bottom: 100,
+    left: -60,
+    opacity: 0.5,
+    transform: [{ rotate: '-15deg' }],
+  },
+  backgroundBlob3: {
+    position: 'absolute',
+    width: 180,
+    height: 180,
+    borderRadius: 50,
+    top: '40%',
+    right: -40,
+    opacity: 0.4,
+    transform: [{ rotate: '45deg' }],
+  },
+  welcomeSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 60,
+    paddingHorizontal: 24,
+    marginBottom: 24,
+  },
+  welcomeEmoji: {
+    fontSize: 44,
+    marginRight: 16,
+  },
+  welcomeText: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  dateText: {
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  quoteContainer: {
+    paddingHorizontal: 24,
+    marginBottom: 40,
+  },
+  quoteCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+    borderRadius: 24,
+    borderLeftWidth: 4,
+    borderWidth: 1,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
+  },
+  quoteIcon: {
+    marginRight: 12,
+  },
+  quoteText: {
+    flex: 1,
+    fontSize: 15,
+    fontStyle: 'italic',
+    lineHeight: 22,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginLeft: 24,
+    marginBottom: 20,
+  },
+  organicContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-around',
+    paddingHorizontal: 12,
+  },
+  organicCard: {
     width: width * 0.42,
     aspectRatio: 1,
-    borderRadius: 24,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
-    padding: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
+    overflow: 'hidden',
+    position: 'relative',
   },
-  buttonIcon: {
-    marginBottom: 12,
+  organicIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    transform: [{ rotate: '-5deg' }],
   },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    textAlign: "center",
+  organicTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  organicDot: {
+    position: 'absolute',
+    top: 15,
+    right: 20,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  organicWave: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 8,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
   },
 });

@@ -43,4 +43,26 @@ export const LightColors = {
 
   markerBorder: "#fff",
   overlayBg: "rgba(255,255,255,0.85)",
+
+  // НОВЫЕ ЦВЕТА ДЛЯ MAINSCREEN
+  // Карточки - теплый светло-серый
+  mainCardBg1: "#dce1e9",
+  mainCardBg2: "#d0d7e1",
+  mainCardAccent: "#f0c24b",
+  mainCardIconBg1: "rgba(240, 194, 75, 0.25)",
+  mainCardIconBg2: "rgba(240, 194, 75, 0.08)",
+  mainCardDot: "#f0c24b",
+  mainCardWave: "rgba(240, 194, 75, 0.18)",
+
+  // Фоновые пятна - просто чуть темнее, без желтизны
+  mainBlob1: "#c9e4de", // Мятный
+  mainBlob2: "rgba(240, 194, 75, 0.2)", // Желтый
+  mainBlob3: "#fad2d8", // Розовый
+
+  mainQuoteBg1: "transparent",
+  mainQuoteBg2: "transparent",
+  mainQuoteBorder: "rgba(240, 194, 75, 0.7)", // Желтая полоса слева
+
+  mainTextPrimary: "#1e2a36",
+  mainTextDate: "#3a4c62",
 };

@@ -53,4 +53,23 @@ export const DarkColors = {
 
   markerBorder: "#fff",
   overlayBg: "rgba(0,0,0,0.8)",
+
+  mainCardBg1: "#1e293b", // = primary200
+  mainCardBg2: "#1f2937", // = primary300
+  mainCardAccent: "#f0c24b", // = accent
+  mainCardIconBg1: "rgba(240, 194, 75, 0.3)", // = accent + '30'
+  mainCardIconBg2: "rgba(240, 194, 75, 0.1)", // = accent + '10'
+  mainCardDot: "#f0c24b", // = accent
+  mainCardWave: "rgba(240, 194, 75, 0.15)", // = accent + '15'
+
+  mainBlob1: "#1e3a3a",        // Темный мятный
+  mainBlob2: "rgba(240, 194, 75, 0.15)", // Теплый желтый
+  mainBlob3: "#3a2a30",        // Темный розовый
+
+  mainQuoteBg1: "transparent", // = primary300 + '80'
+  mainQuoteBg2: "transparent", // = primary200 + '80'
+  mainQuoteBorder: "rgba(240, 194, 75, 0.7)", // Желтая полоса слева
+
+  mainTextPrimary: "#e5e7eb", // = textMain
+  mainTextDate: "#f0c24b", // = accent
 };
