@@ -148,14 +148,18 @@ const AppNavigator = () => {
         options={{
           title: t("statistics"),
           headerBackTitleVisible: false,
-          headerBackTitle: "",
+          headerBackTitle: t("main"),
         }}
       />
 
       <Stack.Screen
         name="Places"
         component={PlacesScreen}
-        options={{ title: t("places") }}
+        options={{
+          title: t("places"),
+          headerBackTitleVisible: false,
+          headerBackTitle: t("main"),
+        }}
       />
 
       <Stack.Screen
@@ -164,7 +168,6 @@ const AppNavigator = () => {
         options={{
           title: t(""),
           headerBackTitleVisible: false,
-          // headerBackTitle: t("places"),
         }}
       />
 
