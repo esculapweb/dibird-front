@@ -90,7 +90,6 @@ const AuthContent = ({ isLogin, onAuthenticate, loading }) => {
 
   return (
     <View style={styles.safeArea}>
-      {/* Органические фоновые элементы */}
       <View style={styles.backgroundBlob1} />
       <View style={styles.backgroundBlob2} />
       <View style={styles.backgroundBlob3} />
@@ -105,7 +104,6 @@ const AuthContent = ({ isLogin, onAuthenticate, loading }) => {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.inner}>
-            {/* Приветствие с фламинго */}
             <View style={styles.welcomeSection}>
               <Text style={styles.welcomeEmoji}>🦩</Text>
               <View>
@@ -118,7 +116,6 @@ const AuthContent = ({ isLogin, onAuthenticate, loading }) => {
               </View>
             </View>
 
-            {/* Карточка с логотипом и формой */}
             <LinearGradient
               colors={[Colors.mainCardBg1, Colors.mainCardBg2]}
               start={[0, 0]}

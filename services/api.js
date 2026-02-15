@@ -115,13 +115,10 @@ export const showError = (e, extractApiErrorFn = null) => {
 export const createTranslatedError = (error) => {
   const normalizedError = normalizeApiError(error);
 
-  // Используем существующую логику mapErrorToToast для получения перевода
   const { title, message } = mapErrorToToast(normalizedError, null);
 
-  // Создаем новую ошибку с переведенным сообщением
   const translatedError = new Error(message);
 
-  // Сохраняем все оригинальные данные
   translatedError.title = title;
   translatedError.message = message;
   translatedError.code = normalizedError.code;
@@ -129,7 +126,6 @@ export const createTranslatedError = (error) => {
   translatedError.originalError = error;
   translatedError.response = error.response;
 
-  // Добавляем флаги для удобства
   translatedError.isTimeout = normalizedError.isTimeout;
   translatedError.isNetworkError = normalizedError.isNetworkError;
   translatedError.isServerError = normalizedError.isServerError;
@@ -258,7 +254,6 @@ export const getErrorDetails = (error) => {
     };
   }
 
-  // Fallback для старых ошибок
   const { title, message } = mapErrorToToast(error);
   return {
     title,

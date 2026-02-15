@@ -35,7 +35,6 @@ const PlaceForm = ({
 
   const territories = queryTerritories.data ?? [];
 
-  // Авто-установка страны
   useEffect(() => {
     if (!territories.length || !locationDetails?.countryCode) return;
 

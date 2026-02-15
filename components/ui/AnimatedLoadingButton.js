@@ -11,7 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../store/theme-context";
 
 const BUTTON_HEIGHT = 48;
-const SUCCESS_DISPLAY_TIME = 3000; // 10 секунд
+const SUCCESS_DISPLAY_TIME = 3000; 
 
 const AnimatedLoadingButton = ({ onPress, loading, success, children }) => {
   const { Colors } = useTheme();
@@ -20,7 +20,6 @@ const AnimatedLoadingButton = ({ onPress, loading, success, children }) => {
   const spinnerOpacity = useRef(new Animated.Value(0)).current;
   const successOpacity = useRef(new Animated.Value(0)).current;
 
-  // Анимация спиннера при loading
   useEffect(() => {
     Animated.timing(spinnerOpacity, {
       toValue: loading ? 1 : 0,
@@ -29,10 +28,8 @@ const AnimatedLoadingButton = ({ onPress, loading, success, children }) => {
     }).start();
   }, [loading]);
 
-  // Анимация галочки при success
   useEffect(() => {
     if (success) {
-      // Запускаем последовательность: показать → задержка → скрыть
       Animated.sequence([
         Animated.timing(successOpacity, {
           toValue: 1,
@@ -62,12 +59,10 @@ const AnimatedLoadingButton = ({ onPress, loading, success, children }) => {
       <View style={styles.content}>
         <Text style={styles.text}>{children}</Text>
 
-        {/** Спиннер */}
         <Animated.View style={[styles.spinner, { opacity: spinnerOpacity }]}>
           <ActivityIndicator size="small" color={Colors.buttonPrimaryText} />
         </Animated.View>
 
-        {/** Галочка */}
         <Animated.View style={[styles.spinner, { opacity: successOpacity }]}>
           <Ionicons
             name="checkmark"

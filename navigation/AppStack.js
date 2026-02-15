@@ -162,7 +162,7 @@ const AppNavigator = () => {
         name="PlaceDetail"
         component={PlaceDetailScreen}
         options={{
-          title: t("place"),
+          title: t(""),
           headerBackTitleVisible: false,
           // headerBackTitle: t("places"),
         }}

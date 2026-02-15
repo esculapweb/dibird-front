@@ -81,10 +81,6 @@ const Places = ({
             />
           ) : null
         }
-        // Дополнительные пропсы для стабильности
-        // removeClippedSubviews={false} // Может помочь в некоторых случаях
-        // maxToRenderPerBatch={10} // Ограничить batch рендеринг
-        // windowSize={5} // Уменьшить window size
       />
 
       <Pressable style={styles.fab} onPress={onAddPlace}>

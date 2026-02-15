@@ -27,7 +27,6 @@ const MainScreen = ({ navigation }) => {
     { title: t("diaries"), icon: "book", screen: "Diaries" },
   ];
 
-  // Получаем текущую дату
   const today = new Date();
   const dateOptions = { weekday: "long", day: "numeric", month: "long" };
   const formattedDate = today.toLocaleDateString("ru-RU", dateOptions);
@@ -38,7 +37,6 @@ const MainScreen = ({ navigation }) => {
     <View
       style={[styles.rootContainer, { backgroundColor: Colors.backgroundMain }]}
     >
-      {/* Органические фоновые элементы */}
       <View style={styles.backgroundBlob1} />
       <View style={styles.backgroundBlob2} />
       <View style={styles.backgroundBlob3} />
@@ -69,13 +67,13 @@ const MainScreen = ({ navigation }) => {
               style={styles.quoteIcon}
             />
             <Text style={styles.quoteText}>
-              {t("daily_quote") || "Каждое наблюдение — это маленькое открытие"}
+              {t("daily_quote")}
             </Text>
           </LinearGradient>
         </View>
 
         <Text style={styles.sectionTitle}>
-          {t("your_tools") || "Ваши инструменты"}
+          {t("your_tools")}
         </Text>
 
         <View style={styles.organicContainer}>
@@ -102,7 +100,6 @@ const PressableCardOrganic = ({ title, icon, index, onPress, Colors }) => {
   const translateY = new Animated.Value(0);
   const styles = stylesFn(Colors);
 
-  // Разные формы для каждой карточки
   const getBorderRadius = (idx) => {
     const radii = [
       { tl: 30, tr: 50, br: 30, bl: 50 },

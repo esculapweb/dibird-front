@@ -4,12 +4,12 @@ export const LightNavigationTheme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    primary: "#1f2937",        // кнопки / акценты
-    background: "#f0f0f0",     // общий фон
-    card: "#ffffff",            // фон header / drawer
-    text: "#1f2937",            // цвет текста
-    border: "#ced4da",          // бордеры
-    notification: "#f0c24b",    // уведомления
+    primary: "#1f2937",        
+    background: "#f0f0f0",     
+    card: "#ffffff",            
+    text: "#1f2937",            
+    border: "#ced4da",          
+    notification: "#f0c24b",   
   },
 };
 

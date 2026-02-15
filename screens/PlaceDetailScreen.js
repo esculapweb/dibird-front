@@ -158,7 +158,7 @@ const PlaceDetailScreen = ({ route, navigation }) => {
               <StatBig
                 icon="book-outline"
                 value={place.diary_count}
-                label={t("diary")}
+                label={t("diaries")}
                 onPress={handleDiariesPress}
               />
             </View>
