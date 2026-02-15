@@ -1,11 +1,5 @@
 import { useEffect, useCallback } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Alert,
-} from "react-native";
+import { View, Text, StyleSheet, ScrollView, Alert } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import { useTheme } from "../store/theme-context";
@@ -20,6 +14,7 @@ import Map from "../components/Map/Map";
 
 import { usePlace } from "../hooks/usePlace";
 import { useUpdatePlace, useDeletePlace } from "../hooks/usePlaceMutation";
+import { showError } from "../services/api";
 
 const PlaceDetailScreen = ({ route, navigation }) => {
   const { placeId } = route.params;
@@ -37,11 +32,7 @@ const PlaceDetailScreen = ({ route, navigation }) => {
     updateMutation.mutate(
       { favourite: !place.favourite },
       {
-        onError: (error) => {
-          // Можно показать toast или alert
-          console.error("Failed to toggle favourite:", error);
-          // Или: Alert.alert(t("error"), t("favourite_update_failed"));
-        },
+        onError: (e) => showError(e),
       },
     );
   }, [place, updateMutation]);
@@ -55,7 +46,7 @@ const PlaceDetailScreen = ({ route, navigation }) => {
           onPress={() => navigation.navigate("PlaceEditor", { place })}
           style={styles.iconButton}
           size={24}
-          disabled={!place || updateMutation.isLoading}
+          disabled={!place || updateMutation.isPending}
         />
         <IconButton
           tintColor={Colors.accent}
@@ -63,11 +54,12 @@ const PlaceDetailScreen = ({ route, navigation }) => {
           onPress={handleFavourite}
           style={styles.iconButton}
           size={24}
-          disabled={updateMutation.isLoading || !place}
+          disabled={updateMutation.isPending || !place}
+          loading={updateMutation.isPending}
         />
       </View>
     ),
-    [place?.favourite, handleFavourite, updateMutation.isLoading],
+    [place, handleFavourite, updateMutation.isPending],
   );
 
   const handleDelete = useCallback(() => {
@@ -83,8 +75,8 @@ const PlaceDetailScreen = ({ route, navigation }) => {
           onPress: () =>
             deletePlace.mutate(placeId, {
               onSuccess: () => navigation.goBack(),
-              onError: (error) => {
-                Alert.alert(t("error"), error.message || t("delete_failed"));
+              onError: (e) => {
+                showError(e);
               },
             }),
         },
@@ -127,7 +119,7 @@ const PlaceDetailScreen = ({ route, navigation }) => {
     );
   }
 
-  if (isLoading || !place || updateMutation.isLoading) {
+  if (isLoading || !place) {
     return <LoadingOverlay />;
   }
 
@@ -147,12 +139,7 @@ const PlaceDetailScreen = ({ route, navigation }) => {
             </View>
           </View>
 
-            <Map
-              currentCoords={[lng, lat]}
-              mapHeight={340}
-              showCoords={true}
-            />
-
+          <Map currentCoords={[lng, lat]} mapHeight={340} showCoords={true} />
 
           <View style={styles.footer}>
             <View style={styles.stats}>

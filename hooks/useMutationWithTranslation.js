@@ -1,25 +1,22 @@
-import { useMutation } from '@tanstack/react-query';
-import { useApiError } from './useApiError';
+import { useMutation } from "@tanstack/react-query";
+import { useApiError } from "./useApiError";
 
 export const useMutationWithTranslation = (options) => {
-  const { getTranslatedError, showErrorToast } = useApiError();
+  const { showErrorToast } = useApiError();
 
   return useMutation({
     ...options,
     onError: (error, variables, context) => {
-      // console.error('Mutation error:', {
-      //   mutationKey: options.mutationKey,
-      //   error: getTranslatedError(error),
-      //   variables,
-      // });
+      const isValidationError =
+        error?.status === 400 &&
+        error?.response?.data &&
+        typeof error.response.data === "object";
 
-      if (options.showErrorToast !== false) {
+      if (!isValidationError && options.showErrorToast !== false) {
         showErrorToast(error);
       }
 
-      if (options.onError) {
-        options.onError(error, variables, context);
-      }
+      options.onError?.(error, variables, context);
     },
   });
 };

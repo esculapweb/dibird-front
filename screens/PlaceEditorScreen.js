@@ -1,11 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import {
-  Platform,
-  Alert,
-  ActivityIndicator,
-  StyleSheet,
-  Dimensions,
-} from "react-native";
+import { Platform, StyleSheet, Dimensions } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 import { useTranslation } from "react-i18next";
@@ -16,11 +10,14 @@ import IconButton from "../components/ui/IconButton";
 import PlaceForm from "../components/Place/PlaceForm";
 import { usePlaceLocation, normalizeCoords } from "../hooks/usePlaceLocation";
 import Map from "../components/Map/Map";
+import { showError } from "../services/api";
 
 const PlaceEditorScreen = ({ navigation, route }) => {
   const { Colors } = useTheme();
   const { t } = useTranslation();
   const styles = stylesFn(Colors);
+
+  const FORM_FIELDS = ["name", "territory", "latitude", "longitude"];
 
   const { place } = route.params || {};
   const isEditMode = !!place;
@@ -141,16 +138,27 @@ const PlaceEditorScreen = ({ navigation, route }) => {
     return Object.keys(newErrors).length === 0;
   }, [formData, latText, lngText, t]);
 
-  const handleMutateError = (err, message) => {
-    if (err.response?.data) {
-      message =
-        typeof err.response.data === "string"
-          ? err.response.data
-          : Object.entries(err.response.data)
-              .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
-              .join("\n");
+  const extractApiError = (e) => {
+    return {
+      title: isEditMode ? t("update_failed") : t("create_failed"),
+      message:
+        Object.values(e?.response?.data).flat().join("\n") ||
+        (isEditMode
+          ? t("could_not_update_place")
+          : t("could_not_create_place")),
+    };
+  };
+
+  const handleMutateError = (e) => {
+    const data = e?.response?.data;
+    if (!data) {
+      showError(e, extractApiError);
+      return;
     }
-    Alert.alert(t("error"), message);
+    const errorField = FORM_FIELDS.find((field) => data?.[field]);
+    errorField
+      ? setErrors((prev) => ({ ...prev, [errorField]: data[errorField] }))
+      : showError(e, extractApiError);
   };
 
   const handleCoordsChange = ([lngInput, latInput], options) => {
@@ -181,7 +189,7 @@ const PlaceEditorScreen = ({ navigation, route }) => {
     }
   };
 
-  const handleSavePlace = useCallback(() => {  
+  const handleSavePlace = useCallback(() => {
     if (!validateForm()) return;
 
     const normalized = normalizeCoords(lngText, latText, 4);
@@ -206,7 +214,7 @@ const PlaceEditorScreen = ({ navigation, route }) => {
     if (isEditMode) {
       updatePlaceMutation.mutate(placeData, {
         onSuccess: () => navigation.goBack(),
-        onError: (err) => handleMutateError(err, t("update_failed")),
+        onError: (e) => handleMutateError(e),
       });
     } else {
       createPlaceMutation.mutate(placeData, {
@@ -214,7 +222,7 @@ const PlaceEditorScreen = ({ navigation, route }) => {
           requestAnimationFrame(() =>
             navigation.replace("PlaceDetail", { placeId: res.data.id }),
           ),
-        onError: (err) => handleMutateError(err, t("create_failed")),
+        onError: (e) => handleMutateError(e),
       });
     }
   }, [formData, lngText, latText, isEditMode, place]);
@@ -226,13 +234,12 @@ const PlaceEditorScreen = ({ navigation, route }) => {
         onPress={handleSavePlace}
         style={styles.createHeaderButton}
         size={28}
-        disabled={isLocating}
-        color={Colors.buttonBrightColor}
-        loading={
-          isEditMode
+        disabled={
+          isLocating || isEditMode
             ? updatePlaceMutation.isPending
             : createPlaceMutation.isPending
         }
+        color={Colors.buttonBrightColor}
       />
     ),
     [
@@ -252,7 +259,7 @@ const PlaceEditorScreen = ({ navigation, route }) => {
   }, [navigation, HeaderRight, isEditMode]);
 
   if (
-    isEditMode ? updatePlaceMutation.isLoading : createPlaceMutation.isLoading
+    isEditMode ? updatePlaceMutation.isPending : createPlaceMutation.isPending
   )
     return <LoadingOverlay />;
 

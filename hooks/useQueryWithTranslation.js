@@ -7,7 +7,7 @@ export const useQueryWithTranslation = (options) => {
   return useQuery({
     ...options,
     onError: (error, ...args) => {
-      console.error('Query error:', {
+      console.info('Query error:', {
         queryKey: options.queryKey,
         error: getTranslatedError(error),
       });

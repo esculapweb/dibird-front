@@ -93,20 +93,12 @@ export const useUpdatePlace = (id) => {
 
       return { prevPlace, prevPlaces };
     },
-    // onSuccess: (data) => {
-    //   console.log("Update successful:", data);
-    // },
-    onError: (err, newData, ctx) => {
-      console.error("Update place error:", err);
-      console.error("Failed data:", newData);
-
+    onError: (e, newData, ctx) => {
       if (ctx?.prevPlace) {
         queryClient.setQueryData(["place", id], ctx.prevPlace);
-        console.info("Rolled back place data");
       }
       if (ctx?.prevPlaces) {
         queryClient.setQueryData(["places"], ctx.prevPlaces);
-        console.info("Rolled back places list");
       }
     },
     onSettled: () => {

@@ -1,5 +1,8 @@
+
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import Toast from "react-native-toast-message";
+
 import { getErrorDetails } from '../services/api';
 
 export const useApiError = () => {
@@ -36,7 +39,7 @@ export const useApiError = () => {
       });
     }
     
-    console.error('API Error:', {
+    console.info('API Error:', {
       title,
       message,
       originalError: error,
