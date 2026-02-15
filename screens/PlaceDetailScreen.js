@@ -21,7 +21,7 @@ const PlaceDetailScreen = ({ route, navigation }) => {
   const { data: place, isLoading, isError, error, refetch } = usePlace(placeId);
 
   const updateMutation = useUpdatePlace(placeId);
-  const deletePlace = useDeletePlace();
+  const deleteMutation = useDeletePlace();
   const { Colors } = useTheme();
   const { t } = useTranslation();
 
@@ -73,7 +73,7 @@ const PlaceDetailScreen = ({ route, navigation }) => {
           text: t("delete"),
           style: "destructive",
           onPress: () =>
-            deletePlace.mutate(placeId, {
+            deleteMutation.mutate(placeId, {
               onSuccess: () => navigation.goBack(),
               onError: (e) => {
                 showError(e);
@@ -83,7 +83,7 @@ const PlaceDetailScreen = ({ route, navigation }) => {
       ],
       { cancelable: true },
     );
-  }, [place, placeId, deletePlace, navigation]);
+  }, [place, placeId, deleteMutation, navigation]);
 
   const handleObservationsPress = useCallback(() => {
     console.log("show observations");
@@ -180,6 +180,7 @@ const PlaceDetailScreen = ({ route, navigation }) => {
           textColor={Colors.error600}
           onPress={handleDelete}
           icon="trash-outline"
+          loading={deleteMutation.isPending}
         >
           {t("delete")}
         </FlatButtonBottom>

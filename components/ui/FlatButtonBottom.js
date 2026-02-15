@@ -1,11 +1,27 @@
-import { Pressable, StyleSheet, View, Text } from "react-native";
+import {
+  Pressable,
+  StyleSheet,
+  View,
+  Text,
+  ActivityIndicator,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useTheme } from "../../store/theme-context";
 
-const FlatButtonBottom = ({ children, onPress, textColor, icon }) => {
+const FlatButtonBottom = ({ children, onPress, textColor, icon, loading }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
+
+  if (loading)
+    return (
+      <View style={styles.flatButtonContainer}>
+        <ActivityIndicator
+          size="small"
+          color={textColor ? textColor : Colors.link}
+        />
+      </View>
+    );
 
   return (
     <Pressable
@@ -15,10 +31,15 @@ const FlatButtonBottom = ({ children, onPress, textColor, icon }) => {
         pressed && styles.pressed,
       ]}
     >
-      <View >
-        
+      <View>
         <Text style={[styles.buttonText, textColor && { color: textColor }]}>
-          {icon && <Ionicons name={icon} size={22} color={textColor ? textColor: Colors.link} />}{" "}
+          {icon && (
+            <Ionicons
+              name={icon}
+              size={22}
+              color={textColor ? textColor : Colors.link}
+            />
+          )}{" "}
           {children}
         </Text>
       </View>
