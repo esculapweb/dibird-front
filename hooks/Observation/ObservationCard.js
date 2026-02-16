@@ -1,14 +1,14 @@
 import { StyleSheet, Text, View } from 'react-native'
 import React from 'react'
 
-const Observations = () => {
+const ObservationCard = () => {
   return (
     <View>
-      <Text>Observations</Text>
+      <Text>ObservationCard</Text>
     </View>
   )
 }
 
-export default Observations
+export default ObservationCard
 
 const styles = StyleSheet.create({})

@@ -1,8 +1,8 @@
 import { useTranslation } from "react-i18next";
 
-import Places from "../components/Place/Places";
-import { fetchPlaces } from "../util/fetches";
 import ListScreen from "./ListScreen";
+import { fetchPlaces } from "../util/fetches";
+import PlaceCard from "../components/Place/PlaceCard";
 
 const PlacesScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
@@ -22,16 +22,26 @@ const PlacesScreen = ({ route, navigation }) => {
     // { label: t("diary_count_desc"), value: "-diary_count" },
   ];
 
+  const handleAdd = () => navigation.navigate("PlaceEditor")
+
+  const noItems = {
+      icon: "location-outline",
+      message: t("no_places_yet"),
+      actions: [{ label: t("add_first_place"), onPress: handleAdd }],
+    };
+  
+
   return (
     <ListScreen
       route={route}
       navigation={navigation}
       fetchFunction={fetchPlaces}
-      ListComponent={Places}
       sortOptions={SORT_OPTIONS}
       allowedFilters={["territory", "favourite"]}
       errorTitle={t("places_unavailable")}
-      onAdd={() => navigation.navigate("PlaceEditor")}
+      onAdd={handleAdd}
+      ItemCard={PlaceCard}
+      noItems={noItems}
     />
   );
 };

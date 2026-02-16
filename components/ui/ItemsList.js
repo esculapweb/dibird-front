@@ -8,22 +8,24 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 
 import { useTheme } from "../../store/theme-context";
-import PlaceCard from "./PlaceCard";
 import EmptyState from "../Empty/EmptyState";
 
-const Places = ({
+const ItemsList = ({
   data,
+  screen,
   onEndReached,
   isLoadingMore,
-  onAddPlace,
+  onAdd,
   emptyType,
   onClear,
+  ItemCard,
+  noItems
 }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const { t } = useTranslation();
 
-  const renderPlace = ({ item }) => <PlaceCard item={item} />;
+  const renderItem = ({ item }) => <ItemCard item={item} />;
 
   const getEmptyProps = () => {
     if (!emptyType) return null;
@@ -36,11 +38,7 @@ const Places = ({
       };
     }
 
-    return {
-      icon: "location-outline",
-      message: t("no_places_yet"),
-      actions: [{ label: t("add_first_place"), onPress: onAddPlace }],
-    };
+    return noItems;
   };
 
   const emptyProps = getEmptyProps();
@@ -51,11 +49,11 @@ const Places = ({
         data={data}
         keyExtractor={(item, index) => {
           if (item?.id) {
-            return `place-${item.id}`;
+            return `${screen}-${item.id}`;
           }
-          return `place-${index}-${Date.now()}`;
+          return `${screen}-${index}-${Date.now()}`;
         }}
-        renderItem={renderPlace}
+        renderItem={renderItem}
         contentContainerStyle={[
           styles.list,
           data.length === 0 && { flexGrow: 1 },
@@ -83,14 +81,14 @@ const Places = ({
         }
       />
 
-      <Pressable style={styles.fab} onPress={onAddPlace}>
+      <Pressable style={styles.fab} onPress={onAdd}>
         <Ionicons name="add" size={28} color={Colors.buttonBrightColor} />
       </Pressable>
     </>
   );
 };
 
-export default Places;
+export default ItemsList;
 
 const stylesFn = (Colors) =>
   StyleSheet.create({

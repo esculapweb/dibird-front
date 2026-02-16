@@ -1,8 +1,8 @@
 import { useTranslation } from "react-i18next";
 
-import Observations from "../components/Observation/Observations";
-import { fetchObservations } from "../util/fetches";
 import ListScreen from "./ListScreen";
+import { fetchObservations } from "../util/fetches";
+import ObservationCard from "../hooks/Observation/ObservationCard";
 
 const ObservationsScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
@@ -16,16 +16,25 @@ const ObservationsScreen = ({ route, navigation }) => {
     { label: t("alphabetic_desc"), value: "-name" },
   ];
 
+  const handleAdd = () => navigation.navigate("ObservationEditor");
+
+  const noItems = {
+    icon: "location-outline",
+    message: t("no_observations_yet"),
+    actions: [{ label: t("add_first_observation"), onPress: handleAdd }],
+  };
+
   return (
     <ListScreen
       route={route}
       navigation={navigation}
       fetchFunction={fetchObservations}
-      ListComponent={Observations}
       sortOptions={SORT_OPTIONS}
       allowedFilters={["territory", "place", "date"]} //species
       errorTitle={t("observations_unavailable")}
-      onAdd={() => navigation.navigate("ObservationEditor")}
+      onAdd={handleAdd}
+      ItemCard={ObservationCard}
+      noItems={noItems}
     />
   );
 };

@@ -11,16 +11,18 @@ import { useDebounce } from "../util/useDebounce";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import FiltersHeader from "../components/ui/FiltersHeader";
 import { useList } from "../hooks/useList";
+import ItemsList from "../components/ui/ItemsList";
 
 const ListScreen = ({
   route,
   navigation,
   fetchFunction,
-  ListComponent,
   sortOptions,
   allowedFilters,
   errorTitle,
   onAdd,
+  ItemCard,
+  noItems
 }) => {
   const { t } = useTranslation();
 
@@ -146,13 +148,16 @@ const ListScreen = ({
         placeholder={t("search_by_name")}
       />
 
-      <ListComponent
+      <ItemsList
         data={items}
+        screen={screenName}
         onEndReached={handleLoadMore}
         isLoadingMore={isFetchingNextPage}
-        onAddPlace={onAdd}
+        onAdd={onAdd}
         emptyType={emptyType}
         onClear={handleClearFiltersSearch}
+        ItemCard={ItemCard}
+        noItems={noItems}
       />
 
       <SortModal
