@@ -227,7 +227,7 @@ const PlaceEditorScreen = ({ navigation, route }) => {
     }
   }, [formData, lngText, latText, isEditMode, place]);
 
-  const HeaderRight = useCallback(
+  const headerRight = useCallback(
     () => (
       <IconButton
         icon="checkmark"
@@ -254,9 +254,9 @@ const PlaceEditorScreen = ({ navigation, route }) => {
   useEffect(() => {
     navigation.setOptions({
       title: isEditMode ? t("edit_place") : t("new_place"),
-      headerRight: HeaderRight,
+      headerRight,
     });
-  }, [navigation, HeaderRight, isEditMode]);
+  }, [navigation, headerRight, isEditMode]);
 
   if (
     isEditMode ? updatePlaceMutation.isPending : createPlaceMutation.isPending
