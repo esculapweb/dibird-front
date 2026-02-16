@@ -1,7 +1,6 @@
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useContext } from "react";
+import { useContext, useState } from "react";
 import Navigation from "./navigation/Navigation";
-import * as SplashScreen from "expo-splash-screen";
 import Toast from "react-native-toast-message";
 import { ActionSheetProvider } from "@expo/react-native-action-sheet";
 import "./services/i18n";
@@ -12,8 +11,9 @@ import { ProfileProvider } from "./store/profile-context";
 import { LanguageProvider } from "./store/language-context";
 import { ThemeProvider, useTheme } from "./store/theme-context";
 import ThemedToast from "./components/ui/ThemedToast";
-
 import { showError } from "./services/api";
+
+import CustomSplash from "./components/ui/СustomSplash";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -43,20 +43,13 @@ const queryClient = new QueryClient({
   },
 });
 
-SplashScreen.preventAutoHideAsync();
-
 const Root = () => {
   const { isInitializing } = useContext(AuthContext);
   const { theme } = useTheme();
+  const [splashFinished, setSplashFinished] = useState(false);
 
-  useEffect(() => {
-    if (!isInitializing) {
-      SplashScreen.hide();
-    }
-  }, [isInitializing]);
-
-  if (isInitializing) {
-    return null;
+  if (isInitializing || !splashFinished) {
+    return <CustomSplash onFinish={() => setSplashFinished(true)} />;
   }
 
   return (
@@ -72,18 +65,16 @@ const Root = () => {
 
 export default function App() {
   return (
-    <>
-      <QueryClientProvider client={queryClient}>
-        <LanguageProvider>
-          <ThemeProvider>
-            <AuthContextProvider>
-              <ProfileProvider>
-                <Root />
-              </ProfileProvider>
-            </AuthContextProvider>
-          </ThemeProvider>
-        </LanguageProvider>
-      </QueryClientProvider>
-    </>
+    <QueryClientProvider client={queryClient}>
+      <LanguageProvider>
+        <ThemeProvider>
+          <AuthContextProvider>
+            <ProfileProvider>
+              <Root />
+            </ProfileProvider>
+          </AuthContextProvider>
+        </ThemeProvider>
+      </LanguageProvider>
+    </QueryClientProvider>
   );
 }
