@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 
 import StatsTabs from "../navigation/StatsTabs";
@@ -55,6 +55,17 @@ const StatScreen = ({ route, navigation }) => {
 
   const handleAddObservation = () => console.log("add observation");
 
+  const headerRight = useCallback(
+    () => (
+      <FiltersHeader
+        hasActiveFilters={hasActiveFilters}
+        onSortPress={handleSortPress}
+        onFilterPress={handleFilterPress}
+      />
+    ),
+    [filters, sort],
+  );
+
   useEffect(() => {
     const initFilters = async () => {
       const storedFilters = await loadFilters(route.name);
@@ -80,15 +91,9 @@ const StatScreen = ({ route, navigation }) => {
 
   useEffect(() => {
     navigation.setOptions({
-      headerRight: () => (
-        <FiltersHeader
-          hasActiveFilters={hasActiveFilters}
-          onSortPress={handleSortPress}
-          onFilterPress={handleFilterPress}
-        />
-      ),
+      headerRight,
     });
-  }, [navigation, filters, sort]);
+  }, [navigation, headerRight]);
 
   useEffect(() => {
     if (!filters) return;

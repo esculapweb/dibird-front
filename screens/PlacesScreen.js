@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 
 import LoadingOverlay from "../components/ui/LoadingOverlay";
@@ -96,6 +96,17 @@ const PlacesScreen = ({ route, navigation }) => {
   const handleSortPress = () => setSortModalVisible(true);
   const handleAddPlace = () => navigation.navigate("PlaceEditor");
 
+  const headerRight = useCallback(
+    () => (
+      <FiltersHeader
+        hasActiveFilters={hasActiveFilters}
+        onSortPress={handleSortPress}
+        onFilterPress={handleFilterPress}
+      />
+    ),
+    [filters, sort],
+  );
+
   useEffect(() => {
     const initFilters = async () => {
       const storedFilters = await loadFilters(route.name);
@@ -119,15 +130,9 @@ const PlacesScreen = ({ route, navigation }) => {
 
   useEffect(() => {
     navigation.setOptions({
-      headerRight: () => (
-        <FiltersHeader
-          hasActiveFilters={hasActiveFilters}
-          onSortPress={handleSortPress}
-          onFilterPress={handleFilterPress}
-        />
-      ),
+      headerRight,
     });
-  }, [navigation, filters, sort]);
+  }, [navigation, headerRight]);
 
   if (isError)
     return (
