@@ -22,7 +22,6 @@ const ObservationCard = React.memo(({ item }) => {
   const handlePress = () => {
     navigation.navigate("ObservationDetail", { observationId: item.id });
   };
-  
 
   return (
     <Pressable
@@ -103,14 +102,18 @@ const ObservationCard = React.memo(({ item }) => {
 
           {/* PLACE */}
           <View style={styles.placeRow}>
-            <Ionicons
-              name="location-outline"
-              size={13}
-              color={Colors.textSecondary}
-            />
-            <Text style={styles.placeText} numberOfLines={1}>
-              {item.place_data?.name}
-            </Text>
+            {item.place ? (
+              <>
+                <Ionicons
+                  name="location-outline"
+                  size={13}
+                  color={Colors.textSecondary}
+                />
+                <Text style={styles.placeText} numberOfLines={1}>
+                  {item.place_data?.name}
+                </Text>
+              </>
+            ) : <Text style={{flex:1}}></Text>}
 
             {item.notes && (
               <Ionicons
