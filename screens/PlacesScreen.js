@@ -1,17 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 
-import LoadingOverlay from "../components/ui/LoadingOverlay";
-import FilterModal from "../components/Filters/FilterModal";
-import SortModal from "../components/Sort/SortModal";
-import { loadFilters, clearFilters, loadSort } from "../util/storageHelper";
-import { normalizeValue } from "../util/fetches";
 import Places from "../components/Place/Places";
-import SearchInput from "../components/ui/SearchInput";
-import { useDebounce } from "../util/useDebounce";
-import { usePlaces } from "../hooks/Place/usePlaces";
-import ErrorOverlay from "../components/Error/ErrorOverlay";
-import FiltersHeader from "../components/ui/FiltersHeader";
+import { fetchPlaces } from "../util/fetches";
+import ListScreen from "./ListScreen";
 
 const PlacesScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
@@ -31,156 +22,17 @@ const PlacesScreen = ({ route, navigation }) => {
     // { label: t("diary_count_desc"), value: "-diary_count" },
   ];
 
-  const ALLOWED_FILTERS = ["territory", "favourite"];
-
-  const [filters, setFilters] = useState(null);
-  const [sort, setSort] = useState(null);
-  const [filterModalVisible, setFilterModalVisible] = useState(false);
-  const [sortModalVisible, setSortModalVisible] = useState(false);
-
-  const [search, setSearch] = useState("");
-  const debouncedSearch = useDebounce(search, 400);
-
-  const hasActiveFilters = filters
-    ? Object.values(filters).some((v) =>
-        Array.isArray(v) ? v.length > 0 : v != null && v !== "",
-      )
-    : false;
-
-  const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isLoading,
-    isError,
-    error,
-    refetch,
-  } = usePlaces({
-    filters,
-    sort,
-    search: debouncedSearch,
-  });
-  const places = data?.pages.flatMap((page) => page.results) ?? [];
-
-  const isEmpty = places.length === 0;
-  const isSearchActive = debouncedSearch.length > 0;
-
-  const emptyType =
-    !isLoading && isEmpty
-      ? isSearchActive || hasActiveFilters
-        ? "filtered"
-        : "initial"
-      : null;
-
-  const handleLoadMore = () => {
-    if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
-    }
-  };
-
-  const handleClearFilters = async () => {
-    setFilters({});
-    await clearFilters(route.name);
-    setFilterModalVisible(false);
-  };
-
-  const handleClearSearch = () => setSearch("");
-
-  const handleClearFiltersSearch = () => {
-    handleClearSearch();
-    handleClearFilters();
-  };
-
-  const handleFilterPress = () => setFilterModalVisible(true);
-  const handleSortPress = () => setSortModalVisible(true);
-  const handleAddPlace = () => navigation.navigate("PlaceEditor");
-
-  const headerRight = useCallback(
-    () => (
-      <FiltersHeader
-        hasActiveFilters={hasActiveFilters}
-        onSortPress={handleSortPress}
-        onFilterPress={handleFilterPress}
-      />
-    ),
-    [filters, sort],
-  );
-
-  useEffect(() => {
-    const initFilters = async () => {
-      const storedFilters = await loadFilters(route.name);
-      setFilters(storedFilters ?? {});
-    };
-    initFilters();
-  }, []);
-
-  useEffect(() => {
-    const initSort = async () => {
-      const storedSort = await loadSort(route.name);
-      setSort(
-        normalizeValue(
-          storedSort,
-          SORT_OPTIONS.map((item) => item.value),
-        ),
-      );
-    };
-    initSort();
-  }, []);
-
-  useEffect(() => {
-    navigation.setOptions({
-      headerRight,
-    });
-  }, [navigation, headerRight]);
-
-  if (isError)
-    return (
-      <ErrorOverlay
-        title={t("places_unavailable")}
-        message={error.message}
-        onPress={refetch}
-        logo
-      />
-    );
-  if (isLoading || !filters || !sort) return <LoadingOverlay />;
-
   return (
-    <>
-      <SearchInput
-        value={search}
-        onChange={setSearch}
-        onClear={handleClearSearch}
-        placeholder={t("search_by_name")}
-      />
-
-      <Places
-        data={places}
-        onEndReached={handleLoadMore}
-        isLoadingMore={isFetchingNextPage}
-        onAddPlace={handleAddPlace}
-        emptyType={emptyType}
-        onClear={handleClearFiltersSearch}
-      />
-
-      <SortModal
-        screen={route.name}
-        options={SORT_OPTIONS}
-        visible={sortModalVisible}
-        onClose={() => setSortModalVisible(false)}
-        sort={sort}
-        setSort={setSort}
-      />
-      <FilterModal
-        screen={route.name}
-        visible={filterModalVisible}
-        onClose={() => setFilterModalVisible(false)}
-        filters={filters}
-        allowed={ALLOWED_FILTERS}
-        setFilters={setFilters}
-        clearFilters={handleClearFilters}
-      />
-    </>
+    <ListScreen
+      route={route}
+      navigation={navigation}
+      fetchFunction={fetchPlaces}
+      ListComponent={Places}
+      sortOptions={SORT_OPTIONS}
+      allowedFilters={["territory", "favourite"]}
+      errorTitle={t("places_unavailable")}
+      onAdd={() => navigation.navigate("PlaceEditor")}
+    />
   );
 };
 
