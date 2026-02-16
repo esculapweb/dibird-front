@@ -22,6 +22,7 @@ const ObservationCard = React.memo(({ item }) => {
   const handlePress = () => {
     navigation.navigate("ObservationDetail", { observationId: item.id });
   };
+  
 
   return (
     <Pressable

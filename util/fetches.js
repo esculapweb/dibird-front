@@ -183,14 +183,22 @@ export const fetchObservations = async (
   search = "",
   page = 1,
 ) => {
+
+  const { date, ...restFilters } = filters;
+
+  const apiFilters = {
+    ...restFilters,
+    ...buildDateParams(date),
+  };
+
   let params = {
-    ...cleanFilters(filters),
+    ...cleanFilters(apiFilters),
     per_page: 100,
     o: order,
   };
   if (search) params.name = search;
   if (page > 1) params.page = page;
-
+  
   const res = await api.get("/myapi/observation2/", { params });
 
   return res.data;
