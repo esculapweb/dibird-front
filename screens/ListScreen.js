@@ -22,7 +22,8 @@ const ListScreen = ({
   errorTitle,
   onAdd,
   ItemCard,
-  noItems
+  noItems,
+  showSearch,
 }) => {
   const { t } = useTranslation();
 
@@ -141,12 +142,14 @@ const ListScreen = ({
 
   return (
     <>
-      <SearchInput
-        value={search}
-        onChange={setSearch}
-        onClear={handleClearSearch}
-        placeholder={t("search_by_name")}
-      />
+      {showSearch && (
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          onClear={handleClearSearch}
+          placeholder={t("search_by_name")}
+        />
+      )}
 
       <ItemsList
         data={items}

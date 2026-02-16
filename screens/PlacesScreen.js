@@ -42,6 +42,7 @@ const PlacesScreen = ({ route, navigation }) => {
       onAdd={handleAdd}
       ItemCard={PlaceCard}
       noItems={noItems}
+      showSearch={true}
     />
   );
 };

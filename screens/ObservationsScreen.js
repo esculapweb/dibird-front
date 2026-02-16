@@ -19,7 +19,7 @@ const ObservationsScreen = ({ route, navigation }) => {
   const handleAdd = () => navigation.navigate("ObservationEditor");
 
   const noItems = {
-    icon: "location-outline",
+    icon: "binoculars-outline",
     message: t("no_observations_yet"),
     actions: [{ label: t("add_first_observation"), onPress: handleAdd }],
   };

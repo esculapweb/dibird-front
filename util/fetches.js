@@ -183,11 +183,9 @@ export const fetchObservations = async (
   search = "",
   page = 1,
 ) => {
-
-  console.log('fetchObrervations')
   let params = {
     ...cleanFilters(filters),
-    per_page: 20,
+    per_page: 100,
     o: order,
   };
   if (search) params.name = search;

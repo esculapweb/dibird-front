@@ -86,17 +86,17 @@ const PlaceDetailScreen = ({ route, navigation }) => {
   }, [place, placeId, deleteMutation, navigation]);
 
   const handleObservationsPress = useCallback(() => {
-    console.log("show observations");
+     navigation.navigate("Observations", { placeId });
   }, []);
 
   const handleSpeciesPress = useCallback(() => {
     if (place) {
-      navigation.navigate("Statistics", { placeId });
+      navigation.navigate("Stat", { placeId });
     }
   }, [place, placeId, navigation]);
 
   const handleDiariesPress = useCallback(() => {
-    console.log("show diaries");
+    navigation.navigate("Diaries", { placeId });
   }, []);
 
   useEffect(() => {
