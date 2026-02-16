@@ -1,14 +1,14 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { fetchPlaces } from "../util/fetches";
+import { fetchObservations } from "../../util/fetches";
 
-import { useLanguage } from "../store/language-context";
+import { useLanguage } from "../../store/language-context";
 
-export const usePlaces = ({ filters, sort, search }) => {
+export const useObservations = ({ filters, sort, search }) => {
   const language = useLanguage();
   return useInfiniteQuery({
-    queryKey: ["places", filters, sort, search, language],
+    queryKey: ["observations", filters, sort, search, language],
     queryFn: ({ pageParam = 1 }) =>
-      fetchPlaces(filters, sort, search, pageParam),
+      fetchObservations(filters, sort, search, pageParam),
     getNextPageParam: (lastPage) => {
       const { pagination } = lastPage;
       return pagination.current < pagination.final

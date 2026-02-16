@@ -12,8 +12,8 @@ import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import Map from "../components/Map/Map";
 
-import { usePlace } from "../hooks/usePlace";
-import { useUpdatePlace, useDeletePlace } from "../hooks/usePlaceMutation";
+import { usePlace } from "../hooks/Place/usePlace";
+import { useUpdatePlace, useDeletePlace } from "../hooks/Place/usePlaceMutation";
 import { showError } from "../services/api";
 
 const PlaceDetailScreen = ({ route, navigation }) => {

@@ -6,32 +6,25 @@ import FilterModal from "../components/Filters/FilterModal";
 import SortModal from "../components/Sort/SortModal";
 import { loadFilters, clearFilters, loadSort } from "../util/storageHelper";
 import { normalizeValue } from "../util/fetches";
-import Places from "../components/Place/Places";
 import SearchInput from "../components/ui/SearchInput";
 import { useDebounce } from "../util/useDebounce";
-import { usePlaces } from "../hooks/Place/usePlaces";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import FiltersHeader from "../components/ui/FiltersHeader";
+import { useObservations } from "../hooks/Observation/useObservations";
 
-const PlacesScreen = ({ route, navigation }) => {
+const ObservationsScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
 
   const SORT_OPTIONS = [
+    { label: t("date_sort_desc"), value: "-date_time" },
+    { label: t("date_sort"), value: "date_time" },
+    { label: t("taxonomic"), value: "ioc_id" },
+    { label: t("taxonomic_desc"), value: "-ioc_id" },
     { label: t("alphabetic"), value: "name" },
     { label: t("alphabetic_desc"), value: "-name" },
-    // { label: t("favourite_asc"), value: "favourite,name" },
-    // { label: t("favourite_desc"), value: "-favourite,name" },
-    // { label: t("territory_asc"), value: "territory,name" },
-    // { label: t("territory_desc"), value: "-territory,name" },
-    { label: t("species_count"), value: "species_count,name" },
-    { label: t("species_count_desc"), value: "-species_count,name" },
-    { label: t("observation_count"), value: "observation_count,name" },
-    { label: t("observation_count_desc"), value: "-observation_count,name" },
-    // { label: t("diary_count"), value: "diary_count" },
-    // { label: t("diary_count_desc"), value: "-diary_count" },
   ];
 
-  const ALLOWED_FILTERS = ["territory", "favourite"];
+  const ALLOWED_FILTERS = ["territory", "place", "date"]; //species
 
   const [filters, setFilters] = useState(null);
   const [sort, setSort] = useState(null);
@@ -56,14 +49,16 @@ const PlacesScreen = ({ route, navigation }) => {
     isError,
     error,
     refetch,
-  } = usePlaces({
+  } = useObservations({
     filters,
     sort,
     search: debouncedSearch,
   });
-  const places = data?.pages.flatMap((page) => page.results) ?? [];
+  const observations = data?.pages.flatMap((page) => page.results) ?? [];
 
-  const isEmpty = places.length === 0;
+  // console.log(observations)
+
+  const isEmpty = observations.length === 0;
   const isSearchActive = debouncedSearch.length > 0;
 
   const emptyType =
@@ -79,13 +74,13 @@ const PlacesScreen = ({ route, navigation }) => {
     }
   };
 
+  const handleClearSearch = () => setSearch("");
+
   const handleClearFilters = async () => {
     setFilters({});
     await clearFilters(route.name);
     setFilterModalVisible(false);
   };
-
-  const handleClearSearch = () => setSearch("");
 
   const handleClearFiltersSearch = () => {
     handleClearSearch();
@@ -94,7 +89,7 @@ const PlacesScreen = ({ route, navigation }) => {
 
   const handleFilterPress = () => setFilterModalVisible(true);
   const handleSortPress = () => setSortModalVisible(true);
-  const handleAddPlace = () => navigation.navigate("PlaceEditor");
+  // const handleAddObservation = () => navigation.navigate("ObservationEditor");
 
   const headerRight = useCallback(
     () => (
@@ -137,7 +132,7 @@ const PlacesScreen = ({ route, navigation }) => {
   if (isError)
     return (
       <ErrorOverlay
-        title={t("places_unavailable")}
+        title={t("observations_unavailable")}
         message={error.message}
         onPress={refetch}
         logo
@@ -154,14 +149,14 @@ const PlacesScreen = ({ route, navigation }) => {
         placeholder={t("search_by_name")}
       />
 
-      <Places
-        data={places}
+      {/* <Observations
+        data={observations}
         onEndReached={handleLoadMore}
         isLoadingMore={isFetchingNextPage}
-        onAddPlace={handleAddPlace}
+        onAddObservation={handleAddObservation}
         emptyType={emptyType}
         onClear={handleClearFiltersSearch}
-      />
+      /> */}
 
       <SortModal
         screen={route.name}
@@ -184,4 +179,4 @@ const PlacesScreen = ({ route, navigation }) => {
   );
 };
 
-export default PlacesScreen;
+export default ObservationsScreen;

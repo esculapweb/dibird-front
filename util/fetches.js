@@ -176,3 +176,24 @@ export const fetchPlaces = async (
   const res = await api.get("/myapi/place2/", { params });
   return res.data;
 };
+
+export const fetchObservations = async (
+  filters = {},
+  order = "-date",
+  search = "",
+  page = 1,
+) => {
+
+  console.log('fetchObrervations')
+  let params = {
+    ...cleanFilters(filters),
+    per_page: 20,
+    o: order,
+  };
+  if (search) params.name = search;
+  if (page > 1) params.page = page;
+
+  const res = await api.get("/myapi/observation2/", { params });
+
+  return res.data;
+};

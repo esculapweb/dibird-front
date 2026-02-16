@@ -1,7 +1,9 @@
 import { useState, useCallback, useRef } from "react";
 import * as Location from "expo-location";
-import { cachedReverseGeocode } from "../services/geocoding";
-import { Config } from "../constants/config";
+
+import { cachedReverseGeocode } from "../../services/geocoding";
+import { Config } from "../../constants/config";
+
 export const normalizeCoords = (
   lngInput,
   latInput,

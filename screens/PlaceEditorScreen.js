@@ -5,10 +5,10 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../store/theme-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
-import { useCreatePlace, useUpdatePlace } from "../hooks/usePlaceMutation";
+import { useCreatePlace, useUpdatePlace } from "../hooks/Place/usePlaceMutation";
 import IconButton from "../components/ui/IconButton";
 import PlaceForm from "../components/Place/PlaceForm";
-import { usePlaceLocation, normalizeCoords } from "../hooks/usePlaceLocation";
+import { usePlaceLocation, normalizeCoords } from "../hooks/Place/usePlaceLocation";
 import Map from "../components/Map/Map";
 import { showError } from "../services/api";
 

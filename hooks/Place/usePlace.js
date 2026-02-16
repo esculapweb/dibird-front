@@ -1,5 +1,5 @@
-import { useQueryWithTranslation } from "./useQueryWithTranslation";
-import api from "../services/api";
+import { useQueryWithTranslation } from "../useQueryWithTranslation";
+import api from "../../services/api";
 
 export const usePlace = (id) =>
   useQueryWithTranslation({

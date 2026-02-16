@@ -37,12 +37,9 @@ const StatScreen = ({ route, navigation }) => {
   const ALLOWED_FILTERS = ["territory", "place", "date"];
 
   const hasActiveFilters = filters
-    ? Object.values(filters).some((v) => {
-        if (Array.isArray(v)) {
-          return v.length > 0;
-        }
-        return v !== null && v !== undefined && v !== "";
-      })
+    ? Object.values(filters).some((v) =>
+        Array.isArray(v) ? v.length > 0 : v != null && v !== "",
+      )
     : false;
 
   const emptyType = hasActiveFilters ? "filtered" : "initial";
