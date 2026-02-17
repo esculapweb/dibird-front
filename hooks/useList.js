@@ -8,9 +8,9 @@ export const useList = ({
   sort,
   search,
 }) => {
-  const language = useLanguage();
+  const {language} = useLanguage();
   return useInfiniteQuery({
-    queryKey: [entityKey, filters, sort, search, language],
+    queryKey: [entityKey, JSON.stringify(filters), sort, search, language],
     queryFn: ({ pageParam = 1 }) =>
       fetchFunction(filters, sort, search, pageParam),
     getNextPageParam: (lastPage) => {

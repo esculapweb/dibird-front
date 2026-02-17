@@ -199,7 +199,7 @@ const ListScreen = ({
         />
       )}
       {hasActiveFilters && (
-        <FilterChips filters={filters} removeFilter={removeFilter} />
+        <FilterChips filters={filters} onRemove={removeFilter} />
       )}
       <ItemsList
         data={items}

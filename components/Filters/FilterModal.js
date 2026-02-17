@@ -136,6 +136,7 @@ const FilterModal = ({
               query={useTranslatedQuery({
                 queryFn: fetchMyCountries,
                 params: [language],
+                type: "mycountries",
               })}
               allowReset
             />

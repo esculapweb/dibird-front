@@ -120,7 +120,7 @@ const StatScreen = ({ route, navigation }) => {
   return (
     <>
       {hasActiveFilters && (
-        <FilterChips filters={filters} removeFilter={removeFilter} />
+        <FilterChips filters={filters} onRemove={removeFilter} />
       )}
       <StatsTabs
         seen={seen}

@@ -31,6 +31,7 @@ const PlaceForm = ({
   const queryTerritories = useTranslatedQuery({
     queryFn: fetchCountries,
     params: [language],
+    type: 'countries',
   });
 
   const territories = queryTerritories.data ?? [];

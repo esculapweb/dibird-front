@@ -3,38 +3,25 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 
 import { useTheme } from "../../store/theme-context";
-import { formatDate } from "../../util/fetches";
+import { useFilterLabels } from "../../hooks/useFilterLabels";
 
-const FilterChips = ({ filters, removeFilter }) => {
+const FilterChips = ({ filters, onRemove }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const { t } = useTranslation();
+  const { getFilterLabel } = useFilterLabels(filters);
 
-  const formatFilterValue = (key, value) => {
-    if (!value) return "";
-
-    if (key === "date") {
-      if (value.type === "range") {
-        if (value.from && value.to)
-          return `${formatDate(value.from)} – ${formatDate(value.to)}`;
-        if (value.from) return `${t("from")} ${formatDate(value.from)}`;
-        if (value.to) return `${t("to")} ${formatDate(value.to)}`;
-      }
-      if (value.type === "year" && value.year) return value.year.toString();
-      return "";
-    }
-
-    if (key === "favourite") return value ? t("yes") : t("no");
-    if (Array.isArray(value)) return value.join(", ");
-
-    return value.toString();
-  };
-
-  const filterEntries = Object.entries(filters).filter(
-    ([_, value]) => value && (!Array.isArray(value) || value.length > 0),
+  const activeFilters = Object.entries(filters).filter(
+    ([, value]) => value && !(Array.isArray(value) && value.length === 0),
   );
 
-  if (filterEntries.length === 0) return null;
+  const labels = {
+    territory: t("territory"),
+    place: t("place"),
+    date: t("date"),
+    species: t("species"),
+    favourite: t("favourite"),
+  };
 
   return (
     <View style={styles.wrapper}>
@@ -43,36 +30,24 @@ const FilterChips = ({ filters, removeFilter }) => {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContainer}
       >
-        {filterEntries.map(([key, value]) => {
-          const label =
-            {
-              territory: t("territory"),
-              place: t("place"),
-              date: t("date"),
-              species: t("species"),
-            }[key] || key;
-
-          const displayValue = formatFilterValue(key, value);
-
-          return (
-            <View key={key} style={styles.filterChip}>
-              <Text style={styles.filterText}>
-                {label}: {displayValue}
-              </Text>
-              <Pressable
-                onPress={() => removeFilter(key)}
-                style={styles.removeIcon}
-                hitSlop={8}
-              >
-                <Ionicons
-                  name="close-circle"
-                  size={16}
-                  color={Colors.textSecondary}
-                />
-              </Pressable>
-            </View>
-          );
-        })}
+        {activeFilters.map(([key, value]) => (
+          <View key={key} style={styles.filterChip}>
+            <Text style={styles.filterText}>
+              {labels[key]}: {getFilterLabel(key, value)}
+            </Text>
+            <Pressable
+              onPress={() => onRemove(key)}
+              style={styles.removeIcon}
+              hitSlop={8}
+            >
+              <Ionicons
+                name="close-circle"
+                size={16}
+                color={Colors.textSecondary}
+              />
+            </Pressable>
+          </View>
+        ))}
       </ScrollView>
     </View>
   );

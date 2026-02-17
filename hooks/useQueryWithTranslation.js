@@ -1,13 +1,13 @@
-import { useQuery } from '@tanstack/react-query';
-import { useApiError } from './useApiError';
+import { useQuery } from "@tanstack/react-query";
+import { useApiError } from "./useApiError";
 
-export const useQueryWithTranslation = (options) => {
+const useQueryWithTranslation = (options) => {
   const { getTranslatedError, showErrorToast } = useApiError();
 
   return useQuery({
     ...options,
     onError: (error, ...args) => {
-      console.info('Query error:', {
+      console.info("Query error:", {
         queryKey: options.queryKey,
         error: getTranslatedError(error),
       });
@@ -28,15 +28,22 @@ export const useTranslatedQuery = ({
   params = [],
   type,
   options = {},
+  mapResult = false,
 }) => {
   return useQueryWithTranslation({
     queryKey: [type ?? queryFn.name, ...params],
-    queryFn,
-    staleTime: 1000 * 60 * 60 * 24, 
-    cacheTime: 1000 * 60 * 60 * 24, 
+    queryFn: () => queryFn(params[0]),
+    staleTime: 1000 * 60 * 60 * 24,
+    cacheTime: 1000 * 60 * 60 * 24,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,
-    ...options, 
+    select: mapResult
+      ? (data) =>
+          new Map(
+            data.map((item) => [item.value, item?.labelLang ?? item.label]),
+          )
+      : undefined,
+    ...options,
   });
 };

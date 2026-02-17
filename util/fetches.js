@@ -1,4 +1,3 @@
-import { useQueryWithTranslation } from "../hooks/useQueryWithTranslation";
 import i18n from "../services/i18n";
 import api, { showError } from "../services/api";
 
@@ -28,12 +27,15 @@ export const normalizeValue = (value, allowed_values) => {
   return value;
 };
 
-export const formatDate = (isoDate) =>
-  new Intl.DateTimeFormat(i18n.language, {
+export const formatDate = (isoDate) => {
+  if (!isoDate) return ""; // защита от null/undefined
+  const d = isoDate instanceof Date ? isoDate : new Date(isoDate);
+  return new Intl.DateTimeFormat(i18n.language, {
     year: "numeric",
     month: "numeric",
     day: "numeric",
-  }).format(new Date(isoDate));
+  }).format(d);
+};
 
 const toDateOnly = (value) =>
   value ? new Date(value).toISOString().slice(0, 10) : null;
@@ -118,6 +120,7 @@ export const fetchSpecies = async (territory = null) => {
   return res.data.map((item) => ({
     value: item.taxon_pk,
     label: item.sp_name,
+    labelLang: item.sp_name_lang
   }));
 };
 

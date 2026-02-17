@@ -105,6 +105,7 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
           query={useTranslatedQuery({
             queryFn: fetchCountries,
             params: [language],
+            type: 'countries'
           })}
         />
 
