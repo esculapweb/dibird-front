@@ -1,4 +1,4 @@
-import { StyleSheet, View, Pressable, Text } from "react-native";
+import { ScrollView, View, Pressable, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 
@@ -20,52 +20,60 @@ const FilterChips = ({ filters, removeFilter }) => {
         if (value.from) return `${t("from")} ${formatDate(value.from)}`;
         if (value.to) return `${t("to")} ${formatDate(value.to)}`;
       }
-      if (value.type === "year" && value.year) {
-        return value.year.toString();
-      }
+      if (value.type === "year" && value.year) return value.year.toString();
       return "";
     }
 
-    if (key == "favourite") return value ? "yes" : "no";
-
+    if (key === "favourite") return value ? t("yes") : t("no");
     if (Array.isArray(value)) return value.join(", ");
 
     return value.toString();
   };
 
+  const filterEntries = Object.entries(filters).filter(
+    ([_, value]) => value && (!Array.isArray(value) || value.length > 0),
+  );
+
+  if (filterEntries.length === 0) return null;
+
   return (
-    <View style={styles.filtersContainer}>
-      {Object.entries(filters).map(([key, value]) => {
-        if (!value || (Array.isArray(value) && value.length === 0)) return null;
+    <View style={styles.wrapper}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContainer}
+      >
+        {filterEntries.map(([key, value]) => {
+          const label =
+            {
+              territory: t("territory"),
+              place: t("place"),
+              date: t("date"),
+              species: t("species"),
+            }[key] || key;
 
-        const label =
-          {
-            territory: t("territory"),
-            place: t("place"),
-            date: t("date"),
-            species: t("species"),
-          }[key] || key;
+          const displayValue = formatFilterValue(key, value);
 
-        const displayValue = formatFilterValue(key, value);
-
-        return (
-          <View key={key} style={styles.filterChip}>
-            <Text style={styles.filterText}>
-              {label}: {displayValue}
-            </Text>
-            <Pressable
-              onPress={() => removeFilter(key)}
-              style={styles.removeIcon}
-            >
-              <Ionicons
-                name="close-circle"
-                size={16}
-                color={Colors.textSecondary}
-              />
-            </Pressable>
-          </View>
-        );
-      })}
+          return (
+            <View key={key} style={styles.filterChip}>
+              <Text style={styles.filterText}>
+                {label}: {displayValue}
+              </Text>
+              <Pressable
+                onPress={() => removeFilter(key)}
+                style={styles.removeIcon}
+                hitSlop={8}
+              >
+                <Ionicons
+                  name="close-circle"
+                  size={16}
+                  color={Colors.textSecondary}
+                />
+              </Pressable>
+            </View>
+          );
+        })}
+      </ScrollView>
     </View>
   );
 };
@@ -74,21 +82,22 @@ export default FilterChips;
 
 const stylesFn = (Colors) =>
   StyleSheet.create({
-    filtersContainer: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      marginTop: 12,
-      marginBottom: 4,
+    wrapper: {
+      paddingTop: 12,
+      paddingBottom: 4,
+    },
+    scrollContainer: {
       paddingHorizontal: 12,
+      alignItems: "center",
     },
     filterChip: {
       flexDirection: "row",
       alignItems: "center",
       backgroundColor: Colors.primary200,
       borderRadius: 16,
-      paddingHorizontal: 8,
+      paddingHorizontal: 10,
       paddingVertical: 6,
-      marginRight: 4,
+      marginRight: 8,
       borderWidth: 1,
       borderColor: Colors.accent,
     },
@@ -98,7 +107,7 @@ const stylesFn = (Colors) =>
       lineHeight: 16,
     },
     removeIcon: {
-      marginLeft: 2,
+      marginLeft: 4,
       justifyContent: "center",
       alignItems: "center",
     },

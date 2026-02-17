@@ -36,7 +36,7 @@ const DateInput = ({
   const today = getTodayEnd();
 
   const [showPicker, setShowPicker] = useState(false);
-  const [tempValue, setTempValue] = useState(value || today);
+  const [tempValue, setTempValue] = useState(value instanceof Date ? value : today);
 
   const openPicker = () => {
     setTempValue(value || today);

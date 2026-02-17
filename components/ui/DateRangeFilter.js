@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { View, StyleSheet, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 
@@ -12,14 +12,17 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
 
-  const [mode, setMode] = useState("all"); // all | year | range
-  const [year, setYear] = useState(null);
-  const [from, setFrom] = useState(null);
-  const [to, setTo] = useState(null);
+  const mode = value?.type ?? "all";
+  const year = value?.type === "year" ? value.year : null;
 
-  const normalizeRange = ({ from, to }) => {
+  const from =
+    value?.type === "range" && value.from ? new Date(value.from) : null;
+
+  const to = value?.type === "range" && value.to ? new Date(value.to) : null;
+
+  const normalizeRange = (from, to) => {
     if (!from && !to) return null;
-    if (from && to && new Date(from) > new Date(to)) return null;
+    if (from && to && from > to) return null;
 
     return {
       ...(from && { from }),
@@ -27,51 +30,38 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
     };
   };
 
-  useEffect(() => {
-    if (!value) {
-      // setMode("all");
-      // setYear(null);
-      // setFrom(null);
-      // setTo(null);
-      return;
-    }
+  const rangeInvalid = mode === "range" && from && to && from > to;
 
-    if (value.type === "year") {
-      setMode("year");
-      setYear(value.year);
-    }
-
-    if (value.type === "range") {
-      setMode("range");
-      setFrom(value.from);
-      setTo(value.to);
-    }
-  }, [value]);
-
-  /* =========================
-     EMIT FILTER UP
-     ========================= */
-  useEffect(() => {
-    if (mode === "all") {
+  const handleModeChange = (newMode) => {
+    if (newMode === "all") {
       setDateFilter(null);
       return;
     }
 
-    if (mode === "year") {
-      setDateFilter(year ? { type: "year", year } : null);
+    if (newMode === "year") {
+      setDateFilter({ type: "year", year: null });
       return;
     }
 
-    if (mode === "range") {
-      const normalized = normalizeRange({ from, to });
-
-      setDateFilter(normalized ? { type: "range", ...normalized } : null);
+    if (newMode === "range") {
+      setDateFilter({ type: "range" });
     }
-  }, [mode, year, from, to]);
+  };
 
-  /* =========================
-     YEARS OPTIONS
-     ========================= */
+  const handleYearChange = (newYear) => {
+    setDateFilter(newYear ? { type: "year", year: newYear } : null);
+  };
+
+  const handleFromChange = (newFrom) => {
+    const normalized = normalizeRange(newFrom, to);
+    setDateFilter(normalized ? { type: "range", ...normalized } : null);
+  };
+
+  const handleToChange = (newTo) => {
+    const normalized = normalizeRange(from, newTo);
+    setDateFilter(normalized ? { type: "range", ...normalized } : null);
+  };
+
   const yearOptions = useMemo(() => {
     const currentYear = new Date().getFullYear();
     const startYear = 1900;
@@ -82,15 +72,12 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
     });
   }, []);
 
-  const rangeInvalid =
-    mode === "range" && from && to && new Date(from) > new Date(to);
-
   return (
     <View style={styles.wrapper}>
       <RadioGroup
         label={t("date")}
         value={mode}
-        onChange={setMode}
+        onChange={handleModeChange}
         direction="column"
         options={[
           { label: t("all_period"), value: "all" },
@@ -104,7 +91,7 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
           title={t("year")}
           placeholder={t("select_year")}
           value={year}
-          setValue={setYear}
+          setValue={handleYearChange}
           query={{ data: yearOptions }}
           allowReset
         />
@@ -115,7 +102,7 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
           <DateInput
             label={t("from_date")}
             value={from}
-            onChange={setFrom}
+            onChange={handleFromChange}
             placeholder={t("not_selected")}
             error={rangeInvalid}
           />
@@ -123,7 +110,7 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
           <DateInput
             label={t("to_date")}
             value={to}
-            onChange={setTo}
+            onChange={handleToChange}
             placeholder={t("not_selected")}
             error={rangeInvalid}
             minimumDate={from || undefined}
