@@ -43,6 +43,7 @@ const PlacesScreen = ({ route, navigation }) => {
       ItemCard={PlaceCard}
       noItems={noItems}
       showSearch={true}
+      title={t("places")}
     />
   );
 };

@@ -61,12 +61,10 @@ const ObservationCard = React.memo(({ item, index }) => {
             </View>
           </View>
 
-          {/* LATIN */}
           <Text style={styles.latin} numberOfLines={1}>
             {item.species_data?.name}
           </Text>
 
-          {/* META ROW */}
           <View style={styles.metaRow}>
             <View style={styles.metaLeft}>
               <Ionicons
@@ -100,7 +98,6 @@ const ObservationCard = React.memo(({ item, index }) => {
             )}
           </View>
 
-          {/* PLACE */}
           <View style={styles.placeRow}>
             {item.place ? (
               <>

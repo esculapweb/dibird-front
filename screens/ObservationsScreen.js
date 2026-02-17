@@ -35,6 +35,7 @@ const ObservationsScreen = ({ route, navigation }) => {
       onAdd={handleAdd}
       ItemCard={ObservationCard}
       noItems={noItems}
+      title={t("observations")}
     />
   );
 };

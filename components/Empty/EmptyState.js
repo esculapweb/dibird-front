@@ -31,7 +31,9 @@ const stylesFn = (Colors) =>
   StyleSheet.create({
     container: {
       alignItems: "center",
-      marginTop: 60,
+      justifyContent: 'center',
+      flex: 1,
+      paddingHorizontal: 16, 
     },
     message: {
       marginTop: 12,

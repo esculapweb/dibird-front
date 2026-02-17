@@ -18,6 +18,7 @@ import ErrorOverlay from "../components/Error/ErrorOverlay";
 import FiltersHeader from "../components/ui/FiltersHeader";
 import { useList } from "../hooks/useList";
 import ItemsList from "../components/ui/ItemsList";
+import HeaderTitleWithBadge from "../components/ui/HeaderTitleWithBadge";
 
 const ListScreen = ({
   route,
@@ -30,6 +31,7 @@ const ListScreen = ({
   ItemCard,
   noItems,
   showSearch,
+  title
 }) => {
   const { t } = useTranslation();
 
@@ -160,9 +162,15 @@ const ListScreen = ({
 
   useEffect(() => {
     navigation.setOptions({
+      headerTitle: () => (
+        <HeaderTitleWithBadge
+          title={title}
+          badgeCount={data?.pages[0]?.pagination?.count ?? 0}
+        />
+      ),
       headerRight,
     });
-  }, [navigation, headerRight]);
+  }, [navigation, headerRight, data]);
 
   if (isError)
     return (
