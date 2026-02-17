@@ -144,7 +144,7 @@ const stylesFn = (Colors) =>
       padding: 8,
       marginBottom: 4,
       shadowColor: Colors.shadow,
-      shadowOpacity: 0.08,
+      shadowOpacity: 0.2,
       shadowRadius: 4,
       shadowOffset: { width: 0, height: 2 },
       elevation: 2,

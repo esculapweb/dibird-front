@@ -19,6 +19,7 @@ import FiltersHeader from "../components/ui/FiltersHeader";
 import { useList } from "../hooks/useList";
 import ItemsList from "../components/ui/ItemsList";
 import HeaderTitleWithBadge from "../components/ui/HeaderTitleWithBadge";
+import FilterChips from "../components/Filters/FilterChips";
 
 const ListScreen = ({
   route,
@@ -31,7 +32,7 @@ const ListScreen = ({
   ItemCard,
   noItems,
   showSearch,
-  title
+  title,
 }) => {
   const { t } = useTranslation();
 
@@ -43,8 +44,6 @@ const ListScreen = ({
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 400);
   const screenName = route.name;
-
-  // console.log('params', route.params)
 
   const {
     data,
@@ -101,6 +100,12 @@ const ListScreen = ({
 
   const handleFilterPress = () => setFilterModalVisible(true);
   const handleSortPress = () => setSortModalVisible(true);
+
+  const removeFilter = (key) => {
+    const newFilters = { ...filters, [key]: undefined };
+    setFilters(newFilters);
+    saveFilters(screenName, newFilters);
+  };
 
   const headerRight = useCallback(
     () => (
@@ -193,7 +198,9 @@ const ListScreen = ({
           placeholder={t("search_by_name")}
         />
       )}
-
+      {hasActiveFilters && (
+        <FilterChips filters={filters} removeFilter={removeFilter} />
+      )}
       <ItemsList
         data={items}
         screen={screenName}
@@ -205,7 +212,6 @@ const ListScreen = ({
         ItemCard={ItemCard}
         noItems={noItems}
       />
-
       <SortModal
         screen={screenName}
         options={sortOptions}

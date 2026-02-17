@@ -40,6 +40,8 @@ const stylesFn = (Colors) =>
       alignItems: "center",
       paddingHorizontal: 5,
       backgroundColor: Colors.primary200,
+      borderWidth: 1,
+      borderColor: Colors.accent, 
     },
     badgeText: {
       color: Colors.textMain,

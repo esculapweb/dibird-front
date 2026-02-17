@@ -7,8 +7,9 @@ import { useLanguage } from "../store/language-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import FilterModal from "../components/Filters/FilterModal";
 import SortModal from "../components/Sort/SortModal";
-import { loadFilters, clearFilters, loadSort } from "../util/storageHelper";
+import { loadFilters, clearFilters, loadSort, saveFilters } from "../util/storageHelper";
 import FiltersHeader from "../components/ui/FiltersHeader";
+import FilterChips from "../components/Filters/FilterChips";
 
 const StatScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
@@ -48,6 +49,12 @@ const StatScreen = ({ route, navigation }) => {
     setFilters({});
     await clearFilters(route.name);
     setFilterModalVisible(false);
+  };
+
+  const removeFilter = (key) => {
+    const newFilters = { ...filters, [key]: undefined };
+    setFilters(newFilters);
+    saveFilters(route.name, newFilters);
   };
 
   const handleAddObservation = () => console.log("add observation");
@@ -112,6 +119,9 @@ const StatScreen = ({ route, navigation }) => {
 
   return (
     <>
+      {hasActiveFilters && (
+        <FilterChips filters={filters} removeFilter={removeFilter} />
+      )}
       <StatsTabs
         seen={seen}
         notSeen={notSeen}
