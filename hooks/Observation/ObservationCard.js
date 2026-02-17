@@ -9,7 +9,7 @@ import { useTheme } from "../../store/theme-context";
 
 const useStyles = (Colors) => React.useMemo(() => stylesFn(Colors), [Colors]);
 
-const ObservationCard = React.memo(({ item }) => {
+const ObservationCard = React.memo(({ item, index }) => {
   const { Colors } = useTheme();
   const styles = useStyles(Colors);
   const navigation = useNavigation();
@@ -43,7 +43,7 @@ const ObservationCard = React.memo(({ item }) => {
         <View style={styles.content}>
           <View style={styles.titleRow}>
             <Text style={styles.title} numberOfLines={1}>
-              {item.species_data?.name_lang}
+              {index + 1}. {item.species_data?.name_lang}
             </Text>
 
             <View style={styles.rightTop}>

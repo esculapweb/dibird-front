@@ -18,6 +18,7 @@ import PlaceEditorScreen from "../screens/PlaceEditorScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import ErrorScreen from "../screens/ErrorScreen";
 import ObservationsScreen from "../screens/ObservationsScreen";
+import ObservationDetailScreen from "../screens/ObservationDetailScreen";
 // import SettingsScreen from "../screens/SettingsScreen";
 
 import { AuthContext } from "../store/auth-context";
@@ -188,6 +189,15 @@ const AppNavigator = () => {
           title: t("observations"),
           headerBackTitleVisible: false,
           headerBackTitle: t("main"),
+        }}
+      />
+
+      <Stack.Screen
+        name="ObservationDetail"
+        component={ObservationDetailScreen}
+        options={{
+          title: t(""),
+          headerBackTitleVisible: false,
         }}
       />
     </Stack.Navigator>

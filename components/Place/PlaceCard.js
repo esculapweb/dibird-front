@@ -28,7 +28,7 @@ const StatItem = React.memo(({ icon, txt, children, style }) => {
   );
 });
 
-const PlaceCard = React.memo(({ item }) => {
+const PlaceCard = React.memo(({ item, index }) => {
   const { Colors } = useTheme();
   const styles = useStyles(Colors);
   const { t } = useTranslation();
@@ -42,7 +42,6 @@ const PlaceCard = React.memo(({ item }) => {
   const [lng, lat] = item.location.coordinates;
 
   const handlePlacePress = () => {
-
     navigation.navigate("PlaceDetail", { placeId: item.id });
 
     // const options = [
@@ -98,7 +97,7 @@ const PlaceCard = React.memo(({ item }) => {
               />
             )}
             <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
-              {item.name}
+              {index + 1}. {item.name}
             </Text>
           </View>
 
@@ -119,8 +118,12 @@ const PlaceCard = React.memo(({ item }) => {
 
           <View style={styles.statsBlock}>
             {/* <StatItem icon="book-outline" txt={item.diary_count} /> */}
-            <StatItem icon="binoculars" txt={item.observation_count} style={{minWidth: 80}} />
-            <StatItem txt={item.species_count} style={{minWidth: 56}}>
+            <StatItem
+              icon="binoculars"
+              txt={item.observation_count}
+              style={{ minWidth: 80 }}
+            />
+            <StatItem txt={item.species_count} style={{ minWidth: 56 }}>
               <BirdSVG size={16} color={Colors.textMain} />
             </StatItem>
           </View>

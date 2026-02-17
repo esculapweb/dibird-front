@@ -25,7 +25,7 @@ const ItemsList = ({
   const styles = stylesFn(Colors);
   const { t } = useTranslation();
 
-  const renderItem = ({ item }) => <ItemCard item={item} />;
+  const renderItem = ({ item, index }) => <ItemCard item={item} index={index} />;
 
   const getEmptyProps = () => {
     if (!emptyType) return null;

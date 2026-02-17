@@ -66,14 +66,20 @@ const FilterModal = ({
   });
 
   useEffect(() => {
-    if (!queryPlaces.data) return;
-    if (!territoryValue) setPlaceValue(null);
-  }, [queryPlaces.data, placeValue]);
+    setPlaceValue(null);
+  }, [territoryValue]);
 
   useEffect(() => {
-    if (!querySpecies.data) return;
-    if (!territoryValue) setSpeciesValue(null);
-  }, [querySpecies.data, territoryValue]);
+    if (!querySpecies.data || !speciesValue) return;
+
+    const speciesExists = querySpecies.data.some(
+      (item) => item.value === speciesValue,
+    );
+
+    if (!speciesExists) {
+      setSpeciesValue(null);
+    }
+  }, [querySpecies.data]);
 
   useEffect(() => {
     if (!visible) return;

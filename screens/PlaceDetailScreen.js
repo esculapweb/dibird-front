@@ -13,7 +13,10 @@ import ErrorOverlay from "../components/Error/ErrorOverlay";
 import Map from "../components/Map/Map";
 
 import { usePlace } from "../hooks/Place/usePlace";
-import { useUpdatePlace, useDeletePlace } from "../hooks/Place/usePlaceMutation";
+import {
+  useUpdatePlace,
+  useDeletePlace,
+} from "../hooks/Place/usePlaceMutation";
 import { showError } from "../services/api";
 
 const PlaceDetailScreen = ({ route, navigation }) => {
@@ -86,18 +89,30 @@ const PlaceDetailScreen = ({ route, navigation }) => {
   }, [place, placeId, deleteMutation, navigation]);
 
   const handleObservationsPress = useCallback(() => {
-     navigation.navigate("Observations", { placeId });
-  }, []);
+    if (place)
+      navigation.push("Observations", {
+        placeId,
+        territoryId: place.territory,
+      });
+  }, [place, navigation]);
 
   const handleSpeciesPress = useCallback(() => {
     if (place) {
-      navigation.navigate("Stat", { placeId });
+      navigation.push("Stat", {
+        placeId,
+        territoryId: place.territory,
+      });
     }
-  }, [place, placeId, navigation]);
+  }, [place, navigation]);
 
   const handleDiariesPress = useCallback(() => {
-    navigation.navigate("Diaries", { placeId });
-  }, []);
+    if (place) {
+      navigation.push("Diaries", {
+        placeId,
+        territoryId: place.territory,
+      });
+    }
+  }, [place, navigation]);
 
   useEffect(() => {
     if (!place) return;

@@ -1,10 +1,16 @@
 import { useState, useEffect, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import FilterModal from "../components/Filters/FilterModal";
 import SortModal from "../components/Sort/SortModal";
-import { loadFilters, clearFilters, loadSort } from "../util/storageHelper";
+import {
+  loadFilters,
+  clearFilters,
+  loadSort,
+  saveFilters,
+} from "../util/storageHelper";
 import { normalizeValue } from "../util/fetches";
 import SearchInput from "../components/ui/SearchInput";
 import { useDebounce } from "../util/useDebounce";
@@ -31,9 +37,12 @@ const ListScreen = ({
   const [sort, setSort] = useState(null);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [sortModalVisible, setSortModalVisible] = useState(false);
+  const [filtersLoaded, setFiltersLoaded] = useState(false);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 400);
   const screenName = route.name;
+
+  // console.log('params', route.params)
 
   const {
     data,
@@ -106,6 +115,7 @@ const ListScreen = ({
     const initFilters = async () => {
       const storedFilters = await loadFilters(screenName);
       setFilters(storedFilters ?? {});
+      setFiltersLoaded(true);
     };
     initFilters();
   }, []);
@@ -122,6 +132,31 @@ const ListScreen = ({
     };
     initSort();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!filtersLoaded) return;
+
+      const { placeId, territoryId } = route.params ?? {};
+      if (!placeId || !territoryId) return;
+
+      setFilters((prev) => {
+        const newFilters = {
+          ...(prev ?? {}),
+          territory: territoryId,
+          place: placeId,
+        };
+
+        saveFilters(screenName, newFilters);
+        return newFilters;
+      });
+
+      navigation.setParams({
+        placeId: undefined,
+        territoryId: undefined,
+      });
+    }, [route.params?.placeId, filtersLoaded]),
+  );
 
   useEffect(() => {
     navigation.setOptions({
