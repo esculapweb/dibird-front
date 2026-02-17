@@ -12,16 +12,11 @@ const FilterChips = ({ filters, onRemove }) => {
   const { getFilterLabel } = useFilterLabels(filters);
 
   const activeFilters = Object.entries(filters).filter(
-    ([, value]) => value && !(Array.isArray(value) && value.length === 0),
+    ([, value]) =>
+      value !== null &&
+      value !== undefined &&
+      !(Array.isArray(value) && value.length === 0),
   );
-
-  const labels = {
-    territory: t("territory"),
-    place: t("place"),
-    date: t("date"),
-    species: t("species_single"),
-    favourite: t("favourite"),
-  };
 
   if (activeFilters.length === 0) return null;
 
@@ -32,24 +27,31 @@ const FilterChips = ({ filters, onRemove }) => {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContainer}
       >
-        {activeFilters.map(([key, value]) => (
-          <View key={key} style={styles.filterChip}>
-            <Text style={styles.filterText}>
-              {labels[key]}: {getFilterLabel(key, value)}
-            </Text>
-            <Pressable
-              onPress={() => onRemove(key)}
-              style={styles.removeIcon}
-              hitSlop={8}
-            >
-              <Ionicons
-                name="close-circle"
-                size={16}
-                color={Colors.textSecondary}
-              />
-            </Pressable>
-          </View>
-        ))}
+        {activeFilters.map(([key, value]) => {
+          const [filterName, filterLabel] = getFilterLabel(key, value);
+          return (
+            <View key={key} style={styles.filterChip}>
+              <Text
+                style={styles.filterText}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {filterName}: {filterLabel}
+              </Text>
+              <Pressable
+                onPress={() => onRemove(key)}
+                style={styles.removeIcon}
+                hitSlop={8}
+              >
+                <Ionicons
+                  name="close-circle"
+                  size={16}
+                  color={Colors.textSecondary}
+                />
+              </Pressable>
+            </View>
+          );
+        })}
       </ScrollView>
     </View>
   );
@@ -77,11 +79,15 @@ const stylesFn = (Colors) =>
       marginRight: 8,
       borderWidth: 1,
       borderColor: Colors.accent,
+      maxWidth: 300,
     },
     filterText: {
       fontSize: 12,
       color: Colors.textMain,
       lineHeight: 16,
+      flexShrink: 1, 
+      marginRight: 4,
+
     },
     removeIcon: {
       marginLeft: 4,

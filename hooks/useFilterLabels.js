@@ -34,20 +34,22 @@ export const useFilterLabels = (filters) => {
   });
 
   const getFilterLabel = (key, value) => {
-    if (!value) return "";
+    if (value === null && value === undefined) return "";
+
+    const placeholder = "...";
 
     switch (key) {
       case "territory":
-        return countriesQuery.data?.get(Number(value)) ?? value.toString();
+        return [t("territory"), countriesQuery.data?.get(Number(value)) ?? placeholder];
 
       case "place":
-        return placesQuery.data?.get(Number(value)) ?? value.toString();
+        return [t("place"), placesQuery.data?.get(Number(value)) ?? placeholder];
 
       case "species":
-        return speciesQuery.data?.get(Number(value)) ?? value.toString();
+        return [t("species_single"), speciesQuery.data?.get(Number(value)) ?? placeholder];
 
       case "favourite":
-        return value ? t("yes") : t("no");
+        return [t("favourite"), value ? t("yes") : t("no")];
 
       case "date":
         return formatDateFilter(value, t);
@@ -64,14 +66,13 @@ export const useFilterLabels = (filters) => {
 const formatDateFilter = (value, t) => {
   if (value.type === "range") {
     if (value.from && value.to)
-      return `${formatDate(value.from)} – ${formatDate(value.to)}`;
+      return [t("date"), `${formatDate(value.from)} – ${formatDate(value.to)}`];
 
-    if (value.from) return `${t("from")} ${formatDate(value.from)}`;
-
-    if (value.to) return `${t("to")} ${formatDate(value.to)}`;
+    if (value.from) return [t("date"), `${t("from")} ${formatDate(value.from)}`];
+    if (value.to) return [t("date"), `${t("to")} ${formatDate(value.to)}`];
   }
 
-  if (value.type === "year" && value.year) return value.year.toString();
+  if (value.type === "year" && value.year) return [t("year"), value.year.toString()];
 
   return "";
 };
