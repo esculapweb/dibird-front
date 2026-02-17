@@ -125,8 +125,6 @@ const Map = ({
                 type: "success",
                 text1: t("coordinates_copied"),
                 text2: coordsText,
-                position: "bottom",
-                visibilityTime: 1500,
               });
             }}
           >

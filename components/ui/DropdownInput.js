@@ -19,7 +19,9 @@ const DropdownInput = ({
   setValue,
   error,
   allowReset,
-  query
+  query,
+  disabled = false,
+  disabledMessage,
 }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -32,8 +34,6 @@ const DropdownInput = ({
   const [icon, setIcon] = useState(null);
   const [iconLabel, setIconLabel] = useState(null);
 
-
-
   const onSelectValue = (selectedValue) => {
     const option = query.data.find((o) => o.value === selectedValue);
     setValue(selectedValue);
@@ -43,7 +43,14 @@ const DropdownInput = ({
     setModalVisible(false);
   };
 
+  const displayText = disabled
+    ? disabledMessage || translatedPlaceholder
+    : label || translatedPlaceholder;
+
   const openModal = () => {
+    if (disabled) {
+      return;
+    }
     setSearch("");
     setModalVisible(true);
   };
@@ -81,99 +88,64 @@ const DropdownInput = ({
   return (
     <>
       <View style={styles.wrapper}>
-        {title && (
-          <Text style={[styles.title, error && styles.titleError]}>
-            {title}
-          </Text>
-        )}
+        {title && <Text style={[styles.title, error && styles.titleError]}>{title}</Text>}
 
         <Pressable
           onPress={openModal}
-          style={[styles.select, error && { borderColor: Colors.error500 }]}
+          style={[
+            styles.select,
+            error && { borderColor: Colors.error500 },
+            disabled && styles.disabled,
+          ]}
         >
           <View style={styles.left}>
             {query.isLoading && (
-              <Text
-                style={[styles.text, !label && { color: Colors.dropdownIcon }]}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
+              <Text style={[styles.text, !label && { color: Colors.dropdownIcon }]} numberOfLines={1} ellipsizeMode="tail">
                 {t("loading_")}
               </Text>
             )}
             {query.isError && (
-              <Text
-                style={[styles.text, { color: Colors.error500 }]}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
+              <Text style={[styles.text, { color: Colors.error500 }]} numberOfLines={1} ellipsizeMode="tail">
                 {t("failed_to_load_data")}
               </Text>
             )}
             {!query.isLoading && !query.isError && (
               <>
-                {iconLabel && (
-                  <View style={styles.icon}>
-                    <Ionicons
-                      name={iconLabel}
-                      size={14}
-                      color={Colors.accent}
-                    />
-                  </View>
-                )}
-
+                {iconLabel && <View style={styles.icon}><Ionicons name={iconLabel} size={14} color={Colors.accent} /></View>}
                 {icon && <Text style={styles.icon}>{icon}</Text>}
-
                 <Text
                   style={[
                     styles.text,
-                    !label && { color: Colors.dropdownIcon },
+                    (!label || disabled) && { color: Colors.dropdownIcon, fontStyle: disabled ? "italic" : "normal" },
                   ]}
                   numberOfLines={1}
                   ellipsizeMode="tail"
                 >
-                  {label || translatedPlaceholder}
+                  {displayText}
                 </Text>
               </>
             )}
           </View>
 
           <View style={styles.right}>
-            {query.isLoading && (
-              <ActivityIndicator
-                size="small"
-                color={Colors.dropdownIcon}
-                style={{ marginRight: 6 }}
-              />
-            )}
-
+            {query.isLoading && <ActivityIndicator size="small" color={Colors.dropdownIcon} style={{ marginRight: 6 }} />}
             {query.isError && query.refetch && (
-              <Pressable
-                onPress={query.refetch}
-                style={styles.retryIcon}
-                hitSlop={12}
-              >
+              <Pressable onPress={query.refetch} style={styles.retryIcon} hitSlop={12}>
                 <Ionicons name="refresh" size={18} color={Colors.link} />
               </Pressable>
             )}
 
-            {value && allowReset && !query.isLoading && !query.isError && (
+            {!disabled && value && allowReset && !query.isLoading && !query.isError && (
               <Pressable onPress={clearValue} hitSlop={10} style={styles.clear}>
-                <Ionicons
-                  name="close-circle"
-                  size={18}
-                  color={Colors.dropdownIcon}
-                />
+                <Ionicons name="close-circle" size={18} color={Colors.dropdownIcon} />
               </Pressable>
             )}
 
-            {!query.isLoading && !query.isError && (
-              <Ionicons
-                name="chevron-down"
-                size={20}
-                color={Colors.dropdownIcon}
-              />
+            {disabled && (
+              <Ionicons name="lock-closed" size={20} color={Colors.dropdownIcon} style={{ marginLeft: 4 }} />
             )}
+
+            {!disabled && !query.isLoading && !query.isError && <Ionicons name="chevron-down" size={20} color={Colors.dropdownIcon} />}
           </View>
         </Pressable>
 
@@ -229,4 +201,7 @@ const stylesFn = (Colors) =>
       marginLeft: 4,
     },
     retryIcon: { marginRight: 6 },
+    disabled: {
+      opacity: 0.7,
+    },
   });
