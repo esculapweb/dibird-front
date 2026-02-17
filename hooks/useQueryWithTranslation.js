@@ -26,10 +26,11 @@ export const useQueryWithTranslation = (options) => {
 export const useTranslatedQuery = ({
   queryFn,
   params = [],
+  type,
   options = {},
 }) => {
   return useQueryWithTranslation({
-    queryKey: [queryFn.name, ...params],
+    queryKey: [type ?? queryFn.name, ...params],
     queryFn,
     staleTime: 1000 * 60 * 60 * 24, 
     cacheTime: 1000 * 60 * 60 * 24, 

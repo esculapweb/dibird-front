@@ -97,13 +97,27 @@ export const fetchMyPlaces = async (territory = null) => {
   const params = {
     o: "-favourite,name",
   };
-  if (territory) params.territory = territory;
+  if (!territory) return [];
+  params.territory = territory;
   const res = await api.get("/myapi/place-dropdown/", { params });
 
   return res.data.map(([value, item]) => ({
     value,
     label: item.label,
     iconLabel: item["data-favourite"] && "star",
+  }));
+};
+
+export const fetchSpecies = async (territory = null) => {
+  const params = {
+    o: "ioc_id",
+  };
+  if (!territory) return [];
+  params.territory_id = territory;
+  const res = await api.get("/api/territory-species2/", { params });
+  return res.data.map((item) => ({
+    value: item.taxon_pk,
+    label: item.sp_name,
   }));
 };
 
@@ -114,9 +128,11 @@ const fetchSpeciesForTerritory = (territory_id, order) => {
     o: normalizeValue(order, orderAllowed),
   };
 
-  return api.get("/api/territory-species2/", {
+  const res =  api.get("/api/territory-species2/", {
     params,
   });
+
+  return res
 };
 
 export const fetchSeen = async (filters = {}, order = "ioc_id") => {

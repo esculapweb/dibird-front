@@ -30,7 +30,7 @@ const ObservationsScreen = ({ route, navigation }) => {
       navigation={navigation}
       fetchFunction={fetchObservations}
       sortOptions={SORT_OPTIONS}
-      allowedFilters={["territory", "place", "date"]} //species
+      allowedFilters={["territory", "place", "date", "species"]} 
       errorTitle={t("observations_unavailable")}
       onAdd={handleAdd}
       ItemCard={ObservationCard}

@@ -164,7 +164,7 @@ const stylesFn = (Colors) =>
     image: {
       width: 72,
       height: 72,
-      borderRadius: 36,
+      borderRadius: 12,
       marginRight: 8,
       backgroundColor: Colors.imageBg,
     },
@@ -172,7 +172,7 @@ const stylesFn = (Colors) =>
     imagePlaceholder: {
       width: 72,
       height: 72,
-      borderRadius: 36,
+      borderRadius: 12,
       marginRight: 8,
       backgroundColor: Colors.imageBg,
     },

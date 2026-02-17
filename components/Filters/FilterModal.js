@@ -4,7 +4,11 @@ import { View, ScrollView, StyleSheet } from "react-native";
 
 import ModalWrapper from "../ui/ModalWrapper";
 import DropdownInput from "../ui/DropdownInput";
-import { fetchMyCountries, fetchMyPlaces } from "../../util/fetches";
+import {
+  fetchMyCountries,
+  fetchMyPlaces,
+  fetchSpecies,
+} from "../../util/fetches";
 import DateRangeFilter from "../ui/DateRangeFilter";
 import { saveFilters } from "../../util/storageHelper";
 import FlatButtonBottom from "../ui/FlatButtonBottom";
@@ -41,6 +45,7 @@ const FilterModal = ({
     filters?.territory || null,
   );
   const [placeValue, setPlaceValue] = useState(filters?.place ?? null);
+  const [speciesValue, setSpeciesValue] = useState(filters?.species ?? null);
   const [dateFilter, setDateFilter] = useState(dateFilterInitial);
   const [favouriteValue, setFavouriteValue] = useState(
     filters?.favourite ?? null,
@@ -48,30 +53,49 @@ const FilterModal = ({
 
   const queryPlaces = useTranslatedQuery({
     queryFn: () => fetchMyPlaces(territoryValue),
+    type: "places",
+    params: [territoryValue],
+  });
+
+  const querySpecies = useTranslatedQuery({
+    queryFn: () => fetchSpecies(territoryValue),
+    type: "species",
     params: [territoryValue],
   });
 
   useEffect(() => {
     if (!queryPlaces.data) return;
-    if (placeValue && !queryPlaces.data.some((p) => p.value === placeValue)) {
-      setPlaceValue(null);
-    }
+    if (!territoryValue) setPlaceValue(null);
   }, [queryPlaces.data, placeValue]);
+
+  useEffect(() => {
+    if (!querySpecies.data) return;
+    if (!territoryValue) setSpeciesValue(null);
+  }, [querySpecies.data, territoryValue]);
 
   useEffect(() => {
     if (!visible) return;
 
     setTerritoryValue(filters?.territory ?? null);
     setPlaceValue(filters?.place ?? null);
+    setSpeciesValue(filters?.species ?? null);
     setDateFilter(filters?.date ?? dateFilterInitial);
     setFavouriteValue(filters?.favourite ?? null);
   }, [visible, filters]);
+
+  const isDateFilterActive = (date) => {
+    if (!date) return false;
+    if (date.mode === "any") return false;
+    return !!(date.from || date.to || date.year);
+  };
 
   const getNewFilters = () => {
     let res = {};
     if (allowed.includes("territory")) res.territory = territoryValue;
     if (allowed.includes("place")) res.place = placeValue;
-    if (allowed.includes("date")) res.date = dateFilter;
+    if (allowed.includes("species")) res.species = speciesValue;
+    if (allowed.includes("date"))
+      res.date = isDateFilterActive(dateFilter) ? dateFilter : null;
     if (allowed.includes("favourite")) res.favourite = favouriteValue;
     return res;
   };
@@ -115,6 +139,17 @@ const FilterModal = ({
               value={placeValue}
               setValue={setPlaceValue}
               query={queryPlaces}
+              allowReset
+            />
+          )}
+
+          {allowed.includes("species") && (
+            <DropdownInput
+              title={t("species")}
+              placeholder={t("all_species")}
+              value={speciesValue}
+              setValue={setSpeciesValue}
+              query={querySpecies}
               allowReset
             />
           )}
