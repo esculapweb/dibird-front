@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useTheme } from "../../store/theme-context";
 import Input from "../ui/Input";
 import DropdownInput from "../ui/DropdownInput";
-import { fetchCountries } from "../../util/fetches";
+import { fetchMyCountries } from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
 import { useTranslatedQuery } from "../../hooks/useQueryWithTranslation";
 
@@ -29,9 +29,9 @@ const PlaceForm = ({
   const [territory, setTerritory] = useState(null);
 
   const queryTerritories = useTranslatedQuery({
-    queryFn: fetchCountries,
+    queryFn: () => fetchMyCountries(false),
     params: [language],
-    type: 'countries',
+    type: "mycountries",
   });
 
   const territories = queryTerritories.data ?? [];

@@ -1,50 +1,55 @@
-
-import { useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
 
-import { getErrorDetails } from '../services/api';
+import { getErrorDetails } from "../services/api";
 
 export const useApiError = () => {
   const { t } = useTranslation();
 
-  const getTranslatedError = useCallback((error) => {
-    if (!error) {
-      return {
-        title: t('errors.unknown'),
-        message: t('errors.something_went_wrong'),
-      };
-    }
+  const getTranslatedError = useCallback(
+    (error) => {
+      if (!error) {
+        return {
+          title: t("errors.unknown"),
+          message: t("errors.something_went_wrong"),
+        };
+      }
 
-    if (error.title && error.message) {
-      return {
-        title: error.title,
-        message: error.message,
-        code: error.code,
-        status: error.status,
-      };
-    }
+      if (error.title && error.message) {
+        return {
+          title: error.title,
+          message: error.message,
+          code: error.code,
+          status: error.status,
+        };
+      }
 
-    return getErrorDetails(error);
-  }, [t]);
+      return getErrorDetails(error);
+    },
+    [t],
+  );
 
-  const showErrorToast = useCallback((error) => {
-    const { title, message } = getTranslatedError(error);
-    
-    if (typeof Toast?.show === 'function') {
-      Toast.show({
-        type: 'error',
-        text1: title,
-        text2: message,
+  const showErrorToast = useCallback(
+    (error) => {
+      const { title, message } = getTranslatedError(error);
+
+      if (typeof Toast?.show === "function") {
+        Toast.show({
+          type: "error",
+          text1: title,
+          text2: message,
+        });
+      }
+
+      console.info("API Error:", {
+        title,
+        message,
+        originalError: error,
       });
-    }
-    
-    console.info('API Error:', {
-      title,
-      message,
-      originalError: error,
-    });
-  }, [getTranslatedError]);
+    },
+    [getTranslatedError],
+  );
 
   return {
     getTranslatedError,

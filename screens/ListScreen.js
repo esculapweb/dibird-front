@@ -102,9 +102,16 @@ const ListScreen = ({
   const handleSortPress = () => setSortModalVisible(true);
 
   const removeFilter = (key) => {
-    const newFilters = { ...filters, [key]: undefined };
-    setFilters(newFilters);
-    saveFilters(screenName, newFilters);
+    setFilters((prev) => {
+      const newFilters = { ...prev };
+      newFilters[key] = undefined;
+      if (key === "territory") {
+        newFilters.place = undefined;
+        newFilters.species = undefined;
+      }
+      saveFilters(screenName, newFilters);
+      return newFilters;
+    });
   };
 
   const headerRight = useCallback(

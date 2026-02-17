@@ -10,11 +10,11 @@ export const useFilterLabels = (filters) => {
   const { language } = useLanguage();
 
   const countriesQuery = useTranslatedQuery({
-    queryFn: fetchMyCountries,
+    queryFn: () => fetchMyCountries(false),
     params: [language],
     mapResult: true,
     enabled: true,
-    type: 'mycouuntries',
+    type: "mycountries",
   });
 
   const placesQuery = useTranslatedQuery({
@@ -22,7 +22,7 @@ export const useFilterLabels = (filters) => {
     params: [filters?.territory ?? null, language],
     mapResult: true,
     enabled: !!filters?.territory,
-    type: 'places'
+    type: "places",
   });
 
   const speciesQuery = useTranslatedQuery({
@@ -30,7 +30,7 @@ export const useFilterLabels = (filters) => {
     params: [filters?.territory ?? null, language],
     mapResult: true,
     enabled: !!filters?.territory,
-    type: 'speciesall'
+    type: "speciesall",
   });
 
   const getFilterLabel = (key, value) => {

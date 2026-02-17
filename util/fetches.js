@@ -74,22 +74,13 @@ export const fetchTimezones = async () => {
   }));
 };
 
-export const fetchCountries = async () => {
-  const res = await api.get("/api/territory-dropdown-my/");
-  return res.data.map(([value, label]) => ({
-    value,
-    label: label.label,
-    code: label["data-code"],
-    icon: isoToFlagEmoji(label["data-code"]),
-  }));
-};
-
 export const fetchMyCountries = async (favOnly = false) => {
-  const params = favOnly ? { fav_only: favOnly } : {};
+  const params = favOnly ? { fav_only: true } : {};
   const res = await api.get("/myapi/territory2/", { params });
   return res.data.map((item) => ({
     value: item.territory_id,
     label: item.name,
+    code: item.code,
     icon: isoToFlagEmoji(item.code),
     iconLabel: item.favourite && "star",
   }));
@@ -120,7 +111,7 @@ export const fetchSpecies = async (territory = null) => {
   return res.data.map((item) => ({
     value: item.taxon_pk,
     label: item.sp_name,
-    labelLang: item.sp_name_lang
+    labelLang: item.sp_name_lang,
   }));
 };
 
@@ -131,11 +122,11 @@ const fetchSpeciesForTerritory = (territory_id, order) => {
     o: normalizeValue(order, orderAllowed),
   };
 
-  const res =  api.get("/api/territory-species2/", {
+  const res = api.get("/api/territory-species2/", {
     params,
   });
 
-  return res
+  return res;
 };
 
 export const fetchSeen = async (filters = {}, order = "ioc_id") => {
@@ -202,7 +193,6 @@ export const fetchObservations = async (
   search = "",
   page = 1,
 ) => {
-
   const { date, ...restFilters } = filters;
 
   const apiFilters = {
@@ -217,7 +207,7 @@ export const fetchObservations = async (
   };
   if (search) params.name = search;
   if (page > 1) params.page = page;
-  
+
   const res = await api.get("/myapi/observation2/", { params });
 
   return res.data;

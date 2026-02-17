@@ -134,7 +134,7 @@ const FilterModal = ({
               value={territoryValue}
               setValue={setTerritoryValue}
               query={useTranslatedQuery({
-                queryFn: fetchMyCountries,
+                queryFn: () => fetchMyCountries(false),
                 params: [language],
                 type: "mycountries",
               })}

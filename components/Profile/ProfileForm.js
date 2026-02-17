@@ -7,7 +7,7 @@ import AnimatedLoadingButton from "../ui/AnimatedLoadingButton";
 import DropdownInput from "../ui/DropdownInput";
 import RadioGroup from "../ui/RadioGroup";
 import { useProfile } from "../../store/profile-context";
-import { fetchTimezones, fetchCountries } from "../../util/fetches";
+import { fetchTimezones, fetchMyCountries } from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
 import { useTranslatedQuery } from "../../hooks/useQueryWithTranslation";
 
@@ -103,9 +103,9 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
           value={territoryValue}
           setValue={setTerritoryValue}
           query={useTranslatedQuery({
-            queryFn: fetchCountries,
+            queryFn: () => fetchMyCountries(false),
             params: [language],
-            type: 'countries'
+            type: "countries",
           })}
         />
 

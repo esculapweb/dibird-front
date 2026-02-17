@@ -19,9 +19,11 @@ const FilterChips = ({ filters, onRemove }) => {
     territory: t("territory"),
     place: t("place"),
     date: t("date"),
-    species: t("species"),
+    species: t("species_single"),
     favourite: t("favourite"),
   };
+
+  if (activeFilters.length === 0) return null;
 
   return (
     <View style={styles.wrapper}>
