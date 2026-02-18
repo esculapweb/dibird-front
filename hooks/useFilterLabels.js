@@ -30,7 +30,7 @@ export const useFilterLabels = (filters) => {
     params: [filters?.territory ?? null, language],
     mapResult: true,
     enabled: !!filters?.territory,
-    type: "speciesall",
+    type: "species",
   });
 
   const getFilterLabel = (key, value) => {

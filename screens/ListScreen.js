@@ -159,6 +159,7 @@ const ListScreen = ({
           ...(prev ?? {}),
           territory: territoryId,
           place: placeId,
+          species: null,
         };
 
         saveFilters(screenName, newFilters);
