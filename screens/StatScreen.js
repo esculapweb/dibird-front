@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 
 import StatsTabs from "../navigation/StatsTabs";
@@ -7,7 +8,12 @@ import { useLanguage } from "../store/language-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import FilterModal from "../components/Filters/FilterModal";
 import SortModal from "../components/Sort/SortModal";
-import { loadFilters, clearFilters, loadSort, saveFilters } from "../util/storageHelper";
+import {
+  loadFilters,
+  clearFilters,
+  loadSort,
+  saveFilters,
+} from "../util/storageHelper";
 import FiltersHeader from "../components/ui/FiltersHeader";
 import FilterChips from "../components/Filters/FilterChips";
 
@@ -19,6 +25,7 @@ const StatScreen = ({ route, navigation }) => {
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [sort, setSort] = useState(null);
   const [sortModalVisible, setSortModalVisible] = useState(false);
+  const [filtersLoaded, setFiltersLoaded] = useState(false);
   const [seen, setSeen] = useState([]);
   const [notSeen, setNotSeen] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,9 +59,13 @@ const StatScreen = ({ route, navigation }) => {
   };
 
   const removeFilter = (key) => {
-    const newFilters = { ...filters, [key]: undefined };
-    setFilters(newFilters);
-    saveFilters(route.name, newFilters);
+    setFilters((prev) => {
+      const newFilters = { ...prev };
+      newFilters[key] = undefined;
+      if (key === "territory") newFilters.place = undefined;
+      saveFilters(route.name, newFilters);
+      return newFilters;
+    });
   };
 
   const handleAddObservation = () => console.log("add observation");
@@ -74,6 +85,7 @@ const StatScreen = ({ route, navigation }) => {
     const initFilters = async () => {
       const storedFilters = await loadFilters(route.name);
       setFilters(storedFilters ?? {});
+      setFiltersLoaded(true);
     };
 
     initFilters();
@@ -92,6 +104,31 @@ const StatScreen = ({ route, navigation }) => {
 
     initSort();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!filtersLoaded) return;
+
+      const { placeId, territoryId } = route.params ?? {};
+      if (!placeId || !territoryId) return;
+
+      setFilters((prev) => {
+        const newFilters = {
+          ...(prev ?? {}),
+          territory: territoryId,
+          place: placeId,
+        };
+
+        saveFilters(route.name, newFilters);
+        return newFilters;
+      });
+
+      navigation.setParams({
+        placeId: undefined,
+        territoryId: undefined,
+      });
+    }, [route.params?.placeId, filtersLoaded]),
+  );
 
   useEffect(() => {
     navigation.setOptions({
