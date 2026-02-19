@@ -13,7 +13,7 @@ import {
 } from "../util/storageHelper";
 import FiltersHeader from "../components/ui/FiltersHeader";
 import FilterChips from "../components/Filters/FilterChips";
-import { loadDecorator, fetchSeen } from "../util/fetches";
+import { loadDecorator, fetchStat } from "../util/fetches";
 import { normalizeValue } from "../util/helpers";
 
 import StatsTabs from "../navigation/StatsTabs";
@@ -144,7 +144,9 @@ const StatScreen = ({ route, navigation }) => {
     const loadData = async () => {
       setIsLoading(true);
       try {
-        const { seenList, notSeenList } = await fetchSeen(filters, sort);
+        const seenList = await fetchStat(true, filters, sort);
+        const notSeenList = await fetchStat(false, filters, sort);
+
         setSeen(seenList);
         setNotSeen(notSeenList);
       } finally {

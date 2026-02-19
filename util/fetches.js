@@ -98,7 +98,8 @@ export const fetchObservations = async (
   return res.data;
 };
 
-export const fetchSeen = async (filters = {}, order = "ioc_id") => {
+
+export const fetchStat = async (seen, filters = {}, order = "ioc_id") => {
   const { date, ...restFilters } = filters;
 
   const apiFilters = {
@@ -108,35 +109,13 @@ export const fetchSeen = async (filters = {}, order = "ioc_id") => {
 
   const params = {
     ...cleanFilters(apiFilters),
-    per_page: 20000,
+    seen: seen,
     o: order,
   };
 
-  const res = await api.get("/myapi/stat/", { params });
+  // if (!restFilters?.territory) return [];
 
-  return res?.data?.results.map((item) => ({
-    id: item.species_id,
-    ...item,
-  }));
-};
-
-export const fetchNotSeen = async (filters = {}, order = "ioc_id") => {
-  const { date, ...restFilters } = filters;
-
-  const apiFilters = {
-    ...restFilters,
-    ...buildDateParams(date),
-  };
-
-  const params = {
-    ...cleanFilters(apiFilters),
-    per_page: 20000,
-    o: order,
-  };
-
-  if (!restFilters?.territory) return [];
-
-  const res = await api.get("/myapi/notseen/", { params });
+  const res = await api.get("/myapi/stat2/", { params });
   return res?.data?.results.map((item) => ({
     id: item.species_id,
     ...item,
