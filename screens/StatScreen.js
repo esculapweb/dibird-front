@@ -2,9 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 
-import StatsTabs from "../navigation/StatsTabs";
-import { loadDecorator, normalizeValue, fetchSeen } from "../util/fetches";
-import { useLanguage } from "../store/language-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import FilterModal from "../components/Filters/FilterModal";
 import SortModal from "../components/Sort/SortModal";
@@ -16,6 +13,11 @@ import {
 } from "../util/storageHelper";
 import FiltersHeader from "../components/ui/FiltersHeader";
 import FilterChips from "../components/Filters/FilterChips";
+import { loadDecorator, fetchSeen } from "../util/fetches";
+import { normalizeValue } from "../util/helpers";
+
+import StatsTabs from "../navigation/StatsTabs";
+import { useLanguage } from "../store/language-context";
 
 const StatScreen = ({ route, navigation }) => {
   const { t } = useTranslation();

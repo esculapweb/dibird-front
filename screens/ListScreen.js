@@ -11,15 +11,16 @@ import {
   loadSort,
   saveFilters,
 } from "../util/storageHelper";
-import { normalizeValue } from "../util/fetches";
-import SearchInput from "../components/ui/SearchInput";
-import { useDebounce } from "../util/useDebounce";
-import ErrorOverlay from "../components/Error/ErrorOverlay";
 import FiltersHeader from "../components/ui/FiltersHeader";
+import FilterChips from "../components/Filters/FilterChips";
+
+import { normalizeValue } from "../util/helpers";
 import { useList } from "../hooks/useList";
 import ItemsList from "../components/ui/ItemsList";
 import HeaderTitleWithBadge from "../components/ui/HeaderTitleWithBadge";
-import FilterChips from "../components/Filters/FilterChips";
+import SearchInput from "../components/ui/SearchInput";
+import { useDebounce } from "../util/useDebounce";
+import ErrorOverlay from "../components/Error/ErrorOverlay";
 
 const ListScreen = ({
   route,

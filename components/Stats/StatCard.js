@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, Image, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { formatDate, isoToFlagEmoji } from "../../util/fetches";
+import { formatDate, isoToFlagEmoji } from "../../util/helpers";
 import { Config } from "../../constants/config";
 import { useTheme } from "../../store/theme-context";
 import MetaItem from "../ui/MetaItem";

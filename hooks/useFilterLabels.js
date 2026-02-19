@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useLanguage } from "../store/language-context";
 import { useTranslatedQuery } from "./useQueryWithTranslation";
 
-import { formatDate } from "../util/fetches";
+import { formatDate } from "../util/helpers";
 import { fetchMyCountries, fetchMyPlaces, fetchSpecies } from "../util/fetches";
 
 export const useFilterLabels = (filters) => {

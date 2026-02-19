@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Alert } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import { useTheme } from "../store/theme-context";
-import { isoToFlagEmoji, formatDate } from "../util/fetches";
+import { isoToFlagEmoji, formatDate } from "../util/helpers";
 import { StatBig } from "../components/Place/StatBig";
 import { MetaRow } from "../components/Place/MetaRow";
 import IconButton from "../components/ui/IconButton";

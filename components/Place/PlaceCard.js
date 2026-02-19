@@ -6,7 +6,7 @@ import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 
 import { useTheme } from "../../store/theme-context";
-import { isoToFlagEmoji } from "../../util/fetches";
+import { isoToFlagEmoji } from "../../util/helpers";
 import { BirdSVG } from "../ui/Svgs";
 
 const useStyles = (Colors) => React.useMemo(() => stylesFn(Colors), [Colors]);
