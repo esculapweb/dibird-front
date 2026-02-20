@@ -19,13 +19,14 @@ const ItemsList = ({
   emptyType,
   onClear,
   ItemCard,
-  noItems
+  noItems,
+  filters
 }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const { t } = useTranslation();
 
-  const renderItem = ({ item, index }) => <ItemCard item={item} index={index} />;
+  const renderItem = ({ item, index }) => <ItemCard item={item} index={index} filters={filters} />;
 
   const getEmptyProps = () => {
     if (!emptyType) return null;

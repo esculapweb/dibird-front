@@ -1,6 +1,7 @@
 import React from "react";
-import { View, Text, StyleSheet, Image, Pressable } from "react-native";
+import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 
 import { formatDate, isoToFlagEmoji } from "../../util/helpers";
 import { Config } from "../../constants/config";
@@ -9,9 +10,12 @@ import MetaItem from "../ui/MetaItem";
 
 const useStyles = (Colors) => React.useMemo(() => stylesFn(Colors), [Colors]);
 
-const StatCard = React.memo(({ item, index, seen }) => {
+const StatCard = React.memo(({ item, index, filters }) => {
   const { Colors } = useTheme();
   const styles = useStyles(Colors);
+  const seen=filters?.seen;
+
+  
 
   const minDate = item?.min_date && formatDate(item.min_date);
   const maxDate = item?.max_date && formatDate(item.max_date);
@@ -38,6 +42,8 @@ const StatCard = React.memo(({ item, index, seen }) => {
           <Image
             source={{ uri: `${Config.baseUrl}/media/${item.sp_thumb}` }}
             style={[styles.image, !seen && styles.imageSmall]}
+            contentFit="cover"
+            cachePolicy="disk"
           />
         ) : (
           <View style={[styles.imagePlaceholder, !seen && styles.imageSmall]} />

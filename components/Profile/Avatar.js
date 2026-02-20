@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import {
   StyleSheet,
   View,
-  Image,
   Text,
   Pressable,
   ActivityIndicator,
@@ -15,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import { useTheme } from "../../store/theme-context";
 import { patchAvatar } from "../../util/requests";
 import Toast from "react-native-toast-message";
+import { Image } from "expo-image";
 
 import { useProfile } from "../../store/profile-context";
 import api, { showError } from "../../services/api";
@@ -149,7 +149,12 @@ const Avatar = () => {
     <>
       <Pressable style={styles.container} onPress={onPress} disabled={loading}>
         {avatar ? (
-          <Image source={{ uri: avatar }} style={styles.avatar} />
+          <Image
+            source={{ uri: avatar }}
+            style={styles.avatar}
+            contentFit="cover"
+            cachePolicy="disk"
+          />
         ) : (
           <View style={styles.placeholder}>
             <Text style={styles.avatarName}>{avatarName}</Text>

@@ -1,6 +1,5 @@
 import { ScrollView, View, Pressable, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useTranslation } from "react-i18next";
 
 import { useTheme } from "../../store/theme-context";
 import { useFilterLabels } from "../../hooks/useFilterLabels";
@@ -8,7 +7,6 @@ import { useFilterLabels } from "../../hooks/useFilterLabels";
 const FilterChips = ({ filters, onRemove }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
-  const { t } = useTranslation();
   const { getFilterLabel } = useFilterLabels(filters);
 
   const activeFilters = Object.entries(filters).filter(
@@ -30,7 +28,12 @@ const FilterChips = ({ filters, onRemove }) => {
         {activeFilters.map(([key, value]) => {
           const [filterName, filterLabel] = getFilterLabel(key, value);
           return (
-            <View key={key} style={styles.filterChip}>
+            <Pressable
+              key={key}
+              style={styles.filterChip}
+              onPress={() => onRemove(key)}
+              hitSlop={6}
+            >
               <Text
                 style={styles.filterText}
                 numberOfLines={1}
@@ -38,18 +41,14 @@ const FilterChips = ({ filters, onRemove }) => {
               >
                 {filterName}: {filterLabel}
               </Text>
-              <Pressable
-                onPress={() => onRemove(key)}
-                style={styles.removeIcon}
-                hitSlop={8}
-              >
+              <View style={styles.removeIcon}>
                 <Ionicons
                   name="close-circle"
                   size={16}
                   color={Colors.textSecondary}
                 />
-              </Pressable>
-            </View>
+              </View>
+            </Pressable>
           );
         })}
       </ScrollView>
@@ -85,9 +84,8 @@ const stylesFn = (Colors) =>
       fontSize: 12,
       color: Colors.textMain,
       lineHeight: 16,
-      flexShrink: 1, 
+      flexShrink: 1,
       marginRight: 4,
-
     },
     removeIcon: {
       marginLeft: 4,

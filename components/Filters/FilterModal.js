@@ -34,6 +34,11 @@ const FilterModal = ({
     { label: t("non_favourites_only"), value: false },
   ];
 
+  const seenOptions = [
+    { label: t("yes"), value: true },
+    { label: t("no"), value: false },
+  ];
+
   const dateFilterInitial = {
     mode: "any",
     from: null,
@@ -41,6 +46,7 @@ const FilterModal = ({
     year: null,
   };
 
+  const [seenValue, setSeenValue] = useState(filters?.seen ?? true);
   const [territoryValue, setTerritoryValue] = useState(
     filters?.territory || null,
   );
@@ -65,6 +71,12 @@ const FilterModal = ({
     enabled: !!territoryValue,
   });
 
+  const queryMyCountries = useTranslatedQuery({
+    queryFn: () => fetchMyCountries(false),
+    params: [language],
+    type: "mycountries",
+  });
+
   useEffect(() => {
     setPlaceValue(null);
   }, [territoryValue]);
@@ -84,6 +96,7 @@ const FilterModal = ({
   useEffect(() => {
     if (!visible) return;
 
+    setSeenValue(filters?.seen ?? true);
     setTerritoryValue(filters?.territory ?? null);
     setPlaceValue(filters?.place ?? null);
     setSpeciesValue(filters?.species ?? null);
@@ -99,6 +112,7 @@ const FilterModal = ({
 
   const getNewFilters = () => {
     let res = {};
+    if (allowed.includes("seen")) res.seen = seenValue;
     if (allowed.includes("territory")) res.territory = territoryValue;
     if (allowed.includes("place")) res.place = placeValue;
     if (allowed.includes("species")) res.species = speciesValue;
@@ -127,17 +141,26 @@ const FilterModal = ({
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
+
+          {allowed.includes("seen") && (
+            <View style={{ marginTop: 12, marginBottom: 20, }}>
+              <RadioGroup
+                label={`${t("seen")}:`}
+                value={seenValue}
+                onChange={setSeenValue}
+                direction="row"
+                options={seenOptions}
+              />
+            </View>
+          )}
+
           {allowed.includes("territory") && (
             <DropdownInput
               title={t("country")}
               placeholder={t("all_countries")}
               value={territoryValue}
               setValue={setTerritoryValue}
-              query={useTranslatedQuery({
-                queryFn: () => fetchMyCountries(false),
-                params: [language],
-                type: "mycountries",
-              })}
+              query={queryMyCountries}
               allowReset
             />
           )}

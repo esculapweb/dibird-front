@@ -105,11 +105,17 @@ const ListScreen = ({
   const removeFilter = (key) => {
     setFilters((prev) => {
       const newFilters = { ...prev };
-      newFilters[key] = undefined;
+      if (key === "seen") {
+        newFilters[key] = !prev[key];
+      } else {
+        newFilters[key] = undefined;
+      }
+
       if (key === "territory") {
         newFilters.place = undefined;
         newFilters.species = undefined;
       }
+
       saveFilters(screenName, newFilters);
       return newFilters;
     });
@@ -220,6 +226,7 @@ const ListScreen = ({
         onClear={handleClearFiltersSearch}
         ItemCard={ItemCard}
         noItems={noItems}
+        filters={filters}
       />
       <SortModal
         screen={screenName}

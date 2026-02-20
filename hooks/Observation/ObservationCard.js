@@ -1,7 +1,8 @@
 import React from "react";
-import { View, Text, StyleSheet, Image, Pressable } from "react-native";
+import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { Image } from "expo-image";
 
 import { formatDate, isoToFlagEmoji } from "../../util/helpers";
 import { Config } from "../../constants/config";
@@ -35,6 +36,8 @@ const ObservationCard = React.memo(({ item, index }) => {
               uri: `${Config.baseUrl}/media/${item.species_data.thumb}`,
             }}
             style={styles.image}
+            contentFit="cover"
+            cachePolicy="disk"
           />
         ) : (
           <View style={styles.imagePlaceholder} />
@@ -110,7 +113,9 @@ const ObservationCard = React.memo(({ item, index }) => {
                   {item.place_data?.name}
                 </Text>
               </>
-            ) : <Text style={{flex:1}}></Text>}
+            ) : (
+              <Text style={{ flex: 1 }}></Text>
+            )}
 
             {item.notes && (
               <Ionicons

@@ -1,23 +1,9 @@
 import api, { showError } from "../services/api";
 import {
   isoToFlagEmoji,
-  normalizeValue,
   buildDateParams,
   cleanFilters,
 } from "./helpers";
-
-export const loadDecorator = async (loaderFn) => {
-  try {
-    await loaderFn();
-  } catch (e) {
-    showError(e);
-    console.warn(
-      `[${new Date().toLocaleString()}] Failed to load data`,
-      e.code,
-      e.message,
-    );
-  }
-};
 
 export const fetchTimezones = async () => {
   const res = await api.get("/api/timezones/");
@@ -92,14 +78,13 @@ export const fetchObservations = async (
   };
   if (search) params.name = search;
   if (page > 1) params.page = page;
-
   const res = await api.get("/myapi/observation2/", { params });
 
   return res.data;
 };
 
 
-export const fetchStat = async (seen, filters = {}, order = "ioc_id") => {
+export const fetchStat = async (filters = {}, order = "ioc_id", search="", page=1) => {
   const { date, ...restFilters } = filters;
 
   const apiFilters = {
@@ -109,17 +94,16 @@ export const fetchStat = async (seen, filters = {}, order = "ioc_id") => {
 
   const params = {
     ...cleanFilters(apiFilters),
-    seen: seen,
+    per_page: 100,
     o: order,
   };
+  if (search) params.name = search;
+  if (page > 1) params.page = page;
 
   // if (!restFilters?.territory) return [];
 
   const res = await api.get("/myapi/stat2/", { params });
-  return res?.data?.results.map((item) => ({
-    id: item.species_id,
-    ...item,
-  }));
+  return res.data;
 };
 
 export const fetchSpecies = async (territory = null) => {
