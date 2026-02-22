@@ -39,8 +39,6 @@ export const useFilterLabels = (filters) => {
     const placeholder = "...";
 
     switch (key) {
-      case "seen":
-        return [t("seen"), value ? t("yes") : t("no")];
       case "territory":
         return [t("territory"), countriesQuery.data?.get(Number(value)) ?? placeholder];
 

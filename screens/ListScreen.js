@@ -34,6 +34,7 @@ const ListScreen = ({
   noItems,
   showSearch,
   title,
+  seenMode
 }) => {
   const { t } = useTranslation();
 
@@ -61,6 +62,7 @@ const ListScreen = ({
     filters,
     sort,
     search: debouncedSearch,
+    seenMode
   });
   const items = data?.pages.flatMap((page) => page.results) ?? [];
 
@@ -105,11 +107,7 @@ const ListScreen = ({
   const removeFilter = (key) => {
     setFilters((prev) => {
       const newFilters = { ...prev };
-      if (key === "seen") {
-        newFilters[key] = !prev[key];
-      } else {
-        newFilters[key] = undefined;
-      }
+      newFilters[key] = undefined;
 
       if (key === "territory") {
         newFilters.place = undefined;
@@ -226,7 +224,7 @@ const ListScreen = ({
         onClear={handleClearFiltersSearch}
         ItemCard={ItemCard}
         noItems={noItems}
-        filters={filters}
+        seenMode={seenMode}
       />
       <SortModal
         screen={screenName}

@@ -10,10 +10,9 @@ import MetaItem from "../ui/MetaItem";
 
 const useStyles = (Colors) => React.useMemo(() => stylesFn(Colors), [Colors]);
 
-const StatCard = React.memo(({ item, index, filters }) => {
+const StatCard = React.memo(({ item, index, seenMode }) => {
   const { Colors } = useTheme();
   const styles = useStyles(Colors);
-  const seen=filters?.seen;
 
   
 
@@ -41,12 +40,12 @@ const StatCard = React.memo(({ item, index, filters }) => {
         {item.sp_thumb ? (
           <Image
             source={{ uri: `${Config.baseUrl}/media/${item.sp_thumb}` }}
-            style={[styles.image, !seen && styles.imageSmall]}
+            style={[styles.image, !seenMode && styles.imageSmall]}
             contentFit="cover"
             cachePolicy="disk"
           />
         ) : (
-          <View style={[styles.imagePlaceholder, !seen && styles.imageSmall]} />
+          <View style={[styles.imagePlaceholder, !seenMode && styles.imageSmall]} />
         )}
 
         <View style={styles.content}>
@@ -56,12 +55,12 @@ const StatCard = React.memo(({ item, index, filters }) => {
 
           <View style={styles.latinRow}>
             <Text style={styles.latin}>{item.sp_latin}</Text>
-            {seen && countriesText && (
+            {seenMode && countriesText && (
               <Text style={styles.flags}>{countriesText}</Text>
             )}
           </View>
 
-          {seen && (
+          {seenMode && (
             <View style={styles.meta}>
               <View style={styles.metaLeft}>
                 <MetaItem icon="calendar-outline" text={dateText} />

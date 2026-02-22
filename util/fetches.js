@@ -1,9 +1,5 @@
-import api, { showError } from "../services/api";
-import {
-  isoToFlagEmoji,
-  buildDateParams,
-  cleanFilters,
-} from "./helpers";
+import api from "../services/api";
+import { isoToFlagEmoji, buildDateParams, cleanFilters } from "./helpers";
 
 export const fetchTimezones = async () => {
   const res = await api.get("/api/timezones/");
@@ -40,51 +36,27 @@ export const fetchMyPlaces = async (territory = null) => {
   }));
 };
 
-export const fetchPlaces = async (
+export const fetchSpecies = async (territory = null) => {
+  const params = {
+    o: "ioc_id",
+  };
+  if (!territory) return [];
+  params.territory_id = territory;
+  const res = await api.get("/api/territory-species2/", { params });
+  return res.data.map((item) => ({
+    value: item.taxon_pk,
+    label: item.sp_name,
+    labelLang: item.sp_name_lang,
+  }));
+};
+
+const fetchAbstract = async (
+  fetchUrl,
   filters = {},
-  order = "name",
+  order,
   search = "",
   page = 1,
 ) => {
-  let params = {
-    ...cleanFilters(filters),
-    per_page: 100,
-    o: order,
-  };
-  if (search) params.name = search;
-  if (page > 1) params.page = page;
-
-  const res = await api.get("/myapi/place2/", { params });
-  return res.data;
-};
-
-export const fetchObservations = async (
-  filters = {},
-  order = "-date",
-  search = "",
-  page = 1,
-) => {
-  const { date, ...restFilters } = filters;
-
-  const apiFilters = {
-    ...restFilters,
-    ...buildDateParams(date),
-  };
-
-  let params = {
-    ...cleanFilters(apiFilters),
-    per_page: 100,
-    o: order,
-  };
-  if (search) params.name = search;
-  if (page > 1) params.page = page;
-  const res = await api.get("/myapi/observation2/", { params });
-
-  return res.data;
-};
-
-
-export const fetchStat = async (filters = {}, order = "ioc_id", search="", page=1) => {
   const { date, ...restFilters } = filters;
 
   const apiFilters = {
@@ -102,20 +74,35 @@ export const fetchStat = async (filters = {}, order = "ioc_id", search="", page=
 
   // if (!restFilters?.territory) return [];
 
-  const res = await api.get("/myapi/stat2/", { params });
+  const res = await api.get(fetchUrl, { params });
   return res.data;
 };
 
-export const fetchSpecies = async (territory = null) => {
-  const params = {
-    o: "ioc_id",
-  };
-  if (!territory) return [];
-  params.territory_id = territory;
-  const res = await api.get("/api/territory-species2/", { params });
-  return res.data.map((item) => ({
-    value: item.taxon_pk,
-    label: item.sp_name,
-    labelLang: item.sp_name_lang,
-  }));
+export const fetchPlaces = (
+  filters = {},
+  order = "name",
+  search = "",
+  page = 1,
+) => fetchAbstract("/myapi/place2/", filters, order, search, page);
+
+export const fetchObservations = (
+  filters = {},
+  order = "-date",
+  search = "",
+  page = 1,
+) => fetchAbstract("/myapi/observation2/", filters, order, search, page);
+
+export const fetchStat = (
+  filters = {},
+  order = "ioc_id",
+  search = "",
+  page = 1,
+  seenMode,
+) => {
+  console.log('seenMode', seenMode)
+
+  filters = { ...filters, seen: seenMode };
+  return fetchAbstract("/myapi/stat2/", filters, order, search, page);
 };
+
+// if (!restFilters?.territory) return [];

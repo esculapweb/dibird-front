@@ -20,13 +20,13 @@ const ItemsList = ({
   onClear,
   ItemCard,
   noItems,
-  filters
+  seenMode
 }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const { t } = useTranslation();
 
-  const renderItem = ({ item, index }) => <ItemCard item={item} index={index} filters={filters} />;
+  const renderItem = ({ item, index }) => <ItemCard item={item} index={index} seenMode={seenMode} />;
 
   const getEmptyProps = () => {
     if (!emptyType) return null;
