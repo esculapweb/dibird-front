@@ -1,16 +1,13 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { StyleSheet, View, Pressable, Text } from "react-native";
 
 import ListScreen from "./ListScreen";
 import { fetchStat } from "../util/fetches";
 import StatCard from "../components/Stats/StatCard";
-import { useTheme } from "../store/theme-context";
+import Tabs from "../components/ui/Tabs";
 
 const StatScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
-  const { Colors } = useTheme();
-  const styles = stylesFn(Colors);
   const [seenMode, setSeenMode] = useState(true);
 
   const SORT_OPTIONS = [
@@ -30,27 +27,18 @@ const StatScreen = ({ route, navigation }) => {
     actions: [{ label: t("add_first_observation"), onPress: handleAdd }],
   };
 
+  const renderItem = useCallback(
+    ({ item, index }) => (
+      <StatCard item={item} index={index} seenMode={seenMode} />
+    ),
+    [seenMode],
+  );
+
+  const keyExtractor = (item, _) => `${route.name}-${item.species_id}`;
+
+
   return (
     <>
-      <View style={styles.segment}>
-        <Pressable
-          style={[styles.segmentItem, seenMode && styles.activeSegment]}
-          onPress={() => setSeenMode(true)}
-        >
-          <Text style={[styles.segmentText, seenMode && styles.activeText]}>
-            Отмеченные
-          </Text>
-        </Pressable>
-
-        <Pressable
-          style={[styles.segmentItem, !seenMode && styles.activeSegment]}
-          onPress={() => setSeenMode(false)}
-        >
-          <Text style={[styles.segmentText, !seenMode && styles.activeText]}>
-            Не отмеченные
-          </Text>
-        </Pressable>
-      </View>
       <ListScreen
         route={route}
         navigation={navigation}
@@ -60,47 +48,16 @@ const StatScreen = ({ route, navigation }) => {
         sortOptions={SORT_OPTIONS}
         allowedFilters={["territory", "place", "date"]}
         errorTitle={t("stat_unavailable")}
-        ItemCard={StatCard}
+        onAdd={handleAdd}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
         noItems={noItems}
         title={t("statistics")}
-        seenMode={seenMode}
+        tabs={(<Tabs tabsMode={seenMode} setTabsMode={setSeenMode} />)}
+        tabsMode={seenMode}
       />
     </>
   );
 };
 
 export default StatScreen;
-
-const stylesFn = (Colors) =>
-  StyleSheet.create({
-    segment: {
-      flexDirection: "row",
-      backgroundColor: Colors.card,
-      borderRadius: 12,
-      padding: 4,
-      marginHorizontal: 16,
-      marginTop: 8,
-    },
-
-    segmentItem: {
-      flex: 1,
-      paddingVertical: 8,
-      alignItems: "center",
-      borderRadius: 10,
-    },
-
-    activeSegment: {
-      backgroundColor: Colors.primary,
-    },
-
-    segmentText: {
-      fontSize: 14,
-      color: Colors.textSecondary,
-      fontWeight: "500",
-    },
-
-    activeText: {
-      color: "white",
-      fontWeight: "600",
-    },
-  });

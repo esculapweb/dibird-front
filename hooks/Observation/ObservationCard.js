@@ -37,6 +37,7 @@ const ObservationCard = React.memo(({ item, index }) => {
             }}
             style={styles.image}
             contentFit="cover"
+            transition={0}
             cachePolicy="disk"
           />
         ) : (

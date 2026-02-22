@@ -22,14 +22,19 @@ const PlacesScreen = ({ route, navigation }) => {
     // { label: t("diary_count_desc"), value: "-diary_count" },
   ];
 
-  const handleAdd = () => navigation.navigate("PlaceEditor")
+  const handleAdd = () => navigation.navigate("PlaceEditor");
 
   const noItems = {
-      icon: "location-outline",
-      message: t("no_places_yet"),
-      actions: [{ label: t("add_first_place"), onPress: handleAdd }],
-    };
-  
+    icon: "location-outline",
+    message: t("no_places_yet"),
+    actions: [{ label: t("add_first_place"), onPress: handleAdd }],
+  };
+
+  const renderItem = ({ item, index }) => (
+    <PlaceCard item={item} index={index} />
+  );
+
+  const keyExtractor = (item, _) => `${route.name}-${item.id}`;
 
   return (
     <ListScreen
@@ -40,7 +45,8 @@ const PlacesScreen = ({ route, navigation }) => {
       allowedFilters={["territory", "favourite"]}
       errorTitle={t("places_unavailable")}
       onAdd={handleAdd}
-      ItemCard={PlaceCard}
+      renderItem={renderItem}
+      keyExtractor={keyExtractor}
       noItems={noItems}
       showSearch={true}
       title={t("places")}

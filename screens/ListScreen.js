@@ -30,11 +30,13 @@ const ListScreen = ({
   allowedFilters,
   errorTitle,
   onAdd,
-  ItemCard,
+  renderItem,
+  keyExtractor,
   noItems,
   showSearch,
   title,
-  seenMode
+  tabs,
+  tabsMode,
 }) => {
   const { t } = useTranslation();
 
@@ -62,10 +64,10 @@ const ListScreen = ({
     filters,
     sort,
     search: debouncedSearch,
-    seenMode
+    tabsMode,
   });
   const items = data?.pages.flatMap((page) => page.results) ?? [];
-
+  
   const hasActiveFilters = filters
     ? Object.values(filters).some((v) =>
         Array.isArray(v) ? v.length > 0 : v != null && v !== "",
@@ -199,10 +201,12 @@ const ListScreen = ({
         logo
       />
     );
-  if (isLoading || !filters || !sort) return <LoadingOverlay />;
+  if (isLoading || !data) return <LoadingOverlay />;
 
   return (
     <>
+      {tabs}
+
       {showSearch && (
         <SearchInput
           value={search}
@@ -216,15 +220,14 @@ const ListScreen = ({
       )}
       <ItemsList
         data={items}
-        screen={screenName}
         onEndReached={handleLoadMore}
         isLoadingMore={isFetchingNextPage}
         onAdd={onAdd}
         emptyType={emptyType}
         onClear={handleClearFiltersSearch}
-        ItemCard={ItemCard}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
         noItems={noItems}
-        seenMode={seenMode}
       />
       <SortModal
         screen={screenName}

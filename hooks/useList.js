@@ -7,11 +7,11 @@ export const useList = ({
   filters,
   sort,
   search,
-  seenMode
+  tabsMode
 }) => {
   const {language} = useLanguage();
   return useInfiniteQuery({
-    queryKey: [screenName, JSON.stringify(filters), sort, search, seenMode, language],
+    queryKey: [screenName, JSON.stringify(filters), sort, search, tabsMode, language],
     queryFn: ({ pageParam = 1 }) =>
       fetchFunction(filters, sort, search, pageParam),
     getNextPageParam: (lastPage) => {

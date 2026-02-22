@@ -14,8 +14,6 @@ const StatCard = React.memo(({ item, index, seenMode }) => {
   const { Colors } = useTheme();
   const styles = useStyles(Colors);
 
-  
-
   const minDate = item?.min_date && formatDate(item.min_date);
   const maxDate = item?.max_date && formatDate(item.max_date);
 
@@ -42,6 +40,7 @@ const StatCard = React.memo(({ item, index, seenMode }) => {
             source={{ uri: `${Config.baseUrl}/media/${item.sp_thumb}` }}
             style={[styles.image, !seenMode && styles.imageSmall]}
             contentFit="cover"
+            transition={0}
             cachePolicy="disk"
           />
         ) : (

@@ -78,31 +78,20 @@ const fetchAbstract = async (
   return res.data;
 };
 
-export const fetchPlaces = (
-  filters = {},
-  order = "name",
-  search = "",
-  page = 1,
-) => fetchAbstract("/myapi/place2/", filters, order, search, page);
-
-export const fetchObservations = (
-  filters = {},
-  order = "-date",
-  search = "",
-  page = 1,
-) => fetchAbstract("/myapi/observation2/", filters, order, search, page);
-
 export const fetchStat = (
-  filters = {},
+  filters,
   order = "ioc_id",
-  search = "",
-  page = 1,
+  search,
+  page,
   seenMode,
 ) => {
-  console.log('seenMode', seenMode)
-
   filters = { ...filters, seen: seenMode };
   return fetchAbstract("/myapi/stat2/", filters, order, search, page);
 };
-
 // if (!restFilters?.territory) return [];
+
+export const fetchPlaces = (filters, order = "name", search, page) =>
+  fetchAbstract("/myapi/place2/", filters, order, search, page);
+
+export const fetchObservations = (filters, order = "-date", search, page) =>
+  fetchAbstract("/myapi/observation2/", filters, order, search, page);

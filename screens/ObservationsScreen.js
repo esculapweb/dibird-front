@@ -24,16 +24,23 @@ const ObservationsScreen = ({ route, navigation }) => {
     actions: [{ label: t("add_first_observation"), onPress: handleAdd }],
   };
 
+  const renderItem = ({ item, index }) => (
+    <ObservationCard item={item} index={index} />
+  );
+
+  const keyExtractor = (item, _) => `${route.name}-${item.id}`;
+
   return (
     <ListScreen
       route={route}
       navigation={navigation}
       fetchFunction={fetchObservations}
       sortOptions={SORT_OPTIONS}
-      allowedFilters={["territory", "place", "date", "species"]} 
+      allowedFilters={["territory", "place", "date", "species"]}
       errorTitle={t("observations_unavailable")}
       onAdd={handleAdd}
-      ItemCard={ObservationCard}
+      renderItem={renderItem}
+      keyExtractor={keyExtractor}
       noItems={noItems}
       title={t("observations")}
     />

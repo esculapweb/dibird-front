@@ -12,21 +12,27 @@ import EmptyState from "../Empty/EmptyState";
 
 const ItemsList = ({
   data,
-  screen,
   onEndReached,
   isLoadingMore,
   onAdd,
+  renderItem,
+  keyExtractor,
   emptyType,
   onClear,
-  ItemCard,
   noItems,
-  seenMode
 }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const { t } = useTranslation();
 
-  const renderItem = ({ item, index }) => <ItemCard item={item} index={index} seenMode={seenMode} />;
+  // const renderItem = useCallback(
+  //   ({ item, index }) => (
+  //     <ItemCard item={item} index={index} seenMode={seenMode} />
+  //   ),
+  //   [seenMode],
+  // );
+
+  // const keyExtractor = (item, index) => `${screen}-${item.id}`
 
   const getEmptyProps = () => {
     if (!emptyType) return null;
@@ -48,12 +54,7 @@ const ItemsList = ({
     <>
       <FlatList
         data={data}
-        keyExtractor={(item, index) => {
-          if (item?.id) {
-            return `${screen}-${item.id}`;
-          }
-          return `${screen}-${index}-${Date.now()}`;
-        }}
+        keyExtractor={keyExtractor}
         renderItem={renderItem}
         contentContainerStyle={[
           styles.list,
@@ -80,6 +81,10 @@ const ItemsList = ({
             />
           ) : null
         }
+        initialNumToRender={12}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews
       />
 
       <Pressable style={styles.fab} onPress={onAdd}>
