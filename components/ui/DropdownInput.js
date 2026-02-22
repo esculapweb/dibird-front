@@ -48,7 +48,7 @@ const DropdownInput = ({
     : label || translatedPlaceholder;
 
   const openModal = () => {
-    if (disabled) {
+    if (disabled || query.isLoading || query.isError) {
       return;
     }
     setSearch("");
@@ -154,7 +154,7 @@ const DropdownInput = ({
 
       <SelectListModal
         visible={modalVisible}
-        options={query.data}
+        options={query.data || []}
         selected={value}
         search={search}
         setSearch={setSearch}
