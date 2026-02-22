@@ -36,7 +36,9 @@ const DateInput = ({
   const today = getTodayEnd();
 
   const [showPicker, setShowPicker] = useState(false);
-  const [tempValue, setTempValue] = useState(value instanceof Date ? value : today);
+  const [tempValue, setTempValue] = useState(
+    value instanceof Date ? value : today,
+  );
 
   const openPicker = () => {
     setTempValue(value || today);
@@ -109,9 +111,11 @@ const DateInput = ({
           />
 
           {Platform.OS === "ios" && (
-            <Pressable style={styles.doneBtn} onPress={confirmDate}>
-              <Text style={styles.doneText}>{t('done')}</Text>
-            </Pressable>
+            <View style={styles.doneContainer}>
+              <Pressable style={styles.doneBtn} onPress={confirmDate}>
+                <Text style={styles.doneText}>{t("done")}</Text>
+              </Pressable>
+            </View>
           )}
         </View>
       )}
@@ -142,7 +146,7 @@ const stylesFn = (Colors) =>
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      backgroundColor: Colors.backgroundColor,
+      backgroundColor: Colors.primary100,
     },
 
     text: { fontSize: 16, color: Colors.textMain },
@@ -196,5 +200,12 @@ const stylesFn = (Colors) =>
 
     inputActive: {
       backgroundColor: Colors.primary100,
+    },
+
+    doneContainer: {
+      position: "absolute",
+      top: -8,
+      right: 0,
+      zIndex: 10,
     },
   });
