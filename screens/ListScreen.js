@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
+import { View } from "react-native";
 
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import FilterModal from "../components/Filters/FilterModal";
@@ -46,7 +47,7 @@ const ListScreen = ({
   const [sortModalVisible, setSortModalVisible] = useState(false);
   const [filtersLoaded, setFiltersLoaded] = useState(false);
   const [search, setSearch] = useState("");
-  const debouncedSearch = useDebounce(search, 400);
+  const debouncedSearch = useDebounce(search);
   const screenName = route.name;
 
   const {
@@ -67,7 +68,7 @@ const ListScreen = ({
     tabsMode,
   });
   const items = data?.pages.flatMap((page) => page.results) ?? [];
-  
+
   const hasActiveFilters = filters
     ? Object.values(filters).some((v) =>
         Array.isArray(v) ? v.length > 0 : v != null && v !== "",
@@ -206,7 +207,6 @@ const ListScreen = ({
   return (
     <>
       {tabs}
-
       {showSearch && (
         <SearchInput
           value={search}
@@ -228,6 +228,8 @@ const ListScreen = ({
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         noItems={noItems}
+        filters={filters}
+        removeFilter={removeFilter}
       />
       <SortModal
         screen={screenName}

@@ -20,19 +20,12 @@ const ItemsList = ({
   emptyType,
   onClear,
   noItems,
+  filters,
+  removeFilter
 }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const { t } = useTranslation();
-
-  // const renderItem = useCallback(
-  //   ({ item, index }) => (
-  //     <ItemCard item={item} index={index} seenMode={seenMode} />
-  //   ),
-  //   [seenMode],
-  // );
-
-  // const keyExtractor = (item, index) => `${screen}-${item.id}`
 
   const getEmptyProps = () => {
     if (!emptyType) return null;

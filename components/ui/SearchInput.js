@@ -27,7 +27,7 @@ const SearchInput = ({ value, onChange, placeholder, onClear }) => {
       {showClear && (
         <Pressable
           onPress={onClear}
-          hitSlop={10}
+          hitSlop={8}
           accessibilityLabel={t("clear_search")}
           accessibilityRole="button"
         >

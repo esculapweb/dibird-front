@@ -72,8 +72,6 @@ const fetchAbstract = async (
   if (search) params.name = search;
   if (page > 1) params.page = page;
 
-  // if (!restFilters?.territory) return [];
-
   const res = await api.get(fetchUrl, { params });
   return res.data;
 };
@@ -85,10 +83,10 @@ export const fetchStat = (
   page,
   seenMode,
 ) => {
+  // if (!filters?.territory && seenMode===false) return [];
   filters = { ...filters, seen: seenMode };
   return fetchAbstract("/myapi/stat2/", filters, order, search, page);
 };
-// if (!restFilters?.territory) return [];
 
 export const fetchPlaces = (filters, order = "name", search, page) =>
   fetchAbstract("/myapi/place2/", filters, order, search, page);

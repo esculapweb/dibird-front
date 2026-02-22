@@ -1,5 +1,7 @@
 import { StyleSheet, View, Pressable, Text } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+import * as Haptics from "expo-haptics";
 
 import { useTheme } from "../../store/theme-context";
 
@@ -9,21 +11,39 @@ const Tabs = ({ tabsMode, setTabsMode }) => {
   const styles = stylesFn(Colors);
 
   return (
-    <View style={styles.segment}>
+    <View style={styles.container}>
       <Pressable
-        style={[styles.segmentItem, tabsMode && styles.activeSegment]}
-        onPress={() => setTabsMode(true)}
+        style={[styles.tab, tabsMode && styles.activeTab]}
+        onPress={() => {
+          Haptics.selectionAsync();
+          setTabsMode(true);
+        }}
       >
-        <Text style={[styles.segmentText, tabsMode && styles.activeText]}>
+        <Ionicons
+          name="eye-outline"
+          size={16}
+          color={tabsMode ? Colors.buttonBrightColor : Colors.textSecondary}
+          style={styles.icon}
+        />
+        <Text style={[styles.text, tabsMode && styles.activeText]}>
           {t("seen")}
         </Text>
       </Pressable>
 
       <Pressable
-        style={[styles.segmentItem, !tabsMode && styles.activeSegment]}
-        onPress={() => setTabsMode(false)}
+        style={[styles.tab, !tabsMode && styles.activeTab]}
+        onPress={() => {
+          Haptics.selectionAsync();
+          setTabsMode(false);
+        }}
       >
-        <Text style={[styles.segmentText, !tabsMode && styles.activeText]}>
+        <Ionicons
+          name="eye-off-outline"
+          size={16}
+          color={!tabsMode ? Colors.buttonBrightColor : Colors.textSecondary}
+          style={styles.icon}
+        />
+        <Text style={[styles.text, !tabsMode && styles.activeText]}>
           {t("not_seen")}
         </Text>
       </Pressable>
@@ -35,34 +55,42 @@ export default Tabs;
 
 const stylesFn = (Colors) =>
   StyleSheet.create({
-    segment: {
+    container: {
       flexDirection: "row",
-      backgroundColor: Colors.card,
-      borderRadius: 12,
-      padding: 4,
-      marginHorizontal: 16,
-      marginTop: 8,
+      backgroundColor: Colors.primary100,
+      padding: 10,
     },
 
-    segmentItem: {
+    tab: {
       flex: 1,
-      paddingVertical: 8,
+      flexDirection: "row",
+      justifyContent: "center",
       alignItems: "center",
-      borderRadius: 10,
+      paddingVertical: 10,
+      borderRadius: 16,
     },
 
-    activeSegment: {
-      backgroundColor: Colors.primary,
+    activeTab: {
+      backgroundColor: Colors.buttonBrightBg,
+      shadowColor: Colors.shadow,
+      shadowOpacity: 0.25,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 3 },
+      elevation: 4,
     },
 
-    segmentText: {
+    text: {
       fontSize: 14,
-      color: Colors.textSecondary,
       fontWeight: "500",
+      color: Colors.textSecondary,
     },
 
     activeText: {
-      color: "white",
       fontWeight: "600",
+      color: Colors.buttonBrightColor,
+    },
+
+    icon: {
+      marginRight: 6,
     },
   });

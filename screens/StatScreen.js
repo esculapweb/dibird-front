@@ -36,7 +36,6 @@ const StatScreen = ({ route, navigation }) => {
 
   const keyExtractor = (item, _) => `${route.name}-${item.species_id}`;
 
-
   return (
     <>
       <ListScreen
@@ -53,7 +52,7 @@ const StatScreen = ({ route, navigation }) => {
         keyExtractor={keyExtractor}
         noItems={noItems}
         title={t("statistics")}
-        tabs={(<Tabs tabsMode={seenMode} setTabsMode={setSeenMode} />)}
+        tabs={<Tabs tabsMode={seenMode} setTabsMode={setSeenMode} />}
         tabsMode={seenMode}
       />
     </>

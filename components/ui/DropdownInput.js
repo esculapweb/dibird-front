@@ -136,7 +136,7 @@ const DropdownInput = ({
             )}
 
             {!disabled && value && allowReset && !query.isLoading && !query.isError && (
-              <Pressable onPress={clearValue} hitSlop={10} style={styles.clear}>
+              <Pressable onPress={clearValue} hitSlop={8} style={styles.clear}>
                 <Ionicons name="close-circle" size={18} color={Colors.dropdownIcon} />
               </Pressable>
             )}
