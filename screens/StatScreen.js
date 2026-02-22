@@ -45,7 +45,7 @@ const StatScreen = ({ route, navigation }) => {
           fetchStat(filters, sort, search, page, seenMode)
         }
         sortOptions={SORT_OPTIONS}
-        allowedFilters={["territory", "place", "date"]}
+        allowedFilters={["territory", "place", "species", "date"]}
         errorTitle={t("stat_unavailable")}
         onAdd={handleAdd}
         renderItem={renderItem}
