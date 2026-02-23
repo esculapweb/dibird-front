@@ -1,19 +1,14 @@
 import {
   FlatList,
-  Pressable,
-  Text,
-  View,
   StyleSheet,
   TextInput,
 } from "react-native";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Ionicons } from "@expo/vector-icons";
 
 import ModalWrapper from "./ModalWrapper";
 import { useTheme } from "../../store/theme-context";
-
-const ITEM_HEIGHT = 46;
+import DefaultOptionRow from "./DefaultOptionRow";
 
 const SelectListModal = ({
   visible,
@@ -24,6 +19,8 @@ const SelectListModal = ({
   search,
   setSearch,
   title,
+  renderOption,
+  itemHeight = 52,
 }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -64,42 +61,6 @@ const SelectListModal = ({
     if (!visible) setHasScrolled(false);
   }, [visible, filteredOptions, selected]);
 
-  const renderItem = ({ item }) => {
-    const isActive = item.value === selected;
-    return (
-      <Pressable
-        onPress={() => {
-          onSelect(item.value);
-          onClose();
-        }}
-        style={{
-          height: ITEM_HEIGHT,
-          justifyContent: "center",
-          paddingHorizontal: 16,
-          backgroundColor: isActive ? Colors.primary300 : Colors.primary100,
-        }}
-      >
-        <View style={styles.row}>
-          {item.iconLabel && (
-            <View style={styles.icon}>
-              <Ionicons name={item.iconLabel} size={14} color={Colors.accent} />
-            </View>
-          )}
-          {item.icon && <Text style={styles.icon}>{item.icon}</Text>}
-          <Text
-            style={{
-              fontSize: 16,
-              fontWeight: isActive ? "600" : "400",
-              color: Colors.textMain
-            }}
-          >
-            {item.label}
-          </Text>
-        </View>
-      </Pressable>
-    );
-  };
-
   return (
     <ModalWrapper visible={visible} onClose={onClose} title={title}>
       <TextInput
@@ -115,11 +76,23 @@ const SelectListModal = ({
         data={filteredOptions}
         keyExtractor={(item) => item.value}
         getItemLayout={(_, index) => ({
-          length: ITEM_HEIGHT,
-          offset: ITEM_HEIGHT * index,
+          length: itemHeight,
+          offset: itemHeight * index,
           index,
         })}
-        renderItem={renderItem}
+        renderItem={({ item }) =>
+          renderOption ? (
+            renderOption({ item, selected, onSelect, onClose })
+          ) : (
+            <DefaultOptionRow
+              item={item}
+              selected={selected}
+              onSelect={onSelect}
+              onClose={onClose}
+              itemHeight={itemHeight}
+            />
+          )
+        }
       />
     </ModalWrapper>
   );
@@ -127,23 +100,22 @@ const SelectListModal = ({
 
 export default SelectListModal;
 
-const stylesFn = (Colors) => StyleSheet.create({
-  search: {
-    height: 40,
-    margin: 12,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: Colors.primary100,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    color: Colors.textMain
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  icon: {
-    fontSize: 18,
-    marginRight: 6,
-  },
-});
+const stylesFn = (Colors) =>
+  StyleSheet.create({
+    search: {
+      height: 40,
+      margin: 12,
+      paddingHorizontal: 12,
+      borderRadius: 8,
+      backgroundColor: Colors.primary100,
+      borderWidth: 1,
+      borderColor: Colors.border,
+      color: Colors.textMain,
+    },
+
+    imageSmall: {
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+    },
+  });

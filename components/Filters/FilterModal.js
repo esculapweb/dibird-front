@@ -15,6 +15,7 @@ import FlatButtonBottom from "../ui/FlatButtonBottom";
 import { useLanguage } from "../../store/language-context";
 import RadioGroup from "../ui/RadioGroup";
 import { useTranslatedQuery } from "../../hooks/useQueryWithTranslation";
+import SpeciesOptionRow from "../ui/SpeciesOptionRow";
 
 const FilterModal = ({
   screen,
@@ -168,6 +169,14 @@ const FilterModal = ({
               allowReset
               disabled={!territoryValue}
               disabledMessage={t("select_country_first")}
+              renderOption={({ item, selected, onSelect, onClose }) => (
+                <SpeciesOptionRow
+                  item={item}
+                  selected={selected}
+                  onSelect={onSelect}
+                  onClose={onClose}
+                />
+              )}
             />
           )}
 

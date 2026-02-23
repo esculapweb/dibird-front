@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { Image } from "expo-image";
 
+import { BirdSVG } from "../../components/ui/Svgs";
 import { formatDate, isoToFlagEmoji } from "../../util/helpers";
 import { Config } from "../../constants/config";
 import { useTheme } from "../../store/theme-context";
@@ -92,11 +93,7 @@ const ObservationCard = React.memo(({ item, index }) => {
 
             {item.quantity && (
               <View style={styles.badge}>
-                <Ionicons
-                  name="logo-twitter"
-                  size={12}
-                  color={Colors.textSecondary}
-                />
+                <BirdSVG size={14} color={Colors.textMain} />
                 <Text style={styles.badgeText}>{item.quantity}</Text>
               </View>
             )}

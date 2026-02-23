@@ -22,6 +22,7 @@ const DropdownInput = ({
   query,
   disabled = false,
   disabledMessage,
+  renderOption,
 }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -161,6 +162,7 @@ const DropdownInput = ({
         onClose={() => setModalVisible(false)}
         onSelect={onSelectValue}
         title={title}
+        renderOption={renderOption}
       />
     </>
   );

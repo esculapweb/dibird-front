@@ -46,7 +46,9 @@ export const fetchSpecies = async (territory = null) => {
   return res.data.map((item) => ({
     value: item.taxon_pk,
     label: item.sp_name,
+    labelLatin: item.sp_latin,
     labelLang: item.sp_name_lang,
+    thumb: item.sp_thumb
   }));
 };
 
@@ -83,7 +85,6 @@ export const fetchStat = (
   page,
   seenMode,
 ) => {
-  // if (!filters?.territory && seenMode===false) return [];
   filters = { ...filters, seen: seenMode };
   return fetchAbstract("/myapi/stat2/", filters, order, search, page);
 };
