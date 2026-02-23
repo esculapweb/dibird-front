@@ -47,7 +47,7 @@ const DefaultOptionRow = ({
         </Text>
 
         {isActive && (
-          <Ionicons name="checkmark-circle" size={32} color={Colors.accent} />
+          <Ionicons name="checkmark-circle-outline" size={32} color={Colors.accent} />
         )}
       </View>
     </Pressable>

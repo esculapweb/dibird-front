@@ -1,10 +1,11 @@
-import { FlatList, StyleSheet, TextInput } from "react-native";
+import { FlatList, View, StyleSheet, Text } from "react-native";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
-import ModalWrapper from "./ModalWrapper";
 import { useTheme } from "../../store/theme-context";
+import ModalWrapper from "./ModalWrapper";
 import DefaultOptionRow from "./DefaultOptionRow";
+import SearchInput from "./SearchInput";
 
 const SelectListModal = ({
   visible,
@@ -18,12 +19,11 @@ const SelectListModal = ({
   renderOption,
   itemHeight = 52,
 }) => {
-  const { Colors } = useTheme();
-  const styles = stylesFn(Colors);
-
   const flatListRef = useRef(null);
   const [hasScrolled, setHasScrolled] = useState(false);
   const { t } = useTranslation();
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
 
   const filteredOptions = useMemo(() => {
     if (!search) return options;
@@ -59,37 +59,50 @@ const SelectListModal = ({
 
   return (
     <ModalWrapper visible={visible} onClose={onClose} title={title}>
-      <TextInput
-        style={styles.search}
-        placeholder={`${t("search")}...`}
-        placeholderTextColor={Colors.textSecondary}
-        value={search}
-        onChangeText={setSearch}
-      />
-
-      <FlatList
-        ref={flatListRef}
-        data={filteredOptions}
-        keyExtractor={(item) => item.value}
-        getItemLayout={(_, index) => ({
-          length: itemHeight,
-          offset: itemHeight * index,
-          index,
-        })}
-        renderItem={({ item }) =>
-          renderOption ? (
-            renderOption({ item, selected, onSelect, onClose })
+      {options.length === 0 ? (
+        <View style={styles.empty}>
+          <Text style={styles.emptyText}>{t("no_options_available")}</Text>
+        </View>
+      ) : (
+        <>
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            onClear={() => setSearch("")}
+            placeholder={`${t("search")}...`}
+            style={{ marginBottom: 8 }}
+          />
+          {filteredOptions.length === 0 ? (
+            <View style={styles.empty}>
+              <Text style={styles.emptyText}>{t("nothing_found")}</Text>
+            </View>
           ) : (
-            <DefaultOptionRow
-              item={item}
-              selected={selected}
-              onSelect={onSelect}
-              onClose={onClose}
-              itemHeight={itemHeight}
+            <FlatList
+              ref={flatListRef}
+              data={filteredOptions}
+              keyExtractor={(item) => item.value}
+              getItemLayout={(_, index) => ({
+                length: itemHeight,
+                offset: itemHeight * index,
+                index,
+              })}
+              renderItem={({ item }) =>
+                renderOption ? (
+                  renderOption({ item, selected, onSelect, onClose })
+                ) : (
+                  <DefaultOptionRow
+                    item={item}
+                    selected={selected}
+                    onSelect={onSelect}
+                    onClose={onClose}
+                    itemHeight={itemHeight}
+                  />
+                )
+              }
             />
-          )
-        }
-      />
+          )}
+        </>
+      )}
     </ModalWrapper>
   );
 };
@@ -98,14 +111,15 @@ export default SelectListModal;
 
 const stylesFn = (Colors) =>
   StyleSheet.create({
-    search: {
-      height: 40,
-      margin: 12,
-      paddingHorizontal: 12,
-      borderRadius: 8,
-      backgroundColor: Colors.primary100,
-      borderWidth: 1,
-      borderColor: Colors.border,
-      color: Colors.textMain,
+    empty: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      padding: 16,
+    },
+    emptyText: {
+      color: Colors.textSecondary,
+      fontSize: 16,
+      textAlign: "center",
     },
   });

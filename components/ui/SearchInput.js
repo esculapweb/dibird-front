@@ -4,14 +4,14 @@ import { useTranslation } from "react-i18next";
 
 import { useTheme } from "../../store/theme-context";
 
-const SearchInput = ({ value, onChange, placeholder, onClear }) => {
+const SearchInput = ({ value, onChange, placeholder, onClear, style }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const showClear = value && value.length > 0;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, style && style]}>
       <Ionicons name="search-outline" size={20} color={Colors.textSecondary} />
 
       <TextInput
