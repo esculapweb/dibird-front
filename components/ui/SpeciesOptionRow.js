@@ -98,7 +98,7 @@ const stylesFn = (Colors, itemHeight) =>
       width: 44,
       height: 44,
       borderRadius: 12,
-      backgroundColor: Colors.card,
+      backgroundColor: Colors.imageBg,
     },
 
     imagePlaceholder: {
@@ -117,7 +117,7 @@ const stylesFn = (Colors, itemHeight) =>
 
     name: {
       fontSize: 16,
-      color: Colors.text,
+      color: Colors.textMain,
       lineHeight: 20,
     },
 

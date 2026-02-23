@@ -1,8 +1,4 @@
-import {
-  FlatList,
-  StyleSheet,
-  TextInput,
-} from "react-native";
+import { FlatList, StyleSheet, TextInput } from "react-native";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -111,11 +107,5 @@ const stylesFn = (Colors) =>
       borderWidth: 1,
       borderColor: Colors.border,
       color: Colors.textMain,
-    },
-
-    imageSmall: {
-      width: 40,
-      height: 40,
-      borderRadius: 12,
     },
   });

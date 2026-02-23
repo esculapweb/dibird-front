@@ -35,17 +35,24 @@ const StatCard = React.memo(({ item, index, seenMode }) => {
       style={({ pressed }) => [styles.card, pressed && styles.pressedCard]}
     >
       <View style={styles.row}>
-        {item.sp_thumb ? (
-          <Image
-            source={{ uri: `${Config.baseUrl}/media/${item.sp_thumb}` }}
-            style={[styles.image, !seenMode && styles.imageSmall]}
-            contentFit="cover"
-            transition={0}
-            cachePolicy="disk"
-          />
-        ) : (
-          <View style={[styles.imagePlaceholder, !seenMode && styles.imageSmall]} />
-        )}
+        <View style={[styles.imageWrapper, !seenMode && styles.imageWrapperSmall]}>
+          {item.sp_thumb ? (
+            <Image
+              source={{ uri: `${Config.baseUrl}/media/${item.sp_thumb}` }}
+              style={[styles.image, !seenMode && styles.imageSmall]}
+              contentFit="cover"
+              cachePolicy="disk"
+            />
+          ) : (
+            <View style={[styles.imagePlaceholder, !seenMode && styles.imageSmall]}>
+              <Ionicons
+                name="image-outline"
+                size={20}
+                color={Colors.dropdownIcon}
+              />
+            </View>
+          )}
+        </View>
 
         <View style={styles.content}>
           <Text style={styles.title}>
@@ -109,11 +116,16 @@ const stylesFn = (Colors) =>
       flexDirection: "row",
     },
 
+    imageWrapper: {
+      width: 56,
+      height: 56,
+      marginRight: 12,
+    },
+
     image: {
       width: 56,
       height: 56,
       borderRadius: 12,
-      marginRight: 8,
       backgroundColor: Colors.imageBg,
     },
 
@@ -121,8 +133,15 @@ const stylesFn = (Colors) =>
       width: 56,
       height: 56,
       borderRadius: 12,
-      marginRight: 8,
       backgroundColor: Colors.imageBg,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+
+    imageWrapperSmall: {
+      width: 40,
+      height: 40,
+      marginRight: 8,
     },
 
     imageSmall: {
