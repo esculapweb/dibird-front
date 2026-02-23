@@ -9,6 +9,11 @@ import Tabs from "../components/ui/Tabs";
 const StatScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
   const [seenMode, setSeenMode] = useState(true);
+  const [noItems, setNoItems] = useState({
+    icon: "stats-chart",
+    message: t("no_stat_yet"),
+    actions: [{ label: t("add_first_observation"), onPress: handleAdd }],
+  });
 
   const SORT_OPTIONS = [
     { label: t("taxonomic"), value: "ioc_id" },
@@ -21,10 +26,24 @@ const StatScreen = ({ route, navigation }) => {
 
   const handleAdd = () => navigation.navigate("ObservationEditor");
 
-  const noItems = {
-    icon: "stats-chart",
-    message: t("no_stat_yet"),
-    actions: [{ label: t("add_first_observation"), onPress: handleAdd }],
+  const fetchData = (filters, sort, search, page, openFilterModal) => {
+    const safeFilters = { ...filters };
+
+    if (!safeFilters.territory && seenMode === false) {
+      setNoItems({
+        icon: "stats-chart",
+        message: t("select_territory_to_view_not_seen"),
+        actions: [{ label: t("select_territory"), onPress: openFilterModal }],
+      });
+
+      return Promise.resolve({
+        results: [],
+        pagination: { count: 0 },
+      });
+    }
+    safeFilters.seen = seenMode;
+
+    return fetchStat(safeFilters, sort, search, page, seenMode);
   };
 
   const renderItem = useCallback(
@@ -41,9 +60,7 @@ const StatScreen = ({ route, navigation }) => {
       <ListScreen
         route={route}
         navigation={navigation}
-        fetchFunction={(filters, sort, search, page) =>
-          fetchStat(filters, sort, search, page, seenMode)
-        }
+        fetchFunction={fetchData}
         sortOptions={SORT_OPTIONS}
         allowedFilters={["territory", "place", "species", "date"]}
         errorTitle={t("stat_unavailable")}

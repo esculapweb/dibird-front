@@ -14,6 +14,7 @@
   "failed_remove_avatar": "Failed to remove avatar",
   "failed_to_update_favourite": "Failed to update favourite status",
   "image_processing_failed": "Image processing failed",
+  "no_not_seen_empty": "All species are already marked as observed",
   "retry": "Retry",
   "serer_error": "Service unavailable",
   "settings": "Settings",

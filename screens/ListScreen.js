@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
-import { View } from "react-native";
 
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import FilterModal from "../components/Filters/FilterModal";
@@ -41,6 +40,17 @@ const ListScreen = ({
 }) => {
   const { t } = useTranslation();
 
+  const translations = [
+    t("territory"),
+    t("place"),
+    t("species_single"),
+    t("favourite"),
+    t("yes"),
+    t("no"),
+    t("date"),
+    t("year"),
+  ];
+
   const [filters, setFilters] = useState(null);
   const [sort, setSort] = useState(null);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
@@ -49,6 +59,12 @@ const ListScreen = ({
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search);
   const screenName = route.name;
+
+  const fetchDataWrapper = (filters, sort, search, page) => {
+    return fetchFunction(filters, sort, search, page, () =>
+      setFilterModalVisible(true),
+    );
+  };
 
   const {
     data,
@@ -61,7 +77,7 @@ const ListScreen = ({
     refetch,
   } = useList({
     screenName,
-    fetchFunction,
+    fetchFunction: fetchDataWrapper,
     filters,
     sort,
     search: debouncedSearch,
@@ -228,8 +244,6 @@ const ListScreen = ({
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         noItems={noItems}
-        filters={filters}
-        removeFilter={removeFilter}
       />
       <SortModal
         screen={screenName}

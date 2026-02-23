@@ -19,9 +19,7 @@ const ItemsList = ({
   keyExtractor,
   emptyType,
   onClear,
-  noItems,
-  filters,
-  removeFilter
+  noItems
 }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);

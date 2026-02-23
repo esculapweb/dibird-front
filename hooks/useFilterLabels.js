@@ -40,13 +40,22 @@ export const useFilterLabels = (filters) => {
 
     switch (key) {
       case "territory":
-        return [t("territory"), countriesQuery.data?.get(Number(value)) ?? placeholder];
+        return [
+          t("territory"),
+          countriesQuery.data?.get(Number(value)) ?? placeholder,
+        ];
 
       case "place":
-        return [t("place"), placesQuery.data?.get(Number(value)) ?? placeholder];
+        return [
+          t("place"),
+          placesQuery.data?.get(Number(value)) ?? placeholder,
+        ];
 
       case "species":
-        return [t("species_single"), speciesQuery.data?.get(Number(value)) ?? placeholder];
+        return [
+          t("species_single"),
+          speciesQuery.data?.get(Number(value)) ?? placeholder,
+        ];
 
       case "favourite":
         return [t("favourite"), value ? t("yes") : t("no")];
@@ -68,11 +77,13 @@ const formatDateFilter = (value, t) => {
     if (value.from && value.to)
       return [t("date"), `${formatDate(value.from)} – ${formatDate(value.to)}`];
 
-    if (value.from) return [t("date"), `${t("from")} ${formatDate(value.from)}`];
+    if (value.from)
+      return [t("date"), `${t("from")} ${formatDate(value.from)}`];
     if (value.to) return [t("date"), `${t("to")} ${formatDate(value.to)}`];
   }
 
-  if (value.type === "year" && value.year) return [t("year"), value.year.toString()];
+  if (value.type === "year" && value.year)
+    return [t("year"), value.year.toString()];
 
   return "";
 };
