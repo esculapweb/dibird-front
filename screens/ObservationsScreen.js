@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 
 import ListScreen from "./ListScreen";
 import { fetchObservations } from "../util/fetches";
-import ObservationCard from "../hooks/Observation/ObservationCard";
+import ObservationCard from "../components/Observation/ObservationCard";
 
 const ObservationsScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
