@@ -12,19 +12,23 @@ import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import Map from "../components/Map/Map";
 
-import { usePlace } from "../hooks/Place/usePlace";
-import {
-  useUpdatePlace,
-  useDeletePlace,
-} from "../hooks/Place/usePlaceMutation";
+import { useItem, useUpdateItem, useDeleteItem } from "../hooks/useItem";
 import { showError } from "../services/api";
 
 const PlaceDetailScreen = ({ route, navigation }) => {
   const { placeId } = route.params;
-  const { data: place, isLoading, isError, error, refetch } = usePlace(placeId);
+  const type = "Place";
 
-  const updateMutation = useUpdatePlace(placeId);
-  const deleteMutation = useDeletePlace();
+  const {
+    data: place,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useItem(placeId, type);
+
+  const updateMutation = useUpdateItem(placeId, type);
+  const deleteMutation = useDeleteItem(type);
   const { Colors } = useTheme();
   const { t } = useTranslation();
 

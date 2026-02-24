@@ -117,7 +117,7 @@ const ObservationCard = React.memo(({ item, index }) => {
 
             {item.notes && (
               <Ionicons
-                name="information-circle-outline"
+                name="document-text-outline"
                 size={13}
                 color={Colors.textSecondary}
               />
@@ -245,7 +245,7 @@ const stylesFn = (Colors) =>
       fontSize: 11,
       fontWeight: "600",
       marginLeft: 3,
-      color: Colors.textMain,
+      color: Colors.textSecondary,
     },
 
     placeRow: {

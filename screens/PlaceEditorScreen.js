@@ -5,7 +5,8 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../store/theme-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
-import { useCreatePlace, useUpdatePlace } from "../hooks/Place/usePlaceMutation";
+import { useUpdateItem } from "../hooks/useItem";
+import { useCreatePlace } from "../hooks/Place/usePlaceMutation";
 import IconButton from "../components/ui/IconButton";
 import PlaceForm from "../components/Place/PlaceForm";
 import { usePlaceLocation, normalizeCoords } from "../hooks/Place/usePlaceLocation";
@@ -16,6 +17,7 @@ const PlaceEditorScreen = ({ navigation, route }) => {
   const { Colors } = useTheme();
   const { t } = useTranslation();
   const styles = stylesFn(Colors);
+  const type = 'Place';
 
   const FORM_FIELDS = ["name", "territory", "latitude", "longitude"];
 
@@ -38,7 +40,7 @@ const PlaceEditorScreen = ({ navigation, route }) => {
   } = usePlaceLocation();
 
   const createPlaceMutation = useCreatePlace();
-  const updatePlaceMutation = useUpdatePlace(place?.id);
+  const updatePlaceMutation = useUpdateItem(place?.id, type);
 
   const [formData, setFormData] = useState({
     name: place?.name ?? "",

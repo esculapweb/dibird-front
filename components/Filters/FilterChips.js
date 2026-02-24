@@ -62,26 +62,23 @@ const stylesFn = (Colors) =>
     wrapper: {
       paddingTop: 10,
       paddingBottom: 8,
-      // backgroundColor: Colors.primary100,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: Colors.border,
     },
     scrollContainer: {
       paddingHorizontal: 10,
       alignItems: "center",
-      // justifyContent: "center",
-      // flexGrow: 1,
     },
     filterChip: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: Colors.primary200,
+      backgroundColor: Colors.primary100,
       borderRadius: 16,
       paddingHorizontal: 10,
       paddingVertical: 8,
       marginRight: 8,
       borderWidth: 1,
-      borderColor: Colors.accent,
+      borderColor: Colors.primary200,
       maxWidth: 300,
     },
     filterText: {

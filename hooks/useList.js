@@ -10,6 +10,7 @@ export const useList = ({
   tabsMode
 }) => {
   const {language} = useLanguage();
+
   return useInfiniteQuery({
     queryKey: [screenName, JSON.stringify(filters), sort, search, tabsMode, language],
     queryFn: ({ pageParam = 1 }) =>

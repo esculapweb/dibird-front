@@ -5,7 +5,7 @@ import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useTheme } from "../store/theme-context";
-import { isoToFlagEmoji, formatDate } from "../util/helpers";
+import { isoToFlagEmoji, formatDate, formatDateTime } from "../util/helpers";
 
 import { Config } from "../constants/config";
 import IconButton from "../components/ui/IconButton";
@@ -13,13 +13,13 @@ import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import Map from "../components/Map/Map";
-import { useObservation } from "../hooks/Observation/useObservation";
+import { useItem, useUpdateItem, useDeleteItem } from "../hooks/useItem";
 import { showError } from "../services/api";
 import { BirdSVG } from "../components/ui/Svgs";
-import { changeLanguage } from "i18next";
 
 const ObservationDetailScreen = ({ route, navigation }) => {
   const { observationId } = route.params;
+  const type = "Observation";
 
   const {
     data: observation,
@@ -27,10 +27,10 @@ const ObservationDetailScreen = ({ route, navigation }) => {
     isError,
     error,
     refetch,
-  } = useObservation(observationId);
+  } = useItem(observationId, type);
 
-  // const deleteMutation = useDeleteObservation();
-  const deleteMutation = () => console.log("delete");
+  const updateMutation = useUpdateItem(observationId, type);
+  const deleteMutation = useDeleteItem(type);
 
   const { Colors } = useTheme();
   const { t } = useTranslation();
@@ -58,22 +58,30 @@ const ObservationDetailScreen = ({ route, navigation }) => {
     );
   }, [observation, observationId]);
 
+  const headerRight = useCallback(
+    () => (
+      <IconButton
+        icon="create-outline"
+        onPress={() =>
+          navigation.navigate("ObservationEditor", { observation })
+        }
+        style={styles.headerButton}
+        size={24}
+        disabled={!observation || updateMutation.isPending}
+        color={Colors.textSecondary}
+      />
+    ),
+    [observation, updateMutation.isPending],
+  );
+
   useEffect(() => {
     if (!observation) return;
 
     navigation.setOptions({
       title: "",
-      headerRight: () => (
-        <IconButton
-          icon="create-outline"
-          tintColor={Colors.textSecondary}
-          onPress={() =>
-            navigation.navigate("ObservationEditor", { observation })
-          }
-        />
-      ),
+      headerRight,
     });
-  }, [navigation, observation]);
+  }, [navigation, headerRight, observation]);
 
   if (isError) {
     return (
@@ -86,9 +94,7 @@ const ObservationDetailScreen = ({ route, navigation }) => {
     );
   }
 
-  if (isLoading || !observation) {
-    return <LoadingOverlay />;
-  }
+  if (isLoading || !observation) return <LoadingOverlay />;
 
   const name =
     observation.species_data.name_lang || observation.species_data.name;
@@ -100,7 +106,7 @@ const ObservationDetailScreen = ({ route, navigation }) => {
     <View style={{ flex: 1 }}>
       <ScrollView style={styles.container}>
         {/* HEADER */}
-        <View style={styles.header}>
+        <View style={[styles.section, styles.header]}>
           <View style={styles.imageWrapper}>
             {observation?.species_data?.thumb ? (
               <Image
@@ -123,32 +129,30 @@ const ObservationDetailScreen = ({ route, navigation }) => {
           </View>
 
           <View style={{ flex: 1 }}>
-            <View style={styles.titleRow}>
-              <Text style={styles.title}>{name}</Text>
-            </View>
-
+            <Text style={styles.title}>{name}</Text>
             <Text style={styles.latin}>{latin}</Text>
 
-            <Text style={styles.subtitle}>
-              {flag} {territory}
-            </Text>
-
-            {observation.private && (
+            {observation.private ? (
               <View style={styles.privacyRow}>
                 <Text style={styles.privacyIcon}>🔒</Text>
                 <Text style={styles.privacyText}>
                   {t("visible_only_to_you")}
                 </Text>
               </View>
+            ) : (
+              <View style={styles.privacyRow}>
+                <Text style={styles.privacyIcon}>🌐</Text>
+                <Text style={styles.privacyText}>
+                  {t("visible_to_everyone")}
+                </Text>
+              </View>
             )}
           </View>
         </View>
 
-        {/* CAPSULE ROW — DATE, TIME, QUANTITY */}
+        {/* CAPSULES */}
         <View style={styles.capsuleRow}>
-          <View
-            style={[styles.capsule, { backgroundColor: Colors.primary200 }]}
-          >
+          <View style={styles.capsule}>
             <Ionicons
               name="calendar-outline"
               size={14}
@@ -160,9 +164,7 @@ const ObservationDetailScreen = ({ route, navigation }) => {
           </View>
 
           {observation.time && (
-            <View
-              style={[styles.capsule, { backgroundColor: Colors.primary200 }]}
-            >
+            <View style={styles.capsule}>
               <Ionicons
                 name="time-outline"
                 size={14}
@@ -173,75 +175,87 @@ const ObservationDetailScreen = ({ route, navigation }) => {
           )}
 
           {observation.quantity > 1 && (
-            <View
-              style={[styles.capsule, { backgroundColor: Colors.primary200 }]}
-            >
+            <View style={styles.capsule}>
               <BirdSVG size={14} color={Colors.textMain} />
               <Text style={styles.capsuleText}>{observation.quantity}</Text>
             </View>
           )}
         </View>
 
-        {/* PLACE & MAP */}
-        {observation?.place_data?.name && (
-          <View style={styles.section}>
-            <View style={styles.placeRow}>
-              <Ionicons
-                name="location-outline"
-                size={16}
-                color={Colors.textSecondary}
-              />
-              <Text style={styles.placeText}>
+        <View style={styles.section}>
+          {/* PLACE */}
+          {observation?.place_data && (
+            <View style={styles.placeWrap}>
+              <Text style={styles.placeName}>
                 {observation.place_data.name}
               </Text>
+              <Text style={styles.placeTerritory}>
+                {flag} {territory}
+              </Text>
+              {observation?.place_data?.location?.coordinates?.length === 2 && (
+                <View style={{ borderRadius: 12, overflow: "hidden" }}>
+                  <Map
+                    currentCoords={observation.place_data.location.coordinates}
+                    mapHeight={300}
+                    showCoords={true}
+                  />
+                </View>
+              )}
             </View>
+          )}
 
-            {observation?.place_data?.location?.coordinates?.length === 2 && (
-              <Map
-                currentCoords={observation.place_data.location.coordinates}
-                mapHeight={320}
-                showCoords={true}
+          {/* DIARY */}
+          {observation?.diary_data && (
+            <View style={styles.diaryBlock}>
+              <Ionicons
+                name="book-outline"
+                size={18}
+                color={Colors.textSecondary}
+                style={{ marginRight: 10 }}
               />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.diaryLabel}>{t("diary_entry")}</Text>
+                <Text style={styles.diaryTitle}>
+                  {observation.diary_data?.name ||
+                    formatDate(observation.date_time)}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* NOTES */}
+          {observation?.notes && (
+            <View style={styles.notesBlock}>
+              <Ionicons
+                name="document-text-outline"
+                size={20}
+                color={Colors.textSecondary}
+                style={{ marginRight: 8 }}
+              />
+              <Text style={styles.notes}>{observation.notes}</Text>
+            </View>
+          )}
+
+          {/* META */}
+          <View
+            style={[
+              styles.meta,
+              (observation.notes ||
+                observation?.diary_data ||
+                observation?.place_data) &&
+                styles.metaBorder,
+            ]}
+          >
+            <Text style={styles.metaText}>
+              {t("created")}: {formatDateTime(observation.created_at)}
+            </Text>
+            {formatDate(observation.created_at) !==
+              formatDate(observation.updated_at) && (
+              <Text style={styles.metaText}>
+                {t("updated")}: {formatDateTime(observation.updated_at)}
+              </Text>
             )}
           </View>
-        )}
-
-        {observation?.diary_data && (
-          <View style={styles.diaryContext}>
-            <Ionicons
-              name="book-outline"
-              size={18}
-              color={Colors.textSecondary}
-              style={{ marginRight: 10 }}
-            />
-
-            <View style={{ flex: 1 }}>
-              <Text style={styles.diaryLabel}>{t("diary_entry")}</Text>
-
-              <Text style={styles.diaryTitle}>
-                {observation.diary_data?.name ||
-                  formatDate(observation.date_time)}
-              </Text>
-            </View>
-          </View>
-        )}
-
-        {/* NOTES */}
-        {observation.notes && (
-          <View style={styles.notesBlock}>
-            <Text style={styles.notesLabel}>{t("notes")}</Text>
-            <Text style={styles.notes}>{observation.notes}</Text>
-          </View>
-        )}
-
-        {/* META */}
-        <View style={styles.meta}>
-          <Text style={styles.metaText}>
-            {t("created")}: {formatDate(observation.created_at)}
-          </Text>
-          <Text style={styles.metaText}>
-            {t("updated")}: {formatDate(observation.updated_at)}
-          </Text>
         </View>
       </ScrollView>
 
@@ -263,11 +277,21 @@ const stylesFn = (Colors) =>
   StyleSheet.create({
     container: {
       flex: 1,
+      backgroundColor: Colors.backgroundMain,
+      padding: 12,
+    },
+    section: {
+      padding: 12,
       backgroundColor: Colors.primary100,
+      borderRadius: 12,
+      shadowColor: Colors.shadow,
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 2,
     },
     header: {
       flexDirection: "row",
-      padding: 16,
       alignItems: "center",
     },
     imageWrapper: {
@@ -289,34 +313,34 @@ const stylesFn = (Colors) =>
       justifyContent: "center",
       alignItems: "center",
     },
-    titleRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      marginBottom: 2,
-    },
     title: {
       fontSize: 20,
       fontWeight: "700",
       color: Colors.textMain,
-      marginRight: 6,
-    },
-    lock: {
-      fontSize: 16,
     },
     latin: {
       fontSize: 14,
       fontStyle: "italic",
       color: Colors.textSecondary,
-      marginBottom: 2,
+      marginTop: 2,
     },
-    subtitle: {
-      fontSize: 14,
+    privacyRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: 6,
+    },
+    privacyIcon: {
+      fontSize: 13,
+      marginRight: 4,
+    },
+    privacyText: {
+      fontSize: 13,
       color: Colors.textSecondary,
     },
     capsuleRow: {
       flexDirection: "row",
       flexWrap: "wrap",
-      paddingHorizontal: 16,
+      paddingVertical: 12,
       gap: 8,
     },
     capsule: {
@@ -324,9 +348,10 @@ const stylesFn = (Colors) =>
       alignItems: "center",
       paddingHorizontal: 12,
       paddingVertical: 6,
+      backgroundColor: Colors.primary100,
       borderRadius: 16,
       borderWidth: 1,
-      borderColor: Colors.accent,
+      borderColor: Colors.primary200,
       gap: 4,
       maxWidth: 200,
     },
@@ -335,87 +360,63 @@ const stylesFn = (Colors) =>
       fontWeight: "500",
       color: Colors.textMain,
     },
-    section: {
-      marginTop: 16,
-      paddingHorizontal: 16,
+    placeWrap: {
+      marginBottom: 12,
     },
-    placeRow: {
+    placeName: {
+      fontSize: 15,
+      fontWeight: "600",
+      color: Colors.textMain,
+    },
+    placeTerritory: {
+      fontSize: 12,
+      color: Colors.textSecondary,
+      marginTop: 2,
+      marginBottom: 8,
+    },
+    diaryBlock: {
       flexDirection: "row",
       alignItems: "center",
-      marginBottom: 8,
-      gap: 6,
+      marginBottom: 12,
     },
-    placeText: {
-      fontSize: 14,
+    diaryLabel: {
+      fontSize: 11,
+      color: Colors.textSecondary,
+      textTransform: "uppercase",
+      marginBottom: 2,
+      letterSpacing: 0.5,
+    },
+    diaryTitle: {
+      fontSize: 12,
+      fontWeight: "600",
       color: Colors.textMain,
     },
     notesBlock: {
-      marginTop: 16,
-      paddingLeft: 16,
-    },
-    notesLabel: {
-      fontSize: 12,
-      color: Colors.textSecondary,
-      marginBottom: 4,
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 12,
     },
     notes: {
       fontSize: 14,
       color: Colors.textMain,
       lineHeight: 20,
+      flex: 1,
     },
-    meta: {
-      marginTop: 24,
-      paddingHorizontal: 16,
-      paddingBottom: 16,
+    metaBorder: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: Colors.border,
+      paddingTop: 12,
     },
     metaText: {
       fontSize: 12,
       color: Colors.textSecondary,
       marginBottom: 2,
     },
-
-    diaryContext: {
-      flexDirection: "row",
+    headerButton: {
+      width: 36,
+      height: 36,
+      marginRight: 0,
+      justifyContent: "center",
       alignItems: "center",
-      padding: 0,
-      // marginHorizontal: 16,
-      marginTop: 20,
-      // paddingVertical: 14,
-      paddingHorizontal: 16,
-      // borderRadius: 16,
-      // backgroundColor: Colors.primary100,
-      // borderLeftWidth: 4,
-      // borderWidth: 1,
-      // borderColor: Colors.accent,
-    },
-
-    diaryLabel: {
-      fontSize: 11,
-      letterSpacing: 0.5,
-      textTransform: "uppercase",
-      color: Colors.textSecondary,
-      marginBottom: 2,
-    },
-
-    diaryTitle: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: Colors.textMain,
-    },
-
-    privacyRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      marginTop: 6,
-    },
-
-    privacyIcon: {
-      fontSize: 13,
-      marginRight: 4,
-    },
-
-    privacyText: {
-      fontSize: 13,
-      color: Colors.textSecondary,
     },
   });
