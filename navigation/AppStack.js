@@ -19,6 +19,7 @@ import ProfileScreen from "../screens/ProfileScreen";
 import ErrorScreen from "../screens/ErrorScreen";
 import ObservationsScreen from "../screens/ObservationsScreen";
 import ObservationDetailScreen from "../screens/ObservationDetailScreen";
+import ObservationEditorScreen from "../screens/ObservationEditorScreen";
 // import SettingsScreen from "../screens/SettingsScreen";
 
 import { AuthContext } from "../store/auth-context";
@@ -200,6 +201,16 @@ const AppNavigator = () => {
           headerBackTitleVisible: false,
         }}
       />
+
+      <Stack.Screen
+        name="ObservationEditor"
+        component={ObservationEditorScreen}
+        options={{
+          title: t("new_observation"),
+          headerBackTitleVisible: false,
+        }}
+      />
+
     </Stack.Navigator>
   );
 };
