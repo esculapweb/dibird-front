@@ -1,8 +1,9 @@
-import { View, StyleSheet, Switch, TextInput, Text } from "react-native";
+import { View, StyleSheet, Switch, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../../store/theme-context";
 import DropdownInput from "../ui/DropdownInput";
-import DatePickerField from "../ui/DatePickerField";
+import DateInput from "../ui/DateInput";
+import TimeInput from "../ui/TimeInput";
 import {
   fetchMyCountries,
   fetchMyPlaces,
@@ -10,6 +11,8 @@ import {
 } from "../../util/fetches";
 import { useTranslatedQuery } from "../../hooks/useQueryWithTranslation";
 import { useLanguage } from "../../store/language-context";
+import SpeciesOptionRow from "../ui/SpeciesOptionRow";
+import Input from "../ui/Input";
 
 const ObservationForm = ({
   formData,
@@ -31,20 +34,20 @@ const ObservationForm = ({
   const queryTerritories = useTranslatedQuery({
     queryFn: () => fetchMyCountries(false),
     params: [language],
-    type: "mycountries",
+    type: "Mycountries",
   });
 
   const queryPlaces = useTranslatedQuery({
     queryFn: () => fetchMyPlaces(territoryValue),
     params: [territoryValue],
-    type: "places",
+    type: "Places",
     enabled: !!territoryValue,
   });
 
   const querySpecies = useTranslatedQuery({
     queryFn: () => fetchSpecies(territoryValue),
     params: [territoryValue],
-    type: "species",
+    type: "Species",
     enabled: !!territoryValue,
   });
 
@@ -63,6 +66,30 @@ const ObservationForm = ({
         }}
         query={queryTerritories}
         error={errors.territory}
+      />
+
+      {/* Вид */}
+      <DropdownInput
+        title={t("species")}
+        placeholder={t("select_species")}
+        value={speciesValue}
+        setValue={(val) => {
+          setSpeciesValue(val);
+          setFormData((prev) => ({ ...prev, species: val }));
+          setErrors((prev) => ({ ...prev, species: undefined }));
+        }}
+        query={querySpecies}
+        disabled={!territoryValue}
+        disabledMessage={t("select_country_first")}
+        error={errors.species}
+        renderOption={({ item, selected, onSelect, onClose }) => (
+          <SpeciesOptionRow
+            item={item}
+            selected={selected}
+            onSelect={onSelect}
+            onClose={onClose}
+          />
+        )}
       />
 
       {/* Место */}
@@ -86,47 +113,47 @@ const ObservationForm = ({
         {t("add_new_location")}
       </Text>
 
-      {/* Вид */}
-      <DropdownInput
-        title={t("species")}
-        placeholder={t("select_species")}
-        value={speciesValue}
-        setValue={(val) => {
-          setSpeciesValue(val);
-          setFormData((prev) => ({ ...prev, species: val }));
-          setErrors((prev) => ({ ...prev, species: undefined }));
-        }}
-        query={querySpecies}
-        disabled={!territoryValue}
-        disabledMessage={t("select_country_first")}
-        error={errors.species}
-      />
-
-      {/* Дата и время */}
-      <DatePickerField
-        label="Дата наблюдения"
-        date={formData.date_time}
-        setDate={(newDate) => setFormData((prev) => ({ ...prev, date_time: newDate }))}
-      />
-
-      {/* Количество */}
-      <TextInput
-        style={styles.input}
-        placeholder={t("quantity")}
-        keyboardType="numeric"
-        value={formData.quantity?.toString() || ""}
-        onChangeText={(val) =>
-          setFormData((prev) => ({ ...prev, quantity: val }))
+      <DateInput
+        label={t("observation_date")}
+        value={formData.date_time}
+        onChange={(newDate) =>
+          setFormData((prev) => ({ ...prev, date_time: newDate }))
         }
+        placeholder={t("not_selected")}
+        error={errors.date_time}
+        allowClear={false}
       />
+
+      <TimeInput
+        label={t("observation_time")}
+        value={formData.time}
+        onChange={(newTime) => setFormData((prev) => ({ ...prev, time: newTime }))}
+      />
+
+      <Input
+        label={t("quantity")}
+        value={
+          formData?.quantity != null ? formData?.quantity.toString() : null
+        }
+        keyboardType="numeric"
+        onUpdateValue={(val) =>
+          setFormData((prev) => ({
+            ...prev,
+            quantity: val?.trim() === "" ? null : val.trim(),
+          }))
+        }
+        error={errors.quantity}
+        isInvalid={errors.quantity}
+      />
+      
 
       {/* Примечания */}
-      <TextInput
-        style={styles.input}
-        placeholder={t("notes")}
-        multiline
+      <Input
+        label={t("notes")}
         value={formData.notes}
-        onChangeText={(val) => setFormData((prev) => ({ ...prev, notes: val }))}
+        onUpdateValue={(val) => setFormData((prev) => ({ ...prev, notes: val }))}
+        error={errors.notes}
+        isInvalid={errors.notes}
       />
 
       {/* Приватность */}

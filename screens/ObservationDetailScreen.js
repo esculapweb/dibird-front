@@ -174,7 +174,7 @@ const ObservationDetailScreen = ({ route, navigation }) => {
             </View>
           )}
 
-          {observation.quantity > 1 && (
+          {observation.quantity && (
             <View style={styles.capsule}>
               <BirdSVG size={14} color={Colors.textMain} />
               <Text style={styles.capsuleText}>{observation.quantity}</Text>

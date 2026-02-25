@@ -55,14 +55,14 @@ const FilterModal = ({
 
   const queryPlaces = useTranslatedQuery({
     queryFn: () => fetchMyPlaces(territoryValue),
-    type: "places",
+    type: "Places",
     params: [territoryValue],
     enabled: !!territoryValue,
   });
 
   const querySpecies = useTranslatedQuery({
     queryFn: () => fetchSpecies(territoryValue),
-    type: "species",
+    type: "Species",
     params: [territoryValue],
     enabled: !!territoryValue,
   });
@@ -70,7 +70,7 @@ const FilterModal = ({
   const queryMyCountries = useTranslatedQuery({
     queryFn: () => fetchMyCountries(false),
     params: [language],
-    type: "mycountries",
+    type: "Mycountries",
   });
 
   useEffect(() => {

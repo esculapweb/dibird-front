@@ -3,8 +3,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useMutationWithTranslation } from "../useMutationWithTranslation";
 import api from "../../services/api";
 
-
-
 export const useCreateObservation = () => {
   const queryClient = useQueryClient();
 
@@ -14,8 +12,12 @@ export const useCreateObservation = () => {
         species: data.species,
         territory: data.territory,
         place: data.place ?? null,
-        date_time: data.date_time ? data.date_time.toISOString() : new Date().toISOString(),
-        time: data.time ?? null,
+        date_time: data.date_time,
+        time: data.time
+          ? `${String(data.time.getHours()).padStart(2, "0")}:${String(
+              data.time.getMinutes(),
+            ).padStart(2, "0")}`
+          : null,
         private: data.private ?? false,
         quantity: data.quantity ?? null,
         notes: data.notes ?? "",
