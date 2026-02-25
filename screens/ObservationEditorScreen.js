@@ -1,77 +1,82 @@
 import { useState, useCallback, useEffect } from "react";
-import { StyleSheet, Dimensions, Platform } from "react-native";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { StyleSheet, Platform, KeyboardAvoidingView } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import { useTheme } from "../store/theme-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
-import { useUpdateItem } from "../hooks/useItem";
 import IconButton from "../components/ui/IconButton";
 import ObservationForm from "../components/Observation/ObservationForm";
-import { useCreateObservation } from "../hooks/Observation/useObservationMutation";
+import { useCreateObservation } from "../hooks/Observation/useCreateObservation";
+import { useUpdateItem } from "../hooks/useItem";
 import { showError } from "../services/api";
+
+import {
+  getLastObservationDate,
+  setLastObservationDate,
+} from "../util/storageHelper";
 
 const ObservationEditorScreen = ({ navigation, route }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
-  const type = "Observation";
-
-  const FORM_FIELDS = ["species", "territory"];
 
   const { observation } = route.params || {};
   const isEditMode = !!observation;
-  const screenHeight = Dimensions.get("window").height;
+
+  const FORM_FIELDS = ["species", "territory"];
 
   const createObservationMutation = useCreateObservation();
-  const updateObservationMutation = useUpdateItem(observation?.id, type);
+  const updateObservationMutation = useUpdateItem(
+    observation?.id,
+    "Observation",
+  );
+
+  const [defaultDate, setDefaultDate] = useState(new Date());
+
+  // Подгружаем дату последнего наблюдения
+  useEffect(() => {
+    if (!isEditMode) {
+      getLastObservationDate().then((lastDate) => {
+        if (lastDate) setDefaultDate(lastDate);
+      });
+    }
+  }, [isEditMode]);
 
   const [formData, setFormData] = useState({
     species: observation?.species ?? "",
     territory: observation?.territory ?? "",
+    place: observation?.place ?? null,
+    date_time: observation?.date_time
+      ? new Date(observation.date_time)
+      : defaultDate,
+    time: observation?.time ?? null,
+    private: observation?.private ?? false,
+    quantity: observation?.quantity ?? "",
+    notes: observation?.notes ?? "",
   });
+
+  const [territoryValue, setTerritoryValue] = useState(formData.territory);
+  const [speciesValue, setSpeciesValue] = useState(formData.species);
+  const [placeValue, setPlaceValue] = useState(formData.place);
   const [errors, setErrors] = useState({});
 
+  // Валидация
   const validateForm = useCallback(() => {
     const newErrors = {};
-    // if (!formData.name.trim()) newErrors.name = t("name_required");
-    // else if (formData.name.trim().length > 254)
-    //   newErrors.name = t("name_too_long");
-
-    // if (!formData?.territory) newErrors.territory = t("territory_required");
-
-    // if (!latText?.trim()) {
-    //   newErrors.latitude = t("invalid_latitude");
-    // } else {
-    //   const lat = Number(latText);
-    //   if (isNaN(lat) || lat < -90 || lat > 90) {
-    //     newErrors.latitude = t("invalid_latitude");
-    //   }
-    // }
-
-    // if (!lngText?.trim()) {
-    //   newErrors.longitude = t("invalid_longitude");
-    // } else {
-    //   const lng = Number(lngText);
-    //   if (isNaN(lng) || lng < -180 || lng > 180) {
-    //     newErrors.longitude = t("invalid_longitude");
-    //   }
-    // }
-
+    if (!territoryValue) newErrors.territory = t("territory_required");
+    if (!speciesValue) newErrors.species = t("species_required");
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [formData, t]);
+  }, [territoryValue, speciesValue, t]);
 
-  const extractApiError = (e) => {
-    return {
-      title: isEditMode ? t("update_failed") : t("create_failed"),
-      message:
-        Object.values(e?.response?.data).flat().join("\n") ||
-        (isEditMode
-          ? t("could_not_update_observation")
-          : t("could_not_create_observation")),
-    };
-  };
+  const extractApiError = (e) => ({
+    title: isEditMode ? t("update_failed") : t("create_failed"),
+    message:
+      Object.values(e?.response?.data).flat().join("\n") ||
+      (isEditMode
+        ? t("could_not_update_observation")
+        : t("could_not_create_observation")),
+  });
 
   const handleMutateError = (e) => {
     const data = e?.response?.data;
@@ -85,52 +90,51 @@ const ObservationEditorScreen = ({ navigation, route }) => {
       : showError(e, extractApiError);
   };
 
+  // Сохранение наблюдения
   const handleSaveObservation = useCallback(() => {
     if (!validateForm()) return;
 
-    //   const normalized = normalizeCoords(lngText, latText, 4);
-    //   if (!normalized) return;
-
-    //   const { lng, lat, lngText: newLngText, latText: newLatText } = normalized;
-    //   updateCoords([lng, lat], {
-    //     fromManual: true,
-    //     normalizeOnSave: true,
-    //     withGeocode: false,
-    //   });
-    //   setLatText(newLatText);
-    //   setLngText(newLngText);
-
-    //   const placeData = {
-    //     name: formData.name.trim(),
-    //     location: { type: "Point", coordinates: [lng, lat] },
-    //     territory: formData.territory,
-    //     favourite: place?.favourite ?? false,
-    //   };
+    const observationData = {
+      ...formData,
+      species: speciesValue,
+      territory: territoryValue,
+      place: placeValue,
+    };
 
     if (isEditMode) {
       updateObservationMutation.mutate(observationData, {
         onSuccess: () => navigation.goBack(),
-        onError: (e) => handleMutateError(e),
+        onError: handleMutateError,
       });
     } else {
       createObservationMutation.mutate(observationData, {
-        onSuccess: (res) =>
+        onSuccess: async (res) => {
+          await setLastObservationDate(observationData.date_time);
           requestAnimationFrame(() =>
             navigation.replace("ObservationDetail", {
               observationId: res.data.id,
             }),
-          ),
-        onError: (e) => handleMutateError(e),
+          );
+        },
+        onError: handleMutateError,
       });
     }
-  }, [formData, isEditMode, observation]);
+  }, [
+    formData,
+    speciesValue,
+    territoryValue,
+    placeValue,
+    isEditMode,
+    createObservationMutation,
+    updateObservationMutation,
+  ]);
 
   const headerRight = useCallback(
     () => (
       <IconButton
         icon="checkmark"
         onPress={handleSaveObservation}
-        style={styles.createHeaderButton}
+        style={styles.saveButton}
         size={28}
         disabled={
           isEditMode
@@ -163,15 +167,26 @@ const ObservationEditorScreen = ({ navigation, route }) => {
     return <LoadingOverlay />;
 
   return (
-    <KeyboardAwareScrollView
-      contentContainerStyle={styles.container}
-      enableOnAndroid
-      keyboardShouldPersistTaps="handled"
-      extraScrollHeight={Platform.OS === "ios" ? 20 : 80}
+    <KeyboardAvoidingView
       style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <ObservationForm />
-    </KeyboardAwareScrollView>
+      <ObservationForm
+        formData={formData}
+        setFormData={setFormData}
+        errors={errors}
+        setErrors={setErrors}
+        territoryValue={territoryValue}
+        setTerritoryValue={setTerritoryValue}
+        speciesValue={speciesValue}
+        setSpeciesValue={setSpeciesValue}
+        placeValue={placeValue}
+        setPlaceValue={setPlaceValue}
+        onAddNewPlace={(cb) =>
+          navigation.navigate("PlaceEditorScreen", { onReturn: cb })
+        }
+      />
+    </KeyboardAvoidingView>
   );
 };
 
@@ -180,13 +195,13 @@ export default ObservationEditorScreen;
 const stylesFn = (Colors) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.backgroundMain },
-    createHeaderButton: {
+    saveButton: {
       backgroundColor: Colors.buttonBrightBg,
       borderRadius: 20,
       width: 36,
       height: 36,
-      marginRight: 0,
       justifyContent: "center",
       alignItems: "center",
+      marginRight: 0,
     },
   });

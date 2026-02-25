@@ -13,6 +13,12 @@ export const useCreateObservation = () => {
       const formattedData = {
         species: data.species,
         territory: data.territory,
+        place: data.place ?? null,
+        date_time: data.date_time ? data.date_time.toISOString() : new Date().toISOString(),
+        time: data.time ?? null,
+        private: data.private ?? false,
+        quantity: data.quantity ?? null,
+        notes: data.notes ?? "",
       };
 
       return api.post(`/myapi/observation2/`, formattedData);
