@@ -1,10 +1,14 @@
+import "react-native-gesture-handler";
+import "react-native-reanimated";
 import { StatusBar } from "expo-status-bar";
 import { useContext, useState } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Navigation from "./navigation/Navigation";
 import Toast from "react-native-toast-message";
 import { ActionSheetProvider } from "@expo/react-native-action-sheet";
 import "./services/i18n";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 
 import AuthContextProvider, { AuthContext } from "./store/auth-context";
 import { ProfileProvider } from "./store/profile-context";
@@ -53,28 +57,30 @@ const Root = () => {
   }
 
   return (
-    <>
+    <BottomSheetModalProvider>
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
       <ActionSheetProvider>
         <Navigation />
       </ActionSheetProvider>
       <Toast config={ThemedToast} position="bottom" />
-    </>
+    </BottomSheetModalProvider>
   );
 };
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <LanguageProvider>
-        <ThemeProvider>
-          <AuthContextProvider>
-            <ProfileProvider>
-              <Root />
-            </ProfileProvider>
-          </AuthContextProvider>
-        </ThemeProvider>
-      </LanguageProvider>
-    </QueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <QueryClientProvider client={queryClient}>
+        <LanguageProvider>
+          <ThemeProvider>
+            <AuthContextProvider>
+              <ProfileProvider>
+                <Root />
+              </ProfileProvider>
+            </AuthContextProvider>
+          </ThemeProvider>
+        </LanguageProvider>
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   );
 }

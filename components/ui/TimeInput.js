@@ -11,6 +11,7 @@ const TimeInput = ({
   onChange,
   placeholder = "Select time",
   error,
+  allowClear = true,
 }) => {
   const { t } = useTranslation();
   const { Colors, theme } = useTheme();
@@ -63,7 +64,19 @@ const TimeInput = ({
         <Text style={[styles.text, !value && styles.placeholder]}>
           {value ? formatTime(value) : placeholder}
         </Text>
-        <Ionicons name="time" size={20} color={Colors.textSecondary} />
+
+        <View style={styles.icons}>
+          {allowClear && value && (
+            <Pressable onPress={() => onChange(null)} hitSlop={8}>
+              <Ionicons
+                name="close-circle"
+                size={18}
+                color={Colors.dropdownIcon}
+              />
+            </Pressable>
+          )}
+          <Ionicons name="time" size={20} color={Colors.textSecondary} />
+        </View>
       </Pressable>
 
       {showPicker && (
@@ -111,4 +124,9 @@ const stylesFn = (Colors) =>
     errorBorder: { borderColor: Colors.error500 },
     doneBtn: { marginTop: 8, alignSelf: "flex-end", padding: 8 },
     doneText: { fontSize: 16, color: Colors.done, fontWeight: "600" },
+     icons: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
   });
