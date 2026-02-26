@@ -124,16 +124,8 @@ const ObservationForm = ({
         />
       </Section>
 
-      {/* ── 5. Required: Privacy ─────────────────────────────── */}
-      <Section title={t("section_privacy")} required>
-        <PrivacyToggle
-          value={formData.private}
-          onChange={(val) => setFormData((prev) => ({ ...prev, private: val }))}
-        />
-      </Section>
-
       {/* ── 3. Optional: Where ───────────────────────────────── */}
-      <Section title={t("section_where")} hint={t("optional")}>
+      {territoryValue && <Section title={t("section_where")} hint={t("optional")}>
         <PlaceBlock
           territoryValue={territoryValue}
           placeValue={placeValue}
@@ -142,12 +134,19 @@ const ObservationForm = ({
           onAddNewPlace={onAddNewPlace}
           queryPlaces={queryPlaces}
         />
+      </Section> }
+
+      {/* ── 5. Required: Privacy ─────────────────────────────── */}
+      <Section title={t("section_privacy")}>
+        <PrivacyToggle
+          value={formData.private}
+          onChange={(val) => setFormData((prev) => ({ ...prev, private: val }))}
+        />
       </Section>
 
       {/* ── 4. Optional: Details ─────────────────────────────── */}
       <Section title={t("section_details")} hint={t("optional")}>
         <TimeInput
-          label={`${t("observation_time")}`}
           value={formData.time}
           onChange={(newTime) =>
             setFormData((prev) => ({ ...prev, time: newTime }))

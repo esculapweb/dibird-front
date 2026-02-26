@@ -75,7 +75,6 @@ const ObservationEditorScreen = ({ navigation, route }) => {
     observation?.species_data ?? null,
   );
 
-  // Валидация
   const validateForm = useCallback(() => {
     const newErrors = {};
     if (!territoryValue) newErrors.territory = t("territory_required");
@@ -106,7 +105,6 @@ const ObservationEditorScreen = ({ navigation, route }) => {
       : showError(e, extractApiError);
   };
 
-  // Сохранение наблюдения
   const handleSaveObservation = useCallback(() => {
     if (!validateForm()) return;
 
@@ -135,15 +133,7 @@ const ObservationEditorScreen = ({ navigation, route }) => {
         onError: handleMutateError,
       });
     }
-  }, [
-    formData,
-    speciesValue,
-    territoryValue,
-    placeValue,
-    isEditMode,
-    createObservationMutation,
-    updateObservationMutation,
-  ]);
+  }, [formData, speciesValue, territoryValue, placeValue, isEditMode]);
 
   const headerRight = useCallback(
     () => (
@@ -179,8 +169,22 @@ const ObservationEditorScreen = ({ navigation, route }) => {
     isEditMode
       ? updateObservationMutation.isPending
       : createObservationMutation.isPending
-  )
+  ) {
     return <LoadingOverlay />;
+  }
+
+  const handleAddNewPlace = useCallback(
+    (cb) => {
+      navigation.navigate("PlaceEditor", {
+        onReturn: (newPlaceId) => {
+          setPlaceValue(newPlaceId);
+          setFormData((prev) => ({ ...prev, place: newPlaceId }));
+          cb?.(newPlaceId);
+        },
+      });
+    },
+    [navigation],
+  );
 
   return (
     <KeyboardAvoidingView
@@ -200,9 +204,7 @@ const ObservationEditorScreen = ({ navigation, route }) => {
         setPlaceValue={setPlaceValue}
         speciesData={speciesData}
         setSpeciesData={setSpeciesData}
-        onAddNewPlace={(cb) =>
-          navigation.navigate("PlaceEditorScreen", { onReturn: cb })
-        }
+        onAddNewPlace={handleAddNewPlace}
       />
     </KeyboardAvoidingView>
   );

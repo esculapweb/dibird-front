@@ -2,11 +2,12 @@ import { StyleSheet, View, Text } from "react-native";
 
 import { useTheme } from "../../store/theme-context";
 
-const Section = ({ title, required, children, hint }) => {
+const Section = ({ title, required, children, hint, style }) => {
   const { Colors } = useTheme();
   const styles = sectionFn(Colors);
   return (
-    <View style={styles.section}>
+    <View style={[styles.section, style]}>
+      {title && (
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>
           {title}
@@ -14,6 +15,7 @@ const Section = ({ title, required, children, hint }) => {
         </Text>
         {hint && <Text style={styles.hint}>{hint}</Text>}
       </View>
+      )}
       {children}
     </View>
   );

@@ -27,12 +27,13 @@ export const fetchMyPlaces = async (territory = null) => {
   };
   if (!territory) return [];
   params.territory = territory;
-  const res = await api.get("/myapi/place-dropdown/", { params });
+  const res = await api.get("/myapi/place-dropdown2/", { params });
 
-  return res.data.map(([value, item]) => ({
-    value,
-    label: item.label,
-    iconLabel: item["data-favourite"] && "star",
+  return res.data.map((item) => ({
+    value:item.id,
+    label: item.name,
+    iconLabel: item.favourite && "star",
+    location: item.location,
   }));
 };
 

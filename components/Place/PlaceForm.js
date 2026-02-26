@@ -122,7 +122,7 @@ export default PlaceForm;
 
 const stylesFn = (Colors) =>
   StyleSheet.create({
-    formSection: { padding: 16 },
+    formSection: { padding: 16, marginBottom: 8 },
     coordsContainer: { flexDirection: "row", gap: 12 },
     coordInputWrapper: { flex: 1 },
   });

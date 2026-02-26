@@ -1,20 +1,130 @@
-import { StyleSheet, View, Text, Pressable, Image } from "react-native";
+import {
+  StyleSheet,
+  View,
+  Text,
+  Pressable,
+  Image,
+  ActivityIndicator,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 
 import { useTheme } from "../../store/theme-context";
 import { Config } from "../../constants/config";
 
-const SpeciesCard = ({ speciesData, value, onPress, disabled, error }) => {
+const SpeciesCard = ({
+  speciesData,
+  value,
+  onPress,
+  disabled,
+  error,
+  query
+}) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const name = speciesData?.labelLang || speciesData?.label;
 
+  const handlePress = () => {
+    if (query.isError && query.refetch) {
+      query.refetch();
+      return;
+    }
+    onPress();
+  }
+
+  const ImagePart = () => {
+    if (query.isLoading)
+      return (
+        <View style={[styles.image, styles.imageEmpty]}>
+          <ActivityIndicator size="small" color={Colors.dropdownIcon} />
+        </View>
+      );
+
+    if (query.isError) return <View style={[styles.image, styles.imageEmpty]}>
+      <Ionicons name="refresh" size={32} color={Colors.link} />
+    </View>;
+
+    if (speciesData?.thumb && value)
+      return (
+        <Image
+          source={{ uri: `${Config.baseUrl}/media/${speciesData.thumb}` }}
+          style={styles.image}
+          contentFit="cover"
+          cachePolicy="disk"
+        />
+      );
+
+    if (speciesData && value)
+      return (
+        <View style={[styles.image, styles.imagePlaceholder]}>
+          <Ionicons
+            name="image-outline"
+            size={32}
+            color={Colors.dropdownIcon}
+          />
+        </View>
+      );
+
+    return (
+      <View style={[styles.image, styles.imageEmpty]}>
+        <Ionicons
+          name="search-outline"
+          size={32}
+          color={Colors.textSecondary}
+        />
+      </View>
+    );
+  };
+
+  const TextPart = () => {
+    if (query.isLoading)
+      return (
+        <Text style={styles.name} numberOfLines={1}>
+          {t("loading_")}
+        </Text>
+      );
+    if (query.isError)
+      return (
+        <Text
+          style={[styles.name, { color: Colors.error500 }]}
+          numberOfLines={2}
+          ellipsizeMode="tail"
+        >
+          {t("failed_to_load_data")}
+        </Text>
+      );
+
+    if (speciesData && value)
+      return (
+        <>
+          <Text style={styles.name} numberOfLines={2}>
+            {name}
+          </Text>
+          {speciesData.labelLatin && speciesData.labelLatin !== name && (
+            <Text style={styles.latin} numberOfLines={1}>
+              {speciesData.labelLatin}
+            </Text>
+          )}
+          <Text style={styles.changeHint}>{t("tap_to_change")}</Text>
+        </>
+      );
+
+    return (
+      <>
+        <Text style={[styles.name, styles.promptTitle]}>
+          {disabled ? t("select_country_first") : t("select_species")}
+        </Text>
+        {!disabled && (
+          <Text style={styles.promptSub}>{t("species_tap_hint")}</Text>
+        )}
+      </>
+    );
+  };
 
   return (
     <Pressable
-      onPress={onPress}
+      onPress={handlePress}
       disabled={disabled}
       style={({ pressed }) => [
         styles.card,
@@ -23,64 +133,21 @@ const SpeciesCard = ({ speciesData, value, onPress, disabled, error }) => {
         pressed && !disabled && styles.cardPressed,
       ]}
     >
-      {speciesData?.thumb && value ? (
-        <Image
-          source={{ uri: `${Config.baseUrl}/media/${speciesData.thumb}` }}
-          style={styles.image}
-          contentFit="cover"
-          cachePolicy="disk"
-        />
-      ) : speciesData && value ? (
-        <View style={[styles.image, styles.imagePlaceholder]}>
-          <Ionicons
-            name="image-outline"
-            size={32}
-            color={Colors.dropdownIcon}
-          />
-        </View>
-      ) : (
-        <View style={[styles.image, styles.imageEmpty]}>
-          <Ionicons
-            name="search-outline"
-            size={32}
-            color={Colors.textSecondary}
-          />
-        </View>
-      )}
+      <ImagePart />
 
-      {/* Text */}
       <View style={styles.info}>
-        {speciesData && value ? (
-          <>
-            <Text style={styles.name} numberOfLines={2}>
-              {name}
-            </Text>
-            {speciesData.labelLatin && speciesData.labelLatin !== name && (
-              <Text style={styles.latin} numberOfLines={1}>
-                {speciesData.labelLatin}
-              </Text>
-            )}
-            <Text style={styles.changeHint}>{t("tap_to_change")}</Text>
-          </>
-        ) : (
-          <>
-            <Text style={[styles.name, styles.promptTitle]}>
-              {disabled ? t("select_country_first") : t("select_species")}
-            </Text>
-            {!disabled && (
-              <Text style={styles.promptSub}>{t("species_tap_hint")}</Text>
-            )}
-          </>
-        )}
+        <TextPart />
         {error && <Text style={styles.errorText}>{error}</Text>}
       </View>
 
-      <Ionicons
-        name="chevron-forward"
-        size={22}
-        color={Colors.textSecondary}
-        style={{ marginRight: 14 }}
-      />
+      {!disabled && !query.isLoading && !query.isError && (
+        <Ionicons
+          name="chevron-forward"
+          size={22}
+          color={Colors.textSecondary}
+          style={{ marginRight: 14 }}
+        />
+      )}
     </Pressable>
   );
 };

@@ -25,7 +25,6 @@ const DropdownInput = ({
   disabledMessage,
   renderOption,
   speciesData,
-  setSpeciesData
 }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -98,6 +97,7 @@ const DropdownInput = ({
           disabled={disabled}
           error={error}
           onPress={openModal}
+          query={query}
         />
       ) : (
         <View style={styles.wrapper}>

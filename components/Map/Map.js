@@ -17,7 +17,7 @@ import {
 } from "@maplibre/maplibre-react-native";
 import Toast from "react-native-toast-message";
 import Clipboard from "@react-native-clipboard/clipboard";
-import { useTranslation } from "react-i18next"; 
+import { useTranslation } from "react-i18next";
 
 import { Config } from "../../constants/config";
 import { useTheme } from "../../store/theme-context";
@@ -27,10 +27,10 @@ const Map = ({
   currentZoom = 12,
   onPress = () => {},
   accuracy,
-  mapHeight,
+  mapHeight,       // опционально: если не передан — растягивается через flex: 1 родителя
   onUseMyLocation,
   isLocating,
-  showCoords
+  showCoords,
 }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors, mapHeight);
@@ -49,8 +49,6 @@ const Map = ({
     <View style={styles.mapSection}>
       <View style={styles.container} pointerEvents="box-none">
         <MapView
-          // attributionEnabled={false}
-          // logoEnabled={false}
           attributionPosition={{ bottom: 16, left: 16 }}
           style={{ flex: 1 }}
           onPress={onPress}
@@ -148,7 +146,10 @@ export default Map;
 
 const stylesFn = (Colors, mapHeight) =>
   StyleSheet.create({
-    mapSection: { height: mapHeight, position: "relative" },
+
+    mapSection: mapHeight != null
+      ? { height: mapHeight, position: "relative" }
+      : { flex: 1, position: "relative" },
     container: { flex: 1, position: "relative" },
     myLocationButton: {
       alignItems: "center",

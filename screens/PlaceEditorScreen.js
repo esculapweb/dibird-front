@@ -8,7 +8,10 @@ import { useUpdateItem } from "../hooks/useItem";
 import { useCreatePlace } from "../hooks/Place/usePlaceMutation";
 import IconButton from "../components/ui/IconButton";
 import PlaceForm from "../components/Place/PlaceForm";
-import { usePlaceLocation, normalizeCoords } from "../hooks/Place/usePlaceLocation";
+import {
+  usePlaceLocation,
+  normalizeCoords,
+} from "../hooks/Place/usePlaceLocation";
 import Map from "../components/Map/Map";
 import { showError } from "../services/api";
 
@@ -16,13 +19,12 @@ const PlaceEditorScreen = ({ navigation, route }) => {
   const { Colors } = useTheme();
   const { t } = useTranslation();
   const styles = stylesFn(Colors);
-  const type = 'Place';
+  const type = "Place";
 
   const FORM_FIELDS = ["name", "territory", "latitude", "longitude"];
 
-  const { place } = route.params || {};
+  const { place, onReturn } = route.params || {};
   const isEditMode = !!place;
-  const screenHeight = Dimensions.get("window").height;
 
   const {
     coords,
@@ -54,21 +56,18 @@ const PlaceEditorScreen = ({ navigation, route }) => {
       const [lng, lat] = e.geometry.coordinates;
       const normalized = normalizeCoords(lng, lat);
       if (!normalized) return;
-
       const {
         lngText: newLngText,
         latText: newLatText,
         lng: newLng,
         lat: newLat,
       } = normalized;
-
       updateCoords([newLng, newLat], {
         fromManual: true,
         latText: newLatText,
         lngText: newLngText,
         withGeocode: true,
       });
-
       setErrors((prev) => ({
         ...prev,
         latitude: undefined,
@@ -92,16 +91,14 @@ const PlaceEditorScreen = ({ navigation, route }) => {
     }
   }, []);
 
-  const getSuggestedName = (details) => {
-    if (details?.city && details?.raw?.county)
-      return `${details.city}, ${details?.raw?.county}`;
-    if (details?.city) return details.city;
-    if (details?.address) return details.address;
-    return "";
-  };
-
   useEffect(() => {
     if (!details || isEditMode) return;
+    const getSuggestedName = (d) => {
+      if (d?.city && d?.raw?.county) return `${d.city}, ${d?.raw?.county}`;
+      if (d?.city) return d.city;
+      if (d?.address) return d.address;
+      return "";
+    };
     const suggestedName = getSuggestedName(details);
     if (!suggestedName) return;
 
@@ -121,34 +118,27 @@ const PlaceEditorScreen = ({ navigation, route }) => {
       newErrors.latitude = t("invalid_latitude");
     } else {
       const lat = Number(latText);
-      if (isNaN(lat) || lat < -90 || lat > 90) {
+      if (isNaN(lat) || lat < -90 || lat > 90)
         newErrors.latitude = t("invalid_latitude");
-      }
     }
 
     if (!lngText?.trim()) {
       newErrors.longitude = t("invalid_longitude");
     } else {
       const lng = Number(lngText);
-      if (isNaN(lng) || lng < -180 || lng > 180) {
+      if (isNaN(lng) || lng < -180 || lng > 180)
         newErrors.longitude = t("invalid_longitude");
-      }
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }, [formData, latText, lngText, t]);
 
-  const extractApiError = (e) => {
-    return {
-      title: isEditMode ? t("update_failed") : t("create_failed"),
-      message:
-        Object.values(e?.response?.data).flat().join("\n") ||
-        (isEditMode
-          ? t("could_not_update_place")
-          : t("could_not_create_place")),
-    };
-  };
+  const extractApiError = (e) => ({
+    title: isEditMode ? t("update_failed") : t("create_failed"),
+    message:
+      Object.values(e?.response?.data).flat().join("\n") ||
+      (isEditMode ? t("could_not_update_place") : t("could_not_create_place")),
+  });
 
   const handleMutateError = (e) => {
     const data = e?.response?.data;
@@ -219,14 +209,20 @@ const PlaceEditorScreen = ({ navigation, route }) => {
       });
     } else {
       createPlaceMutation.mutate(placeData, {
-        onSuccess: (res) =>
-          requestAnimationFrame(() =>
-            navigation.replace("PlaceDetail", { placeId: res.data.id }),
-          ),
+        onSuccess: (res) => {
+          if (onReturn) {
+            onReturn(res.data.id);
+            navigation.goBack();
+          } else {
+            requestAnimationFrame(() =>
+              navigation.replace("PlaceDetail", { placeId: res.data.id }),
+            );
+          }
+        },
         onError: (e) => handleMutateError(e),
       });
     }
-  }, [formData, lngText, latText, isEditMode, place]);
+  }, [formData, lngText, latText, isEditMode, place, onReturn]);
 
   const headerRight = useCallback(
     () => (
@@ -236,9 +232,10 @@ const PlaceEditorScreen = ({ navigation, route }) => {
         style={styles.createHeaderButton}
         size={28}
         disabled={
-          isLocating || isEditMode
+          isLocating ||
+          (isEditMode
             ? updatePlaceMutation.isPending
-            : createPlaceMutation.isPending
+            : createPlaceMutation.isPending)
         }
         color={Colors.buttonBrightColor}
       />
@@ -261,26 +258,25 @@ const PlaceEditorScreen = ({ navigation, route }) => {
 
   if (
     isEditMode ? updatePlaceMutation.isPending : createPlaceMutation.isPending
-  )
+  ) {
     return <LoadingOverlay />;
+  }
 
   return (
-    <KeyboardAwareScrollView
-      contentContainerStyle={styles.container}
-      enableOnAndroid
-      keyboardShouldPersistTaps="handled"
-      extraScrollHeight={Platform.OS === "ios" ? 20 : 80}
+    <KeyboardAvoidingView
       style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <Map
-        onPress={handleMapPress}
-        currentCoords={coords}
-        currentZoom={zoom}
-        accuracy={accuracy}
-        mapHeight={Math.min(Math.max(screenHeight * 0.5, 200), 500)}
-        onUseMyLocation={useMyLocation}
-        isLocating={isLocating}
-      />
+      <View style={styles.mapContainer}>
+        <Map
+          onPress={handleMapPress}
+          currentCoords={coords}
+          currentZoom={zoom}
+          accuracy={accuracy}
+          onUseMyLocation={useMyLocation}
+          isLocating={isLocating}
+        />
+      </View>
       <PlaceForm
         onCoordsChange={handleCoordsChange}
         formData={formData}
@@ -294,7 +290,7 @@ const PlaceEditorScreen = ({ navigation, route }) => {
         setErrors={setErrors}
         locationDetails={details}
       />
-    </KeyboardAwareScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -302,7 +298,8 @@ export default PlaceEditorScreen;
 
 const stylesFn = (Colors) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: Colors.backgroundMain },
+    container: { flex: 1, backgroundColor: Colors.primary100 },
+    mapContainer: { flex: 1 },
     createHeaderButton: {
       backgroundColor: Colors.buttonBrightBg,
       borderRadius: 20,

@@ -18,6 +18,7 @@ const PlaceBlock = ({
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const selectedPlace = queryPlaces?.data?.find((p) => p.value === placeValue);
+
   const coords = selectedPlace?.location?.coordinates;
 
   return (
@@ -37,7 +38,7 @@ const PlaceBlock = ({
 
       {coords?.length === 2 && (
         <View style={styles.mapWrap}>
-          <Map currentCoords={coords} mapHeight={160} showCoords={false} />
+          <Map currentCoords={coords} mapHeight={220} showCoords={false} />
         </View>
       )}
 
