@@ -15,6 +15,7 @@ import {
   getLastObservationDate,
   setLastObservationDate,
 } from "../util/storageHelper";
+import { setNavigationCallback } from "../util/navigationCallbacks";
 
 const ObservationEditorScreen = ({ navigation, route }) => {
   const { t } = useTranslation();
@@ -107,14 +108,12 @@ const ObservationEditorScreen = ({ navigation, route }) => {
 
   const handleSaveObservation = useCallback(() => {
     if (!validateForm()) return;
-
     const observationData = {
       ...formData,
       species: speciesValue,
       territory: territoryValue,
       place: placeValue,
     };
-
     if (isEditMode) {
       updateObservationMutation.mutate(observationData, {
         onSuccess: () => navigation.goBack(),
@@ -173,18 +172,14 @@ const ObservationEditorScreen = ({ navigation, route }) => {
     return <LoadingOverlay />;
   }
 
-  const handleAddNewPlace = useCallback(
-    (cb) => {
-      navigation.navigate("PlaceEditor", {
-        onReturn: (newPlaceId) => {
-          setPlaceValue(newPlaceId);
-          setFormData((prev) => ({ ...prev, place: newPlaceId }));
-          cb?.(newPlaceId);
-        },
-      });
-    },
-    [navigation],
-  );
+  const handleAddNewPlace = useCallback(() => {
+      setNavigationCallback("onPlaceCreated", (newPlaceId) => {
+      setPlaceValue(newPlaceId);
+      setFormData((prev) => ({ ...prev, place: newPlaceId }));
+    });
+
+    navigation.navigate("PlaceEditor", { returnToScreen: "ObservationEditor" });
+  }, [navigation]);
 
   return (
     <KeyboardAvoidingView
