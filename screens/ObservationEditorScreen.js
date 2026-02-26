@@ -71,6 +71,9 @@ const ObservationEditorScreen = ({ navigation, route }) => {
   const [placeValue, setPlaceValue] = useState(formData.place);
   const [dateTimeValue, setDateTimeValue] = useState(formData.date_time);
   const [errors, setErrors] = useState({});
+  const [speciesData, setSpeciesData] = useState(
+    observation?.species_data ?? null,
+  );
 
   // Валидация
   const validateForm = useCallback(() => {
@@ -107,8 +110,7 @@ const ObservationEditorScreen = ({ navigation, route }) => {
   const handleSaveObservation = useCallback(() => {
     if (!validateForm()) return;
 
-      console.log(formData)
-      
+    console.log(formData);
 
     const observationData = {
       ...formData,
@@ -117,9 +119,7 @@ const ObservationEditorScreen = ({ navigation, route }) => {
       place: placeValue,
     };
 
-    console.log(formData)
-
-  
+    console.log(formData);
 
     if (isEditMode) {
       updateObservationMutation.mutate(observationData, {
@@ -202,6 +202,8 @@ const ObservationEditorScreen = ({ navigation, route }) => {
         setSpeciesValue={setSpeciesValue}
         placeValue={placeValue}
         setPlaceValue={setPlaceValue}
+        speciesData={speciesData}
+        setSpeciesData={setSpeciesData}
         onAddNewPlace={(cb) =>
           navigation.navigate("PlaceEditorScreen", { onReturn: cb })
         }
