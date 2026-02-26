@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 
 import SelectListModal from "./SelectListModal";
 import { useTheme } from "../../store/theme-context";
+import SpeciesCard from "./SpeciesCard";
 
 const DropdownInput = ({
   title,
@@ -23,6 +24,8 @@ const DropdownInput = ({
   disabled = false,
   disabledMessage,
   renderOption,
+  speciesData,
+  setSpeciesData
 }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -88,70 +91,139 @@ const DropdownInput = ({
 
   return (
     <>
-      <View style={styles.wrapper}>
-        {title && <Text style={[styles.title, error && styles.titleError]}>{title}</Text>}
-
-        <Pressable
+      {speciesData!==undefined ? (
+        <SpeciesCard
+          speciesData={speciesData}
+          value={value}
+          disabled={disabled}
+          error={error}
           onPress={openModal}
-          style={[
-            styles.select,
-            error && { borderColor: Colors.error500 },
-            disabled && styles.disabled,
-          ]}
-        >
-          <View style={styles.left}>
-            {query.isLoading && (
-              <Text style={[styles.text, !label && { color: Colors.dropdownIcon }]} numberOfLines={1} ellipsizeMode="tail">
-                {t("loading_")}
-              </Text>
-            )}
-            {query.isError && (
-              <Text style={[styles.text, { color: Colors.error500 }]} numberOfLines={1} ellipsizeMode="tail">
-                {t("failed_to_load_data")}
-              </Text>
-            )}
-            {!query.isLoading && !query.isError && (
-              <>
-                {iconLabel && <View style={styles.icon}><Ionicons name={iconLabel} size={14} color={Colors.accent} /></View>}
-                {icon && <Text style={styles.icon}>{icon}</Text>}
+        />
+      ) : (
+        <View style={styles.wrapper}>
+          {title && (
+            <Text style={[styles.title, error && styles.titleError]}>
+              {title}
+            </Text>
+          )}
+
+          <Pressable
+            onPress={openModal}
+            style={[
+              styles.select,
+              error && { borderColor: Colors.error500 },
+              disabled && styles.disabled,
+            ]}
+          >
+            <View style={styles.left}>
+              {query.isLoading && (
                 <Text
                   style={[
                     styles.text,
-                    (!label || disabled) && { color: Colors.dropdownIcon, fontStyle: disabled ? "italic" : "normal" },
+                    !label && { color: Colors.dropdownIcon },
                   ]}
                   numberOfLines={1}
                   ellipsizeMode="tail"
                 >
-                  {displayText}
+                  {t("loading_")}
                 </Text>
-              </>
-            )}
-          </View>
+              )}
+              {query.isError && (
+                <Text
+                  style={[styles.text, { color: Colors.error500 }]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {t("failed_to_load_data")}
+                </Text>
+              )}
+              {!query.isLoading && !query.isError && (
+                <>
+                  {iconLabel && (
+                    <View style={styles.icon}>
+                      <Ionicons
+                        name={iconLabel}
+                        size={14}
+                        color={Colors.accent}
+                      />
+                    </View>
+                  )}
+                  {icon && <Text style={styles.icon}>{icon}</Text>}
+                  <Text
+                    style={[
+                      styles.text,
+                      (!label || disabled) && {
+                        color: Colors.dropdownIcon,
+                        fontStyle: disabled ? "italic" : "normal",
+                      },
+                    ]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {displayText}
+                  </Text>
+                </>
+              )}
+            </View>
 
-          <View style={styles.right}>
-            {query.isLoading && <ActivityIndicator size="small" color={Colors.dropdownIcon} style={{ marginRight: 6 }} />}
-            {query.isError && query.refetch && (
-              <Pressable onPress={query.refetch} style={styles.retryIcon} hitSlop={12}>
-                <Ionicons name="refresh" size={18} color={Colors.link} />
-              </Pressable>
-            )}
+            <View style={styles.right}>
+              {query.isLoading && (
+                <ActivityIndicator
+                  size="small"
+                  color={Colors.dropdownIcon}
+                  style={{ marginRight: 6 }}
+                />
+              )}
+              {query.isError && query.refetch && (
+                <Pressable
+                  onPress={query.refetch}
+                  style={styles.retryIcon}
+                  hitSlop={12}
+                >
+                  <Ionicons name="refresh" size={18} color={Colors.link} />
+                </Pressable>
+              )}
 
-            {!disabled && value && allowReset && !query.isLoading && !query.isError && (
-              <Pressable onPress={clearValue} hitSlop={8} style={styles.clear}>
-                <Ionicons name="close-circle" size={18} color={Colors.dropdownIcon} />
-              </Pressable>
-            )}
+              {!disabled &&
+                value &&
+                allowReset &&
+                !query.isLoading &&
+                !query.isError && (
+                  <Pressable
+                    onPress={clearValue}
+                    hitSlop={8}
+                    style={styles.clear}
+                  >
+                    <Ionicons
+                      name="close-circle"
+                      size={18}
+                      color={Colors.dropdownIcon}
+                    />
+                  </Pressable>
+                )}
 
-            {disabled && (
-              <Ionicons name="lock-closed" size={20} color={Colors.dropdownIcon} style={{ marginLeft: 4 }} />
-            )}
+              {disabled && (
+                <Ionicons
+                  name="lock-closed"
+                  size={20}
+                  color={Colors.dropdownIcon}
+                  style={{ marginLeft: 4 }}
+                />
+              )}
 
-            {!disabled && !query.isLoading && !query.isError && <Ionicons name="chevron-down" size={20} color={Colors.dropdownIcon} />}
-          </View>
-        </Pressable>
+              {!disabled && !query.isLoading && !query.isError && (
+                <Ionicons
+                  name="chevron-down"
+                  size={20}
+                  color={Colors.dropdownIcon}
+                />
+              )}
+            </View>
+          </Pressable>
 
-        {error && <Text style={styles.errorText}>{error}</Text>}
-      </View>
+          {error && <Text style={styles.errorText}>{error}</Text>}
+        </View>
+      )}
 
       <SelectListModal
         visible={modalVisible}

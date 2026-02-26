@@ -110,16 +110,12 @@ const ObservationEditorScreen = ({ navigation, route }) => {
   const handleSaveObservation = useCallback(() => {
     if (!validateForm()) return;
 
-    console.log(formData);
-
     const observationData = {
       ...formData,
       species: speciesValue,
       territory: territoryValue,
       place: placeValue,
     };
-
-    console.log(formData);
 
     if (isEditMode) {
       updateObservationMutation.mutate(observationData, {

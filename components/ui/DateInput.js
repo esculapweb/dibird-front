@@ -48,6 +48,7 @@ const DateInput = ({
   minimumDate,
   allowClear = true,
   disabled = false,
+  style
 }) => {
   const { t, i18n } = useTranslation();
   const { Colors, theme } = useTheme();
@@ -141,7 +142,7 @@ const DateInput = ({
   const isOpen = Platform.OS === "ios" ? iosOpen : false;
 
   return (
-    <View style={styles.wrapper}>
+    <View style={[styles.wrapper && style]}>
       {label && <Text style={styles.label}>{label}</Text>}
 
       {/* Field row */}

@@ -64,10 +64,8 @@ const PlaceCard = React.memo(({ item, index }) => {
     //     }
     //     if (buttonIndex === 1) {
     //       // navigation.navigate("Observations", { placeId: item.id });
-    //       console.log('observations')
     //     }
     //     if (buttonIndex === 2) {
-    //       console.log('diaries')
     //       // navigation.navigate("Diaries", { placeId: item.id });
     //     }
     //   },

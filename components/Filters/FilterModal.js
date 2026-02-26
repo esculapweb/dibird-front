@@ -83,10 +83,8 @@ const FilterModal = ({
     const speciesExists = querySpecies.data.some(
       (item) => item.value === speciesValue,
     );
+    if (!speciesExists) setSpeciesValue(null);
 
-    if (!speciesExists) {
-      setSpeciesValue(null);
-    }
   }, [querySpecies.data]);
 
   useEffect(() => {

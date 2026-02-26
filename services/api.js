@@ -193,7 +193,7 @@ api.interceptors.request.use(
     )
       config.headers.Authorization = `Bearer ${token}`;
 
-    // console.log(
+    // console.info(
     //   "API request:",
     //   config.method,
     //   config.url,
