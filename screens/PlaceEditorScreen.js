@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { Platform, StyleSheet, Dimensions } from "react-native";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { Platform, StyleSheet, View, KeyboardAvoidingView } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import { useTheme } from "../store/theme-context";
