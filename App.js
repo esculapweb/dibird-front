@@ -33,7 +33,7 @@ const queryClient = new QueryClient({
       onError: (error) => {
         showError(error);
       },
-      staleTime: 10_000, 
+      staleTime: 10_000,
       cacheTime: 5 * 60_000,
       refetchOnFocus: false,
       refetchOnReconnect: true,
@@ -57,30 +57,32 @@ const Root = () => {
   }
 
   return (
-    <BottomSheetModalProvider>
+    <>
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
       <ActionSheetProvider>
         <Navigation />
       </ActionSheetProvider>
       <Toast config={ThemedToast} position="bottom" />
-    </BottomSheetModalProvider>
+    </>
   );
 };
 
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <QueryClientProvider client={queryClient}>
-        <LanguageProvider>
-          <ThemeProvider>
-            <AuthContextProvider>
-              <ProfileProvider>
-                <Root />
-              </ProfileProvider>
-            </AuthContextProvider>
-          </ThemeProvider>
-        </LanguageProvider>
-      </QueryClientProvider>
+      <BottomSheetModalProvider>
+        <QueryClientProvider client={queryClient}>
+          <LanguageProvider>
+            <ThemeProvider>
+              <AuthContextProvider>
+                <ProfileProvider>
+                  <Root />
+                </ProfileProvider>
+              </AuthContextProvider>
+            </ThemeProvider>
+          </LanguageProvider>
+        </QueryClientProvider>
+      </BottomSheetModalProvider>
     </GestureHandlerRootView>
   );
 }
