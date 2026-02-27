@@ -46,9 +46,8 @@ export const fetchSpecies = async (territory = null) => {
   const res = await api.get("/api/territory-species2/", { params });
   return res.data.map((item) => ({
     value: item.taxon_pk,
-    label: item.sp_name,
-    labelLatin: item.sp_latin,
-    labelLang: item.sp_name_lang,
+    name: item.sp_latin,
+    name_lang: item.sp_name_lang,
     thumb: item.sp_thumb
   }));
 };

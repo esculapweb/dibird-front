@@ -23,7 +23,7 @@ const SpeciesCard = ({
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
-  const name = speciesData?.labelLang || speciesData?.label;
+  const name = speciesData?.name_lang || speciesData?.name;
 
   const handlePress = () => {
     if (query.isError && query.refetch) {
@@ -101,9 +101,9 @@ const SpeciesCard = ({
           <Text style={styles.name} numberOfLines={2}>
             {name}
           </Text>
-          {speciesData.labelLatin && speciesData.labelLatin !== name && (
+          {speciesData.name && speciesData.name !== name && (
             <Text style={styles.latin} numberOfLines={1}>
-              {speciesData.labelLatin}
+              {speciesData.name}
             </Text>
           )}
           <Text style={styles.changeHint}>{t("tap_to_change")}</Text>

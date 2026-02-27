@@ -52,12 +52,12 @@ const SpeciesOptionRow = ({
             numberOfLines={1}
             style={[styles.name, isActive && styles.nameActive]}
           >
-            {item.labelLang}
+            {item.name_lang }
           </Text>
 
-          {item.labelLang !== item.labelLatin && (
+          {item.name_lang !== item.name && (
             <Text numberOfLines={1} style={styles.latin}>
-              {item.labelLatin}
+              {item.name}
             </Text>
           )}
         </View>
