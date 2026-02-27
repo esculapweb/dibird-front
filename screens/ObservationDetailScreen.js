@@ -16,6 +16,7 @@ import Map from "../components/Map/Map";
 import { useItem, useUpdateItem, useDeleteItem } from "../hooks/useItem";
 import { showError } from "../services/api";
 import { BirdSVG } from "../components/ui/Svgs";
+import { formatTimeString } from "../util/timeHelpers";
 
 const ObservationDetailScreen = ({ route, navigation }) => {
   const { observationId } = route.params;
@@ -170,7 +171,7 @@ const ObservationDetailScreen = ({ route, navigation }) => {
                 size={14}
                 color={Colors.textSecondary}
               />
-              <Text style={styles.capsuleText}>{observation.time}</Text>
+              <Text style={styles.capsuleText}>{formatTimeString(observation.time)}</Text>
             </View>
           )}
 

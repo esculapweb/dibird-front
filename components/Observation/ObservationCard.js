@@ -8,6 +8,7 @@ import { BirdSVG } from "../ui/Svgs";
 import { formatDate, isoToFlagEmoji } from "../../util/helpers";
 import { Config } from "../../constants/config";
 import { useTheme } from "../../store/theme-context";
+import { formatTimeString } from "../../util/timeHelpers";
 
 const useStyles = (Colors) => React.useMemo(() => stylesFn(Colors), [Colors]);
 
@@ -86,7 +87,7 @@ const ObservationCard = React.memo(({ item, index }) => {
                     size={13}
                     color={Colors.textSecondary}
                   />
-                  <Text style={styles.metaText}>{item.time}</Text>
+                  <Text style={styles.metaText}>{formatTimeString(item.time)}</Text>
                 </View>
               )}
             </View>

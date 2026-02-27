@@ -43,28 +43,3 @@ export const clearSort = (screen) => clearItem(SORT_KEY, screen);
 export const saveFilters = (screen, value) => saveItem(FILTERS_KEY, screen, value);
 export const loadFilters = (screen) => loadItem(FILTERS_KEY, screen);
 export const clearFilters = (screen) => clearItem(FILTERS_KEY, screen);
-
-
-const LAST_OBSERVATION_DATE_KEY = "lastObservationDate";
-
-
-export const getLastObservationDate = async () => {
-  try {
-    const isoDate = await AsyncStorage.getItem(LAST_OBSERVATION_DATE_KEY);
-    return isoDate ? new Date(isoDate) : null;
-  } catch (e) {
-    console.warn("Failed to get last observation date", e);
-    return null;
-  }
-};
-
-export const setLastObservationDate = async (date) => {
-  try {
-    await AsyncStorage.setItem(
-      LAST_OBSERVATION_DATE_KEY,
-      date instanceof Date ? date.toISOString() : date
-    );
-  } catch (e) {
-    console.warn("Failed to save last observation date", e);
-  }
-};

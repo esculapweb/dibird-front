@@ -1,8 +1,10 @@
+import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 
 import ListScreen from "./ListScreen";
 import { fetchObservations } from "../util/fetches";
 import ObservationCard from "../components/Observation/ObservationCard";
+import { loadFilters } from "../util/storageHelper";
 
 const ObservationsScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
@@ -16,7 +18,11 @@ const ObservationsScreen = ({ route, navigation }) => {
     // { label: t("alphabetic_desc"), value: "-species_name" },
   ];
 
-  const handleAdd = () => navigation.navigate("ObservationEditor");
+  const handleAdd = useCallback(async () => {
+    const filters = await loadFilters(route.name);
+    const defaultTerritory = filters?.territory ?? null;
+    navigation.navigate("ObservationEditor", { defaultTerritory });
+  }, [navigation, route.name]);
 
   const noItems = {
     icon: "binoculars-outline",

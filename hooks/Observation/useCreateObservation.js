@@ -13,11 +13,7 @@ export const useCreateObservation = () => {
         territory: data.territory,
         place: data.place ?? null,
         date_time: data.date_time,
-        time: data.time
-          ? `${String(data.time.getHours()).padStart(2, "0")}:${String(
-              data.time.getMinutes(),
-            ).padStart(2, "0")}`
-          : null,
+        time: data.time ?? null,
         private: data.private ?? false,
         quantity: data.quantity ?? null,
         notes: data.notes ?? "",

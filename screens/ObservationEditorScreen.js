@@ -10,11 +10,7 @@ import { useCreateObservation } from "../hooks/Observation/useCreateObservation"
 import { useUpdateItem } from "../hooks/useItem";
 import { showError } from "../services/api";
 import { useProfile } from "../store/profile-context";
-
-import {
-  getLastObservationDate,
-  setLastObservationDate,
-} from "../util/storageHelper";
+import { getSession, setSession } from "../util/sessionStore";
 import { setNavigationCallback } from "../util/navigationCallbacks";
 
 const ObservationEditorScreen = ({ navigation, route }) => {
@@ -23,7 +19,7 @@ const ObservationEditorScreen = ({ navigation, route }) => {
   const styles = stylesFn(Colors);
   const profileCtx = useProfile();
 
-  const { observation } = route.params || {};
+  const { observation, defaultTerritory } = route.params || {};
   const isEditMode = !!observation;
 
   const FORM_FIELDS = [
@@ -43,31 +39,24 @@ const ObservationEditorScreen = ({ navigation, route }) => {
     "Observation",
   );
 
-  const [defaultDate, setDefaultDate] = useState(new Date());
+  const initialTerritory = observation?.territory ?? defaultTerritory ?? "";
 
-  // Подгружаем дату последнего наблюдения
-  // useEffect(() => {
-  //   if (!isEditMode) {
-  //     getLastObservationDate().then((lastDate) => {
-  //       if (lastDate) setDefaultDate(lastDate);
-  //     });
-  //   }
-  // }, [isEditMode]);
+  const initialDate = observation?.date_time
+    ? new Date(observation.date_time)
+    : (getSession("lastObservationDate") ?? new Date());
 
   const [formData, setFormData] = useState({
     species: observation?.species ?? "",
-    territory: observation?.territory ?? "",
+    territory: initialTerritory,
     place: observation?.place ?? null,
-    date_time: observation?.date_time
-      ? new Date(observation.date_time)
-      : defaultDate,
+    date_time: initialDate,
     time: observation?.time ?? null,
     private: profileCtx.profile?.private_diary,
     quantity: observation?.quantity ?? null,
     notes: observation?.notes ?? null,
   });
 
-  const [territoryValue, setTerritoryValue] = useState(formData.territory);
+  const [territoryValue, setTerritoryValue] = useState(initialTerritory);
   const [speciesValue, setSpeciesValue] = useState(formData.species);
   const [placeValue, setPlaceValue] = useState(formData.place);
   const [dateTimeValue, setDateTimeValue] = useState(formData.date_time);
@@ -114,6 +103,7 @@ const ObservationEditorScreen = ({ navigation, route }) => {
       territory: territoryValue,
       place: placeValue,
     };
+
     if (isEditMode) {
       updateObservationMutation.mutate(observationData, {
         onSuccess: () => navigation.goBack(),
@@ -121,8 +111,9 @@ const ObservationEditorScreen = ({ navigation, route }) => {
       });
     } else {
       createObservationMutation.mutate(observationData, {
-        onSuccess: async (res) => {
-          await setLastObservationDate(observationData.date_time);
+        onSuccess: (res) => {
+          // Сохраняем дату только после успешного создания
+          setSession("lastObservationDate", observationData.date_time);
           requestAnimationFrame(() =>
             navigation.replace("ObservationDetail", {
               observationId: res.data.id,
@@ -133,6 +124,14 @@ const ObservationEditorScreen = ({ navigation, route }) => {
       });
     }
   }, [formData, speciesValue, territoryValue, placeValue, isEditMode]);
+
+  const handleAddNewPlace = useCallback(() => {
+    setNavigationCallback("onPlaceCreated", (newPlaceId) => {
+      setPlaceValue(newPlaceId);
+      setFormData((prev) => ({ ...prev, place: newPlaceId }));
+    });
+    navigation.navigate("PlaceEditor", { returnToScreen: "ObservationEditor" });
+  }, [navigation]);
 
   const headerRight = useCallback(
     () => (
@@ -171,15 +170,6 @@ const ObservationEditorScreen = ({ navigation, route }) => {
   ) {
     return <LoadingOverlay />;
   }
-
-  const handleAddNewPlace = useCallback(() => {
-      setNavigationCallback("onPlaceCreated", (newPlaceId) => {
-      setPlaceValue(newPlaceId);
-      setFormData((prev) => ({ ...prev, place: newPlaceId }));
-    });
-
-    navigation.navigate("PlaceEditor", { returnToScreen: "ObservationEditor" });
-  }, [navigation]);
 
   return (
     <KeyboardAvoidingView
