@@ -13,6 +13,17 @@ import { useProfile } from "../store/profile-context";
 import { getSession, setSession } from "../util/sessionStore";
 import { setNavigationCallback } from "../util/navigationCallbacks";
 
+const FORM_FIELDS = [
+  "species",
+  "territory",
+  "place",
+  "date_time",
+  "time",
+  "private",
+  "quantity",
+  "notes",
+];
+
 const ObservationEditorScreen = ({ navigation, route }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -22,44 +33,35 @@ const ObservationEditorScreen = ({ navigation, route }) => {
   const { observation, defaultTerritory } = route.params || {};
   const isEditMode = !!observation;
 
-  const FORM_FIELDS = [
-    "species",
-    "territory",
-    "place",
-    "date_time",
-    "time",
-    "private",
-    "quantity",
-    "notes",
-  ];
-
   const createObservationMutation = useCreateObservation();
   const updateObservationMutation = useUpdateItem(
     observation?.id,
     "Observation",
   );
 
-  const initialTerritory = observation?.territory ?? defaultTerritory ?? "";
+  const [territoryValue, setTerritoryValue] = useState(
+    () => observation?.territory ?? defaultTerritory ?? "",
+  );
 
-  const initialDate = observation?.date_time
-    ? new Date(observation.date_time)
-    : (getSession("lastObservationDate") ?? new Date());
+  const [formData, setFormData] = useState(() => {
+    const initialDate = observation?.date_time
+      ? new Date(observation.date_time)
+      : (getSession("lastObservationDate") ?? new Date());
 
-  const [formData, setFormData] = useState({
-    species: observation?.species ?? "",
-    territory: initialTerritory,
-    place: observation?.place ?? null,
-    date_time: initialDate,
-    time: observation?.time ?? null,
-    private: profileCtx.profile?.private_diary,
-    quantity: observation?.quantity ?? null,
-    notes: observation?.notes ?? null,
+    return {
+      species: observation?.species ?? null,
+      territory: territoryValue,
+      place: observation?.place ?? null,
+      date_time: initialDate,
+      time: observation?.time ?? null,
+      private: profileCtx.profile?.private_diary,
+      quantity: observation?.quantity ?? null,
+      notes: observation?.notes ?? null,
+    };
   });
 
-  const [territoryValue, setTerritoryValue] = useState(initialTerritory);
   const [speciesValue, setSpeciesValue] = useState(formData.species);
   const [placeValue, setPlaceValue] = useState(formData.place);
-  const [dateTimeValue, setDateTimeValue] = useState(formData.date_time);
   const [errors, setErrors] = useState({});
   const [speciesData, setSpeciesData] = useState(
     observation?.species_data ?? null,
@@ -69,10 +71,10 @@ const ObservationEditorScreen = ({ navigation, route }) => {
     const newErrors = {};
     if (!territoryValue) newErrors.territory = t("territory_required");
     if (!speciesValue) newErrors.species = t("species_required");
-    if (!dateTimeValue) newErrors.date_time = t("date_required");
+    if (!formData.date_time) newErrors.date_time = t("date_required");
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [territoryValue, speciesValue, dateTimeValue, t]);
+  }, [territoryValue, speciesValue, formData.date_time, t]);
 
   const extractApiError = (e) => ({
     title: isEditMode ? t("update_failed") : t("create_failed"),

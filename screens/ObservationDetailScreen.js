@@ -130,8 +130,10 @@ const ObservationDetailScreen = ({ route, navigation }) => {
           </View>
 
           <View style={{ flex: 1 }}>
+            <View style={{marginBottom: 6}}>
             <Text style={styles.title}>{name}</Text>
             <Text style={styles.latin}>{latin}</Text>
+            </View>
 
             {observation.private ? (
               <View style={styles.privacyRow}>
@@ -145,6 +147,14 @@ const ObservationDetailScreen = ({ route, navigation }) => {
                 <Text style={styles.privacyIcon}>🌐</Text>
                 <Text style={styles.privacyText}>
                   {t("visible_to_everyone")}
+                </Text>
+              </View>
+            )}
+
+            {!observation?.place_data && (
+              <View style={{ marginTop: 8 }}>
+                <Text style={styles.placeTerritory}>
+                  {flag} {territory}
                 </Text>
               </View>
             )}
@@ -171,7 +181,9 @@ const ObservationDetailScreen = ({ route, navigation }) => {
                 size={14}
                 color={Colors.textSecondary}
               />
-              <Text style={styles.capsuleText}>{formatTimeString(observation.time)}</Text>
+              <Text style={styles.capsuleText}>
+                {formatTimeString(observation.time)}
+              </Text>
             </View>
           )}
 
@@ -328,7 +340,6 @@ const stylesFn = (Colors) =>
     privacyRow: {
       flexDirection: "row",
       alignItems: "center",
-      marginTop: 6,
     },
     privacyIcon: {
       fontSize: 13,
