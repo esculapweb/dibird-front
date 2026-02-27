@@ -71,14 +71,17 @@ const DateInput = ({
 
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
-  const animatePress = useCallback((toValue) => {
-    Animated.spring(scaleAnim, {
-      toValue,
-      useNativeDriver: true,
-      speed: 30,
-      bounciness: 4,
-    }).start();
-  }, [scaleAnim]);
+  const animatePress = useCallback(
+    (toValue) => {
+      Animated.spring(scaleAnim, {
+        toValue,
+        useNativeDriver: true,
+        speed: 30,
+        bounciness: 4,
+      }).start();
+    },
+    [scaleAnim],
+  );
 
   const handleFieldPress = useCallback(() => {
     if (disabled) return;
@@ -87,37 +90,41 @@ const DateInput = ({
     if (Platform.OS === "android") {
       setAndroidPickerOpen(true);
     } else {
-      setTempDate(toDate(value));
-
-      if (!value) {
-        onChange(tempDate);
-      }
+      const initial = toDate(value); // <- свежая дата здесь
+      setTempDate(toDate(initial));
 
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setIosOpen((prev) => !prev);
     }
   }, [disabled, value]);
 
-  const handleAndroidChange = useCallback((event, selectedDate) => {
-    setAndroidPickerOpen(false);
-    if (event.type === "set" && selectedDate) {
-      onChange(selectedDate);
-      Haptics.selectionAsync();
-    }
-  }, [onChange]);
+  const handleAndroidChange = useCallback(
+    (event, selectedDate) => {
+      setAndroidPickerOpen(false);
+      if (event.type === "set" && selectedDate) {
+        onChange(selectedDate);
+        Haptics.selectionAsync();
+      }
+    },
+    [onChange],
+  );
 
-  const handleIosChange = useCallback((_event, selectedDate) => {
-    if (!selectedDate) return;
-    // Обновляем локальный tempDate — пикер его читает, не сбрасывается
-    setTempDate(selectedDate);
-    // Сразу сообщаем родителю
-    onChange(selectedDate);
-  }, [onChange]);
+  const handleIosChange = useCallback(
+    (_event, selectedDate) => {
+      if (!selectedDate) return;
+      // Обновляем локальный tempDate — пикер его читает, не сбрасывается
+      setTempDate(selectedDate);
+      // Сразу сообщаем родителю
+      onChange(selectedDate);
+    },
+    [onChange],
+  );
 
   const handleClose = useCallback(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setIosOpen(false);
-  }, []);
+    if (!value) onChange(tempDate);
+  }, [value, tempDate, onChange]);
 
   const handleToday = useCallback(() => {
     const now = new Date();
@@ -156,14 +163,24 @@ const DateInput = ({
           ]}
           disabled={disabled}
         >
-          <Text style={[styles.text, !value && styles.placeholder, disabled && styles.textDisabled]}>
+          <Text
+            style={[
+              styles.text,
+              !value && styles.placeholder,
+              disabled && styles.textDisabled,
+            ]}
+          >
             {value ? formatDate(value, i18n.language) : placeholder}
           </Text>
 
           <View style={styles.icons}>
             {allowClear && value && !disabled && (
               <Pressable onPress={handleClear} hitSlop={8}>
-                <Ionicons name="close-circle" size={18} color={Colors.dropdownIcon} />
+                <Ionicons
+                  name="close-circle"
+                  size={18}
+                  color={Colors.dropdownIcon}
+                />
               </Pressable>
             )}
             <Ionicons
@@ -193,9 +210,16 @@ const DateInput = ({
           <View style={styles.panelHeader}>
             <Pressable
               onPress={handleToday}
-              style={({ pressed }) => [styles.todayBtn, pressed && styles.todayBtnPressed]}
+              style={({ pressed }) => [
+                styles.todayBtn,
+                pressed && styles.todayBtnPressed,
+              ]}
             >
-              <Ionicons name="today-outline" size={14} color={Colors.textMain} />
+              <Ionicons
+                name="today-outline"
+                size={14}
+                color={Colors.textMain}
+              />
               <Text style={styles.todayText}>{t("today")}</Text>
             </Pressable>
 
