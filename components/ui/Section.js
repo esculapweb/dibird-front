@@ -1,22 +1,73 @@
-import { StyleSheet, View, Text } from "react-native";
-
+import { useState } from "react";
+import {
+  StyleSheet,
+  View,
+  Text,
+  TouchableOpacity,
+  LayoutAnimation,
+  Platform,
+  UIManager,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../store/theme-context";
 
-const Section = ({ title, required, children, hint, style }) => {
+// Нужно для Android
+if (
+  Platform.OS === "android" &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+const Section = ({
+  title,
+  required,
+  children,
+  hint,
+  style,
+  collapsed: initialCollapsed = false,
+  collapsible = false,
+}) => {
   const { Colors } = useTheme();
   const styles = sectionFn(Colors);
+
+  const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
+
+  const handleToggle = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setIsCollapsed((prev) => !prev);
+  };
+
+  const isCollapsible = collapsible || initialCollapsed;
+
   return (
     <View style={[styles.section, style]}>
       {title && (
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>
-          {title}
-          {required && <Text style={styles.required}> *</Text>}
-        </Text>
-        {hint && <Text style={styles.hint}>{hint}</Text>}
-      </View>
+        <TouchableOpacity
+          style={styles.sectionHeader}
+          onPress={isCollapsible ? handleToggle : undefined}
+          activeOpacity={isCollapsible ? 0.7 : 1}
+        >
+          <Text style={styles.sectionTitle}>
+            {title}
+            {required && <Text style={styles.required}> *</Text>}
+          </Text>
+
+          <View style={styles.hintRow}>
+            {hint && <Text style={styles.hint}>{hint}</Text>}
+            {isCollapsible && (
+              <Ionicons
+                name={isCollapsed ? "chevron-down" : "chevron-up"}
+                size={14}
+                color={Colors.textSecondary}
+                style={styles.chevron}
+              />
+            )}
+          </View>
+        </TouchableOpacity>
       )}
-      {children}
+
+      {!isCollapsed && children}
     </View>
   );
 };
@@ -52,9 +103,17 @@ const sectionFn = (Colors) =>
     required: {
       color: Colors.error500,
     },
+    hintRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+    },
     hint: {
       fontSize: 12,
       color: Colors.textSecondary,
       fontStyle: "italic",
+    },
+    chevron: {
+      marginLeft: 2,
     },
   });

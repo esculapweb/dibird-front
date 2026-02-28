@@ -71,7 +71,7 @@ const ObservationForm = ({
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
-      <Section title={t("section_main")} required>
+      <Section title={t("section_main")} required collapsible={true}>
         <DropdownInput
           placeholder={t("select_country")}
           value={territoryValue}
@@ -125,7 +125,11 @@ const ObservationForm = ({
       </Section>
 
       {/* ── 3. Optional: Where ───────────────────────────────── */}
-      {territoryValue && <Section title={t("section_where")} hint={t("optional")}>
+      <Section
+       title={t("section_where")} 
+       hint={t("optional")} 
+       collapsible={!!placeValue}
+       collapsed={!placeValue}>
         <PlaceBlock
           territoryValue={territoryValue}
           placeValue={placeValue}
@@ -134,18 +138,10 @@ const ObservationForm = ({
           onAddNewPlace={onAddNewPlace}
           queryPlaces={queryPlaces}
         />
-      </Section> }
-
-      {/* ── 5. Required: Privacy ─────────────────────────────── */}
-      <Section title={t("section_privacy")}>
-        <PrivacyToggle
-          value={formData.private}
-          onChange={(val) => setFormData((prev) => ({ ...prev, private: val }))}
-        />
       </Section>
 
       {/* ── 4. Optional: Details ─────────────────────────────── */}
-      <Section title={t("section_details")} hint={t("optional")}>
+      <Section title={t("section_details")} hint={t("optional")} collapsed>
         <TimeInput
           value={formData.time}
           onChange={(newTime) =>
@@ -176,7 +172,16 @@ const ObservationForm = ({
           }
           error={errors.notes}
           isInvalid={errors.notes}
+          ƒ
           multiline
+        />
+      </Section>
+
+      {/* ── 5. Required: Privacy ─────────────────────────────── */}
+      <Section title={t("section_privacy")}>
+        <PrivacyToggle
+          value={formData.private}
+          onChange={(val) => setFormData((prev) => ({ ...prev, private: val }))}
         />
       </Section>
     </ScrollView>
