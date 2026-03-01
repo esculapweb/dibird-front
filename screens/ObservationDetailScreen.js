@@ -130,9 +130,9 @@ const ObservationDetailScreen = ({ route, navigation }) => {
           </View>
 
           <View style={{ flex: 1 }}>
-            <View style={{marginBottom: 6}}>
-            <Text style={styles.title}>{name}</Text>
-            <Text style={styles.latin}>{latin}</Text>
+            <View style={{ marginBottom: 6 }}>
+              <Text style={styles.title}>{name}</Text>
+              <Text style={styles.latin}>{latin}</Text>
             </View>
 
             {observation.private ? (
@@ -147,14 +147,6 @@ const ObservationDetailScreen = ({ route, navigation }) => {
                 <Text style={styles.privacyIcon}>🌐</Text>
                 <Text style={styles.privacyText}>
                   {t("visible_to_everyone")}
-                </Text>
-              </View>
-            )}
-
-            {!observation?.place_data && (
-              <View style={{ marginTop: 8 }}>
-                <Text style={styles.placeTerritory}>
-                  {flag} {territory}
                 </Text>
               </View>
             )}
@@ -197,25 +189,26 @@ const ObservationDetailScreen = ({ route, navigation }) => {
 
         <View style={styles.section}>
           {/* PLACE */}
-          {observation?.place_data && (
-            <View style={styles.placeWrap}>
-              <Text style={styles.placeName}>
-                {observation.place_data.name}
-              </Text>
-              <Text style={styles.placeTerritory}>
-                {flag} {territory}
-              </Text>
-              {observation?.place_data?.location?.coordinates?.length === 2 && (
-                <View style={{ borderRadius: 12, overflow: "hidden" }}>
-                  <Map
-                    currentCoords={observation.place_data.location.coordinates}
-                    mapHeight={300}
-                    showCoords={true}
-                  />
-                </View>
-              )}
-            </View>
-          )}
+
+          <View style={styles.placeWrap}>
+            <Text style={styles.placeName}>
+              {observation?.place_data
+                ? observation.place_data.name
+                : t("location_not_specified")}
+            </Text>
+            <Text style={styles.placeTerritory}>
+              {flag} {territory}
+            </Text>
+            {observation?.place_data?.location?.coordinates?.length === 2 && (
+              <View style={{ borderRadius: 12, overflow: "hidden" }}>
+                <Map
+                  currentCoords={observation.place_data.location.coordinates}
+                  mapHeight={300}
+                  showCoords={true}
+                />
+              </View>
+            )}
+          </View>
 
           {/* DIARY */}
           {observation?.diary_data && (
