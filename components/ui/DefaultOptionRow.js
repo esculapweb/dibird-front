@@ -46,6 +46,14 @@ const DefaultOptionRow = ({
           {item.label}
         </Text>
 
+        {item.distance != null && (
+            <Text style={styles.distance}>
+              {item.distance >= 1000
+                ? `~${(item.distance / 1000).toFixed()} km`
+                : `~${item.distance} m`}
+            </Text>
+          )}
+
         {isActive && (
           <Ionicons name="checkmark-circle-outline" size={32} color={Colors.accent} />
         )}
@@ -91,5 +99,11 @@ const stylesFn = (Colors, itemHeight) => StyleSheet.create({
   icon: {
     fontSize: 18,
     marginRight: 6,
+  },
+
+  distance: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginTop: 1,
   },
 });

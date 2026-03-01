@@ -49,6 +49,7 @@ export const normalizeCoords = (
 
 export const usePlaceLocation = () => {
   const [coords, setCoords] = useState(Config.defaultCoords);
+  const [roundedCoords, setRoundedCoords] = useState(Config.defaultCoords);
   const [zoom, setZoom] = useState(12);
   const [accuracy, setAccuracy] = useState(0);
   const [latText, setLatText] = useState("");
@@ -58,8 +59,13 @@ export const usePlaceLocation = () => {
 
   const geocodeTimeout = useRef(null);
 
+  const rnd = (c) => Math.round(c * 100) / 100;
+
   const updateCoords = useCallback(([lng, lat], options = {}) => {
-    if (lng != null && lat != null) setCoords([lng, lat]);
+    if (lng != null && lat != null) {
+      setCoords([lng, lat]);
+      setRoundedCoords([rnd(lng), rnd(lat)]);
+    }
 
     if (options.fromManual) {
       if (options.latText) setLatText(options.latText);
@@ -109,6 +115,7 @@ export const usePlaceLocation = () => {
 
   return {
     coords,
+    roundedCoords,
     zoom,
     accuracy,
     details,

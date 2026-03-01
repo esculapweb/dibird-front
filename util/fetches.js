@@ -21,12 +21,20 @@ export const fetchMyCountries = async (favOnly = false) => {
   }));
 };
 
-export const fetchMyPlaces = async (territory = null) => {
-  const params = {
-    o: "-favourite,name",
-  };
+export const fetchMyPlaces = async (territory = null, coords=null) => {
   if (!territory) return [];
-  params.territory = territory;
+
+  const params = {
+    territory,
+    o: coords ? "distance" : "-favourite,name",
+  };
+
+if (coords) {
+    const [lng, lat] = coords;
+    params.lng = lng;
+    params.lat = lat;
+  }
+
   const res = await api.get("/myapi/place-dropdown2/", { params });
 
   return res.data.map((item) => ({
@@ -34,6 +42,7 @@ export const fetchMyPlaces = async (territory = null) => {
     label: item.name,
     iconLabel: item.favourite && "star",
     location: item.location,
+    distance: item.distance ?? null,
   }));
 };
 

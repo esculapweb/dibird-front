@@ -25,6 +25,7 @@ const DropdownInput = ({
   disabledMessage,
   renderOption,
   speciesData,
+  isLocating
 }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -51,7 +52,7 @@ const DropdownInput = ({
     : label || translatedPlaceholder;
 
   const openModal = () => {
-    if (disabled || query.isLoading || query.isError) {
+    if (disabled || query.isLoading || query.isError || isLocating) {
       return;
     }
     setSearch("");

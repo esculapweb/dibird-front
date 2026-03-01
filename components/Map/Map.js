@@ -27,7 +27,7 @@ const Map = ({
   currentZoom = 12,
   onPress = () => {},
   accuracy,
-  mapHeight,       // опционально: если не передан — растягивается через flex: 1 родителя
+  mapHeight,      
   onUseMyLocation,
   isLocating,
   showCoords,

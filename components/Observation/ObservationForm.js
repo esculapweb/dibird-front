@@ -17,6 +17,7 @@ import Input from "../ui/Input";
 import Section from "../ui/Section";
 import PrivacyToggle from "../ui/PrivacyToggle";
 import PlaceBlock from "../Place/PlaceBlock";
+import { usePlaceLocation } from "../../hooks/Place/usePlaceLocation";
 
 const ObservationForm = ({
   formData,
@@ -35,6 +36,7 @@ const ObservationForm = ({
 }) => {
   const { t } = useTranslation();
   const { language } = useLanguage();
+  const { coords, roundedCoords, isLocating } = usePlaceLocation();
 
   const queryTerritories = useTranslatedQuery({
     queryFn: () => fetchMyCountries(false),
@@ -43,8 +45,8 @@ const ObservationForm = ({
   });
 
   const queryPlaces = useTranslatedQuery({
-    queryFn: () => fetchMyPlaces(territoryValue),
-    params: [territoryValue],
+    queryFn: () => fetchMyPlaces(territoryValue, coords),
+    params: [territoryValue, roundedCoords],
     type: "Places",
     enabled: !!territoryValue,
   });
@@ -137,6 +139,7 @@ const ObservationForm = ({
           setFormData={setFormData}
           onAddNewPlace={onAddNewPlace}
           queryPlaces={queryPlaces}
+          isLocating={isLocating}
         />
       </Section>
 

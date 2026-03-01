@@ -16,6 +16,7 @@ import { useLanguage } from "../../store/language-context";
 import RadioGroup from "../ui/RadioGroup";
 import { useTranslatedQuery } from "../../hooks/useQueryWithTranslation";
 import SpeciesOptionRow from "../ui/SpeciesOptionRow";
+import { usePlaceLocation } from "../../hooks/Place/usePlaceLocation";
 
 const FilterModal = ({
   screen,
@@ -28,13 +29,13 @@ const FilterModal = ({
 }) => {
   const { language } = useLanguage();
   const { t } = useTranslation();
+  const { coords, roundedCoords, isLocating } = usePlaceLocation();
 
   const favouriteOptions = [
     { label: t("all"), value: null },
     { label: t("favourites_only"), value: true },
     { label: t("non_favourites_only"), value: false },
   ];
-
 
   const dateFilterInitial = {
     mode: "any",
@@ -54,9 +55,9 @@ const FilterModal = ({
   );
 
   const queryPlaces = useTranslatedQuery({
-    queryFn: () => fetchMyPlaces(territoryValue),
+    queryFn: () => fetchMyPlaces(territoryValue, coords),
     type: "Places",
-    params: [territoryValue],
+    params: [territoryValue, roundedCoords],
     enabled: !!territoryValue,
   });
 
@@ -154,6 +155,7 @@ const FilterModal = ({
               allowReset
               disabled={!territoryValue}
               disabledMessage={t("select_country_first")}
+              isLocating={isLocating}
             />
           )}
 

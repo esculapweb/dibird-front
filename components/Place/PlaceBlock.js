@@ -13,6 +13,7 @@ const PlaceBlock = ({
   setFormData,
   onAddNewPlace,
   queryPlaces,
+  isLocating,
 }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -34,6 +35,7 @@ const PlaceBlock = ({
         allowReset
         disabled={!territoryValue}
         disabledMessage={t("select_country_first")}
+        isLocating={isLocating}
       />
 
       {coords?.length === 2 && (
