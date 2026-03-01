@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useLayoutEffect } from "react";
 import { StyleSheet, Platform, KeyboardAvoidingView } from "react-native";
 import { useTranslation } from "react-i18next";
 
@@ -158,7 +158,7 @@ const ObservationEditorScreen = ({ navigation, route }) => {
     ],
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     navigation.setOptions({
       title: isEditMode ? t("edit_observation") : t("new_observation"),
       headerRight,

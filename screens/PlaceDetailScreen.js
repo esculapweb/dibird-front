@@ -1,11 +1,10 @@
-import { useEffect, useCallback } from "react";
+import { useLayoutEffect, useCallback } from "react";
 import { View, Text, StyleSheet, ScrollView, Alert } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import { useTheme } from "../store/theme-context";
-import { isoToFlagEmoji, formatDate } from "../util/helpers";
+import { isoToFlagEmoji, formatDate, formatDateTime} from "../util/helpers";
 import { StatBig } from "../components/Place/StatBig";
-import { MetaRow } from "../components/Place/MetaRow";
 import IconButton from "../components/ui/IconButton";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
@@ -118,7 +117,7 @@ const PlaceDetailScreen = ({ route, navigation }) => {
     }
   }, [place, navigation]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!place) return;
 
     navigation.setOptions({
@@ -158,7 +157,7 @@ const PlaceDetailScreen = ({ route, navigation }) => {
             </View>
           </View>
 
-          <Map currentCoords={[lng, lat]} mapHeight={340} showCoords={true} />
+          <Map currentCoords={[lng, lat]} mapHeight={440} showCoords={true} />
 
           <View style={styles.footer}>
             <View style={styles.stats}>
@@ -182,16 +181,24 @@ const PlaceDetailScreen = ({ route, navigation }) => {
               />
             </View>
 
-            <View style={styles.meta}>
-              <MetaRow
-                label={t("created")}
-                value={formatDate(place.created_at)}
-              />
-              <MetaRow
-                label={t("updated")}
-                value={formatDate(place.updated_at)}
-              />
-            </View>
+            {/* META */}
+              <View
+                style={[
+                  styles.meta,
+                  styles.metaBorder,
+                ]}
+              >
+                <Text style={styles.metaText}>
+                  {t("created")}: {formatDateTime(place.created_at)}
+                </Text>
+                {formatDate(place.created_at) !==
+                  formatDate(place.updated_at) && (
+                  <Text style={styles.metaText}>
+                    {t("updated")}: {formatDateTime(place.updated_at)}
+                  </Text>
+                )}
+              </View>
+
           </View>
         </ScrollView>
 
@@ -225,7 +232,7 @@ const stylesFn = (Colors) =>
       paddingBottom: 8,
     },
     title: {
-      fontSize: 22,
+      fontSize: 18,
       fontWeight: "700",
       color: Colors.textMain,
     },
@@ -243,20 +250,23 @@ const stylesFn = (Colors) =>
       justifyContent: "space-between",
       marginBottom: 16,
     },
-    meta: {
-      borderTopWidth: 1,
-      borderColor: Colors.divider,
+    metaBorder: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: Colors.border,
       paddingTop: 12,
+    },
+    metaText: {
+      fontSize: 12,
+      color: Colors.textSecondary,
+      marginBottom: 2,
     },
     headerButtons: {
       flexDirection: "row",
       alignItems: "center",
-      paddingHorizontal: 4,
+      gap: 6,
+      marginHorizontal: 4,
     },
     iconButton: {
-      width: 36,
       marginRight: 0,
-      justifyContent: "center",
-      alignItems: "center",
     },
   });

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useLayoutEffect } from "react";
 import { Platform, StyleSheet, View, KeyboardAvoidingView } from "react-native";
 import { useTranslation } from "react-i18next";
 
@@ -181,7 +181,7 @@ const PlaceEditorScreen = ({ navigation, route }) => {
     />
   ), [handleSavePlace, isLocating, isEditMode, createPlaceMutation.isPending, updatePlaceMutation.isPending]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     navigation.setOptions({
       title: isEditMode ? t("edit_place") : t("new_place"),
       headerRight,

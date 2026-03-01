@@ -35,12 +35,10 @@ const stylesFn = () =>
     headerButtons: {
       flexDirection: "row",
       alignItems: "center",
-      paddingHorizontal: 4,
+      gap: 6,
+      marginHorizontal: 4,
     },
     iconButton: {
-      width: 36,
       marginRight: 0,
-      justifyContent: "center",
-      alignItems: "center",
     },
   });

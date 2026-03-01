@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useLayoutEffect } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 
@@ -197,7 +197,7 @@ const ListScreen = ({
     }, [route.params?.placeId, filtersLoaded]),
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
         <HeaderTitleWithBadge

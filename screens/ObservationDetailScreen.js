@@ -1,5 +1,12 @@
-import { useEffect, useCallback } from "react";
-import { View, Text, StyleSheet, ScrollView, Alert } from "react-native";
+import { useLayoutEffect, useCallback } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  Pressable,
+} from "react-native";
 import { useTranslation } from "react-i18next";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
@@ -75,7 +82,7 @@ const ObservationDetailScreen = ({ route, navigation }) => {
     [observation, updateMutation.isPending],
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!observation) return;
 
     navigation.setOptions({
@@ -102,6 +109,14 @@ const ObservationDetailScreen = ({ route, navigation }) => {
   const latin = observation.species_data.name;
   const flag = isoToFlagEmoji(observation.territory_data.code);
   const territory = observation.territory_data.name;
+
+  console.log(observation.place);
+  const handlePlaceNaviate = () => {
+    if (!observation.place) return;
+    navigation.navigate("PlaceDetail", {
+      placeId: observation.place,
+    });
+  };
 
   return (
     <View style={{ flex: 1 }}>
@@ -188,14 +203,16 @@ const ObservationDetailScreen = ({ route, navigation }) => {
         </View>
 
         <View style={styles.section}>
-          {/* PLACE */}
-
-          <View style={styles.placeWrap}>
-            <Text style={styles.placeName}>
-              {observation?.place_data
-                ? observation.place_data.name
-                : t("location_not_specified")}
-            </Text>
+          <Pressable style={styles.placeWrap} onPress={handlePlaceNaviate}>
+            {observation?.place_data ? (
+              <Text style={styles.placeName}>
+                {observation.place_data.name}
+              </Text>
+            ) : (
+              <Text style={styles.placeName}>
+                {t("location_not_specified")}
+              </Text>
+            )}
             <Text style={styles.placeTerritory}>
               {flag} {territory}
             </Text>
@@ -208,7 +225,7 @@ const ObservationDetailScreen = ({ route, navigation }) => {
                 />
               </View>
             )}
-          </View>
+          </Pressable>
 
           {/* DIARY */}
           {observation?.diary_data && (
