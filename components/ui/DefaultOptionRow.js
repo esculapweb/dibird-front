@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 
 import { useTheme } from "../../store/theme-context";
 
@@ -11,6 +12,7 @@ const DefaultOptionRow = ({
   itemHeight,
 }) => {
   const { Colors } = useTheme();
+  const { t } = useTranslation();
   const styles = stylesFn(Colors, itemHeight);
   const isActive = item.value === selected;
 
@@ -22,7 +24,8 @@ const DefaultOptionRow = ({
       }}
       style={({ pressed }) => [
         styles.item,
-        pressed && { backgroundColor: Colors.primary300 },
+        isActive && styles.itemActive,
+        pressed && styles.itemPressed,
       ]}
     >
       <View style={styles.row}>
@@ -47,15 +50,11 @@ const DefaultOptionRow = ({
         </Text>
 
         {item.distance != null && (
-            <Text style={styles.distance}>
-              {item.distance >= 1000
-                ? `~${(item.distance / 1000).toFixed()} km`
-                : `~${item.distance} m`}
-            </Text>
-          )}
-
-        {isActive && (
-          <Ionicons name="checkmark-circle-outline" size={32} color={Colors.accent} />
+          <Text style={[styles.distance, isActive && styles.distanceActive]}>
+            {item.distance >= 1000
+              ? `~${(item.distance / 1000).toFixed(1)} ${t("km")}`
+              : `~${item.distance} ${t("m")}`}
+          </Text>
         )}
       </View>
     </Pressable>
@@ -64,46 +63,57 @@ const DefaultOptionRow = ({
 
 export default DefaultOptionRow;
 
-const stylesFn = (Colors, itemHeight) => StyleSheet.create({
-  item: {
-    height: itemHeight,
-    justifyContent: "center",
-    paddingHorizontal: 12,
-    backgroundColor: Colors.primary100,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
-  },
+const stylesFn = (Colors, itemHeight) =>
+  StyleSheet.create({
+    item: {
+      minHeight: itemHeight,
+      justifyContent: "center",
+      paddingHorizontal: 16,
+      paddingVertical: 4,
+      backgroundColor: Colors.primary100,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: Colors.border,
+      borderLeftWidth: 4,
+      borderLeftColor: "transparent",
+    },
 
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  left: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  label: {
-    flex: 1,
-    fontSize: 16,
-    lineHeight: 20,
-    color: Colors.textMain,
-    paddingRight: 6,
-  },
-
-  labelActive: {
-    fontWeight: "600",
-  },
-
-  icon: {
-    fontSize: 18,
-    marginRight: 6,
-  },
-
-  distance: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    marginTop: 1,
-  },
-});
+    itemPressed: {
+      backgroundColor: Colors.primary200,
+    },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    left: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    label: {
+      flex: 1,
+      fontSize: 16,
+      lineHeight: 20,
+      color: Colors.textMain,
+      paddingRight: 6,
+    },
+ 
+    icon: {
+      fontSize: 18,
+      marginRight: 6,
+    },
+    distance: {
+      fontSize: 12,
+      color: Colors.textSecondary,
+      marginRight: 8,
+    },
+    itemActive: {
+      borderLeftColor: Colors.mainTextDate,
+      backgroundColor: Colors.primary200, 
+    },
+    labelActive: {
+      fontWeight: "600",
+      color: Colors.primary500,
+    },
+    distanceActive: {
+      color: Colors.primary500,
+},
+  });

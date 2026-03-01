@@ -78,7 +78,7 @@ const stylesFn = (Colors) =>
       paddingVertical: 8,
       marginRight: 8,
       borderWidth: 1,
-      borderColor: Colors.primary200,
+      borderColor: Colors.dropdownIcon,
       maxWidth: 300,
     },
     filterText: {

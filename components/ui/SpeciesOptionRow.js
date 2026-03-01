@@ -24,6 +24,7 @@ const SpeciesOptionRow = ({
       }}
       style={({ pressed }) => [
         styles.item,
+        isActive && styles.itemActive,
         pressed && { backgroundColor: Colors.primary300 },
       ]}
     >
@@ -56,15 +57,11 @@ const SpeciesOptionRow = ({
           </Text>
 
           {item.name_lang !== item.name && (
-            <Text numberOfLines={1} style={styles.latin}>
+            <Text numberOfLines={1} style={[styles.latin, isActive && styles.labelActive]}>
               {item.name}
             </Text>
           )}
         </View>
-
-        {isActive && (
-          <Ionicons name="checkmark-circle-outline" size={32} color={Colors.accent} />
-        )}
       </View>
     </Pressable>
   );
@@ -81,6 +78,13 @@ const stylesFn = (Colors, itemHeight) =>
       backgroundColor: Colors.primary100,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: Colors.border,
+      borderBottomColor: Colors.border,
+      borderLeftWidth: 4,
+      borderLeftColor: "transparent",
+    },
+
+    itemPressed: {
+      backgroundColor: Colors.primary200,
     },
 
     row: {
@@ -130,5 +134,14 @@ const stylesFn = (Colors, itemHeight) =>
       color: Colors.textSecondary,
       fontStyle: "italic",
       marginTop: 2,
+    },
+
+    itemActive: {
+      borderLeftColor: Colors.mainTextDate,
+      backgroundColor: Colors.primary200, 
+    },
+    labelActive: {
+      fontWeight: "600",
+      color: Colors.primary500,
     },
   });

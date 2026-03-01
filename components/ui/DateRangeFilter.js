@@ -105,6 +105,7 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
             onChange={handleFromChange}
             placeholder={t("not_selected")}
             error={rangeInvalid}
+            style={{marginBottom: 8}}
           />
 
           <DateInput

@@ -16,7 +16,7 @@ const PrivacyToggle = ({ value, onChange, style }) => {
           <Ionicons
             name={value ? "lock-closed" : "globe-outline"}
             size={18}
-            color={value ? Colors.buttonPrimaryText : Colors.textSecondary}
+            color={value ? Colors.buttonBrightColor : Colors.textSecondary}
           />
         </View>
         <View>
