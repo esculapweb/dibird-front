@@ -263,7 +263,7 @@ const stylesFn = (Colors) =>
     headerButtons: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 6,
+      gap: 8,
       marginHorizontal: 4,
     },
     iconButton: {

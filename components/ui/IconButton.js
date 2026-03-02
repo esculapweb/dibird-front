@@ -32,7 +32,7 @@ const IconButton = ({
         disabled && styles.disabled,
       ]}
       onPress={disabled ? undefined : onPress}
-      hitSlop={12}
+      hitSlop={8}
     >
       <Ionicons name={icon} size={size} color={tintColor} />
 

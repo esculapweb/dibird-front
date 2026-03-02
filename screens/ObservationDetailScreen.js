@@ -68,16 +68,18 @@ const ObservationDetailScreen = ({ route, navigation }) => {
 
   const headerRight = useCallback(
     () => (
-      <IconButton
-        icon="create-outline"
-        onPress={() =>
-          navigation.navigate("ObservationEditor", { observation })
-        }
-        style={styles.headerButton}
-        size={24}
-        disabled={!observation || updateMutation.isPending}
-        color={Colors.textSecondary}
-      />
+      <View style={styles.headerButtons}>
+        <IconButton
+          icon="create-outline"
+          onPress={() =>
+            navigation.navigate("ObservationEditor", { observation })
+          }
+          style={styles.iconButton}
+          size={24}
+          disabled={!observation || updateMutation.isPending}
+          color={Colors.textSecondary}
+        />
+      </View>
     ),
     [observation, updateMutation.isPending],
   );
@@ -110,7 +112,6 @@ const ObservationDetailScreen = ({ route, navigation }) => {
   const flag = isoToFlagEmoji(observation.territory_data.code);
   const territory = observation.territory_data.name;
 
-  console.log(observation.place);
   const handlePlaceNaviate = () => {
     if (!observation.place) return;
     navigation.navigate("PlaceDetail", {
@@ -434,11 +435,13 @@ const stylesFn = (Colors) =>
       color: Colors.textSecondary,
       marginBottom: 2,
     },
-    headerButton: {
-      width: 36,
-      height: 36,
-      marginRight: 0,
-      justifyContent: "center",
+     headerButtons: {
+      flexDirection: "row",
       alignItems: "center",
+      gap: 6,
+      marginHorizontal: 4,
+    },
+    iconButton: {
+      marginRight: 0,
     },
   });

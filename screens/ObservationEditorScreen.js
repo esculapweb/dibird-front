@@ -1,5 +1,5 @@
 import { useState, useCallback, useLayoutEffect } from "react";
-import { StyleSheet, Platform, KeyboardAvoidingView } from "react-native";
+import { StyleSheet, Platform, KeyboardAvoidingView, View } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import { useTheme } from "../store/theme-context";
@@ -137,18 +137,20 @@ const ObservationEditorScreen = ({ navigation, route }) => {
 
   const headerRight = useCallback(
     () => (
-      <IconButton
-        icon="checkmark"
-        onPress={handleSaveObservation}
-        style={styles.saveButton}
-        size={28}
-        disabled={
-          isEditMode
-            ? updateObservationMutation.isPending
-            : createObservationMutation.isPending
-        }
-        color={Colors.buttonBrightColor}
-      />
+      <View style={styles.headerButtons}>
+        <IconButton
+          icon="checkmark"
+          onPress={handleSaveObservation}
+          style={styles.saveButton}
+          size={28}
+          disabled={
+            isEditMode
+              ? updateObservationMutation.isPending
+              : createObservationMutation.isPending
+          }
+          color={Colors.buttonBrightColor}
+        />
+      </View>
     ),
     [
       handleSaveObservation,
@@ -202,13 +204,15 @@ export default ObservationEditorScreen;
 const stylesFn = (Colors) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.backgroundMain },
+    headerButtons: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      marginHorizontal: 4,
+    },
     saveButton: {
       backgroundColor: Colors.buttonBrightBg,
       borderRadius: 20,
-      width: 36,
-      height: 36,
-      justifyContent: "center",
-      alignItems: "center",
       marginRight: 0,
     },
   });
