@@ -8,7 +8,7 @@ export const isoToFlagEmoji = (isoCode) => {
 };
 
 export const formatDate = (isoDate) => {
-  if (!isoDate) return ""; 
+  if (!isoDate) return "";
   const d = isoDate instanceof Date ? isoDate : new Date(isoDate);
   return new Intl.DateTimeFormat(i18n.language, {
     year: "numeric",
@@ -17,18 +17,28 @@ export const formatDate = (isoDate) => {
   }).format(d);
 };
 
+export const formatDateLong = (isoDate) => {
+  const date = isoDate ? new Date(isoDate) : null;
+  return date
+    ? date.toLocaleDateString(i18n.language, {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      })
+    : "";
+};
+
 export const formatDateTime = (isoDate) => {
-  if (!isoDate) return ""; 
+  if (!isoDate) return "";
   const d = isoDate instanceof Date ? isoDate : new Date(isoDate);
   return new Intl.DateTimeFormat(i18n.language, {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
-    minute: "2-digit"
+    minute: "2-digit",
   }).format(d);
-
-}
+};
 
 export const normalizeValue = (value, allowed_values) => {
   if (!value) return allowed_values[0];

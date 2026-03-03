@@ -35,7 +35,9 @@ const StatCard = React.memo(({ item, index, seenMode }) => {
       style={({ pressed }) => [styles.card, pressed && styles.pressedCard]}
     >
       <View style={styles.row}>
-        <View style={[styles.imageWrapper, !seenMode && styles.imageWrapperSmall]}>
+        <View
+          style={[styles.imageWrapper, !seenMode && styles.imageWrapperSmall]}
+        >
           {item.sp_thumb ? (
             <Image
               source={{ uri: `${Config.baseUrl}/media/${item.sp_thumb}` }}
@@ -44,7 +46,9 @@ const StatCard = React.memo(({ item, index, seenMode }) => {
               cachePolicy="disk"
             />
           ) : (
-            <View style={[styles.imagePlaceholder, !seenMode && styles.imageSmall]}>
+            <View
+              style={[styles.imagePlaceholder, !seenMode && styles.imageSmall]}
+            >
               <Ionicons
                 name="image-outline"
                 size={20}
@@ -55,9 +59,10 @@ const StatCard = React.memo(({ item, index, seenMode }) => {
         </View>
 
         <View style={styles.content}>
-          <Text style={styles.title}>
-            {index + 1}. {item.sp_name_lang}
-          </Text>
+          <View style={styles.titleLeft}>
+            <Text style={styles.index}>{index + 1}.</Text>
+            <Text style={styles.title}>{item.sp_name_lang}</Text>
+          </View>
 
           <View style={styles.latinRow}>
             <Text style={styles.latin}>{item.sp_latin}</Text>
@@ -153,7 +158,16 @@ const stylesFn = (Colors) =>
       flex: 1,
       justifyContent: "flex-start",
     },
-
+    titleLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      flexShrink: 1,
+    },
+    index: {
+      fontSize: 12,
+      color: Colors.textSecondary,
+    },
     title: {
       fontSize: 15,
       fontWeight: "600",

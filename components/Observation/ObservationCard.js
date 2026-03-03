@@ -5,7 +5,7 @@ import { useNavigation } from "@react-navigation/native";
 import { Image } from "expo-image";
 
 import { BirdSVG } from "../ui/Svgs";
-import { formatDate, isoToFlagEmoji } from "../../util/helpers";
+import { formatDateLong, isoToFlagEmoji } from "../../util/helpers";
 import { Config } from "../../constants/config";
 import { useTheme } from "../../store/theme-context";
 import { formatTimeString } from "../../util/timeHelpers";
@@ -17,7 +17,7 @@ const ObservationCard = React.memo(({ item, index }) => {
   const styles = useStyles(Colors);
   const navigation = useNavigation();
 
-  const dateText = formatDate(item.date_time);
+  const dateText = formatDateLong(item.date_time);
   const territoryFlag = item.territory_data
     ? isoToFlagEmoji(item.territory_data.code)
     : null;
@@ -48,11 +48,14 @@ const ObservationCard = React.memo(({ item, index }) => {
 
         <View style={styles.content}>
           <View style={styles.titleRow}>
-            <Text style={styles.title} numberOfLines={1}>
-              {index + 1}. {item.species_data?.name_lang}
-            </Text>
+            <View style={styles.titleLeft}>
+              <View style={styles.indexBadge}>
+                <Text style={styles.index}>{index + 1}.</Text>
+              </View>
+              <Text style={styles.title} numberOfLines={1}>{item.species_data?.name_lang}</Text>
+            </View>
 
-            <View style={styles.rightTop}>
+                  <View style={styles.rightTop}>
               {item.private && (
                 <Ionicons
                   name="lock-closed-outline"
@@ -187,13 +190,22 @@ const stylesFn = (Colors) =>
       justifyContent: "space-between",
       alignItems: "flex-start",
     },
-
+    titleLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      flexShrink: 1,
+    },
+    index: {
+      fontSize: 12,
+      color: Colors.textSecondary,
+      flexShrink: 1,
+    },
     title: {
       fontSize: 15,
       fontWeight: "600",
       color: Colors.textMain,
       flex: 1,
-      marginRight: 6,
     },
 
     rightTop: {

@@ -12,7 +12,7 @@ import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useTheme } from "../store/theme-context";
-import { isoToFlagEmoji, formatDate, formatDateTime } from "../util/helpers";
+import { isoToFlagEmoji, formatDate, formatDateTime, formatDateLong } from "../util/helpers";
 
 import { Config } from "../constants/config";
 import IconButton from "../components/ui/IconButton";
@@ -178,7 +178,7 @@ const ObservationDetailScreen = ({ route, navigation }) => {
               color={Colors.textSecondary}
             />
             <Text style={styles.capsuleText}>
-              {formatDate(observation.date_time)}
+              {formatDateLong(observation.date_time)}
             </Text>
           </View>
 

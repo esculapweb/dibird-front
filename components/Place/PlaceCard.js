@@ -63,24 +63,18 @@ const PlaceCard = React.memo(({ item, index }) => {
     >
       <View style={styles.main}>
         <View style={styles.titleRow}>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              flexShrink: 1,
-            }}
-          >
+          <View style={styles.titleLeft}>
             {item.favourite && (
-              <Ionicons
-                name="star"
-                size={18}
-                color={Colors.accent}
-                style={styles.star}
-              />
-            )}
-            <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
-              {index + 1}. {item.name}
-            </Text>
+                <Ionicons
+                  name="star"
+                  size={18}
+                  color={Colors.accent}
+                />
+              )}
+            <Text style={styles.index}>{index + 1}.</Text>
+              <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
+                {item.name}
+              </Text>
           </View>
 
           {territoryText && <Text style={styles.flag}>{territoryText}</Text>}
@@ -144,17 +138,23 @@ const stylesFn = (Colors) =>
       marginBottom: 4,
     },
 
+    titleLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      flexShrink: 1,
+    },
+    index: {
+      fontSize: 12,
+      color: Colors.textSecondary,
+    },
+
     title: {
       fontSize: 15,
       fontWeight: "600",
       color: Colors.textMain,
       flexShrink: 1,
     },
-
-    star: {
-      marginRight: 6,
-    },
-
     flag: {
       marginLeft: 6,
     },
