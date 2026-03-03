@@ -107,6 +107,7 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
             params: [language],
             type: "countries",
           })}
+          type="CountriesDropdown"
         />
 
         <DropdownInput

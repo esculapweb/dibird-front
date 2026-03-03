@@ -86,6 +86,7 @@ const ObservationForm = ({
           query={queryTerritories}
           error={errors.territory}
           label={t("country")}
+          type="CountriesDropdown"
         />
 
         <DropdownInput
@@ -111,6 +112,7 @@ const ObservationForm = ({
             />
           )}
           speciesData={speciesData}
+          type="SpeciesDropdown"
         />
 
         <DateInput

@@ -113,6 +113,7 @@ const PlaceForm = ({
         setValue={onChangeTerritory}
         query={queryTerritories}
         error={errors?.territory}
+        type="CountriesDropdown"
       />
     </View>
   );

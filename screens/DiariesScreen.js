@@ -9,15 +9,6 @@ import { loadFilters } from "../util/storageHelper";
 const DiariesScreen = ({route, navigation}) => {
   const { t } = useTranslation();
 
-  const SORT_OPTIONS = [
-    { label: t("date_sort_desc"), value: "-date_time" },
-    { label: t("date_sort"), value: "date_time" },
-    // { label: t("alphabetic"), value: "species_name" },
-    // { label: t("alphabetic_desc"), value: "-species_name" },
-    { label: t("observation_count"), value: "observation_count,name" },
-    { label: t("observation_count_desc"), value: "-observation_count,name" },
-  ];
-
   const handleAdd = useCallback(async () => {
     const filters = await loadFilters(route.name);
     const defaultTerritory = filters?.territory ?? null;
@@ -41,7 +32,6 @@ const DiariesScreen = ({route, navigation}) => {
       route={route}
       navigation={navigation}
       fetchFunction={fetchDiaries}
-      sortOptions={SORT_OPTIONS}
       allowedFilters={["territory", "place", "date", "species"]}
       errorTitle={t("diaries_unavailable")}
       onAdd={handleAdd}

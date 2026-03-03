@@ -6,6 +6,8 @@ import { useTheme } from "../../store/theme-context";
 import ModalWrapper from "./ModalWrapper";
 import DefaultOptionRow from "./DefaultOptionRow";
 import SearchInput from "./SearchInput";
+import { sortOptionsList } from "../../util/sortOptionsList";
+import RadioGroup from "./RadioGroup";
 
 const SelectListModal = ({
   visible,
@@ -18,12 +20,18 @@ const SelectListModal = ({
   title,
   renderOption,
   itemHeight = 52,
+  type,
+  sort,
+  onSortChange,
 }) => {
   const flatListRef = useRef(null);
   const [hasScrolled, setHasScrolled] = useState(false);
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
+  const sortOptions = type ? sortOptionsList(type) : [];
+  const [sortOrder, setSortOrder] = useState(sort ?? null);
+  const [sortMenuVisible, setSortMenuVisible] = useState(false);
 
   const filteredOptions = useMemo(() => {
     if (!search) return options;
@@ -31,6 +39,16 @@ const SelectListModal = ({
       o.label.toLowerCase().includes(search.toLowerCase()),
     );
   }, [options, search]);
+
+  useEffect(() => {
+    setSortOrder(sort);
+  }, [sort]);
+  
+  const handleSortChange = (val) => {
+    setSortOrder(val);
+    setSortMenuVisible(false);
+    onSortChange?.(val);  
+  };
 
   useEffect(() => {
     if (visible && !hasScrolled && flatListRef.current) {
@@ -58,7 +76,13 @@ const SelectListModal = ({
   }, [visible, filteredOptions, selected]);
 
   return (
-    <ModalWrapper visible={visible} onClose={onClose} title={title}>
+    <ModalWrapper
+      visible={visible}
+      onClose={onClose}
+      title={title}
+      showSortIcon={!!type}
+      onSort={() => setSortMenuVisible((prev) => !prev)}
+    >
       {options.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyText}>{t("no_options_available")}</Text>
@@ -72,6 +96,19 @@ const SelectListModal = ({
             placeholder={`${t("search")}...`}
             style={{ marginBottom: 8 }}
           />
+
+          {sortMenuVisible && (
+            <View style={styles.sortMenu}>
+              <RadioGroup
+                label={`${t("sort_by")}:`}
+                value={sortOrder}
+                onChange={handleSortChange}
+                direction="column"
+                options={sortOptions}
+              />
+            </View>
+          )}
+
           {filteredOptions.length === 0 ? (
             <View style={styles.empty}>
               <Text style={styles.emptyText}>{t("nothing_found")}</Text>
@@ -121,5 +158,18 @@ const stylesFn = (Colors) =>
       color: Colors.textSecondary,
       fontSize: 16,
       textAlign: "center",
+    },
+    sortMenu: {
+      backgroundColor: Colors.primary100,
+      borderRadius: 10,
+      marginHorizontal: 12,
+      marginBottom: 8,
+      paddingHorizontal: 16,
+      paddingTop: 12,
+      shadowColor: Colors.shadow,
+      shadowOpacity: 0.08,
+      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 2,
     },
   });

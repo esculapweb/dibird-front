@@ -14,9 +14,9 @@ import { saveFilters } from "../../util/storageHelper";
 import FlatButtonBottom from "../ui/FlatButtonBottom";
 import { useLanguage } from "../../store/language-context";
 import RadioGroup from "../ui/RadioGroup";
-import { useTranslatedQuery } from "../../hooks/useQueryWithTranslation";
 import SpeciesOptionRow from "../ui/SpeciesOptionRow";
 import { usePlaceLocation } from "../../hooks/Place/usePlaceLocation";
+import { useSortedQuery } from "../../hooks/useSortedQuery";
 
 const FilterModal = ({
   screen,
@@ -54,24 +54,36 @@ const FilterModal = ({
     filters?.favourite ?? null,
   );
 
-  const queryPlaces = useTranslatedQuery({
-    queryFn: () => fetchMyPlaces(territoryValue, coords),
-    type: "Places",
+  const {
+    query: queryMyCountries,
+    sort: countriesSort,
+    onSortChange: onCountriesSortChange,
+  } = useSortedQuery({
+    type: "CountriesDropdown",
+    queryFn: () => fetchMyCountries(false),
+    params: [language],
+  });
+
+  const {
+    query: queryPlaces,
+    sort: placesSort,
+    onSortChange: onPlacesSortChange,
+  } = useSortedQuery({
+    type: "PlacesDropdown",
+    queryFn: (sort) => fetchMyPlaces(territoryValue, coords, sort),
     params: [territoryValue, roundedCoords],
     enabled: !!territoryValue,
   });
 
-  const querySpecies = useTranslatedQuery({
-    queryFn: () => fetchSpecies(territoryValue),
-    type: "Species",
+  const {
+    query: querySpecies,
+    sort: speciesSort,
+    onSortChange: onSpeciesSortChange,
+  } = useSortedQuery({
+    type: "SpeciesDropdown",
+    queryFn: (sort) => fetchSpecies(territoryValue, sort),
     params: [territoryValue],
     enabled: !!territoryValue,
-  });
-
-  const queryMyCountries = useTranslatedQuery({
-    queryFn: () => fetchMyCountries(false),
-    params: [language],
-    type: "Mycountries",
   });
 
   useEffect(() => {
@@ -85,7 +97,6 @@ const FilterModal = ({
       (item) => item.value === speciesValue,
     );
     if (!speciesExists) setSpeciesValue(null);
-
   }, [querySpecies.data]);
 
   useEffect(() => {
@@ -134,7 +145,6 @@ const FilterModal = ({
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-
           {allowed.includes("territory") && (
             <DropdownInput
               title={t("country")}
@@ -142,6 +152,9 @@ const FilterModal = ({
               value={territoryValue}
               setValue={setTerritoryValue}
               query={queryMyCountries}
+              type="CountriesDropdown"
+              sort={countriesSort}
+              onSortChange={onCountriesSortChange}
               allowReset
             />
           )}
@@ -152,6 +165,9 @@ const FilterModal = ({
               value={placeValue}
               setValue={setPlaceValue}
               query={queryPlaces}
+              type="PlacesDropdown"
+              sort={placesSort}
+              onSortChange={onPlacesSortChange}
               allowReset
               disabled={!territoryValue}
               disabledMessage={t("select_country_first")}
@@ -166,6 +182,9 @@ const FilterModal = ({
               value={speciesValue}
               setValue={setSpeciesValue}
               query={querySpecies}
+              type="SpeciesDropdown"
+              sort={speciesSort}
+              onSortChange={onSpeciesSortChange}
               allowReset
               disabled={!territoryValue}
               disabledMessage={t("select_country_first")}

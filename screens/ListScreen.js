@@ -21,12 +21,12 @@ import HeaderTitleWithBadge from "../components/ui/HeaderTitleWithBadge";
 import SearchInput from "../components/ui/SearchInput";
 import { useDebounce } from "../util/useDebounce";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
+import { sortOptionsList } from "../util/sortOptionsList";
 
 const ListScreen = ({
   route,
   navigation,
   fetchFunction,
-  sortOptions,
   allowedFilters,
   errorTitle,
   onAdd,
@@ -59,6 +59,7 @@ const ListScreen = ({
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search);
   const screenName = route.name;
+  const sortOptions = sortOptionsList(screenName);
 
   const fetchDataWrapper = (filters, sort, search, page) => {
     return fetchFunction(filters, sort, search, page, () =>

@@ -25,7 +25,10 @@ const DropdownInput = ({
   disabledMessage,
   renderOption,
   speciesData,
-  isLocating
+  isLocating,
+  type,
+  sort,
+  onSortChange,
 }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -91,7 +94,7 @@ const DropdownInput = ({
 
   return (
     <>
-      {speciesData!==undefined ? (
+      {speciesData !== undefined ? (
         <SpeciesCard
           speciesData={speciesData}
           value={value}
@@ -236,6 +239,9 @@ const DropdownInput = ({
         onSelect={onSelectValue}
         title={title}
         renderOption={renderOption}
+        type={type}
+        sort={sort}
+        onSortChange={onSortChange}
       />
     </>
   );

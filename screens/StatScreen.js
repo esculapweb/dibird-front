@@ -15,15 +15,6 @@ const StatScreen = ({ route, navigation }) => {
     actions: [{ label: t("add_first_observation"), onPress: handleAdd }],
   });
 
-  const SORT_OPTIONS = [
-    { label: t("taxonomic"), value: "ioc_id" },
-    { label: t("taxonomic_desc"), value: "-ioc_id" },
-    { label: t("alphabetic"), value: "name" },
-    { label: t("alphabetic_desc"), value: "-name" },
-    { label: t("date_sort_desc"), value: "-date_time" },
-    { label: t("date_sort"), value: "date_time" },
-  ];
-
   const handleAdd = () => navigation.navigate("ObservationEditor");
 
   const fetchData = (filters, sort, search, page, openFilterModal) => {
@@ -61,7 +52,6 @@ const StatScreen = ({ route, navigation }) => {
         route={route}
         navigation={navigation}
         fetchFunction={fetchData}
-        sortOptions={SORT_OPTIONS}
         allowedFilters={["territory", "place", "species", "date"]}
         errorTitle={t("stat_unavailable")}
         onAdd={handleAdd}

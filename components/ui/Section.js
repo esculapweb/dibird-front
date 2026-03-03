@@ -44,7 +44,7 @@ const Section = ({
     <View style={[styles.section, style]}>
       {title && (
         <TouchableOpacity
-          style={styles.sectionHeader}
+          style={[styles.sectionHeader, !isCollapsed && { marginBottom: 12 }]}
           onPress={isCollapsible ? handleToggle : undefined}
           activeOpacity={isCollapsible ? 0.7 : 1}
         >
@@ -91,7 +91,6 @@ const sectionFn = (Colors) =>
       flexDirection: "row",
       alignItems: "baseline",
       justifyContent: "space-between",
-      marginBottom: 12,
     },
     sectionTitle: {
       fontSize: 13,

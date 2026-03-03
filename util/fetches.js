@@ -9,8 +9,11 @@ export const fetchTimezones = async () => {
   }));
 };
 
-export const fetchMyCountries = async (favOnly = false) => {
-  const params = favOnly ? { fav_only: true } : {};
+export const fetchMyCountries = async (favOnly = false, order) => {
+  const params = {
+    o: order,
+  };
+  if (favOnly) params.fav_only = true;
   const res = await api.get("/myapi/territory2/", { params });
   return res.data.map((item) => ({
     value: item.territory_id,
@@ -21,15 +24,19 @@ export const fetchMyCountries = async (favOnly = false) => {
   }));
 };
 
-export const fetchMyPlaces = async (territory = null, coords=null) => {
+export const fetchMyPlaces = async (
+  territory = null,
+  coords = null,
+  order
+) => {
   if (!territory) return [];
 
   const params = {
     territory,
-    o: coords ? "distance" : "-favourite,name",
+    o: order,
   };
 
-if (coords) {
+  if (coords) {
     const [lng, lat] = coords;
     params.lng = lng;
     params.lat = lat;
@@ -38,7 +45,7 @@ if (coords) {
   const res = await api.get("/myapi/place-dropdown2/", { params });
 
   return res.data.map((item) => ({
-    value:item.id,
+    value: item.id,
     label: item.name,
     iconLabel: item.favourite && "star",
     location: item.location,
@@ -46,9 +53,9 @@ if (coords) {
   }));
 };
 
-export const fetchSpecies = async (territory = null) => {
+export const fetchSpecies = async (territory = null, order) => {
   const params = {
-    o: "ioc_id",
+    o: order,
   };
   if (!territory) return [];
   params.territory_id = territory;
@@ -58,7 +65,7 @@ export const fetchSpecies = async (territory = null) => {
     label: item.sp_name,
     name: item.sp_latin,
     name_lang: item.sp_name_lang,
-    thumb: item.sp_thumb
+    thumb: item.sp_thumb,
   }));
 };
 

@@ -9,15 +9,6 @@ import { loadFilters } from "../util/storageHelper";
 const ObservationsScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
 
-  const SORT_OPTIONS = [
-    { label: t("date_sort_desc"), value: "-date_time" },
-    { label: t("date_sort"), value: "date_time" },
-    { label: t("taxonomic"), value: "ioc_id" },
-    { label: t("taxonomic_desc"), value: "-ioc_id" },
-    // { label: t("alphabetic"), value: "species_name" },
-    // { label: t("alphabetic_desc"), value: "-species_name" },
-  ];
-
   const handleAdd = useCallback(async () => {
     const filters = await loadFilters(route.name);
     const defaultTerritory = filters?.territory ?? null;
@@ -41,7 +32,6 @@ const ObservationsScreen = ({ route, navigation }) => {
       route={route}
       navigation={navigation}
       fetchFunction={fetchObservations}
-      sortOptions={SORT_OPTIONS}
       allowedFilters={["territory", "place", "date", "species"]}
       errorTitle={t("observations_unavailable")}
       onAdd={handleAdd}

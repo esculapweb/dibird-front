@@ -36,6 +36,7 @@ const PlaceBlock = ({
         disabled={!territoryValue}
         disabledMessage={t("select_country_first")}
         isLocating={isLocating}
+        type="PlacesDropdown"
       />
 
       {coords?.length === 2 && (

@@ -102,7 +102,7 @@ const stylesFn = (Colors, itemHeight) =>
     },
     distance: {
       fontSize: 12,
-      color: Colors.textSecondary,
+      color: Colors.link,
       marginRight: 8,
     },
     itemActive: {

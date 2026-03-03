@@ -6,7 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const ICON_SIZE = 24;
 const BUTTON_SIZE = 40;
 
-const ModalWrapper = ({ children, onClose, onApply, visible, title }) => {
+const ModalWrapper = ({ children, onClose, onApply, visible, title, onSort, showSortIcon }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
 
@@ -18,7 +18,8 @@ const ModalWrapper = ({ children, onClose, onApply, visible, title }) => {
       onRequestClose={onClose}
     >
       <View style={styles.container}>
-        <SafeAreaView edges={['top']}
+        <SafeAreaView
+          edges={["top"]}
           style={{ flex: 1, backgroundColor: Colors.backgroundMain }}
         >
           <View style={styles.header}>
@@ -36,6 +37,24 @@ const ModalWrapper = ({ children, onClose, onApply, visible, title }) => {
             <Text style={styles.title} numberOfLines={1}>
               {title}
             </Text>
+
+            {showSortIcon && onSort && (
+              <Pressable
+                onPress={onSort}
+                style={({ pressed }) => [
+                  styles.iconButton,
+                  styles.rightButton,
+                  styles.sortButton,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Ionicons
+                  name="swap-vertical"
+                  size={ICON_SIZE}
+                  color={Colors.textMain}
+                />
+              </Pressable>
+            )}
 
             {onApply && (
               <Pressable
