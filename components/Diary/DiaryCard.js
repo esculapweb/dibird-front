@@ -1,65 +1,36 @@
 import React from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
-// import { useActionSheet } from "@expo/react-native-action-sheet";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import { useTranslation } from "react-i18next";
+import { Image } from "expo-image";
 
-import { useTheme } from "../../store/theme-context";
-import { isoToFlagEmoji } from "../../util/helpers";
 import { BirdSVG } from "../ui/Svgs";
+import { formatDate, isoToFlagEmoji } from "../../util/helpers";
+import { Config } from "../../constants/config";
+import { useTheme } from "../../store/theme-context";
+import { formatTimeString } from "../../util/timeHelpers";
 import StatItem from "../ui/StatItem";
 
 const useStyles = (Colors) => React.useMemo(() => stylesFn(Colors), [Colors]);
 
-const PlaceCard = React.memo(({ item, index }) => {
+const DiaryCard = ({ item, index }) => {
   const { Colors } = useTheme();
   const styles = useStyles(Colors);
-  const { t } = useTranslation();
   const navigation = useNavigation();
-  // const { showActionSheetWithOptions } = useActionSheet();
 
+  const dateText = formatDate(item.date_time);
   const territoryText = item.territory_data
     ? isoToFlagEmoji(item.territory_data.code)
     : null;
 
-  const [lng, lat] = item.location.coordinates;
-
-  const handlePlacePress = () => {
-    navigation.navigate("PlaceDetail", { placeId: item.id });
-
-    // const options = [
-    //   t("place_details"),
-    //   t("all_observations"),
-    //   t("all_diaries"),
-    //   t("cancel"),
-    // ];
-
-    // const cancelButtonIndex = 3;
-
-    // showActionSheetWithOptions(
-    //   {
-    //     options,
-    //     cancelButtonIndex,
-    //   },
-    //   (buttonIndex) => {
-    //     if (buttonIndex === 0) {
-    //       navigation.navigate("PlaceDetail", { place: item });
-    //     }
-    //     if (buttonIndex === 1) {
-    //       // navigation.navigate("Observations", { placeId: item.id });
-    //     }
-    //     if (buttonIndex === 2) {
-    //       // navigation.navigate("Diaries", { placeId: item.id });
-    //     }
-    //   },
-    // );
+  const handlePress = () => {
+    navigation.navigate("DiaryDetail", { diaryId: item.id });
   };
 
   return (
     <Pressable
       style={({ pressed }) => [styles.card, pressed && styles.pressedCard]}
-      onPress={handlePlacePress}
+      onPress={handlePress}
     >
       <View style={styles.main}>
         <View style={styles.titleRow}>
@@ -70,16 +41,8 @@ const PlaceCard = React.memo(({ item, index }) => {
               flexShrink: 1,
             }}
           >
-            {item.favourite && (
-              <Ionicons
-                name="star"
-                size={18}
-                color={Colors.accent}
-                style={styles.star}
-              />
-            )}
             <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
-              {index + 1}. {item.name}
+              {index + 1}. {item.name || dateText}
             </Text>
           </View>
 
@@ -88,24 +51,21 @@ const PlaceCard = React.memo(({ item, index }) => {
 
         <View style={styles.bottomRow}>
           <View style={styles.coordRow}>
-            <Ionicons
-              name="location-outline"
-              size={16}
-              color={Colors.textSecondary}
-            />
-            <Text style={styles.subLine}>
-              {lat.toFixed(4)}, {lng.toFixed(4)}
-            </Text>
+            {item?.place_data?.name ? (
+              <>
+                <Ionicons
+                  name="location-outline"
+                  size={16}
+                  color={Colors.textSecondary}
+                />
+                <Text style={styles.subLine}>{item?.place_data?.name}</Text>
+              </>
+            ) : null}
           </View>
 
           <View style={styles.statsBlock}>
             {/* <StatItem icon="book-outline" txt={item.diary_count} /> */}
-            <StatItem
-              icon="binoculars"
-              txt={item.observation_count}
-              style={{ minWidth: 80 }}
-            />
-            <StatItem txt={item.species_count} style={{ minWidth: 56 }}>
+            <StatItem txt={item.observation_count}>
               <BirdSVG size={16} color={Colors.textMain} />
             </StatItem>
           </View>
@@ -113,9 +73,9 @@ const PlaceCard = React.memo(({ item, index }) => {
       </View>
     </Pressable>
   );
-});
+};
 
-export default PlaceCard;
+export default DiaryCard;
 
 const stylesFn = (Colors) =>
   StyleSheet.create({
@@ -182,5 +142,27 @@ const stylesFn = (Colors) =>
       flexDirection: "row",
       alignItems: "center",
       gap: 8,
+    },
+
+    statItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-around",
+      backgroundColor: Colors.badgeBg,
+      borderRadius: 6,
+      paddingHorizontal: 4,
+    },
+
+    statItemInner: {
+      width: 24,
+      height: 24,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+
+    statValue: {
+      fontSize: 12,
+      color: Colors.textMain,
+      marginLeft: 2,
     },
   });

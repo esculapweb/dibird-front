@@ -10,16 +10,18 @@ import { View, StyleSheet, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 
+import ErrorScreen from "../screens/ErrorScreen";
 import MainScreen from "../screens/MainScreen";
 import StatScreen from "../screens/StatScreen";
 import PlacesScreen from "../screens/PlacesScreen";
 import PlaceDetailScreen from "../screens/PlaceDetailScreen";
 import PlaceEditorScreen from "../screens/PlaceEditorScreen";
 import ProfileScreen from "../screens/ProfileScreen";
-import ErrorScreen from "../screens/ErrorScreen";
 import ObservationsScreen from "../screens/ObservationsScreen";
 import ObservationDetailScreen from "../screens/ObservationDetailScreen";
 import ObservationEditorScreen from "../screens/ObservationEditorScreen";
+import DiariesScreen from "../screens/DiariesScreen";
+
 // import SettingsScreen from "../screens/SettingsScreen";
 
 import { AuthContext } from "../store/auth-context";
@@ -208,6 +210,16 @@ const AppNavigator = () => {
         options={{
           title: t("new_observation"),
           headerBackTitleVisible: false,
+        }}
+      />
+
+      <Stack.Screen
+        name="Diaries"
+        component={DiariesScreen}
+        options={{
+          title: t("diaries"),
+          headerBackTitleVisible: false,
+          headerBackTitle: t("main"),
         }}
       />
 

@@ -11,8 +11,8 @@ export const useApiError = () => {
     (error) => {
       if (!error) {
         return {
-          title: t("errors.unknown"),
-          message: t("errors.something_went_wrong"),
+          title: t("unexpected_error"),
+          message: t("something_went_wrong"),
         };
       }
 

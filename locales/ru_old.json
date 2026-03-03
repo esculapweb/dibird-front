@@ -8,6 +8,11 @@
   "diary": "Дневник",
   "diary_count": "Количеству дневников",
   "diary_count_desc": "Количеству дневников (убыв.)",
+  "diearies": "",
+  "errors": {
+    "something_went_wrong": "Что-то пошло не так",
+    "unknown": ""
+  },
   "failed_remove_avatar": "Не удалось удалить аватар",
   "failed_to_update_favourite": "Ошибка при изменении статуса избранного",
   "image_processing_failed": "Ошибка обработки изображения",

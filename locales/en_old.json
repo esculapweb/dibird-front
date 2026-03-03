@@ -10,7 +10,12 @@
   "diary": "Diary",
   "diary_count": "Number of diaries",
   "diary_count_desc": "Number of diaries (descending)",
+  "diearies": "",
   "enter_place_name": "Enter place name",
+  "errors": {
+    "something_went_wrong": "",
+    "unknown": ""
+  },
   "failed_remove_avatar": "Failed to remove avatar",
   "failed_to_update_favourite": "Failed to update favourite status",
   "image_processing_failed": "Image processing failed",

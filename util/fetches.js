@@ -104,3 +104,6 @@ export const fetchPlaces = (filters, order = "name", search, page) =>
 
 export const fetchObservations = (filters, order = "-date", search, page) =>
   fetchAbstract("/myapi/observation2/", filters, order, search, page);
+
+export const fetchDiaries = (filters, order = "-date", search, page) =>
+  fetchAbstract("/myapi/diary2/", filters, order, search, page);
