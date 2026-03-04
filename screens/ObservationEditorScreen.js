@@ -1,6 +1,7 @@
 import { useState, useCallback, useLayoutEffect } from "react";
 import { StyleSheet, Platform, KeyboardAvoidingView, View } from "react-native";
 import { useTranslation } from "react-i18next";
+import Toast from "react-native-toast-message";
 
 import { useTheme } from "../store/theme-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
@@ -128,12 +129,27 @@ const ObservationEditorScreen = ({ navigation, route }) => {
   }, [formData, speciesValue, territoryValue, placeValue, isEditMode]);
 
   const handleAddNewPlace = useCallback(() => {
-    setNavigationCallback("onPlaceCreated", (newPlaceId) => {
+    setNavigationCallback("onPlaceCreated", (newPlaceId, newPlaceTerritory) => {
       setPlaceValue(newPlaceId);
-      setFormData((prev) => ({ ...prev, place: newPlaceId }));
+
+      if (newPlaceTerritory && newPlaceTerritory !== territoryValue) {
+        setTerritoryValue(newPlaceTerritory);
+        setFormData((prev) => ({
+          ...prev,
+          place: newPlaceId,
+          territory: newPlaceTerritory,
+        }));
+        Toast.show({
+          type: "info",
+          text1: t("country_changed"),
+          text2: t("country_changed_hint"),
+        });
+      } else {
+        setFormData((prev) => ({ ...prev, place: newPlaceId }));
+      }
     });
     navigation.navigate("PlaceEditor", { returnToScreen: "ObservationEditor" });
-  }, [navigation]);
+  }, [navigation, territoryValue]);
 
   const headerRight = useCallback(
     () => (

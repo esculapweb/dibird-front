@@ -156,8 +156,7 @@ const PlaceEditorScreen = ({ navigation, route }) => {
       createPlaceMutation.mutate(placeData, {
         onSuccess: (res) => {
           if (returnToScreen) {
-            
-            callNavigationCallback("onPlaceCreated", res.data.id);
+            callNavigationCallback("onPlaceCreated", res.data.id, placeData.territory);
             navigation.goBack();
           } else {
             requestAnimationFrame(() =>

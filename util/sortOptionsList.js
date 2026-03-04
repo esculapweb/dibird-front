@@ -56,19 +56,19 @@ export const sortOptionsList = (screen) => {
 
     case "CountriesDropdown":
       return [
-        { label: i18n.t("favourite_desc"), value: "-favourite,name" },
-        { label: i18n.t("favourite_asc"), value: "favourite,name" },
+        { label: i18n.t("favourite_asc"), value: "-favourite,name" },
+        { label: i18n.t("favourite_desc"), value: "favourite,name" },
         { label: i18n.t("alphabetic"), value: "name" },
         { label: i18n.t("alphabetic_desc"), value: "-name" },
       ];
 
     case "PlacesDropdown":
       return [
-        { label: i18n.t("favourite"), value: "-favourite,name" },
+        { label: i18n.t("favourite_asc"), value: "-favourite,name" },
         { label: i18n.t("favourite_desc"), value: "favourite,name" },
         { label: i18n.t("alphabetic"), value: "name" },
         { label: i18n.t("alphabetic_desc"), value: "-name" },
-        { label: i18n.t("distance"), value: "distance" },
+        { label: i18n.t("distance_asc"), value: "distance" },
         { label: i18n.t("distande_desc"), value: "-distance" },
       ];
 
