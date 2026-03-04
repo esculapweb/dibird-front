@@ -136,11 +136,7 @@ const ObservationDetailScreen = ({ route, navigation }) => {
               />
             ) : (
               <View style={styles.imagePlaceholder}>
-                <Ionicons
-                  name="image-outline"
-                  size={20}
-                  color={Colors.dropdownIcon}
-                />
+                <BirdSVG size={40} color={Colors.textSecondary} />
               </View>
             )}
           </View>

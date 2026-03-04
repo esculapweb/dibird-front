@@ -7,6 +7,7 @@ import { formatDate, isoToFlagEmoji } from "../../util/helpers";
 import { Config } from "../../constants/config";
 import { useTheme } from "../../store/theme-context";
 import MetaItem from "../ui/MetaItem";
+import { BirdSVG } from "../ui/Svgs";
 
 const useStyles = (Colors) => React.useMemo(() => stylesFn(Colors), [Colors]);
 
@@ -49,11 +50,7 @@ const StatCard = React.memo(({ item, index, seenMode }) => {
             <View
               style={[styles.imagePlaceholder, !seenMode && styles.imageSmall]}
             >
-              <Ionicons
-                name="image-outline"
-                size={20}
-                color={Colors.dropdownIcon}
-              />
+              <BirdSVG size={26} color={Colors.textSecondary} />
             </View>
           )}
         </View>

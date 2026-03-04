@@ -61,7 +61,7 @@ const DiaryCard = ({ item, index }) => {
                 />
               ) : (
                 <View key={i} style={styles.speciesThumbPlaceholder}>
-                  <BirdSVG size={16} color={Colors.textSecondary} />
+                  <BirdSVG size={26} color={Colors.textSecondary} />
                 </View>
               ),
             )}
@@ -169,7 +169,7 @@ const stylesFn = (Colors) =>
       width: 48,
       height: 48,
       borderRadius: 10,
-      backgroundColor: Colors.badgeBg,
+      backgroundColor: Colors.imageBg,
       justifyContent: "center",
       alignItems: "center",
     },
@@ -177,7 +177,7 @@ const stylesFn = (Colors) =>
       width: 48,
       height: 48,
       borderRadius: 10,
-      backgroundColor: Colors.badgeBg,
+      backgroundColor: Colors.imageBg,
       justifyContent: "center",
       alignItems: "center",
     },

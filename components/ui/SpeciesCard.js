@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 
 import { useTheme } from "../../store/theme-context";
 import { Config } from "../../constants/config";
+import { BirdSVG } from "./Svgs";
 
 const SpeciesCard = ({
   speciesData,
@@ -58,11 +59,7 @@ const SpeciesCard = ({
     if (speciesData && value)
       return (
         <View style={[styles.image, styles.imagePlaceholder]}>
-          <Ionicons
-            name="image-outline"
-            size={32}
-            color={Colors.dropdownIcon}
-          />
+          <BirdSVG size={44} color={Colors.textSecondary} />
         </View>
       );
 

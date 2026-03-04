@@ -1,9 +1,9 @@
 import { StyleSheet, Text, View, Pressable } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 
 import { Config } from "../../constants/config";
 import { useTheme } from "../../store/theme-context";
+import { BirdSVG } from "./Svgs";
 
 const SpeciesOptionRow = ({
   item,
@@ -39,11 +39,7 @@ const SpeciesOptionRow = ({
             />
           ) : (
             <View style={styles.imagePlaceholder}>
-              <Ionicons
-                name="image-outline"
-                size={20}
-                color={Colors.dropdownIcon}
-              />
+              <BirdSVG size={22} color={Colors.textSecondary} />
             </View>
           )}
         </View>

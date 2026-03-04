@@ -43,7 +43,9 @@ const ObservationCard = React.memo(({ item, index }) => {
             cachePolicy="disk"
           />
         ) : (
-          <View style={styles.imagePlaceholder} />
+          <View style={styles.imagePlaceholder}>
+            <BirdSVG size={38} color={Colors.textSecondary} />
+          </View>
         )}
 
         <View style={styles.content}>
@@ -179,6 +181,8 @@ const stylesFn = (Colors) =>
       borderRadius: 12,
       marginRight: 8,
       backgroundColor: Colors.imageBg,
+      justifyContent: "center",
+      alignItems: "center",
     },
 
     content: {
