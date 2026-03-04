@@ -6,7 +6,7 @@ import Input from "../ui/Input";
 import DropdownInput from "../ui/DropdownInput";
 import { fetchMyCountries } from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
-import { useTranslatedQuery } from "../../hooks/useQueryWithTranslation";
+import { useSortedQuery } from "../../hooks/useSortedQuery";
 
 const PlaceForm = ({
   onCoordsChange,
@@ -28,13 +28,17 @@ const PlaceForm = ({
 
   const [territory, setTerritory] = useState(null);
 
-  const queryTerritories = useTranslatedQuery({
-    queryFn: () => fetchMyCountries(false),
+  const {
+    query: queryMyCountries,
+    sort: countriesSort,
+    onSortChange: onCountriesSortChange,
+  } = useSortedQuery({
+    type: "CountriesDropdown",
+    queryFn: (sort) => fetchMyCountries(false, sort),
     params: [language],
-    type: "mycountries",
   });
 
-  const territories = queryTerritories.data ?? [];
+  const territories = queryMyCountries.data ?? [];
 
   useEffect(() => {
     if (!territories.length || !locationDetails?.countryCode) return;
@@ -111,9 +115,11 @@ const PlaceForm = ({
         placeholder={t("select_country")}
         value={territory}
         setValue={onChangeTerritory}
-        query={queryTerritories}
+        query={queryMyCountries}
         error={errors?.territory}
         type="CountriesDropdown"
+        sort={countriesSort}
+        onSortChange={onCountriesSortChange}
       />
     </View>
   );

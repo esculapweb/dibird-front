@@ -14,6 +14,8 @@ const PlaceBlock = ({
   onAddNewPlace,
   queryPlaces,
   isLocating,
+  sort,
+  onSortChange,
 }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -37,6 +39,8 @@ const PlaceBlock = ({
         disabledMessage={t("select_country_first")}
         isLocating={isLocating}
         type="PlacesDropdown"
+        sort={sort}
+        onSortChange={onSortChange}
       />
 
       {coords?.length === 2 && (

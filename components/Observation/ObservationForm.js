@@ -10,7 +10,6 @@ import {
   fetchMyPlaces,
   fetchSpecies,
 } from "../../util/fetches";
-import { useTranslatedQuery } from "../../hooks/useQueryWithTranslation";
 import { useLanguage } from "../../store/language-context";
 import SpeciesOptionRow from "../ui/SpeciesOptionRow";
 import Input from "../ui/Input";
@@ -18,6 +17,7 @@ import Section from "../ui/Section";
 import PrivacyToggle from "../ui/PrivacyToggle";
 import PlaceBlock from "../Place/PlaceBlock";
 import { usePlaceLocation } from "../../hooks/Place/usePlaceLocation";
+import { useSortedQuery } from "../../hooks/useSortedQuery";
 
 const ObservationForm = ({
   formData,
@@ -38,23 +38,35 @@ const ObservationForm = ({
   const { language } = useLanguage();
   const { coords, roundedCoords, isLocating } = usePlaceLocation();
 
-  const queryTerritories = useTranslatedQuery({
-    queryFn: () => fetchMyCountries(false),
+  const {
+    query: queryMyCountries,
+    sort: countriesSort,
+    onSortChange: onCountriesSortChange,
+  } = useSortedQuery({
+    type: "CountriesDropdown",
+    queryFn: (sort) => fetchMyCountries(false, sort),
     params: [language],
-    type: "Mycountries",
   });
 
-  const queryPlaces = useTranslatedQuery({
-    queryFn: () => fetchMyPlaces(territoryValue, coords),
+  const {
+    query: queryPlaces,
+    sort: placesSort,
+    onSortChange: onPlacesSortChange,
+  } = useSortedQuery({
+    type: "PlacesDropdown",
+    queryFn: (sort) => fetchMyPlaces(territoryValue, coords, sort),
     params: [territoryValue, roundedCoords],
-    type: "Places",
     enabled: !!territoryValue,
   });
 
-  const querySpecies = useTranslatedQuery({
-    queryFn: () => fetchSpecies(territoryValue),
+  const {
+    query: querySpecies,
+    sort: speciesSort,
+    onSortChange: onSpeciesSortChange,
+  } = useSortedQuery({
+    type: "SpeciesDropdown",
+    queryFn: (sort) => fetchSpecies(territoryValue, sort),
     params: [territoryValue],
-    type: "Species",
     enabled: !!territoryValue,
   });
 
@@ -83,10 +95,12 @@ const ObservationForm = ({
             setErrors((prev) => ({ ...prev, territory: undefined }));
             setPlaceValue(null);
           }}
-          query={queryTerritories}
+          query={queryMyCountries}
           error={errors.territory}
           label={t("country")}
           type="CountriesDropdown"
+          sort={countriesSort}
+          onSortChange={onCountriesSortChange}
         />
 
         <DropdownInput
@@ -113,6 +127,8 @@ const ObservationForm = ({
           )}
           speciesData={speciesData}
           type="SpeciesDropdown"
+          sort={speciesSort}
+          onSortChange={onSpeciesSortChange}
         />
 
         <DateInput
@@ -130,10 +146,11 @@ const ObservationForm = ({
 
       {/* ── 3. Optional: Where ───────────────────────────────── */}
       <Section
-       title={t("section_where")} 
-       hint={t("optional")} 
-       collapsible={!!placeValue}
-       collapsed={!placeValue}>
+        title={t("section_where")}
+        hint={t("optional")}
+        collapsible={!!placeValue}
+        collapsed={!placeValue}
+      >
         <PlaceBlock
           territoryValue={territoryValue}
           placeValue={placeValue}
@@ -142,6 +159,8 @@ const ObservationForm = ({
           onAddNewPlace={onAddNewPlace}
           queryPlaces={queryPlaces}
           isLocating={isLocating}
+          sort={placesSort}
+          onSortChange={onPlacesSortChange}
         />
       </Section>
 

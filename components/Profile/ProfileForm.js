@@ -10,6 +10,7 @@ import { useProfile } from "../../store/profile-context";
 import { fetchTimezones, fetchMyCountries } from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
 import { useTranslatedQuery } from "../../hooks/useQueryWithTranslation";
+import { useSortedQuery } from "../../hooks/useSortedQuery";
 
 const ProfileForm = ({ submitHandler, loading, success }) => {
   const { language } = useLanguage();
@@ -70,6 +71,18 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
     submitHandler(formData);
   };
 
+
+  const {
+    query: queryMyCountries,
+    sort: countriesSort,
+    onSortChange: onCountriesSortChange,
+  } = useSortedQuery({
+    type: "CountriesDropdown",
+    queryFn: (sort) => fetchMyCountries(false, sort),
+    params: [language],
+  });
+
+
   useEffect(() => {
     if (!profile?.user_data) return;
     setInitialValues();
@@ -102,12 +115,10 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
           placeholder={t("select_country")}
           value={territoryValue}
           setValue={setTerritoryValue}
-          query={useTranslatedQuery({
-            queryFn: () => fetchMyCountries(false),
-            params: [language],
-            type: "countries",
-          })}
+          query={queryMyCountries}
           type="CountriesDropdown"
+          sort={countriesSort}
+          onSortChange={onCountriesSortChange}
         />
 
         <DropdownInput
