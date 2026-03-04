@@ -45,7 +45,7 @@ const FilterModal = ({
   };
 
   const [territoryValue, setTerritoryValue] = useState(
-    filters?.territory || null,
+    filters?.territory ?? null,
   );
   const [placeValue, setPlaceValue] = useState(filters?.place ?? null);
   const [speciesValue, setSpeciesValue] = useState(filters?.species ?? null);
@@ -60,7 +60,7 @@ const FilterModal = ({
     onSortChange: onCountriesSortChange,
   } = useSortedQuery({
     type: "CountriesDropdown",
-    queryFn: () => fetchMyCountries(false),
+    queryFn: (sort) => fetchMyCountries(false, sort),
     params: [language],
   });
 
