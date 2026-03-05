@@ -9,16 +9,19 @@ import {
   LightNavigationTheme,
   DarkNavigationTheme,
 } from "../constants/NavigationTheme";
+import linking from "../linking";
 
 const Navigation = () => {
   const { theme } = useTheme();
   const authCtx = useContext(AuthContext);
+  const isAuthenticated = authCtx.isAuthenticated;
 
   return (
     <NavigationContainer
+    linking={linking(isAuthenticated)}
       theme={theme === "dark" ? DarkNavigationTheme : LightNavigationTheme}
     >
-      {authCtx.isAuthenticated ? <AppNavigator /> : <AuthDrawer />}
+      {isAuthenticated ? <AppNavigator /> : <AuthDrawer />}
     </NavigationContainer>
   );
 };
