@@ -22,6 +22,7 @@ import SearchInput from "../components/ui/SearchInput";
 import { useDebounce } from "../util/useDebounce";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import { sortOptionsList } from "../util/sortOptionsList";
+import { parseDeepLinkParams } from "../util/parseDeepLinkParams";
 
 const ListScreen = ({
   route,
@@ -152,24 +153,29 @@ const ListScreen = ({
 
   useEffect(() => {
     const initFilters = async () => {
-      const storedFilters = await loadFilters(screenName);
-      setFilters(storedFilters ?? {});
+      const {
+        filters: deepFilters,
+        sort: deepSort,
+        hasParams,
+      } = parseDeepLinkParams(route.params);
+
+      if (hasParams) {
+        setFilters(deepFilters);
+        if (deepSort) setSort(deepSort);
+      } else {
+        const storedFilters = await loadFilters(screenName);
+        const storedSort = await loadSort(screenName);
+        setFilters(storedFilters ?? {});
+        setSort(
+          normalizeValue(
+            storedSort,
+            sortOptions.map((item) => item.value),
+          ),
+        );
+      }
       setFiltersLoaded(true);
     };
     initFilters();
-  }, []);
-
-  useEffect(() => {
-    const initSort = async () => {
-      const storedSort = await loadSort(screenName);
-      setSort(
-        normalizeValue(
-          storedSort,
-          sortOptions.map((item) => item.value),
-        ),
-      );
-    };
-    initSort();
   }, []);
 
   useFocusEffect(

@@ -1,5 +1,28 @@
 import { getStateFromPath } from "@react-navigation/native";
 
+const parseString = (v) => v || undefined;
+
+const withFilters = (path) => ({
+  path,
+  parse: {
+    territory: parseString,
+    place: parseString,
+    species: parseString,
+    year: parseString,
+    date_time_min: parseString,
+    date_time_max: parseString,
+    o: parseString,
+  },
+});
+
+const withBasicFilters = (path) => ({
+  path,
+  parse: {
+    territory: parseString,
+    o: parseString,
+  },
+});
+
 const linking = (isAuthenticated) => ({
   prefixes: ["dibird://", "https://dibird.com"],
 
@@ -11,12 +34,12 @@ const linking = (isAuthenticated) => ({
           Profile: "my/profile",
         },
       },
-      Stat: "my/stat",
-      Places: "my/place",
+      Stat: withFilters("my/stat"),
+      Places: withBasicFilters("my/place"),
       PlaceDetail: "my/place/:placeId",
-      Observations: "my/observation",
-      ObservationDetail: "my/observation/:observationId",
-      Diaries: "my/diary",
+      Observations: withFilters("my/observation"),
+      //   ObservationDetail: "my/observation/:observationId",
+      Diaries: withFilters("my/diary"),
       DiaryDetail: "my/diary/:diaryId",
 
       // AuthDrawer
@@ -27,10 +50,13 @@ const linking = (isAuthenticated) => ({
 
   getStateFromPath(path, options) {
     const locales = ["ru"];
-    const localePrefix = locales.find((l) => path.startsWith(`/${l}/`));
+    const normalizedPath2 = path.startsWith("/") ? path : `/${path}`;
+    const localePrefix = locales.find((l) =>
+      normalizedPath2.startsWith(`/${l}/`),
+    );
     const normalizedPath = localePrefix
-      ? path.replace(`/${localePrefix}/`, "/")
-      : path;
+      ? normalizedPath2.replace(`/${localePrefix}`, "")
+      : normalizedPath2;
 
     const authPaths = ["/accounts/login", "/accounts/signup"];
     const isAuthPath = authPaths.some((p) => normalizedPath.startsWith(p));
