@@ -7,7 +7,14 @@ import api from "../services/api";
 const URLS = {
   Place: "/myapi/place2/",
   Observation: "/myapi/observation2/",
+  Diary: "/myapi/diary2/",
 };
+
+const TYPE_PLURAL = {
+  Place: "Places",
+  Observation: "Observations",
+  Diary: "Diaries",
+}
 
 export const useItem = (id, type) =>
   useTranslatedQuery({
@@ -31,7 +38,7 @@ export const useUpdateItem = (id, type) => {
       await queryClient.cancelQueries([type, id]);
 
       const prevItem = queryClient.getQueryData([type, id]);
-      const prevItems = queryClient.getQueryData(["Observations"]);
+      const prevItems = queryClient.getQueryData([TYPE_PLURAL[type]]);
 
       const mergeDeep = (old, updates) => {
         if (!old) return updates;
@@ -60,7 +67,7 @@ export const useUpdateItem = (id, type) => {
         return updated;
       });
 
-      queryClient.setQueryData([`${type}s`], (old) => {
+      queryClient.setQueryData([`${TYPE_PLURAL[type]}`], (old) => {
         if (!old?.results) return old;
         const updated = {
           ...old,
@@ -75,7 +82,7 @@ export const useUpdateItem = (id, type) => {
     },
     onError: (e, newData, ctx) => {
       if (ctx?.prevItems) {
-        queryClient.setQueryData([`${type}s`, id], ctx.prevItem);
+        queryClient.setQueryData([`${TYPE_PLURAL[type]}`, id], ctx.prevItem);
       }
       if (ctx?.prevItems) {
         queryClient.setQueryData([type], ctx.prevItems);
@@ -83,7 +90,7 @@ export const useUpdateItem = (id, type) => {
     },
     onSettled: () => {
       queryClient.invalidateQueries([type, id]);
-      queryClient.invalidateQueries([`${type}s`]);
+      queryClient.invalidateQueries([`${TYPE_PLURAL[type]}`]);
     },
   });
 };
@@ -95,7 +102,7 @@ export const useDeleteItem = (type) => {
     mutationFn: (id) => api.delete(`${URLS[type]}${id}/`),
     onSettled: () => {
       queryClient.invalidateQueries({
-        queryKey: [`${type}s`],
+        queryKey: [`${TYPE_PLURAL[type]}`],
         exact: false,
       });
     },

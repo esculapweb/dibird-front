@@ -112,7 +112,7 @@ const ObservationDetailScreen = ({ route, navigation }) => {
   const flag = isoToFlagEmoji(observation.territory_data.code);
   const territory = observation.territory_data.name;
 
-  const handlePlaceNaviate = () => {
+  const handlePlaceNavigate = () => {
     if (!observation.place) return;
     navigation.navigate("PlaceDetail", {
       placeId: observation.place,
@@ -200,7 +200,7 @@ const ObservationDetailScreen = ({ route, navigation }) => {
         </View>
 
         <View style={styles.section}>
-          <Pressable style={styles.placeWrap} onPress={handlePlaceNaviate}>
+          <Pressable style={styles.placeWrap} onPress={handlePlaceNavigate}>
             {observation?.place_data ? (
               <Text style={styles.placeName}>
                 {observation.place_data.name}
