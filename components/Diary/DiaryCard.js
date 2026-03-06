@@ -55,7 +55,7 @@ const DiaryCard = ({ item, index }) => {
               obs.species_data.thumb ? (
                 <Image
                   key={i}
-                  source={{ uri: Config.baseUrl + obs.species_data.thumb }}
+                  source={{ uri: `${Config.mediaBaseUrl}${obs.species_data.thumb}` }}
                   style={styles.speciesThumb}
                   contentFit="cover"
                 />

@@ -128,7 +128,7 @@ const ObservationDetailScreen = ({ route, navigation }) => {
             {observation?.species_data?.thumb ? (
               <Image
                 source={{
-                  uri: `${Config.baseUrl}/media/${observation.species_data.thumb}`,
+                  uri: `${Config.mediaUrl}/${observation.species_data.thumb}`,
                 }}
                 style={styles.image}
                 contentFit="cover"

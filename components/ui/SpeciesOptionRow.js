@@ -32,7 +32,7 @@ const SpeciesOptionRow = ({
         <View style={styles.imageWrapper}>
           {item.thumb ? (
             <Image
-              source={{ uri: `${Config.baseUrl}/media/${item.thumb}` }}
+              source={{ uri: `${Config.mediaUrl}/${item.thumb}` }}
               style={styles.image}
               contentFit="cover"
               cachePolicy="disk"

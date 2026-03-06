@@ -41,7 +41,7 @@ const StatCard = React.memo(({ item, index, seenMode }) => {
         >
           {item.sp_thumb ? (
             <Image
-              source={{ uri: `${Config.baseUrl}/media/${item.sp_thumb}` }}
+              source={{ uri: `${Config.mediaUrl}/${item.sp_thumb}` }}
               style={[styles.image, !seenMode && styles.imageSmall]}
               contentFit="cover"
               cachePolicy="disk"

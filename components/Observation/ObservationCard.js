@@ -35,7 +35,7 @@ const ObservationCard = React.memo(({ item, index }) => {
         {item.species_data?.thumb ? (
           <Image
             source={{
-              uri: `${Config.baseUrl}/media/${item.species_data.thumb}`,
+              uri: `${Config.mediaUrl}/${item.species_data.thumb}`,
             }}
             style={styles.image}
             contentFit="cover"

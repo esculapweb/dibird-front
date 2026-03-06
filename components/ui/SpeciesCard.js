@@ -49,7 +49,7 @@ const SpeciesCard = ({
     if (speciesData?.thumb && value)
       return (
         <Image
-          source={{ uri: `${Config.baseUrl}/media/${speciesData.thumb}` }}
+          source={{ uri: `${Config.mediaUrl}/${speciesData.thumb}` }}
           style={styles.image}
           contentFit="cover"
           cachePolicy="disk"

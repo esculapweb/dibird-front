@@ -54,7 +54,7 @@ const parseWebDate = (str) => {
     return new Date(`${year}-${month}-${day}T00:00:00.000Z`);
   }
 
-  // YYYY-MM-DD (на всякий случай)
+  // YYYY-MM-DD
   if (decoded.includes("-")) {
     return new Date(`${decoded}T00:00:00.000Z`);
   }
