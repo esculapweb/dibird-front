@@ -27,8 +27,6 @@ import ErrorOverlay from "../components/Error/ErrorOverlay";
 import Map from "../components/Map/Map";
 import { useItem, useUpdateItem, useDeleteItem } from "../hooks/useItem";
 import { showError } from "../services/api";
-import { BirdSVG } from "../components/ui/Svgs";
-import { formatTimeString } from "../util/timeHelpers";
 
 const DiaryDetailScreen = ({ route, navigation }) => {
   const { diaryId } = route.params;

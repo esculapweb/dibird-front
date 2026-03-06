@@ -69,6 +69,11 @@ export const fetchSpecies = async (territory = null, order) => {
   }));
 };
 
+export const fetchMapPreview = async(placeId) => {
+  const res = await api.get(`/myapi/place2/${placeId}/map_preview/`);
+  return res.data
+}
+
 const fetchAbstract = async (
   fetchUrl,
   filters = {},

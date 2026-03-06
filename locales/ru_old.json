@@ -18,6 +18,8 @@
   "failed_to_update_favourite": "Ошибка при изменении статуса избранного",
   "image_processing_failed": "Ошибка обработки изображения",
   "no_not_seen_empty": "Все виды уже отмечены как отмеченные",
+  "observation_created": "Наблюдение создано",
+  "observation_updated": "Наблюдение обновлено",
   "retry": "Повторить",
   "settings": "Настройки"
 }

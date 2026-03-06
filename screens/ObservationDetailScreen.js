@@ -1,4 +1,4 @@
-import { useLayoutEffect, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -6,24 +6,30 @@ import {
   ScrollView,
   Alert,
   Pressable,
+  ActivityIndicator,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useTheme } from "../store/theme-context";
-import { isoToFlagEmoji, formatDate, formatDateTime, formatDateLong } from "../util/helpers";
+import {
+  isoToFlagEmoji,
+  formatDate,
+  formatDateTime,
+  formatDateLong,
+} from "../util/helpers";
 
 import { Config } from "../constants/config";
 import IconButton from "../components/ui/IconButton";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
-import Map from "../components/Map/Map";
 import { useItem, useUpdateItem, useDeleteItem } from "../hooks/useItem";
 import { showError } from "../services/api";
 import { BirdSVG } from "../components/ui/Svgs";
 import { formatTimeString } from "../util/timeHelpers";
+import { fetchMapPreview } from "../util/fetches";
 
 const ObservationDetailScreen = ({ route, navigation }) => {
   const { observationId } = route.params;
@@ -36,6 +42,25 @@ const ObservationDetailScreen = ({ route, navigation }) => {
     error,
     refetch,
   } = useItem(observationId, type);
+
+  const [previewUri, setPreviewUri] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  useEffect(() => {
+    if (!observation) return;
+
+    if (observation?.place_data?.preview) {
+      setPreviewUri(`${Config.mediaUrl}/${observation.place_data.preview}`);
+    } else if (observation?.place) {
+      setPreviewLoading(true);
+      fetchMapPreview(observation.place)
+        .then((data) => {
+          setPreviewUri(`${Config.mediaUrl}/${data.preview}`);
+        })
+        .catch((e) => console.log("map preview error:", e))
+        .finally(() => setPreviewLoading(false));
+    }
+  }, [observation?.place, observation?.place_data?.preview]);
 
   const updateMutation = useUpdateItem(observationId, type);
   const deleteMutation = useDeleteItem(type);
@@ -201,27 +226,66 @@ const ObservationDetailScreen = ({ route, navigation }) => {
 
         <View style={styles.section}>
           <Pressable style={styles.placeWrap} onPress={handlePlaceNavigate}>
-            {observation?.place_data ? (
-              <Text style={styles.placeName}>
-                {observation.place_data.name}
-              </Text>
-            ) : (
-              <Text style={styles.placeName}>
-                {t("location_not_specified")}
-              </Text>
-            )}
-            <Text style={styles.placeTerritory}>
-              {flag} {territory}
-            </Text>
-            {observation?.place_data?.location?.coordinates?.length === 2 && (
-              <View style={{ borderRadius: 12, overflow: "hidden" }}>
-                <Map
-                  currentCoords={observation.place_data.location.coordinates}
-                  mapHeight={300}
-                  showCoords={true}
-                />
+            <View style={styles.placeRow}>
+              {(previewUri || previewLoading) && (
+                <View style={styles.mapThumb}>
+                  {previewLoading ? (
+                    <ActivityIndicator
+                      size="small"
+                      color={Colors.textSecondary}
+                    />
+                  ) : (
+                    <Image
+                      source={{ uri: previewUri }}
+                      style={styles.mapThumb}
+                      contentFit="cover"
+                      cachePolicy="disk"
+                    />
+                  )}
+                </View>
+              )}
+              <View style={{ flex: 1 }}>
+                <Text style={styles.placeName}>
+                  {observation.place_data?.name || t("location_not_specified")}
+                </Text>
+                <Text style={styles.placeTerritory}>
+                  {flag} {territory}
+                </Text>
+
+                {/* NOTES */}
+                {observation?.notes && (
+                  <View style={styles.notesBlock}>
+                    <Ionicons
+                      name="document-text-outline"
+                      size={20}
+                      color={Colors.textSecondary}
+                      style={{ marginRight: 8 }}
+                    />
+                    <Text style={styles.notes}>{observation.notes}</Text>
+                  </View>
+                )}
+                {/* META */}
+                <View
+                  style={[
+                    styles.meta,
+                    (observation.notes ||
+                      observation?.diary_data ||
+                      observation?.place_data) &&
+                      styles.metaBorder,
+                  ]}
+                >
+                  <Text style={styles.metaText}>
+                    {t("created")}: {formatDateTime(observation.created_at)}
+                  </Text>
+                  {formatDate(observation.created_at) !==
+                    formatDate(observation.updated_at) && (
+                    <Text style={styles.metaText}>
+                      {t("updated")}: {formatDateTime(observation.updated_at)}
+                    </Text>
+                  )}
+                </View>
               </View>
-            )}
+            </View>
           </Pressable>
 
           {/* DIARY */}
@@ -242,40 +306,6 @@ const ObservationDetailScreen = ({ route, navigation }) => {
               </View>
             </View>
           )}
-
-          {/* NOTES */}
-          {observation?.notes && (
-            <View style={styles.notesBlock}>
-              <Ionicons
-                name="document-text-outline"
-                size={20}
-                color={Colors.textSecondary}
-                style={{ marginRight: 8 }}
-              />
-              <Text style={styles.notes}>{observation.notes}</Text>
-            </View>
-          )}
-
-          {/* META */}
-          <View
-            style={[
-              styles.meta,
-              (observation.notes ||
-                observation?.diary_data ||
-                observation?.place_data) &&
-                styles.metaBorder,
-            ]}
-          >
-            <Text style={styles.metaText}>
-              {t("created")}: {formatDateTime(observation.created_at)}
-            </Text>
-            {formatDate(observation.created_at) !==
-              formatDate(observation.updated_at) && (
-              <Text style={styles.metaText}>
-                {t("updated")}: {formatDateTime(observation.updated_at)}
-              </Text>
-            )}
-          </View>
         </View>
       </ScrollView>
 
@@ -431,7 +461,7 @@ const stylesFn = (Colors) =>
       color: Colors.textSecondary,
       marginBottom: 2,
     },
-     headerButtons: {
+    headerButtons: {
       flexDirection: "row",
       alignItems: "center",
       gap: 6,
@@ -439,5 +469,21 @@ const stylesFn = (Colors) =>
     },
     iconButton: {
       marginRight: 0,
+    },
+
+    placeRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: 10,
+      marginBottom: 12,
+    },
+    mapThumb: {
+      width: 120,
+      height: 120,
+      borderRadius: 8,
+      backgroundColor: Colors.imageBg,
+      justifyContent: "center",
+      alignItems: "center",
+      overflow: "hidden",
     },
   });
