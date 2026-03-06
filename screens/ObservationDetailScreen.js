@@ -57,7 +57,7 @@ const ObservationDetailScreen = ({ route, navigation }) => {
         .then((data) => {
           setPreviewUri(`${Config.mediaUrl}/${data.preview}`);
         })
-        .catch((e) => console.log("map preview error:", e))
+        .catch((e) => console.warn("map preview error:", e))
         .finally(() => setPreviewLoading(false));
     }
   }, [observation?.place, observation?.place_data?.preview]);
