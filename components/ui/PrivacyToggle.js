@@ -8,9 +8,13 @@ const PrivacyToggle = ({ value, onChange, style }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const { t } = useTranslation();
-  
+
   return (
-    <Pressable style={[styles.row, style]} onPress={() => onChange(!value)}>
+    <Pressable
+      style={[styles.row, style]}
+      disabled={!onChange}
+      onPress={() => onChange && onChange(!value)}
+    >
       <View style={styles.left}>
         <View style={[styles.iconWrap, value && styles.iconWrapActive]}>
           <Ionicons
@@ -26,12 +30,14 @@ const PrivacyToggle = ({ value, onChange, style }) => {
           </Text>
         </View>
       </View>
-      <Switch
-        value={value}
-        onValueChange={onChange}
-        trackColor={{ false: Colors.border, true: Colors.accent }}
-        thumbColor={Colors.primary100}
-      />
+      {onChange && (
+        <Switch
+          value={value}
+          onValueChange={onChange}
+          trackColor={{ false: Colors.border, true: Colors.accent }}
+          thumbColor={Colors.primary100}
+        />
+      )}
     </Pressable>
   );
 };

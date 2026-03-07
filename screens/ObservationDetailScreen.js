@@ -1,24 +1,11 @@
 import { useState, useEffect, useLayoutEffect, useCallback } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Alert,
-  Pressable,
-  ActivityIndicator,
-} from "react-native";
+import { View, Text, StyleSheet, ScrollView, Alert } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useTheme } from "../store/theme-context";
-import {
-  isoToFlagEmoji,
-  formatDate,
-  formatDateTime,
-  formatDateLong,
-} from "../util/helpers";
+import { formatDate, formatDateTime, formatDateLong } from "../util/helpers";
 
 import { Config } from "../constants/config";
 import IconButton from "../components/ui/IconButton";
@@ -30,6 +17,9 @@ import { showError } from "../services/api";
 import { BirdSVG } from "../components/ui/Svgs";
 import { formatTimeString } from "../util/timeHelpers";
 import { fetchMapPreview } from "../util/fetches";
+import Section from "../components/ui/Section";
+import PlacePreviewRow from "../components/Place/PlacePreviewRow";
+import PrivacyToggle from "../components/ui/PrivacyToggle";
 
 const ObservationDetailScreen = ({ route, navigation }) => {
   const { observationId } = route.params;
@@ -134,8 +124,6 @@ const ObservationDetailScreen = ({ route, navigation }) => {
   const name =
     observation.species_data.name_lang || observation.species_data.name;
   const latin = observation.species_data.name;
-  const flag = isoToFlagEmoji(observation.territory_data.code);
-  const territory = observation.territory_data.name;
 
   const handlePlaceNavigate = () => {
     if (!observation.place) return;
@@ -148,145 +136,83 @@ const ObservationDetailScreen = ({ route, navigation }) => {
     <View style={{ flex: 1 }}>
       <ScrollView style={styles.container}>
         {/* HEADER */}
-        <View style={[styles.section, styles.header]}>
-          <View style={styles.imageWrapper}>
-            {observation?.species_data?.thumb ? (
-              <Image
-                source={{
-                  uri: `${Config.mediaUrl}/${observation.species_data.thumb}`,
-                }}
-                style={styles.image}
-                contentFit="cover"
-                cachePolicy="disk"
-              />
-            ) : (
-              <View style={styles.imagePlaceholder}>
-                <BirdSVG size={40} color={Colors.textSecondary} />
-              </View>
-            )}
-          </View>
-
-          <View style={{ flex: 1 }}>
-            <View style={{ marginBottom: 6 }}>
-              <Text style={styles.title}>{name}</Text>
-              <Text style={styles.latin}>{latin}</Text>
-            </View>
-
-            {observation.private ? (
-              <View style={styles.privacyRow}>
-                <Text style={styles.privacyIcon}>🔒</Text>
-                <Text style={styles.privacyText}>
-                  {t("visible_only_to_you")}
-                </Text>
-              </View>
-            ) : (
-              <View style={styles.privacyRow}>
-                <Text style={styles.privacyIcon}>🌐</Text>
-                <Text style={styles.privacyText}>
-                  {t("visible_to_everyone")}
-                </Text>
-              </View>
-            )}
-          </View>
-        </View>
-
-        {/* CAPSULES */}
-        <View style={styles.capsuleRow}>
-          <View style={styles.capsule}>
-            <Ionicons
-              name="calendar-outline"
-              size={14}
-              color={Colors.textSecondary}
-            />
-            <Text style={styles.capsuleText}>
-              {formatDateLong(observation.date_time)}
-            </Text>
-          </View>
-
-          {observation.time && (
-            <View style={styles.capsule}>
-              <Ionicons
-                name="time-outline"
-                size={14}
-                color={Colors.textSecondary}
-              />
-              <Text style={styles.capsuleText}>
-                {formatTimeString(observation.time)}
-              </Text>
-            </View>
-          )}
-
-          {observation.quantity && (
-            <View style={styles.capsule}>
-              <BirdSVG size={14} color={Colors.textMain} />
-              <Text style={styles.capsuleText}>{observation.quantity}</Text>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.section}>
-          <Pressable style={styles.placeWrap} onPress={handlePlaceNavigate}>
-            <View style={styles.placeRow}>
-              {(previewUri || previewLoading) && (
-                <View style={styles.mapThumb}>
-                  {previewLoading ? (
-                    <ActivityIndicator
-                      size="small"
-                      color={Colors.textSecondary}
-                    />
-                  ) : (
-                    <Image
-                      source={{ uri: previewUri }}
-                      style={styles.mapThumb}
-                      contentFit="cover"
-                      cachePolicy="disk"
-                    />
-                  )}
+        <Section title={t("section_main")}>
+          <View style={styles.header}>
+            <View style={styles.imageWrapper}>
+              {observation?.species_data?.thumb ? (
+                <Image
+                  source={{
+                    uri: `${Config.mediaUrl}/${observation.species_data.thumb}`,
+                  }}
+                  style={styles.image}
+                  contentFit="cover"
+                  cachePolicy="disk"
+                />
+              ) : (
+                <View style={styles.imagePlaceholder}>
+                  <BirdSVG size={40} color={Colors.textSecondary} />
                 </View>
               )}
-              <View style={{ flex: 1 }}>
-                <Text style={styles.placeName}>
-                  {observation.place_data?.name || t("location_not_specified")}
-                </Text>
-                <Text style={styles.placeTerritory}>
-                  {flag} {territory}
-                </Text>
+            </View>
 
-                {/* NOTES */}
-                {observation?.notes && (
-                  <View style={styles.notesBlock}>
+            <View style={{ flex: 1 }}>
+              <View style={{ marginBottom: 6 }}>
+                <Text style={styles.title}>{name}</Text>
+                <Text style={styles.latin}>{latin}</Text>
+
+                <View style={styles.capsule}>
                     <Ionicons
-                      name="document-text-outline"
-                      size={20}
+                      name="calendar-outline"
+                      size={14}
                       color={Colors.textSecondary}
-                      style={{ marginRight: 8 }}
                     />
-                    <Text style={styles.notes}>{observation.notes}</Text>
-                  </View>
-                )}
-                {/* META */}
-                <View
-                  style={[
-                    styles.meta,
-                    (observation.notes ||
-                      observation?.diary_data ||
-                      observation?.place_data) &&
-                      styles.metaBorder,
-                  ]}
-                >
-                  <Text style={styles.metaText}>
-                    {t("created")}: {formatDateTime(observation.created_at)}
-                  </Text>
-                  {formatDate(observation.created_at) !==
-                    formatDate(observation.updated_at) && (
-                    <Text style={styles.metaText}>
-                      {t("updated")}: {formatDateTime(observation.updated_at)}
+                    <Text style={styles.capsuleText}>
+                      {formatDateLong(observation.date_time)}
                     </Text>
+                    {observation.time && (
+                      <Text style={styles.capsuleText}>
+                        {formatTimeString(observation.time)}
+                      </Text>
+                    )}
+                  </View>
+
+                  {observation.quantity && (
+                    <View style={styles.capsule}>
+                      <BirdSVG size={14} color={Colors.textMain} />
+                      <Text style={styles.capsuleText}>
+                        {observation.quantity}
+                      </Text>
+                    </View>
                   )}
-                </View>
+                
               </View>
             </View>
-          </Pressable>
+          </View>
+        </Section>
+        {/* CAPSULES */}
+
+        <Section title={t("section_where")}>
+          <PlacePreviewRow
+            observation={observation}
+            onPress={handlePlaceNavigate}
+            isLoading={previewLoading}
+            previewUri={previewUri}
+            style={{ marginBottom: 12 }}
+          />
+        </Section>
+        <Section title={t("section_details")}>
+          {/* NOTES */}
+          {observation?.notes && (
+            <View style={styles.notesBlock}>
+              <Ionicons
+                name="document-text-outline"
+                size={20}
+                color={Colors.textSecondary}
+                style={{ marginRight: 8 }}
+              />
+              <Text style={styles.notes}>{observation.notes}</Text>
+            </View>
+          )}
 
           {/* DIARY */}
           {observation?.diary_data && (
@@ -306,7 +232,31 @@ const ObservationDetailScreen = ({ route, navigation }) => {
               </View>
             </View>
           )}
-        </View>
+          {/* META */}
+          <View
+            style={[
+              styles.meta,
+              (observation.notes ||
+                observation?.diary_data ||
+                observation?.place_data) &&
+                styles.metaBorder,
+            ]}
+          >
+            <Text style={styles.metaText}>
+              {t("created")}: {formatDateTime(observation.created_at)}
+            </Text>
+            {formatDate(observation.created_at) !==
+              formatDate(observation.updated_at) && (
+              <Text style={styles.metaText}>
+                {t("updated")}: {formatDateTime(observation.updated_at)}
+              </Text>
+            )}
+          </View>
+        </Section>
+
+        <Section title={t("section_privacy")}>
+          <PrivacyToggle value={observation.private} />
+        </Section>
       </ScrollView>
 
       <FlatButtonBottom
@@ -329,16 +279,6 @@ const stylesFn = (Colors) =>
       flex: 1,
       backgroundColor: Colors.backgroundMain,
       padding: 12,
-    },
-    section: {
-      padding: 12,
-      backgroundColor: Colors.primary100,
-      borderRadius: 12,
-      shadowColor: Colors.shadow,
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
-      shadowOffset: { width: 0, height: 2 },
-      elevation: 2,
     },
     header: {
       flexDirection: "row",
@@ -374,54 +314,24 @@ const stylesFn = (Colors) =>
       color: Colors.textSecondary,
       marginTop: 2,
     },
-    privacyRow: {
+    capsule: {
       flexDirection: "row",
       alignItems: "center",
-    },
-    privacyIcon: {
-      fontSize: 13,
-      marginRight: 4,
-    },
-    privacyText: {
-      fontSize: 13,
-      color: Colors.textSecondary,
+      marginTop: 4,
+      fontSize: 14,
+      gap: 4,
     },
     capsuleRow: {
       flexDirection: "row",
       flexWrap: "wrap",
-      paddingVertical: 12,
+      paddingBottom: 8,
       gap: 8,
     },
-    capsule: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      backgroundColor: Colors.primary100,
-      borderRadius: 16,
-      borderWidth: 1,
-      borderColor: Colors.primary200,
-      gap: 4,
-      maxWidth: 200,
-    },
+
     capsuleText: {
       fontSize: 12,
       fontWeight: "500",
       color: Colors.textMain,
-    },
-    placeWrap: {
-      marginBottom: 12,
-    },
-    placeName: {
-      fontSize: 15,
-      fontWeight: "600",
-      color: Colors.textMain,
-    },
-    placeTerritory: {
-      fontSize: 12,
-      color: Colors.textSecondary,
-      marginTop: 2,
-      marginBottom: 8,
     },
     diaryBlock: {
       flexDirection: "row",
@@ -469,21 +379,5 @@ const stylesFn = (Colors) =>
     },
     iconButton: {
       marginRight: 0,
-    },
-
-    placeRow: {
-      flexDirection: "row",
-      alignItems: "flex-start",
-      gap: 10,
-      marginBottom: 12,
-    },
-    mapThumb: {
-      width: 120,
-      height: 120,
-      borderRadius: 8,
-      backgroundColor: Colors.imageBg,
-      justifyContent: "center",
-      alignItems: "center",
-      overflow: "hidden",
     },
   });
