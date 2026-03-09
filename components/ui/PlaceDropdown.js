@@ -46,9 +46,6 @@ const ImagePart = ({
           contentFit="cover"
           cachePolicy="disk"
         />
-        <View style={styles.mapOverlay}>
-          <Ionicons name="expand-outline" size={16} color="#fff" />
-        </View>
       </View>
     );
 
@@ -281,14 +278,5 @@ const stylesFn = (Colors) =>
       fontSize: 12,
       color: Colors.error500,
       marginTop: 4,
-    },
-
-    mapOverlay: {
-      position: "absolute",
-      bottom: 5,
-      right: 5,
-      backgroundColor: "rgba(0,0,0,0.25)",
-      borderRadius: 5,
-      padding: 3,
     },
   });
