@@ -16,6 +16,8 @@ const PlaceBlock = ({
   isLocating,
   sort,
   onSortChange,
+  placeData,
+  setPlaceData
 }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -32,6 +34,8 @@ const PlaceBlock = ({
         setValue={(val) => {
           setPlaceValue(val);
           setFormData((prev) => ({ ...prev, place: val }));
+          const found = queryPlaces.data?.find((item) => item.value === val);
+          setPlaceData(found ?? null);
         }}
         query={queryPlaces}
         allowReset
@@ -41,13 +45,8 @@ const PlaceBlock = ({
         type="PlacesDropdown"
         sort={sort}
         onSortChange={onSortChange}
+        placeData={placeData}
       />
-
-      {coords?.length === 2 && (
-        <View style={styles.mapWrap}>
-          <Map currentCoords={coords} mapHeight={220} showCoords={false} />
-        </View>
-      )}
 
       <View style={styles.dividerRow}>
         <View style={styles.dividerLine} />

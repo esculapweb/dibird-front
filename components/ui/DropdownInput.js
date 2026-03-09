@@ -11,7 +11,8 @@ import { useTranslation } from "react-i18next";
 
 import SelectListModal from "./SelectListModal";
 import { useTheme } from "../../store/theme-context";
-import SpeciesCard from "./SpeciesCard";
+import SpeciesDropdown from "./SpeciesDropdown";
+import PlaceDropdown from "./PlaceDropdown"
 
 const DropdownInput = ({
   title,
@@ -25,6 +26,7 @@ const DropdownInput = ({
   disabledMessage,
   renderOption,
   speciesData,
+  placeData,
   isLocating,
   type,
   sort,
@@ -95,8 +97,17 @@ const DropdownInput = ({
   return (
     <>
       {speciesData !== undefined ? (
-        <SpeciesCard
+        <SpeciesDropdown
           speciesData={speciesData}
+          value={value}
+          disabled={disabled}
+          error={error}
+          onPress={openModal}
+          query={query}
+        />
+      ) : placeData !== undefined ? (
+        <PlaceDropdown
+          placeData={placeData}
           value={value}
           disabled={disabled}
           error={error}

@@ -189,11 +189,11 @@ const ObservationDetailScreen = ({ route, navigation }) => {
             </View>
           </View>
         </Section>
-        {/* CAPSULES */}
 
         <Section title={t("section_where")}>
           <PlacePreviewRow
-            observation={observation}
+            placeData={observation?.place_data}
+            territoryData={observation.territory_data}
             onPress={handlePlaceNavigate}
             isLoading={previewLoading}
             previewUri={previewUri}

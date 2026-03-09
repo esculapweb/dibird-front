@@ -13,7 +13,8 @@ import { useTheme } from "../../store/theme-context";
 import { isoToFlagEmoji } from "../../util/helpers";
 
 const PlacePreviewRow = ({
-  observation,
+  placeData,
+  territoryData,
   onPress,
   isLoading,
   previewUri,
@@ -23,9 +24,7 @@ const PlacePreviewRow = ({
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
 
-  const flag = isoToFlagEmoji(observation.territory_data.code);
-  const territory = observation.territory_data.name;
-  const disabled = !observation?.place;
+  const disabled = !placeData?.id;
 
   const ImagePart = () => {
     if (isLoading)
@@ -72,10 +71,10 @@ const PlacePreviewRow = ({
     return (
       <>
         <Text style={styles.name} numberOfLines={3}>
-          {observation.place_data?.name || t("location_not_specified")}
+          {placeData?.name || t("location_not_specified")}
         </Text>
         <Text style={styles.placeTerritory} numberOfLines={2}>
-          {flag} {territory}
+          {isoToFlagEmoji(territoryData.code)} {territoryData.name}
         </Text>
       </>
     );
@@ -97,7 +96,7 @@ const PlacePreviewRow = ({
         <TextPart />
       </View>
 
-      {observation.place && !isLoading && (
+      {placeData?.id && !isLoading && (
         <Ionicons
           name="chevron-forward"
           size={22}

@@ -67,6 +67,9 @@ const ObservationEditorScreen = ({ navigation, route }) => {
   const [speciesData, setSpeciesData] = useState(
     observation?.species_data ?? null,
   );
+  const [placeData, setPlaceData] = useState(
+    observation?.place_data ?? null,
+  );
 
   const validateForm = useCallback(() => {
     const newErrors = {};
@@ -209,6 +212,8 @@ const ObservationEditorScreen = ({ navigation, route }) => {
         setPlaceValue={setPlaceValue}
         speciesData={speciesData}
         setSpeciesData={setSpeciesData}
+        placeData={placeData}
+        setPlaceData={setPlaceData}
         onAddNewPlace={handleAddNewPlace}
       />
     </KeyboardAvoidingView>

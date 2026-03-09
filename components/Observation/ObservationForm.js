@@ -33,6 +33,8 @@ const ObservationForm = ({
   onAddNewPlace,
   speciesData,
   setSpeciesData,
+  placeData,
+  setPlaceData,
 }) => {
   const { t } = useTranslation();
   const { language } = useLanguage();
@@ -161,6 +163,8 @@ const ObservationForm = ({
           isLocating={isLocating}
           sort={placesSort}
           onSortChange={onPlacesSortChange}
+          placeData={placeData}
+          setPlaceData={setPlaceData}
         />
       </Section>
 

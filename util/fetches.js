@@ -50,6 +50,7 @@ export const fetchMyPlaces = async (
     iconLabel: item.favourite && "star",
     location: item.location,
     distance: item.distance ?? null,
+    preview: item.preview,
   }));
 };
 
