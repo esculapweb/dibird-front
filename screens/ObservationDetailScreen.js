@@ -38,7 +38,7 @@ const ObservationDetailScreen = ({ route, navigation }) => {
 
   useEffect(() => {
     setPreviewUri(null);
-    if (!observation) return;
+    if (!observation?.place) return;
 
     const loadPreview = async () => {
       if (observation?.place_data?.preview) {
@@ -48,7 +48,7 @@ const ObservationDetailScreen = ({ route, navigation }) => {
 
       setPreviewLoading(true);
       try {
-        const data = await fetchMapPreview(value);
+        const data = await fetchMapPreview(observation.place);
         setPreviewUri(`${Config.mediaUrl}/${data.preview}`);
       } catch (e) {
         console.warn("map preview error:", e);
