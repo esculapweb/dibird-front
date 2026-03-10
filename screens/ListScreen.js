@@ -38,6 +38,7 @@ const ListScreen = ({
   title,
   tabs,
   tabsMode,
+  listHeader
 }) => {
   const { t } = useTranslation();
 
@@ -251,6 +252,7 @@ const ListScreen = ({
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         noItems={noItems}
+        listHeader={listHeader}
       />
       <SortModal
         screen={screenName}

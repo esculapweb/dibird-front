@@ -15,6 +15,9 @@ import { showError } from "../services/api";
 import PlacePreviewRow from "../components/Place/PlacePreviewRow";
 import Section from "../components/ui/Section";
 import PrivacyToggle from "../components/ui/PrivacyToggle";
+import ListScreen from "./ListScreen";
+import { fetchDiaryObservations } from "../util/fetches";
+import ObservationCard from "../components/Observation/ObservationCard";
 
 const DiaryDetailScreen = ({ route, navigation }) => {
   const { diaryId } = route.params;
@@ -34,6 +37,29 @@ const DiaryDetailScreen = ({ route, navigation }) => {
   const { Colors } = useTheme();
   const { t } = useTranslation();
   const styles = stylesFn(Colors);
+
+  const handleAdd = useCallback(async () => {
+    // const filters = await loadFilters(route.name);
+    // const defaultTerritory = filters?.territory ?? null;
+    // navigation.navigate("ObservationEditor", { defaultTerritory });
+    console.log("add diary observation");
+  }, [navigation, route.name]);
+
+  const fetchData = (filters, sort, search, page) => {
+    return fetchDiaryObservations(filters, sort, search, page, diaryId);
+  };
+
+  const noItems = {
+    icon: "binoculars-outline",
+    message: t("no_observations_yet"),
+    actions: [{ label: t("add_first_observation"), onPress: handleAdd }],
+  };
+
+  const renderItem = ({ item, index }) => (
+    <ObservationCard item={item} index={index} />
+  );
+
+  const keyExtractor = (item, _) => `${route.name}-${item.id}`;
 
   const handleDelete = useCallback(() => {
     if (!diary) return;
@@ -57,30 +83,30 @@ const DiaryDetailScreen = ({ route, navigation }) => {
     );
   }, [diary, diaryId]);
 
-  const headerRight = useCallback(
-    () => (
-      <View style={styles.headerButtons}>
-        <IconButton
-          icon="create-outline"
-          onPress={() => navigation.navigate("DiaryEditor", { diary })}
-          style={styles.iconButton}
-          size={24}
-          disabled={!diary || updateMutation.isPending}
-          color={Colors.textSecondary}
-        />
-      </View>
-    ),
-    [diary, updateMutation.isPending],
-  );
+  // const headerRight = useCallback(
+  //   () => (
+  //     <View style={styles.headerButtons}>
+  //       <IconButton
+  //         icon="create-outline"
+  //         onPress={() => navigation.navigate("DiaryEditor", { diary })}
+  //         style={styles.iconButton}
+  //         size={24}
+  //         disabled={!diary || updateMutation.isPending}
+  //         color={Colors.textSecondary}
+  //       />
+  //     </View>
+  //   ),
+  //   [diary, updateMutation.isPending],
+  // );
 
-  useLayoutEffect(() => {
-    if (!diary) return;
+  // useLayoutEffect(() => {
+  //   if (!diary) return;
 
-    navigation.setOptions({
-      title: "",
-      headerRight,
-    });
-  }, [navigation, headerRight, diary]);
+  //   navigation.setOptions({
+  //     title: "",
+  //     headerRight,
+  //   });
+  // }, [navigation, headerRight, diary]);
 
   if (isError) {
     return (
@@ -106,43 +132,43 @@ const DiaryDetailScreen = ({ route, navigation }) => {
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView style={styles.container}>
-        <Section>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: 12
-            }}
+      <ListScreen
+        route={route}
+        navigation={navigation}
+        fetchFunction={fetchData}
+        allowedFilters={["species"]}
+        errorTitle={t("observations_unavailable")}
+        onAdd={handleAdd}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
+        noItems={noItems}
+        title={t("diary")}
+        listHeader={
+          <Section
+            title={name}
+            titleBig={true}
+            hintBlock={<PrivacyToggle value={diary.private} diary={true} />}
+            collapsible={true}
           >
-            <Text style={styles.title}>{name}</Text>
-
-            <PrivacyToggle value={diary.private} diary={true} />
-          </View>
-
-          <PlacePreviewRow
-            placeData={diary?.place_data}
-            territoryData={diary.territory_data}
-            onPress={handlePlaceNavigate}
-          />
-        </Section>
-
-        <View style={styles.section}>
-          {/* NOTES */}
-          {diary?.name && (
-            <View style={styles.notesBlock}>
-              <Ionicons
-                name="document-text-outline"
-                size={20}
-                color={Colors.textSecondary}
-                style={{ marginRight: 8 }}
-              />
-              <Text style={styles.notes}>{diary.name}</Text>
-            </View>
-          )}
-        </View>
-      </ScrollView>
+            <PlacePreviewRow
+              placeData={diary?.place_data}
+              territoryData={diary.territory_data}
+              onPress={handlePlaceNavigate}
+            />
+            {diary?.name && (
+              <View style={styles.notesBlock}>
+                <Ionicons
+                  name="document-text-outline"
+                  size={20}
+                  color={Colors.textSecondary}
+                  style={{ marginRight: 8 }}
+                />
+                <Text style={styles.notes}>{diary.name}</Text>
+              </View>
+            )}
+          </Section>
+        }
+      />
 
       <FlatButtonBottom
         textColor={Colors.error600}
@@ -178,6 +204,8 @@ const stylesFn = (Colors) =>
     header: {
       flexDirection: "row",
       alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 12,
     },
     imageWrapper: {
       width: 120,
@@ -278,7 +306,7 @@ const stylesFn = (Colors) =>
     notesBlock: {
       flexDirection: "row",
       alignItems: "center",
-      marginBottom: 12,
+      marginTop: 12,
     },
     notes: {
       fontSize: 14,

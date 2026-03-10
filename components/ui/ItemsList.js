@@ -19,7 +19,8 @@ const ItemsList = ({
   keyExtractor,
   emptyType,
   onClear,
-  noItems
+  noItems,
+  listHeader,
 }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -57,6 +58,7 @@ const ItemsList = ({
           }
         }}
         onEndReachedThreshold={0.5}
+        ListHeaderComponent={listHeader}
         ListEmptyComponent={
           data.length === 0 && emptyProps ? (
             <EmptyState key="empty-state" {...emptyProps} />

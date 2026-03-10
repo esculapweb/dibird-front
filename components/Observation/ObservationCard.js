@@ -57,7 +57,7 @@ const ObservationCard = React.memo(({ item, index }) => {
               <Text style={styles.title} numberOfLines={1}>{item.species_data?.name_lang}</Text>
             </View>
 
-                  <View style={styles.rightTop}>
+            {/* <View style={styles.rightTop}>
               {item.private && (
                 <Ionicons
                   name="lock-closed-outline"
@@ -69,7 +69,7 @@ const ObservationCard = React.memo(({ item, index }) => {
               {territoryFlag && (
                 <Text style={styles.flag}>{territoryFlag}</Text>
               )}
-            </View>
+            </View> */}
           </View>
 
           <Text style={styles.latin} numberOfLines={1}>
@@ -78,12 +78,12 @@ const ObservationCard = React.memo(({ item, index }) => {
 
           <View style={styles.metaRow}>
             <View style={styles.metaLeft}>
-              <Ionicons
+              {/* <Ionicons
                 name="calendar-outline"
                 size={13}
                 color={Colors.textSecondary}
               />
-              <Text style={styles.metaText}>{dateText}</Text>
+              <Text style={styles.metaText}>{dateText}</Text> */}
 
               {item.time && (
                 <View style={styles.time}>
@@ -106,7 +106,7 @@ const ObservationCard = React.memo(({ item, index }) => {
           </View>
 
           <View style={styles.placeRow}>
-            {item.place ? (
+            {/* {item.place ? (
               <>
                 <Ionicons
                   name="location-outline"
@@ -119,7 +119,7 @@ const ObservationCard = React.memo(({ item, index }) => {
               </>
             ) : (
               <Text style={{ flex: 1 }}></Text>
-            )}
+            )} */}
 
             {item.notes && (
               <Ionicons
@@ -129,13 +129,13 @@ const ObservationCard = React.memo(({ item, index }) => {
               />
             )}
 
-            {item.diary && (
+            {/* {item.diary && (
               <Ionicons
                 name="book-outline"
                 size={13}
                 color={Colors.textSecondary}
               />
-            )}
+            )} */}
           </View>
         </View>
       </View>
