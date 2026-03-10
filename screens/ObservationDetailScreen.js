@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useCallback } from "react";
+import { useLayoutEffect, useCallback } from "react";
 import { View, Text, StyleSheet, ScrollView, Alert } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Image } from "expo-image";
@@ -6,7 +6,6 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { useTheme } from "../store/theme-context";
 import { formatDate, formatDateTime, formatDateLong } from "../util/helpers";
-
 import { Config } from "../constants/config";
 import IconButton from "../components/ui/IconButton";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
@@ -16,10 +15,10 @@ import { useItem, useUpdateItem, useDeleteItem } from "../hooks/useItem";
 import { showError } from "../services/api";
 import { BirdSVG } from "../components/ui/Svgs";
 import { formatTimeString } from "../util/timeHelpers";
-import { fetchMapPreview } from "../util/fetches";
+import { isoToFlagEmoji } from "../util/helpers";
 import Section from "../components/ui/Section";
-import PlacePreviewRow from "../components/Place/PlacePreviewRow";
 import PrivacyToggle from "../components/ui/PrivacyToggle";
+import Map from "../components/Map/Map";
 
 const ObservationDetailScreen = ({ route, navigation }) => {
   const { observationId } = route.params;
@@ -32,33 +31,6 @@ const ObservationDetailScreen = ({ route, navigation }) => {
     error,
     refetch,
   } = useItem(observationId, type);
-
-  const [previewUri, setPreviewUri] = useState(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
-
-  useEffect(() => {
-    setPreviewUri(null);
-    if (!observation?.place) return;
-
-    const loadPreview = async () => {
-      if (observation?.place_data?.preview) {
-        setPreviewUri(`${Config.mediaUrl}/${observation.place_data.preview}`);
-        return;
-      }
-
-      setPreviewLoading(true);
-      try {
-        const data = await fetchMapPreview(observation.place);
-        setPreviewUri(`${Config.mediaUrl}/${data.preview}`);
-      } catch (e) {
-        console.warn("map preview error:", e);
-      } finally {
-        setPreviewLoading(false);
-      }
-    };
-
-    loadPreview();
-  }, [observation?.place, observation?.place_data?.preview]);
 
   const updateMutation = useUpdateItem(observationId, type);
   const deleteMutation = useDeleteItem(type);
@@ -100,7 +72,7 @@ const ObservationDetailScreen = ({ route, navigation }) => {
           style={styles.iconButton}
           size={24}
           disabled={!observation || updateMutation.isPending}
-          color={Colors.textSecondary}
+          tintColor={Colors.textSecondary}
         />
       </View>
     ),
@@ -133,18 +105,13 @@ const ObservationDetailScreen = ({ route, navigation }) => {
     observation.species_data.name_lang || observation.species_data.name;
   const latin = observation.species_data.name;
 
-  const handlePlaceNavigate = () => {
-    if (!observation.place) return;
-    navigation.navigate("PlaceDetail", {
-      placeId: observation.place,
-    });
-  };
-
   return (
     <View style={{ flex: 1 }}>
       <ScrollView style={styles.container}>
-        {/* HEADER */}
-        <Section title={t("section_main")}>
+        <Section
+          title={t("section_main")}
+          hintBlock={<PrivacyToggle value={observation.private} />}
+        >
           <View style={styles.header}>
             <View style={styles.imageWrapper}>
               {observation?.species_data?.thumb ? (
@@ -195,20 +162,32 @@ const ObservationDetailScreen = ({ route, navigation }) => {
               </View>
             </View>
           </View>
+
+          <View style={styles.dividerLine} />
+
+          <View style={styles.placeRow}>
+            <Text style={styles.placeName} numberOfLines={2}>
+              {observation?.place_data?.name || t("location_not_specified")}
+            </Text>
+            <Text style={styles.placeTerritory} numberOfLines={1}>
+              {isoToFlagEmoji(observation?.territory_data?.code)}{" "}
+              {observation?.territory_data?.name}
+            </Text>
+          </View>
+
+          {observation?.place_data?.location?.coordinates && (
+            <View style={styles.mapWrapper}>
+              <Map
+                currentCoords={observation.place_data.location.coordinates}
+                currentZoom={13}
+                mapHeight={200}
+                showCoords={true}
+              />
+            </View>
+          )}
         </Section>
 
-        <Section title={t("section_where")}>
-          <PlacePreviewRow
-            placeData={observation?.place_data}
-            territoryData={observation.territory_data}
-            onPress={handlePlaceNavigate}
-            isLoading={previewLoading}
-            previewUri={previewUri}
-            style={{ marginBottom: 12 }}
-          />
-        </Section>
         <Section title={t("section_details")}>
-          {/* NOTES */}
           {observation?.notes && (
             <View style={styles.notesBlock}>
               <Ionicons
@@ -221,7 +200,6 @@ const ObservationDetailScreen = ({ route, navigation }) => {
             </View>
           )}
 
-          {/* DIARY */}
           {observation?.diary_data && (
             <View style={styles.diaryBlock}>
               <Ionicons
@@ -239,7 +217,6 @@ const ObservationDetailScreen = ({ route, navigation }) => {
               </View>
             </View>
           )}
-          {/* META */}
           <View
             style={[
               styles.meta,
@@ -259,10 +236,6 @@ const ObservationDetailScreen = ({ route, navigation }) => {
               </Text>
             )}
           </View>
-        </Section>
-
-        <Section title={t("section_privacy")}>
-          <PrivacyToggle value={observation.private} />
         </Section>
       </ScrollView>
 
@@ -387,4 +360,29 @@ const stylesFn = (Colors) =>
     iconButton: {
       marginRight: 0,
     },
+
+    placeRow: {
+      marginTop: 12,
+      paddingVertical: 8,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: Colors.border,
+    },
+    placeName: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: Colors.textMain,
+    },
+    placeTerritory: {
+      fontSize: 12,
+      color: Colors.textSecondary,
+      marginTop: 2,
+    },
+    mapWrapper: {
+      marginHorizontal: -16,
+      marginBottom: -16,
+      borderBottomLeftRadius: 14,
+      borderBottomRightRadius: 14,
+      overflow: "hidden",
+    },
+   
   });

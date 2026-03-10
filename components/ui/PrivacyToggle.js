@@ -4,10 +4,18 @@ import { useTranslation } from "react-i18next";
 
 import { useTheme } from "../../store/theme-context";
 
-const PrivacyToggle = ({ value, onChange, style }) => {
+const PrivacyToggle = ({ value, onChange, style, diary }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const { t } = useTranslation();
+
+  const labels = diary ? {
+    private: t("private_diary"),
+    public: t("public_diary"),
+  } : {
+    private: t("private"),
+    public: t("public"),
+  }
 
   return (
     <Pressable
@@ -15,7 +23,7 @@ const PrivacyToggle = ({ value, onChange, style }) => {
       disabled={!onChange}
       onPress={() => onChange && onChange(!value)}
     >
-      <View style={styles.left}>
+      <View style={[styles.left, onChange && {flex: 1}]}>
         <View style={[styles.iconWrap, value && styles.iconWrapActive]}>
           <Ionicons
             name={value ? "lock-closed" : "globe-outline"}
@@ -24,7 +32,7 @@ const PrivacyToggle = ({ value, onChange, style }) => {
           />
         </View>
         <View>
-          <Text style={styles.label}>{value ? t("private") : t("public")}</Text>
+          <Text style={styles.label}>{value ? labels.private : labels.public}</Text>
           <Text style={styles.desc}>
             {value ? t("visible_only_to_you") : t("visible_to_everyone")}
           </Text>
@@ -55,7 +63,6 @@ const stylesFn = (Colors) =>
       flexDirection: "row",
       alignItems: "center",
       gap: 12,
-      flex: 1,
     },
     iconWrap: {
       width: 36,

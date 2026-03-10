@@ -24,6 +24,7 @@ const Section = ({
   required,
   children,
   hint,
+  hintBlock,
   style,
   collapsed: initialCollapsed = false,
   collapsible = false,
@@ -56,6 +57,7 @@ const Section = ({
 
           <View style={styles.hintRow}>
             {hint && <Text style={styles.hint}>{hint}</Text>}
+            {hintBlock}
             {isCollapsible && (
               <Ionicons
                 name={isCollapsed ? "chevron-down" : "chevron-up"}

@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import {
   StyleSheet,
   View,
@@ -5,98 +6,136 @@ import {
   Pressable,
   ActivityIndicator,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { Image } from "expo-image";
 
 import { useTheme } from "../../store/theme-context";
 import { isoToFlagEmoji } from "../../util/helpers";
+import { fetchMapPreview } from "../../util/fetches";
+import { Config } from "../../constants/config";
 
-const PlacePreviewRow = ({
-  placeData,
-  territoryData,
-  onPress,
-  isLoading,
-  previewUri,
-  style,
-}) => {
+const ImagePart = ({ previewUri, previewLoading }) => {
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
+
+  if (previewLoading)
+    return (
+      <View style={[styles.image, styles.imageEmpty]}>
+        <ActivityIndicator size="small" color={Colors.dropdownIcon} />
+      </View>
+    );
+
+  if (previewUri)
+    return (
+      <View>
+        <Image
+          source={{ uri: previewUri }}
+          style={styles.image}
+          contentFit="cover"
+          cachePolicy="disk"
+        />
+        <View style={styles.mapOverlay}>
+          <Ionicons name="expand-outline" size={16} color={Colors.markerBorder} />
+        </View>
+      </View>
+    );
+
+  return (
+    <View style={[styles.image, styles.imageEmpty]}>
+      <Ionicons
+        name="location-outline"
+        size={32}
+        color={Colors.textSecondary}
+      />
+    </View>
+  );
+};
+
+const TextPart = ({ placeData, territoryData, previewLoading }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
 
-  const disabled = !placeData?.id;
-
-  const ImagePart = () => {
-    if (isLoading)
-      return (
-        <View style={[styles.image, styles.imageEmpty]}>
-          <ActivityIndicator size="small" color={Colors.dropdownIcon} />
-        </View>
-      );
-
-    if (previewUri)
-      return (
-        <View>
-          <Image
-            source={{ uri: previewUri }}
-            style={styles.image}
-            contentFit="cover"
-            cachePolicy="disk"
-          />
-          <View style={styles.mapOverlay}>
-            <Ionicons name="expand-outline" size={16} color="#fff" />
-          </View>
-        </View>
-      );
-
+  if (previewLoading)
     return (
-      <View style={[styles.image, styles.imageEmpty]}>
-        <Ionicons
-          name="location-outline"
-          size={32}
-          color={Colors.textSecondary}
-        />
-      </View>
+      <Text style={styles.name} numberOfLines={1}>
+        {t("loading_")}
+      </Text>
     );
+
+  return (
+    <>
+      <Text style={styles.name} numberOfLines={3}>
+        {placeData?.name || t("location_not_specified")}
+      </Text>
+      <Text style={styles.placeTerritory} numberOfLines={2}>
+        {isoToFlagEmoji(territoryData.code)} {territoryData.name}
+      </Text>
+    </>
+  );
+};
+
+const PlacePreviewRow = ({ placeData, territoryData, style }) => {
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
+  const navigation = useNavigation();
+  const [previewUri, setPreviewUri] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  const handlePlaceNavigate = () => {
+    if (!placeData) return;
+    navigation.navigate("PlaceDetail", {
+      placeId: placeData.id,
+    });
   };
 
-  const TextPart = () => {
-    if (isLoading)
-      return (
-        <Text style={styles.name} numberOfLines={1}>
-          {t("loading_")}
-        </Text>
-      );
+  useEffect(() => {
+    setPreviewUri(null);
+    if (!placeData) return;
 
-    return (
-      <>
-        <Text style={styles.name} numberOfLines={3}>
-          {placeData?.name || t("location_not_specified")}
-        </Text>
-        <Text style={styles.placeTerritory} numberOfLines={2}>
-          {isoToFlagEmoji(territoryData.code)} {territoryData.name}
-        </Text>
-      </>
-    );
-  };
+    const loadPreview = async () => {
+      if (placeData?.preview) {
+        setPreviewUri(`${Config.mediaUrl}/${placeData.preview}`);
+        return;
+      }
+
+      setPreviewLoading(true);
+      try {
+        const data = await fetchMapPreview(placeData.id);
+        setPreviewUri(`${Config.mediaUrl}/${data.preview}`);
+      } catch (e) {
+        console.warn("map preview error:", e);
+      } finally {
+        setPreviewLoading(false);
+      }
+    };
+
+    loadPreview();
+  }, [placeData]);
 
   return (
     <Pressable
-      onPress={onPress}
-      disabled={disabled}
+      onPress={handlePlaceNavigate}
+      disabled={!placeData?.id}
       style={({ pressed }) => [
         styles.card,
         pressed && styles.cardPressed,
         style,
       ]}
     >
-      <ImagePart />
+      <ImagePart previewUri={previewUri} previewLoading={previewLoading} />
 
       <View style={styles.info}>
-        <TextPart />
+        <TextPart
+          placeData={placeData}
+          territoryData={territoryData}
+          previewLoading={previewLoading}
+        />
       </View>
 
-      {placeData?.id && !isLoading && (
+      {placeData?.id && !previewLoading && (
         <Ionicons
           name="chevron-forward"
           size={22}

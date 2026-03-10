@@ -1,32 +1,20 @@
 import { useLayoutEffect, useCallback } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Alert,
-  Pressable,
-} from "react-native";
+import { View, Text, StyleSheet, ScrollView, Alert } from "react-native";
 import { useTranslation } from "react-i18next";
-import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useTheme } from "../store/theme-context";
-import {
-  isoToFlagEmoji,
-  formatDate,
-  formatDateTime,
-  formatDateLong,
-} from "../util/helpers";
+import { formatDate } from "../util/helpers";
 
-import { Config } from "../constants/config";
 import IconButton from "../components/ui/IconButton";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
-import Map from "../components/Map/Map";
 import { useItem, useUpdateItem, useDeleteItem } from "../hooks/useItem";
 import { showError } from "../services/api";
+import PlacePreviewRow from "../components/Place/PlacePreviewRow";
+import Section from "../components/ui/Section";
+import PrivacyToggle from "../components/ui/PrivacyToggle";
 
 const DiaryDetailScreen = ({ route, navigation }) => {
   const { diaryId } = route.params;
@@ -108,8 +96,6 @@ const DiaryDetailScreen = ({ route, navigation }) => {
   if (isLoading || !diary) return <LoadingOverlay />;
 
   const name = formatDate(diary.date_time);
-  const flag = isoToFlagEmoji(diary.territory_data.code);
-  const territory = diary.territory_data.name;
 
   const handlePlaceNavigate = () => {
     if (!diary.place) return;
@@ -121,72 +107,28 @@ const DiaryDetailScreen = ({ route, navigation }) => {
   return (
     <View style={{ flex: 1 }}>
       <ScrollView style={styles.container}>
-        {/* HEADER */}
-        <View style={[styles.section, styles.header]}>
-          <View style={styles.imageWrapper}>
-            {diary?.place_data?.location?.coordinates?.length === 2 && (
-              <View style={{ borderRadius: 12, overflow: "hidden" }}>
-                <Map
-                  currentCoords={diary.place_data.location.coordinates}
-                  mapHeight={120}
-                  currentZoom={10}
-                  showCoords={false}
-                />
-              </View>
-            )}
+        <Section>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 12
+            }}
+          >
+            <Text style={styles.title}>{name}</Text>
 
-            {/* <View style={styles.imagePlaceholder}>
-              <BirdSVG size={40} color={Colors.textSecondary} />
-              
-            </View>*/}
+            <PrivacyToggle value={diary.private} diary={true} />
           </View>
 
-          <View style={{ flex: 1 }}>
-            <View style={{ marginBottom: 6 }}>
-              <Text style={styles.title}>{name}</Text>
-            </View>
-
-            {diary.private ? (
-              <View style={styles.privacyRow}>
-                <Text style={styles.privacyIcon}>🔒</Text>
-                <Text style={styles.privacyText}>
-                  {t("visible_only_to_you")}
-                </Text>
-              </View>
-            ) : (
-              <View style={styles.privacyRow}>
-                <Text style={styles.privacyIcon}>🌐</Text>
-                <Text style={styles.privacyText}>
-                  {t("visible_to_everyone")}
-                </Text>
-              </View>
-            )}
-          </View>
-        </View>
+          <PlacePreviewRow
+            placeData={diary?.place_data}
+            territoryData={diary.territory_data}
+            onPress={handlePlaceNavigate}
+          />
+        </Section>
 
         <View style={styles.section}>
-          <Pressable style={styles.placeWrap} onPress={handlePlaceNavigate}>
-            {diary?.place_data ? (
-              <Text style={styles.placeName}>{diary.place_data.name}</Text>
-            ) : (
-              <Text style={styles.placeName}>
-                {t("location_not_specified")}
-              </Text>
-            )}
-            <Text style={styles.placeTerritory}>
-              {flag} {territory}
-            </Text>
-            {/* {diary?.place_data?.location?.coordinates?.length === 2 && (
-              <View style={{ borderRadius: 12, overflow: "hidden" }}>
-                <Map
-                  currentCoords={diary.place_data.location.coordinates}
-                  mapHeight={300}
-                  showCoords={true}
-                />
-              </View>
-            )} */}
-          </Pressable>
-
           {/* NOTES */}
           {diary?.name && (
             <View style={styles.notesBlock}>
