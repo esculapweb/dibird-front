@@ -41,7 +41,7 @@ export const useTranslatedQuery = ({
     select: mapResult
       ? (data) =>
           new Map(
-            data.map((item) => [item.value, item?.labelLang ?? item.label]),
+            data.map((item) => [item.value, item?.name_lang ?? item.label]),
           )
       : undefined,
     ...options,
