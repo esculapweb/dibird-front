@@ -3,11 +3,11 @@ import {
   View,
   Text,
   Pressable,
-  Image,
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+import { Image } from "expo-image";
 
 import { useTheme } from "../../store/theme-context";
 import { isoToFlagEmoji } from "../../util/helpers";

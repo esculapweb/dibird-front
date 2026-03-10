@@ -112,6 +112,7 @@ const DropdownInput = ({
           disabled={disabled}
           error={error}
           onPress={openModal}
+          onClear={allowReset ? clearValue : undefined}
           query={query}
         />
       ) : (

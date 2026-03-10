@@ -142,7 +142,11 @@ const ObservationForm = ({
           placeholder={t("observation_date")}
           error={errors.date_time}
           allowClear={false}
-          style={{ marginTop: 16 }}
+          style={{ marginVertical: 16 }}
+        />
+        <PrivacyToggle
+          value={formData.private}
+          onChange={(val) => setFormData((prev) => ({ ...prev, private: val }))}
         />
       </Section>
 
@@ -150,8 +154,7 @@ const ObservationForm = ({
       <Section
         title={t("section_where")}
         hint={t("optional")}
-        collapsible={!!placeValue}
-        collapsed={!placeValue}
+        collapsible={true}
       >
         <PlaceBlock
           territoryValue={territoryValue}
@@ -202,14 +205,6 @@ const ObservationForm = ({
           isInvalid={errors.notes}
           ƒ
           multiline
-        />
-      </Section>
-
-      {/* ── 5. Required: Privacy ─────────────────────────────── */}
-      <Section title={t("section_privacy")}>
-        <PrivacyToggle
-          value={formData.private}
-          onChange={(val) => setFormData((prev) => ({ ...prev, private: val }))}
         />
       </Section>
     </ScrollView>

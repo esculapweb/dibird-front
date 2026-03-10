@@ -6,6 +6,7 @@ import {
   Pressable,
   ActivityIndicator,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { Image } from "expo-image";
@@ -14,15 +15,38 @@ import { useTheme } from "../../store/theme-context";
 import { fetchMapPreview } from "../../util/fetches";
 import { Config } from "../../constants/config";
 
-const ImagePart = ({
-  query,
-  previewLoading,
-  previewUri,
-  value,
-  placeData,
-  Colors,
-  styles,
-}) => {
+const ImagePart = ({ query, value, placeData }) => {
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
+  const navigation = useNavigation();
+  const [previewUri, setPreviewUri] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  useEffect(() => {
+    setPreviewUri(null);
+
+    if (!placeData || !value) return;
+
+    const loadPreview = async () => {
+      if (placeData?.preview) {
+        setPreviewUri(`${Config.mediaUrl}/${placeData.preview}`);
+        return;
+      }
+
+      setPreviewLoading(true);
+      try {
+        const data = await fetchMapPreview(value);
+        setPreviewUri(`${Config.mediaUrl}/${data.preview}`);
+      } catch (e) {
+        console.warn("map preview error:", e);
+      } finally {
+        setPreviewLoading(false);
+      }
+    };
+
+    loadPreview();
+  }, [placeData?.preview, value]);
+
   if (query.isLoading || previewLoading)
     return (
       <View style={[styles.image, styles.imageEmpty]}>
@@ -46,6 +70,15 @@ const ImagePart = ({
           contentFit="cover"
           cachePolicy="disk"
         />
+        <Pressable
+          style={styles.mapOverlay}
+          hitSlop={8}
+          onPress={() => {
+            navigation.navigate("PlaceDetail", { placeId: value });
+          }}
+        >
+          <Ionicons name="expand-outline" size={16} color="#fff" />
+        </Pressable>
       </View>
     );
 
@@ -68,16 +101,10 @@ const ImagePart = ({
   );
 };
 
-const TextPart = ({
-  query,
-  placeData,
-  value,
-  name,
-  disabled,
-  Colors,
-  styles,
-  t,
-}) => {
+const TextPart = ({ query, placeData, value, name, disabled }) => {
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
+  const { t } = useTranslation();
   if (query.isLoading)
     return (
       <Text style={styles.name} numberOfLines={1}>
@@ -108,10 +135,10 @@ const TextPart = ({
 
   return (
     <>
-      <Text style={[styles.name, styles.promptTitle]}>{t("select_place")}</Text>
-      {!disabled && (
-        <Text style={styles.promptSub}>{t("species_tap_hint")}</Text>
-      )}
+      <Text style={[styles.name, styles.promptTitle]}>
+        {disabled ? t("select_country_first") : t("select_place")}
+      </Text>
+      {!disabled && <Text style={styles.promptSub}>{t("place_tap_hint")}</Text>}
     </>
   );
 };
@@ -120,6 +147,7 @@ const PlaceDropdown = ({
   placeData,
   value,
   onPress,
+  onClear,
   disabled,
   error,
   query,
@@ -127,33 +155,7 @@ const PlaceDropdown = ({
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
-  const name = placeData?.label;
-
-  const [previewUri, setPreviewUri] = useState(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
-
-  useEffect(() => {
-    setPreviewUri(null);
-
-    if (!placeData || !value) return;
-
-    if (placeData?.preview) {
-      setPreviewLoading(false);
-      setPreviewUri(`${Config.mediaUrl}/${placeData.preview}`);
-    } else if (placeData?.value) {
-      setPreviewLoading(true);
-      fetchMapPreview(placeData?.value)
-        .then((data) => {
-          setPreviewUri(`${Config.mediaUrl}/${data.preview}`);
-        })
-        .catch((e) => console.warn("map preview error:", e))
-        .finally(() => setPreviewLoading(false));
-    } else {
-    setPreviewLoading(false);
-  }
-  }, [placeData?.value, placeData?.preview, value]);
-
-  
+  const name = placeData?.label ?? placeData?.name;
 
   const handlePress = () => {
     if (query.isError && query.refetch) {
@@ -174,15 +176,7 @@ const PlaceDropdown = ({
         pressed && styles.cardPressed,
       ]}
     >
-      <ImagePart
-        query={query}
-        previewLoading={previewLoading}
-        previewUri={previewUri}
-        value={value}
-        placeData={placeData}
-        Colors={Colors}
-        styles={styles}
-      />
+      <ImagePart query={query} value={value} placeData={placeData} />
 
       <View style={styles.info}>
         <TextPart
@@ -191,12 +185,19 @@ const PlaceDropdown = ({
           value={value}
           name={name}
           disabled={disabled}
-          Colors={Colors}
-          styles={styles}
-          t={t}
         />
         {error && <Text style={styles.errorText}>{error}</Text>}
       </View>
+
+      {value && onClear && !query.isLoading && !query.isError && (
+        <Pressable onPress={onClear} hitSlop={8} style={{ marginRight: 4 }}>
+          <Ionicons
+            name="close-circle"
+            size={20}
+            color={Colors.textSecondary}
+          />
+        </Pressable>
+      )}
 
       {!disabled && !query.isLoading && !query.isError && (
         <Ionicons
@@ -278,5 +279,13 @@ const stylesFn = (Colors) =>
       fontSize: 12,
       color: Colors.error500,
       marginTop: 4,
+    },
+    mapOverlay: {
+      position: "absolute",
+      bottom: 5,
+      right: 5,
+      backgroundColor: "rgba(0,0,0,0.25)",
+      borderRadius: 5,
+      padding: 3,
     },
   });

@@ -47,6 +47,7 @@ const Section = ({
           style={[styles.sectionHeader, !isCollapsed && { marginBottom: 12 }]}
           onPress={isCollapsible ? handleToggle : undefined}
           activeOpacity={isCollapsible ? 0.7 : 1}
+          hitSlop={16}
         >
           <Text style={styles.sectionTitle}>
             {title}

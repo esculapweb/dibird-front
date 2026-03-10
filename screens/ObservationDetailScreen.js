@@ -37,19 +37,27 @@ const ObservationDetailScreen = ({ route, navigation }) => {
   const [previewLoading, setPreviewLoading] = useState(false);
 
   useEffect(() => {
+    setPreviewUri(null);
     if (!observation) return;
 
-    if (observation?.place_data?.preview) {
-      setPreviewUri(`${Config.mediaUrl}/${observation.place_data.preview}`);
-    } else if (observation?.place) {
+    const loadPreview = async () => {
+      if (observation?.place_data?.preview) {
+        setPreviewUri(`${Config.mediaUrl}/${observation.place_data.preview}`);
+        return;
+      }
+
       setPreviewLoading(true);
-      fetchMapPreview(observation.place)
-        .then((data) => {
-          setPreviewUri(`${Config.mediaUrl}/${data.preview}`);
-        })
-        .catch((e) => console.warn("map preview error:", e))
-        .finally(() => setPreviewLoading(false));
-    }
+      try {
+        const data = await fetchMapPreview(value);
+        setPreviewUri(`${Config.mediaUrl}/${data.preview}`);
+      } catch (e) {
+        console.warn("map preview error:", e);
+      } finally {
+        setPreviewLoading(false);
+      }
+    };
+
+    loadPreview();
   }, [observation?.place, observation?.place_data?.preview]);
 
   const updateMutation = useUpdateItem(observationId, type);
@@ -161,30 +169,29 @@ const ObservationDetailScreen = ({ route, navigation }) => {
                 <Text style={styles.latin}>{latin}</Text>
 
                 <View style={styles.capsule}>
-                    <Ionicons
-                      name="calendar-outline"
-                      size={14}
-                      color={Colors.textSecondary}
-                    />
+                  <Ionicons
+                    name="calendar-outline"
+                    size={14}
+                    color={Colors.textSecondary}
+                  />
+                  <Text style={styles.capsuleText}>
+                    {formatDateLong(observation.date_time)}
+                  </Text>
+                  {observation.time && (
                     <Text style={styles.capsuleText}>
-                      {formatDateLong(observation.date_time)}
+                      {formatTimeString(observation.time)}
                     </Text>
-                    {observation.time && (
-                      <Text style={styles.capsuleText}>
-                        {formatTimeString(observation.time)}
-                      </Text>
-                    )}
-                  </View>
-
-                  {observation.quantity && (
-                    <View style={styles.capsule}>
-                      <BirdSVG size={14} color={Colors.textMain} />
-                      <Text style={styles.capsuleText}>
-                        {observation.quantity}
-                      </Text>
-                    </View>
                   )}
-                
+                </View>
+
+                {observation.quantity && (
+                  <View style={styles.capsule}>
+                    <BirdSVG size={14} color={Colors.textMain} />
+                    <Text style={styles.capsuleText}>
+                      {observation.quantity}
+                    </Text>
+                  </View>
+                )}
               </View>
             </View>
           </View>
