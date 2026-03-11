@@ -1,5 +1,5 @@
-import { useLayoutEffect, useCallback } from "react";
-import { View, Text, StyleSheet, ScrollView, Alert } from "react-native";
+import { useCallback } from "react";
+import { View, Text, StyleSheet, Alert } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -17,7 +17,7 @@ import Section from "../components/ui/Section";
 import PrivacyToggle from "../components/ui/PrivacyToggle";
 import ListScreen from "./ListScreen";
 import { fetchDiaryObservations } from "../util/fetches";
-import ObservationCard from "../components/Observation/ObservationCard";
+import DiaryObservationCard from "../components/Diary/DiaryObservationCard";
 
 const DiaryDetailScreen = ({ route, navigation }) => {
   const { diaryId } = route.params;
@@ -45,10 +45,6 @@ const DiaryDetailScreen = ({ route, navigation }) => {
     console.log("add diary observation");
   }, [navigation, route.name]);
 
-  const fetchData = (filters, sort, search, page) => {
-    return fetchDiaryObservations(filters, sort, search, page, diaryId);
-  };
-
   const noItems = {
     icon: "binoculars-outline",
     message: t("no_observations_yet"),
@@ -56,11 +52,10 @@ const DiaryDetailScreen = ({ route, navigation }) => {
   };
 
   const renderItem = ({ item, index }) => (
-    <ObservationCard item={item} index={index} />
+    <DiaryObservationCard item={item} index={index} />
   );
 
   const keyExtractor = (item, _) => `${route.name}-${item.id}`;
-
   const handleDelete = useCallback(() => {
     if (!diary) return;
 
@@ -83,30 +78,19 @@ const DiaryDetailScreen = ({ route, navigation }) => {
     );
   }, [diary, diaryId]);
 
-  // const headerRight = useCallback(
-  //   () => (
-  //     <View style={styles.headerButtons}>
-  //       <IconButton
-  //         icon="create-outline"
-  //         onPress={() => navigation.navigate("DiaryEditor", { diary })}
-  //         style={styles.iconButton}
-  //         size={24}
-  //         disabled={!diary || updateMutation.isPending}
-  //         color={Colors.textSecondary}
-  //       />
-  //     </View>
-  //   ),
-  //   [diary, updateMutation.isPending],
-  // );
-
-  // useLayoutEffect(() => {
-  //   if (!diary) return;
-
-  //   navigation.setOptions({
-  //     title: "",
-  //     headerRight,
-  //   });
-  // }, [navigation, headerRight, diary]);
+  const headerRight = useCallback(
+    () => (
+        <IconButton
+          icon="create-outline"
+          onPress={() => navigation.navigate("DiaryEditor", { diary })}
+          style={styles.iconButton}
+          size={24}
+          disabled={!diary || updateMutation.isPending}
+          color={Colors.textSecondary}
+        />
+    ),
+    [diary, updateMutation.isPending],
+  );
 
   if (isError) {
     return (
@@ -135,7 +119,8 @@ const DiaryDetailScreen = ({ route, navigation }) => {
       <ListScreen
         route={route}
         navigation={navigation}
-        fetchFunction={fetchData}
+        fetchFunction={fetchDiaryObservations}
+        extraFilters={{diary: diaryId}}
         allowedFilters={["species"]}
         errorTitle={t("observations_unavailable")}
         onAdd={handleAdd}
@@ -143,6 +128,8 @@ const DiaryDetailScreen = ({ route, navigation }) => {
         keyExtractor={keyExtractor}
         noItems={noItems}
         title={t("diary")}
+        headerRightExtra={headerRight}
+        fabOffset={70}
         listHeader={
           <Section
             title={name}

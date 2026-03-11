@@ -7,14 +7,19 @@ export const useList = ({
   filters,
   sort,
   search,
-  tabsMode
+  tabsMode,
+  extraFilters
 }) => {
   const {language} = useLanguage();
 
+  const mergedFilters = extraFilters 
+    ? { ...(filters ?? {}), ...extraFilters }
+    : filters;
+
   return useInfiniteQuery({
-    queryKey: [screenName, JSON.stringify(filters), sort, search, tabsMode, language],
+    queryKey: [screenName, JSON.stringify(mergedFilters), sort, search, tabsMode, language],
     queryFn: ({ pageParam = 1 }) =>
-      fetchFunction(filters, sort, search, pageParam),
+      fetchFunction(mergedFilters, sort, search, pageParam),
     getNextPageParam: (lastPage) => {
       const { pagination } = lastPage;
       return pagination.current < pagination.final

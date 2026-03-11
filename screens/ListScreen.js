@@ -38,7 +38,10 @@ const ListScreen = ({
   title,
   tabs,
   tabsMode,
-  listHeader
+  listHeader,
+  extraFilters,
+  headerRightExtra,
+  fabOffset,
 }) => {
   const { t } = useTranslation();
 
@@ -85,6 +88,7 @@ const ListScreen = ({
     sort,
     search: debouncedSearch,
     tabsMode,
+    extraFilters
   });
   const items = data?.pages.flatMap((page) => page.results) ?? [];
 
@@ -147,9 +151,10 @@ const ListScreen = ({
         hasActiveFilters={hasActiveFilters}
         onSortPress={handleSortPress}
         onFilterPress={handleFilterPress}
+        headerRightExtra={headerRightExtra}
       />
     ),
-    [filters, sort],
+    [filters, sort, headerRightExtra],
   );
 
   useEffect(() => {
@@ -253,6 +258,7 @@ const ListScreen = ({
         keyExtractor={keyExtractor}
         noItems={noItems}
         listHeader={listHeader}
+        fabOffset={fabOffset}
       />
       <SortModal
         screen={screenName}

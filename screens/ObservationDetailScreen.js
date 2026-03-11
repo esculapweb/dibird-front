@@ -209,11 +209,18 @@ const ObservationDetailScreen = ({ route, navigation }) => {
                 style={{ marginRight: 10 }}
               />
               <View style={{ flex: 1 }}>
-                <Text style={styles.diaryLabel}>{t("diary_entry")}</Text>
-                <Text style={styles.diaryTitle}>
-                  {observation.diary_data?.name ||
-                    formatDate(observation.date_time)}
+                <View style={styles.diaryLabelRow}>
+                <Text style={styles.diaryLabel}>
+                  {t("diary_entry")}
                 </Text>
+                 <Text style={styles.diaryTitle}>{formatDate(observation.date_time)}</Text>
+                </View>
+
+                {observation.diary_data?.name && (
+                  <Text style={styles.diaryDescription}>
+                    {observation.diary_data?.name}
+                  </Text>
+                )}
               </View>
             </View>
           )}
@@ -318,17 +325,27 @@ const stylesFn = (Colors) =>
       alignItems: "center",
       marginBottom: 12,
     },
+    diaryLabelRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 2,
+      gap: 8
+    },
     diaryLabel: {
-      fontSize: 11,
+      fontSize: 12,
       color: Colors.textSecondary,
       textTransform: "uppercase",
-      marginBottom: 2,
       letterSpacing: 0.5,
     },
     diaryTitle: {
       fontSize: 12,
       fontWeight: "600",
       color: Colors.textMain,
+    },
+    diaryDescription: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: Colors.textSecondary,
     },
     notesBlock: {
       flexDirection: "row",
@@ -384,5 +401,4 @@ const stylesFn = (Colors) =>
       borderBottomRightRadius: 14,
       overflow: "hidden",
     },
-   
   });

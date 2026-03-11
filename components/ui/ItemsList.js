@@ -21,9 +21,10 @@ const ItemsList = ({
   onClear,
   noItems,
   listHeader,
+  fabOffset,
 }) => {
   const { Colors } = useTheme();
-  const styles = stylesFn(Colors);
+  const styles = stylesFn(Colors, fabOffset);
   const { t } = useTranslation();
 
   const getEmptyProps = () => {
@@ -89,12 +90,12 @@ const ItemsList = ({
 
 export default ItemsList;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors, fabOffset) =>
   StyleSheet.create({
     list: { paddingHorizontal: 12, paddingVertical: 8 },
     fab: {
       position: "absolute",
-      bottom: 20,
+      bottom: 20 + (fabOffset ?? 0),
       right: 20,
       width: 56,
       height: 56,

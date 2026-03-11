@@ -5,9 +5,6 @@
   "check_internet": "Проверьте интернет или попробуйте позже",
   "choose_location_": "Выберите местоположение...",
   "could_not_create_user": "Не удалось создать пользователя",
-  "diary": "Дневник",
-  "diary_count": "Количеству дневников",
-  "diary_count_desc": "Количеству дневников (убыв.)",
   "diearies": "",
   "distance": "",
   "errors": {
@@ -21,5 +18,6 @@
   "observation_created": "Наблюдение создано",
   "observation_updated": "Наблюдение обновлено",
   "retry": "Повторить",
+  "section_privacy": "Приватность",
   "settings": "Настройки"
 }

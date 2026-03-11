@@ -122,6 +122,5 @@ export const fetchDiaries = (filters, order = "-date", search, page) =>
   fetchAbstract("/myapi/diary2/", filters, order, search, page);
 
 export const fetchDiaryObservations = (filters, order = "ioc_id", search, page, id) => {
-  filters = { ...filters, diary: id };
   return fetchAbstract("/myapi/diary-observation/", filters, order, search, page);
 }

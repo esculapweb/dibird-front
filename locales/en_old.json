@@ -7,9 +7,6 @@
   "coordinates": "Coordinates",
   "coordinates_hint": "You can change coordinates by tapping on the map or editing the fields below. Coordinates must be in decimal degrees format.",
   "could_not_create_user": "Could not create user",
-  "diary": "Diary",
-  "diary_count": "Number of diaries",
-  "diary_count_desc": "Number of diaries (descending)",
   "diearies": "",
   "distance": "",
   "enter_place_name": "Enter place name",
@@ -24,6 +21,7 @@
   "observation_created": "Observation created at",
   "observation_updated": "Observation updated at",
   "retry": "Retry",
+  "section_privacy": "Privacy",
   "serer_error": "Service unavailable",
   "settings": "Settings",
   "tap_map_to_change": "Tap on the map to change location"

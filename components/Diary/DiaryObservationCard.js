@@ -12,15 +12,10 @@ import { formatTimeString } from "../../util/timeHelpers";
 
 const useStyles = (Colors) => React.useMemo(() => stylesFn(Colors), [Colors]);
 
-const ObservationCard = React.memo(({ item, index }) => {
+const DiaryObservationCard = React.memo(({ item, index }) => {
   const { Colors } = useTheme();
   const styles = useStyles(Colors);
   const navigation = useNavigation();
-
-  const dateText = formatDateLong(item.date_time);
-  const territoryFlag = item.territory_data
-    ? isoToFlagEmoji(item.territory_data.code)
-    : null;
 
   const handlePress = () => {
     navigation.navigate("ObservationDetail", { observationId: item.id });
@@ -54,73 +49,10 @@ const ObservationCard = React.memo(({ item, index }) => {
               <View style={styles.indexBadge}>
                 <Text style={styles.index}>{index + 1}.</Text>
               </View>
-              <Text style={styles.title} numberOfLines={1}>{item.species_data?.name_lang}</Text>
+              <Text style={styles.title} numberOfLines={1}>
+                {item.species_data?.name_lang}
+              </Text>
             </View>
-
-            <View style={styles.rightTop}>
-              {item.private && (
-                <Ionicons
-                  name="lock-closed-outline"
-                  size={14}
-                  color={Colors.textSecondary}
-                  style={{ marginRight: 4 }}
-                />
-              )}
-              {territoryFlag && (
-                <Text style={styles.flag}>{territoryFlag}</Text>
-              )}
-            </View>
-          </View>
-
-          <Text style={styles.latin} numberOfLines={1}>
-            {item.species_data?.name}
-          </Text>
-
-          <View style={styles.metaRow}>
-            <View style={styles.metaLeft}>
-              <Ionicons
-                name="calendar-outline"
-                size={13}
-                color={Colors.textSecondary}
-              />
-              <Text style={styles.metaText}>{dateText}</Text>
-
-              {item.time && (
-                <View style={styles.time}>
-                  <Ionicons
-                    name="time-outline"
-                    size={13}
-                    color={Colors.textSecondary}
-                  />
-                  <Text style={styles.metaText}>{formatTimeString(item.time)}</Text>
-                </View>
-              )}
-            </View>
-
-            {item.quantity && (
-              <View style={styles.badge}>
-                <BirdSVG size={14} color={Colors.textMain} />
-                <Text style={styles.badgeText}>{item.quantity}</Text>
-              </View>
-            )}
-          </View>
-
-          <View style={styles.placeRow}>
-            {item.place ? (
-              <>
-                <Ionicons
-                  name="location-outline"
-                  size={13}
-                  color={Colors.textSecondary}
-                />
-                <Text style={styles.placeText} numberOfLines={1}>
-                  {item.place_data?.name}
-                </Text>
-              </>
-            ) : (
-              <Text style={{ flex: 1 }}></Text>
-            )}
-
             {item.notes && (
               <Ionicons
                 name="document-text-outline"
@@ -128,14 +60,35 @@ const ObservationCard = React.memo(({ item, index }) => {
                 color={Colors.textSecondary}
               />
             )}
+          </View>
 
-            {item.diary && (
-              <Ionicons
-                name="book-outline"
-                size={13}
-                color={Colors.textSecondary}
-              />
-            )}
+          <View style={styles.metaRow}>
+            <Text style={styles.latin} numberOfLines={1}>
+              {item.species_data?.name}
+            </Text>
+
+            <View style={styles.metaRight}>
+              {item.quantity && (
+                <View style={styles.badge}>
+                  <BirdSVG size={14} color={Colors.textMain} />
+                  <Text style={styles.badgeText}>{item.quantity}</Text>
+                </View>
+              )}
+              {item.time && (
+                <View style={styles.time}>
+                  <Ionicons
+                    name="time-outline"
+                    size={13}
+                    color={Colors.textSecondary}
+                  />
+                  <Text style={styles.metaText}>
+                    {formatTimeString(item.time)}
+                  </Text>
+                </View>
+              )}
+
+              
+            </View>
           </View>
         </View>
       </View>
@@ -143,7 +96,7 @@ const ObservationCard = React.memo(({ item, index }) => {
   );
 });
 
-export default ObservationCard;
+export default DiaryObservationCard;
 
 const stylesFn = (Colors) =>
   StyleSheet.create({
@@ -168,16 +121,16 @@ const stylesFn = (Colors) =>
     },
 
     image: {
-      width: 72,
-      height: 72,
+      width: 40,
+      height: 40,
       borderRadius: 12,
       marginRight: 8,
       backgroundColor: Colors.imageBg,
     },
 
     imagePlaceholder: {
-      width: 72,
-      height: 72,
+      width: 40,
+      height: 40,
       borderRadius: 12,
       marginRight: 8,
       backgroundColor: Colors.imageBg,
@@ -212,15 +165,6 @@ const stylesFn = (Colors) =>
       flex: 1,
     },
 
-    rightTop: {
-      flexDirection: "row",
-      alignItems: "center",
-    },
-
-    flag: {
-      fontSize: 14,
-    },
-
     latin: {
       fontSize: 12,
       fontStyle: "italic",
@@ -242,10 +186,10 @@ const stylesFn = (Colors) =>
       marginLeft: 4,
     },
 
-    metaLeft: {
+    metaRight: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 4,
+      gap: 8,
     },
 
     metaText: {
