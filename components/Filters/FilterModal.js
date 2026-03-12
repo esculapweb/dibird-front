@@ -26,6 +26,7 @@ const FilterModal = ({
   allowed,
   setFilters,
   clearFilters,
+  extraTerritory,
 }) => {
   const { language } = useLanguage();
   const { t } = useTranslation();
@@ -54,6 +55,10 @@ const FilterModal = ({
     filters?.favourite ?? null,
   );
 
+  const effectiveTerritory = allowed.includes("territory")
+    ? territoryValue
+    : extraTerritory;
+
   const {
     query: queryMyCountries,
     sort: countriesSort,
@@ -70,9 +75,9 @@ const FilterModal = ({
     onSortChange: onPlacesSortChange,
   } = useSortedQuery({
     type: "PlacesDropdown",
-    queryFn: (sort) => fetchMyPlaces(territoryValue, coords, sort),
-    params: [territoryValue, roundedCoords],
-    enabled: !!territoryValue,
+    queryFn: (sort) => fetchMyPlaces(effectiveTerritory, coords, sort),
+    params: [effectiveTerritory, roundedCoords],
+    enabled: !!effectiveTerritory,
   });
 
   const {
@@ -81,14 +86,14 @@ const FilterModal = ({
     onSortChange: onSpeciesSortChange,
   } = useSortedQuery({
     type: "SpeciesDropdown",
-    queryFn: (sort) => fetchSpecies(territoryValue, sort),
-    params: [territoryValue],
-    enabled: !!territoryValue,
+    queryFn: (sort) => fetchSpecies(effectiveTerritory, sort),
+    params: [effectiveTerritory],
+    enabled: !!effectiveTerritory,
   });
 
   useEffect(() => {
     setPlaceValue(null);
-  }, [territoryValue]);
+  }, [effectiveTerritory]);
 
   useEffect(() => {
     if (!querySpecies.data || !speciesValue) return;
@@ -169,7 +174,7 @@ const FilterModal = ({
               sort={placesSort}
               onSortChange={onPlacesSortChange}
               allowReset
-              disabled={!territoryValue}
+              disabled={!effectiveTerritory}
               disabledMessage={t("select_country_first")}
               isLocating={isLocating}
             />
@@ -186,7 +191,7 @@ const FilterModal = ({
               sort={speciesSort}
               onSortChange={onSpeciesSortChange}
               allowReset
-              disabled={!territoryValue}
+              disabled={!effectiveTerritory}
               disabledMessage={t("select_country_first")}
               renderOption={({ item, selected, onSelect, onClose }) => (
                 <SpeciesOptionRow

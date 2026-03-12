@@ -4,12 +4,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../store/theme-context";
 import { useFilterLabels } from "../../hooks/useFilterLabels";
 
-const FilterChips = ({ filters, onRemove }) => {
+const FilterChips = ({ filters, onRemove, extraFilters}) => {
   if (!filters || typeof filters !== "object") return null;
 
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
-  const { getFilterLabel } = useFilterLabels(filters);
+  const effectiveTerritory = filters?.territory ?? extraFilters?.territory ?? null;
+  const { getFilterLabel } = useFilterLabels(filters, effectiveTerritory);
 
   const activeFilters = Object.entries(filters).filter(
     ([, value]) =>
@@ -36,7 +37,8 @@ const FilterChips = ({ filters, onRemove }) => {
                 numberOfLines={1}
                 ellipsizeMode="tail"
               >
-                {filterName}: {filterLabel}
+                <Text style={styles.filterLabel}>{filterName}: </Text>
+                <Text style={styles.filterValue}>{filterLabel}</Text>
               </Text>
               <View style={styles.removeIcon}>
                 <Pressable onPress={() => onRemove(key)} hitSlop={8}>
@@ -83,10 +85,19 @@ const stylesFn = (Colors) =>
     },
     filterText: {
       fontSize: 12,
-      color: Colors.textMain,
       lineHeight: 16,
       flexShrink: 1,
       marginRight: 4,
+    },
+    filterLabel: {
+      fontSize: 11,
+      color: Colors.textSecondary,
+      fontWeight: "400",
+    },
+    filterValue: {
+      fontSize: 12,
+      color: Colors.textMain,
+      fontWeight: "600",
     },
     removeIcon: {
       marginLeft: 4,

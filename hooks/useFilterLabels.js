@@ -5,7 +5,7 @@ import { useTranslatedQuery } from "./useQueryWithTranslation";
 import { formatDate } from "../util/helpers";
 import { fetchMyCountries, fetchMyPlaces, fetchSpecies } from "../util/fetches";
 
-export const useFilterLabels = (filters) => {
+export const useFilterLabels = (filters, effectiveTerritory) => {
   const { t } = useTranslation();
   const { language } = useLanguage();
 
@@ -18,18 +18,18 @@ export const useFilterLabels = (filters) => {
   });
 
   const placesQuery = useTranslatedQuery({
-    queryFn: () => fetchMyPlaces(filters?.territory ?? null),
-    params: [filters?.territory ?? null, language],
+    queryFn: () => fetchMyPlaces(effectiveTerritory),
+    params: [effectiveTerritory, language],
     mapResult: true,
-    enabled: !!filters?.territory,
+    enabled: !!effectiveTerritory,
     type: "places",
   });
 
   const speciesQuery = useTranslatedQuery({
-    queryFn: () => fetchSpecies(filters?.territory ?? null),
-    params: [filters?.territory ?? null, language],
+    queryFn: () => fetchSpecies(effectiveTerritory),
+    params: [effectiveTerritory, language],
     mapResult: true,
-    enabled: !!filters?.territory,
+    enabled: effectiveTerritory,
     type: "species",
   });
 

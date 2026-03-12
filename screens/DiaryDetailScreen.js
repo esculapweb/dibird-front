@@ -119,8 +119,8 @@ const DiaryDetailScreen = ({ route, navigation }) => {
         route={route}
         navigation={navigation}
         fetchFunction={fetchDiaryObservations}
-        extraFilters={{diary: diaryId}}
-        allowedFilters={["territory", "species"]}
+        extraFilters={{diary: diaryId, territory: diary.territory}}
+        allowedFilters={["species"]}
         errorTitle={t("observations_unavailable")}
         onAdd={handleAdd}
         renderItem={renderItem}

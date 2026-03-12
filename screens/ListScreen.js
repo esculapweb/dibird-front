@@ -254,7 +254,7 @@ const ListScreen = ({
         />
       )}
       {hasActiveFilters && (
-        <FilterChips filters={filters} onRemove={removeFilter} />
+        <FilterChips filters={filters} onRemove={removeFilter} extraFilters={extraFilters} />
       )}
       <ItemsList
         data={items}
@@ -285,6 +285,7 @@ const ListScreen = ({
         allowed={allowedFilters}
         setFilters={setFilters}
         clearFilters={handleClearFilters}
+        extraTerritory={extraFilters?.territory}
       />
     </>
   );
