@@ -37,8 +37,18 @@ export const sortOptionsList = (screen) => {
         { label: i18n.t("date_sort"), value: "date_time" },
         { label: i18n.t("taxonomic"), value: "ioc_id" },
         { label: i18n.t("taxonomic_desc"), value: "-ioc_id" },
-        // { label: t("alphabetic"), value: "species_name" },
-        // { label: t("alphabetic_desc"), value: "-species_name" },
+        { label: i18n.t("alphabetic"), value: "species_name" },
+        { label: i18n.t("alphabetic_desc"), value: "-species_name" },
+      ];
+
+    case "DiaryDetail":
+      return [
+        { label: i18n.t("date_sort_desc"), value: "-date_time" },
+        { label: i18n.t("date_sort"), value: "date_time" },
+        { label: i18n.t("taxonomic"), value: "ioc_id" },
+        { label: i18n.t("taxonomic_desc"), value: "-ioc_id" },
+        { label: i18n.t("alphabetic"), value: "species_name" },
+        { label: i18n.t("alphabetic_desc"), value: "-species_name" },
       ];
 
     case "Diaries":

@@ -55,7 +55,6 @@ const DiaryDetailScreen = ({ route, navigation }) => {
     <DiaryObservationCard item={item} index={index} />
   );
 
-  const keyExtractor = (item, _) => `${route.name}-${item.id}`;
   const handleDelete = useCallback(() => {
     if (!diary) return;
 
@@ -121,11 +120,10 @@ const DiaryDetailScreen = ({ route, navigation }) => {
         navigation={navigation}
         fetchFunction={fetchDiaryObservations}
         extraFilters={{diary: diaryId}}
-        allowedFilters={["species"]}
+        allowedFilters={["territory", "species"]}
         errorTitle={t("observations_unavailable")}
         onAdd={handleAdd}
         renderItem={renderItem}
-        keyExtractor={keyExtractor}
         noItems={noItems}
         title={t("diary")}
         headerRightExtra={headerRight}

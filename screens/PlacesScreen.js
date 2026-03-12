@@ -19,8 +19,6 @@ const PlacesScreen = ({ route, navigation }) => {
     <PlaceCard item={item} index={index} />
   );
 
-  const keyExtractor = (item, _) => `${route.name}-${item.id}`;
-
   return (
     <ListScreen
       route={route}
@@ -30,7 +28,6 @@ const PlacesScreen = ({ route, navigation }) => {
       errorTitle={t("places_unavailable")}
       onAdd={handleAdd}
       renderItem={renderItem}
-      keyExtractor={keyExtractor}
       noItems={noItems}
       showSearch={true}
       title={t("places")}

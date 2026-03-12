@@ -25,8 +25,6 @@ const DiariesScreen = ({route, navigation}) => {
     <DiaryCard item={item} index={index} />
   );
 
-  const keyExtractor = (item, _) => `${route.name}-${item.id}`;
-
   return (
     <ListScreen
       route={route}
@@ -36,7 +34,6 @@ const DiariesScreen = ({route, navigation}) => {
       errorTitle={t("diaries_unavailable")}
       onAdd={handleAdd}
       renderItem={renderItem}
-      keyExtractor={keyExtractor}
       noItems={noItems}
       title={t("diaries")}
     />

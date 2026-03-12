@@ -32,7 +32,6 @@ const ListScreen = ({
   errorTitle,
   onAdd,
   renderItem,
-  keyExtractor,
   noItems,
   showSearch,
   title,
@@ -42,6 +41,7 @@ const ListScreen = ({
   extraFilters,
   headerRightExtra,
   fabOffset,
+  getItemId = (item) => item.id,
 }) => {
   const { t } = useTranslation();
 
@@ -66,6 +66,8 @@ const ListScreen = ({
   const screenName = route.name;
   const sortOptions = sortOptionsList(screenName);
 
+  const keyExtractor = (item, _) => `${screenName}-${getItemId(item)}`;
+
   const fetchDataWrapper = (filters, sort, search, page) => {
     return fetchFunction(filters, sort, search, page, () =>
       setFilterModalVisible(true),
@@ -88,9 +90,16 @@ const ListScreen = ({
     sort,
     search: debouncedSearch,
     tabsMode,
-    extraFilters
+    extraFilters,
   });
-  const items = data?.pages.flatMap((page) => page.results) ?? [];
+  const rawItems = data?.pages.flatMap((page) => page.results) ?? [];
+  const objects = new Set();
+  const items = rawItems.filter((item) => {
+    const id = getItemId(item);
+    if (objects.has(id)) return false;
+    objects.add(id);
+    return true;
+  });
 
   const hasActiveFilters = filters
     ? Object.values(filters).some((v) =>

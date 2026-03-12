@@ -44,8 +44,6 @@ const StatScreen = ({ route, navigation }) => {
     [seenMode],
   );
 
-  const keyExtractor = (item, _) => `${route.name}-${item.species_id}`;
-
   return (
     <>
       <ListScreen
@@ -56,11 +54,11 @@ const StatScreen = ({ route, navigation }) => {
         errorTitle={t("stat_unavailable")}
         onAdd={handleAdd}
         renderItem={renderItem}
-        keyExtractor={keyExtractor}
         noItems={noItems}
         title={t("statistics")}
         tabs={<Tabs tabsMode={seenMode} setTabsMode={setSeenMode} />}
         tabsMode={seenMode}
+        getItemId={(item) => item.species_id}
       />
     </>
   );
