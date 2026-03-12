@@ -125,13 +125,12 @@ const DiaryDetailScreen = ({ route, navigation }) => {
         onAdd={handleAdd}
         renderItem={renderItem}
         noItems={noItems}
-        title={t("diary")}
+        title={name}
         headerRightExtra={headerRight}
         fabOffset={70}
         listHeader={
           <Section
-            title={name}
-            titleBig={true}
+            title={t("diary")}
             hintBlock={<PrivacyToggle value={diary.private} diary={true} />}
             collapsible={true}
           >

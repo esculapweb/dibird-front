@@ -21,7 +21,6 @@ if (
 
 const Section = ({
   title,
-  titleBig,
   required,
   children,
   hint,
@@ -51,7 +50,7 @@ const Section = ({
           activeOpacity={isCollapsible ? 0.7 : 1}
           hitSlop={16}
         >
-          <Text style={titleBig ? styles.sectionTitleBig : styles.sectionTitle}>
+          <Text style={styles.sectionTitle}>
             {title}
             {required && <Text style={styles.required}> *</Text>}
           </Text>
@@ -102,11 +101,6 @@ const sectionFn = (Colors) =>
       color: Colors.textSecondary,
       textTransform: "uppercase",
       letterSpacing: 0.8,
-    },
-    sectionTitleBig: {
-      fontSize: 20,
-      fontWeight: "700",
-      color: Colors.textMain,
     },
     required: {
       color: Colors.error500,
