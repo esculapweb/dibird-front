@@ -83,7 +83,7 @@ const ObservationDetailScreen = ({ route, navigation }) => {
     if (!observation) return;
 
     navigation.setOptions({
-      title: "",
+      title: t("observation"),
       headerRight,
     });
   }, [navigation, headerRight, observation]);
