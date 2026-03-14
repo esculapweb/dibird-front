@@ -8,6 +8,7 @@ import {
   Animated,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { BirdSVG } from "./Svgs";
 
 import { useTheme } from "../../store/theme-context";
 
@@ -18,7 +19,11 @@ const Input = ({
   onUpdateValue,
   value,
   isInvalid,
-  error
+  error,
+  multiline,
+  icon,
+  birdSvg,
+  placeholder
 }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -43,9 +48,9 @@ const Input = ({
 
   return (
     <View style={styles.inputContainer}>
-      <Text style={[styles.label, isInvalid && styles.labelInvalid]}>
+      {label && (<Text style={[styles.label, isInvalid && styles.labelInvalid]}>
         {label}
-      </Text>
+      </Text>)}
       <View style={[styles.inputWrapper, isInvalid && styles.inputInvalid]}>
         <TextInput
           style={[styles.input, isInvalid && styles.inputInvalid]}
@@ -54,9 +59,12 @@ const Input = ({
           secureTextEntry={isSecure}
           onChangeText={onUpdateValue}
           value={value}
+          multiline={multiline}
+          placeholder={placeholder} 
+          placeholderTextColor={Colors.textSecondary}
         />
         {secure && (
-          <TouchableOpacity onPress={toggleSecure} style={styles.icon}>
+          <TouchableOpacity onPress={toggleSecure} style={styles.iconSecure}>
             <Animated.View style={{ opacity: iconOpacity }}>
               <Ionicons
                 name={isSecure ? "eye-off-outline" : "eye-outline"}
@@ -65,6 +73,23 @@ const Input = ({
               />
             </Animated.View>
           </TouchableOpacity>
+        )}
+        {icon && (
+          <View style={styles.icon}>
+            <Ionicons
+              name={icon}
+              size={20}
+              color={Colors.textSecondary}
+            />
+          </View>
+        )}
+        {birdSvg && (
+          <View style={styles.icon}>
+            <BirdSVG
+              size={20}
+              color={Colors.textMain}
+            />
+          </View>
         )}
       </View>
       {error && <Text style={styles.errorText}>{error}</Text>}
@@ -93,7 +118,7 @@ const stylesFn = (Colors) =>
       borderWidth: 1,
       backgroundColor: Colors.primary100,
       borderRadius: 4,
-      paddingHorizontal: 10,
+      paddingHorizontal: 8,
     },
     input: {
       flex: 1,
@@ -105,8 +130,11 @@ const stylesFn = (Colors) =>
       backgroundColor: Colors.error100,
       borderColor: Colors.error500,
     },
-    icon: {
+    iconSecure: {
       marginLeft: 8,
+    },
+    iconSecure: {
+      marginLeft: 4,
     },
     errorText: {
       fontSize: 13,

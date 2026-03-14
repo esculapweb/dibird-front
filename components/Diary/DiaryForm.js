@@ -1,17 +1,10 @@
-import { useEffect } from "react";
 import { ScrollView } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import DropdownInput from "../ui/DropdownInput";
 import DateInput from "../ui/DateInput";
-import TimeInput from "../ui/TimeInput";
-import {
-  fetchMyCountries,
-  fetchMyPlaces,
-  fetchSpecies,
-} from "../../util/fetches";
+import { fetchMyCountries, fetchMyPlaces } from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
-import SpeciesOptionRow from "../ui/SpeciesOptionRow";
 import Input from "../ui/Input";
 import Section from "../ui/Section";
 import PrivacyToggle from "../ui/PrivacyToggle";
@@ -19,22 +12,19 @@ import PlaceBlock from "../Place/PlaceBlock";
 import { usePlaceLocation } from "../../hooks/Place/usePlaceLocation";
 import { useSortedQuery } from "../../hooks/useSortedQuery";
 
-const ObservationForm = ({
+const DiaryForm = ({
   formData,
   setFormData,
   errors,
   setErrors,
   territoryValue,
   setTerritoryValue,
-  speciesValue,
-  setSpeciesValue,
   placeValue,
   setPlaceValue,
   onAddNewPlace,
-  speciesData,
-  setSpeciesData,
   placeData,
   setPlaceData,
+  isEditMode,
 }) => {
   const { t } = useTranslation();
   const { language } = useLanguage();
@@ -61,26 +51,6 @@ const ObservationForm = ({
     enabled: !!territoryValue,
   });
 
-  const {
-    query: querySpecies,
-    sort: speciesSort,
-    onSortChange: onSpeciesSortChange,
-  } = useSortedQuery({
-    type: "SpeciesDropdown",
-    queryFn: (sort) => fetchSpecies(territoryValue, sort),
-    params: [territoryValue],
-    enabled: !!territoryValue,
-  });
-
-  useEffect(() => {
-    if (!querySpecies.data || !speciesValue) return;
-
-    const speciesExists = querySpecies.data.some(
-      (item) => item.value === speciesValue,
-    );
-    if (!speciesExists) setSpeciesValue(null);
-  }, [querySpecies.data]);
-
   return (
     <ScrollView
       contentContainerStyle={{ padding: 12 }}
@@ -103,34 +73,7 @@ const ObservationForm = ({
           type="CountriesDropdown"
           sort={countriesSort}
           onSortChange={onCountriesSortChange}
-        />
-
-        <DropdownInput
-          placeholder={t("select_species")}
-          value={speciesValue}
-          setValue={(val) => {
-            setSpeciesValue(val);
-            setFormData((prev) => ({ ...prev, species: val }));
-            setErrors((prev) => ({ ...prev, species: undefined }));
-            const found = querySpecies.data?.find((item) => item.value === val);
-            setSpeciesData(found ?? null);
-          }}
-          query={querySpecies}
-          disabled={!territoryValue}
-          error={errors.species}
-          hidden
-          renderOption={({ item, selected, onSelect, onClose }) => (
-            <SpeciesOptionRow
-              item={item}
-              selected={selected}
-              onSelect={onSelect}
-              onClose={onClose}
-            />
-          )}
-          speciesData={speciesData}
-          type="SpeciesDropdown"
-          sort={speciesSort}
-          onSortChange={onSpeciesSortChange}
+          disabled={isEditMode}
         />
 
         <DateInput
@@ -139,14 +82,28 @@ const ObservationForm = ({
             setFormData((prev) => ({ ...prev, date_time: newDate }));
             setErrors((prev) => ({ ...prev, date_time: undefined }));
           }}
-          placeholder={t("observation_date")}
+          placeholder={t("diary_date")}
           error={errors.date_time}
           allowClear={false}
-          style={{ marginVertical: 16 }}
+          style={{ marginBottom: 16 }}
         />
+
+        <Input
+          value={formData.name}
+          onUpdateValue={(val) =>
+            setFormData((prev) => ({ ...prev, name: val }))
+          }
+          error={errors.name}
+          isInvalid={errors.name}
+          icon="document-text-outline"
+          placeholder={t("add_a_note")}
+          multiline
+        />
+
         <PrivacyToggle
           value={formData.private}
           onChange={(val) => setFormData((prev) => ({ ...prev, private: val }))}
+          diary={true}
         />
       </Section>
 
@@ -170,46 +127,8 @@ const ObservationForm = ({
           setPlaceData={setPlaceData}
         />
       </Section>
-
-      {/* ── 4. Optional: Details ─────────────────────────────── */}
-      <Section title={t("section_details")} hint={t("optional")} collapsible={true} collapsed={!formData.time && formData.quantity == null && !formData.notes}>
-        <TimeInput
-          value={formData.time}
-          onChange={(newTime) =>
-            setFormData((prev) => ({ ...prev, time: newTime }))
-          }
-        />
-        <Input
-          value={
-            formData?.quantity != null ? formData.quantity.toString() : null
-          }
-          keyboardType="numeric"
-          onUpdateValue={(val) =>
-            setFormData((prev) => ({
-              ...prev,
-              quantity: val?.trim() === "" ? null : val.trim(),
-            }))
-          }
-          error={errors.quantity}
-          isInvalid={errors.quantity}
-          placeholder={t("quantity_placeholder")}
-          birdSvg
-        />
-
-        <Input
-          value={formData.notes}
-          onUpdateValue={(val) =>
-            setFormData((prev) => ({ ...prev, notes: val }))
-          }
-          error={errors.notes}
-          isInvalid={errors.notes}
-          icon="document-text-outline"
-          placeholder={t("add_a_note")}
-          multiline
-        />
-      </Section>
     </ScrollView>
   );
 };
 
-export default ObservationForm;
+export default DiaryForm;

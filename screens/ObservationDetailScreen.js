@@ -67,7 +67,15 @@ const ObservationDetailScreen = ({ route, navigation }) => {
         <IconButton
           icon="create-outline"
           onPress={() =>
-            navigation.navigate("ObservationEditor", { observation })
+            navigation.navigate("ObservationEditor", {
+              observation: {
+                ...observation,
+                date_time:
+                  observation.date_time instanceof Date
+                    ? observation.date_time.toISOString()
+                    : observation.date_time,
+              },
+            })
           }
           style={styles.iconButton}
           size={24}
@@ -210,10 +218,10 @@ const ObservationDetailScreen = ({ route, navigation }) => {
               />
               <View style={{ flex: 1 }}>
                 <View style={styles.diaryLabelRow}>
-                <Text style={styles.diaryLabel}>
-                  {t("diary_entry")}
-                </Text>
-                 <Text style={styles.diaryTitle}>{formatDate(observation.date_time)}</Text>
+                  <Text style={styles.diaryLabel}>{t("diary_entry")}</Text>
+                  <Text style={styles.diaryTitle}>
+                    {formatDate(observation.date_time)}
+                  </Text>
                 </View>
 
                 {observation.diary_data?.name && (
@@ -326,10 +334,10 @@ const stylesFn = (Colors) =>
       marginBottom: 12,
     },
     diaryLabelRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
+      flexDirection: "row",
+      alignItems: "center",
       marginBottom: 2,
-      gap: 8
+      gap: 8,
     },
     diaryLabel: {
       fontSize: 12,

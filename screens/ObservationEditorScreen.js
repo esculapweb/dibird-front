@@ -34,30 +34,41 @@ const ObservationEditorScreen = ({ navigation, route }) => {
   const { observation, defaultTerritory } = route.params || {};
   const isEditMode = !!observation;
 
+  const observationWithParsedDate = observation
+    ? {
+        ...observation,
+        date_time: observation.date_time
+          ? new Date(observation.date_time)
+          : undefined,
+      }
+    : undefined;
+
   const createObservationMutation = useCreateObservation();
   const updateObservationMutation = useUpdateItem(
-    observation?.id,
+    observationWithParsedDate?.id,
     "Observation",
   );
 
   const [territoryValue, setTerritoryValue] = useState(
-    () => observation?.territory ?? defaultTerritory ?? "",
+    () => observationWithParsedDate?.territory ?? defaultTerritory ?? "",
   );
 
   const [formData, setFormData] = useState(() => {
-    const initialDate = observation?.date_time
-      ? new Date(observation.date_time)
-      : (getSession("lastObservationDate") ?? new Date());
+    const initialDate =
+      observationWithParsedDate?.date_time ??
+      getSession("lastDate") ??
+      new Date();
 
     return {
-      species: observation?.species ?? null,
+      species: observationWithParsedDate?.species ?? null,
       territory: territoryValue,
-      place: observation?.place ?? null,
+      place: observationWithParsedDate?.place ?? null,
       date_time: initialDate,
-      time: observation?.time ?? null,
-      private: profileCtx.profile?.private_diary,
-      quantity: observation?.quantity ?? null,
-      notes: observation?.notes ?? null,
+      time: observationWithParsedDate?.time ?? null,
+      private:
+        observationWithParsedDate?.private ?? profileCtx.profile?.private_diary,
+      quantity: observationWithParsedDate?.quantity ?? null,
+      notes: observationWithParsedDate?.notes ?? null,
     };
   });
 
@@ -65,10 +76,10 @@ const ObservationEditorScreen = ({ navigation, route }) => {
   const [placeValue, setPlaceValue] = useState(formData.place);
   const [errors, setErrors] = useState({});
   const [speciesData, setSpeciesData] = useState(
-    observation?.species_data ?? null,
+    observationWithParsedDate?.species_data ?? null,
   );
   const [placeData, setPlaceData] = useState(
-    observation?.place_data ?? null,
+    observationWithParsedDate?.place_data ?? null,
   );
 
   const validateForm = useCallback(() => {
@@ -118,8 +129,7 @@ const ObservationEditorScreen = ({ navigation, route }) => {
     } else {
       createObservationMutation.mutate(observationData, {
         onSuccess: (res) => {
-          // Сохраняем дату только после успешного создания
-          setSession("lastObservationDate", observationData.date_time);
+          setSession("lastDate", observationData.date_time);
           requestAnimationFrame(() =>
             navigation.replace("ObservationDetail", {
               observationId: res.data.id,

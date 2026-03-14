@@ -52,7 +52,7 @@ const DropdownInput = ({
     setModalVisible(false);
   };
 
-  const displayText = disabled
+  const displayText = (disabled && !label)
     ? disabledMessage || translatedPlaceholder
     : label || translatedPlaceholder;
 
@@ -128,7 +128,7 @@ const DropdownInput = ({
             style={[
               styles.select,
               error && { borderColor: Colors.error500 },
-              disabled && styles.disabled,
+              (disabled && !label) && styles.disabled,
             ]}
           >
             <View style={styles.left}>
@@ -168,7 +168,7 @@ const DropdownInput = ({
                   <Text
                     style={[
                       styles.text,
-                      (!label || disabled) && {
+                      (!label && disabled) && {
                         color: Colors.dropdownIcon,
                         fontStyle: disabled ? "italic" : "normal",
                       },
@@ -268,7 +268,7 @@ const stylesFn = (Colors) =>
     titleError: { color: Colors.error500 },
     select: {
       height: 40,
-      paddingHorizontal: 6,
+      paddingHorizontal: 8,
       borderWidth: 1,
       borderColor: Colors.border,
       borderRadius: 4,

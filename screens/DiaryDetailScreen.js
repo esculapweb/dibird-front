@@ -81,7 +81,13 @@ const DiaryDetailScreen = ({ route, navigation }) => {
     () => (
         <IconButton
           icon="create-outline"
-          onPress={() => navigation.navigate("DiaryEditor", { diary })}
+          onPress={() => navigation.navigate("DiaryEditor", { diary: {
+                ...diary,
+                date_time:
+                  diary.date_time instanceof Date
+                    ? diary.date_time.toISOString()
+                    : diary.date_time,
+              }, })}
           style={styles.iconButton}
           size={24}
           disabled={!diary || updateMutation.isPending}

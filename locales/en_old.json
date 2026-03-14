@@ -18,6 +18,8 @@
   "failed_to_update_favourite": "Failed to update favourite status",
   "image_processing_failed": "Image processing failed",
   "no_not_seen_empty": "All species are already marked as observed",
+  "notes": "Notes",
+  "quantity": "Quantity",
   "retry": "Retry",
   "section_privacy": "Privacy",
   "serer_error": "Service unavailable",

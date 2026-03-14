@@ -22,7 +22,6 @@ const TimeInput = ({
   label,
   value,
   onChange,
-  placeholder = "Select time",
   error,
   allowClear = true,
   disabled = false,
@@ -30,6 +29,7 @@ const TimeInput = ({
   const { t } = useTranslation();
   const { Colors, theme } = useTheme();
   const styles = stylesFn(Colors);
+  const placeholder = t("select_time");
 
   const [androidPickerOpen, setAndroidPickerOpen] = useState(false);
   const [iosOpen, setIosOpen] = useState(false);
@@ -78,10 +78,7 @@ const TimeInput = ({
 
   const handleIosChange = useCallback((_event, selectedDate) => {
     if (!selectedDate) return;
-    // Обновляем локальный tempDate — пикер использует его, не value извне.
-    // Так спиннер не сбрасывается при каждом onChange.
     setTempDate(selectedDate);
-    // Сразу сообщаем родителю — значение обновляется на каждый тик
     onChange(dateToTimeString(selectedDate));
   }, [onChange]);
 
@@ -154,8 +151,6 @@ const TimeInput = ({
               <Text style={styles.doneText}>{t("done")}</Text>
             </Pressable>
           </View>
-          {/* Пикер получает tempDate — независимое локальное состояние,
-              не перезаписывается извне при каждом onChange */}
           <DateTimePicker
             value={tempDate}
             mode="time"
