@@ -2,7 +2,7 @@ import api from "../services/api";
 import { isoToFlagEmoji, buildDateParams, cleanFilters } from "./helpers";
 
 export const fetchTimezones = async () => {
-  const res = await api.get("/api/timezones/");
+  const res = await api.get("/api/timezones2/");
   return res.data.map(([value, label]) => ({
     value,
     label,
