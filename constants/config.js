@@ -1,4 +1,4 @@
-const baseUrl = "http://192.168.0.103:8000";
+const baseUrl = "http://192.168.0.102:8000";
 // const mediaBaseUrl = "https://s.dibird.com";
 const mediaBaseUrl = baseUrl;
 

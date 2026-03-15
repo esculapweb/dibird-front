@@ -91,7 +91,7 @@ const DiaryDetailScreen = ({ route, navigation }) => {
           style={styles.iconButton}
           size={24}
           disabled={!diary || updateMutation.isPending}
-          color={Colors.textSecondary}
+          tintColor={Colors.textMain}
         />
     ),
     [diary, updateMutation.isPending],
