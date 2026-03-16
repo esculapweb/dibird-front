@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMutationWithTranslation } from "./useMutationWithTranslation";
 import { useApiError } from "./useApiError";
 import api from "../services/api";
+import { INVALIDATION_MAP } from "../constants/invalidationMap";
 
 const URLS = {
   Place: "/myapi/place2/",
@@ -93,16 +94,19 @@ export const useUpdateItem = (id, type) => {
       return { prevItem, prevItems };
     },
     onError: (e, newData, ctx) => {
-      if (ctx?.prevItems) {
-        queryClient.setQueryData([`${TYPE_PLURAL[type]}`, id], ctx.prevItem);
+      if (ctx?.prevItem) {
+        queryClient.setQueryData([type, id], ctx.prevItem);
       }
       if (ctx?.prevItems) {
-        queryClient.setQueryData([type], ctx.prevItems);
+        queryClient.setQueryData([TYPE_PLURAL[type]], ctx.prevItems);
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries([type, id]);
-      queryClient.invalidateQueries([`${TYPE_PLURAL[type]}`]);
+      queryClient.invalidateQueries({ queryKey: [type, id], exact: true });
+      const extraKeys = INVALIDATION_MAP[type]?.update ?? [];
+      extraKeys.forEach((key) => {
+        queryClient.invalidateQueries({ queryKey: key, exact: false });
+      });
     },
   });
 };
@@ -112,10 +116,11 @@ export const useDeleteItem = (type) => {
 
   return useMutationWithTranslation({
     mutationFn: (id) => api.delete(`${URLS[type]}${id}/`),
-    onSettled: () => {
-      queryClient.invalidateQueries({
-        queryKey: [`${TYPE_PLURAL[type]}`],
-        exact: false,
+    onSettled: (data, error, id) => {
+      queryClient.removeQueries({ queryKey: [type, id], exact: true });
+      const extraKeys = INVALIDATION_MAP[type]?.delete ?? [];
+      extraKeys.forEach((key) => {
+        queryClient.invalidateQueries({ queryKey: key, exact: false });
       });
     },
   });

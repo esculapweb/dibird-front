@@ -10,7 +10,7 @@ const FilterChips = ({ filters, onRemove, extraFilters}) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const effectiveTerritory = filters?.territory ?? extraFilters?.territory ?? null;
-  const { getFilterLabel } = useFilterLabels(filters, effectiveTerritory);
+  const { getFilterLabel } = useFilterLabels(effectiveTerritory);
 
   const activeFilters = Object.entries(filters).filter(
     ([, value]) =>

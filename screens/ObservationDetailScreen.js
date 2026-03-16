@@ -39,7 +39,6 @@ const ObservationDetailScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
   const styles = stylesFn(Colors);
 
-
   const handleDelete = useCallback(() => {
     if (!observation) return;
 
@@ -69,20 +68,20 @@ const ObservationDetailScreen = ({ route, navigation }) => {
           icon="create-outline"
           onPress={() =>
             observation.diary
-            ? navigation.navigate("DiaryObservationEditor", {
-              observation,
-              diaryId: observation.diary,
-              territoryValue: observation.territory
-            })
-            : navigation.navigate("ObservationEditor", {
-              observation: {
-                ...observation,
-                date_time:
-                  observation.date_time instanceof Date
-                    ? observation.date_time.toISOString()
-                    : observation.date_time,
-              },
-            })
+              ? navigation.navigate("DiaryObservationEditor", {
+                  observation,
+                  diaryId: observation.diary,
+                  territoryValue: observation.territory,
+                })
+              : navigation.navigate("ObservationEditor", {
+                  observation: {
+                    ...observation,
+                    date_time:
+                      observation.date_time instanceof Date
+                        ? observation.date_time.toISOString()
+                        : observation.date_time,
+                  },
+                })
           }
           style={styles.iconButton}
           size={24}

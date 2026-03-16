@@ -6,7 +6,7 @@ import { formatDate } from "../util/helpers";
 import { fetchMyCountries, fetchMyPlaces, fetchSpecies } from "../util/fetches";
 import { usePlaceLocation } from "./Place/usePlaceLocation";
 
-export const useFilterLabels = (filters, effectiveTerritory) => {
+export const useFilterLabels = (effectiveTerritory) => {
   const { t } = useTranslation();
   const { language } = useLanguage();
   const { coords, roundedCoords } = usePlaceLocation();

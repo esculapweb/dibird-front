@@ -2,6 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { useMutationWithTranslation } from "../useMutationWithTranslation";
 import api from "../../services/api";
+import { INVALIDATION_MAP } from "../../constants/invalidationMap";
 
 export const useCreatePlace = () => {
   const queryClient = useQueryClient();
@@ -36,7 +37,10 @@ export const useCreatePlace = () => {
       });
     },
     onSettled: () => {
-      queryClient.invalidateQueries(["Places"]);
+      const extraKeys = INVALIDATION_MAP["Place"]?.add ?? [];
+      extraKeys.forEach((key) => {
+        queryClient.invalidateQueries({ queryKey: key, exact: false });
+      });
     },
   });
 };
