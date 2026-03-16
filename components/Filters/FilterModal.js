@@ -16,7 +16,7 @@ import { useLanguage } from "../../store/language-context";
 import RadioGroup from "../ui/RadioGroup";
 import SpeciesOptionRow from "../ui/SpeciesOptionRow";
 import { usePlaceLocation } from "../../hooks/Place/usePlaceLocation";
-import { useSortedQuery } from "../../hooks/useSortedQuery";
+import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 
 const FilterModal = ({
   screen,
@@ -63,7 +63,7 @@ const FilterModal = ({
     query: queryMyCountries,
     sort: countriesSort,
     onSortChange: onCountriesSortChange,
-  } = useSortedQuery({
+  } = useDropdownQuery({
     type: "CountriesDropdown",
     queryFn: (sort) => fetchMyCountries(false, sort),
     params: [language],
@@ -73,7 +73,7 @@ const FilterModal = ({
     query: queryPlaces,
     sort: placesSort,
     onSortChange: onPlacesSortChange,
-  } = useSortedQuery({
+  } = useDropdownQuery({
     type: "PlacesDropdown",
     queryFn: (sort) => fetchMyPlaces(effectiveTerritory, coords, sort),
     params: [effectiveTerritory, roundedCoords],
@@ -84,10 +84,10 @@ const FilterModal = ({
     query: querySpecies,
     sort: speciesSort,
     onSortChange: onSpeciesSortChange,
-  } = useSortedQuery({
+  } = useDropdownQuery({
     type: "SpeciesDropdown",
     queryFn: (sort) => fetchSpecies(effectiveTerritory, sort),
-    params: [effectiveTerritory],
+    params: [effectiveTerritory, language],
     enabled: !!effectiveTerritory,
   });
 

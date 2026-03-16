@@ -17,7 +17,7 @@ import Section from "../ui/Section";
 import PrivacyToggle from "../ui/PrivacyToggle";
 import PlaceBlock from "../Place/PlaceBlock";
 import { usePlaceLocation } from "../../hooks/Place/usePlaceLocation";
-import { useSortedQuery } from "../../hooks/useSortedQuery";
+import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 
 const ObservationForm = ({
   formData,
@@ -44,7 +44,7 @@ const ObservationForm = ({
     query: queryMyCountries,
     sort: countriesSort,
     onSortChange: onCountriesSortChange,
-  } = useSortedQuery({
+  } = useDropdownQuery({
     type: "CountriesDropdown",
     queryFn: (sort) => fetchMyCountries(false, sort),
     params: [language],
@@ -54,7 +54,7 @@ const ObservationForm = ({
     query: queryPlaces,
     sort: placesSort,
     onSortChange: onPlacesSortChange,
-  } = useSortedQuery({
+  } = useDropdownQuery({
     type: "PlacesDropdown",
     queryFn: (sort) => fetchMyPlaces(territoryValue, coords, sort),
     params: [territoryValue, roundedCoords],
@@ -65,10 +65,10 @@ const ObservationForm = ({
     query: querySpecies,
     sort: speciesSort,
     onSortChange: onSpeciesSortChange,
-  } = useSortedQuery({
+  } = useDropdownQuery({
     type: "SpeciesDropdown",
     queryFn: (sort) => fetchSpecies(territoryValue, sort),
-    params: [territoryValue],
+    params: [territoryValue, language],
     enabled: !!territoryValue,
   });
 

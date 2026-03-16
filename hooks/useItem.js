@@ -1,7 +1,7 @@
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { useTranslatedQuery } from "./useQueryWithTranslation";
 import { useMutationWithTranslation } from "./useMutationWithTranslation";
+import { useApiError } from "./useApiError";
 import api from "../services/api";
 
 const URLS = {
@@ -14,18 +14,30 @@ const TYPE_PLURAL = {
   Place: "Places",
   Observation: "Observations",
   Diary: "Diaries",
-}
+};
 
-export const useItem = (id, type) =>
-  useTranslatedQuery({
-    queryFn: async (itemId) => {
-      const res = await api.get(`${URLS[type]}${itemId}/`);
+export const useItem = (id, type) => {
+  const { getTranslatedError, showErrorToast } = useApiError();
+
+  return useQuery({
+    queryKey: [type, id],
+    queryFn: async () => {
+      const res = await api.get(`${URLS[type]}${id}/`);
       return res.data;
     },
-    params: [id],
-    type,
     enabled: !!id,
+    staleTime: 1000 * 60 * 60 * 24,
+    cacheTime: 1000 * 60 * 60 * 24,
+    refetchOnWindowFocus: false,
+    onError: (error) => {
+      console.info("Query error:", {
+        queryKey: [type, id],
+        error: getTranslatedError(error),
+      });
+      showErrorToast(error);
+    },
   });
+};
 
 export const useUpdateItem = (id, type) => {
   const queryClient = useQueryClient();

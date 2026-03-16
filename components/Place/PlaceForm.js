@@ -6,7 +6,7 @@ import Input from "../ui/Input";
 import DropdownInput from "../ui/DropdownInput";
 import { fetchMyCountries } from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
-import { useSortedQuery } from "../../hooks/useSortedQuery";
+import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 
 const PlaceForm = ({
   onCoordsChange,
@@ -32,7 +32,7 @@ const PlaceForm = ({
     query: queryMyCountries,
     sort: countriesSort,
     onSortChange: onCountriesSortChange,
-  } = useSortedQuery({
+  } = useDropdownQuery({
     type: "CountriesDropdown",
     queryFn: (sort) => fetchMyCountries(false, sort),
     params: [language],

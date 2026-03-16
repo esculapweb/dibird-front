@@ -90,6 +90,9 @@ export const sortOptionsList = (screen) => {
         { label: i18n.t("alphabetic_desc"), value: "-name" },
       ];
 
+    case "TimezonesDropdown":
+      return [{ label: "Default", value: "name" }];
+
     default:
       return [];
   }

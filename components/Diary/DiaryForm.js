@@ -10,7 +10,7 @@ import Section from "../ui/Section";
 import PrivacyToggle from "../ui/PrivacyToggle";
 import PlaceBlock from "../Place/PlaceBlock";
 import { usePlaceLocation } from "../../hooks/Place/usePlaceLocation";
-import { useSortedQuery } from "../../hooks/useSortedQuery";
+import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 
 const DiaryForm = ({
   formData,
@@ -34,7 +34,7 @@ const DiaryForm = ({
     query: queryMyCountries,
     sort: countriesSort,
     onSortChange: onCountriesSortChange,
-  } = useSortedQuery({
+  } = useDropdownQuery({
     type: "CountriesDropdown",
     queryFn: (sort) => fetchMyCountries(false, sort),
     params: [language],
@@ -44,7 +44,7 @@ const DiaryForm = ({
     query: queryPlaces,
     sort: placesSort,
     onSortChange: onPlacesSortChange,
-  } = useSortedQuery({
+  } = useDropdownQuery({
     type: "PlacesDropdown",
     queryFn: (sort) => fetchMyPlaces(territoryValue, coords, sort),
     params: [territoryValue, roundedCoords],

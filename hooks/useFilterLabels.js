@@ -1,40 +1,42 @@
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "../store/language-context";
-import { useTranslatedQuery } from "./useQueryWithTranslation";
+import { useDropdownQuery } from "./useDropdownQuery";
 
 import { formatDate } from "../util/helpers";
 import { fetchMyCountries, fetchMyPlaces, fetchSpecies } from "../util/fetches";
+import { usePlaceLocation } from "./Place/usePlaceLocation";
 
 export const useFilterLabels = (filters, effectiveTerritory) => {
   const { t } = useTranslation();
   const { language } = useLanguage();
+  const { coords, roundedCoords } = usePlaceLocation();
 
-  const countriesQuery = useTranslatedQuery({
-    queryFn: () => fetchMyCountries(false),
+  const { query: countriesQuery } = useDropdownQuery({
+    type: "CountriesDropdown",
+    queryFn: (sort) => fetchMyCountries(false, sort),
     params: [language],
     mapResult: true,
     enabled: true,
-    type: "mycountries",
   });
 
-  const placesQuery = useTranslatedQuery({
-    queryFn: () => fetchMyPlaces(effectiveTerritory),
-    params: [effectiveTerritory, language],
+  const { query: placesQuery } = useDropdownQuery({
+    type: "PlacesDropdown",
+    queryFn: (sort) => fetchMyPlaces(effectiveTerritory, coords, sort),
+    params: [effectiveTerritory, roundedCoords],
     mapResult: true,
     enabled: !!effectiveTerritory,
-    type: "places",
   });
 
-  const speciesQuery = useTranslatedQuery({
-    queryFn: () => fetchSpecies(effectiveTerritory),
+  const { query: speciesQuery } = useDropdownQuery({
+    type: "SpeciesDropdown",
+    queryFn: (sort) => fetchSpecies(effectiveTerritory, sort),
     params: [effectiveTerritory, language],
     mapResult: true,
     enabled: effectiveTerritory,
-    type: "species",
   });
 
   const getFilterLabel = (key, value) => {
-    if (value === null && value === undefined) return "";
+    if (value === null || value === undefined) return "";
 
     const placeholder = "...";
 

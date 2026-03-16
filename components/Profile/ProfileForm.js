@@ -9,8 +9,7 @@ import RadioGroup from "../ui/RadioGroup";
 import { useProfile } from "../../store/profile-context";
 import { fetchTimezones, fetchMyCountries } from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
-import { useTranslatedQuery } from "../../hooks/useQueryWithTranslation";
-import { useSortedQuery } from "../../hooks/useSortedQuery";
+import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 
 const ProfileForm = ({ submitHandler, loading, success }) => {
   const { language } = useLanguage();
@@ -71,17 +70,21 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
     submitHandler(formData);
   };
 
-
   const {
     query: queryMyCountries,
     sort: countriesSort,
     onSortChange: onCountriesSortChange,
-  } = useSortedQuery({
+  } = useDropdownQuery({
     type: "CountriesDropdown",
     queryFn: (sort) => fetchMyCountries(false, sort),
     params: [language],
   });
 
+  const { query: queryTimeZones } = useDropdownQuery({
+    type: "TimezonesDropdown",
+    queryFn: fetchTimezones,
+    params: [],
+  });
 
   useEffect(() => {
     if (!profile?.user_data) return;
@@ -126,7 +129,7 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
           placeholder={t("select_timezone")}
           value={timezoneValue}
           setValue={setTimezoneValue}
-          query={useTranslatedQuery({ queryFn: fetchTimezones })}
+          query={queryTimeZones}
         />
 
         <RadioGroup

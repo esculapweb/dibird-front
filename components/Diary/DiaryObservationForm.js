@@ -2,13 +2,14 @@ import { useEffect } from "react";
 import { ScrollView } from "react-native";
 import { useTranslation } from "react-i18next";
 
+import { useLanguage } from "../../store/language-context";
 import DropdownInput from "../ui/DropdownInput";
 import TimeInput from "../ui/TimeInput";
 import { fetchSpecies } from "../../util/fetches";
 import SpeciesOptionRow from "../ui/SpeciesOptionRow";
 import Input from "../ui/Input";
 import Section from "../ui/Section";
-import { useSortedQuery } from "../../hooks/useSortedQuery";
+import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 
 const DiaryObservationForm = ({
   formData,
@@ -22,15 +23,16 @@ const DiaryObservationForm = ({
   setSpeciesData,
 }) => {
   const { t } = useTranslation();
+  const { language } = useLanguage();
 
   const {
     query: querySpecies,
     sort: speciesSort,
     onSortChange: onSpeciesSortChange,
-  } = useSortedQuery({
+  } = useDropdownQuery({
     type: "SpeciesDropdown",
     queryFn: (sort) => fetchSpecies(territoryValue, sort),
-    params: [territoryValue],
+    params: [territoryValue, language],
     enabled: !!territoryValue,
   });
 

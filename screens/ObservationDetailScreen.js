@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Alert } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { useTheme } from "../store/theme-context";
 import { formatDate, formatDateTime, formatDateLong } from "../util/helpers";
@@ -38,6 +39,21 @@ const ObservationDetailScreen = ({ route, navigation }) => {
   const { Colors } = useTheme();
   const { t } = useTranslation();
   const styles = stylesFn(Colors);
+
+
+
+
+  const queryClient = useQueryClient();
+  const allQueries = queryClient
+    .getQueryCache()
+    .getAll();
+  const keys = allQueries.map(q => q.queryKey);
+  console.log(keys)
+  // const d = queryClient.getQueryData(["SpeciesDropdown", null, "ioc_id"]);
+  // console.log(d)
+
+
+
 
   const handleDelete = useCallback(() => {
     if (!observation) return;
