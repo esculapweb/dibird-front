@@ -115,11 +115,14 @@ const TextPart = ({
 
   return (
     <>
-      <Text style={[styles.name, styles.promptTitle]}>
-        {disabled ? t("select_country_first") : t("select_place")}
-      </Text>
-      {!disabled && <Text style={styles.promptSub}>{t("place_tap_hint")}</Text>}
-    </>
+        <Text style={[styles.name, styles.promptTitle]}>
+          {disabled ? t("place") : t("select_place")}
+        </Text>
+
+        <Text style={styles.promptSub}>
+          {disabled ? t("select_country_first") : t("place_tap_hint")}
+        </Text>
+      </>
   );
 };
 

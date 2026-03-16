@@ -39,11 +39,12 @@ const DiaryDetailScreen = ({ route, navigation }) => {
   const styles = stylesFn(Colors);
 
   const handleAdd = useCallback(async () => {
-    // const filters = await loadFilters(route.name);
-    // const defaultTerritory = filters?.territory ?? null;
-    // navigation.navigate("ObservationEditor", { defaultTerritory });
-    console.log("add diary observation");
-  }, [navigation, route.name]);
+    if (!diary) return;
+    navigation.navigate("DiaryObservationEditor", {
+      diaryId: diary.id,
+      territoryValue: diary.territory,
+    });
+  }, [navigation, diary]);
 
   const noItems = {
     icon: "binoculars-outline",
@@ -79,20 +80,24 @@ const DiaryDetailScreen = ({ route, navigation }) => {
 
   const headerRight = useCallback(
     () => (
-        <IconButton
-          icon="create-outline"
-          onPress={() => navigation.navigate("DiaryEditor", { diary: {
-                ...diary,
-                date_time:
-                  diary.date_time instanceof Date
-                    ? diary.date_time.toISOString()
-                    : diary.date_time,
-              }, })}
-          style={styles.iconButton}
-          size={24}
-          disabled={!diary || updateMutation.isPending}
-          tintColor={Colors.textMain}
-        />
+      <IconButton
+        icon="create-outline"
+        onPress={() =>
+          navigation.navigate("DiaryEditor", {
+            diary: {
+              ...diary,
+              date_time:
+                diary.date_time instanceof Date
+                  ? diary.date_time.toISOString()
+                  : diary.date_time,
+            },
+          })
+        }
+        style={styles.iconButton}
+        size={24}
+        disabled={!diary || updateMutation.isPending}
+        tintColor={Colors.textMain}
+      />
     ),
     [diary, updateMutation.isPending],
   );
@@ -125,7 +130,7 @@ const DiaryDetailScreen = ({ route, navigation }) => {
         route={route}
         navigation={navigation}
         fetchFunction={fetchDiaryObservations}
-        extraFilters={{diary: diaryId, territory: diary.territory}}
+        extraFilters={{ diary: diaryId, territory: diary.territory }}
         allowedFilters={["species"]}
         errorTitle={t("observations_unavailable")}
         onAdd={handleAdd}

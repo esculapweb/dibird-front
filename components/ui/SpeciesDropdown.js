@@ -19,7 +19,7 @@ const SpeciesDropdown = ({
   onPress,
   disabled,
   error,
-  query
+  query,
 }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -32,7 +32,7 @@ const SpeciesDropdown = ({
       return;
     }
     onPress();
-  }
+  };
 
   const ImagePart = () => {
     if (query.isLoading)
@@ -42,9 +42,12 @@ const SpeciesDropdown = ({
         </View>
       );
 
-    if (query.isError) return <View style={[styles.image, styles.imageEmpty]}>
-      <Ionicons name="refresh" size={32} color={Colors.link} />
-    </View>;
+    if (query.isError)
+      return (
+        <View style={[styles.image, styles.imageEmpty]}>
+          <Ionicons name="refresh" size={32} color={Colors.link} />
+        </View>
+      );
 
     if (speciesData?.thumb && value)
       return (
@@ -110,11 +113,12 @@ const SpeciesDropdown = ({
     return (
       <>
         <Text style={[styles.name, styles.promptTitle]}>
-          {disabled ? t("select_country_first") : t("select_species")}
+          {disabled ? t("species_single") : t("select_species")}
         </Text>
-        {!disabled && (
-          <Text style={styles.promptSub}>{t("species_tap_hint")}</Text>
-        )}
+
+        <Text style={styles.promptSub}>
+          {disabled ? t("select_country_first") : t("species_tap_hint")}
+        </Text>
       </>
     );
   };

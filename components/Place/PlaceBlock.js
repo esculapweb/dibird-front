@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 
 import { useTheme } from "../../store/theme-context";
 import DropdownInput from "../ui/DropdownInput";
-import Map from "../Map/Map";
 
 const PlaceBlock = ({
   territoryValue,
@@ -22,9 +21,6 @@ const PlaceBlock = ({
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
-  const selectedPlace = queryPlaces?.data?.find((p) => p.value === placeValue);
-
-  const coords = selectedPlace?.location?.coordinates;
 
   return (
     <View>

@@ -67,7 +67,13 @@ const ObservationDetailScreen = ({ route, navigation }) => {
         <IconButton
           icon="create-outline"
           onPress={() =>
-            navigation.navigate("ObservationEditor", {
+            observation.diary
+            ? navigation.navigate("DiaryObservationEditor", {
+              observation,
+              diaryId: observation.diary,
+              territoryValue: observation.territory
+            })
+            : navigation.navigate("ObservationEditor", {
               observation: {
                 ...observation,
                 date_time:
