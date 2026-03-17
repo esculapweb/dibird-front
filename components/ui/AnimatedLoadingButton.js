@@ -13,12 +13,15 @@ import { useTheme } from "../../store/theme-context";
 const BUTTON_HEIGHT = 48;
 const SUCCESS_DISPLAY_TIME = 3000; 
 
-const AnimatedLoadingButton = ({ onPress, loading, success, children }) => {
+const AnimatedLoadingButton = ({ onPress, loading, success, children, bright }) => {
   const { Colors } = useTheme();
-  const styles = stylesFn(Colors);
+
+  const textColor = bright ? Colors.buttonBrightColor : Colors.buttonPrimaryText;
+  const styles = stylesFn(textColor);
 
   const spinnerOpacity = useRef(new Animated.Value(0)).current;
   const successOpacity = useRef(new Animated.Value(0)).current;
+
 
   useEffect(() => {
     Animated.timing(spinnerOpacity, {
@@ -52,6 +55,7 @@ const AnimatedLoadingButton = ({ onPress, loading, success, children }) => {
       disabled={loading}
       style={({ pressed }) => [
         styles.button,
+        {backgroundColor: bright ? Colors.buttonBrightBg : Colors.buttonBg},
         pressed && !loading ? styles.pressed : null,
         loading ? styles.disabled : null,
       ]}
@@ -60,14 +64,14 @@ const AnimatedLoadingButton = ({ onPress, loading, success, children }) => {
         <Text style={styles.text}>{children}</Text>
 
         <Animated.View style={[styles.spinner, { opacity: spinnerOpacity }]}>
-          <ActivityIndicator size="small" color={Colors.buttonPrimaryText} />
+          <ActivityIndicator size="small" color={textColor} />
         </Animated.View>
 
         <Animated.View style={[styles.spinner, { opacity: successOpacity }]}>
           <Ionicons
             name="checkmark"
             size={20}
-            color={Colors.buttonPrimarySpinner}
+            color={textColor}
           />
         </Animated.View>
       </View>
@@ -77,10 +81,9 @@ const AnimatedLoadingButton = ({ onPress, loading, success, children }) => {
 
 export default AnimatedLoadingButton;
 
-const stylesFn = (Colors) =>
+const stylesFn = (textColor) =>
   StyleSheet.create({
     button: {
-      backgroundColor: Colors.buttonBg,
       borderRadius: 8,
       height: BUTTON_HEIGHT,
       paddingHorizontal: 20,
@@ -97,7 +100,7 @@ const stylesFn = (Colors) =>
       flex: 1,
     },
     text: {
-      color: Colors.buttonPrimaryText,
+      color: textColor,
       fontWeight: "600",
       fontSize: 16,
       position: "absolute",

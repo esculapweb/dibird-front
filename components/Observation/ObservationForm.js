@@ -43,7 +43,8 @@ const ObservationForm = ({
   onEditDiary,
   onSaveAndAddAnother,
   isSaving,
-  justSaved
+  justSaved,
+  existingSpecies,
 }) => {
   const { t } = useTranslation();
   const { language } = useLanguage();
@@ -237,6 +238,7 @@ const ObservationForm = ({
                 selected={selected}
                 onSelect={onSelect}
                 onClose={onClose}
+                disabled={existingSpecies?.has(item.value)}
               />
             )}
             speciesData={speciesData}

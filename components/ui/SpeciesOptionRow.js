@@ -11,6 +11,7 @@ const SpeciesOptionRow = ({
   onSelect,
   onClose,
   itemHeight = 52,
+  disabled = false,
 }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors, itemHeight);
@@ -19,16 +20,18 @@ const SpeciesOptionRow = ({
   return (
     <Pressable
       onPress={() => {
+        if (disabled) return;
         onSelect(item.value);
         onClose();
       }}
       style={({ pressed }) => [
         styles.item,
         isActive && styles.itemActive,
+        disabled && styles.itemDisabled,
         pressed && { backgroundColor: Colors.primary300 },
       ]}
     >
-      <View style={styles.row}>
+      <View style={[styles.row, disabled && { opacity: 0.4 }]}>
         <View style={styles.imageWrapper}>
           {item.thumb ? (
             <Image
@@ -49,11 +52,14 @@ const SpeciesOptionRow = ({
             numberOfLines={1}
             style={[styles.name, isActive && styles.nameActive]}
           >
-            {item.name_lang }
+            {item.name_lang}
           </Text>
 
           {item.name_lang !== item.name && (
-            <Text numberOfLines={1} style={[styles.latin, isActive && styles.labelActive]}>
+            <Text
+              numberOfLines={1}
+              style={[styles.latin, isActive && styles.labelActive]}
+            >
               {item.name}
             </Text>
           )}
@@ -134,10 +140,13 @@ const stylesFn = (Colors, itemHeight) =>
 
     itemActive: {
       borderLeftColor: Colors.mainTextDate,
-      backgroundColor: Colors.primary200, 
+      backgroundColor: Colors.primary200,
     },
     labelActive: {
       fontWeight: "600",
       color: Colors.primary500,
+    },
+    itemDisabled: {
+      borderLeftColor: "transparent",
     },
   });

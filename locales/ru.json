@@ -99,7 +99,7 @@
   "login": "Вход",
   "login_failed": "Не удалось войти",
   "login_instead": "Войти вместо регистрации",
-  "login_to_continue": "Войдите, чтобы продолжить",
+  "login_to_continue": "Войдите в систему",
   "logout": "Выйти",
   "logout_message": "Вы действительно хотите выйти?",
   "logout_title": "Выход",

@@ -89,7 +89,7 @@ const AuthForm = ({ isLogin, onSubmit, credentialsInvalid, loading }) => {
           end={[1, 1]}
           style={styles.buttonGradient}
         >
-          <AnimatedLoadingButton onPress={submitHandler} loading={loading}>
+          <AnimatedLoadingButton onPress={submitHandler} loading={loading} bright={true}>
             {isLogin ? t("log_in") : t("sign_up")}
           </AnimatedLoadingButton>
         </LinearGradient>

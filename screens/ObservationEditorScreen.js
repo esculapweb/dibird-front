@@ -2,6 +2,7 @@ import { useState, useCallback, useLayoutEffect } from "react";
 import { StyleSheet, Platform, KeyboardAvoidingView, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useTheme } from "../store/theme-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
@@ -14,6 +15,7 @@ import { useProfile } from "../store/profile-context";
 import { setSession } from "../util/sessionStore";
 import { setNavigationCallback } from "../util/navigationCallbacks";
 import { useEditorForm } from "../hooks/useEditorForm";
+import { fetchDiarySpeciesIds } from "../util/fetches";
 
 const FORM_FIELDS = [
   "species",
@@ -32,6 +34,7 @@ const ObservationEditorScreen = ({ navigation, route }) => {
   const styles = stylesFn(Colors);
   const { profile } = useProfile();
   const [justSaved, setJustSaved] = useState(false);
+  const queryClient = useQueryClient();
 
   const {
     observation,
@@ -70,6 +73,19 @@ const ObservationEditorScreen = ({ navigation, route }) => {
     requiredFields: ["territory", "species", "date_time"],
     diaryId,
   });
+
+  const { data: diarySpeciesIds } = useQuery({
+    queryKey: ["DiarySpecies", diaryId],
+    queryFn: () => fetchDiarySpeciesIds(diaryId),
+    enabled: !!diaryId,
+    staleTime: 0,
+  });
+
+  const existingSpecies = new Set(
+    (diarySpeciesIds ?? []).filter(
+      (id) => id !== observationWithParsedDate?.species,
+    ),
+  );
 
   const createObservationMutation = useCreateObservation();
   const updateObservationMutation = useUpdateItem(
@@ -142,6 +158,9 @@ const ObservationEditorScreen = ({ navigation, route }) => {
 
     createObservationMutation.mutate(observationData, {
       onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: ["DiarySpecies", diaryId],
+        });
         setJustSaved(true);
         setTimeout(() => setJustSaved(false), 1500);
         setSpeciesValue(null);
@@ -157,7 +176,14 @@ const ObservationEditorScreen = ({ navigation, route }) => {
       },
       onError: handleMutateError,
     });
-  }, [formData, speciesValue, territoryValue, placeValue]);
+  }, [
+    formData,
+    speciesValue,
+    territoryValue,
+    placeValue,
+    queryClient,
+    diaryId,
+  ]);
 
   const handleAddNewPlace = useCallback(() => {
     setNavigationCallback("onPlaceCreated", (newPlaceId, newPlaceTerritory) => {
@@ -256,6 +282,7 @@ const ObservationEditorScreen = ({ navigation, route }) => {
         }
         isSaving={createObservationMutation.isPending}
         justSaved={justSaved}
+        existingSpecies={existingSpecies}
       />
     </KeyboardAvoidingView>
   );

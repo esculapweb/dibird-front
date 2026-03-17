@@ -24,11 +24,7 @@ export const fetchMyCountries = async (favOnly = false, order) => {
   }));
 };
 
-export const fetchMyPlaces = async (
-  territory = null,
-  coords = null,
-  order
-) => {
+export const fetchMyPlaces = async (territory = null, coords = null, order) => {
   if (!territory) return [];
 
   const params = {
@@ -70,10 +66,20 @@ export const fetchSpecies = async (territory = null, order) => {
   }));
 };
 
-export const fetchMapPreview = async(placeId) => {
+export const fetchDiarySpeciesIds = async (diaryId) => {
+  const params = {
+    diary: diaryId,
+  };
+  const res = await api.get("/myapi/diary-observation2/species-ids/", {
+    params,
+  });
+  return res.data;
+};
+
+export const fetchMapPreview = async (placeId) => {
   const res = await api.get(`/myapi/place2/${placeId}/map_preview/`);
-  return res.data
-}
+  return res.data;
+};
 
 const fetchAbstract = async (
   fetchUrl,
@@ -101,13 +107,7 @@ const fetchAbstract = async (
   return res.data;
 };
 
-export const fetchStat = (
-  filters,
-  order = "-date",
-  search,
-  page,
-  seenMode,
-) => {
+export const fetchStat = (filters, order = "-date", search, page, seenMode) => {
   filters = { ...filters, seen: seenMode };
   return fetchAbstract("/myapi/stat2/", filters, order, search, page);
 };
@@ -121,6 +121,18 @@ export const fetchObservations = (filters, order = "-date", search, page) =>
 export const fetchDiaries = (filters, order = "-date", search, page) =>
   fetchAbstract("/myapi/diary2/", filters, order, search, page);
 
-export const fetchDiaryObservations = (filters, order = "-date_time", search, page, id) => {
-  return fetchAbstract("/myapi/diary-observation2/", filters, order, search, page);
-}
+export const fetchDiaryObservations = (
+  filters,
+  order = "-date_time",
+  search,
+  page,
+  id,
+) => {
+  return fetchAbstract(
+    "/myapi/diary-observation2/",
+    filters,
+    order,
+    search,
+    page,
+  );
+};

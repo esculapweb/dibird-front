@@ -4,7 +4,6 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
 import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
 
 import FlatButtonBottom from "../ui/FlatButtonBottom";
 import AuthForm from "./AuthForm";
@@ -105,7 +104,7 @@ const AuthContent = ({ isLogin, onAuthenticate, loading }) => {
         >
           <View style={styles.inner}>
             <View style={styles.welcomeSection}>
-              <Text style={styles.welcomeEmoji}>🦩</Text>
+              <Logo style={styles.logo} imageSize={70} withText={false} />
               <View>
                 <Text style={styles.welcomeText}>
                   {isLogin ? t("welcome_back") : t("welcome")}
@@ -122,9 +121,6 @@ const AuthContent = ({ isLogin, onAuthenticate, loading }) => {
               end={[1, 1]}
               style={styles.authCard}
             >
-              <Logo style={styles.logo} imageSize={70} withText={false} />
-              <Text style={styles.appName}>Nature Log</Text>
-
               <AuthForm
                 isLogin={isLogin}
                 onSubmit={submitHandler}
@@ -226,14 +222,7 @@ const stylesFn = (Colors) =>
     },
     logo: {
       alignSelf: "center",
-      marginBottom: 12,
-    },
-    appName: {
-      fontSize: 24,
-      fontWeight: "700",
-      color: Colors.mainTextPrimary,
-      letterSpacing: 1,
-      textAlign: "center",
-      marginBottom: 24,
+      marginLeft: 24,
+      marginRight: 12,
     },
   });

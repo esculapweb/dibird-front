@@ -64,6 +64,8 @@ const PlaceCard = React.memo(({ item, index }) => {
       <View style={styles.main}>
         <View style={styles.titleRow}>
           <View style={styles.titleLeft}>
+            
+            <Text style={styles.index}>{index + 1}.</Text>
             {item.favourite && (
                 <Ionicons
                   name="star"
@@ -71,7 +73,6 @@ const PlaceCard = React.memo(({ item, index }) => {
                   color={Colors.accent}
                 />
               )}
-            <Text style={styles.index}>{index + 1}.</Text>
               <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
                 {item.name}
               </Text>
