@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect } from "react";
+import { useState, useCallback, useLayoutEffect } from "react";
 import { StyleSheet, Platform, KeyboardAvoidingView, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
@@ -31,6 +31,7 @@ const ObservationEditorScreen = ({ navigation, route }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const { profile } = useProfile();
+  const [justSaved, setJustSaved] = useState(false);
 
   const {
     observation,
@@ -67,7 +68,7 @@ const ObservationEditorScreen = ({ navigation, route }) => {
     profile,
     hasSpecies: true,
     requiredFields: ["territory", "species", "date_time"],
-    diaryId
+    diaryId,
   });
 
   const createObservationMutation = useCreateObservation();
@@ -114,17 +115,49 @@ const ObservationEditorScreen = ({ navigation, route }) => {
     } else {
       createObservationMutation.mutate(observationData, {
         onSuccess: (res) => {
-          setSession("lastDate", observationData.date_time);
-          requestAnimationFrame(() =>
-            navigation.replace("ObservationDetail", {
-              observationId: res.data.id,
-            }),
-          );
+          if (diaryId) {
+            navigation.goBack();
+          } else {
+            setSession("lastDate", observationData.date_time);
+            requestAnimationFrame(() =>
+              navigation.replace("ObservationDetail", {
+                observationId: res.data.id,
+              }),
+            );
+          }
         },
         onError: handleMutateError,
       });
     }
   }, [formData, speciesValue, territoryValue, placeValue, isEditMode]);
+
+  const handleSaveAndAddAnother = useCallback(() => {
+    if (!validateForm()) return;
+    const observationData = {
+      ...formData,
+      species: speciesValue,
+      territory: territoryValue,
+      place: placeValue,
+    };
+
+    createObservationMutation.mutate(observationData, {
+      onSuccess: () => {
+        setJustSaved(true);
+        setTimeout(() => setJustSaved(false), 1500);
+        setSpeciesValue(null);
+        setSpeciesData(null);
+        setFormData((prev) => ({
+          ...prev,
+          species: null,
+          time: null,
+          quantity: null,
+          notes: null,
+        }));
+        setErrors({});
+      },
+      onError: handleMutateError,
+    });
+  }, [formData, speciesValue, territoryValue, placeValue]);
 
   const handleAddNewPlace = useCallback(() => {
     setNavigationCallback("onPlaceCreated", (newPlaceId, newPlaceTerritory) => {
@@ -218,6 +251,11 @@ const ObservationEditorScreen = ({ navigation, route }) => {
         isDiaryMode={!!diaryId}
         isEditMode={isEditMode}
         onEditDiary={handleEditDiary}
+        onSaveAndAddAnother={
+          !!diaryId && !isEditMode ? handleSaveAndAddAnother : null
+        }
+        isSaving={createObservationMutation.isPending}
+        justSaved={justSaved}
       />
     </KeyboardAvoidingView>
   );

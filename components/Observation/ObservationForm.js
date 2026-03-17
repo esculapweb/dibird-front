@@ -20,6 +20,7 @@ import PlaceBlock from "../Place/PlaceBlock";
 import { usePlaceLocation } from "../../hooks/Place/usePlaceLocation";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 import { useTheme } from "../../store/theme-context";
+import FlatButtonBottom from "../ui/FlatButtonBottom";
 
 const ObservationForm = ({
   formData,
@@ -40,6 +41,9 @@ const ObservationForm = ({
   isDiaryMode = false,
   isEditMode = false,
   onEditDiary,
+  onSaveAndAddAnother,
+  isSaving,
+  justSaved
 }) => {
   const { t } = useTranslation();
   const { language } = useLanguage();
@@ -181,153 +185,167 @@ const ObservationForm = ({
   );
 
   return (
-    <ScrollView
-      contentContainerStyle={{ padding: 12 }}
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
-    >
-      <Section
-        title={t("section_main")}
-        required
-        collapsible={!hideDiaryFields}
+    <View style={{ flex: 1 }}>
+      <ScrollView
+        contentContainerStyle={{ padding: 12 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        {!hideDiaryFields && (
-          <DropdownInput
-            placeholder={t("select_country")}
-            value={territoryValue}
-            setValue={(val) => {
-              setTerritoryValue(val);
-              setFormData((prev) => ({ ...prev, territory: val }));
-              setErrors((prev) => ({ ...prev, territory: undefined }));
-              setPlaceValue(null);
-            }}
-            query={queryMyCountries}
-            error={errors.territory}
-            label={t("country")}
-            type="CountriesDropdown"
-            sort={countriesSort}
-            onSortChange={onCountriesSortChange}
-          />
-        )}
-
-        <DropdownInput
-          placeholder={t("select_species")}
-          value={speciesValue}
-          setValue={(val) => {
-            setSpeciesValue(val);
-            setFormData((prev) => ({ ...prev, species: val }));
-            setErrors((prev) => ({ ...prev, species: undefined }));
-            const found = querySpecies.data?.find((item) => item.value === val);
-            setSpeciesData(found ?? null);
-          }}
-          query={querySpecies}
-          disabled={!territoryValue}
-          error={errors.species}
-          hidden
-          renderOption={({ item, selected, onSelect, onClose }) => (
-            <SpeciesOptionRow
-              item={item}
-              selected={selected}
-              onSelect={onSelect}
-              onClose={onClose}
+        <Section
+          title={t("section_main")}
+          required
+          collapsible={!hideDiaryFields}
+        >
+          {!hideDiaryFields && (
+            <DropdownInput
+              placeholder={t("select_country")}
+              value={territoryValue}
+              setValue={(val) => {
+                setTerritoryValue(val);
+                setFormData((prev) => ({ ...prev, territory: val }));
+                setErrors((prev) => ({ ...prev, territory: undefined }));
+                setPlaceValue(null);
+              }}
+              query={queryMyCountries}
+              error={errors.territory}
+              label={t("country")}
+              type="CountriesDropdown"
+              sort={countriesSort}
+              onSortChange={onCountriesSortChange}
             />
           )}
-          speciesData={speciesData}
-          type="SpeciesDropdown"
-          sort={speciesSort}
-          onSortChange={onSpeciesSortChange}
-        />
 
-        {!hideDiaryFields && (
-          <DateInput
-            value={formData.date_time}
-            onChange={(newDate) => {
-              setFormData((prev) => ({ ...prev, date_time: newDate }));
-              setErrors((prev) => ({ ...prev, date_time: undefined }));
+          <DropdownInput
+            placeholder={t("select_species")}
+            value={speciesValue}
+            setValue={(val) => {
+              setSpeciesValue(val);
+              setFormData((prev) => ({ ...prev, species: val }));
+              setErrors((prev) => ({ ...prev, species: undefined }));
+              const found = querySpecies.data?.find(
+                (item) => item.value === val,
+              );
+              setSpeciesData(found ?? null);
             }}
-            placeholder={t("observation_date")}
-            error={errors.date_time}
-            allowClear={false}
-            style={{ marginVertical: 16 }}
+            query={querySpecies}
+            disabled={!territoryValue}
+            error={errors.species}
+            hidden
+            renderOption={({ item, selected, onSelect, onClose }) => (
+              <SpeciesOptionRow
+                item={item}
+                selected={selected}
+                onSelect={onSelect}
+                onClose={onClose}
+              />
+            )}
+            speciesData={speciesData}
+            type="SpeciesDropdown"
+            sort={speciesSort}
+            onSortChange={onSpeciesSortChange}
           />
-        )}
+
+          {!hideDiaryFields && (
+            <DateInput
+              value={formData.date_time}
+              onChange={(newDate) => {
+                setFormData((prev) => ({ ...prev, date_time: newDate }));
+                setErrors((prev) => ({ ...prev, date_time: undefined }));
+              }}
+              placeholder={t("observation_date")}
+              error={errors.date_time}
+              allowClear={false}
+              style={{ marginVertical: 16 }}
+            />
+          )}
+
+          {!hideDiaryFields && (
+            <PrivacyToggle
+              value={formData.private}
+              onChange={(val) =>
+                setFormData((prev) => ({ ...prev, private: val }))
+              }
+            />
+          )}
+        </Section>
 
         {!hideDiaryFields && (
-          <PrivacyToggle
-            value={formData.private}
-            onChange={(val) =>
-              setFormData((prev) => ({ ...prev, private: val }))
-            }
-          />
+          <Section
+            title={t("section_where")}
+            hint={t("optional")}
+            collapsible={true}
+          >
+            <PlaceBlock
+              territoryValue={territoryValue}
+              placeValue={placeValue}
+              setPlaceValue={setPlaceValue}
+              setFormData={setFormData}
+              onAddNewPlace={onAddNewPlace}
+              queryPlaces={queryPlaces}
+              isLocating={isLocating}
+              sort={placesSort}
+              onSortChange={onPlacesSortChange}
+              placeData={placeData}
+              setPlaceData={setPlaceData}
+            />
+          </Section>
         )}
-      </Section>
 
-      {!hideDiaryFields && (
         <Section
-          title={t("section_where")}
+          title={t("section_details")}
           hint={t("optional")}
           collapsible={true}
+          collapsed={
+            !formData.time && formData.quantity == null && !formData.notes
+          }
         >
-          <PlaceBlock
-            territoryValue={territoryValue}
-            placeValue={placeValue}
-            setPlaceValue={setPlaceValue}
-            setFormData={setFormData}
-            onAddNewPlace={onAddNewPlace}
-            queryPlaces={queryPlaces}
-            isLocating={isLocating}
-            sort={placesSort}
-            onSortChange={onPlacesSortChange}
-            placeData={placeData}
-            setPlaceData={setPlaceData}
+          <TimeInput
+            value={formData.time}
+            onChange={(newTime) =>
+              setFormData((prev) => ({ ...prev, time: newTime }))
+            }
+          />
+          <Input
+            value={
+              formData?.quantity != null ? formData.quantity.toString() : null
+            }
+            keyboardType="numeric"
+            onUpdateValue={(val) =>
+              setFormData((prev) => ({
+                ...prev,
+                quantity: val?.trim() === "" ? null : val.trim(),
+              }))
+            }
+            error={errors.quantity}
+            isInvalid={errors.quantity}
+            placeholder={t("quantity_placeholder")}
+            birdSvg
+          />
+          <Input
+            value={formData.notes}
+            onUpdateValue={(val) =>
+              setFormData((prev) => ({ ...prev, notes: val }))
+            }
+            error={errors.notes}
+            isInvalid={errors.notes}
+            icon="document-text-outline"
+            placeholder={t("add_a_note")}
+            multiline
           />
         </Section>
+        {isDiaryEdit && <DiaryBanner />}
+      </ScrollView>
+      {onSaveAndAddAnother && (
+        <FlatButtonBottom
+          onPress={onSaveAndAddAnother}
+          icon="add-outline"
+          loading={isSaving}
+          savedLabel={justSaved ? t("observation_added") : null}
+        >
+          {t("save_and_add_another")}
+        </FlatButtonBottom>
       )}
-
-      <Section
-        title={t("section_details")}
-        hint={t("optional")}
-        collapsible={true}
-        collapsed={
-          !formData.time && formData.quantity == null && !formData.notes
-        }
-      >
-        <TimeInput
-          value={formData.time}
-          onChange={(newTime) =>
-            setFormData((prev) => ({ ...prev, time: newTime }))
-          }
-        />
-        <Input
-          value={
-            formData?.quantity != null ? formData.quantity.toString() : null
-          }
-          keyboardType="numeric"
-          onUpdateValue={(val) =>
-            setFormData((prev) => ({
-              ...prev,
-              quantity: val?.trim() === "" ? null : val.trim(),
-            }))
-          }
-          error={errors.quantity}
-          isInvalid={errors.quantity}
-          placeholder={t("quantity_placeholder")}
-          birdSvg
-        />
-        <Input
-          value={formData.notes}
-          onUpdateValue={(val) =>
-            setFormData((prev) => ({ ...prev, notes: val }))
-          }
-          error={errors.notes}
-          isInvalid={errors.notes}
-          icon="document-text-outline"
-          placeholder={t("add_a_note")}
-          multiline
-        />
-      </Section>
-            {isDiaryEdit && <DiaryBanner />}
-    </ScrollView>
+    </View>
   );
 };
 

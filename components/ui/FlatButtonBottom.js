@@ -9,9 +9,17 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { useTheme } from "../../store/theme-context";
 
-const FlatButtonBottom = ({ children, onPress, textColor, icon, loading }) => {
+const FlatButtonBottom = ({
+  children,
+  onPress,
+  textColor,
+  icon,
+  loading,
+  savedLabel,
+}) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
+  const displaySaved = !!savedLabel;
 
   if (loading)
     return (
@@ -31,16 +39,24 @@ const FlatButtonBottom = ({ children, onPress, textColor, icon, loading }) => {
         pressed && styles.pressed,
       ]}
     >
-      <View>
-        <Text style={[styles.buttonText, textColor && { color: textColor }]}>
-          {icon && (
-            <Ionicons
-              name={icon}
-              size={22}
-              color={textColor ? textColor : Colors.link}
-            />
-          )}{" "}
-          {children}
+      <View style={styles.buttonInner}>
+        {icon && (
+          <Ionicons
+            name={displaySaved ? "checkmark-circle-outline" : icon}
+            size={22}
+            color={
+              displaySaved ? Colors.toastSuccess : (textColor ?? Colors.link)
+            }
+          />
+        )}
+        <Text
+          style={[
+            styles.buttonText,
+            textColor && { color: textColor },
+            displaySaved && { color: Colors.toastSuccess },
+          ]}
+        >
+          {displaySaved ? savedLabel : children}
         </Text>
       </View>
     </Pressable>
@@ -65,5 +81,11 @@ const stylesFn = (Colors) =>
       borderTopWidth: 1,
       borderTopColor: Colors.border,
       backgroundColor: Colors.primary100,
+    },
+    buttonInner: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
     },
   });

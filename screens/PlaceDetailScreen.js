@@ -208,7 +208,7 @@ const PlaceDetailScreen = ({ route, navigation }) => {
           icon="trash-outline"
           loading={deleteMutation.isPending}
         >
-          {t("delete")}
+          {t("delete_place")}
         </FlatButtonBottom>
       </View>
     </>

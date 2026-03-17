@@ -172,7 +172,7 @@ const DiaryDetailScreen = ({ route, navigation }) => {
         icon="trash-outline"
         loading={deleteMutation.isPending}
       >
-        {t("delete")}
+        {t("delete_diary")}
       </FlatButtonBottom>
     </View>
   );
