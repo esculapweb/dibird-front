@@ -1,4 +1,4 @@
-import { useState, useCallback, useLayoutEffect } from "react";
+import { useCallback, useLayoutEffect } from "react";
 import { StyleSheet, Platform, KeyboardAvoidingView, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
@@ -11,8 +11,9 @@ import { useCreateDiary } from "../hooks/Diary/useCreateDiary";
 import { useUpdateItem } from "../hooks/useItem";
 import { showError } from "../services/api";
 import { useProfile } from "../store/profile-context";
-import { getSession, setSession } from "../util/sessionStore";
+import { setSession } from "../util/sessionStore";
 import { setNavigationCallback } from "../util/navigationCallbacks";
+import { useEditorForm } from "../hooks/useEditorForm";
 
 const FORM_FIELDS = ["territory", "place", "date_time", "private", "name"];
 
@@ -22,49 +23,28 @@ const DiaryEditorScreen = ({ navigation, route }) => {
   const styles = stylesFn(Colors);
   const { profile } = useProfile();
 
-  const { diary, defaultTerritory } = route.params || {};
+  const { diary, defaultTerritory, defaultPlace } = route.params || {};
   const isEditMode = !!diary;
 
-  const diaryWithParsedDate = diary
-    ? {
-        ...diary,
-        date_time: diary.date_time ? new Date(diary.date_time) : undefined,
-      }
-    : undefined;
+  const {
+    itemWithParsedDate: diaryWithParsedDate,
+    formData, setFormData,
+    errors, setErrors,
+    territoryValue, setTerritoryValue,
+    placeValue, setPlaceValue,
+    placeData, setPlaceData,
+    validateForm,
+  } = useEditorForm({
+    item: diary,
+    defaultTerritory,
+    defaultPlace,
+    profile,
+    hasSpecies: false,
+    requiredFields: ["territory", "date_time"],
+  });
 
   const createDiaryMutation = useCreateDiary();
   const updateDiaryMutation = useUpdateItem(diaryWithParsedDate?.id, "Diary");
-
-  const [territoryValue, setTerritoryValue] = useState(
-    () => diaryWithParsedDate?.territory ?? defaultTerritory ?? "",
-  );
-
-  const [formData, setFormData] = useState(() => {
-    const initialDate =
-      diaryWithParsedDate?.date_time ?? getSession("lastDate") ?? new Date();
-
-    return {
-      territory: territoryValue,
-      place: diaryWithParsedDate?.place ?? null,
-      date_time: initialDate,
-      private: diaryWithParsedDate?.private ?? profile?.private_diary,
-      name: diaryWithParsedDate?.name ?? null,
-    };
-  });
-
-  const [placeValue, setPlaceValue] = useState(formData.place);
-  const [errors, setErrors] = useState({});
-  const [placeData, setPlaceData] = useState(
-    diaryWithParsedDate?.place_data ?? null,
-  );
-
-  const validateForm = useCallback(() => {
-    const newErrors = {};
-    if (!territoryValue) newErrors.territory = t("territory_required");
-    if (!formData.date_time) newErrors.date_time = t("date_required");
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  }, [territoryValue, formData.date_time, t]);
 
   const extractApiError = (e) => ({
     title: isEditMode ? t("update_failed") : t("create_failed"),
@@ -103,9 +83,7 @@ const DiaryEditorScreen = ({ navigation, route }) => {
         onSuccess: (res) => {
           setSession("lastDate", diaryData.date_time);
           requestAnimationFrame(() =>
-            navigation.replace("DiaryDetail", {
-              diaryId: res.data.id,
-            }),
+            navigation.replace("DiaryDetail", { diaryId: res.data.id }),
           );
         },
         onError: handleMutateError,
@@ -168,9 +146,7 @@ const DiaryEditorScreen = ({ navigation, route }) => {
     });
   }, [navigation, headerRight, isEditMode]);
 
-  if (
-    isEditMode ? updateDiaryMutation.isPending : createDiaryMutation.isPending
-  ) {
+  if (isEditMode ? updateDiaryMutation.isPending : createDiaryMutation.isPending) {
     return <LoadingOverlay />;
   }
 

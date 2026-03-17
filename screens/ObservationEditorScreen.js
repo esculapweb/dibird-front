@@ -1,4 +1,4 @@
-import { useState, useCallback, useLayoutEffect } from "react";
+import { useCallback, useLayoutEffect } from "react";
 import { StyleSheet, Platform, KeyboardAvoidingView, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
@@ -11,8 +11,9 @@ import { useCreateObservation } from "../hooks/Observation/useCreateObservation"
 import { useUpdateItem } from "../hooks/useItem";
 import { showError } from "../services/api";
 import { useProfile } from "../store/profile-context";
-import { getSession, setSession } from "../util/sessionStore";
+import { setSession } from "../util/sessionStore";
 import { setNavigationCallback } from "../util/navigationCallbacks";
+import { useEditorForm } from "../hooks/useEditorForm";
 
 const FORM_FIELDS = [
   "species",
@@ -29,67 +30,44 @@ const ObservationEditorScreen = ({ navigation, route }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
-  const {profile} = useProfile();
+  const { profile } = useProfile();
 
-  const { observation, defaultTerritory } = route.params || {};
+  const { observation, defaultTerritory, defaultPlace, defaultSpecies } =
+    route.params || {};
   const isEditMode = !!observation;
 
-  const observationWithParsedDate = observation
-    ? {
-        ...observation,
-        date_time: observation.date_time
-          ? new Date(observation.date_time)
-          : undefined,
-      }
-    : undefined;
+  const {
+    itemWithParsedDate: observationWithParsedDate,
+    formData,
+    setFormData,
+    errors,
+    setErrors,
+    territoryValue,
+    setTerritoryValue,
+    speciesValue,
+    setSpeciesValue,
+    placeValue,
+    setPlaceValue,
+    speciesData,
+    setSpeciesData,
+    placeData,
+    setPlaceData,
+    validateForm,
+  } = useEditorForm({
+    item: observation,
+    defaultTerritory,
+    defaultPlace,
+    defaultSpecies,
+    profile,
+    hasSpecies: true,
+    requiredFields: ["territory", "species", "date_time"],
+  });
 
   const createObservationMutation = useCreateObservation();
   const updateObservationMutation = useUpdateItem(
     observationWithParsedDate?.id,
     "Observation",
   );
-
-  const [territoryValue, setTerritoryValue] = useState(
-    () => observationWithParsedDate?.territory ?? defaultTerritory ?? "",
-  );
-
-  const [formData, setFormData] = useState(() => {
-    const initialDate =
-      observationWithParsedDate?.date_time ??
-      getSession("lastDate") ??
-      new Date();
-
-    return {
-      species: observationWithParsedDate?.species ?? null,
-      territory: territoryValue,
-      place: observationWithParsedDate?.place ?? null,
-      date_time: initialDate,
-      time: observationWithParsedDate?.time ?? null,
-      private:
-        observationWithParsedDate?.private ?? profile?.private_diary,
-      quantity: observationWithParsedDate?.quantity ?? null,
-      notes: observationWithParsedDate?.notes ?? null,
-    };
-  });
-
-  const [speciesValue, setSpeciesValue] = useState(formData.species);
-  const [placeValue, setPlaceValue] = useState(formData.place);
-  const [errors, setErrors] = useState({});
-  const [speciesData, setSpeciesData] = useState(
-    observationWithParsedDate?.species_data ?? null,
-  );
-  const [placeData, setPlaceData] = useState(
-    observationWithParsedDate?.place_data ?? null,
-  );
-
-  const validateForm = useCallback(() => {
-    const newErrors = {};
-    if (!territoryValue) newErrors.territory = t("territory_required");
-    if (!speciesValue) newErrors.species = t("species_required");
-    if (!formData.date_time) newErrors.date_time = t("date_required");
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  }, [territoryValue, speciesValue, formData.date_time, t]);
 
   const extractApiError = (e) => ({
     title: isEditMode ? t("update_failed") : t("create_failed"),

@@ -14,7 +14,13 @@ const ObservationsScreen = ({ route, navigation }) => {
   const handleAdd = useCallback(async () => {
     const filters = await loadFilters(route.name);
     const defaultTerritory = filters?.territory ?? territory ?? null;
-    navigation.navigate("ObservationEditor", { defaultTerritory });
+    const defaultPlace = filters?.place ?? null;
+    const defaultSpecies = filters?.species ?? null;
+    navigation.navigate("ObservationEditor", {
+      defaultTerritory,
+      defaultPlace,
+      defaultSpecies,
+    });
   }, [navigation, route.name, territory]);
 
   const noItems = {

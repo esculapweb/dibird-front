@@ -5,15 +5,18 @@ import ListScreen from "./ListScreen";
 import { fetchDiaries } from "../util/fetches";
 import DiaryCard from "../components/Diary/DiaryCard";
 import { loadFilters } from "../util/storageHelper";
+import { useTerritory } from "../store/territory-context";
 
-const DiariesScreen = ({route, navigation}) => {
+const DiariesScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
+  const { territory } = useTerritory();
 
   const handleAdd = useCallback(async () => {
     const filters = await loadFilters(route.name);
-    const defaultTerritory = filters?.territory ?? null;
-    navigation.navigate("DiaryEditor", { defaultTerritory });
-  }, [navigation, route.name]);
+    const defaultTerritory = filters?.territory ?? territory ?? null;
+    const defaultPlace = filters?.place ?? null;
+    navigation.navigate("DiaryEditor", { defaultTerritory, defaultPlace });
+  }, [navigation, route.name, territory]);
 
   const noItems = {
     icon: "book-outline",
