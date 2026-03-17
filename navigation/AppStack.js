@@ -23,7 +23,6 @@ import ObservationEditorScreen from "../screens/ObservationEditorScreen";
 import DiariesScreen from "../screens/DiariesScreen";
 import DiaryDetailScreen from "../screens/DiaryDetailScreen";
 import DiaryEditorScreen from "../screens/DiaryEditorScreen";
-import DiaryObservationEditorScreen from "../screens/DiaryObservationEditorScreen";
 
 // import SettingsScreen from "../screens/SettingsScreen";
 
@@ -240,15 +239,6 @@ const AppNavigator = () => {
         component={DiaryEditorScreen}
         options={{
           title: t("new_diary"),
-          headerBackTitleVisible: false,
-        }}
-      />
-
-      <Stack.Screen
-        name="DiaryObservationEditor"
-        component={DiaryObservationEditorScreen}
-        options={{
-          title: t("new_observation"),
           headerBackTitleVisible: false,
         }}
       />
