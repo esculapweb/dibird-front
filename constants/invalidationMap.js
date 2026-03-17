@@ -11,7 +11,7 @@ export const INVALIDATION_MAP = {
   },
   Diary: {
     add:    [["Diaries"], ["Places"]],
-    update: [["Diaries"], ["Places"]],
+    update: [["Diaries"], ["Place"]],
     delete: [["Diaries"], ["Diary"], ["DiaryDetail"], ["Observations"], ["Observation"], ["Place"], ["Stat"]],
   },
 };

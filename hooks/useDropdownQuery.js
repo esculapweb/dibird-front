@@ -15,7 +15,7 @@ export const useDropdownQuery = ({
   const query = useQuery({
     queryKey: [type, ...params, sort],
     queryFn: () => queryFn(sort),
-    enabled: enabled && loaded,
+    enabled: enabled !== false && !!loaded,
     staleTime: 1000 * 60 * 60 * 24,
     cacheTime: 1000 * 60 * 60 * 24,
     refetchOnWindowFocus: false,
