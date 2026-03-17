@@ -6,7 +6,7 @@ import { formatDate } from "../util/helpers";
 import { fetchMyCountries, fetchMyPlaces, fetchSpecies } from "../util/fetches";
 import { usePlaceLocation } from "./Place/usePlaceLocation";
 
-export const useFilterLabels = (effectiveTerritory) => {
+export const useFilterLabels = (effectiveTerritory, hints = {}) => {
   const { t } = useTranslation();
   const { language } = useLanguage();
   const { coords, roundedCoords } = usePlaceLocation();
@@ -56,7 +56,9 @@ export const useFilterLabels = (effectiveTerritory) => {
       case "species":
         return [
           t("species_single"),
-          speciesQuery.data?.get(Number(value)) ?? placeholder,
+          hints.speciesName ??
+            speciesQuery.data?.get(Number(value)) ??
+            placeholder,
         ];
 
       case "favourite":

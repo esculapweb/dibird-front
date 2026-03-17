@@ -42,6 +42,7 @@ const ListScreen = ({
   headerRightExtra,
   fabOffset,
   getItemId = (item) => item.id,
+  onFiltersChange,
 }) => {
   const { t } = useTranslation();
 
@@ -65,6 +66,7 @@ const ListScreen = ({
   const debouncedSearch = useDebounce(search);
   const screenName = route.name;
   const sortOptions = sortOptionsList(screenName);
+  const [filterHints, setFilterHints] = useState({});
 
   const keyExtractor = (item, _) => `${screenName}-${getItemId(item)}`;
 
@@ -167,7 +169,20 @@ const ListScreen = ({
   );
 
   useEffect(() => {
+    onFiltersChange?.(filters);
+  }, [filters]);
+
+  useEffect(() => {
     const initFilters = async () => {
+      if (route.params?.filtersOverride) {
+        const { speciesName, ...filters } = route.params.filtersOverride;
+        setFilters(filters);
+        setFilterHints({ speciesName });
+        navigation.setParams({ filtersOverride: undefined });
+        setFiltersLoaded(true);
+        return;
+      }
+
       const {
         filters: deepFilters,
         sort: deepSort,
@@ -254,7 +269,12 @@ const ListScreen = ({
         />
       )}
       {hasActiveFilters && (
-        <FilterChips filters={filters} onRemove={removeFilter} extraFilters={extraFilters} />
+        <FilterChips
+          filters={filters}
+          onRemove={removeFilter}
+          extraFilters={extraFilters}
+          hints={filterHints}
+        />
       )}
       <ItemsList
         data={items}

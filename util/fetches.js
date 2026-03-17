@@ -103,7 +103,7 @@ const fetchAbstract = async (
 
 export const fetchStat = (
   filters,
-  order = "ioc_id",
+  order = "-date",
   search,
   page,
   seenMode,

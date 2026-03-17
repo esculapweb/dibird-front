@@ -11,7 +11,7 @@ import { BirdSVG } from "../ui/Svgs";
 
 const useStyles = (Colors) => React.useMemo(() => stylesFn(Colors), [Colors]);
 
-const StatCard = React.memo(({ item, index, seenMode }) => {
+const StatCard = React.memo(({ item, index, seenMode, onPress }) => {
   const { Colors } = useTheme();
   const styles = useStyles(Colors);
 
@@ -33,6 +33,7 @@ const StatCard = React.memo(({ item, index, seenMode }) => {
 
   return (
     <Pressable
+      onPress={onPress}
       style={({ pressed }) => [styles.card, pressed && styles.pressedCard]}
     >
       <View style={styles.row}>

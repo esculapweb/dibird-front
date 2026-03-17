@@ -214,11 +214,13 @@ const ObservationDetailScreen = ({ route, navigation }) => {
                   {observation?.territory_data?.name}
                 </Text>
               </View>
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={Colors.textSecondary}
-              />
+              {observation?.place_data?.id && (
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={Colors.textSecondary}
+                />
+              )}
             </View>
           </Pressable>
 

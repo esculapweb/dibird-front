@@ -8,14 +8,32 @@ import Tabs from "../components/ui/Tabs";
 
 const StatScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
+
+  const handleAdd = () => navigation.navigate("ObservationEditor");
+
   const [seenMode, setSeenMode] = useState(true);
+  const [currentFilters, setCurrentFilters] = useState({});
   const [noItems, setNoItems] = useState({
     icon: "stats-chart",
     message: t("no_stat_yet"),
     actions: [{ label: t("add_first_observation"), onPress: handleAdd }],
   });
 
-  const handleAdd = () => navigation.navigate("ObservationEditor");
+  const handleStatCardPress = useCallback(
+    (item) => {
+      // +
+      navigation.navigate("Observations", {
+        filtersOverride: {
+          territory: currentFilters.territory ?? null,
+          place: currentFilters.place ?? null,
+          species: item.species_id,
+          speciesName: item.sp_name_lang,
+          date: currentFilters.date ?? null,
+        },
+      });
+    },
+    [currentFilters, navigation],
+  );
 
   const fetchData = (filters, sort, search, page, openFilterModal) => {
     const safeFilters = { ...filters };
@@ -39,9 +57,14 @@ const StatScreen = ({ route, navigation }) => {
 
   const renderItem = useCallback(
     ({ item, index }) => (
-      <StatCard item={item} index={index} seenMode={seenMode} />
+      <StatCard
+        item={item}
+        index={index}
+        seenMode={seenMode}
+        onPress={() => handleStatCardPress(item)}
+      />
     ),
-    [seenMode],
+    [seenMode, handleStatCardPress],
   );
 
   return (
@@ -50,7 +73,7 @@ const StatScreen = ({ route, navigation }) => {
         route={route}
         navigation={navigation}
         fetchFunction={fetchData}
-        allowedFilters={["territory", "place", "species", "date"]}
+        allowedFilters={["territory", "place", "date", "species"]}
         errorTitle={t("stat_unavailable")}
         onAdd={handleAdd}
         renderItem={renderItem}
@@ -59,6 +82,7 @@ const StatScreen = ({ route, navigation }) => {
         tabs={<Tabs tabsMode={seenMode} setTabsMode={setSeenMode} />}
         tabsMode={seenMode}
         getItemId={(item) => item.species_id}
+        onFiltersChange={setCurrentFilters}
       />
     </>
   );

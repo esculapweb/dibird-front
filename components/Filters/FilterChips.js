@@ -4,13 +4,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../store/theme-context";
 import { useFilterLabels } from "../../hooks/useFilterLabels";
 
-const FilterChips = ({ filters, onRemove, extraFilters}) => {
+const FilterChips = ({ filters, onRemove, extraFilters, hints}) => {
   if (!filters || typeof filters !== "object") return null;
 
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const effectiveTerritory = filters?.territory ?? extraFilters?.territory ?? null;
-  const { getFilterLabel } = useFilterLabels(effectiveTerritory);
+  const { getFilterLabel } = useFilterLabels(effectiveTerritory, hints);
 
   const activeFilters = Object.entries(filters).filter(
     ([, value]) =>
