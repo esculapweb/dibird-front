@@ -1,5 +1,12 @@
 import { useLayoutEffect, useCallback } from "react";
-import { View, Text, StyleSheet, ScrollView, Alert } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  Pressable,
+} from "react-native";
 import { useTranslation } from "react-i18next";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
@@ -179,15 +186,41 @@ const ObservationDetailScreen = ({ route, navigation }) => {
 
           <View style={styles.dividerLine} />
 
-          <View style={styles.placeRow}>
-            <Text style={styles.placeName} numberOfLines={2}>
-              {observation?.place_data?.name || t("location_not_specified")}
-            </Text>
-            <Text style={styles.placeTerritory} numberOfLines={1}>
-              {isoToFlagEmoji(observation?.territory_data?.code)}{" "}
-              {observation?.territory_data?.name}
-            </Text>
-          </View>
+          <Pressable
+            style={({ pressed }) => [
+              styles.placeRow,
+              pressed && { opacity: 0.6 },
+            ]}
+            onPress={() =>
+              observation?.place_data?.id &&
+              navigation.navigate("PlaceDetail", {
+                placeId: observation.place_data.id,
+              })
+            }
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={styles.placeName} numberOfLines={2}>
+                  {observation?.place_data?.name || t("location_not_specified")}
+                </Text>
+                <Text style={styles.placeTerritory} numberOfLines={1}>
+                  {isoToFlagEmoji(observation?.territory_data?.code)}{" "}
+                  {observation?.territory_data?.name}
+                </Text>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={Colors.textSecondary}
+              />
+            </View>
+          </Pressable>
 
           {observation?.place_data?.location?.coordinates && (
             <View style={styles.mapWrapper}>
@@ -215,7 +248,19 @@ const ObservationDetailScreen = ({ route, navigation }) => {
           )}
 
           {observation?.diary_data && (
-            <View style={styles.diaryBlock}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.diaryBlock,
+                pressed && { opacity: 0.6 },
+              ]}
+              onPress={() =>
+                observation?.diary &&
+                navigation.navigate("DiaryDetail", {
+                  diaryId: observation.diary,
+                })
+              }
+              hitSlop={{ top: 8, bottom: 8 }}
+            >
               <Ionicons
                 name="book-outline"
                 size={18}
@@ -236,7 +281,12 @@ const ObservationDetailScreen = ({ route, navigation }) => {
                   </Text>
                 )}
               </View>
-            </View>
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={Colors.textSecondary}
+              />
+            </Pressable>
           )}
           <View
             style={[
@@ -414,5 +464,10 @@ const stylesFn = (Colors) =>
       borderBottomLeftRadius: 14,
       borderBottomRightRadius: 14,
       overflow: "hidden",
+    },
+    tapHint: {
+      fontSize: 11,
+      color: Colors.textSecondary,
+      marginTop: 3,
     },
   });
