@@ -5,15 +5,17 @@ import ListScreen from "./ListScreen";
 import { fetchObservations } from "../util/fetches";
 import ObservationCard from "../components/Observation/ObservationCard";
 import { loadFilters } from "../util/storageHelper";
+import { useTerritory } from "../store/territory-context";
 
 const ObservationsScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
+  const { territory } = useTerritory();
 
   const handleAdd = useCallback(async () => {
     const filters = await loadFilters(route.name);
-    const defaultTerritory = filters?.territory ?? null;
+    const defaultTerritory = filters?.territory ?? territory ?? null;
     navigation.navigate("ObservationEditor", { defaultTerritory });
-  }, [navigation, route.name]);
+  }, [navigation, route.name, territory]);
 
   const noItems = {
     icon: "binoculars-outline",

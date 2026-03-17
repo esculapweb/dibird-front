@@ -29,7 +29,7 @@ const ObservationEditorScreen = ({ navigation, route }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
-  const { profile } = useProfile();
+  const {profile} = useProfile();
 
   const { observation, defaultTerritory } = route.params || {};
   const isEditMode = !!observation;
@@ -65,7 +65,8 @@ const ObservationEditorScreen = ({ navigation, route }) => {
       place: observationWithParsedDate?.place ?? null,
       date_time: initialDate,
       time: observationWithParsedDate?.time ?? null,
-      private: observationWithParsedDate?.private ?? profile?.private_diary,
+      private:
+        observationWithParsedDate?.private ?? profile?.private_diary,
       quantity: observationWithParsedDate?.quantity ?? null,
       notes: observationWithParsedDate?.notes ?? null,
     };

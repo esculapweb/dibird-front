@@ -48,3 +48,10 @@ export const clearFilters = (screen) => clearItem(FILTERS_KEY, screen);
 export const saveGlobalTerritory = (value) => saveItem(GLOBAL_KEY, "territory", value);
 export const loadGlobalTerritory = () => loadItem(GLOBAL_KEY, "territory");
 export const clearGlobalTerritory = () => clearItem(GLOBAL_KEY, "territory");
+
+export const initGlobalTerritory = async (profileTerritory) => {
+  const saved = await loadGlobalTerritory();
+  if (!saved && profileTerritory) {
+    await saveGlobalTerritory(profileTerritory);
+  }
+};

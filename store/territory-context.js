@@ -1,5 +1,8 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import { loadGlobalTerritory, saveGlobalTerritory } from "../util/storageHelper";
+import {
+  loadGlobalTerritory,
+  saveGlobalTerritory,
+} from "../util/storageHelper";
 
 const TerritoryContext = createContext();
 
