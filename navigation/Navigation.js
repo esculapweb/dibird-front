@@ -13,9 +13,7 @@ import linking from "../linking";
 
 const Navigation = () => {
   const { theme } = useTheme();
-  const authCtx = useContext(AuthContext);
-  const isAuthenticated = authCtx.isAuthenticated;
-
+  const {isAuthenticated} = useContext(AuthContext);
   return (
     <NavigationContainer
     linking={linking(isAuthenticated)}

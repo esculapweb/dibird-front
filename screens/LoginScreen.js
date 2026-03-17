@@ -7,8 +7,8 @@ import { useProfile } from "../store/profile-context";
 
 const LoginScreen = () => {
   const [loading, setLoading] = useState(false);
-  const authCtx = useContext(AuthContext);
-  const {refreshProfile} = useProfile();
+  const { authenticate } = useContext(AuthContext);
+  const { refreshProfile } = useProfile();
 
   const LoginHandler = async ({ email, password }) => {
     if (loading) return;
@@ -16,7 +16,7 @@ const LoginScreen = () => {
     setLoading(true);
     try {
       const token = await Login(email, password);
-      await authCtx.authenticate(token);
+      await authenticate(token);
       await refreshProfile();
     } catch (e) {
       throw e;

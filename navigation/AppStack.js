@@ -39,7 +39,7 @@ const Drawer = createDrawerNavigator();
 
 // --- Custom Drawer ---
 const CustomDrawerContent = (props) => {
-  const authCtx = useContext(AuthContext);
+  const { logout } = useContext(AuthContext);
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -54,7 +54,7 @@ const CustomDrawerContent = (props) => {
           text: t("logout"),
           style: "destructive",
           onPress: async () => {
-            await authCtx.logout();
+            await logout();
             props.navigation.closeDrawer?.();
           },
         },
@@ -93,7 +93,7 @@ const CustomDrawerContent = (props) => {
 // --- Drawer navigator ---
 const MainDrawer = () => {
   const { t } = useTranslation();
-  const {error} = useProfile();
+  const { error } = useProfile();
   const { Colors } = useTheme();
 
   if (error) return <ErrorScreen />;
@@ -252,7 +252,6 @@ const AppNavigator = () => {
           headerBackTitleVisible: false,
         }}
       />
-
     </Stack.Navigator>
   );
 };
