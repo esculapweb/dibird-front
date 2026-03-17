@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const SORT_KEY = "sorting";
 const FILTERS_KEY = "filters";
+const GLOBAL_KEY = "global";
 
 const saveItem = async (key, screen, value) => {
   try {
@@ -43,3 +44,7 @@ export const clearSort = (screen) => clearItem(SORT_KEY, screen);
 export const saveFilters = (screen, value) => saveItem(FILTERS_KEY, screen, value);
 export const loadFilters = (screen) => loadItem(FILTERS_KEY, screen);
 export const clearFilters = (screen) => clearItem(FILTERS_KEY, screen);
+
+export const saveGlobalTerritory = (value) => saveItem(GLOBAL_KEY, "territory", value);
+export const loadGlobalTerritory = () => loadItem(GLOBAL_KEY, "territory");
+export const clearGlobalTerritory = () => clearItem(GLOBAL_KEY, "territory");

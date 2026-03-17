@@ -13,12 +13,23 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../store/theme-context";
 
+// import AsyncStorage from "@react-native-async-storage/async-storage";
+
 const { width } = Dimensions.get("window");
 
 const MainScreen = ({ navigation }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
+ 
+
+  // const showAllKeys = async () => {
+  //   const keys = await AsyncStorage.getAllKeys();
+  //   const pairs = await AsyncStorage.multiGet(keys);
+  //   console.log(JSON.stringify(pairs, null, 2));
+  // };
+
+  // showAllKeys();
 
   const buttonData = [
     { title: t("statistics"), icon: "stats-chart", screen: "Stat" },
@@ -66,15 +77,11 @@ const MainScreen = ({ navigation }) => {
               color={Colors.mainCardAccent}
               style={styles.quoteIcon}
             />
-            <Text style={styles.quoteText}>
-              {t("daily_quote")}
-            </Text>
+            <Text style={styles.quoteText}>{t("daily_quote")}</Text>
           </LinearGradient>
         </View>
 
-        <Text style={styles.sectionTitle}>
-          {t("your_tools")}
-        </Text>
+        <Text style={styles.sectionTitle}>{t("your_tools")}</Text>
 
         <View style={styles.organicContainer}>
           {buttonData.map((btn, index) => (

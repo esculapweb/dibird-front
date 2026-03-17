@@ -23,12 +23,15 @@ import { useDebounce } from "../util/useDebounce";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import { sortOptionsList } from "../util/sortOptionsList";
 import { parseDeepLinkParams } from "../util/parseDeepLinkParams";
+import { useTerritory } from "../store/territory-context";
+import { useProfile } from "../store/profile-context";
 
 const ListScreen = ({
   route,
   navigation,
   fetchFunction,
   allowedFilters,
+  noSaveFilters = [],
   errorTitle,
   onAdd,
   renderItem,
@@ -45,6 +48,8 @@ const ListScreen = ({
   onFiltersChange,
 }) => {
   const { t } = useTranslation();
+  const { territory } = useTerritory();
+  const { profile } = useProfile();
 
   const translations = [
     t("territory"),
@@ -151,7 +156,11 @@ const ListScreen = ({
         newFilters.species = undefined;
       }
 
-      saveFilters(screenName, newFilters);
+      const filtersToSave = Object.fromEntries(
+        Object.entries(newFilters).filter(([k]) => !noSaveFilters.includes(k))
+      );
+
+      saveFilters(screenName, filtersToSave);
       return newFilters;
     });
   };
@@ -174,7 +183,7 @@ const ListScreen = ({
 
   useEffect(() => {
     const initFilters = async () => {
-      if (route.params?.filtersOverride) {
+       if (route.params?.filtersOverride) {
         const { speciesName, ...filters } = route.params.filtersOverride;
         setFilters(filters);
         setFilterHints({ speciesName });
@@ -195,7 +204,11 @@ const ListScreen = ({
       } else {
         const storedFilters = await loadFilters(screenName);
         const storedSort = await loadSort(screenName);
-        setFilters(storedFilters ?? {});
+        setFilters(
+          storedFilters ?? {
+            territory: territory ?? profile.territory ?? null,
+          },
+        );
         setSort(
           normalizeValue(
             storedSort,
@@ -274,6 +287,7 @@ const ListScreen = ({
           onRemove={removeFilter}
           extraFilters={extraFilters}
           hints={filterHints}
+          allowed={allowedFilters}
         />
       )}
       <ItemsList
@@ -303,6 +317,7 @@ const ListScreen = ({
         onClose={() => setFilterModalVisible(false)}
         filters={filters}
         allowed={allowedFilters}
+        noSaveFilters={noSaveFilters}
         setFilters={setFilters}
         clearFilters={handleClearFilters}
         extraTerritory={extraFilters?.territory}

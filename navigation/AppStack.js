@@ -93,10 +93,10 @@ const CustomDrawerContent = (props) => {
 // --- Drawer navigator ---
 const MainDrawer = () => {
   const { t } = useTranslation();
-  const profileCtx = useProfile();
+  const {error} = useProfile();
   const { Colors } = useTheme();
 
-  if (profileCtx.error) return <ErrorScreen />;
+  if (error) return <ErrorScreen />;
 
   return (
     <Drawer.Navigator

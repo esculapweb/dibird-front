@@ -17,6 +17,7 @@ import RadioGroup from "../ui/RadioGroup";
 import SpeciesOptionRow from "../ui/SpeciesOptionRow";
 import { usePlaceLocation } from "../../hooks/Place/usePlaceLocation";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
+import { useTerritory } from "../../store/territory-context";
 
 const FilterModal = ({
   screen,
@@ -24,6 +25,7 @@ const FilterModal = ({
   onClose,
   filters,
   allowed,
+  noSaveFilters,
   setFilters,
   clearFilters,
   extraTerritory,
@@ -31,6 +33,7 @@ const FilterModal = ({
   const { language } = useLanguage();
   const { t } = useTranslation();
   const { coords, roundedCoords, isLocating } = usePlaceLocation();
+  const { setTerritory } = useTerritory();
 
   const favouriteOptions = [
     { label: t("all"), value: null },
@@ -134,7 +137,13 @@ const FilterModal = ({
   const applyHandler = async () => {
     const newFilters = getNewFilters();
     setFilters(newFilters);
-    await saveFilters(screen, newFilters);
+
+    const filtersToSave = Object.fromEntries(
+      Object.entries(newFilters).filter(([k]) => !noSaveFilters.includes(k))
+    );
+    await saveFilters(screen, filtersToSave);
+
+    if (newFilters.territory) setTerritory(newFilters.territory);
     onClose();
   };
 

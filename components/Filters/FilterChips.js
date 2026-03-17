@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../store/theme-context";
 import { useFilterLabels } from "../../hooks/useFilterLabels";
 
-const FilterChips = ({ filters, onRemove, extraFilters, hints}) => {
+const FilterChips = ({ filters, onRemove, extraFilters, hints, allowed}) => {
   if (!filters || typeof filters !== "object") return null;
 
   const { Colors } = useTheme();
@@ -13,7 +13,8 @@ const FilterChips = ({ filters, onRemove, extraFilters, hints}) => {
   const { getFilterLabel } = useFilterLabels(effectiveTerritory, hints);
 
   const activeFilters = Object.entries(filters).filter(
-    ([, value]) =>
+    ([key, value]) =>
+      (!allowed || allowed.includes(key)) &&
       value !== null &&
       value !== undefined &&
       !(Array.isArray(value) && value.length === 0),

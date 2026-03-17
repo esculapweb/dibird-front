@@ -20,7 +20,7 @@ const DiaryEditorScreen = ({ navigation, route }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
-  const profileCtx = useProfile();
+  const { profile } = useProfile();
 
   const { diary, defaultTerritory } = route.params || {};
   const isEditMode = !!diary;
@@ -41,22 +41,22 @@ const DiaryEditorScreen = ({ navigation, route }) => {
 
   const [formData, setFormData] = useState(() => {
     const initialDate =
-      diaryWithParsedDate?.date_time ??
-      getSession("lastDate") ??
-      new Date();
+      diaryWithParsedDate?.date_time ?? getSession("lastDate") ?? new Date();
 
     return {
       territory: territoryValue,
       place: diaryWithParsedDate?.place ?? null,
       date_time: initialDate,
-      private: diaryWithParsedDate?.private ?? profileCtx.profile?.private_diary,
+      private: diaryWithParsedDate?.private ?? profile?.private_diary,
       name: diaryWithParsedDate?.name ?? null,
     };
   });
 
   const [placeValue, setPlaceValue] = useState(formData.place);
   const [errors, setErrors] = useState({});
-  const [placeData, setPlaceData] = useState(diaryWithParsedDate?.place_data ?? null);
+  const [placeData, setPlaceData] = useState(
+    diaryWithParsedDate?.place_data ?? null,
+  );
 
   const validateForm = useCallback(() => {
     const newErrors = {};

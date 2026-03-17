@@ -29,17 +29,17 @@ const Avatar = () => {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const profileCtx = useProfile();
+  const {refreshProfile, profile} = useProfile();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
 
   useEffect(() => {
-    setAvatar(profileCtx.profile?.avatar_thumbnail ?? null);
-  }, [profileCtx.profile]);
+    setAvatar(profile?.avatar_thumbnail ?? null);
+  }, [profile]);
 
   useEffect(() => {
-    const user_data = profileCtx.profile?.user_data;
+    const user_data = profile?.user_data;
     if (!user_data) return;
 
     const { first_name, last_name, username } = user_data;
@@ -52,7 +52,7 @@ const Avatar = () => {
     first_name && last_name
       ? setName(`${first_name} ${last_name}`)
       : setName(username);
-  }, [profileCtx.profile]);
+  }, [profile]);
 
   const onPress = () => {
     if (!avatar) {
@@ -119,7 +119,7 @@ const Avatar = () => {
 
       const { avatar_thumbnail } = await patchAvatar(manipulated);
       setAvatar(avatar_thumbnail);
-      profileCtx.refreshProfile();
+      refreshProfile();
     } catch (e) {
       console.warn("Image manipulation error:", e.code, e.message);
       showError(e);
@@ -134,7 +134,7 @@ const Avatar = () => {
     try {
       const res = await api.delete("/myapi/profile/avatar/");
       if (res?.status === 204) {
-        profileCtx.refreshProfile();
+        refreshProfile();
         setAvatar(null);
       }
     } catch (e) {

@@ -53,6 +53,7 @@ export const Logout = async (onLogoutCallback) => {
     await AsyncStorage.removeItem("profile");
     await AsyncStorage.removeItem("filters");
     await AsyncStorage.removeItem("sorting");
+    await AsyncStorage.removeItem("global");
 
     if (typeof onLogoutCallback === "function") onLogoutCallback();
   }
