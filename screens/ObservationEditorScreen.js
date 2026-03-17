@@ -32,8 +32,14 @@ const ObservationEditorScreen = ({ navigation, route }) => {
   const styles = stylesFn(Colors);
   const { profile } = useProfile();
 
-  const { observation, defaultTerritory, defaultPlace, defaultSpecies } =
-    route.params || {};
+  const {
+    observation,
+    defaultTerritory,
+    defaultPlace,
+    defaultSpecies,
+    diaryId,
+    territoryValue: diaryTerritoryValue,
+  } = route.params || {};
   const isEditMode = !!observation;
 
   const {
@@ -55,12 +61,13 @@ const ObservationEditorScreen = ({ navigation, route }) => {
     validateForm,
   } = useEditorForm({
     item: observation,
-    defaultTerritory,
+    defaultTerritory: defaultTerritory ?? diaryTerritoryValue ?? null,
     defaultPlace,
     defaultSpecies,
     profile,
     hasSpecies: true,
     requiredFields: ["territory", "species", "date_time"],
+    diaryId
   });
 
   const createObservationMutation = useCreateObservation();
@@ -142,6 +149,11 @@ const ObservationEditorScreen = ({ navigation, route }) => {
     navigation.navigate("PlaceEditor", { returnToScreen: "ObservationEditor" });
   }, [navigation, territoryValue]);
 
+  const handleEditDiary = useCallback(() => {
+    if (!diaryId) return;
+    navigation.navigate("DiaryDetail", { diaryId });
+  }, [diaryId, navigation]);
+
   const headerRight = useCallback(
     () => (
       <View style={styles.headerButtons}>
@@ -203,6 +215,9 @@ const ObservationEditorScreen = ({ navigation, route }) => {
         placeData={placeData}
         setPlaceData={setPlaceData}
         onAddNewPlace={handleAddNewPlace}
+        isDiaryMode={!!diaryId}
+        isEditMode={isEditMode}
+        onEditDiary={handleEditDiary}
       />
     </KeyboardAvoidingView>
   );

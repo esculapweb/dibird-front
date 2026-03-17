@@ -9,16 +9,26 @@ export const useCreateObservation = () => {
 
   return useMutationWithTranslation({
     mutationFn: (data) => {
-      const formattedData = {
-        species: data.species,
-        territory: data.territory,
-        place: data.place ?? null,
-        date_time: data.date_time,
-        time: data.time ?? null,
-        private: data.private ?? false,
-        quantity: data.quantity ?? null,
-        notes: data.notes ?? "",
-      };
+      const isDiary = !!data.diary;
+
+      const formattedData = isDiary
+        ? {
+            species: data.species,
+            diary: data.diary,
+            time: data.time ?? null,
+            quantity: data.quantity ?? null,
+            notes: data.notes ?? "",
+          }
+        : {
+            species: data.species,
+            territory: data.territory,
+            place: data.place ?? null,
+            date_time: data.date_time,
+            time: data.time ?? null,
+            private: data.private ?? false,
+            quantity: data.quantity ?? null,
+            notes: data.notes ?? "",
+          };
 
       return api.post(`/myapi/observation2/`, formattedData);
     },

@@ -40,7 +40,7 @@ const DiaryDetailScreen = ({ route, navigation }) => {
 
   const handleAdd = useCallback(async () => {
     if (!diary) return;
-    navigation.navigate("DiaryObservationEditor", {
+    navigation.navigate("ObservationEditor", {
       diaryId: diary.id,
       territoryValue: diary.territory,
     });

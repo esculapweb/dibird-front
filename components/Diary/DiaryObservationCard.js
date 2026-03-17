@@ -5,7 +5,6 @@ import { useNavigation } from "@react-navigation/native";
 import { Image } from "expo-image";
 
 import { BirdSVG } from "../ui/Svgs";
-import { formatDateLong, isoToFlagEmoji } from "../../util/helpers";
 import { Config } from "../../constants/config";
 import { useTheme } from "../../store/theme-context";
 import { formatTimeString } from "../../util/timeHelpers";

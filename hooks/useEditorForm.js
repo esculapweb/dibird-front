@@ -11,6 +11,7 @@ export const useEditorForm = ({
   profile,
   hasSpecies = false,
   requiredFields = [],
+  diaryId = null
 }) => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -45,6 +46,7 @@ export const useEditorForm = ({
       quantity: itemWithParsedDate?.quantity ?? null,
       notes: itemWithParsedDate?.notes ?? null,
       name: itemWithParsedDate?.name ?? null,
+      diary: diaryId,
     };
 
     if (hasSpecies) base.species = speciesValue;
