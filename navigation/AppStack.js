@@ -40,8 +40,8 @@ const Drawer = createDrawerNavigator();
 
 const CustomDrawerContent = (props) => {
   const { logout } = useContext(AuthContext);
-  const {resetProfile} = useProfile();
-  const {resetTerritory, resetDate} = useFilters();
+  const { resetProfile } = useProfile();
+  const { resetFilters } = useFilters();
   const queryClient = useQueryClient();
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -58,8 +58,7 @@ const CustomDrawerContent = (props) => {
           style: "destructive",
           onPress: async () => {
             resetProfile();
-            resetTerritory();
-            resetDate();
+            await resetFilters();
             queryClient.clear();
             await logout();
             props.navigation.closeDrawer?.();

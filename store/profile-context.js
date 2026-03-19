@@ -4,12 +4,13 @@ import {
   useContext,
   useEffect,
   useCallback,
+  useRef,
 } from "react";
 import { AppState } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import api, { getAccessToken } from "../services/api";
-import { initGlobalTerritory } from "../util/storageHelper";
+import { emitLogin, onTokenReady } from "../util/loginEvents";
 
 const EMPTY_PROFILE = {
   user_data: {
@@ -43,6 +44,7 @@ export const ProfileProvider = ({ children }) => {
   const [profileLoading, setProfileLoading] = useState(true);
   const [isTokenReady, setIsTokenReady] = useState(false);
   const url = "/myapi/profile/me/";
+  const isFirstLogin = useRef(false);
 
   const loadProfile = useCallback(async () => {
     try {
@@ -70,7 +72,8 @@ export const ProfileProvider = ({ children }) => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      await saveProfile(data);
+      await saveProfile(data, isFirstLogin.current);
+      isFirstLogin.current = false;
     } catch (e) {
       setError(e);
       console.warn("Failed to refresh profile:", e.code, e.message);
@@ -79,14 +82,13 @@ export const ProfileProvider = ({ children }) => {
     }
   }, []);
 
-  const saveProfile = async (data) => {
-    const safeProfile = {
-      ...EMPTY_PROFILE,
-      ...data,
-    };
+  const saveProfile = async (data, shouldInit = false) => {
+    const safeProfile = { ...EMPTY_PROFILE, ...data };
     setProfile(safeProfile);
     await AsyncStorage.setItem("profile", JSON.stringify(safeProfile));
-    await initGlobalTerritory(safeProfile.territory);
+    if (shouldInit) {
+      emitLogin(safeProfile);
+    }
   };
 
   const updateProfile = useCallback(async (updatedData) => {
@@ -126,6 +128,14 @@ export const ProfileProvider = ({ children }) => {
 
     return () => sub.remove();
   }, [isTokenReady]);
+
+  useEffect(() => {
+    const unsub = onTokenReady(() => {
+      isFirstLogin.current = true;
+      refreshProfile();
+    });
+    return unsub;
+  }, [refreshProfile]);
 
   useEffect(() => {
     if (isTokenReady) {

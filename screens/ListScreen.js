@@ -147,6 +147,9 @@ const ListScreen = ({
   };
 
   const handleClearFilters = async () => {
+    await setDate(null);
+    await setTerritory(null);
+    await setPlace(null);
     setFilters({});
     await clearFilters(screenName);
     setFilterModalVisible(false);
