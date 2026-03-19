@@ -28,7 +28,7 @@ import { useLocationCoords } from "../../store/location-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 import { useTheme } from "../../store/theme-context";
 import FlatButtonBottom from "../ui/FlatButtonBottom";
-import { useTerritory } from "../../store/territory-context";
+import { useFilters } from "../../store/filters-context";
 
 const ObservationForm = ({
   formData,
@@ -59,7 +59,7 @@ const ObservationForm = ({
   const { Colors } = useTheme();
   const { locationCoords, locationAvailable, permissionStatus } =
     useLocationCoords();
-  const { date } = useTerritory();
+  const { date } = useFilters();
 
 
   const handleLocationUnavailable = () => {

@@ -23,7 +23,7 @@ import { useDebounce } from "../util/useDebounce";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import { sortOptionsList } from "../util/sortOptionsList";
 import { parseDeepLinkParams } from "../util/parseDeepLinkParams";
-import { useTerritory } from "../store/territory-context";
+import { useFilters } from "../store/filters-context";
 import { useProfile } from "../store/profile-context";
 
 const ListScreen = ({
@@ -52,7 +52,7 @@ const ListScreen = ({
   onLocationUnavailable,
 }) => {
   const { t } = useTranslation();
-  const { territory, setTerritory, date, setDate } = useTerritory();
+  const { territory, setTerritory, date, setDate } = useFilters();
   const { profile } = useProfile();
 
   const translations = [

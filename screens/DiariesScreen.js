@@ -4,11 +4,11 @@ import { useTranslation } from "react-i18next";
 import ListScreen from "./ListScreen";
 import { fetchDiaries } from "../util/fetches";
 import DiaryCard from "../components/Diary/DiaryCard";
-import { useTerritory } from "../store/territory-context";
+import { useFilters } from "../store/filters-context";
 
 const DiariesScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
-  const { territory } = useTerritory();
+  const { territory } = useFilters();
   const [currentFilters, setCurrentFilters] = useState(null);
 
   const handleAdd = useCallback(async () => {

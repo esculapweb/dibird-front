@@ -4,11 +4,11 @@ import { useTranslation } from "react-i18next";
 import ListScreen from "./ListScreen";
 import { fetchObservations } from "../util/fetches";
 import ObservationCard from "../components/Observation/ObservationCard";
-import { useTerritory } from "../store/territory-context";
+import { useFilters } from "../store/filters-context";
 
 const ObservationsScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
-  const { territory } = useTerritory();
+  const { territory } = useFilters();
   const [currentFilters, setCurrentFilters] = useState(null);
 
   const handleAdd = useCallback(async () => {

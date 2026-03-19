@@ -6,9 +6,9 @@ import {
   saveGlobalDateFilter,
 } from "../util/storageHelper";
 
-const TerritoryContext = createContext();
+const FiltersContext = createContext();
 
-export const TerritoryProvider = ({ children }) => {
+export const FiltersProvider = ({ children }) => {
   const [territory, setTerritoryState] = useState(null);
   const [date, setDateState] = useState(undefined);
 
@@ -36,12 +36,12 @@ export const TerritoryProvider = ({ children }) => {
   };
 
   return (
-    <TerritoryContext.Provider
+    <FiltersContext.Provider
       value={{ territory, setTerritory, date, setDate, resetTerritory, resetDate }}
     >
       {children}
-    </TerritoryContext.Provider>
+    </FiltersContext.Provider>
   );
 };
 
-export const useTerritory = () => useContext(TerritoryContext);
+export const useFilters = () => useContext(FiltersContext);

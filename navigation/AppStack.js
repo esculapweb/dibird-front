@@ -33,7 +33,7 @@ import Avatar from "../components/Profile/Avatar";
 import LanguageSwitcher from "../components/Language/LanguageSwitcher";
 import ThemeSwitcher from "../components/Theme/ThemeSwitcher";
 import { useTheme } from "../store/theme-context";
-import { useTerritory } from "../store/territory-context";
+import { useFilters } from "../store/filters-context";
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -41,7 +41,7 @@ const Drawer = createDrawerNavigator();
 const CustomDrawerContent = (props) => {
   const { logout } = useContext(AuthContext);
   const {resetProfile} = useProfile();
-  const {resetTerritory, resetDate} = useTerritory();
+  const {resetTerritory, resetDate} = useFilters();
   const queryClient = useQueryClient();
   const { t } = useTranslation();
   const { Colors } = useTheme();

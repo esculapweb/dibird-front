@@ -17,7 +17,7 @@ import RadioGroup from "../ui/RadioGroup";
 import SpeciesOptionRow from "../ui/SpeciesOptionRow";
 import { useLocationCoords } from "../../store/location-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
-import { useTerritory } from "../../store/territory-context";
+import { useFilters } from "../../store/filters-context";
 
 const FilterModal = ({
   screen,
@@ -32,7 +32,7 @@ const FilterModal = ({
 }) => {
   const { language } = useLanguage();
   const { t } = useTranslation();
-  const { setTerritory, date, setDate } = useTerritory();
+  const { setTerritory, date, setDate } = useFilters();
   const { locationCoords, locationAvailable, permissionStatus } =
     useLocationCoords();
 
