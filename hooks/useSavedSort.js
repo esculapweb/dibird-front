@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { loadSort, saveSort } from "../util/storageHelper";
 import { sortOptionsList } from "../util/sortOptionsList";
+import { normalizeValue } from "../util/helpers";
 
 export const useSavedSort = (type) => {
   const defaultSort = sortOptionsList(type)[0]?.value ?? null;
@@ -9,7 +10,8 @@ export const useSavedSort = (type) => {
 
   useEffect(() => {
     loadSort(type).then((val) => {
-      setSort(val ?? defaultSort);
+      const validValues = sortOptionsList(type).map((i) => i.value);
+      setSort(normalizeValue(val, validValues) ?? defaultSort);
       setLoaded(true);
     });
   }, [type]);

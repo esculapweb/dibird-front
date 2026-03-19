@@ -7,6 +7,7 @@
   "could_not_create_user": "Не удалось создать пользователя",
   "diearies": "",
   "distance": "",
+  "distande_desc": "Расстоянию (дальние)",
   "errors": {
     "something_went_wrong": "Что-то пошло не так",
     "unknown": ""

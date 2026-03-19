@@ -50,7 +50,7 @@ const DefaultOptionRow = ({
         </Text>
 
         {item.distance != null && (
-          <Text style={[styles.distance, isActive && styles.distanceActive]}>
+          <Text style={styles.distance}>
             {item.distance >= 1000
               ? `~${(item.distance / 1000).toFixed(1)} ${t("km")}`
               : `~${item.distance} ${t("m")}`}
@@ -113,7 +113,4 @@ const stylesFn = (Colors, itemHeight) =>
       fontWeight: "600",
       color: Colors.primary500,
     },
-    distanceActive: {
-      color: Colors.primary500,
-},
   });

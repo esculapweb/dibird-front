@@ -16,7 +16,9 @@ const PlaceBlock = ({
   sort,
   onSortChange,
   placeData,
-  setPlaceData
+  setPlaceData,
+  locationAvailable,
+  onLocationUnavailable
 }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -42,6 +44,8 @@ const PlaceBlock = ({
         sort={sort}
         onSortChange={onSortChange}
         placeData={placeData}
+        locationAvailable={locationAvailable}
+        onLocationUnavailable={onLocationUnavailable}
       />
 
       <View style={styles.dividerRow}>

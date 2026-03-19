@@ -11,6 +11,8 @@ export const RadioGroup = ({
   disabled = false,
   isInvalid,
   style,
+  disabledValues = [],
+  onDisabledPress,
 }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -26,14 +28,22 @@ export const RadioGroup = ({
       <View style={{ flexDirection: direction }}>
         {options.map((option, index) => {
           const checked = option.value === value;
+          const isDisabled = disabled || disabledValues.includes(option.value);
 
           return (
             <Pressable
               key={option.value}
-              onPress={() => !disabled && onChange(option.value)}
+              onPress={() => {
+                if (disabled) return;
+                if (disabledValues.includes(option.value)) {
+                  onDisabledPress?.(option.value);
+                  return;
+                }
+                onChange(option.value);
+              }}
               style={[
                 styles.row,
-                disabled && styles.disabled,
+                isDisabled && styles.disabled,
                 isRow
                   ? index < options.length - 1 && styles.rowHorizontal
                   : styles.rowVertical,

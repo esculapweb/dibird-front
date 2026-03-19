@@ -9,6 +9,7 @@
   "could_not_create_user": "Could not create user",
   "diearies": "",
   "distance": "",
+  "distande_desc": "Distance (farthest first)",
   "enter_place_name": "Enter place name",
   "errors": {
     "something_went_wrong": "",

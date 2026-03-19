@@ -8,9 +8,21 @@ export const useDropdownQuery = ({
   params,
   enabled = true,
   mapResult = false,
+  locationAvailable = true,
+  onLocationUnavailable,
 }) => {
   const { sort, loaded, onChange } = useSavedSort(type);
   const { getTranslatedError, showErrorToast } = useApiError();
+
+  const isDistanceSort = (val) => val === "distance" || val === "-distance";
+
+  const handleSortChange = async (val) => {
+    if (isDistanceSort(val) && !locationAvailable) {
+      onLocationUnavailable?.();
+      return;
+    }
+    await onChange(val);
+  };
 
   const query = useQuery({
     queryKey: [type, ...params, sort],
@@ -33,5 +45,5 @@ export const useDropdownQuery = ({
     },
   });
 
-  return { query, sort, onSortChange: onChange };
+  return { query, sort, onSortChange: handleSortChange };
 };

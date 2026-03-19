@@ -64,18 +64,13 @@ const PlaceCard = React.memo(({ item, index }) => {
       <View style={styles.main}>
         <View style={styles.titleRow}>
           <View style={styles.titleLeft}>
-            
             <Text style={styles.index}>{index + 1}.</Text>
             {item.favourite && (
-                <Ionicons
-                  name="star"
-                  size={18}
-                  color={Colors.accent}
-                />
-              )}
-              <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
-                {item.name}
-              </Text>
+              <Ionicons name="star" size={18} color={Colors.accent} />
+            )}
+            <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
+              {item.name}
+            </Text>
           </View>
 
           {territoryText && <Text style={styles.flag}>{territoryText}</Text>}
@@ -83,6 +78,14 @@ const PlaceCard = React.memo(({ item, index }) => {
 
         <View style={styles.bottomRow}>
           <View style={styles.coordRow}>
+            {item.distance != null && (
+              <Text style={styles.distance}>
+                {item.distance >= 1000
+                  ? `~${(item.distance / 1000).toFixed(1)} ${t("km")}`
+                  : `~${item.distance} ${t("m")}`}
+              </Text>
+            )}
+
             <Ionicons
               name="location-outline"
               size={16}
@@ -98,9 +101,8 @@ const PlaceCard = React.memo(({ item, index }) => {
             <StatItem
               icon="binoculars"
               txt={item.observation_count}
-              style={{ minWidth: 80 }}
             />
-            <StatItem txt={item.species_count} style={{ minWidth: 56 }}>
+            <StatItem txt={item.species_count}>
               <BirdSVG size={16} color={Colors.textMain} />
             </StatItem>
           </View>
@@ -183,5 +185,11 @@ const stylesFn = (Colors) =>
       flexDirection: "row",
       alignItems: "center",
       gap: 8,
+    },
+
+    distance: {
+      fontSize: 12,
+      color: Colors.link,
+      marginRight: 8,
     },
   });

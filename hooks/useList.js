@@ -8,16 +8,25 @@ export const useList = ({
   sort,
   search,
   tabsMode,
-  extraFilters
+  extraFilters,
+  locationCoords,
 }) => {
-  const {language} = useLanguage();
+  const { language } = useLanguage();
 
-  const mergedFilters = extraFilters 
+  const mergedFilters = extraFilters
     ? { ...(filters ?? {}), ...extraFilters }
     : filters;
 
   return useInfiniteQuery({
-    queryKey: [screenName, JSON.stringify(mergedFilters), sort, search, tabsMode, language],
+    queryKey: [
+      screenName,
+      JSON.stringify(mergedFilters),
+      sort,
+      search,
+      tabsMode,
+      language,
+      JSON.stringify(locationCoords),
+    ],
     queryFn: ({ pageParam = 1 }) =>
       fetchFunction(mergedFilters, sort, search, pageParam),
     getNextPageParam: (lastPage) => {
@@ -27,7 +36,7 @@ export const useList = ({
         : undefined;
     },
     keepPreviousData: true,
-    staleTime: 1000 * 60,      
+    staleTime: 1000 * 60,
     refetchOnWindowFocus: false,
   });
 };

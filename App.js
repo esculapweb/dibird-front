@@ -13,6 +13,7 @@ import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import AuthContextProvider, { AuthContext } from "./store/auth-context";
 import { ProfileProvider } from "./store/profile-context";
 import { TerritoryProvider } from "./store/territory-context";
+import { LocationProvider } from "./store/location-context";
 import { LanguageProvider } from "./store/language-context";
 import { ThemeProvider, useTheme } from "./store/theme-context";
 import ThemedToast from "./components/ui/ThemedToast";
@@ -78,7 +79,9 @@ export default function App() {
               <AuthContextProvider>
                 <ProfileProvider>
                   <TerritoryProvider>
-                    <Root />
+                    <LocationProvider>
+                      <Root />
+                    </LocationProvider>
                   </TerritoryProvider>
                 </ProfileProvider>
               </AuthContextProvider>

@@ -27,12 +27,14 @@ export const fetchMyCountries = async (favOnly = false, order) => {
 export const fetchMyPlaces = async (territory = null, coords = null, order) => {
   if (!territory) return [];
 
+  const isDistanceSort = order === "distance" || order === "-distance";
+
   const params = {
     territory,
     o: order,
   };
 
-  if (coords) {
+  if (isDistanceSort && coords) {
     const [lng, lat] = coords;
     params.lng = lng;
     params.lat = lat;
@@ -87,6 +89,7 @@ const fetchAbstract = async (
   order,
   search = "",
   page = 1,
+  extraParams = {}
 ) => {
   const { date, ...restFilters } = filters;
 
@@ -97,6 +100,7 @@ const fetchAbstract = async (
 
   const params = {
     ...cleanFilters(apiFilters),
+    ...extraParams,
     per_page: 100,
     o: order,
   };
@@ -107,18 +111,38 @@ const fetchAbstract = async (
   return res.data;
 };
 
-export const fetchStat = (filters, order = "-date", search, page, seenMode) => {
+export const fetchStat = (
+  filters,
+  order = "-date_time",
+  search,
+  page,
+  seenMode,
+) => {
   filters = { ...filters, seen: seenMode };
   return fetchAbstract("/myapi/stat2/", filters, order, search, page);
 };
 
-export const fetchPlaces = (filters, order = "name", search, page) =>
-  fetchAbstract("/myapi/place2/", filters, order, search, page);
+export const fetchPlaces = (
+  filters,
+  order = "distance",
+  search,
+  page,
+  coords = null,
+) => {
+  const isDistanceSort = order === "distance" || order === "-distance";
+  const extraParams =
+    isDistanceSort && coords ? { lng: coords[0], lat: coords[1] } : {};
+  return fetchAbstract("/myapi/place2/", filters, order, search, page, extraParams);
+};
 
-export const fetchObservations = (filters, order = "-date", search, page) =>
-  fetchAbstract("/myapi/observation2/", filters, order, search, page);
+export const fetchObservations = (
+  filters,
+  order = "-date_time",
+  search,
+  page,
+) => fetchAbstract("/myapi/observation2/", filters, order, search, page);
 
-export const fetchDiaries = (filters, order = "-date", search, page) =>
+export const fetchDiaries = (filters, order = "-date_time", search, page) =>
   fetchAbstract("/myapi/diary2/", filters, order, search, page);
 
 export const fetchDiaryObservations = (

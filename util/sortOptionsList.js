@@ -14,10 +14,12 @@ export const sortOptionsList = (screen) => {
 
     case "Places":
       return [
+        { label: i18n.t("distance_asc"), value: "distance" },
+        { label: i18n.t("distance_desc"), value: "-distance" },
         { label: i18n.t("alphabetic"), value: "name" },
         { label: i18n.t("alphabetic_desc"), value: "-name" },
-        // { label: i18n.t("favourite_asc"), value: "favourite,name" },
-        // { label: i18n.t("favourite_desc"), value: "-favourite,name" },
+        { label: i18n.t("favourite_asc"), value: "favourite,name" },
+        { label: i18n.t("favourite_desc"), value: "-favourite,name" },
         // { label: i18n.t("territory_asc"), value: "territory,name" },
         // { label: i18n.t("territory_desc"), value: "-territory,name" },
         { label: i18n.t("species_count"), value: "species_count,name" },
@@ -29,6 +31,16 @@ export const sortOptionsList = (screen) => {
         },
         // { label: i18n.t("diary_count"), value: "diary_count" },
         // { label: i18n.t("diary_count_desc"), value: "-diary_count" },
+      ];
+
+    case "PlacesDropdown":
+      return [
+        { label: i18n.t("distance_asc"), value: "distance" },
+        { label: i18n.t("distance_desc"), value: "-distance" },
+        { label: i18n.t("favourite_asc"), value: "-favourite,name" },
+        { label: i18n.t("favourite_desc"), value: "favourite,name" },
+        { label: i18n.t("alphabetic"), value: "name" },
+        { label: i18n.t("alphabetic_desc"), value: "-name" },
       ];
 
     case "Observations":
@@ -68,16 +80,6 @@ export const sortOptionsList = (screen) => {
         { label: i18n.t("favourite_desc"), value: "favourite,name" },
         { label: i18n.t("alphabetic"), value: "name" },
         { label: i18n.t("alphabetic_desc"), value: "-name" },
-      ];
-
-    case "PlacesDropdown":
-      return [
-        { label: i18n.t("favourite_asc"), value: "-favourite,name" },
-        { label: i18n.t("favourite_desc"), value: "favourite,name" },
-        { label: i18n.t("alphabetic"), value: "name" },
-        { label: i18n.t("alphabetic_desc"), value: "-name" },
-        { label: i18n.t("distance_asc"), value: "distance" },
-        { label: i18n.t("distande_desc"), value: "-distance" },
       ];
 
     case "SpeciesDropdown":

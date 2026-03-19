@@ -1,22 +1,21 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import ListScreen from "./ListScreen";
 import { fetchDiaries } from "../util/fetches";
 import DiaryCard from "../components/Diary/DiaryCard";
-import { loadFilters } from "../util/storageHelper";
 import { useTerritory } from "../store/territory-context";
 
 const DiariesScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
   const { territory } = useTerritory();
+  const [currentFilters, setCurrentFilters] = useState(null);
 
   const handleAdd = useCallback(async () => {
-    const filters = await loadFilters(route.name);
-    const defaultTerritory = filters?.territory ?? territory ?? null;
-    const defaultPlace = filters?.place ?? null;
+    const defaultTerritory = currentFilters?.territory ?? territory ?? null;
+    const defaultPlace = currentFilters?.place ?? null;
     navigation.navigate("DiaryEditor", { defaultTerritory, defaultPlace });
-  }, [navigation, route.name, territory]);
+  }, [navigation, currentFilters, territory]);
 
   const noItems = {
     icon: "book-outline",
@@ -35,6 +34,7 @@ const DiariesScreen = ({ route, navigation }) => {
       fetchFunction={fetchDiaries}
       allowedFilters={["territory", "place", "date", "species"]}
       errorTitle={t("diaries_unavailable")}
+      onFiltersChange={setCurrentFilters}
       onAdd={handleAdd}
       renderItem={renderItem}
       noItems={noItems}

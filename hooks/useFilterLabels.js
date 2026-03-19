@@ -4,12 +4,12 @@ import { useDropdownQuery } from "./useDropdownQuery";
 
 import { formatDate } from "../util/helpers";
 import { fetchMyCountries, fetchMyPlaces, fetchSpecies } from "../util/fetches";
-import { usePlaceLocation } from "./Place/usePlaceLocation";
+import { useLocationCoords } from "../store/location-context";
 
 export const useFilterLabels = (effectiveTerritory, hints = {}) => {
   const { t } = useTranslation();
   const { language } = useLanguage();
-  const { coords, roundedCoords } = usePlaceLocation();
+  const { locationCoords } = useLocationCoords();
 
   const { query: countriesQuery } = useDropdownQuery({
     type: "CountriesDropdown",
@@ -21,8 +21,8 @@ export const useFilterLabels = (effectiveTerritory, hints = {}) => {
 
   const { query: placesQuery } = useDropdownQuery({
     type: "PlacesDropdown",
-    queryFn: (sort) => fetchMyPlaces(effectiveTerritory, coords, sort),
-    params: [effectiveTerritory, roundedCoords],
+    queryFn: (sort) => fetchMyPlaces(effectiveTerritory, locationCoords, sort),
+    params: [effectiveTerritory, locationCoords],
     mapResult: true,
     enabled: !!effectiveTerritory,
   });

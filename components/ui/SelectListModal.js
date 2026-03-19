@@ -23,6 +23,8 @@ const SelectListModal = ({
   type,
   sort,
   onSortChange,
+  locationAvailable = true,
+  onLocationUnavailable,
 }) => {
   const flatListRef = useRef(null);
   const [hasScrolled, setHasScrolled] = useState(false);
@@ -32,6 +34,12 @@ const SelectListModal = ({
   const sortOptions = type ? sortOptionsList(type) : [];
   const [sortOrder, setSortOrder] = useState(sort ?? null);
   const [sortMenuVisible, setSortMenuVisible] = useState(false);
+
+  const disabledSortValues = !locationAvailable
+    ? sortOptions
+        .filter((o) => o.value === "distance" || o.value === "-distance")
+        .map((o) => o.value)
+    : [];
 
   const filteredOptions = useMemo(() => {
     if (!search) return options;
@@ -43,11 +51,11 @@ const SelectListModal = ({
   useEffect(() => {
     setSortOrder(sort);
   }, [sort]);
-  
+
   const handleSortChange = (val) => {
     setSortOrder(val);
     setSortMenuVisible(false);
-    onSortChange?.(val);  
+    onSortChange?.(val);
   };
 
   useEffect(() => {
@@ -105,6 +113,8 @@ const SelectListModal = ({
                 onChange={handleSortChange}
                 direction="column"
                 options={sortOptions}
+                disabledValues={disabledSortValues}
+                onDisabledPress={() => onLocationUnavailable?.()}
               />
             </View>
           )}

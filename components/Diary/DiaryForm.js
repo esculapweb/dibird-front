@@ -1,4 +1,4 @@
-import { ScrollView } from "react-native";
+import { ScrollView, Alert } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import DropdownInput from "../ui/DropdownInput";
@@ -9,7 +9,7 @@ import Input from "../ui/Input";
 import Section from "../ui/Section";
 import PrivacyToggle from "../ui/PrivacyToggle";
 import PlaceBlock from "../Place/PlaceBlock";
-import { usePlaceLocation } from "../../hooks/Place/usePlaceLocation";
+import { useLocationCoords } from "../../store/location-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 
 const DiaryForm = ({
@@ -28,7 +28,11 @@ const DiaryForm = ({
 }) => {
   const { t } = useTranslation();
   const { language } = useLanguage();
-  const { coords, roundedCoords, isLocating } = usePlaceLocation();
+  const { locationCoords, locationAvailable } = useLocationCoords();
+
+  const handleLocationUnavailable = () => {
+    Alert.alert(t("location_unavailable"), t("location_unavailable_hint"));
+  };
 
   const {
     query: queryMyCountries,
@@ -46,9 +50,11 @@ const DiaryForm = ({
     onSortChange: onPlacesSortChange,
   } = useDropdownQuery({
     type: "PlacesDropdown",
-    queryFn: (sort) => fetchMyPlaces(territoryValue, coords, sort),
-    params: [territoryValue, roundedCoords],
+    queryFn: (sort) => fetchMyPlaces(territoryValue, locationCoords, sort),
+    params: [territoryValue, locationCoords],
     enabled: !!territoryValue,
+    locationAvailable,
+    onLocationUnavailable: handleLocationUnavailable,
   });
 
   return (
@@ -120,11 +126,12 @@ const DiaryForm = ({
           setFormData={setFormData}
           onAddNewPlace={onAddNewPlace}
           queryPlaces={queryPlaces}
-          isLocating={isLocating}
           sort={placesSort}
           onSortChange={onPlacesSortChange}
           placeData={placeData}
           setPlaceData={setPlaceData}
+          locationAvailable={locationAvailable}
+          onLocationUnavailable={handleLocationUnavailable}
         />
       </Section>
     </ScrollView>

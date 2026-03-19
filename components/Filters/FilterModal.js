@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { View, ScrollView, StyleSheet } from "react-native";
+import { View, ScrollView, StyleSheet, Alert } from "react-native";
 
 import ModalWrapper from "../ui/ModalWrapper";
 import DropdownInput from "../ui/DropdownInput";
@@ -15,7 +15,7 @@ import FlatButtonBottom from "../ui/FlatButtonBottom";
 import { useLanguage } from "../../store/language-context";
 import RadioGroup from "../ui/RadioGroup";
 import SpeciesOptionRow from "../ui/SpeciesOptionRow";
-import { usePlaceLocation } from "../../hooks/Place/usePlaceLocation";
+import { useLocationCoords } from "../../store/location-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 import { useTerritory } from "../../store/territory-context";
 
@@ -32,8 +32,12 @@ const FilterModal = ({
 }) => {
   const { language } = useLanguage();
   const { t } = useTranslation();
-  const { coords, roundedCoords, isLocating } = usePlaceLocation();
   const { setTerritory } = useTerritory();
+  const { locationCoords, locationAvailable } = useLocationCoords();
+
+  const handleLocationUnavailable = () => {
+    Alert.alert(t("location_unavailable"), t("location_unavailable_hint"));
+  };
 
   const favouriteOptions = [
     { label: t("all"), value: null },
@@ -78,9 +82,11 @@ const FilterModal = ({
     onSortChange: onPlacesSortChange,
   } = useDropdownQuery({
     type: "PlacesDropdown",
-    queryFn: (sort) => fetchMyPlaces(effectiveTerritory, coords, sort),
-    params: [effectiveTerritory, roundedCoords],
+    queryFn: (sort) => fetchMyPlaces(effectiveTerritory, locationCoords, sort),
+    params: [effectiveTerritory, locationCoords],
     enabled: !!effectiveTerritory,
+    locationAvailable,
+    onLocationUnavailable: handleLocationUnavailable,
   });
 
   const {
@@ -139,7 +145,7 @@ const FilterModal = ({
     setFilters(newFilters);
 
     const filtersToSave = Object.fromEntries(
-      Object.entries(newFilters).filter(([k]) => !noSaveFilters.includes(k))
+      Object.entries(newFilters).filter(([k]) => !noSaveFilters.includes(k)),
     );
     await saveFilters(screen, filtersToSave);
 
@@ -185,7 +191,8 @@ const FilterModal = ({
               allowReset
               disabled={!effectiveTerritory}
               disabledMessage={t("select_country_first")}
-              isLocating={isLocating}
+              locationAvailable={locationAvailable}
+              onLocationUnavailable={handleLocationUnavailable}
             />
           )}
 

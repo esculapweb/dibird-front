@@ -1,27 +1,26 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import ListScreen from "./ListScreen";
 import { fetchObservations } from "../util/fetches";
 import ObservationCard from "../components/Observation/ObservationCard";
-import { loadFilters } from "../util/storageHelper";
 import { useTerritory } from "../store/territory-context";
 
 const ObservationsScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
   const { territory } = useTerritory();
+  const [currentFilters, setCurrentFilters] = useState(null);
 
   const handleAdd = useCallback(async () => {
-    const filters = await loadFilters(route.name);
-    const defaultTerritory = filters?.territory ?? territory ?? null;
-    const defaultPlace = filters?.place ?? null;
-    const defaultSpecies = filters?.species ?? null;
+    const defaultTerritory = currentFilters?.territory ?? territory ?? null;
+    const defaultPlace = currentFilters?.place ?? null;
+    const defaultSpecies = currentFilters?.species ?? null;
     navigation.navigate("ObservationEditor", {
       defaultTerritory,
       defaultPlace,
       defaultSpecies,
     });
-  }, [navigation, route.name, territory]);
+  }, [navigation, currentFilters, territory]);
 
   const noItems = {
     icon: "binoculars-outline",
@@ -40,6 +39,7 @@ const ObservationsScreen = ({ route, navigation }) => {
       fetchFunction={fetchObservations}
       allowedFilters={["territory", "place", "date", "species"]}
       errorTitle={t("observations_unavailable")}
+      onFiltersChange={setCurrentFilters}
       onAdd={handleAdd}
       renderItem={renderItem}
       noItems={noItems}

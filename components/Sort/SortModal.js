@@ -6,10 +6,25 @@ import { saveSort } from "../../util/storageHelper";
 import ModalWrapper from "../ui/ModalWrapper";
 import RadioGroup from "../ui/RadioGroup";
 
-const SortModal = ({ screen, options, visible, onClose, sort, setSort }) => {
+const SortModal = ({
+  screen,
+  options,
+  visible,
+  onClose,
+  sort,
+  setSort,
+  locationAvailable = true,
+  onLocationUnavailable,
+}) => {
   const { t } = useTranslation();
 
   const [sortInternal, setSortInternal] = useState(null);
+
+  const disabledSortValues = !locationAvailable
+    ? options
+        .filter((o) => o.value === "distance" || o.value === "-distance")
+        .map((o) => o.value)
+    : [];
 
   const applyHandler = async () => {
     setSort(sortInternal);
@@ -40,6 +55,8 @@ const SortModal = ({ screen, options, visible, onClose, sort, setSort }) => {
             onChange={setSortInternal}
             direction="column"
             options={options}
+            disabledValues={disabledSortValues}
+            onDisabledPress={() => onLocationUnavailable?.()}
           />
         </ScrollView>
       </View>

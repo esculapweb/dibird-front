@@ -1,5 +1,12 @@
 import { useEffect } from "react";
-import { ScrollView, Text, Pressable, StyleSheet, View } from "react-native";
+import {
+  ScrollView,
+  Text,
+  Pressable,
+  StyleSheet,
+  View,
+  Alert,
+} from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -17,7 +24,7 @@ import Input from "../ui/Input";
 import Section from "../ui/Section";
 import PrivacyToggle from "../ui/PrivacyToggle";
 import PlaceBlock from "../Place/PlaceBlock";
-import { usePlaceLocation } from "../../hooks/Place/usePlaceLocation";
+import { useLocationCoords } from "../../store/location-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 import { useTheme } from "../../store/theme-context";
 import FlatButtonBottom from "../ui/FlatButtonBottom";
@@ -49,7 +56,11 @@ const ObservationForm = ({
   const { t } = useTranslation();
   const { language } = useLanguage();
   const { Colors } = useTheme();
-  const { coords, roundedCoords, isLocating } = usePlaceLocation();
+  const { locationCoords, locationAvailable } = useLocationCoords();
+
+  const handleLocationUnavailable = () => {
+    Alert.alert(t("location_unavailable"), t("location_unavailable_hint"));
+  };
 
   const isDiaryCreate = isDiaryMode && !isEditMode;
   const isDiaryEdit = isDiaryMode && isEditMode;
@@ -72,9 +83,11 @@ const ObservationForm = ({
     onSortChange: onPlacesSortChange,
   } = useDropdownQuery({
     type: "PlacesDropdown",
-    queryFn: (sort) => fetchMyPlaces(territoryValue, coords, sort),
-    params: [territoryValue, roundedCoords],
+    queryFn: (sort) => fetchMyPlaces(territoryValue, locationCoords, sort),
+    params: [territoryValue, locationCoords],
     enabled: !!territoryValue && !hideDiaryFields,
+    locationAvailable,
+    onLocationUnavailable: handleLocationUnavailable,
   });
 
   const {
@@ -284,11 +297,12 @@ const ObservationForm = ({
               setFormData={setFormData}
               onAddNewPlace={onAddNewPlace}
               queryPlaces={queryPlaces}
-              isLocating={isLocating}
               sort={placesSort}
               onSortChange={onPlacesSortChange}
               placeData={placeData}
               setPlaceData={setPlaceData}
+              locationAvailable={locationAvailable}
+              onLocationUnavailable={handleLocationUnavailable}
             />
           </Section>
         )}

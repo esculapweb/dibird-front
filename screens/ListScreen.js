@@ -46,6 +46,9 @@ const ListScreen = ({
   fabOffset,
   getItemId = (item) => item.id,
   onFiltersChange,
+  locationCoords,
+  locationAvailable = true,
+  onLocationUnavailable,
 }) => {
   const { t } = useTranslation();
   const { territory } = useTerritory();
@@ -77,7 +80,7 @@ const ListScreen = ({
 
   const fetchDataWrapper = (filters, sort, search, page) => {
     return fetchFunction(filters, sort, search, page, () =>
-      setFilterModalVisible(true),
+      setFilterModalVisible(true), locationCoords,
     );
   };
 
@@ -98,6 +101,7 @@ const ListScreen = ({
     search: debouncedSearch,
     tabsMode,
     extraFilters,
+    locationCoords,
   });
   const rawItems = data?.pages.flatMap((page) => page.results) ?? [];
   const objects = new Set();
@@ -157,7 +161,7 @@ const ListScreen = ({
       }
 
       const filtersToSave = Object.fromEntries(
-        Object.entries(newFilters).filter(([k]) => !noSaveFilters.includes(k))
+        Object.entries(newFilters).filter(([k]) => !noSaveFilters.includes(k)),
       );
 
       saveFilters(screenName, filtersToSave);
@@ -183,7 +187,7 @@ const ListScreen = ({
 
   useEffect(() => {
     const initFilters = async () => {
-       if (route.params?.filtersOverride) {
+      if (route.params?.filtersOverride) {
         const { speciesName, ...filters } = route.params.filtersOverride;
         setFilters(filters);
         setFilterHints({ speciesName });
@@ -212,7 +216,7 @@ const ListScreen = ({
         setSort(
           normalizeValue(
             storedSort,
-            sortOptions.map((item) => item.value),
+            sortOptions.map((i) => i.value),
           ),
         );
       }
@@ -310,6 +314,8 @@ const ListScreen = ({
         onClose={() => setSortModalVisible(false)}
         sort={sort}
         setSort={setSort}
+        locationAvailable={locationAvailable}
+        onLocationUnavailable={onLocationUnavailable}
       />
       <FilterModal
         screen={screenName}
