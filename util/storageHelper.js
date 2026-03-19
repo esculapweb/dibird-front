@@ -59,3 +59,7 @@ export const initGlobalTerritory = async (profileTerritory) => {
 export const saveGlobalDateFilter = (value) => saveItem(GLOBAL_KEY, "dateFilter", value);
 export const loadGlobalDateFilter = () => loadItem(GLOBAL_KEY, "dateFilter");
 export const clearGlobalDateFilter = () => clearItem(GLOBAL_KEY, "dateFilter");
+
+export const saveGlobalPlace = (value) => saveItem(GLOBAL_KEY, "placeFilter", value);
+export const loadGlobalPlace = () => loadItem(GLOBAL_KEY, "placeFilter");
+export const clearGlobalPlace = () => clearItem(GLOBAL_KEY, "placeFilter");

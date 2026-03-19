@@ -52,7 +52,8 @@ const ListScreen = ({
   onLocationUnavailable,
 }) => {
   const { t } = useTranslation();
-  const { territory, setTerritory, date, setDate } = useFilters();
+  const { territory, setTerritory, date, setDate, place, setPlace } =
+    useFilters();
   const { profile } = useProfile();
 
   const translations = [
@@ -163,7 +164,11 @@ const ListScreen = ({
 
   const removeFilter = (key) => {
     if (key === "date") setDate(null);
-    if (key === "territory") setTerritory(null);
+    if (key === "territory") {
+      setTerritory(null);
+      setPlace(null);
+    }
+    if (key === "place") setPlace(null);
 
     setFilters((prev) => {
       const newFilters = { ...prev };
@@ -267,6 +272,13 @@ const ListScreen = ({
           newFilters.place = null;
           newFilters.species = null;
           changed = true;
+        } else {
+          const prevPlace = prev.place ?? null;
+          const contextPlace = place ?? null;
+          if (prevPlace !== contextPlace) {
+            newFilters.place = contextPlace;
+            changed = true;
+          }
         }
 
         if (placeId && territoryId) {
@@ -287,7 +299,7 @@ const ListScreen = ({
       if (placeId && territoryId) {
         navigation.setParams({ placeId: undefined, territoryId: undefined });
       }
-    }, [date, territory, route.params?.placeId, filtersLoaded]),
+    }, [date, territory, place, route.params?.placeId, filtersLoaded]),
   );
 
   useLayoutEffect(() => {

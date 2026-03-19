@@ -32,7 +32,7 @@ const FilterModal = ({
 }) => {
   const { language } = useLanguage();
   const { t } = useTranslation();
-  const { setTerritory, date, setDate } = useFilters();
+  const { setTerritory, date, setDate, setPlace } = useFilters();
   const { locationCoords, locationAvailable, permissionStatus } =
     useLocationCoords();
 
@@ -152,6 +152,7 @@ const FilterModal = ({
 
     await setTerritory(newFilters.territory ?? null);
     await setDate(newFilters.date ?? null);
+    await setPlace(newFilters.place ?? null);
     onClose();
   };
 
