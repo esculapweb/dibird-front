@@ -2,7 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { useMutationWithTranslation } from "../useMutationWithTranslation";
 import api from "../../services/api";
-import { INVALIDATION_MAP } from "../../constants/invalidationMap";
+import { INVALIDATION_MAP } from "../../util/invalidationMap";
 
 export const useCreatePlace = () => {
   const queryClient = useQueryClient();

@@ -72,4 +72,6 @@ export const DarkColors = {
 
   mainTextPrimary: "#e5e7eb", 
   mainTextDate: "#f0c24b", 
+
+  seenIcon: "#34d399",
 };

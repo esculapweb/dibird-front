@@ -52,19 +52,23 @@ export const fetchMyPlaces = async (territory = null, coords = null, order) => {
   }));
 };
 
-export const fetchSpecies = async (territory = null, order) => {
-  const params = {
-    o: order,
-  };
+export const fetchSpecies = async (territory = null, order, dateFilter) => {
   if (!territory) return [];
-  params.territory_id = territory;
-  const res = await api.get("/api/territory-species2/", { params });
-  return res.data.map((item) => ({
-    value: item.taxon_pk,
+  const params = {
+    territory,
+    per_page: 2500,
+    o: order,
+    ...buildDateParams(dateFilter),
+  };
+  const res = await api.get("/myapi/stat2/", { params });
+
+  return res.data?.results.map((item) => ({
+    value: item.species_id,
     label: item.sp_name,
     name: item.sp_latin,
     name_lang: item.sp_name_lang,
     thumb: item.sp_thumb,
+    seen: item.seen,
   }));
 };
 
@@ -89,7 +93,7 @@ const fetchAbstract = async (
   order,
   search = "",
   page = 1,
-  extraParams = {}
+  extraParams = {},
 ) => {
   const { date, ...restFilters } = filters;
 
@@ -132,7 +136,14 @@ export const fetchPlaces = (
   const isDistanceSort = order === "distance" || order === "-distance";
   const extraParams =
     isDistanceSort && coords ? { lng: coords[0], lat: coords[1] } : {};
-  return fetchAbstract("/myapi/place2/", filters, order, search, page, extraParams);
+  return fetchAbstract(
+    "/myapi/place2/",
+    filters,
+    order,
+    search,
+    page,
+    extraParams,
+  );
 };
 
 export const fetchObservations = (

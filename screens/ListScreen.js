@@ -30,7 +30,7 @@ const ListScreen = ({
   route,
   navigation,
   fetchFunction,
-  allowedFilters,
+  allowedFilters = ["territory", "place", "date", "species"],
   noSaveFilters = [],
   errorTitle,
   onAdd,
@@ -52,7 +52,7 @@ const ListScreen = ({
   onLocationUnavailable,
 }) => {
   const { t } = useTranslation();
-  const { territory } = useTerritory();
+  const { territory, setTerritory, date, setDate } = useTerritory();
   const { profile } = useProfile();
 
   const translations = [
@@ -141,6 +141,10 @@ const ListScreen = ({
     }
   };
 
+  const handleFiltersApplied = (newFilters) => {
+    setFilters(newFilters);
+  };
+
   const handleClearFilters = async () => {
     setFilters({});
     await clearFilters(screenName);
@@ -158,19 +162,19 @@ const ListScreen = ({
   const handleSortPress = () => setSortModalVisible(true);
 
   const removeFilter = (key) => {
+    if (key === "date") setDate(null);
+    if (key === "territory") setTerritory(null);
+
     setFilters((prev) => {
       const newFilters = { ...prev };
       newFilters[key] = undefined;
-
       if (key === "territory") {
         newFilters.place = undefined;
         newFilters.species = undefined;
       }
-
       const filtersToSave = Object.fromEntries(
         Object.entries(newFilters).filter(([k]) => !noSaveFilters.includes(k)),
       );
-
       saveFilters(screenName, filtersToSave);
       return newFilters;
     });
@@ -218,6 +222,7 @@ const ListScreen = ({
         setFilters(
           storedFilters ?? {
             territory: territory ?? profile.territory ?? null,
+            date: date ?? null,
           },
         );
         const resolved = normalizeValue(
@@ -241,25 +246,48 @@ const ListScreen = ({
       if (!filtersLoaded) return;
 
       const { placeId, territoryId } = route.params ?? {};
-      if (!placeId || !territoryId) return;
 
       setFilters((prev) => {
-        const newFilters = {
-          ...(prev ?? {}),
-          territory: territoryId,
-          place: placeId,
-          species: null,
-        };
+        if (!prev) return prev;
 
+        let newFilters = { ...prev };
+        let changed = false;
+
+        const prevDate = JSON.stringify(prev.date ?? null);
+        const contextDate = JSON.stringify(date ?? null);
+        if (prevDate !== contextDate) {
+          newFilters.date = date ?? null;
+          changed = true;
+        }
+
+        const prevTerritory = prev.territory ?? null;
+        const contextTerritory = territory ?? null;
+        if (prevTerritory !== contextTerritory) {
+          newFilters.territory = contextTerritory;
+          newFilters.place = null;
+          newFilters.species = null;
+          changed = true;
+        }
+
+        if (placeId && territoryId) {
+          newFilters = {
+            ...newFilters,
+            territory: territoryId,
+            place: placeId,
+            species: null,
+          };
+          changed = true;
+        }
+
+        if (!changed) return prev;
         saveFilters(screenName, newFilters);
         return newFilters;
       });
 
-      navigation.setParams({
-        placeId: undefined,
-        territoryId: undefined,
-      });
-    }, [route.params?.placeId, filtersLoaded]),
+      if (placeId && territoryId) {
+        navigation.setParams({ placeId: undefined, territoryId: undefined });
+      }
+    }, [date, territory, route.params?.placeId, filtersLoaded]),
   );
 
   useLayoutEffect(() => {
@@ -335,7 +363,7 @@ const ListScreen = ({
         filters={filters}
         allowed={allowedFilters}
         noSaveFilters={noSaveFilters}
-        setFilters={setFilters}
+        setFilters={handleFiltersApplied}
         clearFilters={handleClearFilters}
         extraTerritory={extraFilters?.territory}
       />

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   ScrollView,
   Text,
@@ -28,6 +28,7 @@ import { useLocationCoords } from "../../store/location-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 import { useTheme } from "../../store/theme-context";
 import FlatButtonBottom from "../ui/FlatButtonBottom";
+import { useTerritory } from "../../store/territory-context";
 
 const ObservationForm = ({
   formData,
@@ -56,7 +57,10 @@ const ObservationForm = ({
   const { t } = useTranslation();
   const { language } = useLanguage();
   const { Colors } = useTheme();
-  const { locationCoords, locationAvailable, permissionStatus} = useLocationCoords();
+  const { locationCoords, locationAvailable, permissionStatus } =
+    useLocationCoords();
+  const { date } = useTerritory();
+
 
   const handleLocationUnavailable = () => {
     Alert.alert(t("location_unavailable"), t("location_unavailable_hint"));
@@ -97,9 +101,9 @@ const ObservationForm = ({
     onSortChange: onSpeciesSortChange,
   } = useDropdownQuery({
     type: "SpeciesDropdown",
-    queryFn: (sort) => fetchSpecies(territoryValue, sort),
-    params: [territoryValue, language],
-    enabled: !!territoryValue,
+    queryFn: (sort) => fetchSpecies(territoryValue, sort, date),
+    params: [territoryValue, language, date],
+    enabled: !!territoryValue && date !== undefined,
   });
 
   useEffect(() => {

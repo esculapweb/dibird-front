@@ -32,8 +32,9 @@ const FilterModal = ({
 }) => {
   const { language } = useLanguage();
   const { t } = useTranslation();
-  const { setTerritory } = useTerritory();
-  const { locationCoords, locationAvailable, permissionStatus } = useLocationCoords();
+  const { setTerritory, date, setDate } = useTerritory();
+  const { locationCoords, locationAvailable, permissionStatus } =
+    useLocationCoords();
 
   const handleLocationUnavailable = () => {
     Alert.alert(t("location_unavailable"), t("location_unavailable_hint"));
@@ -96,11 +97,10 @@ const FilterModal = ({
     onSortChange: onSpeciesSortChange,
   } = useDropdownQuery({
     type: "SpeciesDropdown",
-    queryFn: (sort) => fetchSpecies(effectiveTerritory, sort),
-    params: [effectiveTerritory, language],
-    enabled: !!effectiveTerritory,
+    queryFn: (sort) => fetchSpecies(effectiveTerritory, sort, date),
+    params: [effectiveTerritory, language, date],
+    enabled: !!effectiveTerritory && date !== undefined,
   });
-
   useEffect(() => {
     setPlaceValue(null);
   }, [effectiveTerritory]);
@@ -150,7 +150,8 @@ const FilterModal = ({
     );
     await saveFilters(screen, filtersToSave);
 
-    if (newFilters.territory) setTerritory(newFilters.territory);
+    await setTerritory(newFilters.territory ?? null);
+    await setDate(newFilters.date ?? null);
     onClose();
   };
 

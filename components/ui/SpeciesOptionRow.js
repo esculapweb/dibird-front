@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View, Pressable } from "react-native";
 import { Image } from "expo-image";
+import { Ionicons } from "@expo/vector-icons";
 
 import { Config } from "../../constants/config";
 import { useTheme } from "../../store/theme-context";
@@ -60,10 +61,19 @@ const SpeciesOptionRow = ({
               numberOfLines={1}
               style={[styles.latin, isActive && styles.labelActive]}
             >
-              {item.name}
+              {item.name} {item.seen}
             </Text>
           )}
         </View>
+
+        {item.seen && (
+          <Ionicons
+            name="eye-outline"
+            size={18}
+            color={Colors.seenIcon}
+            style={styles.eyeIcon}
+          />
+        )}
       </View>
     </Pressable>
   );
@@ -148,5 +158,10 @@ const stylesFn = (Colors, itemHeight) =>
     },
     itemDisabled: {
       borderLeftColor: "transparent",
+    },
+
+    eyeIcon: {
+      marginLeft: 8,
+      marginRight: 2,
     },
   });

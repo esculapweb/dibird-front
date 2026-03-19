@@ -32,7 +32,6 @@ const DiariesScreen = ({ route, navigation }) => {
       route={route}
       navigation={navigation}
       fetchFunction={fetchDiaries}
-      allowedFilters={["territory", "place", "date", "species"]}
       errorTitle={t("diaries_unavailable")}
       onFiltersChange={setCurrentFilters}
       onAdd={handleAdd}

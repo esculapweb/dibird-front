@@ -73,7 +73,6 @@ const StatScreen = ({ route, navigation }) => {
         route={route}
         navigation={navigation}
         fetchFunction={fetchData}
-        allowedFilters={["territory", "place", "date", "species"]}
         errorTitle={t("stat_unavailable")}
         onAdd={handleAdd}
         renderItem={renderItem}

@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMutationWithTranslation } from "./useMutationWithTranslation";
 import { useApiError } from "./useApiError";
 import api from "../services/api";
-import { INVALIDATION_MAP } from "../constants/invalidationMap";
+import { INVALIDATION_MAP } from "../util/invalidationMap";
 
 const URLS = {
   Place: "/myapi/place2/",

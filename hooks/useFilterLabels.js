@@ -29,8 +29,8 @@ export const useFilterLabels = (effectiveTerritory, hints = {}) => {
 
   const { query: speciesQuery } = useDropdownQuery({
     type: "SpeciesDropdown",
-    queryFn: (sort) => fetchSpecies(effectiveTerritory, sort),
-    params: [effectiveTerritory, language],
+    queryFn: (sort) => fetchSpecies(effectiveTerritory, sort, null),
+    params: [effectiveTerritory, language, null],
     mapResult: true,
     enabled: effectiveTerritory,
   });

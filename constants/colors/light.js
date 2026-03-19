@@ -62,4 +62,6 @@ export const LightColors = {
 
   mainTextPrimary: "#1e2a36",
   mainTextDate: "#3a4c62",
+
+  seenIcon: "#16a34a", 
 };

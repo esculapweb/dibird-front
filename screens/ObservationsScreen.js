@@ -37,7 +37,6 @@ const ObservationsScreen = ({ route, navigation }) => {
       route={route}
       navigation={navigation}
       fetchFunction={fetchObservations}
-      allowedFilters={["territory", "place", "date", "species"]}
       errorTitle={t("observations_unavailable")}
       onFiltersChange={setCurrentFilters}
       onAdd={handleAdd}
