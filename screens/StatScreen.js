@@ -5,14 +5,23 @@ import ListScreen from "./ListScreen";
 import { fetchStat } from "../util/fetches";
 import StatCard from "../components/Stats/StatCard";
 import Tabs from "../components/ui/Tabs";
+import { useFilters } from "../store/filters-context";
 
 const StatScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
-
-  const handleAdd = () => navigation.navigate("ObservationEditor");
-
+  const { territory } = useFilters();
   const [seenMode, setSeenMode] = useState(true);
   const [currentFilters, setCurrentFilters] = useState({});
+
+  const handleAdd = useCallback(() => {
+    const defaultTerritory = currentFilters?.territory ?? territory ?? null;
+    const defaultPlace = currentFilters?.place ?? null;
+    navigation.navigate("ObservationEditor", {
+      defaultTerritory,
+      defaultPlace,
+    });
+  }, [navigation, currentFilters, territory]);
+
   const [noItems, setNoItems] = useState({
     icon: "stats-chart",
     message: t("no_stat_yet"),
@@ -21,7 +30,6 @@ const StatScreen = ({ route, navigation }) => {
 
   const handleStatCardPress = useCallback(
     (item) => {
-      // +
       navigation.navigate("Observations", {
         filtersOverride: {
           territory: currentFilters.territory ?? null,
