@@ -8,7 +8,7 @@ import { useLocationCoords } from "../store/location-context";
 
 const PlacesScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
-  const { locationCoords, locationAvailable } = useLocationCoords();
+  const { locationCoords, locationAvailable, permissionStatus } = useLocationCoords();
 
   const fetchFunction = (filters, sort, search, page, openFilters, coords) =>
     fetchPlaces(filters, sort, search, page, coords);
@@ -42,6 +42,7 @@ const PlacesScreen = ({ route, navigation }) => {
       title={t("places")}
       locationCoords={locationCoords}
       locationAvailable={locationAvailable}
+      permissionStatus={permissionStatus}
       onLocationUnavailable={handleLocationUnavailable}
     />
   );

@@ -56,7 +56,7 @@ const ObservationForm = ({
   const { t } = useTranslation();
   const { language } = useLanguage();
   const { Colors } = useTheme();
-  const { locationCoords, locationAvailable } = useLocationCoords();
+  const { locationCoords, locationAvailable, permissionStatus} = useLocationCoords();
 
   const handleLocationUnavailable = () => {
     Alert.alert(t("location_unavailable"), t("location_unavailable_hint"));
@@ -87,6 +87,7 @@ const ObservationForm = ({
     params: [territoryValue, locationCoords],
     enabled: !!territoryValue && !hideDiaryFields,
     locationAvailable,
+    permissionStatus,
     onLocationUnavailable: handleLocationUnavailable,
   });
 

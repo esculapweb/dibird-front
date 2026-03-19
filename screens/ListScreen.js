@@ -48,6 +48,7 @@ const ListScreen = ({
   onFiltersChange,
   locationCoords,
   locationAvailable = true,
+  permissionStatus,
   onLocationUnavailable,
 }) => {
   const { t } = useTranslation();
@@ -79,8 +80,13 @@ const ListScreen = ({
   const keyExtractor = (item, _) => `${screenName}-${getItemId(item)}`;
 
   const fetchDataWrapper = (filters, sort, search, page) => {
-    return fetchFunction(filters, sort, search, page, () =>
-      setFilterModalVisible(true), locationCoords,
+    return fetchFunction(
+      filters,
+      sort,
+      search,
+      page,
+      () => setFilterModalVisible(true),
+      locationCoords,
     );
   };
 
@@ -120,6 +126,7 @@ const ListScreen = ({
 
   const isEmpty = items.length === 0;
   const isSearchActive = debouncedSearch.length > 0;
+  const isDistanceSort = (val) => val === "distance" || val === "-distance";
 
   const emptyType =
     !isLoading && isEmpty
@@ -213,11 +220,15 @@ const ListScreen = ({
             territory: territory ?? profile.territory ?? null,
           },
         );
+        const resolved = normalizeValue(
+          storedSort,
+          sortOptions.map((i) => i.value),
+        );
         setSort(
-          normalizeValue(
-            storedSort,
-            sortOptions.map((i) => i.value),
-          ),
+          isDistanceSort(resolved) && permissionStatus === "denied"
+            ? (sortOptions.find((o) => !isDistanceSort(o.value))?.value ??
+                resolved)
+            : resolved,
         );
       }
       setFiltersLoaded(true);

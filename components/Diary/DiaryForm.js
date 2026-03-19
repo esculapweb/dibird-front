@@ -28,7 +28,7 @@ const DiaryForm = ({
 }) => {
   const { t } = useTranslation();
   const { language } = useLanguage();
-  const { locationCoords, locationAvailable } = useLocationCoords();
+  const { locationCoords, locationAvailable, permissionStatus } = useLocationCoords();
 
   const handleLocationUnavailable = () => {
     Alert.alert(t("location_unavailable"), t("location_unavailable_hint"));
@@ -54,6 +54,7 @@ const DiaryForm = ({
     params: [territoryValue, locationCoords],
     enabled: !!territoryValue,
     locationAvailable,
+    permissionStatus,
     onLocationUnavailable: handleLocationUnavailable,
   });
 

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useSavedSort } from "./useSavedSort";
 import { useApiError } from "./useApiError";
+import { sortOptionsList } from "../util/sortOptionsList";
 
 export const useDropdownQuery = ({
   type,
@@ -9,12 +10,18 @@ export const useDropdownQuery = ({
   enabled = true,
   mapResult = false,
   locationAvailable = true,
+  permissionStatus,
   onLocationUnavailable,
 }) => {
   const { sort, loaded, onChange } = useSavedSort(type);
   const { getTranslatedError, showErrorToast } = useApiError();
 
   const isDistanceSort = (val) => val === "distance" || val === "-distance";
+
+  const effectiveSort =
+    isDistanceSort(sort) && permissionStatus === "denied"
+      ? sortOptionsList(type).find((o) => !isDistanceSort(o.value))?.value ?? sort
+      : sort;
 
   const handleSortChange = async (val) => {
     if (isDistanceSort(val) && !locationAvailable) {
@@ -25,8 +32,8 @@ export const useDropdownQuery = ({
   };
 
   const query = useQuery({
-    queryKey: [type, ...params, sort],
-    queryFn: () => queryFn(sort),
+    queryKey: [type, ...params, effectiveSort],
+    queryFn: () => queryFn(effectiveSort),
     enabled: enabled !== false && !!loaded,
     staleTime: 1000 * 60 * 60 * 24,
     cacheTime: 1000 * 60 * 60 * 24,
@@ -45,5 +52,5 @@ export const useDropdownQuery = ({
     },
   });
 
-  return { query, sort, onSortChange: handleSortChange };
+  return { query, sort: effectiveSort, onSortChange: handleSortChange };
 };

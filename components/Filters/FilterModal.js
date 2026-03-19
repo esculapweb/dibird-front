@@ -33,7 +33,7 @@ const FilterModal = ({
   const { language } = useLanguage();
   const { t } = useTranslation();
   const { setTerritory } = useTerritory();
-  const { locationCoords, locationAvailable } = useLocationCoords();
+  const { locationCoords, locationAvailable, permissionStatus } = useLocationCoords();
 
   const handleLocationUnavailable = () => {
     Alert.alert(t("location_unavailable"), t("location_unavailable_hint"));
@@ -86,6 +86,7 @@ const FilterModal = ({
     params: [effectiveTerritory, locationCoords],
     enabled: !!effectiveTerritory,
     locationAvailable,
+    permissionStatus,
     onLocationUnavailable: handleLocationUnavailable,
   });
 

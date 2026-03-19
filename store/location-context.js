@@ -17,14 +17,15 @@ const LocationContext = createContext({
 
 export const LocationProvider = ({ children }) => {
   const [locationCoords, setLocationCoords] = useState(null);
+  const [permissionStatus, setPermissionStatus] = useState(null); 
   const isRequestingRef = useRef(false);
 
   const requestLocation = useCallback(async () => {
     if (isRequestingRef.current) return;
     isRequestingRef.current = true;
     try {
-      const { status: existingStatus } =
-        await Location.getForegroundPermissionsAsync();
+      const { status: existingStatus } = await Location.getForegroundPermissionsAsync();
+      setPermissionStatus(existingStatus); // "granted", "denied", "undetermined"
       if (existingStatus === "denied") return;
       if (existingStatus !== "granted") {
         const { status } = await Location.requestForegroundPermissionsAsync();
@@ -40,6 +41,7 @@ export const LocationProvider = ({ children }) => {
       ]);
       const { latitude, longitude } = loc.coords;
       setLocationCoords([longitude, latitude]);
+      setPermissionStatus("granted");
     } catch (e) {
       console.warn("Failed to get location:", e);
     } finally {
@@ -62,6 +64,7 @@ export const LocationProvider = ({ children }) => {
       value={{
         locationCoords,
         locationAvailable: !!locationCoords,
+        permissionStatus,
         refreshLocation: requestLocation,
       }}
     >
