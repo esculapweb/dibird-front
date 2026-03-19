@@ -17,14 +17,15 @@ const LocationContext = createContext({
 
 export const LocationProvider = ({ children }) => {
   const [locationCoords, setLocationCoords] = useState(null);
-  const [permissionStatus, setPermissionStatus] = useState(null); 
+  const [permissionStatus, setPermissionStatus] = useState(null);
   const isRequestingRef = useRef(false);
 
   const requestLocation = useCallback(async () => {
     if (isRequestingRef.current) return;
     isRequestingRef.current = true;
     try {
-      const { status: existingStatus } = await Location.getForegroundPermissionsAsync();
+      const { status: existingStatus } =
+        await Location.getForegroundPermissionsAsync();
       setPermissionStatus(existingStatus); // "granted", "denied", "undetermined"
       if (existingStatus === "denied") return;
       if (existingStatus !== "granted") {
@@ -36,14 +37,24 @@ export const LocationProvider = ({ children }) => {
           accuracy: Location.Accuracy.Balanced,
         }),
         new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Location timeout")), 10000),
+          setTimeout(() => reject(new Error("Location timeout")), 5000),
         ),
       ]);
       const { latitude, longitude } = loc.coords;
       setLocationCoords([longitude, latitude]);
       setPermissionStatus("granted");
     } catch (e) {
-      console.warn("Failed to get location:", e);
+      try {
+        
+        console.warn("Failed to get location:", e);
+        const last = await Location.getLastKnownPositionAsync();
+        if (last) {
+          setLocationCoords([last.coords.longitude, last.coords.latitude]);
+          setPermissionStatus("granted");
+        }
+      } catch {
+        
+      }
     } finally {
       isRequestingRef.current = false;
     }
