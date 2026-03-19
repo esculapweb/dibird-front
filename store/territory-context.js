@@ -18,8 +18,14 @@ export const TerritoryProvider = ({ children }) => {
     saveGlobalTerritory(val);
   };
 
+  const resetTerritory = () => {
+    setTerritoryState(null);
+  };
+
   return (
-    <TerritoryContext.Provider value={{ territory, setTerritory }}>
+    <TerritoryContext.Provider
+      value={{ territory, setTerritory, resetTerritory }}
+    >
       {children}
     </TerritoryContext.Provider>
   );

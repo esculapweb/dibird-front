@@ -9,6 +9,7 @@ import { useContext } from "react";
 import { View, StyleSheet, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+import { useQueryClient } from "@tanstack/react-query";
 
 import ErrorScreen from "../screens/ErrorScreen";
 import MainScreen from "../screens/MainScreen";
@@ -32,13 +33,16 @@ import Avatar from "../components/Profile/Avatar";
 import LanguageSwitcher from "../components/Language/LanguageSwitcher";
 import ThemeSwitcher from "../components/Theme/ThemeSwitcher";
 import { useTheme } from "../store/theme-context";
+import { useTerritory } from "../store/territory-context";
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
 
-// --- Custom Drawer ---
 const CustomDrawerContent = (props) => {
   const { logout } = useContext(AuthContext);
+  const {resetProfile} = useProfile();
+  const {resetTerritory} = useTerritory();
+  const queryClient = useQueryClient();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -53,6 +57,9 @@ const CustomDrawerContent = (props) => {
           text: t("logout"),
           style: "destructive",
           onPress: async () => {
+            resetProfile();
+            resetTerritory();
+            queryClient.clear();
             await logout();
             props.navigation.closeDrawer?.();
           },

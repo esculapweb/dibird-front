@@ -42,7 +42,7 @@ export const Logout = async (onLogoutCallback) => {
     const refresh = await getRefreshToken();
     if (refresh) {
       try {
-        const r = await api.post("/api-auth/logout/", { refresh });
+        await api.post("/api-auth/logout/", { refresh });
       } catch (e) {
         if (e.response?.status !== 401)
           console.warn("Logout request failed", e.response?.status, e.message);

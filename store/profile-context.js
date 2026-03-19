@@ -90,8 +90,14 @@ export const ProfileProvider = ({ children }) => {
   };
 
   const updateProfile = useCallback(async (updatedData) => {
-    const {data} = await api.put(url, updatedData);
+    const { data } = await api.put(url, updatedData);
     return await saveProfile(data);
+  }, []);
+
+  const resetProfile = useCallback(() => {
+    setProfile(null);
+    setError(null);
+    setIsTokenReady(false);
   }, []);
 
   useEffect(() => {
@@ -134,6 +140,7 @@ export const ProfileProvider = ({ children }) => {
         profileLoading,
         updateProfile,
         refreshProfile,
+        resetProfile,
         isTokenReady,
         error,
       }}
