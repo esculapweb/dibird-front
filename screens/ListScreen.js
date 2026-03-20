@@ -25,7 +25,6 @@ const ListScreen = ({
   navigation,
   fetchFunction,
   allowedFilters = ["territory", "place", "date", "species"],
-  noSaveFilters = [],
   errorTitle,
   onAdd,
   renderItem,
@@ -200,8 +199,7 @@ const ListScreen = ({
   useEffect(() => {
     const initFilters = async () => {
       if (route.params?.filtersOverride) {
-        const { speciesName, ...overrideFilters } =
-          route.params.filtersOverride;
+        const { speciesName, ...overrideFilters } = route.params.filtersOverride;
         setFilters(overrideFilters);
         setFilterHints({ speciesName });
         setIgnoreContextSync(true);
@@ -383,12 +381,10 @@ const ListScreen = ({
         onLocationUnavailable={onLocationUnavailable}
       />
       <FilterModal
-        screen={screenName}
         visible={filterModalVisible}
         onClose={() => setFilterModalVisible(false)}
         filters={filters}
         allowed={allowedFilters}
-        noSaveFilters={noSaveFilters}
         setFilters={handleFiltersApplied}
         clearFilters={handleClearFilters}
         extraTerritory={extraFilters?.territory}

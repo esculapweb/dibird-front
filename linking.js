@@ -38,7 +38,7 @@ const linking = (isAuthenticated) => ({
       Places: withBasicFilters("my/place"),
       PlaceDetail: "my/place/:placeId",
       Observations: withFilters("my/observation"),
-      //   ObservationDetail: "my/observation/:observationId",
+      ObservationDetail: "my/observation/:observationId",
       Diaries: withFilters("my/diary"),
       DiaryDetail: "my/diary/:diaryId",
 

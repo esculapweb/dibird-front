@@ -19,12 +19,10 @@ import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 import { useFilters } from "../../store/filters-context";
 
 const FilterModal = ({
-  screen,
   visible,
   onClose,
   filters,
   allowed,
-  noSaveFilters,
   setFilters,
   clearFilters,
   extraTerritory,
@@ -155,12 +153,14 @@ const FilterModal = ({
     setFilters(newFilters);
     requestAnimationFrame(onClose);
 
-    await setTerritory(newFilters.territory ?? null);
-    await setDate(newFilters.date ?? null);
-    await setPlace(newFilters.place ?? null);
-    await setSpecies(newFilters.species ?? null);
+    if (allowed.includes("territory"))
+      await setTerritory(newFilters.territory ?? null);
+    if (allowed.includes("date")) await setDate(newFilters.date ?? null);
+    if (allowed.includes("place")) await setPlace(newFilters.place ?? null);
 
-
+    if (allowed.includes("species") && !extraTerritory) {
+      await setSpecies(newFilters.species ?? null);
+    }
   };
 
   return (

@@ -48,9 +48,9 @@ export const saveGlobalDateFilter = (value) =>
   saveItem(GLOBAL_KEY, "dateFilter", value);
 export const loadGlobalDateFilter = () => loadItem(GLOBAL_KEY, "dateFilter");
 
-export const saveGlobalPlace = (value) => {
-  return saveItem(GLOBAL_KEY, "placeFilter", value);
-};
+export const saveGlobalPlace = (value) =>
+  saveItem(GLOBAL_KEY, "placeFilter", value);
+
 export const loadGlobalPlace = () => loadItem(GLOBAL_KEY, "placeFilter");
 
 export const saveGlobalSpecies = (value) =>
@@ -61,14 +61,16 @@ export const clearAllGlobalFilters = async () => {
   await AsyncStorage.removeItem(GLOBAL_KEY);
 };
 
-export const initGlobalTerritory = async (profileTerritory) => {
-  const saved = await loadGlobalTerritory();
+export const initGlobalFilters = async (profileTerritory) => {
+  const savedTerritory = await loadGlobalTerritory();
   const savedDate = await loadGlobalDateFilter();
 
-  if (!saved && profileTerritory) {  
+  if (!savedTerritory && profileTerritory)
     await saveGlobalTerritory(profileTerritory);
-  }
-  if (!savedDate) {
-    await saveGlobalDateFilter({ type: "year", year: new Date().getFullYear() });
-  }
+
+  if (!savedDate)
+    await saveGlobalDateFilter({
+      type: "year",
+      year: new Date().getFullYear(),
+    });
 };

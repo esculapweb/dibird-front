@@ -9,7 +9,7 @@ import { AppState } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import api, { getAccessToken } from "../services/api";
-import { initGlobalTerritory } from "../util/storageHelper";
+import { initGlobalFilters } from "../util/storageHelper";
 
 const EMPTY_PROFILE = {
   user_data: {
@@ -86,7 +86,7 @@ export const ProfileProvider = ({ children }) => {
     };
     setProfile(safeProfile);
     await AsyncStorage.setItem("profile", JSON.stringify(safeProfile));
-    await initGlobalTerritory(safeProfile.territory);
+    await initGlobalFilters(safeProfile.territory);
   };
 
   const updateProfile = useCallback(async (updatedData) => {
