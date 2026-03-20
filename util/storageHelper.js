@@ -1,7 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const SORT_KEY = "sorting";
-const FILTERS_KEY = "filters";
 const GLOBAL_KEY = "global";
 
 const saveItem = async (key, screen, value) => {
@@ -19,9 +18,9 @@ const loadItem = async (key, screen) => {
   try {
     const json = await AsyncStorage.getItem(key);
     const allData = json ? JSON.parse(json) : {};
+
     return allData[screen] ?? null;
   } catch (e) {
-    console.warn(`Failed to load ${key}`, e);
     return null;
   }
 };
@@ -41,26 +40,35 @@ export const saveSort = (screen, value) => saveItem(SORT_KEY, screen, value);
 export const loadSort = (screen) => loadItem(SORT_KEY, screen);
 export const clearSort = (screen) => clearItem(SORT_KEY, screen);
 
-export const saveFilters = (screen, value) =>
-  saveItem(FILTERS_KEY, screen, value);
-export const loadFilters = (screen) => loadItem(FILTERS_KEY, screen);
-export const clearFilters = (screen) => clearItem(FILTERS_KEY, screen);
-
 export const saveGlobalTerritory = (value) =>
   saveItem(GLOBAL_KEY, "territory", value);
 export const loadGlobalTerritory = () => loadItem(GLOBAL_KEY, "territory");
-export const clearGlobalTerritory = () => clearItem(GLOBAL_KEY, "territory");
 
 export const saveGlobalDateFilter = (value) =>
   saveItem(GLOBAL_KEY, "dateFilter", value);
 export const loadGlobalDateFilter = () => loadItem(GLOBAL_KEY, "dateFilter");
-export const clearGlobalDateFilter = () => clearItem(GLOBAL_KEY, "dateFilter");
 
-export const saveGlobalPlace = (value) =>
-  saveItem(GLOBAL_KEY, "placeFilter", value);
+export const saveGlobalPlace = (value) => {
+  return saveItem(GLOBAL_KEY, "placeFilter", value);
+};
 export const loadGlobalPlace = () => loadItem(GLOBAL_KEY, "placeFilter");
-export const clearGlobalPlace = () => clearItem(GLOBAL_KEY, "placeFilter");
+
+export const saveGlobalSpecies = (value) =>
+  saveItem(GLOBAL_KEY, "species", value);
+export const loadGlobalSpecies = () => loadItem(GLOBAL_KEY, "species");
 
 export const clearAllGlobalFilters = async () => {
   await AsyncStorage.removeItem(GLOBAL_KEY);
+};
+
+export const initGlobalTerritory = async (profileTerritory) => {
+  const saved = await loadGlobalTerritory();
+  const savedDate = await loadGlobalDateFilter();
+
+  if (!saved && profileTerritory) {  
+    await saveGlobalTerritory(profileTerritory);
+  }
+  if (!savedDate) {
+    await saveGlobalDateFilter({ type: "year", year: new Date().getFullYear() });
+  }
 };

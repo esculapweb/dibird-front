@@ -6,7 +6,6 @@ import { setOnTokenUpdate } from "../services/authService";
 import { canUseBiometrics } from "../services/bio";
 import { Logout } from "../util/auth";
 import i18n from "../services/i18n";
-import { emitTokenReady } from "../util/loginEvents";
 
 export const AuthContext = createContext({
   token: "",
@@ -22,10 +21,7 @@ const AuthContextProvider = ({ children }) => {
 
   const authenticate = async (access) => {
     setAuthToken(access);
-    if (access) {
-      await SecureStore.setItemAsync("access", access);
-      emitTokenReady(); 
-    }
+    if (access) await SecureStore.setItemAsync("access", access);
   };
 
   const logout = async () => {
@@ -49,7 +45,7 @@ const AuthContextProvider = ({ children }) => {
 
   useEffect(() => {
     const unlockApp = async () => {
-      if (!(await canUseBiometrics())) return;
+      if (!await canUseBiometrics()) return;
 
       const res = await LocalAuthentication.authenticateAsync({
         promptMessage: i18n.t("unlock_message"),

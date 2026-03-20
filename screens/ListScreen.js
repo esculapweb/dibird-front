@@ -5,12 +5,7 @@ import { useTranslation } from "react-i18next";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import FilterModal from "../components/Filters/FilterModal";
 import SortModal from "../components/Sort/SortModal";
-import {
-  loadFilters,
-  clearFilters,
-  loadSort,
-  saveFilters,
-} from "../util/storageHelper";
+import { loadSort } from "../util/storageHelper";
 import FiltersHeader from "../components/ui/FiltersHeader";
 import FilterChips from "../components/Filters/FilterChips";
 
@@ -24,7 +19,6 @@ import ErrorOverlay from "../components/Error/ErrorOverlay";
 import { sortOptionsList } from "../util/sortOptionsList";
 import { parseDeepLinkParams } from "../util/parseDeepLinkParams";
 import { useFilters } from "../store/filters-context";
-import { useProfile } from "../store/profile-context";
 
 const ListScreen = ({
   route,
@@ -52,20 +46,16 @@ const ListScreen = ({
   onLocationUnavailable,
 }) => {
   const { t } = useTranslation();
-  const { territory, setTerritory, date, setDate, place, setPlace } =
-    useFilters();
-  const { profile } = useProfile();
-
-  const translations = [
-    t("territory"),
-    t("place"),
-    t("species_single"),
-    t("favourite"),
-    t("yes"),
-    t("no"),
-    t("date"),
-    t("year"),
-  ];
+  const {
+    territory,
+    setTerritory,
+    date,
+    setDate,
+    place,
+    setPlace,
+    species,
+    setSpecies,
+  } = useFilters();
 
   const [filters, setFilters] = useState(null);
   const [sort, setSort] = useState(null);
@@ -77,6 +67,7 @@ const ListScreen = ({
   const screenName = route.name;
   const sortOptions = sortOptionsList(screenName);
   const [filterHints, setFilterHints] = useState({});
+  const [ignoreContextSync, setIgnoreContextSync] = useState(false);
 
   const keyExtractor = (item, _) => `${screenName}-${getItemId(item)}`;
 
@@ -110,6 +101,7 @@ const ListScreen = ({
     extraFilters,
     locationCoords,
   });
+
   const rawItems = data?.pages.flatMap((page) => page.results) ?? [];
   const objects = new Set();
   const items = rawItems.filter((item) => {
@@ -143,15 +135,17 @@ const ListScreen = ({
   };
 
   const handleFiltersApplied = (newFilters) => {
+    setIgnoreContextSync(false);
     setFilters(newFilters);
   };
 
   const handleClearFilters = async () => {
+    setIgnoreContextSync(false);
     await setDate(null);
     await setTerritory(null);
     await setPlace(null);
+    await setSpecies(null);
     setFilters({});
-    await clearFilters(screenName);
     setFilterModalVisible(false);
   };
 
@@ -166,12 +160,15 @@ const ListScreen = ({
   const handleSortPress = () => setSortModalVisible(true);
 
   const removeFilter = (key) => {
+    setIgnoreContextSync(false);
     if (key === "date") setDate(null);
     if (key === "territory") {
       setTerritory(null);
       setPlace(null);
+      setSpecies(null);
     }
     if (key === "place") setPlace(null);
+    if (key === "species") setSpecies(null);
 
     setFilters((prev) => {
       const newFilters = { ...prev };
@@ -180,10 +177,6 @@ const ListScreen = ({
         newFilters.place = undefined;
         newFilters.species = undefined;
       }
-      const filtersToSave = Object.fromEntries(
-        Object.entries(newFilters).filter(([k]) => !noSaveFilters.includes(k)),
-      );
-      saveFilters(screenName, filtersToSave);
       return newFilters;
     });
   };
@@ -207,9 +200,11 @@ const ListScreen = ({
   useEffect(() => {
     const initFilters = async () => {
       if (route.params?.filtersOverride) {
-        const { speciesName, ...filters } = route.params.filtersOverride;
-        setFilters(filters);
+        const { speciesName, ...overrideFilters } =
+          route.params.filtersOverride;
+        setFilters(overrideFilters);
         setFilterHints({ speciesName });
+        setIgnoreContextSync(true);
         navigation.setParams({ filtersOverride: undefined });
         setFiltersLoaded(true);
         return;
@@ -224,15 +219,16 @@ const ListScreen = ({
       if (hasParams) {
         setFilters(deepFilters);
         if (deepSort) setSort(deepSort);
+        setIgnoreContextSync(true);
       } else {
-        const storedFilters = await loadFilters(screenName);
+        setFilters({
+          territory: territory ?? null,
+          place: place ?? null,
+          date: date ?? null,
+          species: species ?? null,
+        });
+
         const storedSort = await loadSort(screenName);
-        setFilters(
-          storedFilters ?? {
-            territory: territory ?? profile.territory ?? null,
-            date: date ?? null,
-          },
-        );
         const resolved = normalizeValue(
           storedSort,
           sortOptions.map((i) => i.value),
@@ -244,6 +240,7 @@ const ListScreen = ({
             : resolved,
         );
       }
+
       setFiltersLoaded(true);
     };
     initFilters();
@@ -261,26 +258,34 @@ const ListScreen = ({
         let newFilters = { ...prev };
         let changed = false;
 
-        const prevDate = JSON.stringify(prev.date ?? null);
-        const contextDate = JSON.stringify(date ?? null);
-        if (prevDate !== contextDate) {
-          newFilters.date = date ?? null;
-          changed = true;
-        }
-
-        const prevTerritory = prev.territory ?? null;
-        const contextTerritory = territory ?? null;
-        if (prevTerritory !== contextTerritory) {
-          newFilters.territory = contextTerritory;
-          newFilters.place = null;
-          newFilters.species = null;
-          changed = true;
-        } else {
-          const prevPlace = prev.place ?? null;
-          const contextPlace = place ?? null;
-          if (prevPlace !== contextPlace) {
-            newFilters.place = contextPlace;
+        if (!ignoreContextSync) {
+          const prevDate = JSON.stringify(prev.date ?? null);
+          const contextDate = JSON.stringify(date ?? null);
+          if (prevDate !== contextDate) {
+            newFilters.date = date ?? null;
             changed = true;
+          }
+
+          const prevTerritory = prev.territory ?? null;
+          const contextTerritory = territory ?? null;
+          if (prevTerritory !== contextTerritory) {
+            newFilters.territory = contextTerritory;
+            newFilters.place = null;
+            newFilters.species = null;
+            changed = true;
+          } else {
+            const prevPlace = prev.place ?? null;
+            const contextPlace = place ?? null;
+            if (prevPlace !== contextPlace) {
+              newFilters.place = contextPlace;
+              changed = true;
+            }
+            const prevSpecies = prev.species ?? null;
+            const contextSpecies = species ?? null;
+            if (prevSpecies !== contextSpecies) {
+              newFilters.species = contextSpecies;
+              changed = true;
+            }
           }
         }
 
@@ -294,15 +299,21 @@ const ListScreen = ({
           changed = true;
         }
 
-        if (!changed) return prev;
-        saveFilters(screenName, newFilters);
-        return newFilters;
+        return changed ? newFilters : prev;
       });
 
       if (placeId && territoryId) {
         navigation.setParams({ placeId: undefined, territoryId: undefined });
       }
-    }, [date, territory, place, route.params?.placeId, filtersLoaded]),
+    }, [
+      date,
+      territory,
+      place,
+      species,
+      route.params?.placeId,
+      filtersLoaded,
+      ignoreContextSync,
+    ]),
   );
 
   useLayoutEffect(() => {

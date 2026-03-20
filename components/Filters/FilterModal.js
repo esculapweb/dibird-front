@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { View, ScrollView, StyleSheet, Alert } from "react-native";
 
@@ -10,7 +10,6 @@ import {
   fetchSpecies,
 } from "../../util/fetches";
 import DateRangeFilter from "../ui/DateRangeFilter";
-import { saveFilters } from "../../util/storageHelper";
 import FlatButtonBottom from "../ui/FlatButtonBottom";
 import { useLanguage } from "../../store/language-context";
 import RadioGroup from "../ui/RadioGroup";
@@ -32,7 +31,7 @@ const FilterModal = ({
 }) => {
   const { language } = useLanguage();
   const { t } = useTranslation();
-  const { setTerritory, date, setDate, setPlace } = useFilters();
+  const { setTerritory, date, setDate, setPlace, setSpecies } = useFilters();
   const { locationCoords, locationAvailable, permissionStatus } =
     useLocationCoords();
 
@@ -101,8 +100,18 @@ const FilterModal = ({
     params: [effectiveTerritory, language, date],
     enabled: !!effectiveTerritory && date !== undefined,
   });
+
+  const prevTerritoryRef = useRef(null);
+
   useEffect(() => {
-    setPlaceValue(null);
+    if (prevTerritoryRef.current === null && effectiveTerritory !== null) {
+      prevTerritoryRef.current = effectiveTerritory;
+      return;
+    }
+    if (prevTerritoryRef.current !== effectiveTerritory) {
+      setPlaceValue(null);
+      prevTerritoryRef.current = effectiveTerritory;
+    }
   }, [effectiveTerritory]);
 
   useEffect(() => {
@@ -124,10 +133,10 @@ const FilterModal = ({
     setFavouriteValue(filters?.favourite ?? null);
   }, [visible, filters]);
 
-  const isDateFilterActive = (date) => {
-    if (!date) return false;
-    if (date.mode === "any") return false;
-    return !!(date.from || date.to || date.year);
+  const isDateFilterActive = (d) => {
+    if (!d) return false;
+    if (d.mode === "any") return false;
+    return !!(d.from || d.to || d.year);
   };
 
   const getNewFilters = () => {
@@ -144,16 +153,14 @@ const FilterModal = ({
   const applyHandler = async () => {
     const newFilters = getNewFilters();
     setFilters(newFilters);
-
-    const filtersToSave = Object.fromEntries(
-      Object.entries(newFilters).filter(([k]) => !noSaveFilters.includes(k)),
-    );
-    await saveFilters(screen, filtersToSave);
+    requestAnimationFrame(onClose);
 
     await setTerritory(newFilters.territory ?? null);
     await setDate(newFilters.date ?? null);
     await setPlace(newFilters.place ?? null);
-    onClose();
+    await setSpecies(newFilters.species ?? null);
+
+
   };
 
   return (

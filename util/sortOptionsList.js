@@ -12,6 +12,28 @@ export const sortOptionsList = (screen) => {
         { label: i18n.t("alphabetic_desc"), value: "-name" },
       ];
 
+    case "Observations":
+    case "DiaryDetail":
+      return [
+        { label: i18n.t("date_sort_desc"), value: "-date_time" },
+        { label: i18n.t("date_sort"), value: "date_time" },
+        { label: i18n.t("taxonomic"), value: "ioc_id" },
+        { label: i18n.t("taxonomic_desc"), value: "-ioc_id" },
+        { label: i18n.t("alphabetic"), value: "species_name" },
+        { label: i18n.t("alphabetic_desc"), value: "-species_name" },
+      ];
+
+    case "Diaries":
+      return [
+        { label: i18n.t("date_sort_desc"), value: "-date_time" },
+        { label: i18n.t("date_sort"), value: "date_time" },
+        { label: i18n.t("observation_count"), value: "observation_count,name" },
+        {
+          label: i18n.t("observation_count_desc"),
+          value: "-observation_count,name",
+        },
+      ];
+
     case "Places":
       return [
         { label: i18n.t("distance_asc"), value: "distance" },
@@ -41,28 +63,6 @@ export const sortOptionsList = (screen) => {
         { label: i18n.t("favourite_desc"), value: "favourite,name" },
         { label: i18n.t("alphabetic"), value: "name" },
         { label: i18n.t("alphabetic_desc"), value: "-name" },
-      ];
-
-    case "Observations":
-    case "DiaryDetail":
-      return [
-        { label: i18n.t("date_sort_desc"), value: "-date_time" },
-        { label: i18n.t("date_sort"), value: "date_time" },
-        { label: i18n.t("taxonomic"), value: "ioc_id" },
-        { label: i18n.t("taxonomic_desc"), value: "-ioc_id" },
-        { label: i18n.t("alphabetic"), value: "species_name" },
-        { label: i18n.t("alphabetic_desc"), value: "-species_name" },
-      ];
-
-    case "Diaries":
-      return [
-        { label: i18n.t("date_sort_desc"), value: "-date_time" },
-        { label: i18n.t("date_sort"), value: "date_time" },
-        { label: i18n.t("observation_count"), value: "observation_count,name" },
-        {
-          label: i18n.t("observation_count_desc"),
-          value: "-observation_count,name",
-        },
       ];
 
     case "CountriesDropdown":
