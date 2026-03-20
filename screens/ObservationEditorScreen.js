@@ -43,6 +43,7 @@ const ObservationEditorScreen = ({ navigation, route }) => {
     defaultSpecies,
     diaryId,
     territoryValue: diaryTerritoryValue,
+    returnMode
   } = route.params || {};
   const isEditMode = !!observation;
 
@@ -131,10 +132,10 @@ const ObservationEditorScreen = ({ navigation, route }) => {
     } else {
       createObservationMutation.mutate(observationData, {
         onSuccess: (res) => {
-          if (diaryId) {
+          setSession("lastDate", observationData.date_time);
+          if (returnMode === 'back') {
             navigation.goBack();
           } else {
-            setSession("lastDate", observationData.date_time);
             requestAnimationFrame(() =>
               navigation.replace("ObservationDetail", {
                 observationId: res.data.id,

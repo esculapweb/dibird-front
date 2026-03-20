@@ -6,22 +6,34 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useTheme } from "../../store/theme-context";
 
-const TAB_OPTIONS = [
-  { value: "seen", icon: "eye", iconInactive: "eye-outline", labelKey: "seen" },
-  { value: "all", icon: "apps", iconInactive: "apps-outline", labelKey: "all" },
-  {
-    value: "unseen",
-    icon: "eye-off",
-    iconInactive: "eye-off-outline",
-    labelKey: "not_seen",
-  },
-];
-
 const Tabs = ({ tabsMode, setTabsMode }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = stylesFn(Colors, insets);
+
+  const TAB_OPTIONS = [
+    {
+      value: "seen",
+      icon: "eye",
+      iconInactive: "eye-outline",
+      labelKey: t("seen"),
+    },
+    {
+      value: "all",
+      icon: "apps",
+      iconInactive: "apps-outline",
+      labelKey: t("all"),
+    },
+    {
+      value: "not_seen",
+      icon: "eye-off",
+      iconInactive: "eye-off-outline",
+      labelKey: t("not_seen"),
+    },
+  ];
+
+  const translations = {};
 
   return (
     <View style={styles.container}>

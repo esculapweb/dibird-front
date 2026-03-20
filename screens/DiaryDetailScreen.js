@@ -43,6 +43,7 @@ const DiaryDetailScreen = ({ route, navigation }) => {
     navigation.navigate("ObservationEditor", {
       diaryId: diary.id,
       territoryValue: diary.territory,
+      returnMode: "back",
     });
   }, [navigation, diary]);
 

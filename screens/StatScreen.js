@@ -20,6 +20,7 @@ const StatScreen = ({ route, navigation }) => {
     navigation.navigate("ObservationEditor", {
       defaultTerritory,
       defaultPlace,
+      returnMode: "back",
     });
   }, [navigation, currentFilters, territory]);
 
@@ -31,6 +32,16 @@ const StatScreen = ({ route, navigation }) => {
 
   const handleStatCardPress = useCallback(
     (item) => {
+      if (!item.seen) {
+        navigation.navigate("ObservationEditor", {
+          defaultTerritory: currentFilters.territory ?? null,
+          defaultPlace: currentFilters.place ?? null,
+          defaultSpecies: item.species_id,
+          returnMode: "back",
+        });
+        return;
+      }
+
       navigation.navigate("Observations", {
         filtersOverride: {
           territory: currentFilters.territory ?? null,

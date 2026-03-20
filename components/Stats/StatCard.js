@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
+import { useTranslation } from "react-i18next";
 
 import { formatDate, isoToFlagEmoji } from "../../util/helpers";
 import { Config } from "../../constants/config";
@@ -12,6 +13,7 @@ import { BirdSVG } from "../ui/Svgs";
 const useStyles = (Colors) => React.useMemo(() => stylesFn(Colors), [Colors]);
 
 const StatCard = React.memo(({ item, index, seenMode, onPress }) => {
+  const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = useStyles(Colors);
 
@@ -78,7 +80,7 @@ const StatCard = React.memo(({ item, index, seenMode, onPress }) => {
             >
               {item.sp_name_lang}
             </Text>
-            {!isSeen && (
+            {!isSeen && !isAllMode && (
               <Ionicons
                 name="eye-off-outline"
                 size={13}
@@ -116,7 +118,26 @@ const StatCard = React.memo(({ item, index, seenMode, onPress }) => {
               </View>
             </View>
           )}
+          {!isSeen && isAllMode && (
+            <View style={styles.unseenMeta}>
+              <Ionicons
+                name="eye-off-outline"
+                size={12}
+                color={Colors.textSecondary}
+              />
+              <Text style={styles.unseenHint}>{t("not_observed_yet")}</Text>
+            </View>
+          )}
         </View>
+        {!isSeen && (
+          <View style={styles.addIcon}>
+            <Ionicons
+              name="add-circle-outline"
+              size={20}
+              color={Colors.textSecondary}
+            />
+          </View>
+        )}
       </View>
     </Pressable>
   );
@@ -275,5 +296,20 @@ const stylesFn = (Colors) =>
 
     cardUnseen: {
       backgroundColor: Colors.unseenCardBg,
+    },
+    addIcon: {
+      justifyContent: "center",
+      alignSelf: "stretch",
+      paddingLeft: 8,
+    },
+    unseenMeta: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: 3,
+    },
+    unseenHint: {
+      fontSize: 11,
+      color: Colors.textSecondary,
+      marginLeft: 4,
     },
   });
