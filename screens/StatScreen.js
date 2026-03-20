@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { View } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import ListScreen from "./ListScreen";
@@ -10,7 +11,7 @@ import { useFilters } from "../store/filters-context";
 const StatScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
   const { territory } = useFilters();
-  const [seenMode, setSeenMode] = useState(true);
+  const [seenMode, setSeenMode] = useState("seen");
   const [currentFilters, setCurrentFilters] = useState({});
 
   const handleAdd = useCallback(() => {
@@ -46,7 +47,7 @@ const StatScreen = ({ route, navigation }) => {
   const fetchData = (filters, sort, search, page, openFilterModal) => {
     const safeFilters = { ...filters };
 
-    if (!safeFilters.territory && seenMode === false) {
+    if (!safeFilters.territory && seenMode === "unseen") {
       setNoItems({
         icon: "stats-chart",
         message: t("select_territory_to_view_not_seen"),
@@ -58,9 +59,10 @@ const StatScreen = ({ route, navigation }) => {
         pagination: { count: 0 },
       });
     }
-    safeFilters.seen = seenMode;
+    safeFilters.seen =
+      seenMode === "seen" ? true : seenMode === "unseen" ? false : null;
 
-    return fetchStat(safeFilters, sort, search, page, seenMode);
+    return fetchStat(safeFilters, sort, search, page);
   };
 
   const renderItem = useCallback(
@@ -76,22 +78,21 @@ const StatScreen = ({ route, navigation }) => {
   );
 
   return (
-    <>
+    <View style={{ flex: 1 }}>
       <ListScreen
         route={route}
         navigation={navigation}
         fetchFunction={fetchData}
         errorTitle={t("stat_unavailable")}
-        onAdd={handleAdd}
         renderItem={renderItem}
         noItems={noItems}
         title={t("statistics")}
-        tabs={<Tabs tabsMode={seenMode} setTabsMode={setSeenMode} />}
         tabsMode={seenMode}
         getItemId={(item) => item.species_id}
         onFiltersChange={setCurrentFilters}
       />
-    </>
+      <Tabs tabsMode={seenMode} setTabsMode={setSeenMode} />
+    </View>
   );
 };
 

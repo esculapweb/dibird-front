@@ -120,9 +120,8 @@ export const fetchStat = (
   order = "-date_time",
   search,
   page,
-  seenMode,
 ) => {
-  filters = { ...filters, seen: seenMode };
+  filters = { ...filters };
   return fetchAbstract("/myapi/stat2/", filters, order, search, page);
 };
 

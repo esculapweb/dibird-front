@@ -74,4 +74,8 @@ export const DarkColors = {
   mainTextDate: "#f0c24b", 
 
   seenIcon: "#34d399",
+  seenBadgeBg: "#14532d",
+  unseenCardBg: "#111111",
+  tabActiveColor: "#f0c24b",
+  tabBorder: "#333333",
 };

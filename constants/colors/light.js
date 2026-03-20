@@ -64,4 +64,8 @@ export const LightColors = {
   mainTextDate: "#3a4c62",
 
   seenIcon: "#16a34a", 
+  seenBadgeBg: "#dcfce7",   
+  unseenCardBg: "#f3f4f6",
+  tabActiveColor: "#2f3c43",
+  tabBorder: "#9ca3af", 
 };

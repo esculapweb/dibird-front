@@ -15,6 +15,10 @@ const StatCard = React.memo(({ item, index, seenMode, onPress }) => {
   const { Colors } = useTheme();
   const styles = useStyles(Colors);
 
+  const isSeen = item.seen;
+  const isAllMode = seenMode === "all";
+  const showSmallImage = !isSeen && seenMode === "unseen";
+
   const minDate = item?.min_date && formatDate(item.min_date);
   const maxDate = item?.max_date && formatDate(item.max_date);
 
@@ -34,22 +38,32 @@ const StatCard = React.memo(({ item, index, seenMode, onPress }) => {
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && styles.pressedCard]}
+      style={({ pressed }) => [
+        styles.card,
+        !isSeen && styles.cardUnseen,
+        pressed && styles.pressedCard,
+      ]}
     >
       <View style={styles.row}>
         <View
-          style={[styles.imageWrapper, !seenMode && styles.imageWrapperSmall]}
+          style={[
+            styles.imageWrapper,
+            showSmallImage && styles.imageWrapperSmall,
+          ]}
         >
           {item.sp_thumb ? (
             <Image
               source={{ uri: `${Config.mediaUrl}/${item.sp_thumb}` }}
-              style={[styles.image, !seenMode && styles.imageSmall]}
+              style={[styles.image, showSmallImage && styles.imageSmall]}
               contentFit="cover"
               cachePolicy="disk"
             />
           ) : (
             <View
-              style={[styles.imagePlaceholder, !seenMode && styles.imageSmall]}
+              style={[
+                styles.imagePlaceholder,
+                showSmallImage && styles.imageSmall,
+              ]}
             >
               <BirdSVG size={26} color={Colors.textSecondary} />
             </View>
@@ -59,30 +73,43 @@ const StatCard = React.memo(({ item, index, seenMode, onPress }) => {
         <View style={styles.content}>
           <View style={styles.titleLeft}>
             <Text style={styles.index}>{index + 1}.</Text>
-            <Text style={styles.title}>{item.sp_name_lang}</Text>
+            <Text
+              style={[styles.title, isAllMode && !isSeen && styles.titleUnseen]}
+            >
+              {item.sp_name_lang}
+            </Text>
+            {!isSeen && (
+              <Ionicons
+                name="eye-off-outline"
+                size={13}
+                color={Colors.textSecondary}
+                style={{ marginLeft: 2 }}
+              />
+            )}
           </View>
 
           <View style={styles.latinRow}>
-            <Text style={styles.latin}>{item.sp_latin}</Text>
-            {seenMode && countriesText && (
+            <Text style={[styles.latin, !isSeen && styles.latinUnseen]}>
+              {item.sp_latin}
+            </Text>
+            {isSeen && countriesText && (
               <Text style={styles.flags}>{countriesText}</Text>
             )}
           </View>
 
-          {seenMode && (
+          {isSeen && (
             <View style={styles.meta}>
               <View style={styles.metaLeft}>
                 <MetaItem icon="calendar-outline" text={dateText} />
               </View>
-
               <View style={styles.metaRight}>
-                <View style={styles.observations}>
+                <View style={styles.seenBadge}>
                   <Ionicons
                     name="eye-outline"
                     size={11}
-                    color={Colors.textMain}
+                    color={Colors.seenIcon}
                   />
-                  <Text style={styles.observationsText}>
+                  <Text style={styles.seenBadgeText}>
                     {item.qty_observations}
                   </Text>
                 </View>
@@ -220,5 +247,33 @@ const stylesFn = (Colors) =>
       fontSize: 11,
       fontWeight: "600",
       color: Colors.textMain,
+    },
+
+    seenBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: Colors.seenBadgeBg,
+      paddingHorizontal: 5,
+      paddingVertical: 2,
+      borderRadius: 10,
+      marginBottom: 1,
+    },
+
+    seenBadgeText: {
+      marginLeft: 2,
+      fontSize: 11,
+      fontWeight: "600",
+      color: Colors.seenIcon,
+    },
+    titleUnseen: {
+      color: Colors.textSecondary,
+    },
+
+    latinUnseen: {
+      color: Colors.statIcon,
+    },
+
+    cardUnseen: {
+      backgroundColor: Colors.unseenCardBg,
     },
   });

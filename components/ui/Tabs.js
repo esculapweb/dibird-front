@@ -2,95 +2,83 @@ import { StyleSheet, View, Pressable, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useTheme } from "../../store/theme-context";
+
+const TAB_OPTIONS = [
+  { value: "seen", icon: "eye", iconInactive: "eye-outline", labelKey: "seen" },
+  { value: "all", icon: "apps", iconInactive: "apps-outline", labelKey: "all" },
+  {
+    value: "unseen",
+    icon: "eye-off",
+    iconInactive: "eye-off-outline",
+    labelKey: "not_seen",
+  },
+];
 
 const Tabs = ({ tabsMode, setTabsMode }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
-  const styles = stylesFn(Colors);
+  const insets = useSafeAreaInsets();
+  const styles = stylesFn(Colors, insets);
 
   return (
     <View style={styles.container}>
-      <Pressable
-        style={[styles.tab, tabsMode && styles.activeTab]}
-        onPress={() => {
-          Haptics.selectionAsync();
-          setTabsMode(true);
-        }}
-      >
-        <Ionicons
-          name="eye-outline"
-          size={16}
-          color={tabsMode ? Colors.buttonBrightColor : Colors.textSecondary}
-          style={styles.icon}
-        />
-        <Text style={[styles.text, tabsMode && styles.activeText]}>
-          {t("seen")}
-        </Text>
-      </Pressable>
-
-      <Pressable
-        style={[styles.tab, !tabsMode && styles.activeTab]}
-        onPress={() => {
-          Haptics.selectionAsync();
-          setTabsMode(false);
-        }}
-      >
-        <Ionicons
-          name="eye-off-outline"
-          size={16}
-          color={!tabsMode ? Colors.buttonBrightColor : Colors.textSecondary}
-          style={styles.icon}
-        />
-        <Text style={[styles.text, !tabsMode && styles.activeText]}>
-          {t("not_seen")}
-        </Text>
-      </Pressable>
+      {TAB_OPTIONS.map(({ value, icon, iconInactive, labelKey }) => {
+        const isActive = tabsMode === value;
+        return (
+          <Pressable
+            key={value}
+            style={[styles.tab, isActive && styles.activeTab]}
+            onPress={() => {
+              Haptics.selectionAsync();
+              setTabsMode(value);
+            }}
+          >
+            <Ionicons
+              name={isActive ? icon : iconInactive}
+              size={24}
+              color={isActive ? Colors.tabActiveColor : Colors.textSecondary}
+            />
+            <Text style={[styles.text, isActive && styles.activeText]}>
+              {t(labelKey)}
+            </Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 };
 
 export default Tabs;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors, insets) =>
   StyleSheet.create({
     container: {
       flexDirection: "row",
       backgroundColor: Colors.primary100,
-      padding: 10,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: Colors.tabBorder,
+      paddingBottom: insets.bottom,
     },
-
     tab: {
       flex: 1,
-      flexDirection: "row",
-      justifyContent: "center",
       alignItems: "center",
-      paddingVertical: 10,
-      borderRadius: 16,
+      justifyContent: "center",
+      gap: 3,
+      borderTopWidth: 2,
+      borderTopColor: "transparent",
+      paddingTop: 6,
     },
-
     activeTab: {
-      backgroundColor: Colors.buttonBrightBg,
-      shadowColor: Colors.shadow,
-      shadowOpacity: 0.25,
-      shadowRadius: 6,
-      shadowOffset: { width: 0, height: 3 },
-      elevation: 4,
+      borderTopColor: Colors.tabActiveColor,
     },
-
     text: {
-      fontSize: 14,
-      fontWeight: "500",
+      fontSize: 13,
       color: Colors.textSecondary,
     },
-
     activeText: {
-      fontWeight: "600",
-      color: Colors.buttonBrightColor,
-    },
-
-    icon: {
-      marginRight: 6,
+      color: Colors.tabActiveColor,
     },
   });

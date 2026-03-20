@@ -31,7 +31,6 @@ const ListScreen = ({
   noItems,
   showSearch,
   title,
-  tabs,
   tabsMode,
   listHeader,
   extraFilters,
@@ -339,7 +338,6 @@ const ListScreen = ({
 
   return (
     <>
-      {tabs}
       {showSearch && (
         <SearchInput
           value={search}

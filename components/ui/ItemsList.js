@@ -81,9 +81,11 @@ const ItemsList = ({
         removeClippedSubviews
       />
 
-      <Pressable style={styles.fab} onPress={onAdd}>
-        <Ionicons name="add" size={28} color={Colors.buttonBrightColor} />
-      </Pressable>
+      {onAdd && (
+        <Pressable style={styles.fab} onPress={onAdd}>
+          <Ionicons name="add" size={28} color={Colors.buttonBrightColor} />
+        </Pressable>
+      )}
     </>
   );
 };
