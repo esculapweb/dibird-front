@@ -44,6 +44,7 @@ const PlacesScreen = ({ route, navigation }) => {
       locationAvailable={locationAvailable}
       permissionStatus={permissionStatus}
       onLocationUnavailable={handleLocationUnavailable}
+      fabOffset={76}
     />
   );
 };

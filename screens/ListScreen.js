@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, useLayoutEffect } from "react";
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useHeaderHeight } from "@react-navigation/elements";
 
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import FilterModal from "../components/Filters/FilterModal";
@@ -19,6 +22,7 @@ import ErrorOverlay from "../components/Error/ErrorOverlay";
 import { sortOptionsList } from "../util/sortOptionsList";
 import { parseDeepLinkParams } from "../util/parseDeepLinkParams";
 import { useFilters } from "../store/filters-context";
+import { useTheme } from "../store/theme-context";
 
 const ListScreen = ({
   route,
@@ -44,6 +48,9 @@ const ListScreen = ({
   onLocationUnavailable,
 }) => {
   const { t } = useTranslation();
+  const { Colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const {
     territory,
     setTerritory,
@@ -198,7 +205,8 @@ const ListScreen = ({
   useEffect(() => {
     const initFilters = async () => {
       if (route.params?.filtersOverride) {
-        const { speciesName, ...overrideFilters } = route.params.filtersOverride;
+        const { speciesName, ...overrideFilters } =
+          route.params.filtersOverride;
         setFilters(overrideFilters);
         setFilterHints({ speciesName });
         setIgnoreContextSync(true);
@@ -337,15 +345,11 @@ const ListScreen = ({
   if (isLoading || !data) return <LoadingOverlay />;
 
   return (
-    <>
-      {showSearch && (
-        <SearchInput
-          value={search}
-          onChange={setSearch}
-          onClear={handleClearSearch}
-          placeholder={t("search_by_name")}
-        />
-      )}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={headerHeight - insets.bottom + 8}
+    >
       {hasActiveFilters && (
         <FilterChips
           filters={filters}
@@ -387,7 +391,25 @@ const ListScreen = ({
         clearFilters={handleClearFilters}
         extraTerritory={extraFilters?.territory}
       />
-    </>
+      {showSearch && (
+        <View
+          edges={["bottom"]}
+          style={{
+            backgroundColor: Colors.backgroundMain,
+            borderTopWidth: StyleSheet.hairlineWidth,
+            borderTopColor: Colors.border,
+            paddingBottom: insets.bottom,
+          }}
+        >
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            onClear={handleClearSearch}
+            placeholder={t("search_by_name")}
+          />
+        </View>
+      )}
+    </KeyboardAvoidingView>
   );
 };
 
