@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../../store/theme-context";
 
 import AnimatedLoadingButton from "../ui/AnimatedLoadingButton";
@@ -83,16 +82,13 @@ const AuthForm = ({ isLogin, onSubmit, credentialsInvalid, loading }) => {
         />
       )}
       <View style={styles.buttonContainer}>
-        <LinearGradient
-          colors={[Colors.mainCardAccent + "20", Colors.mainCardAccent + "05"]}
-          start={[0, 0]}
-          end={[1, 1]}
-          style={styles.buttonGradient}
-        >
-          <AnimatedLoadingButton onPress={submitHandler} loading={loading} bright={true}>
+          <AnimatedLoadingButton
+            onPress={submitHandler}
+            loading={loading}
+            bright={true}
+          >
             {isLogin ? t("log_in") : t("sign_up")}
           </AnimatedLoadingButton>
-        </LinearGradient>
       </View>
     </View>
   );
@@ -105,9 +101,5 @@ const stylesFn = (Colors) =>
     buttonContainer: {
       marginVertical: 16,
       borderRadius: 16,
-      overflow: "hidden",
-    },
-    buttonGradient: {
-      padding: 1,
     },
   });

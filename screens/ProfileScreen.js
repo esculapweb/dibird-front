@@ -1,15 +1,13 @@
 import { useState } from "react";
-import { StyleSheet, Platform, View } from "react-native";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { View } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import ProfileForm from "../components/Profile/ProfileForm";
 import { useProfile } from "../store/profile-context";
 import { showError } from "../services/api";
-import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
-import { useTheme } from "../store/theme-context";
+import FormWrapper from "../components/ui/FormWrapper";
 
 const ProfileScreen = () => {
   const [loading, setLoading] = useState(false);
@@ -18,8 +16,6 @@ const ProfileScreen = () => {
   const { profile, profileLoading, updateProfile, refreshProfile } =
     useProfile();
   const { t } = useTranslation();
-  const { Colors } = useTheme();
-  const styles = stylesFn(Colors);
 
   const extractApiError = (err) => {
     const data = err.response.data;
@@ -65,41 +61,19 @@ const ProfileScreen = () => {
     );
 
   return (
-    <View style={styles.safeArea}>
-      <View style={{ flex: 1 }}>
-        <KeyboardAwareScrollView
-          contentContainerStyle={styles.container}
-          enableOnAndroid
-          keyboardShouldPersistTaps="handled"
-          extraScrollHeight={Platform.OS === "ios" ? 20 : 80}
-          style={{ flex: 1 }}
-        >
-          <ProfileForm
-            key={formKey}
-            submitHandler={submitHandler}
-            loading={loading}
-            success={success}
-          />
-        </KeyboardAwareScrollView>
-
-        <FlatButtonBottom onPress={() => setFormKey((k) => k + 1)}>
-          {t("reset_form")}
-        </FlatButtonBottom>
-      </View>
-    </View>
+    <FormWrapper
+      header={<View style={{marginBottom:28}}></View>}
+      bottomButtonLabel={t("reset_form")}
+      bottomButtonHandler={() => setFormKey((k) => k + 1)}
+    >
+      <ProfileForm
+        key={formKey}
+        submitHandler={submitHandler}
+        loading={loading}
+        success={success}
+      />
+    </FormWrapper>
   );
 };
 
 export default ProfileScreen;
-
-const stylesFn = (Colors) =>
-  StyleSheet.create({
-    safeArea: {
-      flex: 1,
-      backgroundColor: Colors.backgroundMain,
-    },
-    container: {
-      flexGrow: 1,
-      paddingBottom: 80,
-    },
-  });

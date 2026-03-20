@@ -110,7 +110,7 @@ const DiaryForm = ({
         <PrivacyToggle
           value={formData.private}
           onChange={(val) => setFormData((prev) => ({ ...prev, private: val }))}
-          diary={true}
+          gender="male"
         />
       </Section>
 

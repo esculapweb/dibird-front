@@ -1,25 +1,27 @@
 import { useState, useEffect } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, View, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import Input from "../ui/Input";
 import AnimatedLoadingButton from "../ui/AnimatedLoadingButton";
 import DropdownInput from "../ui/DropdownInput";
-import RadioGroup from "../ui/RadioGroup";
+import PrivacyToggle from "../ui/PrivacyToggle";
 import { useProfile } from "../../store/profile-context";
 import { fetchTimezones, fetchMyCountries } from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
+import { useTheme } from "../../store/theme-context";
 
 const ProfileForm = ({ submitHandler, loading, success }) => {
   const { language } = useLanguage();
   const { t } = useTranslation();
   const { profile } = useProfile();
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [userName, setUserName] = useState("");
-
   const [territoryValue, setTerritoryValue] = useState("");
   const [privateProfile, setPrivateProfile] = useState(false);
   const [privateDiaries, setPrivateDiaries] = useState(false);
@@ -50,14 +52,12 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
       timezone: !String(timezoneValue ?? "").trim(),
     };
     setInvalid(newInvalid);
-
     return !Object.values(newInvalid).some((v) => v);
   };
 
   const onSubmit = () => {
     if (!validateForm()) return;
-
-    const formData = {
+    submitHandler({
       first_name: firstName,
       last_name: lastName,
       username: userName,
@@ -65,9 +65,7 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
       timezone: timezoneValue,
       private: privateProfile,
       private_diary: privateDiaries,
-    };
-
-    submitHandler(formData);
+    });
   };
 
   const {
@@ -93,80 +91,79 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
 
   return (
     <View style={styles.outer}>
-      <View style={styles.container}>
-        <Input
-          label={t("first_name")}
-          value={firstName}
-          onUpdateValue={setFirstName}
-          isInvalid={invalid.firstName}
-        />
-        <Input
-          label={t("last_name")}
-          value={lastName}
-          onUpdateValue={setLastName}
-          isInvalid={invalid.lastName}
-        />
-        <Input
-          label={t("username")}
-          value={userName}
-          onUpdateValue={setUserName}
-          isInvalid={invalid.userName}
-        />
+      <View style={styles.row}>
+        <View style={styles.rowItem}>
+          <Input
+            label={t("first_name")}
+            value={firstName}
+            onUpdateValue={setFirstName}
+            isInvalid={invalid.firstName}
+          />
+        </View>
+        <View style={styles.rowItem}>
+          <Input
+            label={t("last_name")}
+            value={lastName}
+            onUpdateValue={setLastName}
+            isInvalid={invalid.lastName}
+          />
+        </View>
+      </View>
 
-        <DropdownInput
-          title={t("my_country")}
-          placeholder={t("select_country")}
-          value={territoryValue}
-          setValue={setTerritoryValue}
-          query={queryMyCountries}
-          type="CountriesDropdown"
-          sort={countriesSort}
-          onSortChange={onCountriesSortChange}
-        />
+      <Input
+        label={t("username")}
+        value={userName}
+        onUpdateValue={setUserName}
+        isInvalid={invalid.userName}
+        prefix="@"
+      />
 
-        <DropdownInput
-          title={t("timezone")}
-          placeholder={t("select_timezone")}
-          value={timezoneValue}
-          setValue={setTimezoneValue}
-          query={queryTimeZones}
-        />
+      <View style={styles.hairline} />
 
-        <RadioGroup
-          label={t("only_i_can_see_my_profile")}
+      <DropdownInput
+        title={t("my_country")}
+        placeholder={t("select_country")}
+        value={territoryValue}
+        setValue={setTerritoryValue}
+        query={queryMyCountries}
+        type="CountriesDropdown"
+        sort={countriesSort}
+        onSortChange={onCountriesSortChange}
+      />
+
+      <DropdownInput
+        title={t("timezone")}
+        placeholder={t("select_timezone")}
+        value={timezoneValue}
+        setValue={setTimezoneValue}
+        query={queryTimeZones}
+      />
+
+      <View style={styles.hairline} />
+        <Text style={styles.privacyLabel}>{t("profile")}</Text>
+        <PrivacyToggle
           value={privateProfile}
           onChange={setPrivateProfile}
-          direction="row"
-          isInvalid={invalid.privateProfile}
-          options={[
-            { label: t("yes"), value: true },
-            { label: t("no"), value: false },
-          ]}
-          style={styles.radioGroup}
+          gender="male"
+          style={{marginBottom: 12}}
         />
-
-        <RadioGroup
-          label={t("diaries_are_private_by_default")}
+        <View style={styles.hairline} />
+        <Text style={styles.privacyLabel}>{t("new_observatoins_and_diaries")}</Text>
+        <PrivacyToggle
           value={privateDiaries}
           onChange={setPrivateDiaries}
-          direction="row"
-          isInvalid={invalid.privateDiaries}
-          options={[
-            { label: t("yes"), value: true },
-            { label: t("no"), value: false },
-          ]}
-          style={styles.radioGroup}
+          gender="multiple"
         />
 
-        <View style={styles.buttons}>
-          <AnimatedLoadingButton
-            onPress={onSubmit}
-            loading={loading}
-            success={success}
-          >
-            {t("save")}
-          </AnimatedLoadingButton>
-        </View>
+      <View style={styles.buttonContainer}>
+        <AnimatedLoadingButton
+          onPress={onSubmit}
+          loading={loading}
+          success={success}
+          bright
+        >
+          {t("save")}
+        </AnimatedLoadingButton>
       </View>
     </View>
   );
@@ -174,18 +171,39 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
 
 export default ProfileForm;
 
-const styles = StyleSheet.create({
-  outer: { flex: 1, justifyContent: "space-between" },
-  container: {
-    padding: 18,
-  },
-  buttons: {
-    marginTop: 10,
-  },
-  flatButtonContainer: {
-    paddingHorizontal: 18,
-  },
-  radioGroup: {
-    marginBottom: 16,
-  },
-});
+const stylesFn = (Colors) =>
+  StyleSheet.create({
+    outer: {
+      paddingBottom: 8,
+    },
+    hairline: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: Colors.tabBorder,
+      marginBottom: 12,
+      marginHorizontal: -24,
+    },
+    row: {
+      flexDirection: "row",
+      gap: 12,
+      marginBottom: 4,
+    },
+    rowItem: {
+      flex: 1,
+    },
+    divider: {
+      marginBottom: 12,
+    },
+    buttonContainer: {
+      marginTop: 24,
+      borderRadius: 16,
+    },
+    privacyLabel: {
+      marginBottom: 8,
+      fontSize: 13,
+      fontWeight: "700",
+      color: Colors.textSecondary,
+      textTransform: "uppercase",
+      letterSpacing: 0.8,
+
+    },
+  });

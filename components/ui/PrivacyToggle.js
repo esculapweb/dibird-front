@@ -3,19 +3,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 
 import { useTheme } from "../../store/theme-context";
+import { privacyLabels } from "../../util/privacyLabels";
 
-const PrivacyToggle = ({ value, onChange, style, diary }) => {
+const PrivacyToggle = ({ value, onChange, style, gender, labelAdditional }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const { t } = useTranslation();
 
-  const labels = diary ? {
-    private: t("private_diary"),
-    public: t("public_diary"),
-  } : {
-    private: t("private"),
-    public: t("public"),
-  }
+  const labels = privacyLabels(gender);
 
   return (
     <Pressable
@@ -32,7 +27,7 @@ const PrivacyToggle = ({ value, onChange, style, diary }) => {
           />
         </View>
         <View>
-          <Text style={styles.label}>{value ? labels.private : labels.public}</Text>
+          <Text style={styles.label}>{labelAdditional}{value ? labels.private : labels.public}</Text>
           <Text style={styles.desc}>
             {value ? t("visible_only_to_you") : t("visible_to_everyone")}
           </Text>
