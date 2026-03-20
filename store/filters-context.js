@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import {
   loadGlobalTerritory,
   saveGlobalTerritory,
@@ -66,17 +66,17 @@ export const FiltersProvider = ({ children }) => {
     setSpeciesState(null);
   };
 
-  // const initFilters = async (profileTerritory) => {
-  //   const newDate = { type: "year", year: new Date().getFullYear() };
-  //   await saveGlobalTerritory(profileTerritory ?? null);
-  //   await saveGlobalDateFilter(newDate);
-  //   await saveGlobalPlace(null);
-  //   await saveGlobalSpecies(null);
-  //   setTerritoryState(profileTerritory ?? null);
-  //   setDateState(newDate);
-  //   setPlaceState(null);
-  //   setSpeciesState(null);
-  // };
+  const reload = useCallback(async () => {
+    const territory = await loadGlobalTerritory();
+    const date = await loadGlobalDateFilter();
+    const place = await loadGlobalPlace();
+    const species = await loadGlobalSpecies();
+    setTerritoryState(territory ?? null);
+    setDateState(date ?? null);
+    setPlaceState(place ?? null);
+    setSpeciesState(species ?? null);
+  }, []);
+
 
   return (
     <FiltersContext.Provider
@@ -90,7 +90,7 @@ export const FiltersProvider = ({ children }) => {
         species,
         setSpecies,
         resetFilters,
-        // initFilters,
+        reload,
       }}
     >
       {children}
