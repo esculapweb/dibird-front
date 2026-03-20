@@ -8,7 +8,10 @@ import { useUpdateItem } from "../hooks/useItem";
 import { useCreatePlace } from "../hooks/Place/usePlaceMutation";
 import IconButton from "../components/ui/IconButton";
 import PlaceForm from "../components/Place/PlaceForm";
-import { usePlaceLocation, normalizeCoords } from "../hooks/Place/usePlaceLocation";
+import {
+  usePlaceLocation,
+  normalizeCoords,
+} from "../hooks/Place/usePlaceLocation";
 import Map from "../components/Map/Map";
 import { showError } from "../services/api";
 import { callNavigationCallback } from "../util/navigationCallbacks";
@@ -25,9 +28,17 @@ const PlaceEditorScreen = ({ navigation, route }) => {
   const isEditMode = !!place;
 
   const {
-    coords, zoom, accuracy, details,
-    latText, setLatText, lngText, setLngText,
-    isLoading: isLocating, updateCoords, useMyLocation,
+    coords,
+    zoom,
+    accuracy,
+    details,
+    latText,
+    setLatText,
+    lngText,
+    setLngText,
+    isLoading: isLocating,
+    updateCoords,
+    useMyLocation,
   } = usePlaceLocation();
 
   const createPlaceMutation = useCreatePlace();
@@ -40,15 +51,32 @@ const PlaceEditorScreen = ({ navigation, route }) => {
   const [errors, setErrors] = useState({});
   const initialCoords = place?.location?.coordinates ?? [0, 0];
 
-  const handleMapPress = useCallback((e) => {
-    if (isLocating) return;
-    const [lng, lat] = e.geometry.coordinates;
-    const normalized = normalizeCoords(lng, lat);
-    if (!normalized) return;
-    const { lngText: newLngText, latText: newLatText, lng: newLng, lat: newLat } = normalized;
-    updateCoords([newLng, newLat], { fromManual: true, latText: newLatText, lngText: newLngText, withGeocode: true });
-    setErrors((prev) => ({ ...prev, latitude: undefined, longitude: undefined }));
-  }, [updateCoords, isLocating]);
+  const handleMapPress = useCallback(
+    (e) => {
+      if (isLocating) return;
+      const [lng, lat] = e.geometry.coordinates;
+      const normalized = normalizeCoords(lng, lat);
+      if (!normalized) return;
+      const {
+        lngText: newLngText,
+        latText: newLatText,
+        lng: newLng,
+        lat: newLat,
+      } = normalized;
+      updateCoords([newLng, newLat], {
+        fromManual: true,
+        latText: newLatText,
+        lngText: newLngText,
+        withGeocode: true,
+      });
+      setErrors((prev) => ({
+        ...prev,
+        latitude: undefined,
+        longitude: undefined,
+      }));
+    },
+    [updateCoords, isLocating],
+  );
 
   useEffect(() => {
     if (!isEditMode) {
@@ -81,19 +109,22 @@ const PlaceEditorScreen = ({ navigation, route }) => {
   const validateForm = useCallback(() => {
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = t("name_required");
-    else if (formData.name.trim().length > 254) newErrors.name = t("name_too_long");
+    else if (formData.name.trim().length > 254)
+      newErrors.name = t("name_too_long");
     if (!formData?.territory) newErrors.territory = t("territory_required");
     if (!latText?.trim()) {
       newErrors.latitude = t("invalid_latitude");
     } else {
       const lat = Number(latText);
-      if (isNaN(lat) || lat < -90 || lat > 90) newErrors.latitude = t("invalid_latitude");
+      if (isNaN(lat) || lat < -90 || lat > 90)
+        newErrors.latitude = t("invalid_latitude");
     }
     if (!lngText?.trim()) {
       newErrors.longitude = t("invalid_longitude");
     } else {
       const lng = Number(lngText);
-      if (isNaN(lng) || lng < -180 || lng > 180) newErrors.longitude = t("invalid_longitude");
+      if (isNaN(lng) || lng < -180 || lng > 180)
+        newErrors.longitude = t("invalid_longitude");
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -101,13 +132,17 @@ const PlaceEditorScreen = ({ navigation, route }) => {
 
   const extractApiError = (e) => ({
     title: isEditMode ? t("update_failed") : t("create_failed"),
-    message: Object.values(e?.response?.data).flat().join("\n") ||
+    message:
+      Object.values(e?.response?.data).flat().join("\n") ||
       (isEditMode ? t("could_not_update_place") : t("could_not_create_place")),
   });
 
   const handleMutateError = (e) => {
     const data = e?.response?.data;
-    if (!data) { showError(e, extractApiError); return; }
+    if (!data) {
+      showError(e, extractApiError);
+      return;
+    }
     const errorField = FORM_FIELDS.find((field) => data?.[field]);
     errorField
       ? setErrors((prev) => ({ ...prev, [errorField]: data[errorField] }))
@@ -118,8 +153,17 @@ const PlaceEditorScreen = ({ navigation, route }) => {
     const normalized = normalizeCoords(lngInput, latInput, 4, true);
     if (normalized) {
       const { lngText: newLngText, latText: newLatText, lng, lat } = normalized;
-      updateCoords([lng, lat], { ...options, latText: newLatText, lngText: newLngText, withGeocode: true });
-      setErrors((prev) => ({ ...prev, latitude: undefined, longitude: undefined }));
+      updateCoords([lng, lat], {
+        ...options,
+        latText: newLatText,
+        lngText: newLngText,
+        withGeocode: true,
+      });
+      setErrors((prev) => ({
+        ...prev,
+        latitude: undefined,
+        longitude: undefined,
+      }));
     } else {
       setLatText(latInput ?? "");
       setLngText(lngInput ?? "");
@@ -136,7 +180,11 @@ const PlaceEditorScreen = ({ navigation, route }) => {
     const normalized = normalizeCoords(lngText, latText, 4);
     if (!normalized) return;
     const { lng, lat, lngText: newLngText, latText: newLatText } = normalized;
-    updateCoords([lng, lat], { fromManual: true, normalizeOnSave: true, withGeocode: false });
+    updateCoords([lng, lat], {
+      fromManual: true,
+      normalizeOnSave: true,
+      withGeocode: false,
+    });
     setLatText(newLatText);
     setLngText(newLngText);
 
@@ -156,7 +204,11 @@ const PlaceEditorScreen = ({ navigation, route }) => {
       createPlaceMutation.mutate(placeData, {
         onSuccess: (res) => {
           if (returnToScreen) {
-            callNavigationCallback("onPlaceCreated", res.data.id, placeData.territory);
+            callNavigationCallback(
+              "onPlaceCreated",
+              res.data.id,
+              placeData.territory,
+            );
             navigation.goBack();
           } else {
             requestAnimationFrame(() =>
@@ -169,16 +221,30 @@ const PlaceEditorScreen = ({ navigation, route }) => {
     }
   }, [formData, lngText, latText, isEditMode, place, returnToScreen]);
 
-  const headerRight = useCallback(() => (
-    <IconButton
-      icon="checkmark"
-      onPress={handleSavePlace}
-      style={styles.createHeaderButton}
-      size={28}
-      disabled={isLocating || (isEditMode ? updatePlaceMutation.isPending : createPlaceMutation.isPending)}
-      color={Colors.buttonBrightColor}
-    />
-  ), [handleSavePlace, isLocating, isEditMode, createPlaceMutation.isPending, updatePlaceMutation.isPending]);
+  const headerRight = useCallback(
+    () => (
+      <IconButton
+        icon="checkmark"
+        onPress={handleSavePlace}
+        style={styles.saveButton}
+        size={24}
+        disabled={
+          isLocating ||
+          (isEditMode
+            ? updatePlaceMutation.isPending
+            : createPlaceMutation.isPending)
+        }
+        color={Colors.buttonBrightColor}
+      />
+    ),
+    [
+      handleSavePlace,
+      isLocating,
+      isEditMode,
+      createPlaceMutation.isPending,
+      updatePlaceMutation.isPending,
+    ],
+  );
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -187,7 +253,9 @@ const PlaceEditorScreen = ({ navigation, route }) => {
     });
   }, [navigation, headerRight, isEditMode]);
 
-  if (isEditMode ? updatePlaceMutation.isPending : createPlaceMutation.isPending) {
+  if (
+    isEditMode ? updatePlaceMutation.isPending : createPlaceMutation.isPending
+  ) {
     return <LoadingOverlay />;
   }
 
@@ -229,13 +297,10 @@ const stylesFn = (Colors) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.primary100 },
     mapContainer: { flex: 1 },
-    createHeaderButton: {
+    saveButton: {
       backgroundColor: Colors.buttonBrightBg,
       borderRadius: 20,
-      width: 36,
-      height: 36,
       marginRight: 0,
-      justifyContent: "center",
-      alignItems: "center",
+      padding: 4,
     },
   });

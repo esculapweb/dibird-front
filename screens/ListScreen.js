@@ -138,7 +138,7 @@ const ListScreen = ({
   };
 
   const handleClearFilters = async () => {
-    setIgnoreContextSync(false);
+    setIgnoreContextSync(true);
     await setDate(null);
     await setTerritory(null);
     await setPlace(null);
@@ -158,7 +158,7 @@ const ListScreen = ({
   const handleSortPress = () => setSortModalVisible(true);
 
   const removeFilter = (key) => {
-    setIgnoreContextSync(false);
+    setIgnoreContextSync(true);
     if (key === "date") setDate(null);
     if (key === "territory") {
       setTerritory(null);

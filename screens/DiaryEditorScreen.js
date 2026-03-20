@@ -121,7 +121,7 @@ const DiaryEditorScreen = ({ navigation, route }) => {
           icon="checkmark"
           onPress={handleSaveDiary}
           style={styles.saveButton}
-          size={28}
+          size={24}
           disabled={
             isEditMode
               ? updateDiaryMutation.isPending
@@ -188,5 +188,6 @@ const stylesFn = (Colors) =>
       backgroundColor: Colors.buttonBrightBg,
       borderRadius: 20,
       marginRight: 0,
+      padding: 4,
     },
   });

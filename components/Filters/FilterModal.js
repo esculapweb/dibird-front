@@ -151,7 +151,7 @@ const FilterModal = ({
   const applyHandler = async () => {
     const newFilters = getNewFilters();
     setFilters(newFilters);
-    requestAnimationFrame(onClose);
+    onClose();
 
     if (allowed.includes("territory"))
       await setTerritory(newFilters.territory ?? null);

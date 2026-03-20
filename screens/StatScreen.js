@@ -44,26 +44,26 @@ const StatScreen = ({ route, navigation }) => {
     [currentFilters, navigation],
   );
 
-  const fetchData = (filters, sort, search, page, openFilterModal) => {
-    const safeFilters = { ...filters };
+  const fetchData = useCallback(
+    (filters, sort, search, page, openFilterModal) => {
+      const safeFilters = { ...filters };
 
-    if (!safeFilters.territory && seenMode === "unseen") {
-      setNoItems({
-        icon: "stats-chart",
-        message: t("select_territory_to_view_not_seen"),
-        actions: [{ label: t("select_territory"), onPress: openFilterModal }],
-      });
+      if (!safeFilters.territory && seenMode !== "seen") {
+        setNoItems({
+          icon: "stats-chart",
+          message: t("select_territory_to_view_not_seen"),
+          actions: [{ label: t("select_territory"), onPress: openFilterModal }],
+        });
+        return Promise.resolve({ results: [], pagination: { count: 0 } });
+      }
 
-      return Promise.resolve({
-        results: [],
-        pagination: { count: 0 },
-      });
-    }
-    safeFilters.seen =
-      seenMode === "seen" ? true : seenMode === "unseen" ? false : null;
+      safeFilters.seen =
+        seenMode === "seen" ? true : seenMode === "unseen" ? false : null;
 
-    return fetchStat(safeFilters, sort, search, page);
-  };
+      return fetchStat(safeFilters, sort, search, page);
+    },
+    [seenMode, t],
+  );
 
   const renderItem = useCallback(
     ({ item, index }) => (

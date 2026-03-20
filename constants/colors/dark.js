@@ -73,8 +73,8 @@ export const DarkColors = {
   mainTextPrimary: "#e5e7eb", 
   mainTextDate: "#f0c24b", 
 
-  seenIcon: "#34d399",
-  seenBadgeBg: "#14532d",
+  seenIcon: "#4ade80",
+  seenBadgeBg: "#1a3a1f",
   unseenCardBg: "#111111",
   tabActiveColor: "#f0c24b",
   tabBorder: "#333333",

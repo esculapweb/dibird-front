@@ -59,9 +59,13 @@ export const loadGlobalSpecies = () => loadItem(GLOBAL_KEY, "species");
 
 export const clearAllGlobalFilters = async () => {
   await AsyncStorage.removeItem(GLOBAL_KEY);
+  await AsyncStorage.removeItem("filters_inited"); 
 };
 
 export const initGlobalFilters = async (profileTerritory) => {
+  const alreadyInited = await AsyncStorage.getItem("filters_inited");
+  if (alreadyInited) return;
+
   const savedTerritory = await loadGlobalTerritory();
   const savedDate = await loadGlobalDateFilter();
 
@@ -73,4 +77,6 @@ export const initGlobalFilters = async (profileTerritory) => {
       type: "year",
       year: new Date().getFullYear(),
     });
+
+  await AsyncStorage.setItem("filters_inited", "true");
 };
