@@ -143,7 +143,7 @@ const DiaryDetailScreen = ({ route, navigation }) => {
         listHeader={
           <Section
             title={t("diary")}
-            hintBlock={<PrivacyToggle value={diary.private} gender={male} />}
+            hintBlock={<PrivacyToggle value={diary.private} gender="male" />}
             collapsible={true}
           >
             <PlacePreviewRow

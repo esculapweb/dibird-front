@@ -199,7 +199,7 @@ const stylesFn = (Colors) =>
     },
     privacyLabel: {
       marginBottom: 8,
-      fontSize: 13,
+      fontSize: 11,
       fontWeight: "700",
       color: Colors.textSecondary,
       textTransform: "uppercase",

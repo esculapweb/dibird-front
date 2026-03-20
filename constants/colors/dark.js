@@ -77,5 +77,5 @@ export const DarkColors = {
   seenBadgeBg: "#1a3a1f",
   unseenCardBg: "#111111",
   tabActiveColor: "#f0c24b",
-  tabBorder: "#333333",
+  tabBorder: "#374151",
 };
