@@ -125,6 +125,18 @@ export const fetchStat = (
   return fetchAbstract("/myapi/stat2/", filters, order, search, page);
 };
 
+export const fetchChecklist = (
+  filters,
+  order = "-ioc_id",
+  search,
+  page,
+) => {
+  filters = { ...filters };
+  return fetchAbstract("/myapi/checklist2/", filters, order, search, page);
+};
+
+
+
 export const fetchPlaces = (
   filters,
   order = "distance",

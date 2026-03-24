@@ -46,6 +46,7 @@ const ListScreen = ({
   locationAvailable = true,
   permissionStatus,
   onLocationUnavailable,
+  screenNameOverride
 }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -69,7 +70,7 @@ const ListScreen = ({
   const [filtersLoaded, setFiltersLoaded] = useState(false);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search);
-  const screenName = route.name;
+  const screenName = screenNameOverride ?? route.name;
   const sortOptions = sortOptionsList(screenName);
   const [filterHints, setFilterHints] = useState({});
   const [ignoreContextSync, setIgnoreContextSync] = useState(false);

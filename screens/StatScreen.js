@@ -3,9 +3,9 @@ import { View } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import ListScreen from "./ListScreen";
-import ChecklistScreen from "./ChecklistScreen";
-import { fetchStat } from "../util/fetches";
+import { fetchStat, fetchChecklist } from "../util/fetches";
 import StatCard from "../components/Stats/StatCard";
+import ChecklistCard from "../components/Stats/ChecklistCard";
 import Tabs from "../components/ui/Tabs";
 import { useFilters } from "../store/filters-context";
 import SegmentedControl from "../components/ui/SegmentedControl";
@@ -14,7 +14,7 @@ const StatScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
   const { territory } = useFilters();
   const [viewMode, setViewMode] = useState("stats");
-  const [seenMode, setSeenMode] = useState("seen");
+  const [seenMode, setSeenMode] = useState("all");
   const [currentFilters, setCurrentFilters] = useState({});
 
   const SEGMENT_OPTIONS = [
@@ -84,9 +84,42 @@ const StatScreen = ({ route, navigation }) => {
     [seenMode, t],
   );
 
+  const fetchDataChecklist = useCallback(
+    (filters, sort, search, page, openFilterModal) => {
+      const safeFilters = { ...filters };
+
+      if (!safeFilters.territory && seenMode !== "seen") {
+        setNoItems({
+          icon: "stats-chart",
+          message: t("select_territory_to_view_not_seen"),
+          actions: [{ label: t("select_territory"), onPress: openFilterModal }],
+        });
+        return Promise.resolve({ results: [], pagination: { count: 0 } });
+      }
+
+      safeFilters.seen =
+        seenMode === "seen" ? true : seenMode === "unseen" ? false : null;
+
+      return fetchChecklist(safeFilters, sort, search, page);
+    },
+    [seenMode, t],
+  );
+
   const renderItem = useCallback(
     ({ item, index }) => (
       <StatCard
+        item={item}
+        index={index}
+        seenMode={seenMode}
+        onPress={() => handleStatCardPress(item)}
+      />
+    ),
+    [seenMode, handleStatCardPress],
+  );
+
+  const renderItemChecklist = useCallback(
+    ({ item, index }) => (
+      <ChecklistCard
         item={item}
         index={index}
         seenMode={seenMode}
@@ -117,10 +150,18 @@ const StatScreen = ({ route, navigation }) => {
           onFiltersChange={setCurrentFilters}
         />
       ) : (
-        <ChecklistScreen
+        <ListScreen
           route={route}
           navigation={navigation}
-          filters={currentFilters}
+          fetchFunction={fetchDataChecklist}
+          errorTitle={t("checklist_unavailable")}
+          renderItem={renderItemChecklist}
+          noItems={noItems}
+          title=""
+          tabsMode={seenMode}
+          getItemId={(item) => item.species_id ?? item.id}
+          onFiltersChange={setCurrentFilters}
+          screenNameOverride="Checklist"
         />
       )}
       <Tabs tabsMode={seenMode} setTabsMode={setSeenMode} />
