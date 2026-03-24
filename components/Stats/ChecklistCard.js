@@ -41,7 +41,7 @@ const ChecklistCard = React.memo(({ item, index, seenMode, onPress }) => {
           {isAllMode && total > 0 ? (
             isComplete ? (
               <View style={styles.doneBadge}>
-                <Ionicons name="checkmark" size={10} color={Colors.successText} />
+                <Ionicons name="checkmark" size={10} color={Colors.tabActiveColor} />
                 <Text style={styles.doneBadgeText}>{t("all")}</Text>
               </View>
             ) : (
@@ -83,7 +83,7 @@ const ChecklistCard = React.memo(({ item, index, seenMode, onPress }) => {
             {isAllMode && total > 0 ? (
               isComplete ? (
                 <View style={styles.doneBadge}>
-                  <Ionicons name="checkmark" size={10} color={Colors.seenIcon} />
+                  <Ionicons name="checkmark" size={10} color={Colors.tabActiveColor} />
                   <Text style={styles.doneBadgeText}>{t("all")}</Text>
                 </View>
               ) : (
@@ -319,10 +319,10 @@ const stylesFn = (Colors) =>
     progressFill: {
       height: "100%",
       borderRadius: 2,
-      backgroundColor: Colors.seenIcon,
+      backgroundColor: Colors.tabActiveColor,
     },
     progressFillComplete: {
-      backgroundColor: Colors.seenIcon,
+      backgroundColor: Colors.tabActiveColor,
     },
 
     // Completion badge
@@ -330,7 +330,6 @@ const stylesFn = (Colors) =>
       flexDirection: "row",
       alignItems: "center",
       gap: 3,
-      backgroundColor: Colors.seenBadgeBg,
       borderRadius: 20,
       paddingHorizontal: 7,
       paddingVertical: 1,
@@ -338,9 +337,9 @@ const stylesFn = (Colors) =>
       flexShrink: 0,
     },
     doneBadgeText: {
-      fontSize: 10,
+      fontSize: 11,
       fontWeight: "600",
-      color: Colors.seenIcon,
+      color: Colors.textSecondary,
     },
 
     // Divider lines

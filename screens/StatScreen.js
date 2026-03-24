@@ -144,7 +144,7 @@ const StatScreen = ({ route, navigation }) => {
           errorTitle={t("stat_unavailable")}
           renderItem={renderItem}
           noItems={noItems}
-          title=""
+          title={t("statistics")}
           tabsMode={seenMode}
           getItemId={(item) => item.species_id}
           onFiltersChange={setCurrentFilters}
@@ -157,7 +157,7 @@ const StatScreen = ({ route, navigation }) => {
           errorTitle={t("checklist_unavailable")}
           renderItem={renderItemChecklist}
           noItems={noItems}
-          title=""
+          title={t("checklist")}
           tabsMode={seenMode}
           getItemId={(item) => item.species_id ?? item.id}
           onFiltersChange={setCurrentFilters}
