@@ -26,7 +26,7 @@ const Tabs = ({ tabsMode, setTabsMode }) => {
       labelKey: t("all"),
     },
     {
-      value: "not_seen",
+      value: "unseen",
       icon: "eye-off",
       iconInactive: "eye-off-outline",
       labelKey: t("not_seen"),

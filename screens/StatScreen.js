@@ -3,16 +3,24 @@ import { View } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import ListScreen from "./ListScreen";
+import ChecklistScreen from "./ChecklistScreen";
 import { fetchStat } from "../util/fetches";
 import StatCard from "../components/Stats/StatCard";
 import Tabs from "../components/ui/Tabs";
 import { useFilters } from "../store/filters-context";
+import SegmentedControl from "../components/ui/SegmentedControl";
 
 const StatScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
   const { territory } = useFilters();
+  const [viewMode, setViewMode] = useState("stats");
   const [seenMode, setSeenMode] = useState("seen");
   const [currentFilters, setCurrentFilters] = useState({});
+
+  const SEGMENT_OPTIONS = [
+    { value: "stats", label: t("statistics") },
+    { value: "checklist", label: t("checklist") },
+  ];
 
   const handleAdd = useCallback(() => {
     const defaultTerritory = currentFilters?.territory ?? territory ?? null;
@@ -90,18 +98,31 @@ const StatScreen = ({ route, navigation }) => {
 
   return (
     <View style={{ flex: 1 }}>
-      <ListScreen
-        route={route}
-        navigation={navigation}
-        fetchFunction={fetchData}
-        errorTitle={t("stat_unavailable")}
-        renderItem={renderItem}
-        noItems={noItems}
-        title={t("statistics")}
-        tabsMode={seenMode}
-        getItemId={(item) => item.species_id}
-        onFiltersChange={setCurrentFilters}
+      <SegmentedControl
+        options={SEGMENT_OPTIONS}
+        value={viewMode}
+        onChange={setViewMode}
       />
+      {viewMode === "stats" ? (
+        <ListScreen
+          route={route}
+          navigation={navigation}
+          fetchFunction={fetchData}
+          errorTitle={t("stat_unavailable")}
+          renderItem={renderItem}
+          noItems={noItems}
+          title=""
+          tabsMode={seenMode}
+          getItemId={(item) => item.species_id}
+          onFiltersChange={setCurrentFilters}
+        />
+      ) : (
+        <ChecklistScreen
+          route={route}
+          navigation={navigation}
+          filters={currentFilters}
+        />
+      )}
       <Tabs tabsMode={seenMode} setTabsMode={setSeenMode} />
     </View>
   );

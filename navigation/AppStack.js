@@ -14,6 +14,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import ErrorScreen from "../screens/ErrorScreen";
 import MainScreen from "../screens/MainScreen";
 import StatScreen from "../screens/StatScreen";
+import ChecklistScreen from "../screens/ChecklistScreen";
 import PlacesScreen from "../screens/PlacesScreen";
 import PlaceDetailScreen from "../screens/PlaceDetailScreen";
 import PlaceEditorScreen from "../screens/PlaceEditorScreen";
@@ -24,8 +25,8 @@ import ObservationEditorScreen from "../screens/ObservationEditorScreen";
 import DiariesScreen from "../screens/DiariesScreen";
 import DiaryDetailScreen from "../screens/DiaryDetailScreen";
 import DiaryEditorScreen from "../screens/DiaryEditorScreen";
-
-// import SettingsScreen from "../screens/SettingsScreen";
+import RatingScreen from "../screens/RatingScreen";
+import SettingsScreen from "../screens/SettingsScreen";
 
 import { AuthContext } from "../store/auth-context";
 import { useProfile } from "../store/profile-context";
@@ -141,6 +142,21 @@ const MainDrawer = () => {
           ),
         }}
       />
+
+      <Drawer.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{
+          title: t("settings"),
+          drawerIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "settings" : "settings-outline"}
+              color={color}
+              size={size}
+            />
+          ),
+        }}
+      />
     </Drawer.Navigator>
   );
 };
@@ -161,6 +177,16 @@ const AppNavigator = () => {
         component={StatScreen}
         options={{
           title: t("statistics"),
+          headerBackTitleVisible: false,
+          headerBackTitle: t("main"),
+        }}
+      />
+
+      <Stack.Screen
+        name="Checklist"
+        component={ChecklistScreen}
+        options={{
+          title: t("checklist"),
           headerBackTitleVisible: false,
           headerBackTitle: t("main"),
         }}
@@ -247,6 +273,16 @@ const AppNavigator = () => {
         options={{
           title: t("new_diary"),
           headerBackTitleVisible: false,
+        }}
+      />
+
+      <Stack.Screen
+        name="Rating"
+        component={RatingScreen}
+        options={{
+          title: t("rating"),
+          headerBackTitleVisible: false,
+          headerBackTitle: t("main"),
         }}
       />
     </Stack.Navigator>
