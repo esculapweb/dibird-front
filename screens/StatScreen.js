@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { View } from "react-native";
 import { useTranslation } from "react-i18next";
 
@@ -9,9 +9,11 @@ import ChecklistCard from "../components/Stats/ChecklistCard";
 import Tabs from "../components/ui/Tabs";
 import { useFilters } from "../store/filters-context";
 import SegmentedControl from "../components/ui/SegmentedControl";
+import ConfirmBottomSheet from "../components/ui/ConfirmBottomSheet";
 
 const StatScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
+  const confirmRef = useRef(null);
   const { territory, seenMode, setSeenMode } = useFilters();
   const [currentFilters, setCurrentFilters] = useState({});
 
@@ -25,6 +27,7 @@ const StatScreen = ({ route, navigation }) => {
       getItemId: (item) => item.species_id,
       title: t("statistics"),
       errorTitle: t("stat_unavailable"),
+      showUncheckWarning: false,
     },
     checklist: {
       fetch: fetchChecklist,
@@ -33,9 +36,14 @@ const StatScreen = ({ route, navigation }) => {
       getItemId: (item) => item.species_id ?? item.id,
       title: t("checklist"),
       errorTitle: t("checklist_unavailable"),
+      showUncheckWarning: true,
     },
   };
   const config = MODE_CONFIG[viewMode];
+
+  const openUncheckSheet = (item) => {
+    confirmRef.current?.present(item);
+  };
 
   const handleModeChange = useCallback(
     (mode) => {
@@ -69,6 +77,18 @@ const StatScreen = ({ route, navigation }) => {
     actions: [{ label: t("add_first_observation"), onPress: handleAdd }],
   });
 
+  const handleShowObservations = (item) => {
+    navigation.navigate("Observations", {
+      filtersOverride: {
+        territory: currentFilters.territory ?? null,
+        place: currentFilters.place ?? null,
+        species: item.species_id,
+        speciesName: item.sp_name_lang,
+        date: currentFilters.date ?? null,
+      },
+    });
+  };
+
   const handleStatCardPress = useCallback(
     (item) => {
       if (!item.seen) {
@@ -80,16 +100,11 @@ const StatScreen = ({ route, navigation }) => {
         });
         return;
       }
-
-      navigation.navigate("Observations", {
-        filtersOverride: {
-          territory: currentFilters.territory ?? null,
-          place: currentFilters.place ?? null,
-          species: item.species_id,
-          speciesName: item.sp_name_lang,
-          date: currentFilters.date ?? null,
-        },
-      });
+      if (config.showUncheckWarning) {
+        openUncheckSheet(item);
+        return;
+      }
+      handleShowObservations(item);
     },
     [currentFilters, navigation],
   );
@@ -154,6 +169,15 @@ const StatScreen = ({ route, navigation }) => {
         allowSort={config.allowSort}
       />
       <Tabs tabsMode={seenMode} setTabsMode={setSeenMode} />
+      <ConfirmBottomSheet
+        ref={confirmRef}
+        type="warning"
+        title={t("uncheck_title")}
+        description={t("uncheck_descriptions")}
+        confirmText={t("view_observations")}
+        cancelText={t("cancel")}
+        onConfirm={handleShowObservations}
+      />
     </View>
   );
 };

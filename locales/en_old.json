@@ -19,12 +19,16 @@
   "failed_remove_avatar": "Failed to remove avatar",
   "failed_to_update_favourite": "Failed to update favourite status",
   "image_processing_failed": "Image processing failed",
+  "no_checklist_yet": "No checklist yet",
   "no_not_seen_empty": "All species are already marked as observed",
   "notes": "Notes",
+  "of": "of",
   "only_i_can_see_my_profile": "Only you can see your profile",
   "quantity": "Quantity",
   "retry": "Retry",
   "section_privacy": "Privacy",
   "serer_error": "Service unavailable",
-  "tap_map_to_change": "Tap on the map to change location"
+  "tap_map_to_change": "Tap on the map to change location",
+  "uncheck_requires_delete": "",
+  "warning": ""
 }
