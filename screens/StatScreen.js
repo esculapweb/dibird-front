@@ -17,6 +17,26 @@ const StatScreen = ({ route, navigation }) => {
 
   const viewMode = route.name === "Checklist" ? "checklist" : "stats";
 
+  const MODE_CONFIG = {
+    stats: {
+      fetch: fetchStat,
+      component: StatCard,
+      allowSort: true,
+      getItemId: (item) => item.species_id,
+      title: t("statistics"),
+      errorTitle: t("stat_unavailable"),
+    },
+    checklist: {
+      fetch: fetchChecklist,
+      component: ChecklistCard,
+      allowSort: false,
+      getItemId: (item) => item.species_id ?? item.id,
+      title: t("checklist"),
+      errorTitle: t("checklist_unavailable"),
+    },
+  };
+  const config = MODE_CONFIG[viewMode];
+
   const handleModeChange = useCallback(
     (mode) => {
       const targetRoute = mode === "checklist" ? "Checklist" : "Stat";
@@ -90,54 +110,26 @@ const StatScreen = ({ route, navigation }) => {
       safeFilters.seen =
         seenMode === "seen" ? true : seenMode === "unseen" ? false : null;
 
-      return fetchStat(safeFilters, sort, search, page);
+      const fetchFn = config.fetch;
+
+      return fetchFn(safeFilters, sort, search, page);
     },
-    [seenMode, t],
-  );
-
-  const fetchDataChecklist = useCallback(
-    (filters, sort, search, page, openFilterModal) => {
-      const safeFilters = { ...filters };
-
-      if (!safeFilters.territory && seenMode !== "seen") {
-        setNoItems({
-          icon: "stats-chart",
-          message: t("select_territory_to_view_not_seen"),
-          actions: [{ label: t("select_territory"), onPress: openFilterModal }],
-        });
-        return Promise.resolve({ results: [], pagination: { count: 0 } });
-      }
-
-      safeFilters.seen =
-        seenMode === "seen" ? true : seenMode === "unseen" ? false : null;
-
-      return fetchChecklist(safeFilters, sort, search, page);
-    },
-    [seenMode, t],
+    [seenMode, t, viewMode],
   );
 
   const renderItem = useCallback(
-    ({ item, index }) => (
-      <StatCard
-        item={item}
-        index={index}
-        seenMode={seenMode}
-        onPress={() => handleStatCardPress(item)}
-      />
-    ),
-    [seenMode, handleStatCardPress],
-  );
-
-  const renderItemChecklist = useCallback(
-    ({ item, index }) => (
-      <ChecklistCard
-        item={item}
-        index={index}
-        seenMode={seenMode}
-        onPress={() => handleStatCardPress(item)}
-      />
-    ),
-    [seenMode, handleStatCardPress],
+    ({ item, index }) => {
+      const Component = config.component;
+      return (
+        <Component
+          item={item}
+          index={index}
+          seenMode={seenMode}
+          onPress={() => handleStatCardPress(item)}
+        />
+      );
+    },
+    [seenMode, handleStatCardPress, viewMode],
   );
 
   return (
@@ -147,35 +139,20 @@ const StatScreen = ({ route, navigation }) => {
         value={viewMode}
         onChange={handleModeChange}
       />
-      {viewMode === "stats" ? (
-        <ListScreen
-          route={route}
-          navigation={navigation}
-          fetchFunction={fetchData}
-          errorTitle={t("stat_unavailable")}
-          renderItem={renderItem}
-          noItems={noItems}
-          title={t("statistics")}
-          tabsMode={seenMode}
-          getItemId={(item) => item.species_id}
-          onFiltersChange={setCurrentFilters}
-        />
-      ) : (
-        <ListScreen
-          route={route}
-          navigation={navigation}
-          fetchFunction={fetchDataChecklist}
-          errorTitle={t("checklist_unavailable")}
-          renderItem={renderItemChecklist}
-          noItems={noItems}
-          title={t("checklist")}
-          tabsMode={seenMode}
-          getItemId={(item) => item.species_id ?? item.id}
-          onFiltersChange={setCurrentFilters}
-          screenNameOverride="Checklist"
-          allowSort={false}
-        />
-      )}
+
+      <ListScreen
+        route={route}
+        navigation={navigation}
+        fetchFunction={fetchData}
+        title={config.title}
+        errorTitle={config.errorTitle}
+        renderItem={renderItem}
+        noItems={noItems}
+        tabsMode={seenMode}
+        getItemId={config.getItemId}
+        onFiltersChange={setCurrentFilters}
+        allowSort={config.allowSort}
+      />
       <Tabs tabsMode={seenMode} setTabsMode={setSeenMode} />
     </View>
   );
