@@ -35,6 +35,7 @@ const linking = (isAuthenticated) => ({
         },
       },
       Stat: withFilters("my/stat"),
+      Checklist: withFilters("my/checklist"),
       Places: withBasicFilters("my/place"),
       PlaceDetail: "my/place/:placeId",
       Observations: withFilters("my/observation"),

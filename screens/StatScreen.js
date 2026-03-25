@@ -12,10 +12,21 @@ import SegmentedControl from "../components/ui/SegmentedControl";
 
 const StatScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
-  const { territory } = useFilters();
-  const [viewMode, setViewMode] = useState("stats");
-  const [seenMode, setSeenMode] = useState("all");
+  const { territory, seenMode, setSeenMode } = useFilters();
   const [currentFilters, setCurrentFilters] = useState({});
+
+  const viewMode = route.name === "Checklist" ? "checklist" : "stats";
+
+  const handleModeChange = useCallback(
+    (mode) => {
+      const targetRoute = mode === "checklist" ? "Checklist" : "Stat";
+
+      if (route.name !== targetRoute) {
+        navigation.replace(targetRoute);
+      }
+    },
+    [navigation, route.name],
+  );
 
   const SEGMENT_OPTIONS = [
     { value: "stats", label: t("statistics") },
@@ -134,7 +145,7 @@ const StatScreen = ({ route, navigation }) => {
       <SegmentedControl
         options={SEGMENT_OPTIONS}
         value={viewMode}
-        onChange={setViewMode}
+        onChange={handleModeChange}
       />
       {viewMode === "stats" ? (
         <ListScreen
@@ -162,6 +173,7 @@ const StatScreen = ({ route, navigation }) => {
           getItemId={(item) => item.species_id ?? item.id}
           onFiltersChange={setCurrentFilters}
           screenNameOverride="Checklist"
+          allowSort={false}
         />
       )}
       <Tabs tabsMode={seenMode} setTabsMode={setSeenMode} />

@@ -14,7 +14,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import ErrorScreen from "../screens/ErrorScreen";
 import MainScreen from "../screens/MainScreen";
 import StatScreen from "../screens/StatScreen";
-import ChecklistScreen from "../screens/ChecklistScreen";
 import PlacesScreen from "../screens/PlacesScreen";
 import PlaceDetailScreen from "../screens/PlaceDetailScreen";
 import PlaceEditorScreen from "../screens/PlaceEditorScreen";
@@ -184,7 +183,7 @@ const AppNavigator = () => {
 
       <Stack.Screen
         name="Checklist"
-        component={ChecklistScreen}
+        component={StatScreen}
         options={{
           title: t("checklist"),
           headerBackTitleVisible: false,

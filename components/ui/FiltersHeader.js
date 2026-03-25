@@ -3,20 +3,27 @@ import { View, StyleSheet } from "react-native";
 import IconButton from "./IconButton";
 import { useTheme } from "../../store/theme-context";
 
-const FiltersHeader = ({ hasActiveFilters, onSortPress, onFilterPress, headerRightExtra }) => {
+const FiltersHeader = ({
+  hasActiveFilters,
+  onSortPress,
+  onFilterPress,
+  headerRightExtra,
+}) => {
   const { Colors } = useTheme();
   const styles = stylesFn();
 
   return (
     <View style={styles.headerButtons}>
       {headerRightExtra?.()}
-      <IconButton
-        tintColor={Colors.textMain}
-        onPress={onSortPress}
-        icon="swap-vertical"
-        style={styles.iconButton}
-        size={24}
-      />
+      {onSortPress && (
+        <IconButton
+          tintColor={Colors.textMain}
+          onPress={onSortPress}
+          icon="swap-vertical"
+          style={styles.iconButton}
+          size={24}
+        />
+      )}
       <IconButton
         tintColor={Colors.textMain}
         onPress={onFilterPress}

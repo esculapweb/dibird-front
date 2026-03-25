@@ -15,6 +15,7 @@ const SegmentedControl = ({ options, value, onChange }) => {
             key={option.value}
             style={[styles.segment, isActive && styles.activeSegment]}
             onPress={() => {
+              if (option.value === value) return;
               Haptics.selectionAsync();
               onChange(option.value);
             }}

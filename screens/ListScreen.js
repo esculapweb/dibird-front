@@ -46,7 +46,8 @@ const ListScreen = ({
   locationAvailable = true,
   permissionStatus,
   onLocationUnavailable,
-  screenNameOverride
+  screenNameOverride,
+  allowSort=true,
 }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -191,7 +192,7 @@ const ListScreen = ({
     () => (
       <FiltersHeader
         hasActiveFilters={hasActiveFilters}
-        onSortPress={handleSortPress}
+        onSortPress={allowSort ? handleSortPress : null}
         onFilterPress={handleFilterPress}
         headerRightExtra={headerRightExtra}
       />
@@ -234,17 +235,19 @@ const ListScreen = ({
           species: species ?? null,
         });
 
-        const storedSort = await loadSort(screenName);
-        const resolved = normalizeValue(
-          storedSort,
-          sortOptions.map((i) => i.value),
-        );
-        setSort(
-          isDistanceSort(resolved) && permissionStatus === "denied"
-            ? (sortOptions.find((o) => !isDistanceSort(o.value))?.value ??
-                resolved)
-            : resolved,
-        );
+        if (allowSort) {
+          const storedSort = await loadSort(screenName);
+          const resolved = normalizeValue(
+            storedSort,
+            sortOptions.map((i) => i.value),
+          );
+          setSort(
+            isDistanceSort(resolved) && permissionStatus === "denied"
+              ? (sortOptions.find((o) => !isDistanceSort(o.value))?.value ??
+                  resolved)
+              : resolved,
+          );
+        }
       }
 
       setFiltersLoaded(true);

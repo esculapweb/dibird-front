@@ -1,4 +1,10 @@
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 import {
   loadGlobalTerritory,
   saveGlobalTerritory,
@@ -18,6 +24,7 @@ export const FiltersProvider = ({ children }) => {
   const [date, setDateState] = useState(undefined);
   const [place, setPlaceState] = useState(null);
   const [species, setSpeciesState] = useState(null);
+  const [seenMode, setSeenMode] = useState("all");
 
   useEffect(() => {
     loadGlobalTerritory().then((val) => {
@@ -77,7 +84,6 @@ export const FiltersProvider = ({ children }) => {
     setSpeciesState(species ?? null);
   }, []);
 
-
   return (
     <FiltersContext.Provider
       value={{
@@ -89,6 +95,8 @@ export const FiltersProvider = ({ children }) => {
         setPlace,
         species,
         setSpecies,
+        seenMode,
+        setSeenMode,
         resetFilters,
         reload,
       }}
