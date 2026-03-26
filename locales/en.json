@@ -221,7 +221,7 @@
   "try_again": "Try again",
   "unable_connect_server": "Unable to connect to the server. Please try again later.",
   "uncheck_descriptions": "To mark this species as unseen, you need to delete all its observations.",
-  "uncheck_title": "Cannot uncheck species",
+  "uncheck_title": "You can’t just uncheck it",
   "unexpected_error": "An unexpected error occurred",
   "unlock_fallback": "Use device passcode",
   "unlock_message": "Unlock DiBird",

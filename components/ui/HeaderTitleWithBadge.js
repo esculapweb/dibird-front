@@ -39,9 +39,9 @@ const stylesFn = (Colors) =>
       justifyContent: "center",
       alignItems: "center",
       paddingHorizontal: 5,
-      backgroundColor: Colors.primary200,
+      backgroundColor: Colors.primary100,
       borderWidth: 1,
-      borderColor: Colors.accent, 
+      borderColor: Colors.tabActiveColor, 
     },
     badgeText: {
       color: Colors.textMain,

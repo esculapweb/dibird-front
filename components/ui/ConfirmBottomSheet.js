@@ -5,9 +5,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { Text, Pressable, StyleSheet, View } from "react-native";
+import { Text, Pressable, StyleSheet } from "react-native";
 import { BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet";
-import { Ionicons } from "@expo/vector-icons";
 
 import { useTheme } from "../../store/theme-context";
 
@@ -83,6 +82,9 @@ const ConfirmBottomSheet = forwardRef(
           width: 40,
           height: 4,
         }}
+        backgroundStyle={{
+          backgroundColor: Colors.primary100,
+        }}
       >
         <BottomSheetView style={styles.container}>
           <Text style={styles.title}>{title}</Text>
@@ -100,9 +102,10 @@ const ConfirmBottomSheet = forwardRef(
             <Text style={styles.primaryText}>{confirmText}</Text>
           </Pressable>
 
-          {/* SECONDARY */}
           <Pressable style={styles.secondaryButton} onPress={dismiss}>
-            <Text style={[styles.secondaryText, { color: Colors.textSecondary }]}>
+            <Text
+              style={[styles.secondaryText, { color: Colors.textSecondary }]}
+            >
               {cancelText}
             </Text>
           </Pressable>

@@ -47,7 +47,7 @@ const ListScreen = ({
   permissionStatus,
   onLocationUnavailable,
   screenNameOverride,
-  allowSort=true,
+  allowSort = true,
 }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -78,16 +78,19 @@ const ListScreen = ({
 
   const keyExtractor = (item, _) => `${screenName}-${getItemId(item)}`;
 
-  const fetchDataWrapper = (filters, sort, search, page) => {
-    return fetchFunction(
-      filters,
-      sort,
-      search,
-      page,
-      () => setFilterModalVisible(true),
-      locationCoords,
-    );
-  };
+  const fetchDataWrapper = useCallback(
+    (filters, sort, search, page) => {
+      return fetchFunction(
+        filters,
+        sort,
+        search,
+        page,
+        () => setFilterModalVisible(true),
+        locationCoords,
+      );
+    },
+    [fetchFunction, locationCoords],
+  );
 
   const {
     data,
@@ -197,7 +200,7 @@ const ListScreen = ({
         headerRightExtra={headerRightExtra}
       />
     ),
-    [filters, sort, headerRightExtra],
+    [filters, sort, headerRightExtra, handleSortPress, handleFilterPress],
   );
 
   useEffect(() => {

@@ -22,9 +22,11 @@ const MainScreen = ({ navigation }) => {
 
   const buttonData = [
     { title: t("statistics"), icon: "stats-chart", screen: "Stat" },
+    { title: t("checklist"), icon: "checkbox-outline", screen: "Checklist" },
     { title: t("places"), icon: "location", screen: "Places" },
     { title: t("observations"), icon: "binoculars", screen: "Observations" },
     { title: t("diaries"), icon: "book", screen: "Diaries" },
+    // { title: t("rating"), icon: "book", screen: "Diaries" },
   ];
 
   const today = new Date();

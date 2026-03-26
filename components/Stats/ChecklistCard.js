@@ -24,7 +24,10 @@ const ChecklistCard = React.memo(({ item, index, seenMode, onPress }) => {
     const progress = total > 0 ? seenCount / total : 0;
 
     return (
-      <View style={[styles.orderDivider, index > 0 && styles.orderDividerSpaced]}>
+      <View
+        style={[styles.orderDivider, index > 0 && styles.orderDividerSpaced]}
+      >
+        {index > 0 && <View style={styles.orderTopLine} />}
         <Text style={styles.taxonType}>{t("order")}</Text>
         <View style={styles.taxonRow}>
           <Text style={styles.orderName} numberOfLines={1}>
@@ -41,19 +44,32 @@ const ChecklistCard = React.memo(({ item, index, seenMode, onPress }) => {
           {isAllMode && total > 0 ? (
             isComplete ? (
               <View style={styles.doneBadge}>
-                <Ionicons name="checkmark" size={10} color={Colors.tabActiveColor} />
+                <Ionicons
+                  name="checkmark"
+                  size={10}
+                  color={Colors.tabActiveColor}
+                />
                 <Text style={styles.doneBadgeText}>{t("all")}</Text>
               </View>
             ) : (
-              <Text style={styles.taxonCount}>{seenCount} / {total}</Text>
+              <Text style={styles.taxonCount}>
+                {seenCount} / {total}
+              </Text>
             )
           ) : null}
         </View>
         {isAllMode && total > 0 && (
           <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, isComplete && styles.progressFillComplete, { width: `${Math.round(progress * 100)}%` }]} />
+            <View
+              style={[
+                styles.progressFill,
+                isComplete && styles.progressFillComplete,
+                { width: `${Math.round(progress * 100)}%` },
+              ]}
+            />
           </View>
         )}
+        {!(isAllMode && total > 0) && <View style={styles.taxonLine} />}
       </View>
     );
   }
@@ -65,7 +81,9 @@ const ChecklistCard = React.memo(({ item, index, seenMode, onPress }) => {
     const progress = total > 0 ? seenCount / total : 0;
 
     return (
-      <View style={[styles.familyWrapper, index > 0 && styles.familyWrapperSpaced]}>
+      <View
+        style={styles.familyWrapper}
+      >
         <View style={styles.familyDivider}>
           <Text style={styles.taxonTypeFaded}>{t("family")}</Text>
           <View style={styles.taxonRow}>
@@ -83,19 +101,32 @@ const ChecklistCard = React.memo(({ item, index, seenMode, onPress }) => {
             {isAllMode && total > 0 ? (
               isComplete ? (
                 <View style={styles.doneBadge}>
-                  <Ionicons name="checkmark" size={10} color={Colors.tabActiveColor} />
+                  <Ionicons
+                    name="checkmark"
+                    size={10}
+                    color={Colors.tabActiveColor}
+                  />
                   <Text style={styles.doneBadgeText}>{t("all")}</Text>
                 </View>
               ) : (
-                <Text style={styles.taxonCount}>{seenCount} / {total}</Text>
+                <Text style={styles.taxonCount}>
+                  {seenCount} / {total}
+                </Text>
               )
             ) : null}
           </View>
           {isAllMode && total > 0 && (
             <View style={styles.progressTrackThin}>
-              <View style={[styles.progressFill, isComplete && styles.progressFillComplete, { width: `${Math.round(progress * 100)}%` }]} />
+              <View
+                style={[
+                  styles.progressFill,
+                  isComplete && styles.progressFillComplete,
+                  { width: `${Math.round(progress * 100)}%` },
+                ]}
+              />
             </View>
           )}
+          {!(isAllMode && total > 0) && <View style={styles.taxonLine} />}
         </View>
       </View>
     );
@@ -128,10 +159,16 @@ const ChecklistCard = React.memo(({ item, index, seenMode, onPress }) => {
           )}
         </View>
         <View style={styles.content}>
-          <Text style={[styles.title, isAllMode && !isSeen && styles.titleUnseen]} numberOfLines={1}>
+          <Text
+            style={[styles.title, isAllMode && !isSeen && styles.titleUnseen]}
+            numberOfLines={1}
+          >
             {item.name_lang}
           </Text>
-          <Text style={[styles.latin, !isSeen && styles.latinUnseen]} numberOfLines={1}>
+          <Text
+            style={[styles.latin, !isSeen && styles.latinUnseen]}
+            numberOfLines={1}
+          >
             {item.latin}
           </Text>
         </View>
@@ -151,7 +188,6 @@ export default ChecklistCard;
 
 const stylesFn = (Colors) =>
   StyleSheet.create({
-    // Species card
     card: {
       backgroundColor: Colors.primary100,
       borderRadius: 12,
@@ -222,7 +258,6 @@ const stylesFn = (Colors) =>
       paddingLeft: 8,
     },
 
-    // Order divider
     orderDivider: {
       paddingTop: 10,
       paddingBottom: 4,
@@ -239,9 +274,9 @@ const stylesFn = (Colors) =>
       flexShrink: 0,
     },
 
-    // Family wrapper — row with vertical line + content
     familyWrapper: {
       flexDirection: "row",
+      marginTop: -4,
       marginBottom: 2,
       marginLeft: 8,
     },
@@ -258,7 +293,6 @@ const stylesFn = (Colors) =>
       flexShrink: 0,
     },
 
-    // Shared taxon styles
     taxonType: {
       fontSize: 10,
       fontWeight: "600",
@@ -301,7 +335,6 @@ const stylesFn = (Colors) =>
       flexShrink: 0,
     },
 
-    // Progress bars
     progressTrack: {
       height: 3,
       borderRadius: 2,
@@ -325,7 +358,6 @@ const stylesFn = (Colors) =>
       backgroundColor: Colors.tabActiveColor,
     },
 
-    // Completion badge
     doneBadge: {
       flexDirection: "row",
       alignItems: "center",
@@ -342,16 +374,21 @@ const stylesFn = (Colors) =>
       color: Colors.textSecondary,
     },
 
-    // Divider lines
     taxonLine: {
       height: 0.5,
       backgroundColor: Colors.border,
-      marginTop: 5,
+      marginTop: 6,
     },
     taxonLineFaded: {
       height: 0.5,
       backgroundColor: Colors.border,
       opacity: 0.5,
       marginTop: 4,
+    },
+
+    orderTopLine: {
+      height: 0.5,
+      backgroundColor: Colors.border,
+      marginBottom: 10,
     },
   });
