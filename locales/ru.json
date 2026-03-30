@@ -185,7 +185,7 @@
   "select_place": "Выберите место",
   "select_species": "Выберите вид",
   "select_territory": "Выбрать страну",
-  "select_territory_to_view_checklist": "",
+  "select_territory_to_view_checklist": "Выберите страну, чтобы увидеть чек-лист",
   "select_territory_to_view_not_seen": "Выберите страну, чтобы увидеть не отмеченные виды",
   "select_time": "Время",
   "select_timezone": "Выберите часовой пояс",

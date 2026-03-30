@@ -122,9 +122,10 @@ const ListScreen = ({
   });
 
   const hasActiveFilters = filters
-    ? Object.values(filters).some((v) =>
-        Array.isArray(v) ? v.length > 0 : v != null && v !== "",
-      )
+    ? allowedFilters.some((key) => {
+        const v = filters[key];
+        return Array.isArray(v) ? v.length > 0 : v != null && v !== "";
+      })
     : false;
 
   const isEmpty = items.length === 0;

@@ -185,7 +185,7 @@
   "select_place": "Select location",
   "select_species": "Select species",
   "select_territory": "Select country",
-  "select_territory_to_view_checklist": "",
+  "select_territory_to_view_checklist": "Select a country to see the checklist",
   "select_territory_to_view_not_seen": "Select a country to see not observed species",
   "select_time": "Select time",
   "select_timezone": "Select timezone",
