@@ -190,7 +190,7 @@ const StatScreen = ({ route, navigation }) => {
         type="warning"
         title={t("uncheck_title")}
         description={t("uncheck_descriptions")}
-        confirmText={t("view_observations")}
+        confirmText={t("view_species_observations")}
         cancelText={t("cancel")}
         onConfirm={handleShowObservations}
       />
