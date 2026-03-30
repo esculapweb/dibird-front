@@ -48,6 +48,7 @@ const FilterModal = ({
     from: null,
     to: null,
     year: null,
+    today: null,
   };
 
   const [territoryValue, setTerritoryValue] = useState(
@@ -134,7 +135,7 @@ const FilterModal = ({
   const isDateFilterActive = (d) => {
     if (!d) return false;
     if (d.mode === "any") return false;
-    return !!(d.from || d.to || d.year);
+    return !!(d.from || d.to || d.year || d.type === "today");
   };
 
   const getNewFilters = () => {

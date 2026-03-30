@@ -89,5 +89,8 @@ const formatDateFilter = (value, t) => {
   if (value.type === "year" && value.year)
     return [t("year"), value.year.toString()];
 
+  if (value.type === "today")
+    return [t("date"), t("today")];
+
   return "";
 };

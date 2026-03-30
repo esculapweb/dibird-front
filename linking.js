@@ -8,6 +8,7 @@ const withFilters = (path) => ({
     territory: parseString,
     place: parseString,
     species: parseString,
+    today: parseString,
     year: parseString,
     date_time_min: parseString,
     date_time_max: parseString,

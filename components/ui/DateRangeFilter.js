@@ -38,6 +38,11 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
       return;
     }
 
+    if (newMode === "today") {
+      setDateFilter({ type: "today" });
+      return;
+    }
+
     if (newMode === "year") {
       setDateFilter({ type: "year", year: null });
       return;
@@ -81,6 +86,7 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
         direction="column"
         options={[
           { label: t("all_period"), value: "all" },
+          { label: t("today"), value: "today" },
           { label: t("whole_year"), value: "year" },
           { label: t("date_range"), value: "range" },
         ]}
@@ -105,7 +111,7 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
             onChange={handleFromChange}
             placeholder={t("not_selected")}
             error={rangeInvalid}
-            style={{marginBottom: 8}}
+            style={{ marginBottom: 8 }}
           />
 
           <DateInput
