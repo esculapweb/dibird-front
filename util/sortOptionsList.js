@@ -83,6 +83,14 @@ export const sortOptionsList = (screen) => {
         { label: i18n.t("alphabetic_desc"), value: "-name" },
       ];
 
+    case "Rating":
+      return [
+        { label: i18n.t("observation_count_desc"), value: "-observations" },
+        { label: i18n.t("observation_count"), value: "observations" },
+        { label: i18n.t("last_update"), value: "last_update" },
+        { label: i18n.t("last_update_desc"), value: "-last_update" },
+      ];
+
     case "TimezonesDropdown":
       return [{ label: "Default", value: "name" }];
 

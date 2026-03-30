@@ -54,7 +54,9 @@ const ObservationCard = React.memo(({ item, index }) => {
               <View style={styles.indexBadge}>
                 <Text style={styles.index}>{index + 1}.</Text>
               </View>
-              <Text style={styles.title} numberOfLines={1}>{item.species_data?.name_lang}</Text>
+              <Text style={styles.title} numberOfLines={1}>
+                {item.species_data?.name_lang}
+              </Text>
             </View>
 
             <View style={styles.rightTop}>
@@ -92,7 +94,9 @@ const ObservationCard = React.memo(({ item, index }) => {
                     size={13}
                     color={Colors.textSecondary}
                   />
-                  <Text style={styles.metaText}>{formatTimeString(item.time)}</Text>
+                  <Text style={styles.metaText}>
+                    {formatTimeString(item.time)}
+                  </Text>
                 </View>
               )}
             </View>

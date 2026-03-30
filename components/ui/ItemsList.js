@@ -22,6 +22,7 @@ const ItemsList = ({
   noItems,
   listHeader,
   fabOffset,
+  fabIcon="add",
 }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors, fabOffset);
@@ -83,7 +84,7 @@ const ItemsList = ({
 
       {onAdd && (
         <Pressable style={styles.fab} onPress={onAdd}>
-          <Ionicons name="add" size={28} color={Colors.buttonBrightColor} />
+          <Ionicons name={fabIcon} size={28} color={Colors.buttonBrightColor} />
         </Pressable>
       )}
     </>

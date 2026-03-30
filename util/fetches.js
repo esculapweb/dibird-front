@@ -1,3 +1,4 @@
+import { FlipType } from "expo-image-manipulator";
 import api from "../services/api";
 import { isoToFlagEmoji, buildDateParams, cleanFilters } from "./helpers";
 
@@ -112,30 +113,19 @@ const fetchAbstract = async (
   if (page > 1) params.page = page;
 
   const res = await api.get(fetchUrl, { params });
+
   return res.data;
 };
 
-export const fetchStat = (
-  filters,
-  order = "-date_time",
-  search,
-  page,
-) => {
+export const fetchStat = (filters, order = "-date_time", search, page) => {
   filters = { ...filters };
   return fetchAbstract("/myapi/stat2/", filters, order, search, page);
 };
 
-export const fetchChecklist = (
-  filters,
-  order = "-ioc_id",
-  search,
-  page,
-) => {
+export const fetchChecklist = (filters, order = "-ioc_id", search, page) => {
   filters = { ...filters };
   return fetchAbstract("/myapi/checklist2/", filters, order, search, page);
 };
-
-
 
 export const fetchPlaces = (
   filters,
@@ -181,4 +171,9 @@ export const fetchDiaryObservations = (
     search,
     page,
   );
+};
+
+export const fetchRating = (filters, order = "-observations", search, page) => {
+  filters = { ...filters };
+  return fetchAbstract("/myapi/rating2/", filters, order, search, page);
 };

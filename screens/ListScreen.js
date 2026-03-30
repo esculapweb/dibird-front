@@ -40,6 +40,7 @@ const ListScreen = ({
   extraFilters,
   headerRightExtra,
   fabOffset,
+  fabIcon,
   getItemId = (item) => item.id,
   onFiltersChange,
   locationCoords,
@@ -379,6 +380,7 @@ const ListScreen = ({
         noItems={noItems}
         listHeader={listHeader}
         fabOffset={fabOffset}
+        fabIcon={fabIcon}
       />
       <SortModal
         screen={screenName}
