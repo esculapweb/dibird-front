@@ -33,8 +33,7 @@ const RatingCard = ({ item, index, isSelected, onToggle }) => {
     : null;
 
   const handlePress = () => {
-    console.log("click rating user", item.profile_id);
-    // navigation.navigate("ObservationDetail", { observationId: item.id });
+    navigation.navigate("UserStat", { profileId: item.profile_id });
   };
   return (
     <Pressable
@@ -65,17 +64,18 @@ const RatingCard = ({ item, index, isSelected, onToggle }) => {
               <View style={styles.indexBadge}>
                 <Text style={styles.index}>{index + 1}.</Text>
               </View>
-              <Text style={styles.title} numberOfLines={1}>
-                {fullName}
-              </Text>
               {territoryFlag && (
                 <Text style={styles.flag}>{territoryFlag}</Text>
               )}
+              <Text style={styles.title} numberOfLines={1}>
+                {fullName}
+              </Text>
+              
             </View>
           </View>
 
           <View style={styles.countRow}>
-            <BirdSVG size={18} color={Colors.textMain} />
+            <BirdSVG size={16} color={Colors.textMain} />
             <Text style={styles.countNum}>{item.seen_qty}</Text>
           </View>
 
@@ -123,16 +123,16 @@ const stylesFn = (Colors) =>
     },
 
     image: {
-      width: 56,
-      height: 56,
+      width: 64,
+      height: 64,
       borderRadius: 12,
       marginRight: 8,
       backgroundColor: Colors.imageBg,
     },
 
     imagePlaceholder: {
-      width: 56,
-      height: 56,
+      width: 64,
+      height: 64,
       borderRadius: 12,
       marginRight: 8,
       backgroundColor: Colors.primary500,
@@ -226,7 +226,7 @@ const stylesFn = (Colors) =>
       marginBottom: 2,
     },
     countNum: {
-      fontSize: 22,
+      fontSize: 20,
       fontWeight: "600",
       color: Colors.textMain,
     },

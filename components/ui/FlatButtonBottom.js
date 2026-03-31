@@ -11,7 +11,7 @@ import { useTheme } from "../../store/theme-context";
 
 const FlatButtonBottom = ({
   children,
-  onPress,
+  onPress = () => {},
   textColor,
   icon,
   loading,

@@ -25,6 +25,8 @@ import DiariesScreen from "../screens/DiariesScreen";
 import DiaryDetailScreen from "../screens/DiaryDetailScreen";
 import DiaryEditorScreen from "../screens/DiaryEditorScreen";
 import RatingScreen from "../screens/RatingScreen";
+import RatingsCompareScreen from "../screens/RatingsCompareScreen";
+import UserStatScreen from "../screens/UserStatScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 
 import { AuthContext } from "../store/auth-context";
@@ -284,6 +286,25 @@ const AppNavigator = () => {
           headerBackTitle: t("main"),
         }}
       />
+
+      <Stack.Screen
+        name="RatingsCompare"
+        component={RatingsCompareScreen}
+        options={{
+          title: t("rating_compare"),
+          headerBackTitleVisible: false,
+        }}
+      />
+
+      <Stack.Screen
+        name="UserStat"
+        component={UserStatScreen}
+        options={{
+          title: t("user_statistics"),
+          headerBackTitleVisible: false,
+        }}
+      />
+
     </Stack.Navigator>
   );
 };

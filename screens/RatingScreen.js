@@ -1,25 +1,38 @@
 import { useCallback, useState } from "react";
+import { View } from "react-native";
 import { useTranslation } from "react-i18next";
+import Toast from "react-native-toast-message";
 
 import ListScreen from "./ListScreen";
 import { fetchRating } from "../util/fetches";
 import RatingCard from "../components/Rating/RatingCard";
 import { useFilters } from "../store/filters-context";
+import { useTheme } from "../store/theme-context";
+import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 
 const RatingScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
+  const { Colors } = useTheme();
   const { territory } = useFilters();
   const [currentFilters, setCurrentFilters] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
 
   const handleToggle = useCallback((profileId) => {
-    setSelectedIds((prev) =>
-      prev.includes(profileId)
-        ? prev.filter((id) => id !== profileId)
-        : prev.length < 2
-          ? [...prev, profileId]
-          : prev,
-    );
+    setSelectedIds((prev) => {
+      const isSelected = prev.includes(profileId);
+      if (isSelected) return prev.filter((id) => id !== profileId);
+
+      if (prev.length >= 2) {
+        Toast.show({
+          type: "info",
+          text1: t("selection_limit"),
+          text2: t("you_can_only_compare_two_profiles"),
+        });
+        return prev;
+      }
+
+      return [...prev, profileId];
+    });
   }, []);
 
   const handleAdd = useCallback(async () => {
@@ -33,11 +46,10 @@ const RatingScreen = ({ route, navigation }) => {
     });
   }, [navigation, currentFilters, territory]);
 
-const handleCompare = useCallback(() => {
-  if (selectedIds.length < 2) return;
-  console.log('compare rating')
-  // navigation.navigate("RatingCompare", { profileIds: selectedIds });
-}, [selectedIds]);
+  const handleCompare = useCallback(() => {
+    if (selectedIds.length < 2) return;
+    navigation.navigate("RatingsCompare", { profileIds: selectedIds });
+  }, [selectedIds]);
 
   const noItems = {
     icon: "location-outline",
@@ -55,20 +67,33 @@ const handleCompare = useCallback(() => {
   );
 
   return (
-    <ListScreen
-      route={route}
-      navigation={navigation}
-      fetchFunction={fetchRating}
-      errorTitle={t("rating_unavailable")}
-      allowedFilters={["territory", "date"]}
-      onFiltersChange={setCurrentFilters}
-      onAdd={handleCompare}
-      renderItem={renderItem}
-      getItemId={(item) => item.profile_id}
-      noItems={noItems}
-      title={t("rating")}
-      fabIcon="people-outline"
-    />
+    <View style={{ flex: 1 }}>
+      <ListScreen
+        route={route}
+        navigation={navigation}
+        fetchFunction={fetchRating}
+        errorTitle={t("rating_unavailable")}
+        allowedFilters={["territory", "date"]}
+        onFiltersChange={setCurrentFilters}
+        renderItem={renderItem}
+        getItemId={(item) => item.profile_id}
+        noItems={noItems}
+        title={t("rating")}
+        fabIcon="people-outline"
+      />
+
+      {selectedIds.length == 2 ? (
+        <FlatButtonBottom onPress={handleCompare} icon="people-outline">
+          {t("compare_ratings")}
+        </FlatButtonBottom>
+      ) : (
+        <FlatButtonBottom
+          textColor={Colors.textSecondary}
+        >
+          {t("select_two_for_comparison")}
+        </FlatButtonBottom>
+      )}
+    </View>
   );
 };
 

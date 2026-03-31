@@ -12,7 +12,7 @@ import { BirdSVG } from "../ui/Svgs";
 
 const useStyles = (Colors) => React.useMemo(() => stylesFn(Colors), [Colors]);
 
-const StatCard = React.memo(({ item, index, seenMode, onPress }) => {
+const StatCard = React.memo(({ item, index, seenMode, onPress, personal=false }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = useStyles(Colors);
@@ -129,7 +129,7 @@ const StatCard = React.memo(({ item, index, seenMode, onPress }) => {
             </View>
           )}
         </View>
-        {!isSeen && (
+        {!isSeen && personal && (
           <View style={styles.addIcon}>
             <Ionicons
               name="add-circle-outline"

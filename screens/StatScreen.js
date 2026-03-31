@@ -149,6 +149,7 @@ const StatScreen = ({ route, navigation }) => {
           index={index}
           seenMode={seenMode}
           onPress={() => handleStatCardPress(item)}
+          personal={true}
         />
       );
     },
