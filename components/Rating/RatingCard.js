@@ -2,30 +2,26 @@ import React from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
 
 import { BirdSVG } from "../ui/Svgs";
 import { formatDateLong, isoToFlagEmoji } from "../../util/helpers";
-import { Config } from "../../constants/config";
 import { useTheme } from "../../store/theme-context";
-
+import ProfileAvatar from "../Profile/ProfileAvatar";
+import { useProfileDisplay } from "../../hooks/Profile/useProfileDisplay";
 const useStyles = (Colors) => React.useMemo(() => stylesFn(Colors), [Colors]);
 
-const RatingCard = ({ item, index, isSelected, onToggle }) => {
+const RatingCard = ({ item, index, isSelected, onToggle, profile }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = useStyles(Colors);
   const navigation = useNavigation();
-  const avatarName =
-    item.first_name && item.last_name
-      ? `${item.first_name[0]}${item.last_name[0]}`
-      : item.username.slice(0, 2);
 
-  const fullName =
-    item.first_name && item.last_name
-      ? `${item.first_name} ${item.last_name}`
-      : item.username;
+  const { fullName } = useProfileDisplay({
+    firstName: item.first_name,
+    lastName: item.last_name,
+    username: item.username,
+  });
 
   const dateText = formatDateLong(item.last_update);
   const territoryFlag = item.territory_code
@@ -33,7 +29,9 @@ const RatingCard = ({ item, index, isSelected, onToggle }) => {
     : null;
 
   const handlePress = () => {
-    navigation.navigate("UserStat", { profileId: item.profile_id });
+    profile?.user === item.profile_id
+      ? navigation.navigate("Stat", { backTitle: t("rating") })
+      : navigation.navigate("UserStat", { profileId: item.profile_id });
   };
   return (
     <Pressable
@@ -45,18 +43,15 @@ const RatingCard = ({ item, index, isSelected, onToggle }) => {
       onPress={handlePress}
     >
       <View style={styles.row}>
-        {item.avatar ? (
-          <Image
-            source={{ uri: `${Config.mediaUrl}/${item.avatar}` }}
-            style={styles.image}
-            contentFit="cover"
-            cachePolicy="disk"
-          />
-        ) : (
-          <View style={styles.imagePlaceholder}>
-            <Text style={styles.avatarName}>{avatarName}</Text>
-          </View>
-        )}
+        <ProfileAvatar
+          avatar={item.avatar}
+          firstName={item.first_name}
+          lastName={item.last_name}
+          username={item.username}
+          size={64}
+          borderRadius={12}
+          style={styles.image}
+        />
 
         <View style={styles.content}>
           <View style={styles.titleRow}>
@@ -70,7 +65,6 @@ const RatingCard = ({ item, index, isSelected, onToggle }) => {
               <Text style={styles.title} numberOfLines={1}>
                 {fullName}
               </Text>
-              
             </View>
           </View>
 
@@ -105,17 +99,23 @@ const stylesFn = (Colors) =>
     card: {
       backgroundColor: Colors.primary100,
       borderRadius: 12,
-      padding: 8,
+      padding: 7,
       marginBottom: 4,
       shadowColor: Colors.shadow,
       shadowOpacity: 0.2,
       shadowRadius: 4,
       shadowOffset: { width: 0, height: 2 },
       elevation: 2,
+      borderWidth: 1,
+      borderColor: Colors.primary100,
     },
 
     pressedCard: {
       opacity: 0.85,
+    },
+
+    selectedCard: {
+      borderColor: Colors.tabActiveColor,
     },
 
     row: {
@@ -123,27 +123,7 @@ const stylesFn = (Colors) =>
     },
 
     image: {
-      width: 64,
-      height: 64,
-      borderRadius: 12,
       marginRight: 8,
-      backgroundColor: Colors.imageBg,
-    },
-
-    imagePlaceholder: {
-      width: 64,
-      height: 64,
-      borderRadius: 12,
-      marginRight: 8,
-      backgroundColor: Colors.primary500,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-
-    avatarName: {
-      fontSize: 36,
-      color: Colors.primary100,
-      fontWeight: "bold",
     },
 
     content: {
@@ -173,11 +153,6 @@ const stylesFn = (Colors) =>
       flex: 1,
     },
 
-    rightTop: {
-      flexDirection: "row",
-      alignItems: "center",
-    },
-
     flag: {
       fontSize: 14,
     },
@@ -188,28 +163,10 @@ const stylesFn = (Colors) =>
       alignItems: "center",
       marginTop: 4,
     },
-    metaLeft: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 4,
-    },
 
     metaText: {
       fontSize: 12,
       color: Colors.textSecondary,
-    },
-
-    placeRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 4,
-      marginTop: 3,
-    },
-
-    placeText: {
-      fontSize: 12,
-      color: Colors.textSecondary,
-      flex: 1,
     },
 
     addIcon: {
@@ -229,9 +186,5 @@ const stylesFn = (Colors) =>
       fontSize: 20,
       fontWeight: "600",
       color: Colors.textMain,
-    },
-    selectedCard: {
-      borderWidth: 1,
-      borderColor: Colors.tabActiveColor,
     },
   });

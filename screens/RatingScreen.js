@@ -9,6 +9,7 @@ import RatingCard from "../components/Rating/RatingCard";
 import { useFilters } from "../store/filters-context";
 import { useTheme } from "../store/theme-context";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
+import { useProfile } from "../store/profile-context";
 
 const RatingScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
@@ -16,6 +17,7 @@ const RatingScreen = ({ route, navigation }) => {
   const { territory } = useFilters();
   const [currentFilters, setCurrentFilters] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
+  const { profile } = useProfile();
 
   const handleToggle = useCallback((profileId) => {
     setSelectedIds((prev) => {
@@ -63,6 +65,7 @@ const RatingScreen = ({ route, navigation }) => {
       index={index}
       isSelected={selectedIds.includes(item.profile_id)}
       onToggle={() => handleToggle(item.profile_id)}
+      profile={profile}
     />
   );
 
@@ -87,9 +90,7 @@ const RatingScreen = ({ route, navigation }) => {
           {t("compare_ratings")}
         </FlatButtonBottom>
       ) : (
-        <FlatButtonBottom
-          textColor={Colors.textSecondary}
-        >
+        <FlatButtonBottom textColor={Colors.textSecondary}>
           {t("select_two_for_comparison")}
         </FlatButtonBottom>
       )}

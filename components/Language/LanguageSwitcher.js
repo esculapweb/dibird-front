@@ -18,7 +18,7 @@ const LanguageSwitcher = () => {
         <Text style={styles.title}>{t("language")}:</Text>
       </View>
       <View style={styles.buttonsRight}>
-        {["ru", "en"].map((lang) => (
+        {["en", "ru"].map((lang) => (
           <Pressable
             key={lang}
             onPress={() => changeLanguage(lang)}

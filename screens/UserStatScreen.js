@@ -1,17 +1,34 @@
 import { useState, useCallback } from "react";
-import { View } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 
 import ListScreen from "./ListScreen";
-import { fetchStat } from "../util/fetches";
+import { fetchStat, fetchUserProfile } from "../util/fetches";
 import StatCard from "../components/Stats/StatCard";
 import Tabs from "../components/ui/Tabs";
 import { useFilters } from "../store/filters-context";
+import { useTheme } from "../store/theme-context";
+import ProfileAvatar from "../components/Profile/ProfileAvatar";
+import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
 
 const UserStatScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
   const { profileId } = route.params;
   const { seenMode, setSeenMode } = useFilters();
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
+
+  const { data: userProfile } = useQuery({
+    queryKey: ["userProfile", profileId],
+    queryFn: () => fetchUserProfile(profileId),
+    enabled: !!profileId,
+  });
+
+  const firstName = userProfile?.user_data_public.first_name;
+  const lastName = userProfile?.user_data_public.last_name;
+  const username = userProfile?.user_data_public.username ?? "";
+  const { fullName } = useProfileDisplay({ firstName, lastName, username });
 
   const [noItems, setNoItems] = useState({
     icon: "stats-chart",
@@ -53,7 +70,19 @@ const UserStatScreen = ({ route, navigation }) => {
   );
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.container}>
+      {userProfile && (
+        <View style={styles.profileHeader}>
+          <ProfileAvatar
+            avatar={userProfile.avatar}
+            firstName={firstName}
+            lastName={lastName}
+            username={username}
+            size={44}
+          />
+          <Text style={styles.fullName}>{fullName}</Text>
+        </View>
+      )}
       <ListScreen
         route={route}
         navigation={navigation}
@@ -74,3 +103,26 @@ const UserStatScreen = ({ route, navigation }) => {
 };
 
 export default UserStatScreen;
+
+const stylesFn = (Colors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    profileHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 8,
+      paddingVertical: 10,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: Colors.border,
+      backgroundColor: Colors.backgroundMain,
+      gap: 12,
+    },
+    fullName: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: Colors.textMain,
+    },
+  });

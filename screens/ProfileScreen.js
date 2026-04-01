@@ -8,6 +8,7 @@ import { showError } from "../services/api";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import FormWrapper from "../components/ui/FormWrapper";
+import { useInvalidateProfile } from "../hooks/Profile/useUpdateProfile";
 
 const ProfileScreen = () => {
   const [loading, setLoading] = useState(false);
@@ -16,6 +17,7 @@ const ProfileScreen = () => {
   const { profile, profileLoading, updateProfile, refreshProfile } =
     useProfile();
   const { t } = useTranslation();
+  const invalidateProfile = useInvalidateProfile();
 
   const extractApiError = (err) => {
     const data = err.response.data;
@@ -40,6 +42,7 @@ const ProfileScreen = () => {
 
     try {
       await updateProfile(updatedData);
+      invalidateProfile();
       setSuccess(true);
       setTimeout(() => setSuccess(false), 1500);
     } catch (e) {

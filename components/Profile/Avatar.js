@@ -14,10 +14,12 @@ import { useTranslation } from "react-i18next";
 import { useTheme } from "../../store/theme-context";
 import { patchAvatar } from "../../util/requests";
 import Toast from "react-native-toast-message";
-import { Image } from "expo-image";
 
 import { useProfile } from "../../store/profile-context";
 import api, { showError } from "../../services/api";
+import ProfileAvatar from "./ProfileAvatar";
+import { useProfileDisplay } from "../../hooks/Profile/useProfileDisplay";
+import { useInvalidateProfile } from "../../hooks/Profile/useUpdateProfile";
 
 const AVATAR_SIZE = 100;
 const INDICATOR_SIZE = 32;
@@ -25,33 +27,21 @@ const INDICATOR_SIZE = 32;
 const Avatar = () => {
   const { showActionSheetWithOptions } = useActionSheet();
   const [avatar, setAvatar] = useState();
-  const [avatarName, setAvatarName] = useState("");
-  const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
+  const invalidateProfile = useInvalidateProfile();
 
-  const {refreshProfile, profile} = useProfile();
+  const { refreshProfile, profile } = useProfile();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
 
+  const firstName = profile?.user_data?.first_name;
+  const lastName = profile?.user_data?.last_name;
+  const username = profile?.user_data?.username ?? "";
+  const { fullName } = useProfileDisplay({ firstName, lastName, username });
+
   useEffect(() => {
     setAvatar(profile?.avatar_thumbnail ?? null);
-  }, [profile]);
-
-  useEffect(() => {
-    const user_data = profile?.user_data;
-    if (!user_data) return;
-
-    const { first_name, last_name, username } = user_data;
-    const n =
-      first_name && last_name
-        ? `${first_name[0]}${last_name[0]}`
-        : username.slice(0, 2);
-    setAvatarName(n.toUpperCase());
-
-    first_name && last_name
-      ? setName(`${first_name} ${last_name}`)
-      : setName(username);
   }, [profile]);
 
   const onPress = () => {
@@ -120,6 +110,7 @@ const Avatar = () => {
       const { avatar_thumbnail } = await patchAvatar(manipulated);
       setAvatar(avatar_thumbnail);
       refreshProfile();
+      invalidateProfile();
     } catch (e) {
       console.warn("Image manipulation error:", e.code, e.message);
       showError(e);
@@ -136,6 +127,7 @@ const Avatar = () => {
       if (res?.status === 204) {
         refreshProfile();
         setAvatar(null);
+        invalidateProfile();
       }
     } catch (e) {
       console.warn("Delete Avatar error:", e.code, e.message);
@@ -148,19 +140,13 @@ const Avatar = () => {
   return (
     <>
       <Pressable style={styles.container} onPress={onPress} disabled={loading}>
-        {avatar ? (
-          <Image
-            source={{ uri: avatar }}
-            style={styles.avatar}
-            contentFit="cover"
-            cachePolicy="disk"
-          />
-        ) : (
-          <View style={styles.placeholder}>
-            <Text style={styles.avatarName}>{avatarName}</Text>
-          </View>
-        )}
-
+        <ProfileAvatar
+          avatar={avatar} 
+          firstName={firstName}
+          lastName={lastName}
+          username={username}
+          size={AVATAR_SIZE}
+        />
         {loading && (
           <View style={styles.overlay}>
             <ActivityIndicator
@@ -183,7 +169,7 @@ const Avatar = () => {
           </View>
         )}
       </Pressable>
-      <Text style={styles.smallText}>{name}</Text>
+      <Text style={styles.smallText}>{fullName}</Text>
     </>
   );
 };

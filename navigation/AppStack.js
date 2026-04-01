@@ -176,11 +176,11 @@ const AppNavigator = () => {
       <Stack.Screen
         name="Stat"
         component={StatScreen}
-        options={{
+        options={({ route }) => ({
           title: t("statistics"),
           headerBackTitleVisible: false,
-          headerBackTitle: t("main"),
-        }}
+          headerBackTitle: route.params?.backTitle ?? t("main"),
+        })}
       />
 
       <Stack.Screen

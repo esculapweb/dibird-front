@@ -1,4 +1,3 @@
-import { FlipType } from "expo-image-manipulator";
 import api from "../services/api";
 import { isoToFlagEmoji, buildDateParams, cleanFilters } from "./helpers";
 
@@ -87,6 +86,11 @@ export const fetchMapPreview = async (placeId) => {
   const res = await api.get(`/myapi/place2/${placeId}/map_preview/`);
   return res.data;
 };
+
+export const fetchUserProfile = async (profileId) => {
+  const res = await api.get(`/myapi/user-profile/${profileId}/`);
+  return res.data;
+}
 
 const fetchAbstract = async (
   fetchUrl,
