@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 import { View } from "react-native";
 import { useTranslation } from "react-i18next";
 
@@ -16,6 +16,7 @@ const StatScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const confirmRef = useRef(null);
+  const openFilterModalRef = useRef(null);
   const openUncheckSheet = (item) => {
     confirmRef.current?.present(item);
   };
@@ -24,28 +25,35 @@ const StatScreen = ({ route, navigation }) => {
 
   const viewMode = route.name === "Checklist" ? "checklist" : "stats";
 
-  const MODE_CONFIG = {
-    stats: {
-      fetch: fetchStat,
-      component: StatCard,
-      allowSort: true,
-      getItemId: (item) => item.species_id,
-      title: t("statistics"),
-      errorTitle: t("stat_unavailable"),
-      showUncheckWarning: false,
-      icon: "checkbox-outline",
-    },
-    checklist: {
-      fetch: fetchChecklist,
-      component: ChecklistCard,
-      allowSort: false,
-      getItemId: (item) => item.species_id ?? item.id,
-      title: t("checklist"),
-      errorTitle: t("checklist_unavailable"),
-      showUncheckWarning: true,
-      icon: "stats-chart",
-    },
-  };
+  const MODE_CONFIG = useMemo(
+    () => ({
+      stats: {
+        fetch: fetchStat,
+        component: StatCard,
+        allowSort: true,
+        getItemId: (item) => item.species_id,
+        title: t("statistics"),
+        errorTitle: t("stat_unavailable"),
+        showUncheckWarning: false,
+        icon: "stats-chart",
+        iconOpposite: "checkbox-outline",
+        noItemsMessage: t("no_stat_yet"),
+      },
+      checklist: {
+        fetch: fetchChecklist,
+        component: ChecklistCard,
+        allowSort: false,
+        getItemId: (item) => item.species_id ?? item.id,
+        title: t("checklist"),
+        errorTitle: t("checklist_unavailable"),
+        showUncheckWarning: true,
+        icon: "checkbox-outline",
+        iconOpposite: "stats-chart",
+        noItemsMessage: t("no_checklist_yet"),
+      },
+    }),
+    [t],
+  );
   const config = MODE_CONFIG[viewMode];
 
   const handleModeChange = useCallback(() => {
@@ -53,11 +61,9 @@ const StatScreen = ({ route, navigation }) => {
     navigation.replace(targetRoute);
   }, [navigation, route.name]);
 
-  const [noItems, setNoItems] = useState({
-    icon: "stats-chart",
-    message: t("no_stat_yet"),
-    actions: [{ label: t("add_first_observation"), onPress: handleAdd }],
-  });
+  const handleOpenFilterModal = useCallback((fn) => {
+    openFilterModalRef.current = fn;
+  }, []);
 
   const handleAdd = useCallback(() => {
     const defaultTerritory = currentFilters?.territory ?? territory ?? null;
@@ -104,40 +110,54 @@ const StatScreen = ({ route, navigation }) => {
     [currentFilters, navigation, config],
   );
 
+  const noItems = useMemo(() => {
+    const noTerritory = !currentFilters?.territory;
+    const openFilter = () => openFilterModalRef.current?.();
+
+    if (viewMode === "checklist" && noTerritory) {
+      return {
+        icon: "checkbox-outline",
+        message: t("select_territory_to_view_checklist"),
+        actions: [{ label: t("select_territory"), onPress: openFilter }],
+      };
+    }
+    if (viewMode !== "checklist" && noTerritory && seenMode !== "seen") {
+      return {
+        icon: "stats-chart",
+        message:
+          seenMode === "unseen"
+            ? t("select_territory_to_view_not_seen")
+            : t("select_territory_to_view_all"),
+        actions: [{ label: t("select_territory"), onPress: openFilter }],
+      };
+    }
+    return {
+      icon: config.icon,
+      message: config.noItemsMessage,
+      actions: [{ label: t("add_first_observation"), onPress: handleAdd }],
+    };
+  }, [currentFilters, viewMode, seenMode, config, t, handleAdd]);
+
   const fetchData = useCallback(
-    (filters, sort, search, page, openFilterModal) => {
+    (filters, sort, search, page) => {
       const safeFilters = { ...filters };
 
-      if (viewMode === "checklist") {
-        if (!safeFilters.territory) {
-          setNoItems({
-            icon: "checkbox-outline",
-            message: t("select_territory_to_view_checklist"),
-            actions: [
-              { label: t("select_territory"), onPress: openFilterModal },
-            ],
-          });
-          return Promise.resolve({ results: [], pagination: { count: 0 } });
-        }
-      } else {
-        if (!safeFilters.territory && seenMode !== "seen") {
-          setNoItems({
-            icon: "stats-chart",
-            message: t("select_territory_to_view_not_seen"),
-            actions: [
-              { label: t("select_territory"), onPress: openFilterModal },
-            ],
-          });
-          return Promise.resolve({ results: [], pagination: { count: 0 } });
-        }
+      if (viewMode === "checklist" && !safeFilters.territory) {
+        return Promise.resolve({ results: [], pagination: { count: 0 } });
+      }
+      if (
+        viewMode !== "checklist" &&
+        !safeFilters.territory &&
+        seenMode !== "seen"
+      ) {
+        return Promise.resolve({ results: [], pagination: { count: 0 } });
       }
 
       safeFilters.seen =
         seenMode === "seen" ? true : seenMode === "unseen" ? false : null;
-
       return config.fetch(safeFilters, sort, search, page);
     },
-    [seenMode, t, viewMode, config],
+    [seenMode, viewMode, config],
   );
 
   const renderItem = useCallback(
@@ -159,7 +179,7 @@ const StatScreen = ({ route, navigation }) => {
   const headerRight = useCallback(
     () => (
       <IconButton
-        icon={config.icon}
+        icon={config.iconOpposite}
         onPress={handleModeChange}
         style={{ marginRight: 0 }}
         size={24}
@@ -184,6 +204,7 @@ const StatScreen = ({ route, navigation }) => {
         onFiltersChange={setCurrentFilters}
         allowSort={config.allowSort}
         headerRightExtra={headerRight}
+        onOpenFilterModal={handleOpenFilterModal}
       />
       <Tabs tabsMode={seenMode} setTabsMode={setSeenMode} />
       <ConfirmBottomSheet

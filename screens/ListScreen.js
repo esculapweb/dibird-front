@@ -49,6 +49,7 @@ const ListScreen = ({
   onLocationUnavailable,
   screenNameOverride,
   allowSort = true,
+  onOpenFilterModal,
 }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -78,6 +79,10 @@ const ListScreen = ({
   const [ignoreContextSync, setIgnoreContextSync] = useState(false);
 
   const keyExtractor = (item, _) => `${screenName}-${getItemId(item)}`;
+
+  useEffect(() => {
+    onOpenFilterModal?.(() => setFilterModalVisible(true));
+  }, []);
 
   const fetchDataWrapper = useCallback(
     (filters, sort, search, page) => {

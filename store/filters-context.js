@@ -24,11 +24,12 @@ export const FiltersProvider = ({ children }) => {
   const [date, setDateState] = useState(undefined);
   const [place, setPlaceState] = useState(null);
   const [species, setSpeciesState] = useState(null);
-  const [seenMode, setSeenMode] = useState("all");
+  const [seenMode, setSeenMode] = useState("seen");
 
   useEffect(() => {
     loadGlobalTerritory().then((val) => {
       setTerritoryState(val ?? null);
+      setSeenMode(val ? "all" : "seen");
     });
     loadGlobalDateFilter().then((val) => {
       setDateState(val ?? null);

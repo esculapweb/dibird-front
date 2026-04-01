@@ -54,7 +54,7 @@ const RatingScreen = ({ route, navigation }) => {
   }, [selectedIds]);
 
   const noItems = {
-    icon: "location-outline",
+    icon: "trophy-outline",
     message: t("no_rating_yet"),
     actions: [{ label: t("add_first_observation"), onPress: handleAdd }],
   };
