@@ -52,20 +52,25 @@ export const LightColors = {
   mainCardDot: "#f0c24b",
   mainCardWave: "rgba(240, 194, 75, 0.18)",
 
-  mainBlob1: "#c9e4de", 
-  mainBlob2: "rgba(240, 194, 75, 0.2)", 
-  mainBlob3: "#fad2d8", 
+  mainBlob1: "#c9e4de",
+  mainBlob2: "rgba(240, 194, 75, 0.2)",
+  mainBlob3: "#fad2d8",
 
   mainQuoteBg1: "transparent",
   mainQuoteBg2: "transparent",
-  mainQuoteBorder: "rgba(240, 194, 75, 0.7)", 
+  mainQuoteBorder: "rgba(240, 194, 75, 0.7)",
 
   mainTextPrimary: "#1e2a36",
   mainTextDate: "#3a4c62",
 
-  seenIcon: "#2e7d32", 
-  seenBadgeBg: "#e8f5e9",   
+  seenIcon: "#2e7d32",
+  seenBadgeBg: "#e8f5e9",
   unseenCardBg: "#f3f4f6",
   tabActiveColor: "#2f3c43",
-  tabBorder: "#9ca3af", 
+  tabBorder: "#9ca3af",
+
+  compareP1: "#2f3c43",
+  compareP1Bg: "#dce1e9",
+  compareP2: "#d93b2e",
+  compareP2Bg: "#ffe9e7",
 };

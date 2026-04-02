@@ -117,7 +117,6 @@ const fetchAbstract = async (
   if (page > 1) params.page = page;
 
   const res = await api.get(fetchUrl, { params });
-
   return res.data;
 };
 
@@ -180,4 +179,27 @@ export const fetchDiaryObservations = (
 export const fetchRating = (filters, order = "-observations", search, page) => {
   filters = { ...filters };
   return fetchAbstract("/myapi/rating2/", filters, order, search, page);
+};
+
+export const fetchRatingCompareHeader = async (profileIds, filters) => {
+
+  const { date, ...restFilters } = filters;
+
+  const apiFilters = {
+    ...restFilters,
+    ...buildDateParams(date),
+  };
+
+  const params = {
+    profile1: profileIds[0],
+    profile2: profileIds[1],
+    ...apiFilters
+  };
+  const res = await api.get(`/myapi/rating-compare2-header/`, { params });
+  return res.data;
+}
+
+export const fetchRatingCompare = (filters, order = "ioc_id", search, page) => {
+  filters = { ...filters };
+  return fetchAbstract("/myapi/rating-compare2/", filters, order, search, page);
 };

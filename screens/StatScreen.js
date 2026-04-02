@@ -206,7 +206,30 @@ const StatScreen = ({ route, navigation }) => {
         headerRightExtra={headerRight}
         onOpenFilterModal={handleOpenFilterModal}
       />
-      <Tabs tabsMode={seenMode} setTabsMode={setSeenMode} />
+      <Tabs
+        tabOptions={[
+          {
+            value: "seen",
+            icon: "eye",
+            iconInactive: "eye-outline",
+            labelKey: t("seen"),
+          },
+          {
+            value: "all",
+            icon: "apps",
+            iconInactive: "apps-outline",
+            labelKey: t("all"),
+          },
+          {
+            value: "unseen",
+            icon: "eye-off",
+            iconInactive: "eye-off-outline",
+            labelKey: t("not_seen"),
+          },
+        ]}
+        tabsMode={seenMode}
+        setTabsMode={setSeenMode}
+      />
       <ConfirmBottomSheet
         ref={confirmRef}
         type="warning"

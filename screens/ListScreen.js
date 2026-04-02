@@ -50,6 +50,7 @@ const ListScreen = ({
   screenNameOverride,
   allowSort = true,
   onOpenFilterModal,
+  showHeaderBadge = true,
 }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -340,7 +341,7 @@ const ListScreen = ({
       headerTitle: () => (
         <HeaderTitleWithBadge
           title={title}
-          badgeCount={data?.pages[0]?.pagination?.count ?? 0}
+          badgeCount={showHeaderBadge ? data?.pages[0]?.pagination?.count ?? 0 : undefined}
         />
       ),
       headerRight,

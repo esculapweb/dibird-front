@@ -1,43 +1,18 @@
 import { StyleSheet, View, Pressable, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useTheme } from "../../store/theme-context";
 
-const Tabs = ({ tabsMode, setTabsMode }) => {
-  const { t } = useTranslation();
+const Tabs = ({ tabOptions, tabsMode, setTabsMode }) => {
   const { Colors } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = stylesFn(Colors, insets);
 
-  const TAB_OPTIONS = [
-    {
-      value: "seen",
-      icon: "eye",
-      iconInactive: "eye-outline",
-      labelKey: t("seen"),
-    },
-    {
-      value: "all",
-      icon: "apps",
-      iconInactive: "apps-outline",
-      labelKey: t("all"),
-    },
-    {
-      value: "unseen",
-      icon: "eye-off",
-      iconInactive: "eye-off-outline",
-      labelKey: t("not_seen"),
-    },
-  ];
-
-  const translations = {};
-
   return (
     <View style={styles.container}>
-      {TAB_OPTIONS.map(({ value, icon, iconInactive, labelKey }) => {
+      {tabOptions.map(({ value, icon, iconInactive, labelKey, count }) => {
         const isActive = tabsMode === value;
         return (
           <Pressable
@@ -50,12 +25,19 @@ const Tabs = ({ tabsMode, setTabsMode }) => {
           >
             <Ionicons
               name={isActive ? icon : iconInactive}
-              size={24}
+              size={22}
               color={isActive ? Colors.tabActiveColor : Colors.textSecondary}
             />
-            <Text style={[styles.text, isActive && styles.activeText]}>
-              {t(labelKey)}
+            <Text style={[styles.label, isActive && styles.activeLabel]}>
+              {labelKey}
             </Text>
+            {count != null && (
+              <View style={[styles.badge, isActive && styles.activeBadge]}>
+                <Text style={[styles.badgeText, isActive && styles.activeBadgeText]}>
+                  {count > 999 ? "999+" : count}
+                </Text>
+              </View>
+            )}
           </Pressable>
         );
       })}
@@ -78,19 +60,43 @@ const stylesFn = (Colors, insets) =>
       flex: 1,
       alignItems: "center",
       justifyContent: "center",
-      gap: 3,
+      paddingTop: 6,
+      paddingBottom: 4,
+      gap: 2,
       borderTopWidth: 2,
       borderTopColor: "transparent",
-      paddingTop: 6,
     },
     activeTab: {
       borderTopColor: Colors.tabActiveColor,
     },
-    text: {
-      fontSize: 13,
+    label: {
+      fontSize: 12,
       color: Colors.textSecondary,
     },
-    activeText: {
+    activeLabel: {
+      color: Colors.tabActiveColor,
+      fontWeight: "500",
+    },
+    badge: {
+      marginTop: 2,
+      minWidth: 28,
+      height: 16,
+      borderRadius: 8,
+      backgroundColor: Colors.textSecondary + "22",
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 5,
+    },
+    activeBadge: {
+      backgroundColor: Colors.tabActiveColor + "22",
+    },
+    badgeText: {
+      fontSize: 10,
+      fontWeight: "500",
+      color: Colors.textSecondary,
+      lineHeight: 14,
+    },
+    activeBadgeText: {
       color: Colors.tabActiveColor,
     },
   });

@@ -8,5 +8,12 @@ export const useProfileDisplay = ({ firstName, lastName, username }) => {
       : username.slice(0, 2)
   ).toUpperCase();
 
-  return { fullName, initials };
+  const shortName =
+    firstName && lastName
+      ? `${firstName} ${lastName[0]}.`
+      : (username ?? "");
+
+  return { fullName, initials, shortName };
 };
+
+
