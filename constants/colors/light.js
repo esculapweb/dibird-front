@@ -69,8 +69,8 @@ export const LightColors = {
   tabActiveColor: "#2f3c43",
   tabBorder: "#9ca3af",
 
-  compareP1: "#2f3c43",
+  compareP1: "#2e7d32",
   compareP1Bg: "#dce1e9",
-  compareP2: "#d93b2e",
+  compareP2: "#eab308",
   compareP2Bg: "#ffe9e7",
 };

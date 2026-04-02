@@ -79,8 +79,8 @@ export const DarkColors = {
   tabActiveColor: "#f0c24b",
   tabBorder: "#374151",
 
-  compareP1: "#f0c24b",
+  compareP1: "#4ade80",
   compareP1Bg: "#2f3c43",
-  compareP2: "#f87171",
+  compareP2: "#f0c24b",
   compareP2Bg: "#3f1d1d",
 };
