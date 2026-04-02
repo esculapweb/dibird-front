@@ -49,10 +49,6 @@ export const sortOptionsList = (screen) => {
           label: i18n.t("observation_count_desc"),
           value: "-observation_count,name",
         },
-        // { label: i18n.t("diary_count"), value: "diary_count" },
-        // { label: i18n.t("diary_count_desc"), value: "-diary_count" },
-        // { label: i18n.t("territory_asc"), value: "territory,name" },
-        // { label: i18n.t("territory_desc"), value: "-territory,name" },
       ];
 
     case "PlacesDropdown":
