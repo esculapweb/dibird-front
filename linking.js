@@ -43,6 +43,9 @@ const linking = (isAuthenticated) => ({
       ObservationDetail: "my/observation/:observationId",
       Diaries: withFilters("my/diary"),
       DiaryDetail: "my/diary/:diaryId",
+      Rating: withFilters("my/users"),
+      RatingsCompare: withFilters("my/users/compare/:profile1/:profile2"),
+      UserStat: withFilters("my/users/stat/:profileId"),
 
       // AuthDrawer
       Login: "accounts/login",

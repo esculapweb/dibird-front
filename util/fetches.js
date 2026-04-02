@@ -181,7 +181,7 @@ export const fetchRating = (filters, order = "-observations", search, page) => {
   return fetchAbstract("/myapi/rating2/", filters, order, search, page);
 };
 
-export const fetchRatingCompareHeader = async (profileIds, filters) => {
+export const fetchRatingCompareHeader = async (profile1, profile2, filters) => {
 
   const { date, ...restFilters } = filters;
 
@@ -191,8 +191,8 @@ export const fetchRatingCompareHeader = async (profileIds, filters) => {
   };
 
   const params = {
-    profile1: profileIds[0],
-    profile2: profileIds[1],
+    profile1,
+    profile2,
     ...apiFilters
   };
   const res = await api.get(`/myapi/rating-compare2-header/`, { params });

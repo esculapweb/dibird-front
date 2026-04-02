@@ -50,7 +50,8 @@ const RatingScreen = ({ route, navigation }) => {
 
   const handleCompare = useCallback(() => {
     if (selectedIds.length < 2) return;
-    navigation.navigate("RatingsCompare", { profileIds: selectedIds });
+    const [profile1, profile2] = selectedIds;
+    navigation.navigate("RatingsCompare", { profile1, profile2 });
   }, [selectedIds]);
 
   const noItems = {

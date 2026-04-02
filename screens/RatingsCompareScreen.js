@@ -11,14 +11,14 @@ import RatingCompareCard from "../components/Rating/RatingCompareCard";
 
 const RatingsCompareScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
-  const { profileIds } = route.params;
+  const { profile1, profile2 } = route.params;
   const [tabMode, setTabMode] = useState("all");
   const [currentFilters, setCurrentFilters] = useState({});
 
   const { data: headerData } = useQuery({
-    queryKey: ["ratingCompareHeader", profileIds, currentFilters],
-    queryFn: () => fetchRatingCompareHeader(profileIds, currentFilters),
-    enabled: profileIds?.length === 2,
+    queryKey: ["ratingCompareHeader", profile1, profile2, currentFilters],
+    queryFn: () => fetchRatingCompareHeader(profile1, profile2, currentFilters),
+    enabled: !!profile1 && !!profile2,
   });
 
   const renderItem = useCallback(
@@ -46,7 +46,7 @@ const RatingsCompareScreen = ({ route, navigation }) => {
         getItemId = {(item) => item.taxon_id}
         title={t("comparison")}
         errorTitle={t("comparison_unavailable")}
-        extraFilters={{ profile1: profileIds[0], profile2: profileIds[1], tab: tabMode }}
+        extraFilters={{ profile1, profile2, tab: tabMode }}
         allowedFilters={["territory", "date", "species"]}
         renderItem={renderItem}
         noItems={noItems}
