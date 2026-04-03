@@ -139,7 +139,6 @@ const DiaryDetailScreen = ({ route, navigation }) => {
         noItems={noItems}
         title={name}
         headerRightExtra={headerRight}
-        fabOffset={70}
         listHeader={
           <Section
             title={t("diary")}

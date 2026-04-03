@@ -83,4 +83,10 @@ export const DarkColors = {
   compareP1Bg: "#2f3c43",
   compareP2: "#f0c24b",
   compareP2Bg: "#3f1d1d",
+
+  accuracyFill: "rgba(0,150,255,0.2)",
+  accuracyStroke: "rgba(0,150,255,0.4)",
+
+  squareFill: "rgba(239,68,68,0.2)",
+  squareStroke: "rgba(239,68,68,0.5)",
 };

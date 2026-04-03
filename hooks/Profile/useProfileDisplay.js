@@ -5,15 +5,12 @@ export const useProfileDisplay = ({ firstName, lastName, username }) => {
   const initials = (
     firstName && lastName
       ? `${firstName[0]}${lastName[0]}`
-      : username.slice(0, 2)
-  ).toUpperCase();
+      : (username ?? "").slice(0, 2)
+  ) 
+    .toUpperCase();
 
   const shortName =
-    firstName && lastName
-      ? `${firstName} ${lastName[0]}.`
-      : (username ?? "");
+    firstName && lastName ? `${firstName} ${lastName[0]}.` : (username ?? "");
 
   return { fullName, initials, shortName };
 };
-
-

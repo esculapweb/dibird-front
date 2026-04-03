@@ -14,6 +14,8 @@ import {
   ShapeSource,
   SymbolLayer,
   CircleLayer,
+  FillLayer,
+  LineLayer,
 } from "@maplibre/maplibre-react-native";
 import Toast from "react-native-toast-message";
 import Clipboard from "@react-native-clipboard/clipboard";
@@ -27,10 +29,12 @@ const Map = ({
   currentZoom = 12,
   onPress = () => {},
   accuracy,
-  mapHeight,      
+  mapHeight,
   onUseMyLocation,
   isLocating,
   showCoords,
+  polygon,
+  approximateArea,
 }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors, mapHeight);
@@ -68,36 +72,52 @@ const Map = ({
             <RasterLayer id="osmLayer" sourceID="osmTiles" />
           </RasterSource>
 
-          <ShapeSource
-            id="selectedPoint"
-            shape={{
-              type: "Feature",
-              geometry: { type: "Point", coordinates: [lng, lat] },
-            }}
-          >
-            {accuracy && accuracy > 0 && (
-              <CircleLayer
-                id="accuracyCircleLayer"
+          {polygon ? (
+            <ShapeSource
+              id="privatePolygon"
+              shape={{ type: "Feature", geometry: polygon }}
+            >
+              <FillLayer
+                id="privatePolygonFill"
+                style={{ fillColor: Colors.squareFill }}
+              />
+              <LineLayer
+                id="privatePolygonStroke"
+                style={{ lineColor: Colors.squareStroke, lineWidth: 2 }}
+              />
+            </ShapeSource>
+          ) : (
+            <ShapeSource
+              id="selectedPoint"
+              shape={{
+                type: "Feature",
+                geometry: { type: "Point", coordinates: [lng, lat] },
+              }}
+            >
+              {accuracy && accuracy > 0 && (
+                <CircleLayer
+                  id="accuracyCircleLayer"
+                  sourceID="selectedPoint"
+                  style={{
+                    circleRadius: metersToPixels(accuracy, lat, currentZoom),
+                    circleColor: Colors.accuracyFill,
+                    circleStrokeColor: Colors.accuracyStroke,
+                    circleStrokeWidth: 1,
+                  }}
+                />
+              )}
+              <SymbolLayer
+                id="selectedPointIcon"
                 sourceID="selectedPoint"
                 style={{
-                  circleRadius: metersToPixels(accuracy, lat, currentZoom),
-                  circleColor: "rgba(0,150,255,0.2)",
-                  circleStrokeColor: "rgba(0,150,255,0.3)",
-                  circleStrokeWidth: 1,
+                  iconImage: require("../../assets/marker1.png"),
+                  iconSize: 1,
+                  iconAnchor: "bottom",
+                  iconAllowOverlap: true,
                 }}
               />
-            )}
-            <SymbolLayer
-              id="selectedPointIcon"
-              sourceID="selectedPoint"
-              style={{
-                iconImage: require("../../assets/marker1.png"),
-                iconSize: 1,
-                iconAnchor: "bottom",
-                iconAllowOverlap: true,
-              }}
-            />
-          </ShapeSource>
+            </ShapeSource>
+          )}
         </MapView>
 
         {onUseMyLocation && (
@@ -137,6 +157,20 @@ const Map = ({
             />
           </TouchableOpacity>
         )}
+
+        {approximateArea && (
+          <View style={styles.coordsOverlay}>
+            <Ionicons
+              name="eye-off-outline"
+              size={13}
+              color={Colors.textSecondary}
+              style={{ marginRight: 6 }}
+            />
+            <Text style={styles.coordsOverlayText}>
+              {t("approximate_area")}
+            </Text>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -146,10 +180,10 @@ export default Map;
 
 const stylesFn = (Colors, mapHeight) =>
   StyleSheet.create({
-
-    mapSection: mapHeight != null
-      ? { height: mapHeight, position: "relative" }
-      : { flex: 1, position: "relative" },
+    mapSection:
+      mapHeight != null
+        ? { height: mapHeight, position: "relative" }
+        : { flex: 1, position: "relative" },
     container: { flex: 1, position: "relative" },
     myLocationButton: {
       alignItems: "center",

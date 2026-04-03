@@ -26,6 +26,8 @@ import { isoToFlagEmoji } from "../util/helpers";
 import Section from "../components/ui/Section";
 import PrivacyToggle from "../components/ui/PrivacyToggle";
 import Map from "../components/Map/Map";
+import ProfileAvatar from "../components/Profile/ProfileAvatar";
+import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
 
 const ObservationDetailScreen = ({ route, navigation }) => {
   const { observationId } = route.params;
@@ -45,6 +47,12 @@ const ObservationDetailScreen = ({ route, navigation }) => {
   const { Colors } = useTheme();
   const { t } = useTranslation();
   const styles = stylesFn(Colors);
+
+  const { fullName } = useProfileDisplay({
+    firstName: observation?.owner?.first_name,
+    lastName: observation?.owner?.last_name,
+    username: observation?.owner?.username,
+  });
 
   const handleDelete = useCallback(() => {
     if (!observation) return;
@@ -99,7 +107,7 @@ const ObservationDetailScreen = ({ route, navigation }) => {
   );
 
   useLayoutEffect(() => {
-    if (!observation) return;
+    if (!observation || !observation.is_owner) return;
 
     navigation.setOptions({
       title: t("observation"),
@@ -178,57 +186,117 @@ const ObservationDetailScreen = ({ route, navigation }) => {
                     </Text>
                   </View>
                 )}
+
+                {!observation?.is_owner && (
+                  <View style={styles.capsule}>
+                    <Text style={styles.capsuleText}>
+                      {isoToFlagEmoji(observation?.territory_data?.code)}{" "}
+                      {observation?.territory_data?.name}
+                    </Text>
+                  </View>
+                )}
               </View>
             </View>
           </View>
 
-          <View style={styles.dividerLine} />
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.placeRow,
-              pressed && { opacity: 0.6 },
-            ]}
-            onPress={() =>
-              observation?.place_data?.id &&
-              navigation.navigate("PlaceDetail", {
-                placeId: observation.place_data.id,
-              })
-            }
-          >
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
+          {observation.is_owner ? (
+            <Pressable
+              style={({ pressed }) => [
+                styles.placeRow,
+                pressed && { opacity: 0.6 },
+              ]}
+              onPress={() =>
+                observation?.place_data?.id &&
+                navigation.navigate("PlaceDetail", {
+                  placeId: observation.place_data.id,
+                })
+              }
             >
-              <View style={{ flex: 1 }}>
-                <Text style={styles.placeName} numberOfLines={2}>
-                  {observation?.place_data?.name || t("location_not_specified")}
-                </Text>
-                <Text style={styles.placeTerritory} numberOfLines={1}>
-                  {isoToFlagEmoji(observation?.territory_data?.code)}{" "}
-                  {observation?.territory_data?.name}
-                </Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.placeName} numberOfLines={2}>
+                    {observation?.place_data?.name ||
+                      t("location_not_specified")}
+                  </Text>
+                  <Text style={styles.placeTerritory} numberOfLines={1}>
+                    {isoToFlagEmoji(observation?.territory_data?.code)}{" "}
+                    {observation?.territory_data?.name}
+                  </Text>
+                </View>
+                {observation?.place_data?.id && (
+                  <Ionicons
+                    name="chevron-forward"
+                    size={18}
+                    color={Colors.textSecondary}
+                  />
+                )}
               </View>
-              {observation?.place_data?.id && (
+            </Pressable>
+          ) : (
+            <Pressable
+              style={styles.placeRow}
+              onPress={() =>
+                navigation.navigate("UserStat", {
+                  profileId: observation?.owner?.id,
+                })
+              }
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.authorLabel}>
+                    {t("observation_author")}
+                  </Text>
+                  <View style={styles.authorRow}>
+                    <ProfileAvatar
+                      avatar={observation?.owner?.avatar}
+                      firstName={observation?.owner?.first_name}
+                      lastName={observation?.owner?.last_name}
+                      username={observation?.owner?.username}
+                      size={22}
+                    />
+                    <Text style={styles.authorName}>{fullName}</Text>
+                  </View>
+                </View>
                 <Ionicons
                   name="chevron-forward"
                   size={18}
                   color={Colors.textSecondary}
                 />
-              )}
-            </View>
-          </Pressable>
+              </View>
+            </Pressable>
+          )}
 
           {observation?.place_data?.location?.coordinates && (
             <View style={styles.mapWrapper}>
               <Map
-                currentCoords={observation.place_data.location.coordinates}
-                currentZoom={13}
-                mapHeight={200}
-                showCoords={true}
+                currentCoords={
+                  observation.place_data.location.type === "Polygon"
+                    ? observation.place_data.location.center
+                    : observation.place_data.location.coordinates
+                }
+                currentZoom={
+                  observation.place_data.location.type === "Polygon" ? 10 : 13
+                }
+                mapHeight={250}
+                showCoords={observation.place_data.location.type === "Point"}
+                polygon={
+                  observation.place_data.location.type === "Polygon"
+                    ? observation.place_data.location
+                    : null
+                }
+                approximateArea={!observation.is_owner}
               />
             </View>
           )}
@@ -247,7 +315,7 @@ const ObservationDetailScreen = ({ route, navigation }) => {
             </View>
           )}
 
-          {observation?.diary_data && (
+          {observation?.diary_data && observation.is_owner && (
             <Pressable
               style={({ pressed }) => [
                 styles.diaryBlock,
@@ -310,14 +378,16 @@ const ObservationDetailScreen = ({ route, navigation }) => {
         </Section>
       </ScrollView>
 
-      <FlatButtonBottom
-        textColor={Colors.error600}
-        onPress={handleDelete}
-        icon="trash-outline"
-        loading={deleteMutation.isPending}
-      >
-        {t("delete_observation")}
-      </FlatButtonBottom>
+      {observation.is_owner && (
+        <FlatButtonBottom
+          textColor={Colors.error600}
+          onPress={handleDelete}
+          icon="trash-outline"
+          loading={deleteMutation.isPending}
+        >
+          {t("delete_observation")}
+        </FlatButtonBottom>
+      )}
     </View>
   );
 };
@@ -469,5 +539,27 @@ const stylesFn = (Colors) =>
       fontSize: 11,
       color: Colors.textSecondary,
       marginTop: 3,
+    },
+    authorBlock: {
+      marginVertical: 8,
+      gap: 4,
+    },
+    authorLabel: {
+      fontSize: 11,
+      color: Colors.textSecondary,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+      marginBottom: 4,
+    },
+    authorRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginBottom: 4,
+    },
+    authorName: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: Colors.textMain,
     },
   });

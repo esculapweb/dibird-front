@@ -73,4 +73,10 @@ export const LightColors = {
   compareP1Bg: "#dce1e9",
   compareP2: "#eab308",
   compareP2Bg: "#ffe9e7",
+
+  accuracyFill: "rgba(0,150,255,0.2)",
+  accuracyStroke: "rgba(0,150,255,0.4)",
+
+  squareFill: "rgba(239,68,68,0.2)",
+  squareStroke: "rgba(239,68,68,0.5)",
 };
