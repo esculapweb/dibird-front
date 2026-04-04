@@ -186,66 +186,19 @@ const ObservationDetailScreen = ({ route, navigation }) => {
                     </Text>
                   </View>
                 )}
-
-                {!observation?.is_owner && (
-                  <View style={styles.capsule}>
-                    <Text style={styles.capsuleText}>
-                      {isoToFlagEmoji(observation?.territory_data?.code)}{" "}
-                      {observation?.territory_data?.name}
-                    </Text>
-                  </View>
-                )}
               </View>
             </View>
           </View>
 
-          {observation.is_owner ? (
+          {!observation.is_owner && (
             <Pressable
-              style={({ pressed }) => [
-                styles.placeRow,
-                pressed && { opacity: 0.6 },
-              ]}
-              onPress={() =>
-                observation?.place_data?.id &&
-                navigation.navigate("PlaceDetail", {
-                  placeId: observation.place_data.id,
-                })
-              }
-            >
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.placeName} numberOfLines={2}>
-                    {observation?.place_data?.name ||
-                      t("location_not_specified")}
-                  </Text>
-                  <Text style={styles.placeTerritory} numberOfLines={1}>
-                    {isoToFlagEmoji(observation?.territory_data?.code)}{" "}
-                    {observation?.territory_data?.name}
-                  </Text>
-                </View>
-                {observation?.place_data?.id && (
-                  <Ionicons
-                    name="chevron-forward"
-                    size={18}
-                    color={Colors.textSecondary}
-                  />
-                )}
-              </View>
-            </Pressable>
-          ) : (
-            <Pressable
-              style={styles.placeRow}
-              onPress={() =>
+              style={[styles.placeRow, { marginTop: 8 }]}
+              onPress={() => {
+                if (observation?.owner?.private) return;
                 navigation.navigate("UserStat", {
                   profileId: observation?.owner?.id,
-                })
-              }
+                });
+              }}
             >
               <View
                 style={{
@@ -269,14 +222,55 @@ const ObservationDetailScreen = ({ route, navigation }) => {
                     <Text style={styles.authorName}>{fullName}</Text>
                   </View>
                 </View>
+                {!observation?.owner?.private && (
+                  <Ionicons
+                    name="chevron-forward"
+                    size={18}
+                    color={Colors.textSecondary}
+                  />
+                )}
+              </View>
+            </Pressable>
+          )}
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.placeRow,
+              pressed && observation.is_owner && { opacity: 0.6 },
+            ]}
+            onPress={() =>
+              observation?.place_data?.id &&
+              observation.is_owner &&
+              navigation.navigate("PlaceDetail", {
+                placeId: observation.place_data.id,
+              })
+            }
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={styles.placeName} numberOfLines={2}>
+                  {observation?.place_data?.name || t("location_not_specified")}
+                </Text>
+                <Text style={styles.placeTerritory} numberOfLines={1}>
+                  {isoToFlagEmoji(observation?.territory_data?.code)}{" "}
+                  {observation?.territory_data?.name}
+                </Text>
+              </View>
+              {observation?.place_data?.id && observation.is_owner && (
                 <Ionicons
                   name="chevron-forward"
                   size={18}
                   color={Colors.textSecondary}
                 />
-              </View>
-            </Pressable>
-          )}
+              )}
+            </View>
+          </Pressable>
 
           {observation?.place_data?.location?.coordinates && (
             <View style={styles.mapWrapper}>
@@ -513,7 +507,6 @@ const stylesFn = (Colors) =>
     },
 
     placeRow: {
-      marginTop: 12,
       paddingVertical: 8,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: Colors.border,
@@ -535,15 +528,6 @@ const stylesFn = (Colors) =>
       borderBottomRightRadius: 14,
       overflow: "hidden",
     },
-    tapHint: {
-      fontSize: 11,
-      color: Colors.textSecondary,
-      marginTop: 3,
-    },
-    authorBlock: {
-      marginVertical: 8,
-      gap: 4,
-    },
     authorLabel: {
       fontSize: 11,
       color: Colors.textSecondary,
@@ -555,7 +539,6 @@ const stylesFn = (Colors) =>
       flexDirection: "row",
       alignItems: "center",
       gap: 8,
-      marginBottom: 4,
     },
     authorName: {
       fontSize: 14,
