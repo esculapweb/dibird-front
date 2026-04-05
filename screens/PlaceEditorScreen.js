@@ -208,6 +208,7 @@ const PlaceEditorScreen = ({ navigation, route }) => {
               "onPlaceCreated",
               res.data.id,
               placeData.territory,
+              res.data
             );
             navigation.goBack();
           } else {

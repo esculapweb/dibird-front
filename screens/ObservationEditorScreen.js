@@ -187,8 +187,9 @@ const ObservationEditorScreen = ({ navigation, route }) => {
   ]);
 
   const handleAddNewPlace = useCallback(() => {
-    setNavigationCallback("onPlaceCreated", (newPlaceId, newPlaceTerritory) => {
+    setNavigationCallback("onPlaceCreated", (newPlaceId, newPlaceTerritory, newPlaceData) => {
       setPlaceValue(newPlaceId);
+      setPlaceData(newPlaceData);
 
       if (newPlaceTerritory && newPlaceTerritory !== territoryValue) {
         setTerritoryValue(newPlaceTerritory);

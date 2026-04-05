@@ -92,8 +92,9 @@ const DiaryEditorScreen = ({ navigation, route }) => {
   }, [formData, territoryValue, placeValue, isEditMode]);
 
   const handleAddNewPlace = useCallback(() => {
-    setNavigationCallback("onPlaceCreated", (newPlaceId, newPlaceTerritory) => {
+    setNavigationCallback("onPlaceCreated", (newPlaceId, newPlaceTerritory, newPlaceData) => {
       setPlaceValue(newPlaceId);
+      setPlaceData(newPlaceData);
 
       if (newPlaceTerritory && newPlaceTerritory !== territoryValue) {
         setTerritoryValue(newPlaceTerritory);
