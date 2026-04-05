@@ -1,4 +1,4 @@
-import { useLayoutEffect, useCallback } from "react";
+import { useLayoutEffect, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -6,15 +6,16 @@ import {
   ScrollView,
   Alert,
   Pressable,
+  Share,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
+import Toast from "react-native-toast-message";
 
 import { useTheme } from "../store/theme-context";
 import { formatDate, formatDateTime, formatDateLong } from "../util/helpers";
 import { Config } from "../constants/config";
-import IconButton from "../components/ui/IconButton";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
@@ -28,6 +29,7 @@ import PrivacyToggle from "../components/ui/PrivacyToggle";
 import Map from "../components/Map/Map";
 import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
+import IconsHeader from "../components/ui/IconsHeader";
 
 const ObservationDetailScreen = ({ route, navigation }) => {
   const { observationId } = route.params;
@@ -76,34 +78,57 @@ const ObservationDetailScreen = ({ route, navigation }) => {
     );
   }, [observation, observationId]);
 
+  const headerRightBeginning = useMemo(
+    () => [
+      {
+        condition: !!observation,
+        onPress: () =>
+          navigation.navigate("ObservationEditor", {
+            observation: {
+              ...observation,
+              date_time:
+                observation.date_time instanceof Date
+                  ? observation.date_time.toISOString()
+                  : observation.date_time,
+            },
+            ...(observation.diary && {
+              diaryId: observation.diary,
+              territoryValue: observation.territory,
+            }),
+          }),
+        icon: "create-outline",
+        disabled: !observation || updateMutation.isPending,
+      },
+    ],
+    [observation, updateMutation.isPending, navigation],
+  );
+
+  const handleShare = useCallback(async () => {
+    if (observation?.private) {
+      Toast.show({
+        type: "info",
+        text1: t("observation_private"),
+        text2: t("observation_private_share_hint"),
+      });
+      return;
+    }
+
+    const url = `${Config.baseUrl}/my/observation/${observationId}/`;
+
+    await Share.share({
+      url: url,
+      message: url,
+    });
+  }, [observation, observationId]);
+
   const headerRight = useCallback(
     () => (
-      <View style={styles.headerButtons}>
-        <IconButton
-          icon="create-outline"
-          onPress={() =>
-            navigation.navigate("ObservationEditor", {
-              observation: {
-                ...observation,
-                date_time:
-                  observation.date_time instanceof Date
-                    ? observation.date_time.toISOString()
-                    : observation.date_time,
-              },
-              ...(observation.diary && {
-                diaryId: observation.diary,
-                territoryValue: observation.territory,
-              }),
-            })
-          }
-          style={styles.iconButton}
-          size={24}
-          disabled={!observation || updateMutation.isPending}
-          tintColor={Colors.textSecondary}
-        />
-      </View>
+      <IconsHeader
+        headerRightBeginning={headerRightBeginning}
+        onSharePress={handleShare}
+      />
     ),
-    [observation, updateMutation.isPending],
+    [headerRightBeginning],
   );
 
   useLayoutEffect(() => {
@@ -496,15 +521,6 @@ const stylesFn = (Colors) =>
       fontSize: 12,
       color: Colors.textSecondary,
       marginBottom: 2,
-    },
-    headerButtons: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-      marginHorizontal: 4,
-    },
-    iconButton: {
-      marginRight: 0,
     },
     placeRow: {
       paddingVertical: 8,

@@ -9,7 +9,7 @@ import LoadingOverlay from "../components/ui/LoadingOverlay";
 import FilterModal from "../components/Filters/FilterModal";
 import SortModal from "../components/Sort/SortModal";
 import { loadSort } from "../util/storageHelper";
-import FiltersHeader from "../components/ui/FiltersHeader";
+import IconsHeader from "../components/ui/IconsHeader";
 import FilterChips from "../components/Filters/FilterChips";
 
 import { normalizeValue } from "../util/helpers";
@@ -38,7 +38,9 @@ const ListScreen = ({
   tabsMode,
   listHeader,
   extraFilters,
-  headerRightExtra,
+  headerRightBeginning,
+  headerRightEnd,
+  handleSharePress,
   fabOffset,
   fabIcon,
   getItemId = (item) => item.id,
@@ -201,14 +203,23 @@ const ListScreen = ({
 
   const headerRight = useCallback(
     () => (
-      <FiltersHeader
+      <IconsHeader
         hasActiveFilters={hasActiveFilters}
         onSortPress={allowSort ? handleSortPress : null}
         onFilterPress={handleFilterPress}
-        headerRightExtra={headerRightExtra}
+        onSharePress={handleSharePress}
+        headerRightBeginning={headerRightBeginning}
+        headerRightEnd={headerRightEnd}
       />
     ),
-    [filters, sort, headerRightExtra, handleSortPress, handleFilterPress],
+    [
+      filters,
+      sort,
+      headerRightBeginning,
+      headerRightEnd,
+      handleSortPress,
+      handleFilterPress,
+    ],
   );
 
   useEffect(() => {
@@ -341,7 +352,11 @@ const ListScreen = ({
       headerTitle: () => (
         <HeaderTitleWithBadge
           title={title}
-          badgeCount={showHeaderBadge ? data?.pages[0]?.pagination?.count ?? 0 : undefined}
+          badgeCount={
+            showHeaderBadge
+              ? (data?.pages[0]?.pagination?.count ?? 0)
+              : undefined
+          }
         />
       ),
       headerRight,

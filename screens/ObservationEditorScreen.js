@@ -1,12 +1,11 @@
-import { useState, useCallback, useLayoutEffect } from "react";
-import { StyleSheet, Platform, KeyboardAvoidingView, View } from "react-native";
+import { useState, useCallback, useLayoutEffect, useMemo } from "react";
+import { StyleSheet, Platform, KeyboardAvoidingView } from "react-native";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useTheme } from "../store/theme-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
-import IconButton from "../components/ui/IconButton";
 import ObservationForm from "../components/Observation/ObservationForm";
 import { useCreateObservation } from "../hooks/Observation/useCreateObservation";
 import { useUpdateItem } from "../hooks/useItem";
@@ -16,6 +15,7 @@ import { setSession } from "../util/sessionStore";
 import { setNavigationCallback } from "../util/navigationCallbacks";
 import { useEditorForm } from "../hooks/useEditorForm";
 import { fetchDiarySpeciesIds } from "../util/fetches";
+import IconsHeader from "../components/ui/IconsHeader";
 
 const FORM_FIELDS = [
   "species",
@@ -43,7 +43,7 @@ const ObservationEditorScreen = ({ navigation, route }) => {
     defaultSpecies,
     diaryId,
     territoryValue: diaryTerritoryValue,
-    returnMode
+    returnMode,
   } = route.params || {};
   const isEditMode = !!observation;
 
@@ -133,7 +133,7 @@ const ObservationEditorScreen = ({ navigation, route }) => {
       createObservationMutation.mutate(observationData, {
         onSuccess: (res) => {
           setSession("lastDate", observationData.date_time);
-          if (returnMode === 'back') {
+          if (returnMode === "back") {
             navigation.goBack();
           } else {
             requestAnimationFrame(() =>
@@ -187,26 +187,29 @@ const ObservationEditorScreen = ({ navigation, route }) => {
   ]);
 
   const handleAddNewPlace = useCallback(() => {
-    setNavigationCallback("onPlaceCreated", (newPlaceId, newPlaceTerritory, newPlaceData) => {
-      setPlaceValue(newPlaceId);
-      setPlaceData(newPlaceData);
+    setNavigationCallback(
+      "onPlaceCreated",
+      (newPlaceId, newPlaceTerritory, newPlaceData) => {
+        setPlaceValue(newPlaceId);
+        setPlaceData(newPlaceData);
 
-      if (newPlaceTerritory && newPlaceTerritory !== territoryValue) {
-        setTerritoryValue(newPlaceTerritory);
-        setFormData((prev) => ({
-          ...prev,
-          place: newPlaceId,
-          territory: newPlaceTerritory,
-        }));
-        Toast.show({
-          type: "info",
-          text1: t("country_changed"),
-          text2: t("country_changed_hint"),
-        });
-      } else {
-        setFormData((prev) => ({ ...prev, place: newPlaceId }));
-      }
-    });
+        if (newPlaceTerritory && newPlaceTerritory !== territoryValue) {
+          setTerritoryValue(newPlaceTerritory);
+          setFormData((prev) => ({
+            ...prev,
+            place: newPlaceId,
+            territory: newPlaceTerritory,
+          }));
+          Toast.show({
+            type: "info",
+            text1: t("country_changed"),
+            text2: t("country_changed_hint"),
+          });
+        } else {
+          setFormData((prev) => ({ ...prev, place: newPlaceId }));
+        }
+      },
+    );
     navigation.navigate("PlaceEditor", { returnToScreen: "ObservationEditor" });
   }, [navigation, territoryValue]);
 
@@ -215,29 +218,32 @@ const ObservationEditorScreen = ({ navigation, route }) => {
     navigation.navigate("DiaryDetail", { diaryId });
   }, [diaryId, navigation]);
 
-  const headerRight = useCallback(
-    () => (
-      <View style={styles.headerButtons}>
-        <IconButton
-          icon="checkmark"
-          onPress={handleSaveObservation}
-          style={styles.saveButton}
-          size={24}
-          disabled={
-            isEditMode
-              ? updateObservationMutation.isPending
-              : createObservationMutation.isPending
-          }
-          color={Colors.buttonBrightColor}
-        />
-      </View>
-    ),
+  const headerRightBeginning = useMemo(
+    () => [
+      {
+        condition: !!observation,
+        onPress: handleSaveObservation,
+        icon: "checkmark-circle",
+        size: 36,
+        tintColor: Colors.seenIcon,
+        disabled: isEditMode
+          ? updateObservationMutation.isPending
+          : createObservationMutation.isPending,
+      },
+    ],
     [
+      observation,
       handleSaveObservation,
       isEditMode,
       createObservationMutation.isPending,
       updateObservationMutation.isPending,
+      Colors.seenIcon,
     ],
+  );
+
+  const headerRight = useCallback(
+    () => <IconsHeader headerRightBeginning={headerRightBeginning} />,
+    [headerRightBeginning],
   );
 
   useLayoutEffect(() => {
@@ -295,16 +301,4 @@ export default ObservationEditorScreen;
 const stylesFn = (Colors) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.backgroundMain },
-    headerButtons: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-      marginHorizontal: 4,
-    },
-    saveButton: {
-      backgroundColor: Colors.buttonBrightBg,
-      borderRadius: 20,
-      marginRight: 0,
-      padding:4,
-    },
   });

@@ -1,11 +1,11 @@
-import { useCallback } from "react";
-import { View, Text, StyleSheet, Alert, Pressable } from "react-native";
+import { useCallback, useMemo } from "react";
+import { View, Text, StyleSheet, Alert, Pressable, Share } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
+import Toast from "react-native-toast-message";
 
 import { useTheme } from "../store/theme-context";
 import { formatDateLong } from "../util/helpers";
-
 import IconButton from "../components/ui/IconButton";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
@@ -22,6 +22,7 @@ import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
 import Map from "../components/Map/Map";
 import { isoToFlagEmoji } from "../util/helpers";
+import { Config } from "../constants/config";
 
 const DiaryDetailScreen = ({ route, navigation }) => {
   const { diaryId } = route.params;
@@ -121,7 +122,12 @@ const DiaryDetailScreen = ({ route, navigation }) => {
         )}
 
         {!diary.is_owner && (
-          <View style={[styles.placeRow, !diary?.place_data && { marginBottom: -8 }]} >
+          <View
+            style={[
+              styles.placeRow,
+              !diary?.place_data && { marginBottom: -8 },
+            ]}
+          >
             <View
               style={{
                 flexDirection: "row",
@@ -176,6 +182,24 @@ const DiaryDetailScreen = ({ route, navigation }) => {
     });
   }, [navigation, diary]);
 
+  const handleShare = useCallback(async () => {
+    if (diary?.private) {
+      Toast.show({
+        type: "info",
+        text1: t("diary_private"),
+        text2: t("diary_private_share_hint"),
+      });
+      return;
+    }
+
+    const url = `${Config.baseUrl}/my/diary/${diaryId}/`;
+
+    await Share.share({
+      url: url,
+      message: url,
+    });
+  }, [diary, diaryId]);
+
   const noItems = {
     icon: "binoculars-outline",
     message: t("no_observations_yet"),
@@ -208,28 +232,30 @@ const DiaryDetailScreen = ({ route, navigation }) => {
     );
   }, [diary, diaryId]);
 
-  const headerRight = useCallback(
-    () => (
-      <IconButton
-        icon="create-outline"
-        onPress={() =>
-          navigation.navigate("DiaryEditor", {
-            diary: {
-              ...diary,
-              date_time:
-                diary.date_time instanceof Date
-                  ? diary.date_time.toISOString()
-                  : diary.date_time,
-            },
-          })
-        }
-        style={styles.iconButton}
-        size={24}
-        disabled={!diary || updateMutation.isPending}
-        tintColor={Colors.textMain}
-      />
-    ),
-    [diary, updateMutation.isPending],
+  const handleOpenEdit = useCallback(
+    () =>
+      navigation.navigate("DiaryEditor", {
+        diary: {
+          ...diary,
+          date_time:
+            diary.date_time instanceof Date
+              ? diary.date_time.toISOString()
+              : diary.date_time,
+        },
+      }),
+    [diary, navigation],
+  );
+
+  const headerRightBeginning = useMemo(
+    () => [
+      {
+        condition: diary?.is_owner,
+        onPress: handleOpenEdit,
+        icon: "create-outline",
+        disabled: !diary || updateMutation.isPending,
+      },
+    ],
+    [diary, handleOpenEdit, updateMutation.isPending],
   );
 
   if (isError) {
@@ -265,7 +291,8 @@ const DiaryDetailScreen = ({ route, navigation }) => {
         renderItem={renderItem}
         noItems={noItems}
         title={t("diary")}
-        headerRightExtra={diary.is_owner ? headerRight : undefined}
+        headerRightBeginning={headerRightBeginning}
+        handleSharePress={handleShare}
         listHeader={listHeader}
       />
 
@@ -423,15 +450,6 @@ const stylesFn = (Colors) =>
       fontSize: 12,
       color: Colors.textSecondary,
       marginBottom: 2,
-    },
-    headerButtons: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-      marginHorizontal: 4,
-    },
-    iconButton: {
-      marginRight: 0,
     },
     placeRow: {
       paddingVertical: 6,

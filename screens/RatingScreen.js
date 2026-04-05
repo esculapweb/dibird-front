@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { View } from "react-native";
+import { View, Share } from "react-native";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
 
@@ -10,6 +10,7 @@ import { useFilters } from "../store/filters-context";
 import { useTheme } from "../store/theme-context";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import { useProfile } from "../store/profile-context";
+import { Config } from "../constants/config";
 
 const RatingScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
@@ -54,6 +55,14 @@ const RatingScreen = ({ route, navigation }) => {
     navigation.navigate("RatingsCompare", { profile1, profile2 });
   }, [selectedIds]);
 
+  const handleShare = useCallback(async () => {
+    const url = `${Config.baseUrl}/my/users/`;
+    await Share.share({
+      url: url,
+      message: url,
+    });
+  }, [Config]);
+
   const noItems = {
     icon: "trophy-outline",
     message: t("no_rating_yet"),
@@ -84,6 +93,7 @@ const RatingScreen = ({ route, navigation }) => {
         noItems={noItems}
         title={t("rating")}
         fabIcon="people-outline"
+        handleSharePress={handleShare}
       />
 
       {selectedIds.length == 2 ? (

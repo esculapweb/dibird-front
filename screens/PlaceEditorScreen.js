@@ -1,4 +1,10 @@
-import { useState, useCallback, useEffect, useLayoutEffect } from "react";
+import {
+  useState,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+} from "react";
 import { Platform, StyleSheet, View, KeyboardAvoidingView } from "react-native";
 import { useTranslation } from "react-i18next";
 
@@ -6,7 +12,6 @@ import { useTheme } from "../store/theme-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import { useUpdateItem } from "../hooks/useItem";
 import { useCreatePlace } from "../hooks/Place/usePlaceMutation";
-import IconButton from "../components/ui/IconButton";
 import PlaceForm from "../components/Place/PlaceForm";
 import {
   usePlaceLocation,
@@ -15,6 +20,7 @@ import {
 import Map from "../components/Map/Map";
 import { showError } from "../services/api";
 import { callNavigationCallback } from "../util/navigationCallbacks";
+import IconsHeader from "../components/ui/IconsHeader";
 
 const PlaceEditorScreen = ({ navigation, route }) => {
   const { Colors } = useTheme();
@@ -208,7 +214,7 @@ const PlaceEditorScreen = ({ navigation, route }) => {
               "onPlaceCreated",
               res.data.id,
               placeData.territory,
-              res.data
+              res.data,
             );
             navigation.goBack();
           } else {
@@ -222,29 +228,35 @@ const PlaceEditorScreen = ({ navigation, route }) => {
     }
   }, [formData, lngText, latText, isEditMode, place, returnToScreen]);
 
-  const headerRight = useCallback(
-    () => (
-      <IconButton
-        icon="checkmark"
-        onPress={handleSavePlace}
-        style={styles.saveButton}
-        size={24}
-        disabled={
+  const headerRightBeginning = useMemo(
+    () => [
+      {
+        condition: !!place,
+        onPress: handleSavePlace,
+        icon: "checkmark-circle",
+        size: 36,
+        tintColor: Colors.seenIcon,
+        disabled:
           isLocating ||
           (isEditMode
             ? updatePlaceMutation.isPending
-            : createPlaceMutation.isPending)
-        }
-        color={Colors.buttonBrightColor}
-      />
-    ),
+            : createPlaceMutation.isPending),
+      },
+    ],
     [
+      place,
       handleSavePlace,
       isLocating,
       isEditMode,
       createPlaceMutation.isPending,
       updatePlaceMutation.isPending,
+      Colors.seenIcon,
     ],
+  );
+
+  const headerRight = useCallback(
+    () => <IconsHeader headerRightBeginning={headerRightBeginning} />,
+    [headerRightBeginning],
   );
 
   useLayoutEffect(() => {
@@ -298,10 +310,4 @@ const stylesFn = (Colors) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.primary100 },
     mapContainer: { flex: 1 },
-    saveButton: {
-      backgroundColor: Colors.buttonBrightBg,
-      borderRadius: 20,
-      marginRight: 0,
-      padding: 4,
-    },
   });

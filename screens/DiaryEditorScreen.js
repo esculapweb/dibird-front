@@ -1,11 +1,10 @@
-import { useCallback, useLayoutEffect } from "react";
-import { StyleSheet, Platform, KeyboardAvoidingView, View } from "react-native";
+import { useCallback, useLayoutEffect, useMemo } from "react";
+import { Platform, KeyboardAvoidingView } from "react-native";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
 
 import { useTheme } from "../store/theme-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
-import IconButton from "../components/ui/IconButton";
 import DiaryForm from "../components/Diary/DiaryForm";
 import { useCreateDiary } from "../hooks/Diary/useCreateDiary";
 import { useUpdateItem } from "../hooks/useItem";
@@ -14,13 +13,13 @@ import { useProfile } from "../store/profile-context";
 import { setSession } from "../util/sessionStore";
 import { setNavigationCallback } from "../util/navigationCallbacks";
 import { useEditorForm } from "../hooks/useEditorForm";
+import IconsHeader from "../components/ui/IconsHeader";
 
 const FORM_FIELDS = ["territory", "place", "date_time", "private", "name"];
 
 const DiaryEditorScreen = ({ navigation, route }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
-  const styles = stylesFn(Colors);
   const { profile } = useProfile();
 
   const { diary, defaultTerritory, defaultPlace } = route.params || {};
@@ -28,11 +27,16 @@ const DiaryEditorScreen = ({ navigation, route }) => {
 
   const {
     itemWithParsedDate: diaryWithParsedDate,
-    formData, setFormData,
-    errors, setErrors,
-    territoryValue, setTerritoryValue,
-    placeValue, setPlaceValue,
-    placeData, setPlaceData,
+    formData,
+    setFormData,
+    errors,
+    setErrors,
+    territoryValue,
+    setTerritoryValue,
+    placeValue,
+    setPlaceValue,
+    placeData,
+    setPlaceData,
     validateForm,
   } = useEditorForm({
     item: diary,
@@ -92,52 +96,58 @@ const DiaryEditorScreen = ({ navigation, route }) => {
   }, [formData, territoryValue, placeValue, isEditMode]);
 
   const handleAddNewPlace = useCallback(() => {
-    setNavigationCallback("onPlaceCreated", (newPlaceId, newPlaceTerritory, newPlaceData) => {
-      setPlaceValue(newPlaceId);
-      setPlaceData(newPlaceData);
+    setNavigationCallback(
+      "onPlaceCreated",
+      (newPlaceId, newPlaceTerritory, newPlaceData) => {
+        setPlaceValue(newPlaceId);
+        setPlaceData(newPlaceData);
 
-      if (newPlaceTerritory && newPlaceTerritory !== territoryValue) {
-        setTerritoryValue(newPlaceTerritory);
-        setFormData((prev) => ({
-          ...prev,
-          place: newPlaceId,
-          territory: newPlaceTerritory,
-        }));
-        Toast.show({
-          type: "info",
-          text1: t("country_changed"),
-          text2: t("country_changed_hint"),
-        });
-      } else {
-        setFormData((prev) => ({ ...prev, place: newPlaceId }));
-      }
-    });
+        if (newPlaceTerritory && newPlaceTerritory !== territoryValue) {
+          setTerritoryValue(newPlaceTerritory);
+          setFormData((prev) => ({
+            ...prev,
+            place: newPlaceId,
+            territory: newPlaceTerritory,
+          }));
+          Toast.show({
+            type: "info",
+            text1: t("country_changed"),
+            text2: t("country_changed_hint"),
+          });
+        } else {
+          setFormData((prev) => ({ ...prev, place: newPlaceId }));
+        }
+      },
+    );
     navigation.navigate("PlaceEditor", { returnToScreen: "DiaryEditor" });
   }, [navigation, territoryValue]);
 
-  const headerRight = useCallback(
-    () => (
-      <View style={styles.headerButtons}>
-        <IconButton
-          icon="checkmark"
-          onPress={handleSaveDiary}
-          style={styles.saveButton}
-          size={24}
-          disabled={
-            isEditMode
-              ? updateDiaryMutation.isPending
-              : createDiaryMutation.isPending
-          }
-          color={Colors.buttonBrightColor}
-        />
-      </View>
-    ),
+  const headerRightBeginning = useMemo(
+    () => [
+      {
+        condition: !!diary,
+        onPress: handleSaveDiary,
+        icon: "checkmark-circle",
+        size: 36,
+        tintColor: Colors.seenIcon,
+        disabled: isEditMode
+          ? updateDiaryMutation.isPending
+          : createDiaryMutation.isPending,
+      },
+    ],
     [
+      diary,
       handleSaveDiary,
       isEditMode,
       createDiaryMutation.isPending,
       updateDiaryMutation.isPending,
+      Colors.seenIcon,
     ],
+  );
+
+  const headerRight = useCallback(
+    () => <IconsHeader headerRightBeginning={headerRightBeginning} />,
+    [headerRightBeginning],
   );
 
   useLayoutEffect(() => {
@@ -147,13 +157,17 @@ const DiaryEditorScreen = ({ navigation, route }) => {
     });
   }, [navigation, headerRight, isEditMode]);
 
-  if (isEditMode ? updateDiaryMutation.isPending : createDiaryMutation.isPending) {
+  if (
+    isEditMode ? updateDiaryMutation.isPending : createDiaryMutation.isPending
+  ) {
     return <LoadingOverlay />;
   }
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={{
+        container: { flex: 1, backgroundColor: Colors.backgroundMain },
+      }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <DiaryForm
@@ -175,20 +189,3 @@ const DiaryEditorScreen = ({ navigation, route }) => {
 };
 
 export default DiaryEditorScreen;
-
-const stylesFn = (Colors) =>
-  StyleSheet.create({
-    container: { flex: 1, backgroundColor: Colors.backgroundMain },
-    headerButtons: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-      marginHorizontal: 4,
-    },
-    saveButton: {
-      backgroundColor: Colors.buttonBrightBg,
-      borderRadius: 20,
-      marginRight: 0,
-      padding: 4,
-    },
-  });

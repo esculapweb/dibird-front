@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useMemo } from "react";
-import { View } from "react-native";
+import { View, Share } from "react-native";
 import { useTranslation } from "react-i18next";
+import Toast from "react-native-toast-message";
 
 import ListScreen from "./ListScreen";
 import { fetchStat, fetchChecklist } from "../util/fetches";
@@ -9,12 +10,11 @@ import ChecklistCard from "../components/Stats/ChecklistCard";
 import Tabs from "../components/ui/Tabs";
 import { useFilters } from "../store/filters-context";
 import ConfirmBottomSheet from "../components/ui/ConfirmBottomSheet";
-import IconButton from "../components/ui/IconButton";
-import { useTheme } from "../store/theme-context";
+import { useProfile } from "../store/profile-context";
+import { Config } from "../constants/config";
 
 const StatScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
-  const { Colors } = useTheme();
   const confirmRef = useRef(null);
   const openFilterModalRef = useRef(null);
   const openUncheckSheet = (item) => {
@@ -22,6 +22,7 @@ const StatScreen = ({ route, navigation }) => {
   };
   const { territory, seenMode, setSeenMode } = useFilters();
   const [currentFilters, setCurrentFilters] = useState({});
+  const { profile } = useProfile();
 
   const viewMode = route.name === "Checklist" ? "checklist" : "stats";
 
@@ -176,18 +177,34 @@ const StatScreen = ({ route, navigation }) => {
     [seenMode, handleStatCardPress, viewMode],
   );
 
-  const headerRight = useCallback(
-    () => (
-      <IconButton
-        icon={config.iconOpposite}
-        onPress={handleModeChange}
-        style={{ marginRight: 0 }}
-        size={24}
-        tintColor={Colors.textMain}
-      />
-    ),
-    [config, handleModeChange, Colors],
+  const headerRightBeginning = useMemo(
+    () => [
+      {
+        condition: !!handleModeChange,
+        onPress: handleModeChange,
+        icon: config.iconOpposite,
+      },
+    ],
+    [handleModeChange, config.iconOpposite],
   );
+
+  const handleShare = useCallback(async () => {
+    if (profile?.private) {
+      Toast.show({
+        type: "info",
+        text1: t("profile_private"),
+        text2: t("profile_private_share_hint"),
+      });
+      return;
+    }
+
+    const url = `${Config.baseUrl}/my/users/${profile?.user}/`;
+
+    await Share.share({
+      url: url,
+      message: url,
+    });
+  }, [profile]);
 
   return (
     <View style={{ flex: 1 }}>
@@ -203,7 +220,8 @@ const StatScreen = ({ route, navigation }) => {
         getItemId={config.getItemId}
         onFiltersChange={setCurrentFilters}
         allowSort={config.allowSort}
-        headerRightExtra={headerRight}
+        headerRightBeginning={headerRightBeginning}
+        handleSharePress={viewMode === "stats" ? handleShare : undefined}
         onOpenFilterModal={handleOpenFilterModal}
       />
       <Tabs

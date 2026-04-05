@@ -1,15 +1,15 @@
-import { useLayoutEffect, useCallback } from "react";
+import { useLayoutEffect, useCallback, useMemo } from "react";
 import { View, Text, StyleSheet, ScrollView, Alert } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import { useTheme } from "../store/theme-context";
-import { isoToFlagEmoji, formatDate, formatDateTime} from "../util/helpers";
+import { isoToFlagEmoji, formatDate, formatDateTime } from "../util/helpers";
 import { StatBig } from "../components/Place/StatBig";
-import IconButton from "../components/ui/IconButton";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import Map from "../components/Map/Map";
+import IconsHeader from "../components/ui/IconsHeader";
 
 import { useItem, useUpdateItem, useDeleteItem } from "../hooks/useItem";
 import { showError } from "../services/api";
@@ -41,31 +41,37 @@ const PlaceDetailScreen = ({ route, navigation }) => {
         onError: (e) => showError(e),
       },
     );
-  }, [place, updateMutation]);
+  }, [place, updateMutation.mutate]);
+
+  const headerRightBeginning = useMemo(
+    () => [
+      {
+        condition: !!place,
+        onPress: () => navigation.navigate("PlaceEditor", { place }),
+        icon: "create-outline",
+        disabled: !place || updateMutation.isPending,
+      },
+      {
+        condition: !!place,
+        onPress: handleFavourite,
+        icon: place?.favourite ? "star" : "star-outline",
+        tintColor: Colors.accent,
+        disabled: updateMutation.isPending || !place,
+        loading: updateMutation.isPending,
+      },
+    ],
+    [
+      place,
+      handleFavourite,
+      updateMutation.isPending,
+      navigation,
+      Colors.accent,
+    ],
+  );
 
   const headerRight = useCallback(
-    () => (
-      <View style={styles.headerButtons}>
-        <IconButton
-          tintColor={Colors.textSecondary}
-          icon="create-outline"
-          onPress={() => navigation.navigate("PlaceEditor", { place })}
-          style={styles.iconButton}
-          size={24}
-          disabled={!place || updateMutation.isPending}
-        />
-        <IconButton
-          tintColor={Colors.accent}
-          icon={place?.favourite ? "star" : "star-outline"}
-          onPress={handleFavourite}
-          style={styles.iconButton}
-          size={24}
-          disabled={updateMutation.isPending || !place}
-          loading={updateMutation.isPending}
-        />
-      </View>
-    ),
-    [place, handleFavourite, updateMutation.isPending],
+    () => <IconsHeader headerRightBeginning={headerRightBeginning} />,
+    [headerRightBeginning],
   );
 
   const handleDelete = useCallback(() => {
@@ -182,23 +188,17 @@ const PlaceDetailScreen = ({ route, navigation }) => {
             </View>
 
             {/* META */}
-              <View
-                style={[
-                  styles.meta,
-                  styles.metaBorder,
-                ]}
-              >
+            <View style={[styles.meta, styles.metaBorder]}>
+              <Text style={styles.metaText}>
+                {t("created")}: {formatDateTime(place.created_at)}
+              </Text>
+              {formatDate(place.created_at) !==
+                formatDate(place.updated_at) && (
                 <Text style={styles.metaText}>
-                  {t("created")}: {formatDateTime(place.created_at)}
+                  {t("updated")}: {formatDateTime(place.updated_at)}
                 </Text>
-                {formatDate(place.created_at) !==
-                  formatDate(place.updated_at) && (
-                  <Text style={styles.metaText}>
-                    {t("updated")}: {formatDateTime(place.updated_at)}
-                  </Text>
-                )}
-              </View>
-
+              )}
+            </View>
           </View>
         </ScrollView>
 
@@ -259,14 +259,5 @@ const stylesFn = (Colors) =>
       fontSize: 12,
       color: Colors.textSecondary,
       marginBottom: 2,
-    },
-    headerButtons: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-      marginHorizontal: 4,
-    },
-    iconButton: {
-      marginRight: 0,
     },
   });
