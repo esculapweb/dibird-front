@@ -81,7 +81,7 @@ const ObservationDetailScreen = ({ route, navigation }) => {
   const headerRightBeginning = useMemo(
     () => [
       {
-        condition: !!observation,
+        condition: observation?.is_owner,
         onPress: () =>
           navigation.navigate("ObservationEditor", {
             observation: {
@@ -137,7 +137,7 @@ const ObservationDetailScreen = ({ route, navigation }) => {
     navigation.setOptions({
       title: t("observation"),
     });
-    observation.is_owner && navigation.setOptions({ headerRight });
+    navigation.setOptions({ headerRight });
   }, [navigation, headerRight, observation]);
 
   if (isError) {

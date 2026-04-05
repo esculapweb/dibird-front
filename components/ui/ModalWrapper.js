@@ -1,12 +1,21 @@
-import { Modal, Pressable, View, Text, StyleSheet } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Modal, View, Text, StyleSheet } from "react-native";
 import { useTheme } from "../../store/theme-context";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const ICON_SIZE = 24;
-const BUTTON_SIZE = 40;
+import IconButton from "./IconButton";
 
-const ModalWrapper = ({ children, onClose, onApply, visible, title, onSort, showSortIcon }) => {
+const ICON_SIZE = 28;
+const BUTTON_SIZE = 36;
+
+const ModalWrapper = ({
+  children,
+  onClose,
+  onApply,
+  visible,
+  title,
+  onSort,
+  showSortIcon,
+}) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
 
@@ -23,55 +32,32 @@ const ModalWrapper = ({ children, onClose, onApply, visible, title, onSort, show
           style={{ flex: 1, backgroundColor: Colors.backgroundMain }}
         >
           <View style={styles.header}>
-            <Pressable
+            <IconButton
               onPress={onClose}
-              style={({ pressed }) => [
-                styles.iconButton,
-                styles.leftButton,
-                pressed && styles.pressed,
-              ]}
-            >
-              <Ionicons name="close" size={ICON_SIZE} color={Colors.textMain} />
-            </Pressable>
+              icon="close-circle"
+              size={BUTTON_SIZE}
+              tintColor={Colors.textSecondary}
+            />
 
             <Text style={styles.title} numberOfLines={1}>
               {title}
             </Text>
 
             {showSortIcon && onSort && (
-              <Pressable
+              <IconButton
                 onPress={onSort}
-                style={({ pressed }) => [
-                  styles.iconButton,
-                  styles.rightButton,
-                  styles.sortButton,
-                  pressed && styles.pressed,
-                ]}
-              >
-                <Ionicons
-                  name="swap-vertical"
-                  size={ICON_SIZE}
-                  color={Colors.textMain}
-                />
-              </Pressable>
+                icon="swap-vertical"
+                size={ICON_SIZE}
+              />
             )}
 
             {onApply && (
-              <Pressable
+              <IconButton
                 onPress={onApply}
-                style={({ pressed }) => [
-                  styles.iconButton,
-                  styles.rightButton,
-                  styles.applyButton,
-                  pressed && styles.pressed,
-                ]}
-              >
-                <Ionicons
-                  name="checkmark"
-                  size={ICON_SIZE}
-                  color={Colors.buttonBrightColor}
-                />
-              </Pressable>
+                icon="checkmark-circle"
+                size={BUTTON_SIZE}
+                tintColor={Colors.seenIcon}
+              />
             )}
           </View>
           {children}
@@ -89,51 +75,21 @@ const stylesFn = (Colors) =>
       flex: 1,
       backgroundColor: Colors.backgroundMain,
     },
-
     header: {
       height: 56,
-      paddingVertical: 8,
-      backgroundColor: Colors.primary100,
-      borderBottomWidth: 1,
-      borderBottomColor: Colors.border,
+      paddingHorizontal: 16,
+      flexDirection: "row",
       alignItems: "center",
-      justifyContent: "center",
+      justifyContent: "space-between",
+      backgroundColor: Colors.primary100,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: Colors.border,
     },
-
     title: {
+      flex: 1,
+      textAlign: "center",
       fontSize: 16,
       fontWeight: "600",
       color: Colors.textMain,
-      maxWidth: "70%",
-    },
-
-    iconButton: {
-      position: "absolute",
-      width: BUTTON_SIZE,
-      height: BUTTON_SIZE,
-      borderRadius: BUTTON_SIZE / 2,
-      alignItems: "center",
-      justifyContent: "center",
-      top: 8,
-    },
-
-    leftButton: {
-      left: 16,
-      backgroundColor: Colors.primary200,
-      borderWidth: 1,
-      borderColor: Colors.border,
-    },
-
-    rightButton: {
-      right: 16,
-    },
-
-    applyButton: {
-      backgroundColor: Colors.buttonBrightBg,
-    },
-
-    pressed: {
-      opacity: 0.8,
-      transform: [{ scale: 0.96 }],
     },
   });

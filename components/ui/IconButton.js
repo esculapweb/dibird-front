@@ -26,7 +26,6 @@ const IconButton = ({
   return (
     <Pressable
       style={({ pressed }) => [
-        styles.container,
         pressed && !disabled && styles.pressed,
         style,
         disabled && styles.disabled,
@@ -34,7 +33,7 @@ const IconButton = ({
       onPress={disabled ? undefined : onPress}
       hitSlop={8}
     >
-      <Ionicons name={icon} size={size} color={tintColor} />
+      <Ionicons name={icon} size={size} color={tintColor ?? Colors.textMain} />
 
       {active && <View style={styles.active} />}
     </Pressable>
@@ -45,9 +44,6 @@ export default IconButton;
 
 const stylesFn = (Colors) =>
   StyleSheet.create({
-    container: {
-      marginRight: 12,
-    },
     active: {
       position: "absolute",
       top: 0,

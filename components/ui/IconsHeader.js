@@ -25,6 +25,7 @@ const IconsHeader = ({
       condition: !!onFilterPress,
       onPress: onFilterPress,
       icon: hasActiveFilters ? "options" : "options-outline",
+      active: hasActiveFilters,
     },
     {
       condition: !!onSharePress,
@@ -48,6 +49,7 @@ const IconsHeader = ({
             size={btn.size ?? 24}
             disabled={btn?.disabled}
             loading={btn?.loading}
+            active={btn?.active}
           />
         ))}
     </View>
@@ -62,7 +64,7 @@ const stylesFn = () =>
       flexDirection: "row",
       alignItems: "center",
       gap: 8,
-      marginHorizontal: 4,
+      marginHorizontal: 3,
     },
     iconButton: {
       marginRight: 0,

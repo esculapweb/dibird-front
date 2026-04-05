@@ -6,7 +6,6 @@ import Toast from "react-native-toast-message";
 
 import { useTheme } from "../store/theme-context";
 import { formatDateLong } from "../util/helpers";
-import IconButton from "../components/ui/IconButton";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
