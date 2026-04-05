@@ -1,10 +1,10 @@
 import { useCallback } from "react";
-import { View, Text, StyleSheet, Alert } from "react-native";
+import { View, Text, StyleSheet, Alert, Pressable } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useTheme } from "../store/theme-context";
-import { formatDate } from "../util/helpers";
+import { formatDateLong } from "../util/helpers";
 
 import IconButton from "../components/ui/IconButton";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
@@ -18,6 +18,10 @@ import PrivacyToggle from "../components/ui/PrivacyToggle";
 import ListScreen from "./ListScreen";
 import { fetchDiaryObservations } from "../util/fetches";
 import DiaryObservationCard from "../components/Diary/DiaryObservationCard";
+import ProfileAvatar from "../components/Profile/ProfileAvatar";
+import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
+import Map from "../components/Map/Map";
+import { isoToFlagEmoji } from "../util/helpers";
 
 const DiaryDetailScreen = ({ route, navigation }) => {
   const { diaryId } = route.params;
@@ -37,6 +41,131 @@ const DiaryDetailScreen = ({ route, navigation }) => {
   const { Colors } = useTheme();
   const { t } = useTranslation();
   const styles = stylesFn(Colors);
+
+  const { fullName } = useProfileDisplay({
+    firstName: diary?.owner?.first_name,
+    lastName: diary?.owner?.last_name,
+    username: diary?.owner?.username,
+  });
+
+  const listHeader = useCallback(
+    () => (
+      <Section
+        title={formatDateLong(diary.date_time)}
+        hintBlock={
+          diary.is_owner && (
+            <PrivacyToggle value={diary.private} gender="male" />
+          )
+        }
+        collapsible={true}
+      >
+        {diary?.name && (
+          <View style={styles.notesBlock}>
+            <Ionicons
+              name="document-text-outline"
+              size={20}
+              color={Colors.textSecondary}
+              style={{ marginRight: 8 }}
+            />
+            <Text style={styles.notes}>{diary.name}</Text>
+          </View>
+        )}
+
+        {!diary.is_owner && (
+          <Pressable
+            style={styles.placeRow}
+            onPress={() => {
+              if (diary?.owner?.private) return;
+              navigation.navigate("UserStat", {
+                profileId: diary?.owner?.id,
+              });
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={styles.authorLabel}>{t("diary_author")}</Text>
+                <View style={styles.authorRow}>
+                  <ProfileAvatar
+                    avatar={diary?.owner?.avatar}
+                    firstName={diary?.owner?.first_name}
+                    lastName={diary?.owner?.last_name}
+                    username={diary?.owner?.username}
+                    size={22}
+                  />
+                  <Text style={styles.authorName}>{fullName}</Text>
+                </View>
+              </View>
+              {!diary?.owner?.private && (
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={Colors.textSecondary}
+                />
+              )}
+            </View>
+          </Pressable>
+        )}
+
+        {diary.is_owner && (
+          <PlacePreviewRow
+            placeData={diary?.place_data}
+            territoryData={diary.territory_data}
+            onPress={handlePlaceNavigate}
+          />
+        )}
+
+        {!diary.is_owner && (
+          <View style={[styles.placeRow, !diary?.place_data && { marginBottom: -8 }]} >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={styles.placeName} numberOfLines={2}>
+                  {diary?.place_data?.name || t("location_not_specified")}
+                </Text>
+                <Text style={styles.placeTerritory} numberOfLines={1}>
+                  {isoToFlagEmoji(diary?.territory_data?.code)}{" "}
+                  {diary?.territory_data?.name}
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {!diary.is_owner && diary?.place_data?.location?.coordinates && (
+          <View style={styles.mapWrapper}>
+            <Map
+              currentCoords={
+                diary.place_data.location.type === "Polygon"
+                  ? diary.place_data.location.center
+                  : diary.place_data.location.coordinates
+              }
+              currentZoom={9}
+              mapHeight={180}
+              showCoords={diary.place_data.location.type === "Point"}
+              polygon={
+                diary.place_data.location.type === "Polygon"
+                  ? diary.place_data.location
+                  : null
+              }
+              approximateArea={!diary.is_owner}
+            />
+          </View>
+        )}
+      </Section>
+    ),
+    [diary],
+  );
 
   const handleAdd = useCallback(async () => {
     if (!diary) return;
@@ -116,8 +245,6 @@ const DiaryDetailScreen = ({ route, navigation }) => {
 
   if (isLoading || !diary) return <LoadingOverlay />;
 
-  const name = formatDate(diary.date_time);
-
   const handlePlaceNavigate = () => {
     if (!diary.place) return;
     navigation.navigate("PlaceDetail", {
@@ -134,45 +261,24 @@ const DiaryDetailScreen = ({ route, navigation }) => {
         extraFilters={{ diary: diaryId, territory: diary.territory }}
         allowedFilters={["species"]}
         errorTitle={t("observations_unavailable")}
-        onAdd={handleAdd}
+        onAdd={diary.is_owner ? handleAdd : undefined}
         renderItem={renderItem}
         noItems={noItems}
-        title={name}
-        headerRightExtra={headerRight}
-        listHeader={
-          <Section
-            title={t("diary")}
-            hintBlock={<PrivacyToggle value={diary.private} gender="male" />}
-            collapsible={true}
-          >
-            <PlacePreviewRow
-              placeData={diary?.place_data}
-              territoryData={diary.territory_data}
-              onPress={handlePlaceNavigate}
-            />
-            {diary?.name && (
-              <View style={styles.notesBlock}>
-                <Ionicons
-                  name="document-text-outline"
-                  size={20}
-                  color={Colors.textSecondary}
-                  style={{ marginRight: 8 }}
-                />
-                <Text style={styles.notes}>{diary.name}</Text>
-              </View>
-            )}
-          </Section>
-        }
+        title={t("diary")}
+        headerRightExtra={diary.is_owner ? headerRight : undefined}
+        listHeader={listHeader}
       />
 
-      <FlatButtonBottom
-        textColor={Colors.error600}
-        onPress={handleDelete}
-        icon="trash-outline"
-        loading={deleteMutation.isPending}
-      >
-        {t("delete_diary")}
-      </FlatButtonBottom>
+      {diary.is_owner && (
+        <FlatButtonBottom
+          textColor={Colors.error600}
+          onPress={handleDelete}
+          icon="trash-outline"
+          loading={deleteMutation.isPending}
+        >
+          {t("delete_diary")}
+        </FlatButtonBottom>
+      )}
     </View>
   );
 };
@@ -279,7 +385,6 @@ const stylesFn = (Colors) =>
       fontSize: 12,
       color: Colors.textSecondary,
       marginTop: 2,
-      marginBottom: 8,
     },
     diaryBlock: {
       flexDirection: "row",
@@ -299,9 +404,9 @@ const stylesFn = (Colors) =>
       color: Colors.textMain,
     },
     notesBlock: {
+      marginBottom: 8,
       flexDirection: "row",
       alignItems: "center",
-      marginTop: 12,
     },
     notes: {
       fontSize: 14,
@@ -327,5 +432,34 @@ const stylesFn = (Colors) =>
     },
     iconButton: {
       marginRight: 0,
+    },
+    placeRow: {
+      paddingVertical: 6,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: Colors.border,
+    },
+    authorLabel: {
+      fontSize: 11,
+      color: Colors.textSecondary,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+      marginBottom: 4,
+    },
+    authorRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    authorName: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: Colors.textMain,
+    },
+    mapWrapper: {
+      marginHorizontal: -16,
+      marginBottom: -16,
+      borderBottomLeftRadius: 14,
+      borderBottomRightRadius: 14,
+      overflow: "hidden",
     },
   });

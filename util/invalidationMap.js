@@ -6,12 +6,12 @@ export const INVALIDATION_MAP = {
   },
   Observation: {
     add:    [["Observations"], ["Diaries"], ["Diary"], ["DiaryDetail"], ["Places"], ["Place"], ["Stat"], ["Checklist"], ["SpeciesDropdown"], ["Rating"], ["RatingCompare"], ["RatingCompareHeader"]],
-    update: [["Observations"], ["Diaries"], ["Diary"], ["DiaryDetail"], ["Places"], ["Place"], ["Stat"], ["Checklist"], ["SpeciesDropdown"], ["Rating"], ["RatingCompare"], ["RatingCompareHeader"]],
+    update: [["Observations"], ["Observation"], ["Diaries"], ["Diary"], ["DiaryDetail"], ["Places"], ["Place"], ["Stat"], ["Checklist"], ["SpeciesDropdown"], ["Rating"], ["RatingCompare"], ["RatingCompareHeader"]],
     delete: [["Observations"], ["Diaries"], ["Diary"], ["DiaryDetail"], ["Places"], ["Place"], ["Stat"], ["Checklist"], ["SpeciesDropdown"], ["Rating"], ["RatingCompare"], ["RatingCompareHeader"]],
   },
   Diary: {
     add:    [["Diaries"], ["Places"]],
-    update: [["Diaries"], ["Place"]],
+    update: [["Diaries"], ["Diary"], ["Observation"], ["Place"]],
     delete: [["Diaries"], ["Diary"], ["DiaryDetail"], ["Observations"], ["Observation"], ["Place"], ["Stat"], ["Checklist"], ["SpeciesDropdown"], ["Rating"], ["RatingCompare"], ["RatingCompareHeader"]],
   },
   Profile: {

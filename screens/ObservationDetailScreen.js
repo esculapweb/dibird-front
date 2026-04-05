@@ -107,12 +107,12 @@ const ObservationDetailScreen = ({ route, navigation }) => {
   );
 
   useLayoutEffect(() => {
-    if (!observation || !observation.is_owner) return;
+    if (!observation) return;
 
     navigation.setOptions({
       title: t("observation"),
-      headerRight,
     });
+    observation.is_owner && navigation.setOptions({ headerRight });
   }, [navigation, headerRight, observation]);
 
   if (isError) {
@@ -136,8 +136,12 @@ const ObservationDetailScreen = ({ route, navigation }) => {
     <View style={{ flex: 1 }}>
       <ScrollView style={styles.container}>
         <Section
-          title={t("section_main")}
-          hintBlock={<PrivacyToggle value={observation.private} />}
+          title={formatDateLong(observation.date_time)}
+          hintBlock={
+            observation.is_owner && (
+              <PrivacyToggle value={observation.private} />
+            )
+          }
         >
           <View style={styles.header}>
             <View style={styles.imageWrapper}>
@@ -162,21 +166,18 @@ const ObservationDetailScreen = ({ route, navigation }) => {
                 <Text style={styles.title}>{name}</Text>
                 <Text style={styles.latin}>{latin}</Text>
 
-                <View style={styles.capsule}>
-                  <Ionicons
-                    name="calendar-outline"
-                    size={14}
-                    color={Colors.textSecondary}
-                  />
-                  <Text style={styles.capsuleText}>
-                    {formatDateLong(observation.date_time)}
-                  </Text>
-                  {observation.time && (
+                {observation.time && (
+                  <View style={styles.capsule}>
+                    <Ionicons
+                      name="time-outline"
+                      size={14}
+                      color={Colors.textSecondary}
+                    />
                     <Text style={styles.capsuleText}>
                       {formatTimeString(observation.time)}
                     </Text>
-                  )}
-                </View>
+                  </View>
+                )}
 
                 {observation.quantity && (
                   <View style={styles.capsule}>
@@ -505,14 +506,13 @@ const stylesFn = (Colors) =>
     iconButton: {
       marginRight: 0,
     },
-
     placeRow: {
       paddingVertical: 8,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: Colors.border,
     },
     placeName: {
-      fontSize: 14,
+      fontSize: 15,
       fontWeight: "600",
       color: Colors.textMain,
     },
