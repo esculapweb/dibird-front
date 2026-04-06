@@ -10,7 +10,7 @@ import Tabs from "../components/ui/Tabs";
 import CompareProfileHeader from "../components/Profile/CompareProfileHeader";
 import RatingCompareCard from "../components/Rating/RatingCompareCard";
 import { useProfile } from "../store/profile-context";
-import { Config } from "../constants/config";
+import { langBaseUrl } from "../util/helpers";
 
 const RatingsCompareScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
@@ -45,13 +45,13 @@ const RatingsCompareScreen = ({ route, navigation }) => {
     // const params = new URLSearchParams(currentFilters).toString();
     // console.log('params', params)
 
-    const url = `${Config.baseUrl}/my/users/compare/${profile1}/${profile2}/`;
+    const url = `${langBaseUrl()}/users/compare/${profile1}/${profile2}/`;
 
     await Share.share({
       url: url,
       message: url,
     });
-  }, [profile, currentFilters, profile1, profile2, t]);
+  }, [profile, currentFilters, profile1, profile2, t, langBaseUrl]);
 
   const noItems = {
     icon: "list-outline",

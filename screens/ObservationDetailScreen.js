@@ -23,13 +23,14 @@ import { useItem, useUpdateItem, useDeleteItem } from "../hooks/useItem";
 import { showError } from "../services/api";
 import { BirdSVG } from "../components/ui/Svgs";
 import { formatTimeString } from "../util/timeHelpers";
-import { isoToFlagEmoji } from "../util/helpers";
+import { isoToFlagEmoji, langBaseUrl} from "../util/helpers";
 import Section from "../components/ui/Section";
 import PrivacyToggle from "../components/ui/PrivacyToggle";
 import Map from "../components/Map/Map";
 import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
 import IconsHeader from "../components/ui/IconsHeader";
+
 
 const ObservationDetailScreen = ({ route, navigation }) => {
   const { observationId } = route.params;
@@ -113,13 +114,13 @@ const ObservationDetailScreen = ({ route, navigation }) => {
       return;
     }
 
-    const url = `${Config.baseUrl}/my/observation/${observationId}/`;
+    const url = `${langBaseUrl()}/my/observation/${observationId}/`;
 
     await Share.share({
       url: url,
       message: url,
     });
-  }, [observation, observationId]);
+  }, [observation, observationId, langBaseUrl]);
 
   const headerRight = useCallback(
     () => (

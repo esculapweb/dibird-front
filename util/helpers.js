@@ -1,3 +1,4 @@
+import { Config } from "../constants/config";
 import i18n from "../services/i18n";
 
 export const isoToFlagEmoji = (isoCode) => {
@@ -79,3 +80,9 @@ export const buildDateParams = (date) => {
 
 export const cleanFilters = (filters) =>
   Object.fromEntries(Object.entries(filters).filter(([_, v]) => v != null));
+
+export const langBaseUrl = () => {
+  const lang = i18n.language || "en";
+  if (i18n.language === "en") return Config.baseUrl;
+  return `${Config.baseUrl}/${lang}`;
+};

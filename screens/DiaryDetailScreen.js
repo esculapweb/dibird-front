@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 
 import { useTheme } from "../store/theme-context";
-import { formatDateLong } from "../util/helpers";
+import { formatDateLong, langBaseUrl, isoToFlagEmoji } from "../util/helpers";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
@@ -20,8 +20,6 @@ import DiaryObservationCard from "../components/Diary/DiaryObservationCard";
 import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
 import Map from "../components/Map/Map";
-import { isoToFlagEmoji } from "../util/helpers";
-import { Config } from "../constants/config";
 
 const DiaryDetailScreen = ({ route, navigation }) => {
   const { diaryId } = route.params;
@@ -191,13 +189,13 @@ const DiaryDetailScreen = ({ route, navigation }) => {
       return;
     }
 
-    const url = `${Config.baseUrl}/my/diary/${diaryId}/`;
+    const url = `${langBaseUrl()}/my/diary/${diaryId}/`;
 
     await Share.share({
       url: url,
       message: url,
     });
-  }, [diary, diaryId]);
+  }, [diary, diaryId, langBaseUrl]);
 
   const noItems = {
     icon: "binoculars-outline",

@@ -10,7 +10,7 @@ import { useFilters } from "../store/filters-context";
 import { useTheme } from "../store/theme-context";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import { useProfile } from "../store/profile-context";
-import { Config } from "../constants/config";
+import { langBaseUrl } from "../util/helpers";
 
 const RatingScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
@@ -56,12 +56,12 @@ const RatingScreen = ({ route, navigation }) => {
   }, [selectedIds]);
 
   const handleShare = useCallback(async () => {
-    const url = `${Config.baseUrl}/my/users/`;
+    const url = `${langBaseUrl()}/users/`;
     await Share.share({
       url: url,
       message: url,
     });
-  }, [Config]);
+  }, [langBaseUrl]);
 
   const noItems = {
     icon: "trophy-outline",

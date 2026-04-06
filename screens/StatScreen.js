@@ -11,7 +11,7 @@ import Tabs from "../components/ui/Tabs";
 import { useFilters } from "../store/filters-context";
 import ConfirmBottomSheet from "../components/ui/ConfirmBottomSheet";
 import { useProfile } from "../store/profile-context";
-import { Config } from "../constants/config";
+import { langBaseUrl } from "../util/helpers";
 
 const StatScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
@@ -198,13 +198,13 @@ const StatScreen = ({ route, navigation }) => {
       return;
     }
 
-    const url = `${Config.baseUrl}/my/users/${profile?.user}/`;
+    const url = `${langBaseUrl()}/users/${profile?.user}/`;
 
     await Share.share({
       url: url,
       message: url,
     });
-  }, [profile]);
+  }, [profile, langBaseUrl]);
 
   return (
     <View style={{ flex: 1 }}>
