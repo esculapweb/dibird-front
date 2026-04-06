@@ -10,13 +10,15 @@ import { useFilters } from "../store/filters-context";
 import { useTheme } from "../store/theme-context";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import { useProfile } from "../store/profile-context";
-import { langBaseUrl } from "../util/helpers";
+import { buildShareUrl } from "../util/helpers";
 
 const RatingScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const { territory } = useFilters();
   const [currentFilters, setCurrentFilters] = useState(null);
+  const [currentSort, setCurrentSort] = useState(null); 
+
   const [selectedIds, setSelectedIds] = useState([]);
   const { profile } = useProfile();
 
@@ -56,12 +58,12 @@ const RatingScreen = ({ route, navigation }) => {
   }, [selectedIds]);
 
   const handleShare = useCallback(async () => {
-    const url = `${langBaseUrl()}/users/`;
+    const url = buildShareUrl("/users/", currentFilters, currentSort);
     await Share.share({
       url: url,
       message: url,
     });
-  }, [langBaseUrl]);
+  }, [currentFilters, currentSort]);
 
   const noItems = {
     icon: "trophy-outline",
@@ -88,6 +90,7 @@ const RatingScreen = ({ route, navigation }) => {
         errorTitle={t("rating_unavailable")}
         allowedFilters={["territory", "date"]}
         onFiltersChange={setCurrentFilters}
+        onSortChange={setCurrentSort}
         renderItem={renderItem}
         getItemId={(item) => item.profile_id}
         noItems={noItems}

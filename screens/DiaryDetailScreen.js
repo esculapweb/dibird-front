@@ -1,11 +1,11 @@
-import { useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { View, Text, StyleSheet, Alert, Pressable, Share } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 
 import { useTheme } from "../store/theme-context";
-import { formatDateLong, langBaseUrl, isoToFlagEmoji } from "../util/helpers";
+import { formatDateLong, buildShareUrl, isoToFlagEmoji } from "../util/helpers";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
@@ -24,6 +24,8 @@ import Map from "../components/Map/Map";
 const DiaryDetailScreen = ({ route, navigation }) => {
   const { diaryId } = route.params;
   const type = "Diary";
+  const [currentFilters, setCurrentFilters] = useState(null);
+  const [currentSort, setCurrentSort] = useState(null);
 
   const {
     data: diary,
@@ -189,13 +191,17 @@ const DiaryDetailScreen = ({ route, navigation }) => {
       return;
     }
 
-    const url = `${langBaseUrl()}/my/diary/${diaryId}/`;
+    const url = buildShareUrl(
+      `/my/diary/${diaryId}/`,
+      currentFilters,
+      currentSort,
+    );
 
     await Share.share({
       url: url,
       message: url,
     });
-  }, [diary, diaryId, langBaseUrl]);
+  }, [diary, diaryId, currentFilters, currentSort]);
 
   const noItems = {
     icon: "binoculars-outline",
@@ -283,6 +289,8 @@ const DiaryDetailScreen = ({ route, navigation }) => {
         fetchFunction={fetchDiaryObservations}
         extraFilters={{ diary: diaryId, territory: diary.territory }}
         allowedFilters={["species"]}
+        onFiltersChange={setCurrentFilters}
+        onSortChange={setCurrentSort}
         errorTitle={t("observations_unavailable")}
         onAdd={diary.is_owner ? handleAdd : undefined}
         renderItem={renderItem}

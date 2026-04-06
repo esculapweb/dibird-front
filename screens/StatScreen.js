@@ -11,7 +11,7 @@ import Tabs from "../components/ui/Tabs";
 import { useFilters } from "../store/filters-context";
 import ConfirmBottomSheet from "../components/ui/ConfirmBottomSheet";
 import { useProfile } from "../store/profile-context";
-import { langBaseUrl } from "../util/helpers";
+import { buildShareUrl } from "../util/helpers";
 
 const StatScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
@@ -22,6 +22,7 @@ const StatScreen = ({ route, navigation }) => {
   };
   const { territory, seenMode, setSeenMode } = useFilters();
   const [currentFilters, setCurrentFilters] = useState({});
+  const [currentSort, setCurrentSort] = useState(null);
   const { profile } = useProfile();
 
   const viewMode = route.name === "Checklist" ? "checklist" : "stats";
@@ -198,13 +199,17 @@ const StatScreen = ({ route, navigation }) => {
       return;
     }
 
-    const url = `${langBaseUrl()}/users/${profile?.user}/`;
+    const url = buildShareUrl(
+      `/users/${profile?.user}/`,
+      currentFilters,
+      currentSort,
+    );
 
     await Share.share({
       url: url,
       message: url,
     });
-  }, [profile, langBaseUrl]);
+  }, [profile, currentFilters, currentSort, t]);
 
   return (
     <View style={{ flex: 1 }}>
@@ -219,6 +224,7 @@ const StatScreen = ({ route, navigation }) => {
         tabsMode={seenMode}
         getItemId={config.getItemId}
         onFiltersChange={setCurrentFilters}
+        onSortChange={setCurrentSort}
         allowSort={config.allowSort}
         headerRightBeginning={headerRightBeginning}
         handleSharePress={viewMode === "stats" ? handleShare : undefined}

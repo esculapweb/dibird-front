@@ -10,13 +10,14 @@ import Tabs from "../components/ui/Tabs";
 import CompareProfileHeader from "../components/Profile/CompareProfileHeader";
 import RatingCompareCard from "../components/Rating/RatingCompareCard";
 import { useProfile } from "../store/profile-context";
-import { langBaseUrl } from "../util/helpers";
+import { buildShareUrl } from "../util/helpers";
 
 const RatingsCompareScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
   const { profile1, profile2 } = route.params;
   const [tabMode, setTabMode] = useState("all");
   const [currentFilters, setCurrentFilters] = useState({});
+  const [currentSort, setCurrentSort] = useState(null);
   const { profile } = useProfile();
 
   const { data: headerData } = useQuery({
@@ -42,16 +43,17 @@ const RatingsCompareScreen = ({ route, navigation }) => {
       return;
     }
 
-    // const params = new URLSearchParams(currentFilters).toString();
-    // console.log('params', params)
-
-    const url = `${langBaseUrl()}/users/compare/${profile1}/${profile2}/`;
+    const url = buildShareUrl(
+      `/users/compare/${profile1}/${profile2}/`,
+      currentFilters,
+      currentSort,
+    );
 
     await Share.share({
       url: url,
       message: url,
     });
-  }, [profile, currentFilters, profile1, profile2, t, langBaseUrl]);
+  }, [profile, currentFilters, currentSort, profile1, profile2, t]);
 
   const noItems = {
     icon: "list-outline",
@@ -76,6 +78,7 @@ const RatingsCompareScreen = ({ route, navigation }) => {
         renderItem={renderItem}
         noItems={noItems}
         onFiltersChange={setCurrentFilters}
+        onSortChange={setCurrentSort}
         showHeaderBadge={false}
         handleSharePress={handleShare}
       />

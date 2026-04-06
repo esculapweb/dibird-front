@@ -45,6 +45,7 @@ const ListScreen = ({
   fabIcon,
   getItemId = (item) => item.id,
   onFiltersChange,
+  onSortChange,
   locationCoords,
   locationAvailable = true,
   permissionStatus,
@@ -225,6 +226,10 @@ const ListScreen = ({
   useEffect(() => {
     onFiltersChange?.(filters);
   }, [filters]);
+
+  useEffect(() => {
+    onSortChange?.(sort);
+  }, [sort]);
 
   useEffect(() => {
     const initFilters = async () => {

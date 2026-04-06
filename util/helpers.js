@@ -1,5 +1,6 @@
 import { Config } from "../constants/config";
 import i18n from "../services/i18n";
+import { buildDeepLinkParams } from "./buildDeepLinkParams";
 
 export const isoToFlagEmoji = (isoCode) => {
   if (!isoCode) return "";
@@ -85,4 +86,15 @@ export const langBaseUrl = () => {
   const lang = i18n.language || "en";
   if (i18n.language === "en") return Config.baseUrl;
   return `${Config.baseUrl}/${lang}`;
+};
+
+export const buildShareUrl = (path, filters = null, sort = null) => {
+  const base = `${langBaseUrl()}${path}`;
+
+  if (!filters && !sort) return base;
+
+  const params = buildDeepLinkParams(filters, sort);
+  const query = new URLSearchParams(params).toString();
+
+  return query ? `${base}?${query}` : base;
 };
