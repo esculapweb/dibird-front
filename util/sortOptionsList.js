@@ -3,6 +3,7 @@ import i18n from "../services/i18n";
 export const sortOptionsList = (screen) => {
   switch (screen) {
     case "Stat":
+    case "UserStat":
       return [
         { label: i18n.t("alphabetic"), value: "name" },
         { label: i18n.t("alphabetic_desc"), value: "-name" },

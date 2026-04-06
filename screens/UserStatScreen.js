@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Share } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 
@@ -11,6 +11,7 @@ import { useFilters } from "../store/filters-context";
 import { useTheme } from "../store/theme-context";
 import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
+import { buildShareUrl } from "../util/helpers";
 
 const UserStatScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
@@ -18,6 +19,8 @@ const UserStatScreen = ({ route, navigation }) => {
   const { seenMode, setSeenMode } = useFilters();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
+  const [currentFilters, setCurrentFilters] = useState(null);
+  const [currentSort, setCurrentSort] = useState(null); 
 
   const { data: userProfile } = useQuery({
     queryKey: ["userProfile", profileId],
@@ -56,6 +59,14 @@ const UserStatScreen = ({ route, navigation }) => {
     },
     [seenMode, t],
   );
+
+  const handleShare = useCallback(async () => {
+      const url = buildShareUrl(`/users/stat/${profileId}`, currentFilters, currentSort);
+      await Share.share({
+        url: url,
+        message: url,
+      });
+    }, [profileId, currentFilters, currentSort]);
 
   const renderItem = useCallback(
     ({ item, index }) => (
@@ -96,6 +107,9 @@ const UserStatScreen = ({ route, navigation }) => {
         allowSort={true}
         extraFilters={{ user_id: profileId }}
         allowedFilters={["territory", "species", "date"]}
+        onFiltersChange={setCurrentFilters}
+        onSortChange={setCurrentSort}
+        handleSharePress={handleShare}
       />
       <Tabs
         tabOptions={[

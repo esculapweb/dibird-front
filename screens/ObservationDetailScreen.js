@@ -115,8 +115,6 @@ const ObservationDetailScreen = ({ route, navigation }) => {
 
     const url = buildShareUrl(`/my/observation/${observationId}/`);
 
-    console.log(url)
-
     await Share.share({
       url: url,
       message: url,
