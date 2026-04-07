@@ -125,7 +125,7 @@ const DiaryEditorScreen = ({ navigation, route }) => {
   const headerRightBeginning = useMemo(
     () => [
       {
-        condition: !!diary,
+        condition: true,
         onPress: handleSaveDiary,
         icon: "checkmark-circle",
         size: 36,
@@ -136,7 +136,6 @@ const DiaryEditorScreen = ({ navigation, route }) => {
       },
     ],
     [
-      diary,
       handleSaveDiary,
       isEditMode,
       createDiaryMutation.isPending,

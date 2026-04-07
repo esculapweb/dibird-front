@@ -221,7 +221,7 @@ const ObservationEditorScreen = ({ navigation, route }) => {
   const headerRightBeginning = useMemo(
     () => [
       {
-        condition: !!observation,
+        condition: true,
         onPress: handleSaveObservation,
         icon: "checkmark-circle",
         size: 36,
@@ -232,7 +232,6 @@ const ObservationEditorScreen = ({ navigation, route }) => {
       },
     ],
     [
-      observation,
       handleSaveObservation,
       isEditMode,
       createObservationMutation.isPending,

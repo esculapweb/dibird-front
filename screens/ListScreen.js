@@ -1,4 +1,10 @@
-import { useState, useEffect, useCallback, useLayoutEffect } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useLayoutEffect,
+  useRef,
+} from "react";
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
@@ -137,6 +143,10 @@ const ListScreen = ({
         return Array.isArray(v) ? v.length > 0 : v != null && v !== "";
       })
     : false;
+  const hasActiveFiltersRef = useRef(hasActiveFilters);
+  useEffect(() => {
+    hasActiveFiltersRef.current = hasActiveFilters;
+  }, [hasActiveFilters]);
 
   const isEmpty = items.length === 0;
   const isSearchActive = debouncedSearch.length > 0;
@@ -177,9 +187,6 @@ const ListScreen = ({
     handleClearFilters();
   };
 
-  const handleFilterPress = () => setFilterModalVisible(true);
-  const handleSortPress = () => setSortModalVisible(true);
-
   const removeFilter = (key) => {
     setIgnoreContextSync(true);
     if (key === "date") setDate(null);
@@ -205,22 +212,15 @@ const ListScreen = ({
   const headerRight = useCallback(
     () => (
       <IconsHeader
-        hasActiveFilters={hasActiveFilters}
-        onSortPress={allowSort ? handleSortPress : null}
-        onFilterPress={handleFilterPress}
+        hasActiveFilters={hasActiveFiltersRef.current}
+        onSortPress={allowSort ? () => setSortModalVisible(true) : null}
+        onFilterPress={() => setFilterModalVisible(true)}
         onSharePress={handleSharePress}
         headerRightBeginning={headerRightBeginning}
         headerRightEnd={headerRightEnd}
       />
     ),
-    [
-      filters,
-      sort,
-      headerRightBeginning,
-      headerRightEnd,
-      handleSortPress,
-      handleFilterPress,
-    ],
+    [allowSort, handleSharePress, headerRightBeginning, headerRightEnd],
   );
 
   useEffect(() => {

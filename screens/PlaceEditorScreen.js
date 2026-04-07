@@ -231,7 +231,7 @@ const PlaceEditorScreen = ({ navigation, route }) => {
   const headerRightBeginning = useMemo(
     () => [
       {
-        condition: !!place,
+        condition: true,
         onPress: handleSavePlace,
         icon: "checkmark-circle",
         size: 36,
@@ -244,7 +244,6 @@ const PlaceEditorScreen = ({ navigation, route }) => {
       },
     ],
     [
-      place,
       handleSavePlace,
       isLocating,
       isEditMode,

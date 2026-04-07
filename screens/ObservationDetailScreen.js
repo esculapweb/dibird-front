@@ -7,7 +7,7 @@ import {
   Alert,
   Pressable,
   Share,
-  Platform
+  Platform,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Image } from "expo-image";
@@ -131,11 +131,10 @@ const ObservationDetailScreen = ({ route, navigation }) => {
 
   useLayoutEffect(() => {
     if (!observation) return;
-
     navigation.setOptions({
       title: t("observation"),
+      headerRight,
     });
-    navigation.setOptions({ headerRight });
   }, [navigation, headerRight, observation]);
 
   if (isError) {
