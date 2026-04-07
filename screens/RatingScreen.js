@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { View, Share } from "react-native";
+import { View, Share, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
 
@@ -17,7 +17,7 @@ const RatingScreen = ({ route, navigation }) => {
   const { Colors } = useTheme();
   const { territory } = useFilters();
   const [currentFilters, setCurrentFilters] = useState(null);
-  const [currentSort, setCurrentSort] = useState(null); 
+  const [currentSort, setCurrentSort] = useState(null);
 
   const [selectedIds, setSelectedIds] = useState([]);
   const { profile } = useProfile();
@@ -58,11 +58,8 @@ const RatingScreen = ({ route, navigation }) => {
   }, [selectedIds]);
 
   const handleShare = useCallback(async () => {
-    const url = buildShareUrl("/users/", currentFilters, currentSort);
-    await Share.share({
-      url: url,
-      message: url,
-    });
+    const url = buildShareUrl("users/", currentFilters, currentSort);
+    await Share.share(Platform.OS === "ios" ? { url } : { message: url });
   }, [currentFilters, currentSort]);
 
   const noItems = {

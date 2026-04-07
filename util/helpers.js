@@ -89,7 +89,7 @@ export const langBaseUrl = () => {
 };
 
 export const buildShareUrl = (path, filters = null, sort = null) => {
-  const base = `${langBaseUrl()}${path}`;
+  const base = `${langBaseUrl()}/${path}`;
 
   if (!filters && !sort) return base;
 

@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useMemo } from "react";
-import { View, Share } from "react-native";
+import { View, Share, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
 
@@ -190,6 +190,8 @@ const StatScreen = ({ route, navigation }) => {
   );
 
   const handleShare = useCallback(async () => {
+    if (!profile?.user) return;
+
     if (profile?.private) {
       Toast.show({
         type: "info",
@@ -200,15 +202,12 @@ const StatScreen = ({ route, navigation }) => {
     }
 
     const url = buildShareUrl(
-      `/users/${profile?.user}/`,
+      `users/stat/${profile.user}/`,
       currentFilters,
       currentSort,
     );
 
-    await Share.share({
-      url: url,
-      message: url,
-    });
+    await Share.share(Platform.OS === "ios" ? { url } : { message: url });
   }, [profile, currentFilters, currentSort, t]);
 
   return (

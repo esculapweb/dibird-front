@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { View, Text, StyleSheet, Share } from "react-native";
+import { View, Text, StyleSheet, Share, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 
@@ -20,7 +20,7 @@ const UserStatScreen = ({ route, navigation }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const [currentFilters, setCurrentFilters] = useState(null);
-  const [currentSort, setCurrentSort] = useState(null); 
+  const [currentSort, setCurrentSort] = useState(null);
 
   const { data: userProfile } = useQuery({
     queryKey: ["userProfile", profileId],
@@ -61,12 +61,13 @@ const UserStatScreen = ({ route, navigation }) => {
   );
 
   const handleShare = useCallback(async () => {
-      const url = buildShareUrl(`/users/stat/${profileId}`, currentFilters, currentSort);
-      await Share.share({
-        url: url,
-        message: url,
-      });
-    }, [profileId, currentFilters, currentSort]);
+    const url = buildShareUrl(
+      `users/stat/${profileId}`,
+      currentFilters,
+      currentSort,
+    );
+    await Share.share(Platform.OS === "ios" ? { url } : { message: url });
+  }, [profileId, currentFilters, currentSort]);
 
   const renderItem = useCallback(
     ({ item, index }) => (

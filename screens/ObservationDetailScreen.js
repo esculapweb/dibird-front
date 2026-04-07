@@ -7,6 +7,7 @@ import {
   Alert,
   Pressable,
   Share,
+  Platform
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Image } from "expo-image";
@@ -113,12 +114,9 @@ const ObservationDetailScreen = ({ route, navigation }) => {
       return;
     }
 
-    const url = buildShareUrl(`/my/observation/${observationId}/`);
+    const url = buildShareUrl(`my/observation/${observationId}/`);
 
-    await Share.share({
-      url: url,
-      message: url,
-    });
+    await Share.share(Platform.OS === "ios" ? { url } : { message: url });
   }, [observation, observationId]);
 
   const headerRight = useCallback(

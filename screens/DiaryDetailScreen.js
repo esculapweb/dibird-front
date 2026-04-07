@@ -1,5 +1,13 @@
 import { useState, useCallback, useMemo } from "react";
-import { View, Text, StyleSheet, Alert, Pressable, Share } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Alert,
+  Pressable,
+  Share,
+  Platform,
+} from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
@@ -192,15 +200,12 @@ const DiaryDetailScreen = ({ route, navigation }) => {
     }
 
     const url = buildShareUrl(
-      `/my/diary/${diaryId}/`,
+      `my/diary/${diaryId}/`,
       currentFilters,
       currentSort,
     );
 
-    await Share.share({
-      url: url,
-      message: url,
-    });
+    await Share.share(Platform.OS === "ios" ? { url } : { message: url });
   }, [diary, diaryId, currentFilters, currentSort]);
 
   const noItems = {

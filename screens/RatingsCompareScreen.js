@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { View, Share } from "react-native";
+import { View, Share, Platform } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
@@ -34,6 +34,8 @@ const RatingsCompareScreen = ({ route, navigation }) => {
   );
 
   const handleShare = useCallback(async () => {
+    if (!profile?.user) return;
+
     if (
       profile?.private &&
       [profile1, profile2].map(String).includes(String(profile?.user))
@@ -47,15 +49,12 @@ const RatingsCompareScreen = ({ route, navigation }) => {
     }
 
     const url = buildShareUrl(
-      `/users/compare/${profile1}/${profile2}/`,
+      `users/compare/${profile1}/${profile2}/`,
       currentFilters,
       currentSort,
     );
 
-    await Share.share({
-      url: url,
-      message: url,
-    });
+    await Share.share(Platform.OS === "ios" ? { url } : { message: url });
   }, [profile, currentFilters, currentSort, profile1, profile2, t]);
 
   const noItems = {
