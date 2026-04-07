@@ -119,15 +119,14 @@ const ObservationDetailScreen = ({ route, navigation }) => {
     await Share.share(Platform.OS === "ios" ? { url } : { message: url });
   }, [observation, observationId]);
 
-  const headerRight = useCallback(
-    () => (
-      <IconsHeader
-        headerRightBeginning={headerRightBeginning}
-        onSharePress={handleShare}
-      />
-    ),
-    [headerRightBeginning],
+  const headerRight = () => (
+    <IconsHeader
+      headerRightBeginning={headerRightBeginning}
+      onSharePress={handleShare}
+    />
   );
+
+  const headerRightKey = `${headerRightBeginning?.length}`;
 
   useLayoutEffect(() => {
     if (!observation) return;
@@ -135,7 +134,7 @@ const ObservationDetailScreen = ({ route, navigation }) => {
       title: t("observation"),
       headerRight,
     });
-  }, [navigation, headerRight, observation]);
+  }, [navigation, headerRightKey, observation]);
 
   if (isError) {
     return (

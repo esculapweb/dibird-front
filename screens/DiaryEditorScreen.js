@@ -96,6 +96,7 @@ const DiaryEditorScreen = ({ navigation, route }) => {
   }, [formData, territoryValue, placeValue, isEditMode]);
 
   const handleAddNewPlace = useCallback(() => {
+    setNavigationCallback("onPlaceCreated", null);
     setNavigationCallback(
       "onPlaceCreated",
       (newPlaceId, newPlaceTerritory, newPlaceData) => {
@@ -144,8 +145,15 @@ const DiaryEditorScreen = ({ navigation, route }) => {
     ],
   );
 
-  const headerRight = useCallback(
-    () => <IconsHeader headerRightBeginning={headerRightBeginning} />,
+  const headerRight = () => (
+    <IconsHeader headerRightBeginning={headerRightBeginning} />
+  );
+
+  const headerRightKey = useMemo(
+    () =>
+      headerRightBeginning
+        ?.map((btn) => `${btn.icon}-${btn.disabled}-${btn.loading}`)
+        .join("|"),
     [headerRightBeginning],
   );
 
@@ -154,7 +162,7 @@ const DiaryEditorScreen = ({ navigation, route }) => {
       title: isEditMode ? t("edit_diary") : t("new_diary"),
       headerRight,
     });
-  }, [navigation, headerRight, isEditMode]);
+  }, [navigation, headerRightKey, isEditMode]);
 
   if (
     isEditMode ? updateDiaryMutation.isPending : createDiaryMutation.isPending

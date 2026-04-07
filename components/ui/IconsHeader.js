@@ -64,8 +64,6 @@ const stylesFn = () =>
       flexDirection: "row",
       alignItems: "center",
       gap: 8,
-      marginHorizontal: 3,
-      // height: 44,
     },
     iconButton: {
       marginRight: 0,

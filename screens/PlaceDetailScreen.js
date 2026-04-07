@@ -70,10 +70,11 @@ const PlaceDetailScreen = ({ route, navigation }) => {
     ],
   );
 
-  const headerRight = useCallback(
-    () => <IconsHeader headerRightBeginning={headerRightBeginning} />,
-    [headerRightBeginning],
+  const headerRight = () => (
+    <IconsHeader headerRightBeginning={headerRightBeginning} />
   );
+
+  const headerRightKey = `${headerRightBeginning?.length}`;
 
   const handleDelete = useCallback(() => {
     if (!place) return;
@@ -135,7 +136,7 @@ const PlaceDetailScreen = ({ route, navigation }) => {
       title: "",
       headerRight,
     });
-  }, [navigation, headerRight, place]);
+  }, [navigation, headerRightKey, place]);
 
   if (isError) {
     return (

@@ -240,8 +240,15 @@ const ObservationEditorScreen = ({ navigation, route }) => {
     ],
   );
 
-  const headerRight = useCallback(
-    () => <IconsHeader headerRightBeginning={headerRightBeginning} />,
+  const headerRight = () => (
+    <IconsHeader headerRightBeginning={headerRightBeginning} />
+  );
+
+  const headerRightKey = useMemo(
+    () =>
+      headerRightBeginning
+        ?.map((btn) => `${btn.icon}-${btn.disabled}-${btn.loading}`)
+        .join("|"),
     [headerRightBeginning],
   );
 
@@ -250,7 +257,7 @@ const ObservationEditorScreen = ({ navigation, route }) => {
       title: isEditMode ? t("edit_observation") : t("new_observation"),
       headerRight,
     });
-  }, [navigation, headerRight, isEditMode]);
+  }, [navigation, headerRightKey, isEditMode]);
 
   if (
     isEditMode

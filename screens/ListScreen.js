@@ -215,19 +215,18 @@ const ListScreen = ({
     }
   };
 
-  const headerRight = useCallback(
-    () => (
-      <IconsHeader
-        hasActiveFilters={hasActiveFiltersRef.current}
-        onSortPress={allowSort ? () => setSortModalVisible(true) : null}
-        onFilterPress={() => setFilterModalVisible(true)}
-        onSharePress={handleSharePress}
-        headerRightBeginning={headerRightBeginning}
-        headerRightEnd={headerRightEnd}
-      />
-    ),
-    [allowSort, handleSharePress, headerRightBeginning, headerRightEnd],
+  const headerRight = () => (
+    <IconsHeader
+      hasActiveFilters={hasActiveFiltersRef.current}
+      onSortPress={allowSort ? () => setSortModalVisible(true) : null}
+      onFilterPress={() => setFilterModalVisible(true)}
+      onSharePress={handleSharePress}
+      headerRightBeginning={headerRightBeginning}
+      headerRightEnd={headerRightEnd}
+    />
   );
+
+  const headerRightKey = `${!!handleSharePress}-${!!allowSort}-${headerRightBeginning?.length}-${headerRightEnd?.length}`;
 
   useEffect(() => {
     onFiltersChange?.(filters);
@@ -304,8 +303,6 @@ const ListScreen = ({
       if (route.params?.filtersOverride) return;
       if (!filtersLoaded) return;
 
-      const { placeId, territoryId } = route.params ?? {};
-
       setFilters((prev) => {
         if (!prev) return prev;
 
@@ -343,28 +340,13 @@ const ListScreen = ({
           }
         }
 
-        if (placeId && territoryId) {
-          newFilters = {
-            ...newFilters,
-            territory: territoryId,
-            place: placeId,
-            species: null,
-          };
-          changed = true;
-        }
-
         return changed ? newFilters : prev;
       });
-
-      if (placeId && territoryId) {
-        navigation.setParams({ placeId: undefined, territoryId: undefined });
-      }
     }, [
       date,
       territory,
       place,
       species,
-      route.params?.placeId,
       filtersLoaded,
       ignoreContextSync,
     ]),
@@ -384,7 +366,7 @@ const ListScreen = ({
       ),
       headerRight,
     });
-  }, [navigation, headerRight, data]);
+  }, [navigation, headerRightKey, data]);
 
   if (isError)
     return (
