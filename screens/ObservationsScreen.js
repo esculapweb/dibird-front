@@ -9,7 +9,7 @@ import { useFilters } from "../store/filters-context";
 const ObservationsScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
   const { territory } = useFilters();
-  const [currentFilters, setCurrentFilters] = useState(null);
+  const [currentFilters, setCurrentFilters] = useState({});
 
   const handleAdd = useCallback(async () => {
     const defaultTerritory = currentFilters?.territory ?? territory ?? null;

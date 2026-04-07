@@ -76,8 +76,9 @@ const ListScreen = ({
     setSpecies,
   } = useFilters();
 
-  const [filters, setFilters] = useState(null);
+  const [filters, setFilters] = useState({});
   const [sort, setSort] = useState(null);
+  const [sortReady, setSortReady] = useState(false);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [sortModalVisible, setSortModalVisible] = useState(false);
   const [filtersLoaded, setFiltersLoaded] = useState(false);
@@ -87,6 +88,8 @@ const ListScreen = ({
   const sortOptions = sortOptionsList(screenName);
   const [filterHints, setFilterHints] = useState({});
   const [ignoreContextSync, setIgnoreContextSync] = useState(false);
+  const initFiltersRef = useRef(false);
+  const overrideAppliedRef = useRef(false);
 
   const keyExtractor = (item, _) => `${screenName}-${getItemId(item)}`;
 
@@ -126,6 +129,7 @@ const ListScreen = ({
     tabsMode,
     extraFilters,
     locationCoords,
+    enabled: sortReady && filtersLoaded,
   });
 
   const rawItems = data?.pages.flatMap((page) => page.results) ?? [];
@@ -198,15 +202,17 @@ const ListScreen = ({
     if (key === "place") setPlace(null);
     if (key === "species") setSpecies(null);
 
-    setFilters((prev) => {
-      const newFilters = { ...prev };
-      newFilters[key] = undefined;
-      if (key === "territory") {
-        newFilters.place = undefined;
-        newFilters.species = undefined;
-      }
-      return newFilters;
-    });
+    if (!route.params?.filtersOverride && !overrideAppliedRef.current) {
+      setFilters((prev) => {
+        const newFilters = { ...prev };
+        newFilters[key] = undefined;
+        if (key === "territory") {
+          newFilters.place = undefined;
+          newFilters.species = undefined;
+        }
+        return newFilters;
+      });
+    }
   };
 
   const headerRight = useCallback(
@@ -233,14 +239,20 @@ const ListScreen = ({
 
   useEffect(() => {
     const initFilters = async () => {
-      if (route.params?.filtersOverride) {
+      if (route.params?.filtersOverride && !initFiltersRef.current) {
         const { speciesName, ...overrideFilters } =
           route.params.filtersOverride;
         setFilters(overrideFilters);
         setFilterHints({ speciesName });
         setIgnoreContextSync(true);
+
+        initFiltersRef.current = true;
+
         navigation.setParams({ filtersOverride: undefined });
-        setFiltersLoaded(true);
+        setSortReady(true);
+        setTimeout(() => {
+          setFiltersLoaded(true);
+        }, 0);
         return;
       }
 
@@ -251,9 +263,11 @@ const ListScreen = ({
       } = parseDeepLinkParams(route.params);
 
       if (hasParams) {
-        setFilters(deepFilters);
-        if (deepSort) setSort(deepSort);
+        overrideAppliedRef.current = true;
+        setFilters({ ...deepFilters });
         setIgnoreContextSync(true);
+        if (deepSort) setSort(deepSort);
+        setSortReady(true);
       } else {
         setFilters({
           territory: territory ?? null,
@@ -274,6 +288,9 @@ const ListScreen = ({
                   resolved)
               : resolved,
           );
+          setSortReady(true);
+        } else {
+          setSortReady(true);
         }
       }
 
@@ -284,6 +301,7 @@ const ListScreen = ({
 
   useFocusEffect(
     useCallback(() => {
+      if (route.params?.filtersOverride) return;
       if (!filtersLoaded) return;
 
       const { placeId, territoryId } = route.params ?? {};

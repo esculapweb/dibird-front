@@ -1,6 +1,5 @@
 import React from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
-// import { useActionSheet } from "@expo/react-native-action-sheet";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
@@ -17,7 +16,6 @@ const PlaceCard = React.memo(({ item, index }) => {
   const styles = useStyles(Colors);
   const { t } = useTranslation();
   const navigation = useNavigation();
-  // const { showActionSheetWithOptions } = useActionSheet();
 
   const territoryText = item.territory_data
     ? isoToFlagEmoji(item.territory_data.code)
@@ -27,33 +25,6 @@ const PlaceCard = React.memo(({ item, index }) => {
 
   const handlePlacePress = () => {
     navigation.navigate("PlaceDetail", { placeId: item.id });
-
-    // const options = [
-    //   t("place_details"),
-    //   t("all_observations"),
-    //   t("all_diaries"),
-    //   t("cancel"),
-    // ];
-
-    // const cancelButtonIndex = 3;
-
-    // showActionSheetWithOptions(
-    //   {
-    //     options,
-    //     cancelButtonIndex,
-    //   },
-    //   (buttonIndex) => {
-    //     if (buttonIndex === 0) {
-    //       navigation.navigate("PlaceDetail", { place: item });
-    //     }
-    //     if (buttonIndex === 1) {
-    //       // navigation.navigate("Observations", { placeId: item.id });
-    //     }
-    //     if (buttonIndex === 2) {
-    //       // navigation.navigate("Diaries", { placeId: item.id });
-    //     }
-    //   },
-    // );
   };
 
   return (
@@ -98,10 +69,7 @@ const PlaceCard = React.memo(({ item, index }) => {
 
           <View style={styles.statsBlock}>
             {/* <StatItem icon="book-outline" txt={item.diary_count} /> */}
-            <StatItem
-              icon="binoculars"
-              txt={item.observation_count}
-            />
+            <StatItem icon="binoculars" txt={item.observation_count} />
             <StatItem txt={item.species_count}>
               <BirdSVG size={16} color={Colors.textMain} />
             </StatItem>

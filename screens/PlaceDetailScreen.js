@@ -13,6 +13,7 @@ import IconsHeader from "../components/ui/IconsHeader";
 
 import { useItem, useUpdateItem, useDeleteItem } from "../hooks/useItem";
 import { showError } from "../services/api";
+import { useFilters } from "../store/filters-context";
 
 const PlaceDetailScreen = ({ route, navigation }) => {
   const { placeId } = route.params;
@@ -30,8 +31,8 @@ const PlaceDetailScreen = ({ route, navigation }) => {
   const deleteMutation = useDeleteItem(type);
   const { Colors } = useTheme();
   const { t } = useTranslation();
-
   const styles = stylesFn(Colors);
+  const { date } = useFilters();
 
   const handleFavourite = useCallback(() => {
     if (!place) return;
@@ -97,31 +98,35 @@ const PlaceDetailScreen = ({ route, navigation }) => {
     );
   }, [place, placeId, deleteMutation, navigation]);
 
+  const filtersOverride = useMemo(() => {
+    if (!place) return null;
+    return {
+      territory: place.territory,
+      place: placeId,
+      date: date ?? null,
+    };
+  }, [place, placeId, date]);
+
   const handleObservationsPress = useCallback(() => {
-    if (place)
+    if (place && filtersOverride)
       navigation.push("Observations", {
-        placeId,
-        territoryId: place.territory,
+        filtersOverride,
       });
-  }, [place, navigation]);
+  }, [place, filtersOverride, navigation]);
 
   const handleSpeciesPress = useCallback(() => {
-    if (place) {
+    if (place && filtersOverride)
       navigation.push("Stat", {
-        placeId,
-        territoryId: place.territory,
+        filtersOverride,
       });
-    }
-  }, [place, navigation]);
+  }, [place, filtersOverride, navigation]);
 
   const handleDiariesPress = useCallback(() => {
-    if (place) {
+    if (place && filtersOverride)
       navigation.push("Diaries", {
-        placeId,
-        territoryId: place.territory,
+        filtersOverride,
       });
-    }
-  }, [place, navigation]);
+  }, [place, filtersOverride, navigation]);
 
   useLayoutEffect(() => {
     if (!place) return;
@@ -187,7 +192,6 @@ const PlaceDetailScreen = ({ route, navigation }) => {
               />
             </View>
 
-            {/* META */}
             <View style={[styles.meta, styles.metaBorder]}>
               <Text style={styles.metaText}>
                 {t("created")}: {formatDateTime(place.created_at)}
