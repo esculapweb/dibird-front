@@ -194,7 +194,7 @@ const StatScreen = ({ route, navigation }) => {
       Toast.show({
         type: "info",
         text1: t("profile_private"),
-        text2: t("profile_private_share_hint"),
+        text2: t("profile_private_share_hint_stat"),
       });
       return;
     }

@@ -34,11 +34,14 @@ const RatingsCompareScreen = ({ route, navigation }) => {
   );
 
   const handleShare = useCallback(async () => {
-    if (profile?.private) {
+    if (
+      profile?.private &&
+      [profile1, profile2].map(String).includes(String(profile?.user))
+    ) {
       Toast.show({
         type: "info",
         text1: t("profile_private"),
-        text2: t("profile_private_share_hint"),
+        text2: t("profile_private_share_hint_rating"),
       });
       return;
     }

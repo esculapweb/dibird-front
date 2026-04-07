@@ -148,7 +148,7 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
           style={{marginBottom: 12}}
         />
         <View style={styles.hairline} />
-        <Text style={styles.privacyLabel}>{t("new_observatoins_and_diaries")}</Text>
+        <Text style={styles.privacyLabel}>{t("new_observations_and_diaries")}</Text>
         <PrivacyToggle
           value={privateDiaries}
           onChange={setPrivateDiaries}
