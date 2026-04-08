@@ -43,6 +43,11 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
       return;
     }
 
+    if (newMode === "this_year") {
+      setDateFilter({ type: "this_year" });
+      return;
+    }
+
     if (newMode === "year") {
       setDateFilter({ type: "year", year: null });
       return;
@@ -80,13 +85,14 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
   return (
     <View style={styles.wrapper}>
       <RadioGroup
-        label={t("date")}
+        label={t("period")}
         value={mode}
         onChange={handleModeChange}
         direction="column"
         options={[
           { label: t("all_period"), value: "all" },
           { label: t("today"), value: "today" },
+          { label: t("this_year"), value: "this_year" },
           { label: t("whole_year"), value: "year" },
           { label: t("date_range"), value: "range" },
         ]}

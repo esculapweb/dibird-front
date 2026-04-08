@@ -60,6 +60,15 @@ export const buildDateParams = (date) => {
         date_time_min: toDateOnly(new Date()) + " 00:00:00",
         date_time_max: toDateOnly(new Date()) + " 23:59:59",
       };
+    case "this_year": {
+      const now = new Date();
+      const year = now.getFullYear();
+
+      return {
+        date_time_min: `${year}-01-01 00:00:00`,
+        date_time_max: `${year}-12-31 23:59:59`,
+      };
+    }
     case "year":
       return {
         date_time_min: `${date.year}-01-01 00:00:00`,

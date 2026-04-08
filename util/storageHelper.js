@@ -74,8 +74,7 @@ export const initGlobalFilters = async (profileTerritory) => {
 
   if (!savedDate)
     await saveGlobalDateFilter({
-      type: "year",
-      year: new Date().getFullYear(),
+      type: "this_year",
     });
 
   await AsyncStorage.setItem("filters_inited", "true");

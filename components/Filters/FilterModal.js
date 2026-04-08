@@ -48,6 +48,7 @@ const FilterModal = ({
     from: null,
     to: null,
     year: null,
+    this_year: null,
     today: null,
   };
 
@@ -135,7 +136,7 @@ const FilterModal = ({
   const isDateFilterActive = (d) => {
     if (!d) return false;
     if (d.mode === "any") return false;
-    return !!(d.from || d.to || d.year || d.type === "today");
+    return !!(d.from || d.to || d.year || d.type === "today" || d.type === "this_year");
   };
 
   const getNewFilters = () => {

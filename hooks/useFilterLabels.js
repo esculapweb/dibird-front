@@ -79,18 +79,21 @@ export const useFilterLabels = (effectiveTerritory, hints = {}) => {
 const formatDateFilter = (value, t) => {
   if (value.type === "range") {
     if (value.from && value.to)
-      return [t("date"), `${formatDate(value.from)} – ${formatDate(value.to)}`];
+      return [t("period"), `${formatDate(value.from)} – ${formatDate(value.to)}`];
 
     if (value.from)
-      return [t("date"), `${t("from")} ${formatDate(value.from)}`];
-    if (value.to) return [t("date"), `${t("to")} ${formatDate(value.to)}`];
+      return [t("period"), `${t("from")} ${formatDate(value.from)}`];
+    if (value.to) return [t("period"), `${t("to")} ${formatDate(value.to)}`];
   }
 
   if (value.type === "year" && value.year)
     return [t("year"), value.year.toString()];
 
   if (value.type === "today")
-    return [t("date"), t("today")];
+    return [t("period"), t("today")];
+
+  if (value.type === "this_year")
+    return [t("period"), t("this_year")];
 
   return "";
 };
