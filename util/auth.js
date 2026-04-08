@@ -50,11 +50,7 @@ export const Logout = async (onLogoutCallback) => {
     }
   } finally {
     clearTokens();
-    await AsyncStorage.removeItem("profile");
-    await AsyncStorage.removeItem("filters");
-    await AsyncStorage.removeItem("sorting");
-    await AsyncStorage.removeItem("global");
-
+    await AsyncStorage.multiRemove(["profile", "filters", "sorting", "global"]);
     if (typeof onLogoutCallback === "function") onLogoutCallback();
   }
 };

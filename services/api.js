@@ -7,6 +7,12 @@ import { Config } from "../constants/config";
 import { notifyTokenUpdate } from "./authService";
 import { canUseBiometrics } from "./bio";
 
+let onUnauthorizedCallback = null;
+
+export const setOnUnauthorized = (fn) => {
+  onUnauthorizedCallback = fn;
+};
+
 const API_ERROR = {
   TIMEOUT: "TIMEOUT",
   NETWORK: "NETWORK_ERROR",
@@ -236,6 +242,10 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (e) {
         await clearTokens();
+        const status = e?.response?.status;
+        if (status === 401 || status === 400) {
+          onUnauthorizedCallback?.();
+        }
         return Promise.reject(createTranslatedError(e));
       }
     }

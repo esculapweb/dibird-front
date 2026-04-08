@@ -94,12 +94,6 @@ export const ProfileProvider = ({ children }) => {
     return await saveProfile(data);
   }, []);
 
-  const resetProfile = useCallback(() => {
-    setProfile(null);
-    setError(null);
-    setIsTokenReady(false);
-  }, []);
-
   useEffect(() => {
     loadProfile();
   }, [loadProfile]);
@@ -108,11 +102,6 @@ export const ProfileProvider = ({ children }) => {
     const init = async () => {
       const token = await getAccessToken();
       setIsTokenReady(!!token);
-      // if (token) {
-      //   setIsTokenReady(true);
-      // } else {
-      //   setProfileLoading(false);
-      // }
     };
     init();
   }, []);
@@ -140,7 +129,6 @@ export const ProfileProvider = ({ children }) => {
         profileLoading,
         updateProfile,
         refreshProfile,
-        resetProfile,
         isTokenReady,
         error,
       }}

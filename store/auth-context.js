@@ -6,6 +6,13 @@ import { setOnTokenUpdate } from "../services/authService";
 import { canUseBiometrics } from "../services/bio";
 import { Logout } from "../util/auth";
 import i18n from "../services/i18n";
+import { setOnUnauthorized } from "../services/api";
+
+let onLogoutCallback = null;
+
+export const setOnLogout = (fn) => {
+  onLogoutCallback = fn;
+};
 
 export const AuthContext = createContext({
   token: "",
@@ -25,7 +32,10 @@ const AuthContextProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    await Logout(() => setAuthToken(null));
+    await Logout(() => {
+      setAuthToken(null);
+      onLogoutCallback?.();
+    });
   };
 
   useEffect(() => {
@@ -45,7 +55,7 @@ const AuthContextProvider = ({ children }) => {
 
   useEffect(() => {
     const unlockApp = async () => {
-      if (!await canUseBiometrics()) return;
+      if (!(await canUseBiometrics())) return;
 
       const res = await LocalAuthentication.authenticateAsync({
         promptMessage: i18n.t("unlock_message"),
@@ -63,6 +73,11 @@ const AuthContextProvider = ({ children }) => {
   useEffect(() => {
     setOnTokenUpdate(authenticate);
   }, []);
+
+  useEffect(() => {
+    setOnUnauthorized(logout);
+    return () => setOnUnauthorized(null);
+  }, [logout]);
 
   const value = {
     token: authToken,

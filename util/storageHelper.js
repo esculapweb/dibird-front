@@ -58,8 +58,7 @@ export const saveGlobalSpecies = (value) =>
 export const loadGlobalSpecies = () => loadItem(GLOBAL_KEY, "species");
 
 export const clearAllGlobalFilters = async () => {
-  await AsyncStorage.removeItem(GLOBAL_KEY);
-  await AsyncStorage.removeItem("filters_inited"); 
+  await AsyncStorage.multiRemove([GLOBAL_KEY, "filters_inited"]);
 };
 
 export const initGlobalFilters = async (profileTerritory) => {

@@ -5,7 +5,7 @@ import {
   DrawerItemList,
   DrawerItem,
 } from "@react-navigation/drawer";
-import { useContext } from "react";
+import { useContext, useEffect } from "react";
 import { View, StyleSheet, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
@@ -29,7 +29,7 @@ import RatingsCompareScreen from "../screens/RatingsCompareScreen";
 import UserStatScreen from "../screens/UserStatScreen";
 // import SettingsScreen from "../screens/SettingsScreen";
 
-import { AuthContext } from "../store/auth-context";
+import { AuthContext, setOnLogout } from "../store/auth-context";
 import { useProfile } from "../store/profile-context";
 import Avatar from "../components/Profile/Avatar";
 import LanguageSwitcher from "../components/Language/LanguageSwitcher";
@@ -42,9 +42,6 @@ const Drawer = createDrawerNavigator();
 
 const CustomDrawerContent = (props) => {
   const { logout } = useContext(AuthContext);
-  const { resetProfile } = useProfile();
-  const { resetFilters } = useFilters();
-  const queryClient = useQueryClient();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -59,11 +56,7 @@ const CustomDrawerContent = (props) => {
           text: t("logout"),
           style: "destructive",
           onPress: async () => {
-            resetProfile();
-            await resetFilters();
-            queryClient.clear();
             await logout();
-            props.navigation.closeDrawer?.();
           },
         },
       ],
@@ -164,6 +157,17 @@ const MainDrawer = () => {
 
 const AppNavigator = () => {
   const { t } = useTranslation();
+  const { resetFilters } = useFilters();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    setOnLogout(async () => {
+      await resetFilters();
+      queryClient.clear();
+    });
+
+    return () => setOnLogout(null);
+  }, [resetFilters, queryClient]);
 
   return (
     <Stack.Navigator>
@@ -304,7 +308,6 @@ const AppNavigator = () => {
           headerBackTitleVisible: false,
         }}
       />
-
     </Stack.Navigator>
   );
 };
