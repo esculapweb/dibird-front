@@ -93,7 +93,11 @@ export const buildShareUrl = (path, filters = null, sort = null) => {
 
   if (!filters && !sort) return base;
 
-  const params = buildDeepLinkParams(filters, sort);
+  const params = {
+    ...(buildDeepLinkParams(filters, sort) || {}),
+    share: 1,
+  };
+
   const query = new URLSearchParams(params).toString();
 
   return query ? `${base}?${query}` : base;
