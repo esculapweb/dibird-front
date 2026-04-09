@@ -105,6 +105,7 @@ const MainDrawer = () => {
       screenOptions={{
         drawerActiveTintColor: Colors.textOpposite,
         drawerActiveBackgroundColor: Colors.main100,
+        headerShown: false
       }}
     >
       <Drawer.Screen
@@ -127,6 +128,7 @@ const MainDrawer = () => {
         component={ProfileScreen}
         options={{
           title: t("profile"),
+          headerShown: true,
           drawerIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? "person-circle" : "person-circle-outline"}

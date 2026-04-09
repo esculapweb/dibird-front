@@ -6,7 +6,7 @@ export const LightNavigationTheme = {
     ...DefaultTheme.colors,
     primary: "#1E2A36",        
     background: "#F7F6F2",     
-    card: "#ffffff",            
+    card: "#F7F6F2",            
     text: "#1E2A36",            
     border: "#ced4da",          
     notification: "#f0c24b",   

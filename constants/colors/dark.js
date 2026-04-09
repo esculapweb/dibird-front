@@ -5,11 +5,11 @@ export const DarkColors = {
   overlayBg: "rgba(0,0,0,0.8)",
   overlay: "rgba(0,0,0,0.7)",
   mapOverlay: "rgba(0,0,0,0.25)",
+  mainProgressBg: "rgba(255,255,255,0.25)",
 
   textMain: "#e5e7eb",
   textMiddle: "#ced2d7",
   textSecondary: "#9ca3af",
-  textOnAccent: "#1F2937",
   textOpposite: "#1F2937",
 
   main100: "#F0C24B",

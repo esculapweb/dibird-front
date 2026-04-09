@@ -58,7 +58,7 @@ const IconsHeader = ({
 
 export default memo(IconsHeader);
 
-const stylesFn = () =>
+const stylesFn = (Colors) =>
   StyleSheet.create({
     headerButtons: {
       flexDirection: "row",

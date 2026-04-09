@@ -67,7 +67,7 @@ const stylesFn = (Colors) =>
       padding: 8,
       marginRight: 8,
       borderRadius: 16,
-      backgroundColor: Colors.primary100,
+      backgroundColor: Colors.backgroundMain,
     },
     icon: {
       marginRight: 16,

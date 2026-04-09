@@ -78,7 +78,7 @@ const stylesFn = (Colors) =>
       borderRadius: 16,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: Colors.primary100,
+      backgroundColor: Colors.backgroundMain,
     },
     icon: {
       marginRight: 16,

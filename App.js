@@ -60,7 +60,11 @@ const Root = () => {
 
   return (
     <>
-      <StatusBar style={theme === "dark" ? "light" : "dark"} />
+      <StatusBar
+        style={theme === "dark" ? "light" : "dark"}
+        translucent
+        backgroundColor="transparent"
+      />
       <ActionSheetProvider>
         <Navigation />
       </ActionSheetProvider>
