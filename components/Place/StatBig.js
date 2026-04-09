@@ -10,14 +10,15 @@ export const StatBig = ({ icon, value, label, onPress, bird }) => {
 
   return (
     <Pressable style={styles.container} onPress={onPress}>
+      
+      <Text style={styles.value}>{value}</Text>
       <View style={styles.iconWrapper}>
         {bird ? (
-          <BirdSVG size={28} color={Colors.textMain} />
+          <BirdSVG size={24} color={Colors.textMain} />
         ) : icon ? (
-          <Ionicons name={icon} size={28} color={Colors.textMain} />
+          <Ionicons name={icon} size={24} color={Colors.textMain} />
         ) : null}
       </View>
-      <Text style={styles.value}>{value}</Text>
       <Text style={styles.label}>{label}</Text>
     </Pressable>
   );
@@ -28,18 +29,16 @@ const makeStyles = (Colors) =>
     container: {
       alignItems: "center",
       marginHorizontal: 8,
+      gap: 8,
     },
     iconWrapper: {
-      width: 48,
-      height: 48,
       justifyContent: "center",
       alignItems: "center",
-      marginBottom: 4,
     },
     value: {
-      fontSize: 16,
+      fontSize: 24,
       fontWeight: "700",
-      color: Colors.textMain,
+      color: Colors.main100,
     },
     label: {
       fontSize: 12,

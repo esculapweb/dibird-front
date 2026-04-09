@@ -215,6 +215,6 @@ const stylesFn = (Colors) =>
       borderBottomWidth: 1,
       borderBottomColor: Colors.border,
     },
-    doneText: { fontSize: 15, fontWeight: "600", color: Colors.link },
+    doneText: { fontSize: 15, fontWeight: "600", color: Colors.main100 },
     picker: { alignSelf: "stretch" },
   });

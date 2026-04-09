@@ -162,7 +162,7 @@
                         <Ionicons
                           name={iconLabel}
                           size={14}
-                          color={Colors.accent}
+                          color={Colors.main100}
                         />
                       </View>
                     )}
@@ -198,7 +198,7 @@
                     style={styles.retryIcon}
                     hitSlop={12}
                   >
-                    <Ionicons name="refresh" size={18} color={Colors.link} />
+                    <Ionicons name="refresh" size={18} color={Colors.main100} />
                   </Pressable>
                 )}
 

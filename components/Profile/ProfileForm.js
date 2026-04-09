@@ -160,7 +160,6 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
           onPress={onSubmit}
           loading={loading}
           success={success}
-          bright
         >
           {t("save")}
         </AnimatedLoadingButton>
@@ -180,7 +179,7 @@ const stylesFn = (Colors) =>
       height: StyleSheet.hairlineWidth,
       backgroundColor: Colors.tabBorder,
       marginBottom: 12,
-      marginHorizontal: -24,
+      marginHorizontal: -12,
     },
     row: {
       flexDirection: "row",

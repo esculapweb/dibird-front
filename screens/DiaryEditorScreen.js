@@ -130,7 +130,7 @@ const DiaryEditorScreen = ({ navigation, route }) => {
         onPress: handleSaveDiary,
         icon: "checkmark-circle",
         size: 36,
-        tintColor: Colors.seenIcon,
+        tintColor: Colors.main100,
         disabled: isEditMode
           ? updateDiaryMutation.isPending
           : createDiaryMutation.isPending,
@@ -141,7 +141,7 @@ const DiaryEditorScreen = ({ navigation, route }) => {
       isEditMode,
       createDiaryMutation.isPending,
       updateDiaryMutation.isPending,
-      Colors.seenIcon,
+      Colors.main100,
     ],
   );
 
@@ -152,7 +152,7 @@ const DiaryEditorScreen = ({ navigation, route }) => {
   const headerRightKey = useMemo(
     () =>
       headerRightBeginning
-        ?.map((btn) => `${btn.icon}-${btn.disabled}-${btn.loading}`)
+        ?.map((btn) => `${btn.icon}-${btn.disabled}-${btn.loading}-${Colors.main100}`)
         .join("|"),
     [headerRightBeginning],
   );

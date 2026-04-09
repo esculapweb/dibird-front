@@ -49,7 +49,7 @@ const stylesFn = (Colors, size, borderRadius) =>
       width: size,
       height: size,
       borderRadius,
-      backgroundColor: Colors.primary500,
+      backgroundColor: Colors.textMain,
       justifyContent: "center",
       alignItems: "center",
     },

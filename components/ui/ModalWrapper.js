@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import IconButton from "./IconButton";
 
-const ICON_SIZE = 28;
+const ICON_SIZE = 18;
 const BUTTON_SIZE = 36;
 
 const ModalWrapper = ({
@@ -36,7 +36,7 @@ const ModalWrapper = ({
               onPress={onClose}
               icon="close-circle"
               size={BUTTON_SIZE}
-              tintColor={Colors.textSecondary}
+              tintColor={Colors.radioBorder}
             />
 
             <Text style={styles.title} numberOfLines={1}>
@@ -44,11 +44,12 @@ const ModalWrapper = ({
             </Text>
 
             {showSortIcon && onSort && (
-              <IconButton
+              <View style={styles.sortWrapper}><IconButton
                 onPress={onSort}
                 icon="swap-vertical"
                 size={ICON_SIZE}
-              />
+                tintColor={Colors.textSecondary}
+              /></View>
             )}
 
             {onApply && (
@@ -56,7 +57,7 @@ const ModalWrapper = ({
                 onPress={onApply}
                 icon="checkmark-circle"
                 size={BUTTON_SIZE}
-                tintColor={Colors.seenIcon}
+                tintColor={Colors.main100}
               />
             )}
           </View>
@@ -92,4 +93,13 @@ const stylesFn = (Colors) =>
       fontWeight: "600",
       color: Colors.textMain,
     },
+    sortWrapper: {
+      borderWidth: 1,
+      borderColor: Colors.textSecondary,
+      borderRadius: 14,
+      width: 28,
+      height: 28,
+      alignItems: 'center',
+      justifyContent: 'center',
+    }
   });

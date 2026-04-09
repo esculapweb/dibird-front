@@ -37,7 +37,7 @@ const PlaceCard = React.memo(({ item, index }) => {
           <View style={styles.titleLeft}>
             <Text style={styles.index}>{index + 1}.</Text>
             {item.favourite && (
-              <Ionicons name="star" size={18} color={Colors.accent} />
+              <Ionicons name="heart" size={18} color={Colors.main100} />
             )}
             <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
               {item.name}
@@ -157,7 +157,7 @@ const stylesFn = (Colors) =>
 
     distance: {
       fontSize: 12,
-      color: Colors.link,
+      color: Colors.main100,
       marginRight: 8,
     },
   });

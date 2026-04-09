@@ -45,7 +45,7 @@ const SpeciesDropdown = ({
     if (query.isError)
       return (
         <View style={[styles.image, styles.imageEmpty]}>
-          <Ionicons name="refresh" size={32} color={Colors.link} />
+          <Ionicons name="refresh" size={32} color={Colors.main100} />
         </View>
       );
 

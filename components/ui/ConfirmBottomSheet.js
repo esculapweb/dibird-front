@@ -28,26 +28,6 @@ const ConfirmBottomSheet = forwardRef(
     const snapPoints = useMemo(() => ["35%"], []);
     const [data, setData] = useState(null);
 
-    const TYPE_CONFIG = {
-      danger: {
-        icon: "close-circle",
-      },
-      warning: {
-        icon: "warning",
-      },
-      success: {
-        icon: "checkmark-circle",
-      },
-    };
-
-    const colorMap = {
-      danger: Colors.error500,
-      warning: Colors.buttonBrightBg,
-      success: Colors.seenIcon,
-    };
-
-    const color = colorMap[type];
-
     const present = (payload) => {
       setData(payload);
       bottomSheetRef.current?.present();
@@ -66,8 +46,6 @@ const ConfirmBottomSheet = forwardRef(
       dismiss();
       onConfirm?.(data);
     };
-
-    const config = TYPE_CONFIG[type];
 
     return (
       <BottomSheetModal
@@ -95,10 +73,7 @@ const ConfirmBottomSheet = forwardRef(
               : description}
           </Text>
 
-          <Pressable
-            style={[styles.primaryButton, { backgroundColor: color }]}
-            onPress={handleConfirm}
-          >
+          <Pressable style={[styles.primaryButton]} onPress={handleConfirm}>
             <Text style={styles.primaryText}>{confirmText}</Text>
           </Pressable>
 
@@ -145,9 +120,10 @@ const stylesFn = (Colors) =>
       padding: 14,
       borderRadius: 10,
       alignItems: "center",
+      backgroundColor: Colors.main100,
     },
     primaryText: {
-      color: Colors.buttonBrightColor,
+      color: Colors.textOpposite,
       fontWeight: "600",
     },
     secondaryButton: {

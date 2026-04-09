@@ -84,7 +84,7 @@ const RatingCard = ({ item, index, isSelected, onToggle, profile }) => {
           <Ionicons
             name={isSelected ? "checkbox" : "square-outline"}
             size={28}
-            color={isSelected ? Colors.tabActiveColor : Colors.textSecondary}
+            color={isSelected ? Colors.main100 : Colors.textSecondary}
           />
         </Pressable>
       </View>
@@ -102,7 +102,7 @@ const stylesFn = (Colors) =>
       padding: 7,
       marginBottom: 4,
       shadowColor: Colors.shadow,
-      shadowOpacity: 0.2,
+      shadowOpacity: 0.1,
       shadowRadius: 4,
       shadowOffset: { width: 0, height: 2 },
       elevation: 2,
@@ -115,7 +115,8 @@ const stylesFn = (Colors) =>
     },
 
     selectedCard: {
-      borderColor: Colors.tabActiveColor,
+      backgroundColor: Colors.main300,
+      borderColor: Colors.main100,
     },
 
     row: {

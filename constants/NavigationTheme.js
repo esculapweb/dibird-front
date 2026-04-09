@@ -4,10 +4,10 @@ export const LightNavigationTheme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    primary: "#1f2937",        
-    background: "#f0f0f0",     
+    primary: "#1E2A36",        
+    background: "#F7F6F2",     
     card: "#ffffff",            
-    text: "#1f2937",            
+    text: "#1E2A36",            
     border: "#ced4da",          
     notification: "#f0c24b",   
   },
@@ -22,6 +22,6 @@ export const DarkNavigationTheme = {
     card: "#121212",
     text: "#e5e7eb",
     border: "#374151",
-    notification: "#1e293b",
+    notification: "#F0C24B",
   },
 };

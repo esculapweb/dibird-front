@@ -29,7 +29,7 @@ const SpeciesOptionRow = ({
         styles.item,
         isActive && styles.itemActive,
         disabled && styles.itemDisabled,
-        pressed && { backgroundColor: Colors.primary300 },
+        pressed && styles.itemPressed,
       ]}
     >
       <View style={[styles.row, disabled && { opacity: 0.4 }]}>
@@ -70,7 +70,7 @@ const SpeciesOptionRow = ({
           <Ionicons
             name="eye-outline"
             size={18}
-            color={Colors.seenIcon}
+            color={Colors.main100}
             style={styles.eyeIcon}
           />
         )}
@@ -90,13 +90,12 @@ const stylesFn = (Colors, itemHeight) =>
       backgroundColor: Colors.primary100,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: Colors.border,
-      borderBottomColor: Colors.border,
       borderLeftWidth: 4,
       borderLeftColor: "transparent",
     },
 
     itemPressed: {
-      backgroundColor: Colors.primary200,
+      backgroundColor: Colors.main300,
     },
 
     row: {
@@ -149,12 +148,12 @@ const stylesFn = (Colors, itemHeight) =>
     },
 
     itemActive: {
-      borderLeftColor: Colors.mainTextDate,
-      backgroundColor: Colors.primary200,
+      borderLeftColor: Colors.main100,
+      backgroundColor: Colors.main300, 
     },
     labelActive: {
       fontWeight: "600",
-      color: Colors.primary500,
+      color: Colors.main100,
     },
     itemDisabled: {
       borderLeftColor: "transparent",

@@ -79,7 +79,7 @@ const CustomDrawerContent = (props) => {
         <ThemeSwitcher />
         <DrawerItem
           label={t("logout")}
-          labelStyle={{ color: Colors.primary500 }}
+          labelStyle={{ color: Colors.textMain }}
           onPress={handleLogout}
           style={styles.logout}
           icon={({ color, size }) => (
@@ -103,8 +103,8 @@ const MainDrawer = () => {
     <Drawer.Navigator
       drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={{
-        drawerActiveTintColor: Colors.primary500,
-        drawerActiveBackgroundColor: Colors.primary200,
+        drawerActiveTintColor: Colors.textOpposite,
+        drawerActiveBackgroundColor: Colors.main100,
       }}
     >
       <Drawer.Screen

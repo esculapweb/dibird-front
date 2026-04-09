@@ -235,7 +235,7 @@ const PlaceEditorScreen = ({ navigation, route }) => {
         onPress: handleSavePlace,
         icon: "checkmark-circle",
         size: 36,
-        tintColor: Colors.seenIcon,
+        tintColor: Colors.main100,
         disabled:
           isLocating ||
           (isEditMode
@@ -249,7 +249,7 @@ const PlaceEditorScreen = ({ navigation, route }) => {
       isEditMode,
       createPlaceMutation.isPending,
       updatePlaceMutation.isPending,
-      Colors.seenIcon,
+      Colors.main100,
     ],
   );
 
@@ -260,7 +260,7 @@ const PlaceEditorScreen = ({ navigation, route }) => {
   const headerRightKey = useMemo(
     () =>
       headerRightBeginning
-        ?.map((btn) => `${btn.icon}-${btn.disabled}-${btn.loading}`)
+        ?.map((btn) => `${btn.icon}-${btn.disabled}-${btn.loading}-${Colors.main100}`)
         .join("|"),
     [headerRightBeginning],
   );

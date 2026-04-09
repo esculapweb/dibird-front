@@ -218,7 +218,7 @@ const DateInput = ({
               <Ionicons
                 name="today-outline"
                 size={14}
-                color={Colors.textMain}
+                color={Colors.main100}
               />
               <Text style={styles.todayText}>{t("today")}</Text>
             </Pressable>
@@ -228,7 +228,6 @@ const DateInput = ({
             </Pressable>
           </View>
 
-          {/* Пикер читает tempDate — не сбрасывается при обновлении value снаружи */}
           <DateTimePicker
             value={tempDate}
             mode="date"
@@ -303,10 +302,10 @@ const stylesFn = (Colors) =>
       paddingVertical: 4,
       paddingHorizontal: 10,
       borderRadius: 6,
-      backgroundColor: Colors.primary200,
+      backgroundColor: Colors.main300,
     },
     todayBtnPressed: { opacity: 0.7 },
-    todayText: { fontSize: 13, fontWeight: "500", color: Colors.textMain },
-    doneText: { fontSize: 15, fontWeight: "600", color: Colors.link },
+    todayText: { fontSize: 13, fontWeight: "500", color: Colors.main100 },
+    doneText: { fontSize: 15, fontWeight: "600", color: Colors.main100 },
     picker: { alignSelf: "stretch" },
   });

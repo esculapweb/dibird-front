@@ -12,136 +12,141 @@ import { BirdSVG } from "../ui/Svgs";
 
 const useStyles = (Colors) => React.useMemo(() => stylesFn(Colors), [Colors]);
 
-const StatCard = React.memo(({ item, index, seenMode, onPress, personal=false }) => {
-  const { t } = useTranslation();
-  const { Colors } = useTheme();
-  const styles = useStyles(Colors);
+const StatCard = React.memo(
+  ({ item, index, seenMode, onPress, personal = false }) => {
+    const { t } = useTranslation();
+    const { Colors } = useTheme();
+    const styles = useStyles(Colors);
 
-  const isSeen = item.seen;
-  const isAllMode = seenMode === "all";
-  const showSmallImage = !isSeen && seenMode === "unseen";
+    const isSeen = item.seen;
+    const isAllMode = seenMode === "all";
+    const showSmallImage = !isSeen && seenMode === "unseen";
 
-  const minDate = item?.min_date && formatDate(item.min_date);
-  const maxDate = item?.max_date && formatDate(item.max_date);
+    const minDate = item?.min_date && formatDate(item.min_date);
+    const maxDate = item?.max_date && formatDate(item.max_date);
 
-  const dateText =
-    minDate && maxDate && minDate !== maxDate
-      ? `${minDate} – ${maxDate}`
-      : minDate || maxDate;
+    const dateText =
+      minDate && maxDate && minDate !== maxDate
+        ? `${minDate} – ${maxDate}`
+        : minDate || maxDate;
 
-  const countriesText = item?.min_territory
-    ? `${isoToFlagEmoji(item.min_territory)}${
-        item?.max_territory && item.max_territory !== item.min_territory
-          ? isoToFlagEmoji(item.max_territory)
-          : ""
-      }${item?.qty_countries > 2 ? ` +${item.qty_countries - 2}` : ""}`
-    : null;
+    const countriesText = item?.min_territory
+      ? `${isoToFlagEmoji(item.min_territory)}${
+          item?.max_territory && item.max_territory !== item.min_territory
+            ? isoToFlagEmoji(item.max_territory)
+            : ""
+        }${item?.qty_countries > 2 ? ` +${item.qty_countries - 2}` : ""}`
+      : null;
 
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.card,
-        !isSeen && styles.cardUnseen,
-        pressed && styles.pressedCard,
-      ]}
-    >
-      <View style={styles.row}>
-        <View
-          style={[
-            styles.imageWrapper,
-            showSmallImage && styles.imageWrapperSmall,
-          ]}
-        >
-          {item.sp_thumb ? (
-            <Image
-              source={{ uri: `${Config.mediaUrl}/${item.sp_thumb}` }}
-              style={[styles.image, showSmallImage && styles.imageSmall]}
-              contentFit="cover"
-              cachePolicy="disk"
-            />
-          ) : (
-            <View
-              style={[
-                styles.imagePlaceholder,
-                showSmallImage && styles.imageSmall,
-              ]}
-            >
-              <BirdSVG size={26} color={Colors.textSecondary} />
-            </View>
-          )}
-        </View>
-
-        <View style={styles.content}>
-          <View style={styles.titleLeft}>
-            <Text style={styles.index}>{index + 1}.</Text>
-            <Text
-              style={[styles.title, isAllMode && !isSeen && styles.titleUnseen]}
-            >
-              {item.sp_name_lang}
-            </Text>
-            {!isSeen && !isAllMode && (
-              <Ionicons
-                name="eye-off-outline"
-                size={13}
-                color={Colors.textSecondary}
-                style={{ marginLeft: 2 }}
+    return (
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.card,
+          !isSeen && styles.cardUnseen,
+          pressed && styles.pressedCard,
+        ]}
+      >
+        <View style={styles.row}>
+          <View
+            style={[
+              styles.imageWrapper,
+              showSmallImage && styles.imageWrapperSmall,
+            ]}
+          >
+            {item.sp_thumb ? (
+              <Image
+                source={{ uri: `${Config.mediaUrl}/${item.sp_thumb}` }}
+                style={[styles.image, showSmallImage && styles.imageSmall]}
+                contentFit="cover"
+                cachePolicy="disk"
               />
-            )}
-          </View>
-
-          <View style={styles.latinRow}>
-            <Text style={[styles.latin, !isSeen && styles.latinUnseen]}>
-              {item.sp_latin}
-            </Text>
-            {isSeen && countriesText && (
-              <Text style={styles.flags}>{countriesText}</Text>
-            )}
-          </View>
-
-          {isSeen && (
-            <View style={styles.meta}>
-              <View style={styles.metaLeft}>
-                <MetaItem icon="calendar-outline" text={dateText} />
+            ) : (
+              <View
+                style={[
+                  styles.imagePlaceholder,
+                  showSmallImage && styles.imageSmall,
+                ]}
+              >
+                <BirdSVG size={26} color={Colors.textSecondary} />
               </View>
-              <View style={styles.metaRight}>
-                <View style={styles.seenBadge}>
-                  <Ionicons
-                    name="eye-outline"
-                    size={11}
-                    color={Colors.seenIcon}
-                  />
-                  <Text style={styles.seenBadgeText}>
-                    {item.qty_observations}
-                  </Text>
+            )}
+          </View>
+
+          <View style={styles.content}>
+            <View style={styles.titleLeft}>
+              <Text style={styles.index}>{index + 1}.</Text>
+              <Text
+                style={[
+                  styles.title,
+                  isAllMode && !isSeen && styles.titleUnseen,
+                ]}
+              >
+                {item.sp_name_lang}
+              </Text>
+              {!isSeen && !isAllMode && (
+                <Ionicons
+                  name="eye-off-outline"
+                  size={13}
+                  color={Colors.textSecondary}
+                  style={{ marginLeft: 2 }}
+                />
+              )}
+            </View>
+
+            <View style={styles.latinRow}>
+              <Text style={[styles.latin, !isSeen && styles.latinUnseen]}>
+                {item.sp_latin}
+              </Text>
+              {isSeen && countriesText && (
+                <Text style={styles.flags}>{countriesText}</Text>
+              )}
+            </View>
+
+            {isSeen && (
+              <View style={styles.meta}>
+                <View style={styles.metaLeft}>
+                  <MetaItem icon="calendar-outline" text={dateText} />
+                </View>
+                <View style={styles.metaRight}>
+                  <View style={styles.seenBadge}>
+                    <Ionicons
+                      name="eye-outline"
+                      size={11}
+                      color={Colors.main100}
+                    />
+                    <Text style={styles.seenBadgeText}>
+                      {item.qty_observations}
+                    </Text>
+                  </View>
                 </View>
               </View>
-            </View>
-          )}
-          {!isSeen && isAllMode && (
-            <View style={styles.unseenMeta}>
+            )}
+            {!isSeen && isAllMode && (
+              <View style={styles.unseenMeta}>
+                <Ionicons
+                  name="eye-off-outline"
+                  size={12}
+                  color={Colors.textSecondary}
+                />
+                <Text style={styles.unseenHint}>{t("not_observed_yet")}</Text>
+              </View>
+            )}
+          </View>
+          {!isSeen && personal && (
+            <View style={styles.addIcon}>
               <Ionicons
-                name="eye-off-outline"
-                size={12}
+                name="add-circle-outline"
+                size={24}
                 color={Colors.textSecondary}
               />
-              <Text style={styles.unseenHint}>{t("not_observed_yet")}</Text>
             </View>
           )}
         </View>
-        {!isSeen && personal && (
-          <View style={styles.addIcon}>
-            <Ionicons
-              name="add-circle-outline"
-              size={20}
-              color={Colors.textSecondary}
-            />
-          </View>
-        )}
-      </View>
-    </Pressable>
-  );
-});
+      </Pressable>
+    );
+  },
+);
 
 export default StatCard;
 
@@ -157,6 +162,9 @@ const stylesFn = (Colors) =>
       shadowRadius: 4,
       shadowOffset: { width: 0, height: 2 },
       elevation: 2,
+    },
+    cardUnseen: {
+      backgroundColor: Colors.backgroundMain,
     },
 
     pressedCard: {
@@ -273,7 +281,7 @@ const stylesFn = (Colors) =>
     seenBadge: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: Colors.seenBadgeBg,
+      backgroundColor: Colors.main300,
       paddingHorizontal: 5,
       paddingVertical: 2,
       borderRadius: 10,
@@ -284,19 +292,16 @@ const stylesFn = (Colors) =>
       marginLeft: 2,
       fontSize: 11,
       fontWeight: "600",
-      color: Colors.seenIcon,
+      color: Colors.main100,
     },
     titleUnseen: {
-      color: Colors.textSecondary,
+      color: Colors.textMiddle,
     },
 
     latinUnseen: {
       color: Colors.statIcon,
     },
 
-    cardUnseen: {
-      backgroundColor: Colors.unseenCardBg,
-    },
     addIcon: {
       justifyContent: "center",
       alignSelf: "stretch",

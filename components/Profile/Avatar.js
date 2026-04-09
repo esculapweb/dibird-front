@@ -165,7 +165,7 @@ const Avatar = () => {
 
         {!loading && (
           <View style={styles.plusWrapper}>
-            <Ionicons name="pencil" size={16} color={Colors.primary500} />
+            <Ionicons name="pencil" size={16} color={Colors.textMain} />
           </View>
         )}
       </Pressable>
@@ -193,7 +193,7 @@ const stylesFn = (Colors) =>
       width: AVATAR_SIZE,
       height: AVATAR_SIZE,
       borderRadius: AVATAR_SIZE / 2,
-      backgroundColor: Colors.primary500,
+      backgroundColor: Colors.textMain,
       justifyContent: "center",
       alignItems: "center",
     },
@@ -224,6 +224,6 @@ const stylesFn = (Colors) =>
       marginTop: 8,
       textAlign: "center",
       fontSize: 12,
-      color: Colors.primary500,
+      color: Colors.textMain,
     },
   });

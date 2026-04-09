@@ -3,12 +3,15 @@ import { View, Image, Animated, StyleSheet } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
+import { useTheme } from "../../store/theme-context";
 
 SplashScreen.preventAutoHideAsync();
 
 const CustomSplash = ({ onFinish }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const { t } = useTranslation();
+  const {Colors} = useTheme();
+  const styles = stylesFn(Colors);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -24,7 +27,7 @@ const CustomSplash = ({ onFinish }) => {
   return (
     <View style={styles.container}>
       <Image
-        source={require("../../assets/splash.png")}
+        source={require("../../assets/splash-icon.png")}
         style={styles.logo}
         resizeMode="contain"
       />
@@ -39,16 +42,15 @@ const CustomSplash = ({ onFinish }) => {
 
 export default CustomSplash;
 
-const styles = StyleSheet.create({
+const stylesFn = (Colors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: Colors.primary100,
     justifyContent: "center",
     alignItems: "center",
   },
   logo: {
-    width: "50%",
-    maxWidth: 400,
+    maxWidth: "40%",
     aspectRatio: 1,
   },
   bottomContainer: {
@@ -60,7 +62,7 @@ const styles = StyleSheet.create({
   },
   bottomText: {
     fontSize: 16,
-    color: "#555",
+    color: Colors.textSecondary,
     textAlign: "center",
   },
 });

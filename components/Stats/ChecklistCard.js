@@ -47,7 +47,7 @@ const ChecklistCard = React.memo(({ item, index, seenMode, onPress }) => {
                 <Ionicons
                   name="checkmark"
                   size={10}
-                  color={Colors.tabActiveColor}
+                  color={Colors.main100}
                 />
                 <Text style={styles.doneBadgeText}>{t("all")}</Text>
               </View>
@@ -104,7 +104,7 @@ const ChecklistCard = React.memo(({ item, index, seenMode, onPress }) => {
                   <Ionicons
                     name="checkmark"
                     size={10}
-                    color={Colors.tabActiveColor}
+                    color={Colors.main100}
                   />
                   <Text style={styles.doneBadgeText}>{t("all")}</Text>
                 </View>
@@ -176,7 +176,7 @@ const ChecklistCard = React.memo(({ item, index, seenMode, onPress }) => {
           <Ionicons
             name={isSeen ? "checkbox" : "square-outline"}
             size={28}
-            color={isSeen ? Colors.tabActiveColor : Colors.textSecondary}
+            color={isSeen ? Colors.main100 : Colors.textSecondary}
           />
         </View>
       </View>
@@ -204,7 +204,7 @@ const stylesFn = (Colors) =>
       opacity: 0.85,
     },
     cardUnseen: {
-      backgroundColor: Colors.unseenCardBg,
+      backgroundColor: Colors.backgroundMain,
     },
     row: {
       flexDirection: "row",
@@ -352,10 +352,10 @@ const stylesFn = (Colors) =>
     progressFill: {
       height: "100%",
       borderRadius: 2,
-      backgroundColor: Colors.tabActiveColor,
+      backgroundColor: Colors.main100,
     },
     progressFillComplete: {
-      backgroundColor: Colors.tabActiveColor,
+      backgroundColor: Colors.main100,
     },
 
     doneBadge: {

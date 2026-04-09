@@ -84,7 +84,7 @@ const ItemsList = ({
 
       {onAdd && (
         <Pressable style={styles.fab} onPress={onAdd}>
-          <Ionicons name={fabIcon} size={28} color={Colors.buttonBrightColor} />
+          <Ionicons name={fabIcon} size={28} color={Colors.textOpposite} />
         </Pressable>
       )}
     </>
@@ -105,7 +105,7 @@ const stylesFn = (Colors, fabOffset) =>
       borderRadius: 28,
       justifyContent: "center",
       alignItems: "center",
-      backgroundColor: Colors.buttonBrightBg,
+      backgroundColor: Colors.main100,
       shadowColor: Colors.shadow,
       shadowOpacity: 0.3,
       shadowRadius: 6,

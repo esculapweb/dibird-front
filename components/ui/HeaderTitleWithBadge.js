@@ -41,7 +41,7 @@ const stylesFn = (Colors) =>
       paddingHorizontal: 5,
       backgroundColor: Colors.primary100,
       borderWidth: 1,
-      borderColor: Colors.tabActiveColor, 
+      borderColor: Colors.main100, 
     },
     badgeText: {
       color: Colors.textMain,

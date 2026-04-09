@@ -30,11 +30,11 @@ const DefaultOptionRow = ({
     >
       <View style={styles.row}>
         <View style={styles.left}>
-          {item.iconLabel && (
+           {item.iconLabel && (
             <Ionicons
               name={item.iconLabel}
               size={16}
-              color={Colors.accent}
+              color={Colors.main100}
               style={styles.icon}
             />
           )}
@@ -48,6 +48,15 @@ const DefaultOptionRow = ({
         >
           {item.label}
         </Text>
+
+        {item.iconLabelRight && (
+          <Ionicons
+            name={item.iconLabelRight}
+            size={16}
+            color={Colors.main100}
+            style={styles.iconLabelRight}
+          />
+        )}
 
         {item.distance != null && (
           <Text style={styles.distance}>
@@ -78,7 +87,7 @@ const stylesFn = (Colors, itemHeight) =>
     },
 
     itemPressed: {
-      backgroundColor: Colors.primary200,
+      backgroundColor: Colors.main300,
     },
     row: {
       flexDirection: "row",
@@ -95,22 +104,26 @@ const stylesFn = (Colors, itemHeight) =>
       color: Colors.textMain,
       paddingRight: 6,
     },
- 
+
     icon: {
       fontSize: 18,
       marginRight: 6,
     },
     distance: {
       fontSize: 12,
-      color: Colors.link,
+      color: Colors.main100,
       marginRight: 8,
     },
     itemActive: {
-      borderLeftColor: Colors.mainTextDate,
-      backgroundColor: Colors.primary200, 
+      borderLeftColor: Colors.main100,
+      backgroundColor: Colors.main300,
     },
     labelActive: {
       fontWeight: "600",
-      color: Colors.primary500,
+      color: Colors.main100,
+    },
+    iconLabelRight: {
+      marginLeft: 8,
+      marginRight: 2,
     },
   });

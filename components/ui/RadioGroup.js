@@ -86,13 +86,13 @@ const stylesFn = (Colors) =>
       marginRight: 6,
     },
     outerChecked: {
-      borderColor: Colors.radioChecked,
+      borderColor: Colors.main100,
     },
     inner: {
       width: 10,
       height: 10,
       borderRadius: 5,
-      backgroundColor: Colors.radioChecked,
+      backgroundColor: Colors.main100,
     },
     label: {
       fontSize: 16,

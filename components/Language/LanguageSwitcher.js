@@ -18,19 +18,28 @@ const LanguageSwitcher = () => {
         <Text style={styles.title}>{t("language")}:</Text>
       </View>
       <View style={styles.buttonsRight}>
-        {["en", "ru"].map((lang) => (
-          <Pressable
-            key={lang}
-            onPress={() => changeLanguage(lang)}
-            style={({ pressed }) => [
-              styles.button,
-              language === lang && { backgroundColor: Colors.primary200 },
-              pressed && styles.pressed,
-            ]}
-          >
-            <Text style={styles.buttonText}>{lang.toUpperCase()}</Text>
-          </Pressable>
-        ))}
+        {["en", "ru"].map((lang) => {
+          const isSelected = language === lang;
+          return (
+            <Pressable
+              key={lang}
+              onPress={() => changeLanguage(lang)}
+              style={({ pressed }) => [
+                styles.button,
+                isSelected && { backgroundColor: Colors.main100 },
+                pressed && styles.pressed,
+              ]}
+            >
+              <Text
+                style={{
+                  color: isSelected ? Colors.textOpposite : Colors.textMain,
+                }}
+              >
+                {lang.toUpperCase()}
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
     </View>
   );
@@ -59,9 +68,6 @@ const stylesFn = (Colors) =>
       marginRight: 8,
       borderRadius: 16,
       backgroundColor: Colors.primary100,
-    },
-    buttonText: {
-      color: Colors.textMain,
     },
     icon: {
       marginRight: 16,

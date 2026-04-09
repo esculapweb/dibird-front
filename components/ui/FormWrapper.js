@@ -1,6 +1,5 @@
 import { StyleSheet, View, Platform } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { LinearGradient } from "expo-linear-gradient";
 
 import FlatButtonBottom from "./FlatButtonBottom";
 import { useTheme } from "../../store/theme-context";
@@ -31,15 +30,7 @@ const FormWrapper = ({
         >
           <View style={styles.inner}>
             {header}
-
-            <LinearGradient
-              colors={[Colors.mainCardBg1, Colors.mainCardBg2]}
-              start={[0, 0]}
-              end={[1, 1]}
-              style={styles.formContainer}
-            >
-              {children}
-            </LinearGradient>
+            {children}
           </View>
         </KeyboardAwareScrollView>
 
@@ -100,17 +91,5 @@ const stylesFn = (Colors) =>
       opacity: 0.4,
       transform: [{ rotate: "45deg" }],
       backgroundColor: Colors.mainBlob3,
-    },
-    formContainer: {
-      padding: 24,
-      borderRadius: 32,
-      backgroundColor: Colors.mainCardBg1,
-      shadowOpacity: 0.12,
-      shadowRadius: 16,
-      shadowOffset: { width: 0, height: 8 },
-      shadowColor: Colors.shadow,
-      elevation: 8,
-      overflow: "hidden",
-      marginBottom: 16,
     },
   });

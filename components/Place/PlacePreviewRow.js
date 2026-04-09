@@ -195,7 +195,7 @@ const stylesFn = (Colors) =>
       position: "absolute",
       bottom: 5,
       right: 5,
-      backgroundColor: "rgba(0,0,0,0.25)",
+      backgroundColor: Colors.mapOverlay,
       borderRadius: 5,
       padding: 3,
     },

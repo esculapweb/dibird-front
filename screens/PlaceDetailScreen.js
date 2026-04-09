@@ -55,8 +55,8 @@ const PlaceDetailScreen = ({ route, navigation }) => {
       {
         condition: !!place,
         onPress: handleFavourite,
-        icon: place?.favourite ? "star" : "star-outline",
-        tintColor: Colors.accent,
+        icon: place?.favourite ? "heart" : "heart-outline",
+        tintColor: Colors.main100,
         disabled: updateMutation.isPending || !place,
         loading: updateMutation.isPending,
       },
@@ -66,7 +66,7 @@ const PlaceDetailScreen = ({ route, navigation }) => {
       handleFavourite,
       updateMutation.isPending,
       navigation,
-      Colors.accent,
+      Colors.main100,
     ],
   );
 
@@ -74,7 +74,7 @@ const PlaceDetailScreen = ({ route, navigation }) => {
     <IconsHeader headerRightBeginning={headerRightBeginning} />
   );
 
-  const headerRightKey = `${headerRightBeginning?.length}`;
+  const headerRightKey = `${headerRightBeginning?.length}${Colors.main100}`;
 
   const handleDelete = useCallback(() => {
     if (!place) return;

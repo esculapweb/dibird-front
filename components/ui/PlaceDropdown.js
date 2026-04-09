@@ -30,7 +30,7 @@ const ImagePart = ({ query, value, placeData, previewUri, previewLoading }) => {
   if (query.isError)
     return (
       <View style={[styles.image, styles.imageEmpty]}>
-        <Ionicons name="refresh" size={32} color={Colors.link} />
+        <Ionicons name="refresh" size={32} color={Colors.main100} />
       </View>
     );
 
@@ -301,7 +301,7 @@ const stylesFn = (Colors) =>
       position: "absolute",
       bottom: 5,
       right: 5,
-      backgroundColor: "rgba(0,0,0,0.25)",
+      backgroundColor: Colors.mapOverlay,
       borderRadius: 5,
       padding: 3,
     },

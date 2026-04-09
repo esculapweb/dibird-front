@@ -10,7 +10,7 @@ const createToast = (colorKey) => (props) => {
         borderLeftColor: Colors[colorKey],
         backgroundColor: Colors.primary100,
         borderWidth: 1,
-        borderColor: "rgba(255,255,255,0.1)",
+        borderColor: Colors.toastBorder,
         borderRadius: 12,
         // padding: 10,
       }}

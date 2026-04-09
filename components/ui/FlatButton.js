@@ -31,6 +31,6 @@ const stylesFn = (Colors) =>
     buttonText: {
       fontSize: 16,
       textAlign: "center",
-      color: Colors.link,
+      color: Colors.main100,
     },
   });

@@ -23,7 +23,7 @@ const PrivacyToggle = ({ value, onChange, style, gender, labelAdditional }) => {
           <Ionicons
             name={value ? "lock-closed" : "globe-outline"}
             size={18}
-            color={value ? Colors.buttonBrightColor : Colors.textSecondary}
+            color={value ? Colors.textOpposite : Colors.textSecondary}
           />
         </View>
         <View>
@@ -37,7 +37,7 @@ const PrivacyToggle = ({ value, onChange, style, gender, labelAdditional }) => {
         <Switch
           value={value}
           onValueChange={onChange}
-          trackColor={{ false: Colors.border, true: Colors.accent }}
+          trackColor={{ false: Colors.border, true: Colors.main100 }}
           thumbColor={Colors.primary100}
         />
       )}
@@ -68,7 +68,7 @@ const stylesFn = (Colors) =>
       alignItems: "center",
     },
     iconWrapActive: {
-      backgroundColor: Colors.accent,
+      backgroundColor: Colors.main100,
     },
     label: {
       fontSize: 14,

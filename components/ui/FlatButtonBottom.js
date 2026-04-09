@@ -26,7 +26,7 @@ const FlatButtonBottom = ({
       <View style={styles.flatButtonContainer}>
         <ActivityIndicator
           size="small"
-          color={textColor ? textColor : Colors.link}
+          color={textColor ? textColor : Colors.main100}
         />
       </View>
     );
@@ -37,6 +37,7 @@ const FlatButtonBottom = ({
       style={({ pressed }) => [
         styles.flatButtonContainer,
         pressed && styles.pressed,
+        {backgroundColor: displaySaved ? Colors.main300 : Colors.primary100}
       ]}
     >
       <View style={styles.buttonInner}>
@@ -45,15 +46,14 @@ const FlatButtonBottom = ({
             name={displaySaved ? "checkmark-circle-outline" : icon}
             size={22}
             color={
-              displaySaved ? Colors.toastSuccess : (textColor ?? Colors.link)
+              (textColor ?? Colors.main100)
             }
           />
         )}
         <Text
           style={[
             styles.buttonText,
-            textColor && { color: textColor },
-            displaySaved && { color: Colors.toastSuccess },
+            textColor && { color: textColor },            
           ]}
         >
           {displaySaved ? savedLabel : children}
@@ -73,14 +73,13 @@ const stylesFn = (Colors) =>
     buttonText: {
       fontSize: 16,
       textAlign: "center",
-      color: Colors.link,
+      color: Colors.main100,
     },
     flatButtonContainer: {
       padding: 18,
       paddingBottom: 28,
       borderTopWidth: 1,
       borderTopColor: Colors.border,
-      backgroundColor: Colors.primary100,
     },
     buttonInner: {
       flexDirection: "row",

@@ -26,7 +26,7 @@ const Tabs = ({ tabOptions, tabsMode, setTabsMode }) => {
             <Ionicons
               name={isActive ? icon : iconInactive}
               size={22}
-              color={isActive ? Colors.tabActiveColor : Colors.textSecondary}
+              color={isActive ? Colors.main100 : Colors.textSecondary}
             />
             <Text style={[styles.label, isActive && styles.activeLabel]}>
               {labelKey}
@@ -67,14 +67,14 @@ const stylesFn = (Colors, insets) =>
       borderTopColor: "transparent",
     },
     activeTab: {
-      borderTopColor: Colors.tabActiveColor,
+      borderTopColor: Colors.main100,
     },
     label: {
       fontSize: 12,
       color: Colors.textSecondary,
     },
     activeLabel: {
-      color: Colors.tabActiveColor,
+      color: Colors.main100,
       fontWeight: "500",
     },
     badge: {
@@ -88,7 +88,7 @@ const stylesFn = (Colors, insets) =>
       paddingHorizontal: 5,
     },
     activeBadge: {
-      backgroundColor: Colors.tabActiveColor + "22",
+      backgroundColor: Colors.main300,
     },
     badgeText: {
       fontSize: 10,
@@ -97,6 +97,6 @@ const stylesFn = (Colors, insets) =>
       lineHeight: 14,
     },
     activeBadgeText: {
-      color: Colors.tabActiveColor,
+      color: Colors.main100,
     },
   });

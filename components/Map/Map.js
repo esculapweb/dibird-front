@@ -128,7 +128,7 @@ const Map = ({
             {isLocating ? (
               <ActivityIndicator size="small" color={Colors.textMain} />
             ) : (
-              <Ionicons name="navigate" size={22} color={Colors.primary500} />
+              <Ionicons name="navigate" size={22} color={Colors.textMain} />
             )}
           </TouchableOpacity>
         )}

@@ -13,11 +13,9 @@ import { useTheme } from "../../store/theme-context";
 const BUTTON_HEIGHT = 48;
 const SUCCESS_DISPLAY_TIME = 3000; 
 
-const AnimatedLoadingButton = ({ onPress, loading, success, children, bright }) => {
+const AnimatedLoadingButton = ({ onPress, loading, success, children }) => {
   const { Colors } = useTheme();
-
-  const textColor = bright ? Colors.buttonBrightColor : Colors.buttonPrimaryText;
-  const styles = stylesFn(textColor);
+  const styles = stylesFn(Colors);
 
   const spinnerOpacity = useRef(new Animated.Value(0)).current;
   const successOpacity = useRef(new Animated.Value(0)).current;
@@ -55,7 +53,6 @@ const AnimatedLoadingButton = ({ onPress, loading, success, children, bright }) 
       disabled={loading}
       style={({ pressed }) => [
         styles.button,
-        {backgroundColor: bright ? Colors.buttonBrightBg : Colors.buttonBg},
         pressed && !loading ? styles.pressed : null,
         loading ? styles.disabled : null,
       ]}
@@ -64,14 +61,14 @@ const AnimatedLoadingButton = ({ onPress, loading, success, children, bright }) 
         <Text style={styles.text}>{children}</Text>
 
         <Animated.View style={[styles.spinner, { opacity: spinnerOpacity }]}>
-          <ActivityIndicator size="small" color={textColor} />
+          <ActivityIndicator size="small" color={Colors.textOpposite} />
         </Animated.View>
 
         <Animated.View style={[styles.spinner, { opacity: successOpacity }]}>
           <Ionicons
             name="checkmark"
             size={20}
-            color={textColor}
+            color={Colors.textOpposite}
           />
         </Animated.View>
       </View>
@@ -81,7 +78,7 @@ const AnimatedLoadingButton = ({ onPress, loading, success, children, bright }) 
 
 export default AnimatedLoadingButton;
 
-const stylesFn = (textColor) =>
+const stylesFn = (Colors) =>
   StyleSheet.create({
     button: {
       borderRadius: 8,
@@ -89,6 +86,7 @@ const stylesFn = (textColor) =>
       paddingHorizontal: 20,
       alignItems: "center",
       justifyContent: "center",
+      backgroundColor: Colors.main100
     },
     pressed: { opacity: 0.7 },
     disabled: { opacity: 0.6 },
@@ -100,7 +98,7 @@ const stylesFn = (textColor) =>
       flex: 1,
     },
     text: {
-      color: textColor,
+      color: Colors.textOpposite,
       fontWeight: "600",
       fontSize: 16,
       position: "absolute",

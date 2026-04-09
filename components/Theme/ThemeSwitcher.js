@@ -4,7 +4,7 @@ import { useTheme } from "../../store/theme-context";
 import { useTranslation } from "react-i18next";
 
 const ThemeSwitcher = () => {
-  const { theme, manualTheme, toggleTheme, Colors } = useTheme();
+  const { manualTheme, toggleTheme, Colors } = useTheme();
   const { t } = useTranslation();
   const styles = stylesFn(Colors);
 
@@ -30,7 +30,7 @@ const ThemeSwitcher = () => {
               onPress={() => toggleTheme(option.value)}
               style={({ pressed }) => [
                 styles.button,
-                isSelected && { backgroundColor: Colors.primary200 },
+                isSelected && { backgroundColor: Colors.main100 },
                 pressed && styles.pressed,
               ]}
             >
@@ -38,11 +38,13 @@ const ThemeSwitcher = () => {
                 <Ionicons
                   name={option.icon}
                   size={20}
-                  color={Colors.textMain}
+                  color={isSelected ? Colors.textOpposite : Colors.textMain}
                 />
               )}
               {option?.text && (
-                <Text style={{ color: Colors.textMain }}>{option.text}</Text>
+                <Text style={{
+                color: isSelected ? Colors.textOpposite : Colors.textMain,
+              }}>{option.text}</Text>
               )}
             </Pressable>
           );
@@ -76,6 +78,7 @@ const stylesFn = (Colors) =>
       borderRadius: 16,
       alignItems: "center",
       justifyContent: "center",
+      backgroundColor: Colors.primary100,
     },
     icon: {
       marginRight: 16,

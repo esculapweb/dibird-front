@@ -225,7 +225,7 @@ const ObservationEditorScreen = ({ navigation, route }) => {
         onPress: handleSaveObservation,
         icon: "checkmark-circle",
         size: 36,
-        tintColor: Colors.seenIcon,
+        tintColor: Colors.main100,
         disabled: isEditMode
           ? updateObservationMutation.isPending
           : createObservationMutation.isPending,
@@ -236,7 +236,7 @@ const ObservationEditorScreen = ({ navigation, route }) => {
       isEditMode,
       createObservationMutation.isPending,
       updateObservationMutation.isPending,
-      Colors.seenIcon,
+      Colors.main100,
     ],
   );
 
@@ -247,7 +247,7 @@ const ObservationEditorScreen = ({ navigation, route }) => {
   const headerRightKey = useMemo(
     () =>
       headerRightBeginning
-        ?.map((btn) => `${btn.icon}-${btn.disabled}-${btn.loading}`)
+        ?.map((btn) => `${btn.icon}-${btn.disabled}-${btn.loading}-${Colors.main100}`)
         .join("|"),
     [headerRightBeginning],
   );

@@ -85,7 +85,6 @@ const AuthForm = ({ isLogin, onSubmit, credentialsInvalid, loading }) => {
           <AnimatedLoadingButton
             onPress={submitHandler}
             loading={loading}
-            bright={true}
           >
             {isLogin ? t("log_in") : t("sign_up")}
           </AnimatedLoadingButton>
