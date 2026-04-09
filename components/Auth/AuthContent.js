@@ -125,12 +125,12 @@ const stylesFn = (Colors) =>
       fontSize: 16,
       fontWeight: "500",
       marginBottom: 4,
-      color: Colors.textSecondary,
+      color: Colors.textMiddle,
     },
     dateText: {
       fontSize: 22,
       fontWeight: "700",
-      color: Colors.mainTextDate,
+      color: Colors.main100,
     },
     logo: {
       alignSelf: "center",

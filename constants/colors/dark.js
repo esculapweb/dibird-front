@@ -14,6 +14,7 @@ export const DarkColors = {
 
   main100: "#F0C24B",
   main300: "#30291A",
+  accent: "rgba(34,197,94,0.8)",
   primary100: "#1b1b1b",
   primary200: "#1e293b",
   primary300: "#1f2937",
@@ -45,32 +46,11 @@ export const DarkColors = {
   mainBlob3: "#3a2a30",
 
   compareP1: "rgba(34,197,94,0.9)",
-  compareP1Bg: "#2f3c43",
   compareP2: "#f0c24b",
-  compareP2Bg: "#3f1d1d",
 
   accuracyFill: "rgba(0,150,255,0.2)",
   accuracyStroke: "rgba(0,150,255,0.4)",
 
   squareFill: "rgba(239,68,68,0.2)",
   squareStroke: "rgba(239,68,68,0.5)",
-
-  mainColor: "#f0c24b",
-  mainColorLight: "#1a3a2e",
-  mainColorDark: "#9FE1CB",
-
-  mainCardBg1: "#1e293b",
-  mainCardBg2: "#1f2937",
-  mainCardAccent: "#f0c24b",
-  mainCardIconBg1: "rgba(240, 194, 75, 0.3)",
-  mainCardIconBg2: "rgba(240, 194, 75, 0.1)",
-  mainCardDot: "#f0c24b",
-  mainCardWave: "rgba(240, 194, 75, 0.15)",
-
-  mainQuoteBg1: "transparent",
-  mainQuoteBg2: "transparent",
-  mainQuoteBorder: "rgba(240, 194, 75, 0.7)",
-
-  mainTextPrimary: "#e5e7eb",
-  mainTextDate: "#f0c24b",
 };

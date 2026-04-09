@@ -14,6 +14,7 @@ export const LightColors = {
 
   main100: "#1d9e75",
   main300: "#e8f5f0",
+  accent: "#f59e0b",
   primary100: "#ffffff",
   primary200: "#cfd8dc",
   primary300: "#eef2ff",
@@ -52,19 +53,4 @@ export const LightColors = {
 
   squareFill: "rgba(239,68,68,0.2)",
   squareStroke: "rgba(239,68,68,0.5)",
-
-  mainCardBg1: "#dce1e9",
-  mainCardBg2: "#d0d7e1",
-  mainCardAccent: "#f0c24b",
-  mainCardIconBg1: "rgba(240, 194, 75, 0.25)",
-  mainCardIconBg2: "rgba(240, 194, 75, 0.08)",
-  mainCardDot: "#f0c24b",
-  mainCardWave: "rgba(240, 194, 75, 0.18)",
-
-  mainQuoteBg1: "transparent",
-  mainQuoteBg2: "transparent",
-  mainQuoteBorder: "rgba(240, 194, 75, 0.7)",
-
-  mainTextPrimary: "#1e2a36",
-  mainTextDate: "#3a4c62",
 };
