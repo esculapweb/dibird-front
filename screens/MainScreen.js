@@ -331,43 +331,72 @@ const MainScreen = ({ navigation }) => {
 
         {/* ── SECTIONS — FlatList numColumns=3, cross-platform ─ */}
         <Text style={S.groupLabel}>{t("sections") ?? "Разделы"}</Text>
-        <FlatList
-          data={SECTIONS}
-          keyExtractor={(item) => item.key}
-          numColumns={SEC_COLS}
-          scrollEnabled={false}
-          columnWrapperStyle={S.secRow}
-          contentContainerStyle={S.secGrid}
-          renderItem={({ item: sec, index }) => (
-            <TouchableOpacity
-              style={[
-                S.secCard,
-                { backgroundColor: Colors.primary100, width: SEC_W },
-              ]}
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate(sec.key)}
-            >
-              {sec.showBadge && stats.diaries > 0 && (
-                <View style={[S.secBadge, { backgroundColor: Colors.main100 }]}>
-                  <Text
-                    style={[S.secBadgeText, { color: Colors.textOpposite }]}
-                  >
-                    {stats.diaries}
-                  </Text>
+        <View style={S.secGrid}>
+          {Array.from({ length: Math.ceil(SECTIONS.length / SEC_COLS) }).map(
+            (_, rowIndex) => {
+              const row = SECTIONS.slice(
+                rowIndex * SEC_COLS,
+                rowIndex * SEC_COLS + SEC_COLS,
+              );
+
+              return (
+                <View key={rowIndex} style={S.secRow}>
+                  {row.map((sec) => (
+                    <TouchableOpacity
+                      key={sec.key}
+                      style={[
+                        S.secCard,
+                        { backgroundColor: Colors.primary100, width: SEC_W },
+                      ]}
+                      activeOpacity={0.8}
+                      onPress={() => navigation.navigate(sec.key)}
+                    >
+                      {sec.showBadge && stats.diaries > 0 && (
+                        <View
+                          style={[
+                            S.secBadge,
+                            { backgroundColor: Colors.main100 },
+                          ]}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 11,
+                              fontWeight: "600",
+                              color: Colors.textOpposite,
+                            }}
+                          >
+                            {stats.diaries}
+                          </Text>
+                        </View>
+                      )}
+
+                      <Ionicons
+                        name={sec.icon}
+                        size={30}
+                        color={Colors.main100}
+                        style={{ marginBottom: 10 }}
+                      />
+
+                      <Text
+                        style={[S.secLabel, { color: Colors.textSecondary }]}
+                      >
+                        {t(sec.labelKey)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+
+                  {/* пустые элементы, чтобы выровнять сетку */}
+                  {row.length < SEC_COLS &&
+                    Array.from({ length: SEC_COLS - row.length }).map(
+                      (_, i) => (
+                        <View key={`empty-${i}`} style={{ width: SEC_W }} />
+                      ),
+                    )}
                 </View>
-              )}
-              <Ionicons
-                name={sec.icon}
-                size={30}
-                color={Colors.main100}
-                style={{ marginBottom: 10 }}
-              />
-              <Text style={[S.secLabel, { color: Colors.textSecondary }]}>
-                {t(sec.labelKey)}
-              </Text>
-            </TouchableOpacity>
+              );
+            },
           )}
-        />
+        </View>
       </ScrollView>
     </View>
   );
@@ -652,8 +681,10 @@ const stylesFn = (Colors) =>
       paddingHorizontal: H_PAD,
     },
     secRow: {
+      flexDirection: "row",
       justifyContent: "space-between",
       marginBottom: SEC_GAP,
+      width: "100%",
     },
     secCard: {
       borderRadius: 18,
