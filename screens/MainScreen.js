@@ -9,7 +9,7 @@ import BirdOfTheDay from "../components/Main/BirdOfTheDay";
 import Sections from "../components/Main/Sections";
 import ChecklistHero from "../components/Main/ChecklistHero";
 import QuickActions from "../components/Main/QuickActions";
-import NewSpecies from "../components/Main/NewSpecies";
+// import NewSpecies from "../components/Main/NewSpecies";
 
 // ─────────────────────────────────────────────────────────────────────────────
 const MainScreen = () => {
@@ -82,13 +82,15 @@ const MainScreen = () => {
         <Stats data={dataStats} />
 
         <Sparkline data={dataSpark} />
+
         <QuickActions />
         <BirdOfTheDay data={birdOfDay} />
 
         <ChecklistHero data={dataChecklist} />
 
         <Sections data={dataStats} />
-        <NewSpecies data={newSpecies} />
+
+        {/* <NewSpecies data={newSpecies} /> */}
       </ScrollView>
     </View>
   );

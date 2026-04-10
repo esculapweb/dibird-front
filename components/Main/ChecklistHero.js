@@ -27,9 +27,8 @@ const ChecklistHero = ({ data }) => {
       <View style={styles.clRow}>
         <Text style={styles.clNum}>
           {data.seen}
-          {"  "}
           <Text style={styles.clOf}>
-            {t("of") ?? "из"} {data.total}
+            {" "}{t("of") ?? "из"} {data.total}
           </Text>
         </Text>
         <Ionicons
@@ -64,12 +63,12 @@ const stylesFn = (Colors) =>
     clCard: {
       marginHorizontal: H_PAD,
       marginBottom: 12,
+      backgroundColor: Colors.main100,
       borderRadius: 18,
       padding: 18,
-      backgroundColor: Colors.main100,
     },
     clTag: {
-      fontSize: 13,
+      fontSize: 14,
       marginBottom: 8,
       color: Colors.textOpposite,
       opacity: 0.9,
@@ -92,7 +91,7 @@ const stylesFn = (Colors) =>
       opacity: 0.9,
     },
     clSub: {
-      fontSize: 13,
+      fontSize: 14,
       marginTop: 5,
       color: Colors.textOpposite,
       opacity: 0.9,

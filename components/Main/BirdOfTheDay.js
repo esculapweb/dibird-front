@@ -20,7 +20,7 @@ const BirdOfTheDay = ({ data }) => {
     >
       <View style={styles.botdStrip}>
         <View style={styles.botdStripLeft}>
-          <Ionicons name="star" size={18} color={Colors.textOpposite} />
+          <Ionicons name="star" size={18} color={Colors.main100} />
           <Text style={styles.botdStripTitle}>
             {t("bird_of_day") ?? "Птица дня"}
           </Text>
@@ -55,8 +55,8 @@ const stylesFn = (Colors) =>
       marginBottom: 12,
       backgroundColor: Colors.primary100,
       borderRadius: 18,
-      borderWidth: 0.5,
-      borderColor: Colors.border,
+      borderWidth: 1,
+      borderColor: Colors.main100,
       overflow: "hidden",
     },
     botdStrip: {
@@ -65,7 +65,7 @@ const stylesFn = (Colors) =>
       justifyContent: "space-between",
       paddingHorizontal: 16,
       paddingVertical: 13,
-      backgroundColor: Colors.main100,
+      backgroundColor: Colors.main300,
     },
     botdStripLeft: {
       flexDirection: "row",
@@ -75,12 +75,11 @@ const stylesFn = (Colors) =>
     botdStripTitle: {
       fontSize: 15,
       fontWeight: "600",
-      color: Colors.textOpposite,
+      color: Colors.main100,
     },
     botdStripSub: {
       fontSize: 13,
-      color: Colors.textOpposite,
-      opacity: 0.7,
+      color: Colors.main100,
     },
     botdBody: {
       flexDirection: "row",

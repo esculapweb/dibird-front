@@ -66,7 +66,7 @@ const stylesFn = (Colors) =>
       flexDirection: "row",
       gap: 10,
       paddingHorizontal: H_PAD,
-      marginBottom: 20,
+      marginBottom: 12,
     },
     qbtn: {
       flex: 1,
