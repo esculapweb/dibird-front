@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useTheme } from "../../store/theme-context";
@@ -7,6 +8,7 @@ import { useTheme } from "../../store/theme-context";
 const H_PAD = 16;
 
 const ChecklistHero = ({ data }) => {
+  const navigation = useNavigation();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -34,7 +36,7 @@ const ChecklistHero = ({ data }) => {
           name="chevron-forward"
           size={24}
           color={Colors.textOpposite}
-          style={{ opacity: 0.4 }}
+          style={{ opacity: 0.7 }}
         />
       </View>
       <Text style={styles.clSub}>
@@ -70,7 +72,7 @@ const stylesFn = (Colors) =>
       fontSize: 13,
       marginBottom: 8,
       color: Colors.textOpposite,
-      opacity: 0.65,
+      opacity: 0.9,
     },
     clRow: {
       flexDirection: "row",
@@ -87,13 +89,13 @@ const stylesFn = (Colors) =>
       fontSize: 16,
       fontWeight: "400",
       color: Colors.textOpposite,
-      opacity: 0.65,
+      opacity: 0.9,
     },
     clSub: {
       fontSize: 13,
       marginTop: 5,
       color: Colors.textOpposite,
-      opacity: 0.65,
+      opacity: 0.9,
     },
     clBarBg: {
       marginTop: 14,

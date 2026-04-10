@@ -1,21 +1,23 @@
 import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 
 import { useTheme } from "../../store/theme-context";
 
 const H_PAD = 16;
 
 const QuickActions = () => {
+    const navigation = useNavigation();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
 
   return (
     <>
-      <Text style={styles.groupLabel}>
+      {/* <Text style={styles.groupLabel}>
         {t("quick_actions") ?? "Быстрые действия"}
-      </Text>
+      </Text> */}
       <View style={styles.quickRow}>
         <TouchableOpacity
           style={[styles.qbtn, { backgroundColor: Colors.main100 }]}

@@ -1,12 +1,14 @@
 import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 
 import { useTheme } from "../../store/theme-context";
 
 const H_PAD = 16;
 
 const BirdOfTheDay = ({ data }) => {
+  const navigation = useNavigation();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -16,19 +18,14 @@ const BirdOfTheDay = ({ data }) => {
       activeOpacity={0.85}
       onPress={() => navigation.navigate("BirdOfDay")}
     >
-      <View style={[styles.botdStrip, { backgroundColor: Colors.main100 }]}>
+      <View style={styles.botdStrip}>
         <View style={styles.botdStripLeft}>
-          <Text style={styles.botdStripStar}>⭐</Text>
-          <Text style={[styles.botdStripTitle, { color: Colors.textOpposite }]}>
+          <Ionicons name="star" size={18} color={Colors.textOpposite} />
+          <Text style={styles.botdStripTitle}>
             {t("bird_of_day") ?? "Птица дня"}
           </Text>
         </View>
-        <Text
-          style={[
-            styles.botdStripSub,
-            { color: Colors.textOpposite, opacity: 0.7 },
-          ]}
-        >
+        <Text style={styles.botdStripSub}>
           {t("find_today") ?? "Найди сегодня"}
         </Text>
       </View>
@@ -37,11 +34,9 @@ const BirdOfTheDay = ({ data }) => {
           <Text style={{ fontSize: 30 }}>{data.emoji}</Text>
         </View>
         <View style={styles.botdText}>
-          <Text style={styles.botdName}>
-            {t(data.nameKey) ?? "Орлан-белохвост"}
-          </Text>
+          <Text style={styles.botdName}>{data.nameKey}</Text>
           <Text style={styles.botdLatin}>{data.latin}</Text>
-          <Text style={[styles.botdHint, { color: Colors.main100 }]}>
+          <Text style={styles.botdHint}>
             {t(data.hintKey) ?? "Рядом · нет в чеклисте"}
           </Text>
         </View>
@@ -70,11 +65,23 @@ const stylesFn = (Colors) =>
       justifyContent: "space-between",
       paddingHorizontal: 16,
       paddingVertical: 13,
+      backgroundColor: Colors.main100,
     },
-    botdStripLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
-    botdStripStar: { fontSize: 16 },
-    botdStripTitle: { fontSize: 15, fontWeight: "600" },
-    botdStripSub: { fontSize: 13 },
+    botdStripLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    botdStripTitle: {
+      fontSize: 15,
+      fontWeight: "600",
+      color: Colors.textOpposite,
+    },
+    botdStripSub: {
+      fontSize: 13,
+      color: Colors.textOpposite,
+      opacity: 0.7,
+    },
     botdBody: {
       flexDirection: "row",
       alignItems: "center",
@@ -93,13 +100,23 @@ const stylesFn = (Colors) =>
       justifyContent: "center",
       flexShrink: 0,
     },
-    botdText: { flex: 1 },
-    botdName: { fontSize: 16, fontWeight: "600", color: Colors.textMain },
+    botdText: {
+      flex: 1,
+    },
+    botdName: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: Colors.textMain,
+    },
     botdLatin: {
       fontSize: 13,
       color: Colors.textSecondary,
       fontStyle: "italic",
       marginTop: 3,
     },
-    botdHint: { fontSize: 13, marginTop: 5 },
+    botdHint: {
+      fontSize: 13,
+      marginTop: 5,
+      color: Colors.main100,
+    },
   });

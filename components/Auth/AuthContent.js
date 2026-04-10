@@ -2,9 +2,9 @@ import { useState } from "react";
 import { StyleSheet, View, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
+import { useNavigation } from "@react-navigation/native";
 
 import AuthForm from "./AuthForm";
-import { useNavigation } from "@react-navigation/native";
 import Logo from "../ui/Logo";
 import { showError } from "../../services/api";
 import { useTheme } from "../../store/theme-context";

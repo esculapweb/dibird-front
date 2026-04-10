@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useNavigation } from "@react-navigation/native";
 
 import { useTheme } from "../../store/theme-context";
 
@@ -7,6 +8,7 @@ const H_PAD = 16;
 const SPARK_H = 52;
 
 const Sparkline = ({ data }) => {
+  const navigation = useNavigation();
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const { Colors } = useTheme();

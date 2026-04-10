@@ -1,11 +1,13 @@
 import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useNavigation } from "@react-navigation/native";
 
 import { useTheme } from "../../store/theme-context";
 
 const H_PAD = 16;
 
 const NewSpecies = ({ data }) => {
+    const navigation = useNavigation();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);

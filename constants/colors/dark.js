@@ -14,7 +14,12 @@ export const DarkColors = {
 
   main100: "#F0C24B",
   main300: "#30291A",
-  accent: "rgba(34,197,94,0.8)",
+  accent100: "#1FA14F",
+  accent300: "#145A32",
+  // accent: "#60A5FA",
+  // accent: "#A78BFA",
+  // accent: "#2DD4BF",
+
   primary100: "#1b1b1b",
   primary200: "#1e293b",
   primary300: "#1f2937",

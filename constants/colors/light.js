@@ -14,7 +14,11 @@ export const LightColors = {
 
   main100: "#1d9e75",
   main300: "#e8f5f0",
-  accent: "#f59e0b",
+  // accent: "#f59e0b",
+  accent100: "#EAB308",
+  accent300: "#FEF3C7",
+  // accent: "#4F8CFF",
+  // accent: "#8B5CF6",
   primary100: "#ffffff",
   primary200: "#cfd8dc",
   primary300: "#eef2ff",

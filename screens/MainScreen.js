@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { View, ScrollView } from "react-native";
-
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTheme } from "../store/theme-context";
+
 import FloatingNavbar from "../components/Main/FloatingNavbar";
 import Stats from "../components/Main/Stats";
 import Sparkline from "../components/Main/Sparkline";
@@ -14,7 +13,6 @@ import NewSpecies from "../components/Main/NewSpecies";
 
 // ─────────────────────────────────────────────────────────────────────────────
 const MainScreen = () => {
-  const { Colors } = useTheme();
   const insets = useSafeAreaInsets();
   const NAVBAR_HEIGHT = insets.top + 60;
 
@@ -24,6 +22,7 @@ const MainScreen = () => {
     setShowDivider((prev) => (prev === should ? prev : should));
   };
 
+  // Mock data
   const dataSpark = [
     1, 2, 1, 3, 2, 1, 4, 2, 3, 5, 3, 2, 1, 3, 2, 4, 3, 2, 1, 2, 4, 2, 1, 3, 4,
     3, 2, 4, 3, 5,
@@ -39,7 +38,7 @@ const MainScreen = () => {
   };
   const birdOfDay = {
     emoji: "🦅",
-    nameKey: "bird_of_day_name",
+    nameKey: "Орлан-белохвост",
     latin: "Haliaeetus albicilla",
     hintKey: "bird_of_day_hint",
   };
@@ -68,7 +67,7 @@ const MainScreen = () => {
   ];
 
   return (
-    <View style={{ flex: 1, backgroundColor: Colors.backgroundMain }}>
+    <View style={{ flex: 1 }}>
       <FloatingNavbar showDivider={showDivider} />
 
       <ScrollView
@@ -81,12 +80,15 @@ const MainScreen = () => {
         scrollEventThrottle={16}
       >
         <Stats data={dataStats} />
+
         <Sparkline data={dataSpark} />
-        <BirdOfTheDay data={birdOfDay} />
-        <ChecklistHero data={dataChecklist} />
-        <NewSpecies data={newSpecies} />
         <QuickActions />
+        <BirdOfTheDay data={birdOfDay} />
+
+        <ChecklistHero data={dataChecklist} />
+
         <Sections data={dataStats} />
+        <NewSpecies data={newSpecies} />
       </ScrollView>
     </View>
   );

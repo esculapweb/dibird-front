@@ -7,6 +7,7 @@ import {
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 
 import { useTheme } from "../../store/theme-context";
 
@@ -15,6 +16,7 @@ const SEC_GAP = 8;
 const SEC_COLS = 3;
 
 const Sections = ({ data }) => {
+    const navigation = useNavigation();
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const { Colors } = useTheme();
@@ -33,7 +35,7 @@ const Sections = ({ data }) => {
 
   return (
     <>
-      <Text style={styles.groupLabel}>{t("sections") ?? "Разделы"}</Text>
+      {/* <Text style={styles.groupLabel}>{t("sections") ?? "Разделы"}</Text> */}
       <View style={styles.secGrid}>
         {Array.from({ length: Math.ceil(SECTIONS.length / SEC_COLS) }).map(
           (_, rowIndex) => {

@@ -1,11 +1,13 @@
 import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useNavigation } from "@react-navigation/native";
 
 import { useTheme } from "../../store/theme-context";
 
 const H_PAD = 16;
 
 const StatCard = ({ value, label }) => {
+    const navigation = useNavigation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   return (
