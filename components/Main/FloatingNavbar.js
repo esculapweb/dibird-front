@@ -1,0 +1,97 @@
+import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
+import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+
+import { useTheme } from "../../store/theme-context";
+
+const H_PAD = 16;
+
+const FloatingNavbar = ({showDivider}) => {
+  const { t } = useTranslation();
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
+  const insets = useSafeAreaInsets();
+
+  return (
+    <View style={styles.navbarAbsolute}>
+      <View style={[styles.navbar, { paddingTop: insets.top + 8 }]}>
+        <TouchableOpacity
+          onPress={() => navigation.openDrawer()}
+          hitSlop={8}
+          style={{ gap: 5 }}
+        >
+          <View style={styles.burgerLine} />
+          <View style={styles.burgerLine} />
+          <View style={styles.burgerLine} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.pill}
+          onPress={() => navigation.navigate("FilterSheet")}
+        >
+          <Text style={styles.pillFlag}>🇧🇾</Text>
+          <Text style={styles.pillText} numberOfLines={1}>
+            {t("this_year") ?? "Этот год"}
+          </Text>
+          <Ionicons
+            name="chevron-down"
+            size={14}
+            color={Colors.textSecondary}
+          />
+        </TouchableOpacity>
+
+        <View style={{ width: 28 }} />
+      </View>
+      <View style={[styles.divider, { opacity: showDivider ? 1 : 0 }]} />
+    </View>
+  );
+};
+
+export default FloatingNavbar;
+
+const stylesFn = (Colors) =>
+  StyleSheet.create({
+    navbarAbsolute: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 10,
+      backgroundColor: Colors.backgroundMain,
+    },
+    navbar: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: H_PAD,
+      paddingBottom: 14,
+    },
+    burgerLine: {
+      width: 22,
+      height: 2,
+      borderRadius: 1,
+      backgroundColor: Colors.textMain,
+    },
+    pill: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      backgroundColor: Colors.primary100,
+      borderWidth: 0.5,
+      borderColor: Colors.border,
+      borderRadius: 20,
+      paddingVertical: 9,
+      paddingLeft: 12,
+      paddingRight: 14,
+      maxWidth: 200,
+    },
+    pillFlag: { fontSize: 17 },
+    pillText: {
+      fontSize: 15,
+      fontWeight: "500",
+      color: Colors.textMain,
+      flexShrink: 1,
+    },
+    divider: { height: 0.5, backgroundColor: Colors.divider },
+  });
