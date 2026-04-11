@@ -5,7 +5,7 @@ export const DarkColors = {
   overlayBg: "rgba(0,0,0,0.8)",
   overlay: "rgba(0,0,0,0.7)",
   mapOverlay: "rgba(0,0,0,0.25)",
-  mainProgressBg: "rgba(255,255,255,0.25)",
+    mainProgressBg: "rgba(0,0,0,0.15)",
 
   textMain: "#e5e7eb",
   textMiddle: "#ced2d7",

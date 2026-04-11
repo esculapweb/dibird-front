@@ -2,7 +2,6 @@ import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-
 import { useTheme } from "../../store/theme-context";
 
 const H_PAD = 16;
@@ -12,6 +11,7 @@ const BirdOfTheDay = ({ data }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
+
   return (
     <TouchableOpacity
       style={styles.botdCard}
@@ -20,7 +20,7 @@ const BirdOfTheDay = ({ data }) => {
     >
       <View style={styles.botdStrip}>
         <View style={styles.botdStripLeft}>
-          <Ionicons name="star" size={18} color={Colors.main100} />
+          <Ionicons name="star" size={16} color={Colors.main100} />
           <Text style={styles.botdStripTitle}>
             {t("bird_of_day") ?? "Птица дня"}
           </Text>
@@ -29,12 +29,13 @@ const BirdOfTheDay = ({ data }) => {
           {t("find_today") ?? "Найди сегодня"}
         </Text>
       </View>
+
       <View style={styles.botdBody}>
         <View style={styles.botdImgBox}>
           <Text style={{ fontSize: 30 }}>{data.emoji}</Text>
         </View>
         <View style={styles.botdText}>
-          <Text style={styles.botdName}>{data.nameKey}</Text>
+          <Text style={styles.botdName}>{data.name}</Text>
           <Text style={styles.botdLatin}>{data.latin}</Text>
           <Text style={styles.botdHint}>
             {t(data.hintKey) ?? "Рядом · нет в чеклисте"}
@@ -54,9 +55,9 @@ const stylesFn = (Colors) =>
       marginHorizontal: H_PAD,
       marginBottom: 12,
       backgroundColor: Colors.primary100,
-      borderRadius: 18,
-      borderWidth: 1,
-      borderColor: Colors.main100,
+      borderRadius: 14,
+      borderWidth: 0.5,
+      borderColor: Colors.border,
       overflow: "hidden",
     },
     botdStrip: {
@@ -64,8 +65,8 @@ const stylesFn = (Colors) =>
       alignItems: "center",
       justifyContent: "space-between",
       paddingHorizontal: 16,
-      paddingVertical: 13,
-      backgroundColor: Colors.main300,
+      paddingVertical: 12,
+      backgroundColor: Colors.primary200,
     },
     botdStripLeft: {
       flexDirection: "row",
@@ -75,11 +76,12 @@ const stylesFn = (Colors) =>
     botdStripTitle: {
       fontSize: 15,
       fontWeight: "600",
-      color: Colors.main100,
+      // FIX: textMain instead of main100 — higher contrast on primary200 bg
+      color: Colors.textMain,
     },
     botdStripSub: {
       fontSize: 13,
-      color: Colors.main100,
+      color: Colors.textSecondary,
     },
     botdBody: {
       flexDirection: "row",
@@ -99,9 +101,7 @@ const stylesFn = (Colors) =>
       justifyContent: "center",
       flexShrink: 0,
     },
-    botdText: {
-      flex: 1,
-    },
+    botdText: { flex: 1 },
     botdName: {
       fontSize: 16,
       fontWeight: "600",

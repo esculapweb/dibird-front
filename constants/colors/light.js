@@ -5,7 +5,7 @@ export const LightColors = {
   overlayBg: "rgba(255,255,255,0.85)",
   overlay: "rgba(0,0,0,0.4)",
   mapOverlay: "rgba(0,0,0,0.25)",
-  mainProgressBg: "rgba(255,255,255,0.25)",
+  mainProgressBg: "rgba(0,0,0,0.15)",
 
   textMain: "#1E2A36",
   textMiddle: "#4c515b",

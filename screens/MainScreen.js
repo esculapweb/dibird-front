@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { View, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -6,13 +6,15 @@ import FloatingNavbar from "../components/Main/FloatingNavbar";
 import Stats from "../components/Main/Stats";
 import Sparkline from "../components/Main/Sparkline";
 import BirdOfTheDay from "../components/Main/BirdOfTheDay";
-import Sections from "../components/Main/Sections";
 import ChecklistHero from "../components/Main/ChecklistHero";
+import NewSpecies from "../components/Main/NewSpecies";
 import QuickActions from "../components/Main/QuickActions";
-// import NewSpecies from "../components/Main/NewSpecies";
+import Sections from "../components/Main/Sections";
+import FilterModal from "../components/Filters/FilterModal";
+import { useFilters } from "../store/filters-context";
+import { useSyncedFilters } from "../hooks/useSyncedFIlters";
 
-// ─────────────────────────────────────────────────────────────────────────────
-const MainScreen = () => {
+const MainScreen = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
   const NAVBAR_HEIGHT = insets.top + 60;
 
@@ -22,11 +24,67 @@ const MainScreen = () => {
     setShowDivider((prev) => (prev === should ? prev : should));
   };
 
-  // Mock data
-  const dataSpark = [
+  const { territory, setTerritory, date, setDate, place, setPlace, species, setSpecies } =
+    useFilters();
+
+  const {
+    filters,
+    setFilters,
+    filtersLoaded,
+    ignoreContextSync,
+    setIgnoreContextSync,
+  } = useSyncedFilters({
+    route,
+    navigation,
+    screenName: "Main",
+    contextFilters: {
+      territory,
+      date,
+      place,
+      species,
+    },
+    sortOptions: [],
+    allowSort: false,
+  });
+
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+
+  const allowedFilters = ["territory", "date"];
+
+  const hasActiveFilters = filters
+    ? allowedFilters.some((key) => {
+        const v = filters[key];
+        return Array.isArray(v) ? v.length > 0 : v != null && v !== "";
+      })
+    : false;
+  const hasActiveFiltersRef = useRef(hasActiveFilters);
+  useEffect(() => {
+    hasActiveFiltersRef.current = hasActiveFilters;
+  }, [hasActiveFilters]);
+
+  const handleFiltersApplied = (newFilters) => {
+    setIgnoreContextSync(false); 
+    setFilters(newFilters);
+  };
+
+  const handleClearFilters = async () => {
+    setIgnoreContextSync(true);
+    await setDate(null);
+    await setTerritory(null);
+    await setPlace(null);
+    await setSpecies(null);
+    setFilters({});
+    setFilterModalVisible(false);
+  };
+
+  // Mock data — replace with store / API
+  const dataObservations = [
     1, 2, 1, 3, 2, 1, 4, 2, 3, 5, 3, 2, 1, 3, 2, 4, 3, 2, 1, 2, 4, 2, 1, 3, 4,
     3, 2, 4, 3, 5,
   ];
+
+  // or dataNewSpecies
+
   const dataStats = { species: 23, observations: 37, diaries: 10, rank: 1 };
   const dataChecklist = {
     country: "Беларусь",
@@ -38,7 +96,7 @@ const MainScreen = () => {
   };
   const birdOfDay = {
     emoji: "🦅",
-    nameKey: "Орлан-белохвост",
+    name: "Орлан-белохвост",
     latin: "Haliaeetus albicilla",
     hintKey: "bird_of_day_hint",
   };
@@ -68,30 +126,43 @@ const MainScreen = () => {
 
   return (
     <View style={{ flex: 1 }}>
-      <FloatingNavbar showDivider={showDivider} />
+      <FloatingNavbar
+        showDivider={showDivider}
+        onPress={() => setFilterModalVisible(true)}
+        filters={filters}
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingTop: NAVBAR_HEIGHT + 6,
-          paddingBottom: insets.bottom + 16,
+          paddingBottom: insets.bottom + 24,
         }}
         onScroll={onScroll}
         scrollEventThrottle={16}
       >
         <Stats data={dataStats} />
 
-        <Sparkline data={dataSpark} />
-
-        <QuickActions />
-        <BirdOfTheDay data={birdOfDay} />
+        <Sparkline data={dataObservations} />
 
         <ChecklistHero data={dataChecklist} />
 
-        <Sections data={dataStats} />
+        <BirdOfTheDay data={birdOfDay} />
 
-        {/* <NewSpecies data={newSpecies} /> */}
+        <NewSpecies data={newSpecies} />
+
+        <QuickActions />
+
+        <Sections data={dataStats} />
       </ScrollView>
+      <FilterModal
+        visible={filterModalVisible}
+        onClose={() => setFilterModalVisible(false)}
+        filters={filters}
+        allowed={allowedFilters}
+        setFilters={handleFiltersApplied}
+        clearFilters={handleClearFilters}
+      />
     </View>
   );
 };

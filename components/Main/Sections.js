@@ -16,7 +16,7 @@ const SEC_GAP = 8;
 const SEC_COLS = 3;
 
 const Sections = ({ data }) => {
-    const navigation = useNavigation();
+  const navigation = useNavigation();
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const { Colors } = useTheme();
@@ -28,14 +28,16 @@ const Sections = ({ data }) => {
     { key: "Observations", icon: "binoculars", labelKey: "observations" },
     { key: "Places", icon: "location", labelKey: "places" },
     { key: "Stat", icon: "stats-chart", labelKey: "statistics" },
-    { key: "Diaries", icon: "book", labelKey: "diaries", showBadge: true },
+    { key: "Diaries", icon: "book", labelKey: "diaries", showBadge: false },
     { key: "Rating", icon: "trophy", labelKey: "rating" },
     { key: "Checklist", icon: "checkbox", labelKey: "checklist" },
   ];
 
   return (
     <>
-      {/* <Text style={styles.groupLabel}>{t("sections") ?? "Разделы"}</Text> */}
+    <Text style={styles.groupLabel}>
+        {t("sections") ?? "Разделы"}
+      </Text>
       <View style={styles.secGrid}>
         {Array.from({ length: Math.ceil(SECTIONS.length / SEC_COLS) }).map(
           (_, rowIndex) => {
@@ -112,8 +114,7 @@ const stylesFn = (Colors) =>
       fontWeight: "600",
       color: Colors.textMain,
       marginLeft: H_PAD,
-      marginBottom: 8,
-      marginTop: 4,
+      marginVertical: 8,
     },
     secGrid: {
       paddingHorizontal: H_PAD,
@@ -125,7 +126,7 @@ const stylesFn = (Colors) =>
       width: "100%",
     },
     secCard: {
-      borderRadius: 18,
+      borderRadius: 14,
       borderWidth: 0.5,
       borderColor: Colors.border,
       paddingVertical: 22,

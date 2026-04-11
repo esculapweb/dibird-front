@@ -76,7 +76,7 @@ const stylesFn = (Colors) =>
       marginHorizontal: H_PAD,
       marginBottom: 12,
       backgroundColor: Colors.primary100,
-      borderRadius: 16,
+      borderRadius: 14,
       borderWidth: 0.5,
       borderColor: Colors.border,
       padding: 16,

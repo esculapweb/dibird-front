@@ -84,7 +84,7 @@ const FilterModal = ({
     type: "PlacesDropdown",
     queryFn: (sort) => fetchMyPlaces(effectiveTerritory, locationCoords, sort),
     params: [effectiveTerritory, locationCoords],
-    enabled: !!effectiveTerritory,
+    enabled: !!effectiveTerritory && allowed.includes("place"),
     locationAvailable,
     permissionStatus,
     onLocationUnavailable: handleLocationUnavailable,
@@ -98,7 +98,8 @@ const FilterModal = ({
     type: "SpeciesDropdown",
     queryFn: (sort) => fetchSpecies(effectiveTerritory, sort, date),
     params: [effectiveTerritory, language, date],
-    enabled: !!effectiveTerritory && date !== undefined,
+    enabled:
+      !!effectiveTerritory && date !== undefined && allowed.includes("species"),
   });
 
   const prevTerritoryRef = useRef(null);
@@ -136,7 +137,13 @@ const FilterModal = ({
   const isDateFilterActive = (d) => {
     if (!d) return false;
     if (d.mode === "any") return false;
-    return !!(d.from || d.to || d.year || d.type === "today" || d.type === "this_year");
+    return !!(
+      d.from ||
+      d.to ||
+      d.year ||
+      d.type === "today" ||
+      d.type === "this_year"
+    );
   };
 
   const getNewFilters = () => {

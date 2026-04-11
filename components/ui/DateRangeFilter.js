@@ -91,9 +91,9 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
         direction="column"
         options={[
           { label: t("all_period"), value: "all" },
-          { label: t("today"), value: "today" },
           { label: t("this_year"), value: "this_year" },
           { label: t("whole_year"), value: "year" },
+          { label: t("today"), value: "today" },
           { label: t("date_range"), value: "range" },
         ]}
       />

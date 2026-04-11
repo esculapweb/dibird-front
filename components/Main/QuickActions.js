@@ -15,9 +15,9 @@ const QuickActions = () => {
 
   return (
     <>
-      {/* <Text style={styles.groupLabel}>
+      <Text style={styles.groupLabel}>
         {t("quick_actions") ?? "Быстрые действия"}
-      </Text> */}
+      </Text>
       <View style={styles.quickRow}>
         <TouchableOpacity
           style={[styles.qbtn, { backgroundColor: Colors.main100 }]}
@@ -74,7 +74,7 @@ const stylesFn = (Colors) =>
       alignItems: "center",
       justifyContent: "center",
       gap: 8,
-      borderRadius: 16,
+      borderRadius: 14,
       paddingVertical: 16,
     },
     qbtnText: {

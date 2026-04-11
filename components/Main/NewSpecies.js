@@ -1,13 +1,12 @@
 import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
-
 import { useTheme } from "../../store/theme-context";
 
 const H_PAD = 16;
 
 const NewSpecies = ({ data }) => {
-    const navigation = useNavigation();
+  const navigation = useNavigation();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -27,7 +26,10 @@ const NewSpecies = ({ data }) => {
         {data.map((sp, i) => (
           <TouchableOpacity
             key={sp.key}
-            style={[styles.nsRow, i < data.length - 1 && styles.nsRowDivider]}
+            style={[
+              styles.nsRow,
+              i < data.length - 1 && styles.nsRowDivider,
+            ]}
             activeOpacity={0.7}
             onPress={() =>
               navigation.navigate("SpeciesDetail", { species: sp })
@@ -57,25 +59,27 @@ const stylesFn = (Colors) =>
       alignItems: "center",
       justifyContent: "space-between",
       marginTop: 4,
+      marginBottom: 0,
     },
     groupLabel: {
       fontSize: 15,
       fontWeight: "600",
       color: Colors.textMain,
-      marginLeft: H_PAD,
+      marginLeft: H_PAD+8,
       marginBottom: 8,
-      marginTop: 4,
-    },
 
+    },
     seeAll: {
       fontSize: 14,
       fontWeight: "500",
-      marginRight: H_PAD,
+      marginRight: H_PAD + 8,
       color: Colors.main100,
     },
-
     nsList: {
-      marginBottom: 4,
+      marginHorizontal: H_PAD,
+      borderRadius: 14,
+      overflow: "hidden",
+      marginBottom: 12,
     },
     nsRow: {
       flexDirection: "row",
@@ -83,6 +87,7 @@ const stylesFn = (Colors) =>
       gap: 12,
       paddingHorizontal: 14,
       paddingVertical: 13,
+      backgroundColor: Colors.primary100,
     },
     nsRowDivider: {
       borderBottomWidth: 0.5,

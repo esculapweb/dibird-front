@@ -42,6 +42,21 @@ export const formatDateTime = (isoDate) => {
   }).format(d);
 };
 
+export const formatDateFilterMain = (value) => {
+  if (value?.type === "range") {
+    if (value?.from && value?.to)
+      return `${formatDate(value?.from)} – ${formatDate(value?.to)}`;
+
+    if (value?.from) return `${i18n.t("from")} ${formatDate(value?.from)}`;
+    if (value?.to) return `${i18n.t("to")} ${formatDate(value?.to)}`;
+  }
+  if (value?.type === "year" && value?.year) return value.year.toString();
+  if (value?.type === "today") return i18n.t("today");
+  if (value?.type === "this_year") return i18n.t("this_year");
+
+  return i18n.t("all_period");
+};
+
 export const normalizeValue = (value, allowed_values) => {
   if (!value) return allowed_values[0];
   if (!allowed_values.includes(value)) return allowed_values[0];
