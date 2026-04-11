@@ -45,7 +45,7 @@ export const fetchMyPlaces = async (territory = null, coords = null, order) => {
   return res.data.map((item) => ({
     value: item.id,
     label: item.name,
-    iconLabel: item.favourite && "heart",
+    iconLabel: item.favourite && "star",
     location: item.location,
     distance: item.distance ?? null,
     preview: item.preview,

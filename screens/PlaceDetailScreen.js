@@ -55,8 +55,8 @@ const PlaceDetailScreen = ({ route, navigation }) => {
       {
         condition: !!place,
         onPress: handleFavourite,
-        icon: place?.favourite ? "heart" : "heart-outline",
-        tintColor: Colors.main100,
+        icon: place?.favourite ? "star" : "star-outline",
+        tintColor: Colors.yellow,
         disabled: updateMutation.isPending || !place,
         loading: updateMutation.isPending,
       },

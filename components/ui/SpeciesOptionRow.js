@@ -70,7 +70,7 @@ const SpeciesOptionRow = ({
           <Ionicons
             name="eye-outline"
             size={18}
-            color={Colors.main100}
+            color={Colors.green}
             style={styles.eyeIcon}
           />
         )}

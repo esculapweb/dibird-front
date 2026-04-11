@@ -34,7 +34,7 @@ const DefaultOptionRow = ({
             <Ionicons
               name={item.iconLabel}
               size={16}
-              color={Colors.main100}
+              color={Colors.yellow}
               style={styles.icon}
             />
           )}
@@ -53,7 +53,7 @@ const DefaultOptionRow = ({
           <Ionicons
             name={item.iconLabelRight}
             size={16}
-            color={Colors.main100}
+            color={Colors.yellow}
             style={styles.iconLabelRight}
           />
         )}

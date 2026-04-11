@@ -25,6 +25,8 @@ export const LightColors = {
   error100: "#ffe9e7",
   error500: "#f1665a",
   error600: "#d93b2e",
+  green: "#1d9e75",
+  yellow: "#EAB308",
 
   border: "#ced4da",
   dropdownIcon: "#9ca3af",

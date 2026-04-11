@@ -162,7 +162,7 @@
                         <Ionicons
                           name={iconLabel}
                           size={14}
-                          color={Colors.main100}
+                          color={Colors.yellow}
                         />
                       </View>
                     )}
