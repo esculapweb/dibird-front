@@ -162,8 +162,15 @@ const FilterModal = ({
     setFilters(newFilters);
     onClose();
 
-    if (allowed.includes("territory"))
+    if (allowed.includes("territory")) {
+      const territoryChanged = newFilters.territory !== filters.territory;
       await setTerritory(newFilters.territory ?? null);
+      if (territoryChanged) {
+        await setPlace(null);
+        await setSpecies(null);
+      }
+    }
+
     if (allowed.includes("date")) await setDate(newFilters.date ?? null);
     if (allowed.includes("place")) await setPlace(newFilters.place ?? null);
 
