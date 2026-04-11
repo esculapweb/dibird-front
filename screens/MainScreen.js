@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { View, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -11,7 +11,6 @@ import NewSpecies from "../components/Main/NewSpecies";
 import QuickActions from "../components/Main/QuickActions";
 import Sections from "../components/Main/Sections";
 import FilterModal from "../components/Filters/FilterModal";
-import { useFilters } from "../store/filters-context";
 import { useSyncedFilters } from "../hooks/useSyncedFIlters";
 
 const MainScreen = ({ navigation, route }) => {
@@ -24,58 +23,21 @@ const MainScreen = ({ navigation, route }) => {
     setShowDivider((prev) => (prev === should ? prev : should));
   };
 
-  const { territory, setTerritory, date, setDate, place, setPlace, species, setSpecies } =
-    useFilters();
+  const allowedFilters = ["territory", "date"];
 
   const {
     filters,
-    setFilters,
-    filtersLoaded,
-    ignoreContextSync,
-    setIgnoreContextSync,
+    filterModalVisible,
+    setFilterModalVisible,
+    handleFiltersApplied,
+    handleClearFilters,
   } = useSyncedFilters({
     route,
     navigation,
     screenName: "Main",
-    contextFilters: {
-      territory,
-      date,
-      place,
-      species,
-    },
-    sortOptions: [],
     allowSort: false,
+    allowedFilters,
   });
-
-  const [filterModalVisible, setFilterModalVisible] = useState(false);
-
-  const allowedFilters = ["territory", "date"];
-
-  const hasActiveFilters = filters
-    ? allowedFilters.some((key) => {
-        const v = filters[key];
-        return Array.isArray(v) ? v.length > 0 : v != null && v !== "";
-      })
-    : false;
-  const hasActiveFiltersRef = useRef(hasActiveFilters);
-  useEffect(() => {
-    hasActiveFiltersRef.current = hasActiveFilters;
-  }, [hasActiveFilters]);
-
-  const handleFiltersApplied = (newFilters) => {
-    setIgnoreContextSync(false); 
-    setFilters(newFilters);
-  };
-
-  const handleClearFilters = async () => {
-    setIgnoreContextSync(true);
-    await setDate(null);
-    await setTerritory(null);
-    await setPlace(null);
-    await setSpecies(null);
-    setFilters({});
-    setFilterModalVisible(false);
-  };
 
   // Mock data — replace with store / API
   const dataObservations = [
