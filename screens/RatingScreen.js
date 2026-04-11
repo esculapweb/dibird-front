@@ -11,6 +11,7 @@ import { useTheme } from "../store/theme-context";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import { useProfile } from "../store/profile-context";
 import { buildShareUrl } from "../util/helpers";
+import BackgroundScene from "../components/ui/BackgroundScene";
 
 const RatingScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
@@ -79,7 +80,8 @@ const RatingScreen = ({ route, navigation }) => {
   );
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: Colors.backgroundMain }}>
+      <BackgroundScene />
       <ListScreen
         route={route}
         navigation={navigation}

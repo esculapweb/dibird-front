@@ -5,7 +5,7 @@ export const DarkColors = {
   overlayBg: "rgba(0,0,0,0.8)",
   overlay: "rgba(0,0,0,0.7)",
   mapOverlay: "rgba(0,0,0,0.25)",
-    mainProgressBg: "rgba(0,0,0,0.15)",
+  mainProgressBg: "rgba(0,0,0,0.15)",
 
   textMain: "#e5e7eb",
   textMiddle: "#ced2d7",
@@ -48,9 +48,11 @@ export const DarkColors = {
   toastInfo: "rgba(59,130,246,0.8)",
   toastBorder: "rgba(255,255,255,0.1)",
 
-  mainBlob1: "#1e3a3a",
-  mainBlob2: "rgba(240, 194, 75, 0.15)",
-  mainBlob3: "#3a2a30",
+  // mainBlob1: "#1e3a3a",
+  mainBlob1: "rgba(240, 194, 75, 0.05)",
+  mainBlob2: "rgba(240, 194, 75, 0.05)",
+  mainBlob3: "rgba(240, 194, 75, 0.05)",
+  // mainBlob3: "#3a2a30",
 
   compareP1: "rgba(34,197,94,0.9)",
   compareP2: "#f0c24b",

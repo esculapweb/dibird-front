@@ -13,7 +13,11 @@ import Sections from "../components/Main/Sections";
 import FilterModal from "../components/Filters/FilterModal";
 import { useSyncedFilters } from "../hooks/useSyncedFIlters";
 
+import BackgroundScene from "../components/ui/BackgroundScene";
+import { useTheme } from "../store/theme-context";
+
 const MainScreen = ({ navigation, route }) => {
+const {Colors} = useTheme();
   const insets = useSafeAreaInsets();
   const NAVBAR_HEIGHT = insets.top + 60;
 
@@ -87,7 +91,8 @@ const MainScreen = ({ navigation, route }) => {
   ];
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: Colors.backgroundMain }}>
+      <BackgroundScene />
       <FloatingNavbar
         showDivider={showDivider}
         onPress={() => setFilterModalVisible(true)}
