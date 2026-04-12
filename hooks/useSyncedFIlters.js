@@ -202,7 +202,11 @@ export const useSyncedFilters = ({
           }
         }
 
-        if (species == null && newFilters.species != null) {
+        if (
+          species == null &&
+          newFilters.species != null &&
+          !ignoreContextSync
+        ) {
           newFilters.species = null;
           changed = true;
         }

@@ -7,12 +7,17 @@ import { useTheme } from "../../store/theme-context";
 const H_PAD = 16;
 const SPARK_H = 52;
 
-const Sparkline = ({ data }) => {
+const Sparkline = ({ filters }) => {
   const navigation = useNavigation();
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
+
+  const data = [
+    1, 2, 1, 3, 2, 1, 4, 2, 3, 5, 3, 2, 1, 3, 2, 4, 3, 2, 1, 2, 4, 2, 1, 3, 4,
+    3, 2, 4, 3, 5,
+  ];
 
   const INNER_W = width - H_PAD * 2 - 32;
   const barW = Math.max(

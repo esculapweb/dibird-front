@@ -28,15 +28,15 @@ const Stats = ({ data, filters }) => {
       <StatCard
         value={data.species}
         label={t("species")}
-        onPress={() => {
+        onPress={() =>
           navigation.navigate("Stat", {
             filtersOverride: {
               ...filters,
             },
             seenMode: "seen",
             o: "-seen,-date_time",
-          });
-        }}
+          })
+        }
       />
       <StatCard
         value={data.observations}

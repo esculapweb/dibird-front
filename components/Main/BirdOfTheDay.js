@@ -6,11 +6,18 @@ import { useTheme } from "../../store/theme-context";
 
 const H_PAD = 16;
 
-const BirdOfTheDay = ({ data }) => {
+const BirdOfTheDay = ({ filters }) => {
   const navigation = useNavigation();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
+
+  const data = {
+    emoji: "🦅",
+    name: "Орлан-белохвост",
+    latin: "Haliaeetus albicilla",
+    hintKey: "bird_of_day_hint",
+  };
 
   return (
     <TouchableOpacity

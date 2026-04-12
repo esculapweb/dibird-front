@@ -31,6 +31,7 @@ const MainScreen = ({ navigation, route }) => {
 
   const {
     filters,
+    filtersLoaded,
     filterModalVisible,
     setFilterModalVisible,
     handleFiltersApplied,
@@ -43,14 +44,6 @@ const MainScreen = ({ navigation, route }) => {
     allowedFilters,
   });
 
-  // Mock data — replace with store / API
-  const dataObservations = [
-    1, 2, 1, 3, 2, 1, 4, 2, 3, 5, 3, 2, 1, 3, 2, 4, 3, 2, 1, 2, 4, 2, 1, 3, 4,
-    3, 2, 4, 3, 5,
-  ];
-
-  // or dataNewSpecies
-
   const dataStats = { species: 23, observations: 37, diaries: 10, rank: 1 };
   const dataChecklist = {
     country: "Беларусь",
@@ -60,35 +53,6 @@ const MainScreen = ({ navigation, route }) => {
     newCount: 5,
     monthKey: "april",
   };
-  const birdOfDay = {
-    emoji: "🦅",
-    name: "Орлан-белохвост",
-    latin: "Haliaeetus albicilla",
-    hintKey: "bird_of_day_hint",
-  };
-  const newSpecies = [
-    {
-      key: "sp1",
-      emoji: "🦢",
-      name: "Лебедь-кликун",
-      latin: "Cygnus cygnus",
-      date: "8 апр",
-    },
-    {
-      key: "sp2",
-      emoji: "🐦",
-      name: "Авдотка",
-      latin: "Burhinus oedicnemus",
-      date: "7 апр",
-    },
-    {
-      key: "sp3",
-      emoji: "🕊️",
-      name: "Белокрылая крачка",
-      latin: "Chlidonias leucopterus",
-      date: "4 апр",
-    },
-  ];
 
   return (
     <View style={{ flex: 1, backgroundColor: Colors.backgroundMain }}>
@@ -110,13 +74,13 @@ const MainScreen = ({ navigation, route }) => {
       >
         <Stats data={dataStats} filters={filters} />
 
-        <Sparkline data={dataObservations} />
+        <Sparkline filters={filters} />
 
         <ChecklistHero data={dataChecklist} />
 
-        <BirdOfTheDay data={birdOfDay} />
+        <BirdOfTheDay filters={filters} />
 
-        <NewSpecies data={newSpecies} />
+        <NewSpecies filters={filters} filtersLoaded={filtersLoaded} />
 
         <QuickActions />
 
