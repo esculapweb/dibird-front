@@ -107,6 +107,7 @@ export const useSyncedFilters = ({
         setIgnoreContextSync(true);
 
         initFiltersRef.current = true;
+        if (route.params?.o) setSort(route.params.o);
 
         navigation.setParams({ filtersOverride: undefined });
         setSortReady(true);

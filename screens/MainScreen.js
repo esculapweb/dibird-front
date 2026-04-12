@@ -17,7 +17,7 @@ import BackgroundScene from "../components/ui/BackgroundScene";
 import { useTheme } from "../store/theme-context";
 
 const MainScreen = ({ navigation, route }) => {
-const {Colors} = useTheme();
+  const { Colors } = useTheme();
   const insets = useSafeAreaInsets();
   const NAVBAR_HEIGHT = insets.top + 60;
 
@@ -108,7 +108,7 @@ const {Colors} = useTheme();
         onScroll={onScroll}
         scrollEventThrottle={16}
       >
-        <Stats data={dataStats} />
+        <Stats data={dataStats} filters={filters} />
 
         <Sparkline data={dataObservations} />
 

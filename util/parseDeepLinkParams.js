@@ -1,5 +1,5 @@
 export const parseDeepLinkParams = (params = {}) => {
-  const { territory, place, species, year, date_time_min, date_time_max, o } =
+  const { territory, place, species, year, date_time_min, date_time_max, o, seenMode } =
     params;
 
   const filters = {
@@ -32,7 +32,7 @@ export const parseDeepLinkParams = (params = {}) => {
     sort
   );
 
-  return { filters, sort, hasParams };
+  return { filters, sort, hasParams, seenMode: seenMode ?? null  };
 };
 
 const parseWebDate = (str) => {

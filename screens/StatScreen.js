@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo } from "react";
+import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import { View, Share, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
@@ -12,6 +12,7 @@ import { useFilters } from "../store/filters-context";
 import ConfirmBottomSheet from "../components/ui/ConfirmBottomSheet";
 import { useProfile } from "../store/profile-context";
 import { buildShareUrl } from "../util/helpers";
+import { parseDeepLinkParams } from "../util/parseDeepLinkParams";
 
 const StatScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
@@ -24,6 +25,10 @@ const StatScreen = ({ route, navigation }) => {
   const [currentFilters, setCurrentFilters] = useState({});
   const [currentSort, setCurrentSort] = useState(null);
   const { profile } = useProfile();
+  const { seenMode: initialSeenMode } = useMemo(
+    () => parseDeepLinkParams(route.params),
+    [],
+  );
 
   const viewMode = route.name === "Checklist" ? "checklist" : "stats";
 
@@ -57,6 +62,13 @@ const StatScreen = ({ route, navigation }) => {
     [t],
   );
   const config = MODE_CONFIG[viewMode];
+
+  useEffect(() => {
+    if (initialSeenMode) {
+      setSeenMode(initialSeenMode);
+      navigation.setParams({ seenMode: undefined });
+    }
+  }, []);
 
   const handleModeChange = useCallback(() => {
     const targetRoute = route.name === "Checklist" ? "Stat" : "Checklist";
