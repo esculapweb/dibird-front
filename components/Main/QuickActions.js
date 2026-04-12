@@ -7,26 +7,29 @@ import { useTheme } from "../../store/theme-context";
 
 const H_PAD = 16;
 
-const QuickActions = () => {
-    const navigation = useNavigation();
+const QuickActions = ({ filters }) => {
+  const navigation = useNavigation();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
 
   return (
     <>
-      <Text style={styles.groupLabel}>
-        {t("quick_actions") ?? "Быстрые действия"}
-      </Text>
+      <Text style={styles.groupLabel}>{t("quick_actions")}</Text>
       <View style={styles.quickRow}>
         <TouchableOpacity
           style={[styles.qbtn, { backgroundColor: Colors.main100 }]}
           activeOpacity={0.85}
-          onPress={() => navigation.navigate("DiaryEditor")}
+          onPress={() =>
+            navigation.navigate("DiaryEditor", {
+              defaultTerritory: filters.territory ?? null,
+              returnMode: "back",
+            })
+          }
         >
           <Ionicons name="book" size={22} color={Colors.textOpposite} />
           <Text style={[styles.qbtnText, { color: Colors.textOpposite }]}>
-            + {t("diary") ?? "Дневник"}
+            + {t("diary")}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -39,11 +42,16 @@ const QuickActions = () => {
             },
           ]}
           activeOpacity={0.85}
-          onPress={() => navigation.navigate("ObservationEditor")}
+          onPress={() =>
+            navigation.navigate("ObservationEditor", {
+              defaultTerritory: filters.territory ?? null,
+              returnMode: "back",
+            })
+          }
         >
           <Ionicons name="binoculars" size={22} color={Colors.textMain} />
           <Text style={[styles.qbtnText, { color: Colors.textMain }]}>
-            + {t("observation") ?? "Наблюдение"}
+            + {t("observation")}
           </Text>
         </TouchableOpacity>
       </View>

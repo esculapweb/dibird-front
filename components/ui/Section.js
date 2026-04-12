@@ -11,7 +11,6 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../store/theme-context";
 
-// Нужно для Android
 if (
   Platform.OS === "android" &&
   UIManager.setLayoutAnimationEnabledExperimental

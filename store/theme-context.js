@@ -52,6 +52,7 @@ export const ThemeProvider = ({ children }) => {
       theme,
       manualTheme,
       Colors: theme === "dark" ? DarkColors : LightColors,
+      isDark: theme === "dark",
       toggleTheme,
     }),
     [theme, manualTheme, systemScheme],

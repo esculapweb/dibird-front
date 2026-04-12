@@ -36,7 +36,7 @@ const Sections = ({ data }) => {
   return (
     <>
     <Text style={styles.groupLabel}>
-        {t("sections") ?? "Разделы"}
+        {t("sections")}
       </Text>
       <View style={styles.secGrid}>
         {Array.from({ length: Math.ceil(SECTIONS.length / SEC_COLS) }).map(

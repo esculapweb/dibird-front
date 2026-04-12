@@ -126,3 +126,18 @@ export const buildShareUrl = (path, filters = null, sort = null) => {
 
   return query ? `${base}?${query}` : base;
 };
+
+export const formatDateShort = (dateStr) => {
+  if (!dateStr) return null;
+
+  const date = new Date(dateStr);
+  const d = new Intl.DateTimeFormat(i18n.language, {
+    day: "numeric",
+    month: "short",
+  }).format(date);
+
+  return {
+    d,
+    y: String(date.getFullYear()),
+  };
+};

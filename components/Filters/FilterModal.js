@@ -105,8 +105,6 @@ const FilterModal = ({
   const prevTerritoryRef = useRef(null);
 
   useEffect(() => {
-      console.log('effectiveTerritory changed', effectiveTerritory, 'placeValue', placeValue, 'speciesValue', speciesValue);
-
     if (prevTerritoryRef.current === null && effectiveTerritory !== null) {
       prevTerritoryRef.current = effectiveTerritory;
       return;

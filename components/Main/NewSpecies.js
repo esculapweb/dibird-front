@@ -2,10 +2,14 @@ import { useCallback } from "react";
 import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
+import { Image } from "expo-image";
 
 import { useTheme } from "../../store/theme-context";
 import { fetchStat } from "../../util/fetches";
 import { useList } from "../../hooks/useList";
+import { Config } from "../../constants/config";
+import { BirdSVG } from "../ui/Svgs";
+import { formatDateShort } from "../../util/helpers";
 
 const H_PAD = 16;
 
@@ -28,31 +32,10 @@ const NewSpecies = ({ filters, filtersLoaded }) => {
     enabled: filtersLoaded,
   });
 
-  const data = newSpeciesData?.pages?.[0]?.results?.slice(0, 3) ?? [];
+  const isYearFilter =
+    filters?.date?.type === "year" || filters?.date?.type === "this_year";
 
-  // const data = [
-  //   {
-  //     key: "sp1",
-  //     emoji: "🦢",
-  //     name: "Лебедь-кликун",
-  //     latin: "Cygnus cygnus",
-  //     date: "8 апр",
-  //   },
-  //   {
-  //     key: "sp2",
-  //     emoji: "🐦",
-  //     name: "Авдотка",
-  //     latin: "Burhinus oedicnemus",
-  //     date: "7 апр",
-  //   },
-  //   {
-  //     key: "sp3",
-  //     emoji: "🕊️",
-  //     name: "Белокрылая крачка",
-  //     latin: "Chlidonias leucopterus",
-  //     date: "4 апр",
-  //   },
-  // ];
+  const data = newSpeciesData?.pages?.[0]?.results?.slice(0, 3) ?? [];
 
   if (isLoading) {
     return (
@@ -104,14 +87,14 @@ const NewSpecies = ({ filters, filtersLoaded }) => {
       </>
     );
   }
-  
+
   if (data.length === 0) return null;
 
   return (
     <>
       <View style={styles.sectionHeader}>
         <Text style={styles.groupLabel}>
-          {t("new_species") ?? "Новые виды"}
+          {t("new_species")}
         </Text>
         <TouchableOpacity
           onPress={() =>
@@ -123,39 +106,57 @@ const NewSpecies = ({ filters, filtersLoaded }) => {
               o: "-seen,-date_time",
             })
           }
+          hitSlop={8}
         >
-          <Text style={styles.seeAll}>{t("all") ?? "все"} →</Text>
+          <Text style={styles.seeAll}>{t("all")} →</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.nsList}>
-        {data.map((item, i) => (
-          <TouchableOpacity
-            key={item.species_id}
-            style={[styles.nsRow, i < data.length - 1 && styles.nsRowDivider]}
-            activeOpacity={0.7}
-            onPress={() =>
-              navigation.navigate("Observations", {
-                filtersOverride: {
-                  territory: filters.territory ?? null,
-                  place: filters.place ?? null,
-                  species: item.species_id,
-                  speciesName: item.sp_name_lang,
-                  date: filters.date ?? null,
-                },
-              })
-            }
-          >
-            <View style={styles.nsImgBox}>
-              <Text style={{ fontSize: 24 }}>{item.ioc_id}</Text>
-            </View>
-            <View style={styles.nsNames}>
-              <Text style={styles.nsCommon}>{item.sp_name_lang}</Text>
-              <Text style={styles.nsLatin}>{item.sp_latin}</Text>
-            </View>
-            <Text style={styles.nsDate}>{item.min_date}</Text>
-          </TouchableOpacity>
-        ))}
+        {data.map((item, i) => {
+          const { d, y } = formatDateShort(item.min_date);
+          return (
+            <TouchableOpacity
+              key={item.species_id}
+              style={[styles.nsRow, i < data.length - 1 && styles.nsRowDivider]}
+              activeOpacity={0.7}
+              onPress={() =>
+                navigation.navigate("Observations", {
+                  filtersOverride: {
+                    territory: filters.territory ?? null,
+                    place: filters.place ?? null,
+                    species: item.species_id,
+                    speciesName: item.sp_name_lang,
+                    date: filters.date ?? null,
+                  },
+                })
+              }
+            >
+              <View style={styles.imageWrapper}>
+                {item.sp_thumb ? (
+                  <Image
+                    source={{ uri: `${Config.mediaUrl}/${item.sp_thumb}` }}
+                    style={styles.image}
+                    contentFit="cover"
+                    cachePolicy="disk"
+                  />
+                ) : (
+                  <View style={styles.imagePlaceholder}>
+                    <BirdSVG size={26} color={Colors.textSecondary} />
+                  </View>
+                )}
+              </View>
+              <View style={styles.nsNames}>
+                <Text style={styles.nsCommon} numberOfLines={1}>{item.sp_name_lang}</Text>
+                <Text style={styles.nsLatin} numberOfLines={1}>{item.sp_latin}</Text>
+              </View>
+              <Text style={styles.nsDate}>
+                {d}
+                {!isYearFilter && <Text>{`\n${y}`}</Text>}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
     </>
   );
@@ -176,13 +177,13 @@ const stylesFn = (Colors) =>
       fontSize: 15,
       fontWeight: "600",
       color: Colors.textMain,
-      marginLeft: H_PAD + 8,
+      marginLeft: H_PAD,
       marginBottom: 8,
     },
     seeAll: {
       fontSize: 14,
       fontWeight: "500",
-      marginRight: H_PAD + 8,
+      marginRight: H_PAD,
       color: Colors.main100,
     },
     nsList: {
@@ -203,16 +204,23 @@ const stylesFn = (Colors) =>
       borderBottomWidth: 0.5,
       borderBottomColor: Colors.divider,
     },
-    nsImgBox: {
+    imageWrapper: {
+      width: 48,
+      height: 48,
+    },
+    image: {
       width: 48,
       height: 48,
       borderRadius: 12,
-      borderWidth: 0.5,
-      borderColor: Colors.border,
-      alignItems: "center",
+      backgroundColor: Colors.imageBg,
+    },
+    imagePlaceholder: {
+      width: 48,
+      height: 48,
+      borderRadius: 12,
+      backgroundColor: Colors.imageBg,
       justifyContent: "center",
-      flexShrink: 0,
-      backgroundColor: Colors.backgroundMain,
+      alignItems: "center",
     },
     nsNames: { flex: 1 },
     nsCommon: {
@@ -230,5 +238,6 @@ const stylesFn = (Colors) =>
       fontSize: 13,
       color: Colors.textSecondary,
       flexShrink: 0,
+      textAlign: "right",
     },
   });

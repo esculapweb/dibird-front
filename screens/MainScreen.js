@@ -82,7 +82,7 @@ const MainScreen = ({ navigation, route }) => {
 
         <NewSpecies filters={filters} filtersLoaded={filtersLoaded} />
 
-        <QuickActions />
+        <QuickActions filters={filters} />
 
         <Sections data={dataStats} />
       </ScrollView>
