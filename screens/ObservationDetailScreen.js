@@ -123,7 +123,6 @@ const ObservationDetailScreen = ({ route, navigation }) => {
   useLayoutEffect(() => {
     if (!observation) return;
     navigation.setOptions({
-      title: t("observation"),
       headerRight: () => (
         <IconsHeader
           headerRightBeginning={headerRightBeginning}

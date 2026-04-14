@@ -140,7 +140,6 @@ const PlaceDetailScreen = ({ route, navigation }) => {
     if (!place) return;
 
     navigation.setOptions({
-      title: "",
       headerRight: () => (
         <IconsHeader headerRightBeginning={headerRightBeginning} />
       ),

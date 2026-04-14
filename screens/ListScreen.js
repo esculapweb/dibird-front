@@ -152,8 +152,6 @@ const ListScreen = ({
     ...(headerRightEnd || []),
   ].filter(Boolean).length;
 
-  console.log(screenName, iconCount)
-
   useEffect(() => {
     onFiltersChange?.(filters);
   }, [filters]);
@@ -189,7 +187,7 @@ const ListScreen = ({
     navigation.setOptions({
       headerTitle: () => (
         <HeaderTitleWithBadge
-          title={title}
+          title={title ?? t(route.name)}
           badgeCount={
             showHeaderBadge
               ? (data?.pages[0]?.pagination?.count ?? 0)

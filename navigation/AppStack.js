@@ -105,7 +105,9 @@ const MainDrawer = () => {
       screenOptions={{
         drawerActiveTintColor: Colors.textOpposite,
         drawerActiveBackgroundColor: Colors.main100,
-        headerShown: false
+        headerShown: false,
+        headerBackTitleVisible: false,
+        headerBackButtonDisplayMode: "minimal",
       }}
     >
       <Drawer.Screen
@@ -172,49 +174,30 @@ const AppNavigator = () => {
   }, [resetFilters, queryClient]);
 
   return (
-    <Stack.Navigator>
+    <Stack.Navigator
+      screenOptions={{
+        headerBackTitleVisible: false,
+        headerBackButtonDisplayMode: "minimal",
+        headerBackTitle: "",
+      }}
+    >
       <Stack.Screen
         name="Main"
         component={MainDrawer}
         options={{ headerShown: false }}
       />
 
-      <Stack.Screen
-        name="Stat"
-        component={StatScreen}
-        options={({ route }) => ({
-          title: t("statistics"),
-          headerBackTitleVisible: false,
-          headerBackTitle: route.params?.backTitle ?? t("main"),
-        })}
-      />
+      <Stack.Screen name="Stat" component={StatScreen} />
 
-      <Stack.Screen
-        name="Checklist"
-        component={StatScreen}
-        options={{
-          title: t("checklist"),
-          headerBackTitleVisible: false,
-          headerBackTitle: t("main"),
-        }}
-      />
+      <Stack.Screen name="Checklist" component={StatScreen} />
 
-      <Stack.Screen
-        name="Places"
-        component={PlacesScreen}
-        options={{
-          title: t("places"),
-          headerBackTitleVisible: false,
-          headerBackTitle: t("main"),
-        }}
-      />
+      <Stack.Screen name="Places" component={PlacesScreen} />
 
       <Stack.Screen
         name="PlaceDetail"
         component={PlaceDetailScreen}
         options={{
-          title: t(""),
-          headerBackTitleVisible: false,
+          title: t("place"),
         }}
       />
 
@@ -223,26 +206,16 @@ const AppNavigator = () => {
         component={PlaceEditorScreen}
         options={{
           title: t("new_place"),
-          headerBackTitleVisible: false,
         }}
       />
 
-      <Stack.Screen
-        name="Observations"
-        component={ObservationsScreen}
-        options={{
-          title: t("observations"),
-          headerBackTitleVisible: false,
-          headerBackTitle: t("main"),
-        }}
-      />
+      <Stack.Screen name="Observations" component={ObservationsScreen} />
 
       <Stack.Screen
         name="ObservationDetail"
         component={ObservationDetailScreen}
         options={{
-          title: t(""),
-          headerBackTitleVisible: false,
+          title: t("observation"),
         }}
       />
 
@@ -251,26 +224,16 @@ const AppNavigator = () => {
         component={ObservationEditorScreen}
         options={{
           title: t("new_observation"),
-          headerBackTitleVisible: false,
         }}
       />
 
-      <Stack.Screen
-        name="Diaries"
-        component={DiariesScreen}
-        options={{
-          title: t("diaries"),
-          headerBackTitleVisible: false,
-          headerBackTitle: t("main"),
-        }}
-      />
+      <Stack.Screen name="Diaries" component={DiariesScreen} />
 
       <Stack.Screen
         name="DiaryDetail"
         component={DiaryDetailScreen}
         options={{
-          title: t(""),
-          headerBackTitleVisible: false,
+          title: t("diary"),
         }}
       />
 
@@ -279,37 +242,20 @@ const AppNavigator = () => {
         component={DiaryEditorScreen}
         options={{
           title: t("new_diary"),
-          headerBackTitleVisible: false,
         }}
       />
 
-      <Stack.Screen
-        name="Rating"
-        component={RatingScreen}
-        options={{
-          title: t("rating"),
-          headerBackTitleVisible: false,
-          headerBackTitle: t("main"),
-        }}
-      />
+      <Stack.Screen name="Rating" component={RatingScreen} />
 
       <Stack.Screen
         name="RatingsCompare"
         component={RatingsCompareScreen}
         options={{
           title: t("rating_compare"),
-          headerBackTitleVisible: false,
         }}
       />
 
-      <Stack.Screen
-        name="UserStat"
-        component={UserStatScreen}
-        options={{
-          title: t("user_statistics"),
-          headerBackTitleVisible: false,
-        }}
-      />
+      <Stack.Screen name="UserStat" component={UserStatScreen} />
     </Stack.Navigator>
   );
 };
