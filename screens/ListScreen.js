@@ -6,6 +6,7 @@ import {
   useRef,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import FilterModal from "../components/Filters/FilterModal";
@@ -38,7 +39,6 @@ const ListScreen = ({
   headerRightBeginning,
   headerRightEnd,
   handleSharePress,
-  fabOffset,
   fabIcon,
   getItemId = (item) => item.id,
   onFiltersChange,
@@ -53,10 +53,10 @@ const ListScreen = ({
   showHeaderBadge = true,
   topEl,
   bottomEl,
-  bottomHeight
 }) => {
   const screenName = screenNameOverride ?? route.name;
   const { t } = useTranslation();
+    const insets = useSafeAreaInsets();
   const keyExtractor = (item, _) => `${screenName}-${getItemId(item)}`;
   const [sortModalVisible, setSortModalVisible] = useState(false);
 
@@ -194,14 +194,14 @@ const ListScreen = ({
     });
   }, [navigation, headerRightKey, data]);
 
-  // const bottomEl = showSearch && (
-  //   <SearchInput
-  //     value={search}
-  //     onChange={setSearch}
-  //     onClear={handleClearSearch}
-  //     placeholder={t("search_by_name")}
-  //   />
-  // );
+  const searchEl = showSearch && (
+    <SearchInput
+      value={search}
+      onChange={setSearch}
+      onClear={handleClearSearch}
+      placeholder={t("search_by_name")}
+    />
+  );
 
   if (isError)
     return (
@@ -215,7 +215,7 @@ const ListScreen = ({
   if (isLoading || !data) return <LoadingOverlay />;
 
   return (
-    <Layout keyBoard={true} bottom={bottomEl} bottomHeight={bottomHeight} top={topEl}>
+    <Layout keyBoard={true} bottom={bottomEl} top={topEl ?? searchEl}>
       {hasActiveFilters && (
         <FilterChips
           filters={filters}
@@ -236,7 +236,6 @@ const ListScreen = ({
         keyExtractor={keyExtractor}
         noItems={noItems}
         listHeader={listHeader}
-        fabOffset={fabOffset}
         fabIcon={fabIcon}
       />
       <SortModal

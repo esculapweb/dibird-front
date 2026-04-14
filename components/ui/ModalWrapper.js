@@ -82,7 +82,7 @@ const stylesFn = (Colors) =>
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      backgroundColor: Colors.primary100,
+      // backgroundColor: Colors.primary100,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: Colors.border,
     },
