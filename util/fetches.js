@@ -92,6 +92,19 @@ export const fetchUserProfile = async (profileId) => {
   return res.data;
 };
 
+export const fetchMyActivity = async (
+  filters,
+) => {
+  const params = {
+    territory: filters?.territory,
+    ...buildDateParams(filters?.date),
+  };
+
+  const res = await api.get("/myapi/observation2/activity/", { params });
+
+  return res.data;
+};
+
 const fetchAbstract = async (
   fetchUrl,
   filters = {},

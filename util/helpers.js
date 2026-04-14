@@ -141,3 +141,16 @@ export const formatDateShort = (dateStr) => {
     y: String(date.getFullYear()),
   };
 };
+
+export const formatMonthLabel = (dateStr) => {
+  if (!dateStr) return null;
+
+  const date = new Date(dateStr);
+  const d = new Intl.DateTimeFormat(i18n.language, {
+    month: "short",
+    year: "numeric",
+  }).format(date);
+
+  return d;
+};
+

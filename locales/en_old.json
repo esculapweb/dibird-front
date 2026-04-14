@@ -7,6 +7,7 @@
   "coordinates": "Coordinates",
   "coordinates_hint": "You can change coordinates by tapping on the map or editing the fields below. Coordinates must be in decimal degrees format.",
   "could_not_create_user": "Could not create user",
+  "daily_quote": "Every observation is a small discovery",
   "diaries_are_private_by_default": "Diaries and observations are private by default",
   "diearies": "",
   "distance": "",
@@ -18,6 +19,7 @@
   },
   "failed_remove_avatar": "Failed to remove avatar",
   "failed_to_update_favourite": "Failed to update favourite status",
+  "hello": "Hello",
   "image_processing_failed": "Image processing failed",
   "no_not_seen_empty": "All species are already marked as observed",
   "no_species_found": "",
@@ -31,6 +33,8 @@
   "settings": "Settings",
   "tap_map_to_change": "Tap on the map to change location",
   "uncheck_requires_delete": "",
+  "user_statistics": "Participant statistics",
   "view_observations": "View observations",
-  "warning": ""
+  "warning": "",
+  "your_tools": "Your tools"
 }
