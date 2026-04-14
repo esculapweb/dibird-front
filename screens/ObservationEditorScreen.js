@@ -196,6 +196,7 @@ const ObservationEditorScreen = ({ navigation, route }) => {
     placeValue,
     queryClient,
     diaryId,
+    validateForm,
   ]);
 
   const handleAddNewPlace = useCallback(() => {
@@ -252,27 +253,14 @@ const ObservationEditorScreen = ({ navigation, route }) => {
     ],
   );
 
-  const headerRight = () => (
-    <IconsHeader headerRightBeginning={headerRightBeginning} />
-  );
-
-  const headerRightKey = useMemo(
-    () =>
-      headerRightBeginning
-        ?.map(
-          (btn) =>
-            `${btn.icon}-${btn.disabled}-${btn.loading}-${Colors.main100}`,
-        )
-        .join("|"),
-    [headerRightBeginning],
-  );
-
   useLayoutEffect(() => {
     navigation.setOptions({
       title: isEditMode ? t("edit_observation") : t("new_observation"),
-      headerRight,
+      headerRight: () => (
+        <IconsHeader headerRightBeginning={headerRightBeginning} />
+      ),
     });
-  }, [navigation, headerRightKey, isEditMode]);
+  }, [navigation, isEditMode, headerRightBeginning]);
 
   if (
     isEditMode

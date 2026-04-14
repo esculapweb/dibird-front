@@ -1,12 +1,5 @@
-import {
-  useState,
-  useEffect,
-  useCallback,
-  useLayoutEffect,
-  useRef,
-} from "react";
+import { useState, useEffect, useCallback, useLayoutEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import FilterModal from "../components/Filters/FilterModal";
@@ -56,7 +49,6 @@ const ListScreen = ({
 }) => {
   const screenName = screenNameOverride ?? route.name;
   const { t } = useTranslation();
-    const insets = useSafeAreaInsets();
   const keyExtractor = (item, _) => `${screenName}-${getItemId(item)}`;
   const [sortModalVisible, setSortModalVisible] = useState(false);
 
@@ -88,11 +80,6 @@ const ListScreen = ({
     permissionStatus,
     allowedFilters,
   });
-
-  const hasActiveFiltersRef = useRef(hasActiveFilters);
-  useEffect(() => {
-    hasActiveFiltersRef.current = hasActiveFilters;
-  }, [hasActiveFilters]);
 
   useEffect(() => {
     onOpenFilterModal?.(() => setFilterModalVisible(true));
@@ -157,18 +144,15 @@ const ListScreen = ({
     }
   };
 
-  const headerRight = () => (
-    <IconsHeader
-      hasActiveFilters={hasActiveFiltersRef.current}
-      onSortPress={allowSort ? () => setSortModalVisible(true) : null}
-      onFilterPress={() => setFilterModalVisible(true)}
-      onSharePress={handleSharePress}
-      headerRightBeginning={headerRightBeginning}
-      headerRightEnd={headerRightEnd}
-    />
-  );
+  const iconCount = [
+    ...(headerRightBeginning || []),
+    allowSort ? 1 : 0,
+    1,
+    handleSharePress ? 1 : 0,
+    ...(headerRightEnd || []),
+  ].filter(Boolean).length;
 
-  const headerRightKey = `${!!handleSharePress}-${!!allowSort}-${headerRightBeginning?.length}-${headerRightEnd?.length}`;
+  console.log(screenName, iconCount)
 
   useEffect(() => {
     onFiltersChange?.(filters);
@@ -177,6 +161,29 @@ const ListScreen = ({
   useEffect(() => {
     onSortChange?.(sort);
   }, [sort]);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <IconsHeader
+          key={`header-icons-${iconCount}`}
+          hasActiveFilters={hasActiveFilters}
+          onSortPress={allowSort ? () => setSortModalVisible(true) : null}
+          onFilterPress={() => setFilterModalVisible(true)}
+          onSharePress={handleSharePress}
+          headerRightBeginning={headerRightBeginning}
+          headerRightEnd={headerRightEnd}
+        />
+      ),
+    });
+  }, [
+    navigation,
+    hasActiveFilters,
+    allowSort,
+    handleSharePress,
+    headerRightBeginning,
+    headerRightEnd,
+  ]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -190,9 +197,8 @@ const ListScreen = ({
           }
         />
       ),
-      headerRight,
     });
-  }, [navigation, headerRightKey, data]);
+  }, [navigation, data]);
 
   const searchEl = showSearch && (
     <SearchInput
@@ -256,7 +262,7 @@ const ListScreen = ({
         setFilters={handleFiltersApplied}
         clearFilters={handleClearFilters}
         extraTerritory={extraFilters?.territory}
-      />      
+      />
     </Layout>
   );
 };

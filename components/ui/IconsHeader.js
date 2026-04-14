@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { View, StyleSheet } from "react-native";
+import { StyleSheet } from "react-native";
 import IconButton from "./IconButton";
 import { useTheme } from "../../store/theme-context";
 
@@ -36,23 +36,26 @@ const IconsHeader = ({
   ];
 
   return (
-    <View style={styles.headerButtons}>
+    <>
       {iconButtons
         .filter((btn) => btn.condition)
-        .map((btn, index) => (
+        .map((btn, index, arr) => (
           <IconButton
             key={index}
             tintColor={btn?.tintColor ?? Colors.textMain}
             onPress={btn.onPress}
             icon={btn.icon}
-            style={styles.iconButton}
             size={btn.size ?? 24}
             disabled={btn?.disabled}
             loading={btn?.loading}
             active={btn?.active}
+            style={[
+              styles.iconButton,
+              index < arr.length - 1 && { marginRight: 8 },
+            ]}
           />
         ))}
-    </View>
+    </>
   );
 };
 
@@ -63,7 +66,6 @@ const stylesFn = (Colors) =>
     headerButtons: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 8,
     },
     iconButton: {
       marginRight: 0,

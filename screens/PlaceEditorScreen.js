@@ -253,27 +253,14 @@ const PlaceEditorScreen = ({ navigation, route }) => {
     ],
   );
 
-  const headerRight = () => (
-    <IconsHeader headerRightBeginning={headerRightBeginning} />
-  );
-
-  const headerRightKey = useMemo(
-    () =>
-      headerRightBeginning
-        ?.map(
-          (btn) =>
-            `${btn.icon}-${btn.disabled}-${btn.loading}-${Colors.main100}`,
-        )
-        .join("|"),
-    [headerRightBeginning],
-  );
-
   useLayoutEffect(() => {
     navigation.setOptions({
       title: isEditMode ? t("edit_place") : t("new_place"),
-      headerRight,
+      headerRight: () => (
+        <IconsHeader headerRightBeginning={headerRightBeginning} />
+      ),
     });
-  }, [navigation, headerRightKey, isEditMode]);
+  }, [navigation, isEditMode, headerRightBeginning]);
 
   if (
     isEditMode ? updatePlaceMutation.isPending : createPlaceMutation.isPending

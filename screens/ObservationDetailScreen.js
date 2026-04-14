@@ -120,22 +120,18 @@ const ObservationDetailScreen = ({ route, navigation }) => {
     await Share.share(Platform.OS === "ios" ? { url } : { message: url });
   }, [observation, observationId]);
 
-  const headerRight = () => (
-    <IconsHeader
-      headerRightBeginning={headerRightBeginning}
-      onSharePress={handleShare}
-    />
-  );
-
-  const headerRightKey = `${headerRightBeginning?.length}`;
-
   useLayoutEffect(() => {
     if (!observation) return;
     navigation.setOptions({
       title: t("observation"),
-      headerRight,
+      headerRight: () => (
+        <IconsHeader
+          headerRightBeginning={headerRightBeginning}
+          onSharePress={handleShare}
+        />
+      ),
     });
-  }, [navigation, headerRightKey, observation]);
+  }, [navigation, headerRightBeginning, handleShare, observation]);
 
   if (isError) {
     return (

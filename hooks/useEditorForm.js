@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { getSession } from "../util/sessionStore";
@@ -11,7 +11,7 @@ export const useEditorForm = ({
   profile,
   hasSpecies = false,
   requiredFields = [],
-  diaryId = null
+  diaryId = null,
 }) => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -26,8 +26,8 @@ export const useEditorForm = ({
   const [territoryValue, setTerritoryValue] = useState(
     () => itemWithParsedDate?.territory ?? defaultTerritory ?? "",
   );
-  const [speciesValue, setSpeciesValue] = useState(
-    () => hasSpecies ? (itemWithParsedDate?.species ?? defaultSpecies ?? null) : null,
+  const [speciesValue, setSpeciesValue] = useState(() =>
+    hasSpecies ? (itemWithParsedDate?.species ?? defaultSpecies ?? null) : null,
   );
   const [placeValue, setPlaceValue] = useState(
     () => itemWithParsedDate?.place ?? defaultPlace ?? null,
@@ -66,7 +66,10 @@ export const useEditorForm = ({
     const cache = queryClient.getQueriesData({ queryKey: ["SpeciesDropdown"] });
     for (const [, data] of cache) {
       const found = data?.find?.((item) => item.value === speciesValue);
-      if (found) { setSpeciesData(found); break; }
+      if (found) {
+        setSpeciesData(found);
+        break;
+      }
     }
   }, [speciesValue]);
 
@@ -75,11 +78,14 @@ export const useEditorForm = ({
     const cache = queryClient.getQueriesData({ queryKey: ["PlacesDropdown"] });
     for (const [, data] of cache) {
       const found = data?.find?.((item) => item.value === placeValue);
-      if (found) { setPlaceData(found); break; }
+      if (found) {
+        setPlaceData(found);
+        break;
+      }
     }
   }, [placeValue]);
 
-  const validateForm = () => {
+  const validateForm = useCallback(() => {
     const newErrors = {};
     if (requiredFields.includes("territory") && !territoryValue)
       newErrors.territory = t("territory_required");
@@ -89,17 +95,24 @@ export const useEditorForm = ({
       newErrors.date_time = t("date_required");
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+  }, [territoryValue, speciesValue, formData.date_time, requiredFields, t]);
 
   return {
     itemWithParsedDate,
-    formData, setFormData,
-    errors, setErrors,
-    territoryValue, setTerritoryValue,
-    speciesValue, setSpeciesValue,
-    placeValue, setPlaceValue,
-    speciesData, setSpeciesData,
-    placeData, setPlaceData,
+    formData,
+    setFormData,
+    errors,
+    setErrors,
+    territoryValue,
+    setTerritoryValue,
+    speciesValue,
+    setSpeciesValue,
+    placeValue,
+    setPlaceValue,
+    speciesData,
+    setSpeciesData,
+    placeData,
+    setPlaceData,
     validateForm,
   };
 };

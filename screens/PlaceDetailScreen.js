@@ -73,12 +73,6 @@ const PlaceDetailScreen = ({ route, navigation }) => {
     ],
   );
 
-  const headerRight = () => (
-    <IconsHeader headerRightBeginning={headerRightBeginning} />
-  );
-
-  const headerRightKey = `${headerRightBeginning?.length}${Colors.main100}`;
-
   const handleDelete = useCallback(() => {
     if (!place) return;
     Alert.alert(
@@ -147,9 +141,11 @@ const PlaceDetailScreen = ({ route, navigation }) => {
 
     navigation.setOptions({
       title: "",
-      headerRight,
+      headerRight: () => (
+        <IconsHeader headerRightBeginning={headerRightBeginning} />
+      ),
     });
-  }, [navigation, headerRightKey, place]);
+  }, [navigation, headerRightBeginning, place]);
 
   if (isError) {
     return (

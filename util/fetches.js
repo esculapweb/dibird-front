@@ -90,7 +90,7 @@ export const fetchMapPreview = async (placeId) => {
 export const fetchUserProfile = async (profileId) => {
   const res = await api.get(`/myapi/user-profile/${profileId}/`);
   return res.data;
-}
+};
 
 const fetchAbstract = async (
   fetchUrl,
@@ -162,7 +162,7 @@ export const fetchDiaries = (filters, order = "-date_time", search, page) =>
 
 export const fetchDiaryObservations = (
   filters,
-  order = "-date_time",
+  order = "-created_at",
   search,
   page,
   id,
@@ -182,7 +182,6 @@ export const fetchRating = (filters, order = "-observations", search, page) => {
 };
 
 export const fetchRatingCompareHeader = async (profile1, profile2, filters) => {
-
   const { date, ...restFilters } = filters;
 
   const apiFilters = {
@@ -193,11 +192,11 @@ export const fetchRatingCompareHeader = async (profile1, profile2, filters) => {
   const params = {
     profile1,
     profile2,
-    ...apiFilters
+    ...apiFilters,
   };
   const res = await api.get(`/myapi/rating-compare2-header/`, { params });
   return res.data;
-}
+};
 
 export const fetchRatingCompare = (filters, order = "ioc_id", search, page) => {
   filters = { ...filters };

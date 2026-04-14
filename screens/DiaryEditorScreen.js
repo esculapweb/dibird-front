@@ -145,24 +145,14 @@ const DiaryEditorScreen = ({ navigation, route }) => {
     ],
   );
 
-  const headerRight = () => (
-    <IconsHeader headerRightBeginning={headerRightBeginning} />
-  );
-
-  const headerRightKey = useMemo(
-    () =>
-      headerRightBeginning
-        ?.map((btn) => `${btn.icon}-${btn.disabled}-${btn.loading}-${Colors.main100}`)
-        .join("|"),
-    [headerRightBeginning],
-  );
-
   useLayoutEffect(() => {
     navigation.setOptions({
       title: isEditMode ? t("edit_diary") : t("new_diary"),
-      headerRight,
+      headerRight: () => (
+        <IconsHeader headerRightBeginning={headerRightBeginning} />
+      ),
     });
-  }, [navigation, headerRightKey, isEditMode]);
+  }, [navigation, isEditMode, headerRightBeginning]);
 
   if (
     isEditMode ? updateDiaryMutation.isPending : createDiaryMutation.isPending
@@ -171,7 +161,7 @@ const DiaryEditorScreen = ({ navigation, route }) => {
   }
 
   return (
-    <Layout withKeyboard={true} style={{padding: 12}}>
+    <Layout withKeyboard={true} style={{ padding: 12 }}>
       <DiaryForm
         formData={formData}
         setFormData={setFormData}

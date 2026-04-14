@@ -45,7 +45,6 @@ const QuickActions = ({ filters }) => {
           onPress={() =>
             navigation.navigate("ObservationEditor", {
               defaultTerritory: filters.territory ?? null,
-              returnMode: "back",
             })
           }
         >
