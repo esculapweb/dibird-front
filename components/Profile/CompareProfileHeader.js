@@ -76,10 +76,10 @@ const stylesFn = (Colors) =>
       alignItems: "center",
       justifyContent: "space-around",
       paddingHorizontal: 16,
-      paddingVertical: 8,
+      paddingBottom: 8,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: Colors.border,
-      backgroundColor: Colors.primary100,
+      // backgroundColor: Colors.primary100,
     },
     profileCol: {
       alignItems: "center",
@@ -100,7 +100,7 @@ const stylesFn = (Colors) =>
       borderColor: Colors.primary100,
     },
     profileName: {
-      fontSize: 12,
+      fontSize: 13,
       fontWeight: "500",
       color: Colors.textMain,
       textAlign: "center",
@@ -115,7 +115,7 @@ const stylesFn = (Colors) =>
       paddingHorizontal: 8,
     },
     centerLabel: {
-      fontSize: 10,
+      fontSize: 12,
       color: Colors.textSecondary,
     },
     centerCount: {

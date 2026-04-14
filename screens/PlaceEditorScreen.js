@@ -5,7 +5,7 @@ import {
   useLayoutEffect,
   useMemo,
 } from "react";
-import { Platform, StyleSheet, View, KeyboardAvoidingView } from "react-native";
+import { View } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import { useTheme } from "../store/theme-context";
@@ -21,11 +21,11 @@ import Map from "../components/Map/Map";
 import { showError } from "../services/api";
 import { callNavigationCallback } from "../util/navigationCallbacks";
 import IconsHeader from "../components/ui/IconsHeader";
+import Layout from "../components/ui/Layout";
 
 const PlaceEditorScreen = ({ navigation, route }) => {
   const { Colors } = useTheme();
   const { t } = useTranslation();
-  const styles = stylesFn(Colors);
   const type = "Place";
 
   const FORM_FIELDS = ["name", "territory", "latitude", "longitude"];
@@ -260,7 +260,10 @@ const PlaceEditorScreen = ({ navigation, route }) => {
   const headerRightKey = useMemo(
     () =>
       headerRightBeginning
-        ?.map((btn) => `${btn.icon}-${btn.disabled}-${btn.loading}-${Colors.main100}`)
+        ?.map(
+          (btn) =>
+            `${btn.icon}-${btn.disabled}-${btn.loading}-${Colors.main100}`,
+        )
         .join("|"),
     [headerRightBeginning],
   );
@@ -279,20 +282,15 @@ const PlaceEditorScreen = ({ navigation, route }) => {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <View style={styles.mapContainer}>
-        <Map
-          onPress={handleMapPress}
-          currentCoords={coords}
-          currentZoom={zoom}
-          accuracy={accuracy}
-          onUseMyLocation={useMyLocation}
-          isLocating={isLocating}
-        />
-      </View>
+    <Layout withKeyboard={true}>
+      <Map
+        onPress={handleMapPress}
+        currentCoords={coords}
+        currentZoom={zoom}
+        accuracy={accuracy}
+        onUseMyLocation={useMyLocation}
+        isLocating={isLocating}
+      />
       <PlaceForm
         onCoordsChange={handleCoordsChange}
         formData={formData}
@@ -306,14 +304,8 @@ const PlaceEditorScreen = ({ navigation, route }) => {
         setErrors={setErrors}
         locationDetails={details}
       />
-    </KeyboardAvoidingView>
+    </Layout>
   );
 };
 
 export default PlaceEditorScreen;
-
-const stylesFn = (Colors) =>
-  StyleSheet.create({
-    container: { flex: 1, backgroundColor: Colors.primary100 },
-    mapContainer: { flex: 1 },
-  });

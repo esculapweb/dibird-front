@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, ScrollView } from "react-native";
+import { ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import FloatingNavbar from "../components/Main/FloatingNavbar";
@@ -13,11 +13,9 @@ import Sections from "../components/Main/Sections";
 import FilterModal from "../components/Filters/FilterModal";
 import { useSyncedFilters } from "../hooks/useSyncedFIlters";
 
-import BackgroundScene from "../components/ui/BackgroundScene";
-import { useTheme } from "../store/theme-context";
+import Layout from "../components/ui/Layout";
 
 const MainScreen = ({ navigation, route }) => {
-  const { Colors } = useTheme();
   const insets = useSafeAreaInsets();
   const NAVBAR_HEIGHT = insets.top + 60;
 
@@ -55,8 +53,7 @@ const MainScreen = ({ navigation, route }) => {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: Colors.backgroundMain }}>
-      <BackgroundScene />
+    <Layout>
       <FloatingNavbar
         showDivider={showDivider}
         onPress={() => setFilterModalVisible(true)}
@@ -66,8 +63,8 @@ const MainScreen = ({ navigation, route }) => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingTop: NAVBAR_HEIGHT + 6,
-          paddingBottom: insets.bottom + 24,
+          paddingTop: NAVBAR_HEIGHT,
+          paddingBottom: insets.bottom,
         }}
         onScroll={onScroll}
         scrollEventThrottle={16}
@@ -94,7 +91,7 @@ const MainScreen = ({ navigation, route }) => {
         setFilters={handleFiltersApplied}
         clearFilters={handleClearFilters}
       />
-    </View>
+    </Layout>
   );
 };
 

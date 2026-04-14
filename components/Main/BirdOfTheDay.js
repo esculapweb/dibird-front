@@ -61,7 +61,7 @@ const stylesFn = (Colors) =>
     botdCard: {
       marginHorizontal: H_PAD,
       marginBottom: 12,
-      backgroundColor: Colors.primary100,
+      // backgroundColor: Colors.primary100,
       borderRadius: 14,
       borderWidth: 0.5,
       borderColor: Colors.border,
@@ -73,7 +73,7 @@ const stylesFn = (Colors) =>
       justifyContent: "space-between",
       paddingHorizontal: 16,
       paddingVertical: 12,
-      backgroundColor: Colors.primary200,
+      // backgroundColor: Colors.primary200,
     },
     botdStripLeft: {
       flexDirection: "row",
@@ -96,6 +96,7 @@ const stylesFn = (Colors) =>
       gap: 14,
       paddingHorizontal: 16,
       paddingVertical: 16,
+      backgroundColor: Colors.primary100,
     },
     botdImgBox: {
       width: 58,

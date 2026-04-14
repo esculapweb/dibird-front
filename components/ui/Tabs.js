@@ -33,7 +33,9 @@ const Tabs = ({ tabOptions, tabsMode, setTabsMode }) => {
             </Text>
             {count != null && (
               <View style={[styles.badge, isActive && styles.activeBadge]}>
-                <Text style={[styles.badgeText, isActive && styles.activeBadgeText]}>
+                <Text
+                  style={[styles.badgeText, isActive && styles.activeBadgeText]}
+                >
                   {count > 999 ? "999+" : count}
                 </Text>
               </View>
@@ -54,7 +56,7 @@ const stylesFn = (Colors, insets) =>
       backgroundColor: Colors.primary100,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: Colors.tabBorder,
-      paddingBottom: insets.bottom,
+      paddingBottom: Math.max(16, insets.bottom - 8),
     },
     tab: {
       flex: 1,

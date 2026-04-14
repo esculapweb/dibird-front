@@ -31,6 +31,7 @@ import Map from "../components/Map/Map";
 import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
 import IconsHeader from "../components/ui/IconsHeader";
+import Layout from "../components/ui/Layout";
 
 const ObservationDetailScreen = ({ route, navigation }) => {
   const { observationId } = route.params;
@@ -153,120 +154,80 @@ const ObservationDetailScreen = ({ route, navigation }) => {
     observation.species_data.name_lang || observation.species_data.name;
   const latin = observation.species_data.name;
 
+  const bottomEl = observation.is_owner && (
+    <FlatButtonBottom
+      textColor={Colors.error600}
+      onPress={handleDelete}
+      icon="trash-outline"
+      loading={deleteMutation.isPending}
+    >
+      {t("delete_observation")}
+    </FlatButtonBottom>
+  );
+
   return (
-    <View style={{ flex: 1 }}>
-      <ScrollView style={styles.container}>
-        <Section
-          title={formatDateLong(observation.date_time)}
-          hintBlock={
-            observation.is_owner && (
-              <PrivacyToggle value={observation.private} />
-            )
-          }
-        >
-          <View style={styles.header}>
-            <View style={styles.imageWrapper}>
-              {observation?.species_data?.thumb ? (
-                <Image
-                  source={{
-                    uri: `${Config.mediaUrl}/${observation.species_data.thumb}`,
-                  }}
-                  style={styles.image}
-                  contentFit="cover"
-                  cachePolicy="disk"
-                />
-              ) : (
-                <View style={styles.imagePlaceholder}>
-                  <BirdSVG size={40} color={Colors.textSecondary} />
+    <Layout style={{ padding: 12 }} bottom={bottomEl} withScroll={true}>
+      <Section
+        title={formatDateLong(observation.date_time)}
+        hintBlock={
+          observation.is_owner && <PrivacyToggle value={observation.private} />
+        }
+      >
+        <View style={styles.header}>
+          <View style={styles.imageWrapper}>
+            {observation?.species_data?.thumb ? (
+              <Image
+                source={{
+                  uri: `${Config.mediaUrl}/${observation.species_data.thumb}`,
+                }}
+                style={styles.image}
+                contentFit="cover"
+                cachePolicy="disk"
+              />
+            ) : (
+              <View style={styles.imagePlaceholder}>
+                <BirdSVG size={40} color={Colors.textSecondary} />
+              </View>
+            )}
+          </View>
+
+          <View style={{ flex: 1 }}>
+            <View style={{ marginBottom: 6 }}>
+              <Text style={styles.title}>{name}</Text>
+              <Text style={styles.latin}>{latin}</Text>
+
+              {observation.time && (
+                <View style={styles.capsule}>
+                  <Ionicons
+                    name="time-outline"
+                    size={14}
+                    color={Colors.textSecondary}
+                  />
+                  <Text style={styles.capsuleText}>
+                    {formatTimeString(observation.time)}
+                  </Text>
+                </View>
+              )}
+
+              {observation.quantity && (
+                <View style={styles.capsule}>
+                  <BirdSVG size={14} color={Colors.textMain} />
+                  <Text style={styles.capsuleText}>{observation.quantity}</Text>
                 </View>
               )}
             </View>
-
-            <View style={{ flex: 1 }}>
-              <View style={{ marginBottom: 6 }}>
-                <Text style={styles.title}>{name}</Text>
-                <Text style={styles.latin}>{latin}</Text>
-
-                {observation.time && (
-                  <View style={styles.capsule}>
-                    <Ionicons
-                      name="time-outline"
-                      size={14}
-                      color={Colors.textSecondary}
-                    />
-                    <Text style={styles.capsuleText}>
-                      {formatTimeString(observation.time)}
-                    </Text>
-                  </View>
-                )}
-
-                {observation.quantity && (
-                  <View style={styles.capsule}>
-                    <BirdSVG size={14} color={Colors.textMain} />
-                    <Text style={styles.capsuleText}>
-                      {observation.quantity}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </View>
           </View>
+        </View>
 
-          {!observation.is_owner && (
-            <Pressable
-              style={[styles.placeRow, { marginTop: 8 }]}
-              onPress={() => {
-                if (observation?.owner?.private) return;
-                navigation.navigate("UserStat", {
-                  profileId: observation?.owner?.id,
-                });
-              }}
-            >
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.authorLabel}>
-                    {t("observation_author")}
-                  </Text>
-                  <View style={styles.authorRow}>
-                    <ProfileAvatar
-                      avatar={observation?.owner?.avatar}
-                      firstName={observation?.owner?.first_name}
-                      lastName={observation?.owner?.last_name}
-                      username={observation?.owner?.username}
-                      size={22}
-                    />
-                    <Text style={styles.authorName}>{fullName}</Text>
-                  </View>
-                </View>
-                {!observation?.owner?.private && (
-                  <Ionicons
-                    name="chevron-forward"
-                    size={18}
-                    color={Colors.textSecondary}
-                  />
-                )}
-              </View>
-            </Pressable>
-          )}
-
+        {!observation.is_owner && (
           <Pressable
-            style={({ pressed }) => [
-              styles.placeRow,
-              pressed && observation.is_owner && { opacity: 0.6 },
-            ]}
-            onPress={() =>
-              observation?.place_data?.id &&
-              observation.is_owner &&
-              navigation.navigate("PlaceDetail", {
-                placeId: observation.place_data.id,
-              })
-            }
+            style={[styles.placeRow, { marginTop: 8 }]}
+            onPress={() => {
+              if (observation?.owner?.private) return;
+              navigation.navigate("UserStat", {
+                profileId: observation?.owner?.id,
+              });
+            }}
           >
             <View
               style={{
@@ -276,15 +237,21 @@ const ObservationDetailScreen = ({ route, navigation }) => {
               }}
             >
               <View style={{ flex: 1 }}>
-                <Text style={styles.placeName} numberOfLines={2}>
-                  {observation?.place_data?.name || t("location_not_specified")}
+                <Text style={styles.authorLabel}>
+                  {t("observation_author")}
                 </Text>
-                <Text style={styles.placeTerritory} numberOfLines={1}>
-                  {isoToFlagEmoji(observation?.territory_data?.code)}{" "}
-                  {observation?.territory_data?.name}
-                </Text>
+                <View style={styles.authorRow}>
+                  <ProfileAvatar
+                    avatar={observation?.owner?.avatar}
+                    firstName={observation?.owner?.first_name}
+                    lastName={observation?.owner?.last_name}
+                    username={observation?.owner?.username}
+                    size={22}
+                  />
+                  <Text style={styles.authorName}>{fullName}</Text>
+                </View>
               </View>
-              {observation?.place_data?.id && observation.is_owner && (
+              {!observation?.owner?.private && (
                 <Ionicons
                   name="chevron-forward"
                   size={18}
@@ -293,118 +260,146 @@ const ObservationDetailScreen = ({ route, navigation }) => {
               )}
             </View>
           </Pressable>
+        )}
 
-          {observation?.place_data?.location?.coordinates && (
-            <View style={styles.mapWrapper}>
-              <Map
-                currentCoords={
-                  observation.place_data.location.type === "Polygon"
-                    ? observation.place_data.location.center
-                    : observation.place_data.location.coordinates
-                }
-                currentZoom={
-                  observation.place_data.location.type === "Polygon" ? 10 : 13
-                }
-                mapHeight={250}
-                showCoords={observation.place_data.location.type === "Point"}
-                polygon={
-                  observation.place_data.location.type === "Polygon"
-                    ? observation.place_data.location
-                    : null
-                }
-                approximateArea={!observation.is_owner}
-              />
+        <Pressable
+          style={({ pressed }) => [
+            styles.placeRow,
+            pressed && observation.is_owner && { opacity: 0.6 },
+          ]}
+          onPress={() =>
+            observation?.place_data?.id &&
+            observation.is_owner &&
+            navigation.navigate("PlaceDetail", {
+              placeId: observation.place_data.id,
+            })
+          }
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={styles.placeName} numberOfLines={2}>
+                {observation?.place_data?.name || t("location_not_specified")}
+              </Text>
+              <Text style={styles.placeTerritory} numberOfLines={1}>
+                {isoToFlagEmoji(observation?.territory_data?.code)}{" "}
+                {observation?.territory_data?.name}
+              </Text>
             </View>
-          )}
-        </Section>
-
-        <Section title={t("section_details")}>
-          {observation?.notes && (
-            <View style={styles.notesBlock}>
-              <Ionicons
-                name="document-text-outline"
-                size={20}
-                color={Colors.textSecondary}
-                style={{ marginRight: 8 }}
-              />
-              <Text style={styles.notes}>{observation.notes}</Text>
-            </View>
-          )}
-
-          {observation?.diary_data && observation.is_owner && (
-            <Pressable
-              style={({ pressed }) => [
-                styles.diaryBlock,
-                pressed && { opacity: 0.6 },
-              ]}
-              onPress={() =>
-                observation?.diary &&
-                navigation.navigate("DiaryDetail", {
-                  diaryId: observation.diary,
-                })
-              }
-              hitSlop={{ top: 8, bottom: 8 }}
-            >
-              <Ionicons
-                name="book-outline"
-                size={18}
-                color={Colors.textSecondary}
-                style={{ marginRight: 10 }}
-              />
-              <View style={{ flex: 1 }}>
-                <View style={styles.diaryLabelRow}>
-                  <Text style={styles.diaryLabel}>{t("diary_entry")}</Text>
-                  <Text style={styles.diaryTitle}>
-                    {formatDate(observation.date_time)}
-                  </Text>
-                </View>
-
-                {observation.diary_data?.name && (
-                  <Text style={styles.diaryDescription}>
-                    {observation.diary_data?.name}
-                  </Text>
-                )}
-              </View>
+            {observation?.place_data?.id && observation.is_owner && (
               <Ionicons
                 name="chevron-forward"
                 size={18}
                 color={Colors.textSecondary}
               />
-            </Pressable>
-          )}
-          <View
-            style={[
-              styles.meta,
-              (observation.notes ||
-                observation?.diary_data ||
-                observation?.place_data) &&
-                styles.metaBorder,
-            ]}
-          >
-            <Text style={styles.metaText}>
-              {t("created")}: {formatDateTime(observation.created_at)}
-            </Text>
-            {formatDate(observation.created_at) !==
-              formatDate(observation.updated_at) && (
-              <Text style={styles.metaText}>
-                {t("updated")}: {formatDateTime(observation.updated_at)}
-              </Text>
             )}
           </View>
-        </Section>
-      </ScrollView>
+        </Pressable>
 
-      {observation.is_owner && (
-        <FlatButtonBottom
-          textColor={Colors.error600}
-          onPress={handleDelete}
-          icon="trash-outline"
-          loading={deleteMutation.isPending}
+        {observation?.place_data?.location?.coordinates && (
+          <View style={styles.mapWrapper}>
+            <Map
+              currentCoords={
+                observation.place_data.location.type === "Polygon"
+                  ? observation.place_data.location.center
+                  : observation.place_data.location.coordinates
+              }
+              currentZoom={
+                observation.place_data.location.type === "Polygon" ? 10 : 13
+              }
+              mapHeight={250}
+              showCoords={observation.place_data.location.type === "Point"}
+              polygon={
+                observation.place_data.location.type === "Polygon"
+                  ? observation.place_data.location
+                  : null
+              }
+              approximateArea={!observation.is_owner}
+            />
+          </View>
+        )}
+      </Section>
+
+      <Section title={t("section_details")}>
+        {observation?.notes && (
+          <View style={styles.notesBlock}>
+            <Ionicons
+              name="document-text-outline"
+              size={20}
+              color={Colors.textSecondary}
+              style={{ marginRight: 8 }}
+            />
+            <Text style={styles.notes}>{observation.notes}</Text>
+          </View>
+        )}
+
+        {observation?.diary_data && observation.is_owner && (
+          <Pressable
+            style={({ pressed }) => [
+              styles.diaryBlock,
+              pressed && { opacity: 0.6 },
+            ]}
+            onPress={() =>
+              observation?.diary &&
+              navigation.navigate("DiaryDetail", {
+                diaryId: observation.diary,
+              })
+            }
+            hitSlop={{ top: 8, bottom: 8 }}
+          >
+            <Ionicons
+              name="book-outline"
+              size={18}
+              color={Colors.textSecondary}
+              style={{ marginRight: 10 }}
+            />
+            <View style={{ flex: 1 }}>
+              <View style={styles.diaryLabelRow}>
+                <Text style={styles.diaryLabel}>{t("diary_entry")}</Text>
+                <Text style={styles.diaryTitle}>
+                  {formatDate(observation.date_time)}
+                </Text>
+              </View>
+
+              {observation.diary_data?.name && (
+                <Text style={styles.diaryDescription}>
+                  {observation.diary_data?.name}
+                </Text>
+              )}
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={18}
+              color={Colors.textSecondary}
+            />
+          </Pressable>
+        )}
+        <View
+          style={[
+            styles.meta,
+            (observation.notes ||
+              observation?.diary_data ||
+              observation?.place_data) &&
+              styles.metaBorder,
+          ]}
         >
-          {t("delete_observation")}
-        </FlatButtonBottom>
-      )}
-    </View>
+          <Text style={styles.metaText}>
+            {t("created")}: {formatDateTime(observation.created_at)}
+          </Text>
+          {formatDate(observation.created_at) !==
+            formatDate(observation.updated_at) && (
+            <Text style={styles.metaText}>
+              {t("updated")}: {formatDateTime(observation.updated_at)}
+            </Text>
+          )}
+        </View>
+      </Section>
+    </Layout>
   );
 };
 
@@ -412,11 +407,6 @@ export default ObservationDetailScreen;
 
 const stylesFn = (Colors) =>
   StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: Colors.backgroundMain,
-      padding: 12,
-    },
     header: {
       flexDirection: "row",
       alignItems: "center",

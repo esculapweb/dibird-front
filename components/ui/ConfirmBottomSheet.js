@@ -13,7 +13,6 @@ import { useTheme } from "../../store/theme-context";
 const ConfirmBottomSheet = forwardRef(
   (
     {
-      type = "warning",
       title,
       description,
       confirmText,

@@ -1,5 +1,4 @@
 import { useCallback, useLayoutEffect, useMemo } from "react";
-import { Platform, KeyboardAvoidingView } from "react-native";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
 
@@ -14,6 +13,7 @@ import { setSession } from "../util/sessionStore";
 import { setNavigationCallback } from "../util/navigationCallbacks";
 import { useEditorForm } from "../hooks/useEditorForm";
 import IconsHeader from "../components/ui/IconsHeader";
+import Layout from "../components/ui/Layout";
 
 const FORM_FIELDS = ["territory", "place", "date_time", "private", "name"];
 
@@ -171,12 +171,7 @@ const DiaryEditorScreen = ({ navigation, route }) => {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={{
-        container: { flex: 1, backgroundColor: Colors.backgroundMain },
-      }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
+    <Layout withKeyboard={true} style={{padding: 12}}>
       <DiaryForm
         formData={formData}
         setFormData={setFormData}
@@ -191,7 +186,7 @@ const DiaryEditorScreen = ({ navigation, route }) => {
         onAddNewPlace={handleAddNewPlace}
         isEditMode={isEditMode}
       />
-    </KeyboardAvoidingView>
+    </Layout>
   );
 };
 

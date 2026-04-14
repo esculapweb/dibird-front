@@ -1,4 +1,4 @@
-import { ScrollView, Alert } from "react-native";
+import { Alert } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import DropdownInput from "../ui/DropdownInput";
@@ -59,11 +59,7 @@ const DiaryForm = ({
   });
 
   return (
-    <ScrollView
-      contentContainerStyle={{ padding: 12 }}
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
-    >
+    <>
       <Section title={t("section_main")} required collapsible={true}>
         <DropdownInput
           placeholder={t("select_country")}
@@ -135,7 +131,7 @@ const DiaryForm = ({
           onLocationUnavailable={handleLocationUnavailable}
         />
       </Section>
-    </ScrollView>
+    </>
   );
 };
 

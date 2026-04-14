@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { View, Share, Platform } from "react-native";
+import { Share, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
 
@@ -11,7 +11,6 @@ import { useTheme } from "../store/theme-context";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import { useProfile } from "../store/profile-context";
 import { buildShareUrl } from "../util/helpers";
-import BackgroundScene from "../components/ui/BackgroundScene";
 
 const RatingScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
@@ -79,35 +78,34 @@ const RatingScreen = ({ route, navigation }) => {
     />
   );
 
-  return (
-    <View style={{ flex: 1, backgroundColor: Colors.backgroundMain }}>
-      <BackgroundScene />
-      <ListScreen
-        route={route}
-        navigation={navigation}
-        fetchFunction={fetchRating}
-        errorTitle={t("rating_unavailable")}
-        allowedFilters={["territory", "date"]}
-        onFiltersChange={setCurrentFilters}
-        onSortChange={setCurrentSort}
-        renderItem={renderItem}
-        getItemId={(item) => item.profile_id}
-        noItems={noItems}
-        title={t("rating")}
-        fabIcon="people-outline"
-        handleSharePress={handleShare}
-      />
+  const bottomEl =
+    selectedIds.length == 2 ? (
+      <FlatButtonBottom onPress={handleCompare} icon="people-outline">
+        {t("compare_ratings")}
+      </FlatButtonBottom>
+    ) : (
+      <FlatButtonBottom textColor={Colors.textSecondary}>
+        {t("select_two_for_comparison")}
+      </FlatButtonBottom>
+    );
 
-      {selectedIds.length == 2 ? (
-        <FlatButtonBottom onPress={handleCompare} icon="people-outline">
-          {t("compare_ratings")}
-        </FlatButtonBottom>
-      ) : (
-        <FlatButtonBottom textColor={Colors.textSecondary}>
-          {t("select_two_for_comparison")}
-        </FlatButtonBottom>
-      )}
-    </View>
+  return (
+    <ListScreen
+      route={route}
+      navigation={navigation}
+      fetchFunction={fetchRating}
+      errorTitle={t("rating_unavailable")}
+      allowedFilters={["territory", "date"]}
+      onFiltersChange={setCurrentFilters}
+      onSortChange={setCurrentSort}
+      renderItem={renderItem}
+      getItemId={(item) => item.profile_id}
+      noItems={noItems}
+      title={t("rating")}
+      fabIcon="people-outline"
+      handleSharePress={handleShare}
+      bottomEl={bottomEl}
+    />
   );
 };
 

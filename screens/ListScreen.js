@@ -5,10 +5,7 @@ import {
   useLayoutEffect,
   useRef,
 } from "react";
-import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useHeaderHeight } from "@react-navigation/elements";
 
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import FilterModal from "../components/Filters/FilterModal";
@@ -21,8 +18,8 @@ import ItemsList from "../components/ui/ItemsList";
 import HeaderTitleWithBadge from "../components/ui/HeaderTitleWithBadge";
 import SearchInput from "../components/ui/SearchInput";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
-import { useTheme } from "../store/theme-context";
 import { useSyncedFilters } from "../hooks/useSyncedFIlters";
+import Layout from "../components/ui/Layout";
 
 const ListScreen = ({
   route,
@@ -54,12 +51,12 @@ const ListScreen = ({
   allowSort = true,
   onOpenFilterModal,
   showHeaderBadge = true,
+  topEl,
+  bottomEl,
+  bottomHeight
 }) => {
   const screenName = screenNameOverride ?? route.name;
   const { t } = useTranslation();
-  const { Colors } = useTheme();
-  const insets = useSafeAreaInsets();
-  const headerHeight = useHeaderHeight();
   const keyExtractor = (item, _) => `${screenName}-${getItemId(item)}`;
   const [sortModalVisible, setSortModalVisible] = useState(false);
 
@@ -197,6 +194,15 @@ const ListScreen = ({
     });
   }, [navigation, headerRightKey, data]);
 
+  // const bottomEl = showSearch && (
+  //   <SearchInput
+  //     value={search}
+  //     onChange={setSearch}
+  //     onClear={handleClearSearch}
+  //     placeholder={t("search_by_name")}
+  //   />
+  // );
+
   if (isError)
     return (
       <ErrorOverlay
@@ -209,11 +215,7 @@ const ListScreen = ({
   if (isLoading || !data) return <LoadingOverlay />;
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={headerHeight - insets.bottom + 8}
-    >
+    <Layout keyBoard={true} bottom={bottomEl} bottomHeight={bottomHeight} top={topEl}>
       {hasActiveFilters && (
         <FilterChips
           filters={filters}
@@ -255,26 +257,8 @@ const ListScreen = ({
         setFilters={handleFiltersApplied}
         clearFilters={handleClearFilters}
         extraTerritory={extraFilters?.territory}
-      />
-      {showSearch && (
-        <View
-          edges={["bottom"]}
-          style={{
-            backgroundColor: Colors.backgroundMain,
-            borderTopWidth: StyleSheet.hairlineWidth,
-            borderTopColor: Colors.border,
-            paddingBottom: insets.bottom,
-          }}
-        >
-          <SearchInput
-            value={search}
-            onChange={setSearch}
-            onClear={handleClearSearch}
-            placeholder={t("search_by_name")}
-          />
-        </View>
-      )}
-    </KeyboardAvoidingView>
+      />      
+    </Layout>
   );
 };
 

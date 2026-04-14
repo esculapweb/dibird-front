@@ -4,16 +4,19 @@ import { useTranslation } from "react-i18next";
 
 import { useTheme } from "../store/theme-context";
 import { isoToFlagEmoji, formatDate, formatDateTime } from "../util/helpers";
-import { StatBig } from "../components/Place/StatBig";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import Map from "../components/Map/Map";
 import IconsHeader from "../components/ui/IconsHeader";
+import Layout from "../components/ui/Layout";
+import StatCard from "../components/ui/StatCard";
 
 import { useItem, useUpdateItem, useDeleteItem } from "../hooks/useItem";
 import { showError } from "../services/api";
 import { useFilters } from "../store/filters-context";
+
+const H_PAD = 12;
 
 const PlaceDetailScreen = ({ route, navigation }) => {
   const { placeId } = route.params;
@@ -111,21 +114,31 @@ const PlaceDetailScreen = ({ route, navigation }) => {
   const handleObservationsPress = useCallback(() => {
     if (place && filtersOverride)
       navigation.push("Observations", {
-        filtersOverride,
+        filtersOverride: {
+          ...filtersOverride,
+          date: null,
+        },
       });
   }, [place, filtersOverride, navigation]);
 
   const handleSpeciesPress = useCallback(() => {
     if (place && filtersOverride)
       navigation.push("Stat", {
-        filtersOverride,
+        filtersOverride: {
+          ...filtersOverride,
+          date: null,
+        },
+        seenMode: "seen",
       });
   }, [place, filtersOverride, navigation]);
 
   const handleDiariesPress = useCallback(() => {
     if (place && filtersOverride)
       navigation.push("Diaries", {
-        filtersOverride,
+        filtersOverride: {
+          ...filtersOverride,
+          date: null,
+        },
       });
   }, [place, filtersOverride, navigation]);
 
@@ -155,68 +168,60 @@ const PlaceDetailScreen = ({ route, navigation }) => {
 
   const [lng, lat] = place.location.coordinates;
 
+  const bottomEl = (
+    <FlatButtonBottom
+      textColor={Colors.error600}
+      onPress={handleDelete}
+      icon="trash-outline"
+      loading={deleteMutation.isPending}
+    >
+      {t("delete_place")}
+    </FlatButtonBottom>
+  );
+
   return (
-    <>
-      <View style={{ flex: 1 }}>
-        <ScrollView style={styles.container}>
-          <View style={styles.header}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.title}>{place.name}</Text>
-              <Text style={styles.subtitle}>
-                {isoToFlagEmoji(place.territory_data.code)}{" "}
-                {place.territory_data.name}
-              </Text>
-            </View>
-          </View>
-
-          <Map currentCoords={[lng, lat]} mapHeight={440} showCoords={true} />
-
-          <View style={styles.footer}>
-            <View style={styles.stats}>
-              <StatBig
-                icon="binoculars"
-                value={place.observation_count}
-                label={t("observations")}
-                onPress={handleObservationsPress}
-              />
-              <StatBig
-                value={place.species_count}
-                label={t("species")}
-                bird
-                onPress={handleSpeciesPress}
-              />
-              <StatBig
-                icon="book-outline"
-                value={place.diary_count}
-                label={t("diaries")}
-                onPress={handleDiariesPress}
-              />
-            </View>
-
-            <View style={[styles.meta, styles.metaBorder]}>
-              <Text style={styles.metaText}>
-                {t("created")}: {formatDateTime(place.created_at)}
-              </Text>
-              {formatDate(place.created_at) !==
-                formatDate(place.updated_at) && (
-                <Text style={styles.metaText}>
-                  {t("updated")}: {formatDateTime(place.updated_at)}
-                </Text>
-              )}
-            </View>
-          </View>
-        </ScrollView>
-
-        <FlatButtonBottom
-          textColor={Colors.error600}
-          onPress={handleDelete}
-          icon="trash-outline"
-          loading={deleteMutation.isPending}
-        >
-          {t("delete_place")}
-        </FlatButtonBottom>
+    <Layout withScroll={true} style={{ paddingBottom: 40 }} bottom={bottomEl}>
+      <View style={styles.header}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title}>{place.name}</Text>
+          <Text style={styles.subtitle}>
+            {isoToFlagEmoji(place.territory_data.code)}{" "}
+            {place.territory_data.name}
+          </Text>
+        </View>
       </View>
-    </>
+
+      <Map currentCoords={[lng, lat]} mapHeight={440} showCoords={true} />
+
+      <View style={styles.statsRow}>
+        <StatCard
+          value={place.species_count}
+          label={t("species")}
+          onPress={handleSpeciesPress}
+        />
+        <StatCard
+          value={place.observation_count}
+          label={t("observations")}
+          onPress={handleObservationsPress}
+        />
+        <StatCard
+          value={place.diary_count}
+          label={t("diaries")}
+          onPress={handleDiariesPress}
+        />
+      </View>
+
+      <View style={styles.meta}>
+        <Text style={styles.metaText}>
+          {t("created")}: {formatDateTime(place.created_at)}
+        </Text>
+        {formatDate(place.created_at) !== formatDate(place.updated_at) && (
+          <Text style={styles.metaText}>
+            {t("updated")}: {formatDateTime(place.updated_at)}
+          </Text>
+        )}
+      </View>
+    </Layout>
   );
 };
 
@@ -224,17 +229,10 @@ export default PlaceDetailScreen;
 
 const stylesFn = (Colors) =>
   StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: Colors.primary100,
-      paddingBottom: 40,
-    },
     header: {
       flexDirection: "row",
       alignItems: "center",
-      paddingHorizontal: 16,
-      paddingTop: 16,
-      paddingBottom: 8,
+      padding: H_PAD,
     },
     title: {
       fontSize: 18,
@@ -247,22 +245,21 @@ const stylesFn = (Colors) =>
       marginTop: 2,
       lineHeight: 28,
     },
-    footer: {
-      padding: 16,
-    },
-    stats: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      marginBottom: 16,
-    },
-    metaBorder: {
+
+    meta: {
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: Colors.border,
-      paddingTop: 12,
+      padding: H_PAD,
     },
     metaText: {
       fontSize: 12,
       color: Colors.textSecondary,
       marginBottom: 2,
+    },
+
+    statsRow: {
+      flexDirection: "row",
+      gap: H_PAD,
+      padding: H_PAD,
     },
   });

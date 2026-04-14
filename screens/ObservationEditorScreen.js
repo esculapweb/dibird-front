@@ -1,5 +1,4 @@
 import { useState, useCallback, useLayoutEffect, useMemo } from "react";
-import { StyleSheet, Platform, KeyboardAvoidingView } from "react-native";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -16,6 +15,8 @@ import { setNavigationCallback } from "../util/navigationCallbacks";
 import { useEditorForm } from "../hooks/useEditorForm";
 import { fetchDiarySpeciesIds } from "../util/fetches";
 import IconsHeader from "../components/ui/IconsHeader";
+import Layout from "../components/ui/Layout";
+import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 
 const FORM_FIELDS = [
   "species",
@@ -31,7 +32,6 @@ const FORM_FIELDS = [
 const ObservationEditorScreen = ({ navigation, route }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
-  const styles = stylesFn(Colors);
   const { profile } = useProfile();
   const [justSaved, setJustSaved] = useState(false);
   const queryClient = useQueryClient();
@@ -146,7 +146,19 @@ const ObservationEditorScreen = ({ navigation, route }) => {
         onError: handleMutateError,
       });
     }
-  }, [formData, speciesValue, territoryValue, placeValue, isEditMode]);
+  }, [
+    formData,
+    speciesValue,
+    territoryValue,
+    placeValue,
+    isEditMode,
+    returnMode,
+    updateObservationMutation,
+    createObservationMutation,
+    navigation,
+    handleMutateError,
+    validateForm,
+  ]);
 
   const handleSaveAndAddAnother = useCallback(() => {
     if (!validateForm()) return;
@@ -247,7 +259,10 @@ const ObservationEditorScreen = ({ navigation, route }) => {
   const headerRightKey = useMemo(
     () =>
       headerRightBeginning
-        ?.map((btn) => `${btn.icon}-${btn.disabled}-${btn.loading}-${Colors.main100}`)
+        ?.map(
+          (btn) =>
+            `${btn.icon}-${btn.disabled}-${btn.loading}-${Colors.main100}`,
+        )
         .join("|"),
     [headerRightBeginning],
   );
@@ -267,11 +282,19 @@ const ObservationEditorScreen = ({ navigation, route }) => {
     return <LoadingOverlay />;
   }
 
-  return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+  const bottomEl = !!diaryId && !isEditMode && (
+    <FlatButtonBottom
+      onPress={handleSaveAndAddAnother}
+      icon="add-outline"
+      loading={createObservationMutation.isPending}
+      savedLabel={justSaved ? t("observation_added") : null}
     >
+      {t("save_and_add_another")}
+    </FlatButtonBottom>
+  );
+
+  return (
+    <Layout withKeyboard={true} bottom={bottomEl}>
       <ObservationForm
         formData={formData}
         setFormData={setFormData}
@@ -291,20 +314,10 @@ const ObservationEditorScreen = ({ navigation, route }) => {
         isDiaryMode={!!diaryId}
         isEditMode={isEditMode}
         onEditDiary={handleEditDiary}
-        onSaveAndAddAnother={
-          !!diaryId && !isEditMode ? handleSaveAndAddAnother : null
-        }
-        isSaving={createObservationMutation.isPending}
-        justSaved={justSaved}
         existingSpecies={existingSpecies}
       />
-    </KeyboardAvoidingView>
+    </Layout>
   );
 };
 
 export default ObservationEditorScreen;
-
-const stylesFn = (Colors) =>
-  StyleSheet.create({
-    container: { flex: 1, backgroundColor: Colors.backgroundMain },
-  });

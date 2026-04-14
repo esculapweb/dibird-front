@@ -65,9 +65,9 @@ const ProfileScreen = () => {
 
   return (
     <FormWrapper
-      header={<View style={{marginBottom:36}}></View>}
       bottomButtonLabel={t("reset_form")}
       bottomButtonHandler={() => setFormKey((k) => k + 1)}
+      style={{marginTop: 24}}
     >
       <ProfileForm
         key={formKey}

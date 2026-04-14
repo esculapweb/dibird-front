@@ -286,37 +286,36 @@ const DiaryDetailScreen = ({ route, navigation }) => {
     });
   };
 
-  return (
-    <View style={{ flex: 1 }}>
-      <ListScreen
-        route={route}
-        navigation={navigation}
-        fetchFunction={fetchDiaryObservations}
-        extraFilters={{ diary: diaryId, territory: diary.territory }}
-        allowedFilters={["species"]}
-        onFiltersChange={setCurrentFilters}
-        onSortChange={setCurrentSort}
-        errorTitle={t("observations_unavailable")}
-        onAdd={diary.is_owner ? handleAdd : undefined}
-        renderItem={renderItem}
-        noItems={noItems}
-        title={t("diary")}
-        headerRightBeginning={headerRightBeginning}
-        handleSharePress={handleShare}
-        listHeader={listHeader}
-      />
+  const bottomEl = diary?.is_owner && (
+    <FlatButtonBottom
+      textColor={Colors.error600}
+      onPress={handleDelete}
+      icon="trash-outline"
+      loading={deleteMutation.isPending}
+    >
+      {t("delete_diary")}
+    </FlatButtonBottom>
+  );
 
-      {diary.is_owner && (
-        <FlatButtonBottom
-          textColor={Colors.error600}
-          onPress={handleDelete}
-          icon="trash-outline"
-          loading={deleteMutation.isPending}
-        >
-          {t("delete_diary")}
-        </FlatButtonBottom>
-      )}
-    </View>
+  return (
+    <ListScreen
+      route={route}
+      navigation={navigation}
+      fetchFunction={fetchDiaryObservations}
+      extraFilters={{ diary: diaryId, territory: diary.territory }}
+      allowedFilters={["species"]}
+      onFiltersChange={setCurrentFilters}
+      onSortChange={setCurrentSort}
+      errorTitle={t("observations_unavailable")}
+      onAdd={diary.is_owner ? handleAdd : undefined}
+      renderItem={renderItem}
+      noItems={noItems}
+      title={t("diary")}
+      headerRightBeginning={headerRightBeginning}
+      handleSharePress={handleShare}
+      listHeader={listHeader}
+      bottomEl={bottomEl}
+    />
   );
 };
 

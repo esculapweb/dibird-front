@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { View, Share, Platform } from "react-native";
+import { Share, Platform } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
@@ -62,56 +62,62 @@ const RatingsCompareScreen = ({ route, navigation }) => {
     message: t("no_observations_yet"),
   };
 
+  const topEl = (
+    <CompareProfileHeader
+      profileData={headerData?.profile_data}
+      counts={headerData?.counts}
+    />
+  );
+
+  const tabOptions = [
+    {
+      value: "common",
+      icon: "checkmark-circle",
+      iconInactive: "checkmark-circle-outline",
+      labelKey: t("common"),
+      count: headerData?.counts?.common,
+    },
+    {
+      value: "all",
+      icon: "list",
+      iconInactive: "list-outline",
+      labelKey: t("all"),
+      count: headerData?.counts?.all,
+    },
+    {
+      value: "different",
+      icon: "remove-circle",
+      iconInactive: "remove-circle-outline",
+      labelKey: t("different"),
+      count: headerData?.counts?.different,
+    },
+  ];
+
   return (
-    <View style={{ flex: 1 }}>
-      <CompareProfileHeader
-        profileData={headerData?.profile_data}
-        counts={headerData?.counts}
-      />
-      <ListScreen
-        route={route}
-        navigation={navigation}
-        fetchFunction={fetchRatingCompare}
-        getItemId={(item) => item.taxon_id}
-        title={t("comparison")}
-        errorTitle={t("comparison_unavailable")}
-        extraFilters={{ profile1, profile2, tab: tabMode }}
-        allowedFilters={["territory", "date", "species"]}
-        renderItem={renderItem}
-        noItems={noItems}
-        onFiltersChange={setCurrentFilters}
-        onSortChange={setCurrentSort}
-        showHeaderBadge={false}
-        handleSharePress={handleShare}
-      />
-      <Tabs
-        tabOptions={[
-          {
-            value: "common",
-            icon: "checkmark-circle",
-            iconInactive: "checkmark-circle-outline",
-            labelKey: t("common"),
-            count: headerData?.counts?.common,
-          },
-          {
-            value: "all",
-            icon: "list",
-            iconInactive: "list-outline",
-            labelKey: t("all"),
-            count: headerData?.counts?.all,
-          },
-          {
-            value: "different",
-            icon: "remove-circle",
-            iconInactive: "remove-circle-outline",
-            labelKey: t("different"),
-            count: headerData?.counts?.different,
-          },
-        ]}
-        tabsMode={tabMode}
-        setTabsMode={setTabMode}
-      />
-    </View>
+    <ListScreen
+      route={route}
+      navigation={navigation}
+      fetchFunction={fetchRatingCompare}
+      getItemId={(item) => item.taxon_id}
+      title={t("comparison")}
+      errorTitle={t("comparison_unavailable")}
+      extraFilters={{ profile1, profile2, tab: tabMode }}
+      allowedFilters={["territory", "date", "species"]}
+      renderItem={renderItem}
+      noItems={noItems}
+      onFiltersChange={setCurrentFilters}
+      onSortChange={setCurrentSort}
+      showHeaderBadge={false}
+      handleSharePress={handleShare}
+      listHeader={topEl}
+      bottomEl={
+        <Tabs
+          tabOptions={tabOptions}
+          tabsMode={tabMode}
+          setTabsMode={setTabMode}
+        />
+      }
+    />
   );
 };
 

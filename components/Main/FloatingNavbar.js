@@ -14,7 +14,7 @@ const H_PAD = 16;
 const FloatingNavbar = ({ showDivider, onPress, filters }) => {
   const navigation = useNavigation();
   const { Colors } = useTheme();
-  const styles = stylesFn(Colors);
+  const styles = stylesFn(Colors, showDivider);
   const insets = useSafeAreaInsets();
   const { language } = useLanguage();
 
@@ -70,7 +70,7 @@ const FloatingNavbar = ({ showDivider, onPress, filters }) => {
 
 export default FloatingNavbar;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors, showDivider) =>
   StyleSheet.create({
     navbarAbsolute: {
       position: "absolute",
@@ -78,7 +78,9 @@ const stylesFn = (Colors) =>
       left: 0,
       right: 0,
       zIndex: 10,
-      backgroundColor: Colors.backgroundMain,
+      ...(showDivider && {
+        backgroundColor: Colors.backgroundMain,
+      }),
     },
     navbar: {
       flexDirection: "row",

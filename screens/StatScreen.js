@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from "react";
-import { View, Share, Platform } from "react-native";
+import { Share, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
 
@@ -222,8 +222,29 @@ const StatScreen = ({ route, navigation }) => {
     await Share.share(Platform.OS === "ios" ? { url } : { message: url });
   }, [profile, currentFilters, currentSort, t]);
 
+  const tabOptions = [
+    {
+      value: "seen",
+      icon: "eye",
+      iconInactive: "eye-outline",
+      labelKey: t("seen"),
+    },
+    {
+      value: "all",
+      icon: "apps",
+      iconInactive: "apps-outline",
+      labelKey: t("all"),
+    },
+    {
+      value: "unseen",
+      icon: "eye-off",
+      iconInactive: "eye-off-outline",
+      labelKey: t("not_seen"),
+    },
+  ];
+
   return (
-    <View style={{ flex: 1 }}>
+    <>
       <ListScreen
         route={route}
         navigation={navigation}
@@ -240,41 +261,24 @@ const StatScreen = ({ route, navigation }) => {
         headerRightBeginning={headerRightBeginning}
         handleSharePress={viewMode === "stats" ? handleShare : undefined}
         onOpenFilterModal={handleOpenFilterModal}
+        bottomEl={
+          <Tabs
+            tabOptions={tabOptions}
+            tabsMode={seenMode}
+            setTabsMode={setSeenMode}
+          />
+        }
       />
-      <Tabs
-        tabOptions={[
-          {
-            value: "seen",
-            icon: "eye",
-            iconInactive: "eye-outline",
-            labelKey: t("seen"),
-          },
-          {
-            value: "all",
-            icon: "apps",
-            iconInactive: "apps-outline",
-            labelKey: t("all"),
-          },
-          {
-            value: "unseen",
-            icon: "eye-off",
-            iconInactive: "eye-off-outline",
-            labelKey: t("not_seen"),
-          },
-        ]}
-        tabsMode={seenMode}
-        setTabsMode={setSeenMode}
-      />
+
       <ConfirmBottomSheet
         ref={confirmRef}
-        type="warning"
         title={t("uncheck_title")}
         description={t("uncheck_descriptions")}
         confirmText={t("view_species_observations")}
         cancelText={t("cancel")}
         onConfirm={handleShowObservations}
       />
-    </View>
+    </>
   );
 };
 

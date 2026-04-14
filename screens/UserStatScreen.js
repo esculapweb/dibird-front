@@ -81,62 +81,66 @@ const UserStatScreen = ({ route, navigation }) => {
     [seenMode],
   );
 
-  return (
-    <View style={styles.container}>
-      {userProfile && (
-        <View style={styles.profileHeader}>
-          <ProfileAvatar
-            avatar={userProfile.avatar}
-            firstName={firstName}
-            lastName={lastName}
-            username={username}
-            size={44}
-          />
-          <Text style={styles.fullName}>{fullName}</Text>
-        </View>
-      )}
-      <ListScreen
-        route={route}
-        navigation={navigation}
-        fetchFunction={fetchData}
-        title={t("statistics")}
-        errorTitle={t("stat_unavailable")}
-        renderItem={renderItem}
-        noItems={noItems}
-        tabsMode={seenMode}
-        getItemId={(item) => item.species_id}
-        allowSort={true}
-        extraFilters={{ user_id: profileId }}
-        allowedFilters={["territory", "species", "date"]}
-        onFiltersChange={setCurrentFilters}
-        onSortChange={setCurrentSort}
-        handleSharePress={handleShare}
+  const tabOptions = [
+    {
+      value: "seen",
+      icon: "eye",
+      iconInactive: "eye-outline",
+      labelKey: t("seen"),
+    },
+    {
+      value: "all",
+      icon: "apps",
+      iconInactive: "apps-outline",
+      labelKey: t("all"),
+    },
+    {
+      value: "unseen",
+      icon: "eye-off",
+      iconInactive: "eye-off-outline",
+      labelKey: t("not_seen"),
+    },
+  ];
+
+  const topEl = userProfile && (
+    <View style={styles.profileHeader}>
+      <ProfileAvatar
+        avatar={userProfile.avatar}
+        firstName={firstName}
+        lastName={lastName}
+        username={username}
+        size={44}
       />
-      <Tabs
-        tabOptions={[
-          {
-            value: "seen",
-            icon: "eye",
-            iconInactive: "eye-outline",
-            labelKey: t("seen"),
-          },
-          {
-            value: "all",
-            icon: "apps",
-            iconInactive: "apps-outline",
-            labelKey: t("all"),
-          },
-          {
-            value: "unseen",
-            icon: "eye-off",
-            iconInactive: "eye-off-outline",
-            labelKey: t("not_seen"),
-          },
-        ]}
-        tabsMode={seenMode}
-        setTabsMode={setSeenMode}
-      />
+      <Text style={styles.fullName}>{fullName}</Text>
     </View>
+  );
+
+  return (
+    <ListScreen
+      route={route}
+      navigation={navigation}
+      fetchFunction={fetchData}
+      title={t("statistics")}
+      errorTitle={t("stat_unavailable")}
+      renderItem={renderItem}
+      noItems={noItems}
+      tabsMode={seenMode}
+      getItemId={(item) => item.species_id}
+      allowSort={true}
+      extraFilters={{ user_id: profileId }}
+      allowedFilters={["territory", "species", "date"]}
+      onFiltersChange={setCurrentFilters}
+      onSortChange={setCurrentSort}
+      handleSharePress={handleShare}
+      topEl={topEl}
+      bottomEl={
+        <Tabs
+          tabOptions={tabOptions}
+          tabsMode={seenMode}
+          setTabsMode={setSeenMode}
+        />
+      }
+    />
   );
 };
 
@@ -144,9 +148,6 @@ export default UserStatScreen;
 
 const stylesFn = (Colors) =>
   StyleSheet.create({
-    container: {
-      flex: 1,
-    },
     profileHeader: {
       flexDirection: "row",
       alignItems: "center",
@@ -155,7 +156,6 @@ const stylesFn = (Colors) =>
       paddingVertical: 10,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: Colors.border,
-      backgroundColor: Colors.backgroundMain,
       gap: 12,
     },
     fullName: {
