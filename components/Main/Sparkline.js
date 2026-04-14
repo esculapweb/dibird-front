@@ -41,7 +41,7 @@ const Sparkline = ({ filters }) => {
     date: labels[0],
     from: meta.from,
     to: meta.to,
-    month: formatMonthLabel(labels[0]), // ← "март 2026" вместо "2026-03-16"
+    month: formatMonthLabel(labels[0]), 
     months: meta.points,
     from_y: meta.from?.slice(0, 4),
     to_y: meta.to?.slice(0, 4),
