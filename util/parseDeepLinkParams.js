@@ -1,6 +1,14 @@
 export const parseDeepLinkParams = (params = {}) => {
-  const { territory, place, species, year, date_time_min, date_time_max, o, seenMode } =
-    params;
+  const {
+    territory,
+    place,
+    species,
+    year,
+    date_time_min,
+    date_time_max,
+    o,
+    seenMode,
+  } = params;
 
   const filters = {
     territory: territory ? Number(territory) : null,
@@ -32,32 +40,28 @@ export const parseDeepLinkParams = (params = {}) => {
     sort
   );
 
-  return { filters, sort, hasParams, seenMode: seenMode ?? null  };
+  return { filters, sort, hasParams, seenMode: seenMode ?? null };
 };
 
 const parseWebDate = (str) => {
   if (!str) return null;
-
   const decoded = decodeURIComponent(str);
 
   // MM/DD/YYYY
   if (decoded.includes("/")) {
     const [month, day, year] = decoded.split("/");
     if (!day || !month || !year) return null;
-    return new Date(`${year}-${month}-${day}T00:00:00.000Z`);
+    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
   }
-  
   // DD.MM.YYYY
   if (decoded.includes(".")) {
     const [day, month, year] = decoded.split(".");
     if (!day || !month || !year) return null;
-    return new Date(`${year}-${month}-${day}T00:00:00.000Z`);
+    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
   }
-
   // YYYY-MM-DD
   if (decoded.includes("-")) {
-    return new Date(`${decoded}T00:00:00.000Z`);
+    return decoded.slice(0, 10); // обрезаем лишнее
   }
-
   return null;
 };

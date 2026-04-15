@@ -1,24 +1,8 @@
 import { useMemo } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useLanguage } from "../store/language-context";
+import { stableStringify } from "../util/helpers";
 
-const stableStringify = (obj) => {
-  if (!obj) return null;
-
-  return JSON.stringify(
-    Object.keys(obj)
-      .sort()
-      .reduce((acc, key) => {
-        const value = obj[key];
-
-        if (value !== undefined) {
-          acc[key] = value;
-        }
-
-        return acc;
-      }, {}),
-  );
-};
 
 export const useList = ({
   screenName,

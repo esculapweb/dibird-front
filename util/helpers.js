@@ -63,41 +63,57 @@ export const normalizeValue = (value, allowed_values) => {
   return value;
 };
 
-const toDateOnly = (value) =>
-  value ? new Date(value).toISOString().slice(0, 10) : null;
+const addOneDay = (dateStr) => {
+  if (!dateStr) return null;
+  const d = new Date(dateStr + "T00:00:00");
+  d.setDate(d.getDate() + 1);
+  return toDateOnly(d);
+};
+
+export const toDateOnly = (date) => {
+  if (!date) return null;
+  const d =
+    date instanceof Date
+      ? date
+      : new Date(
+          typeof date === "string" && !date.includes("T")
+            ? date + "T00:00:00"
+            : date,
+        );
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
 export const buildDateParams = (date) => {
   if (!date || date.type === "any") return {};
 
   switch (date.type) {
-    case "today":
-      return {
-        date_time_min: toDateOnly(new Date()) + " 00:00:00",
-        date_time_max: toDateOnly(new Date()) + " 23:59:59",
-      };
+    case "today": {
+      const today = toDateOnly(new Date());
+      return { date_time_min: today, date_time_max: addOneDay(today) };
+    }
     case "this_year": {
-      const now = new Date();
-      const year = now.getFullYear();
-
+      const year = new Date().getFullYear();
       return {
-        date_time_min: `${year}-01-01 00:00:00`,
-        date_time_max: `${year}-12-31 23:59:59`,
+        date_time_min: `${year}-01-01`,
+        date_time_max: `${year + 1}-01-01`, // чище чем +1 день к 12-31
       };
     }
-    case "year":
+    case "year": {
+      const y = date.year;
       return {
-        date_time_min: `${date.year}-01-01 00:00:00`,
-        date_time_max: `${date.year}-12-31 23:59:59`,
+        date_time_min: `${y}-01-01`,
+        date_time_max: `${y + 1}-01-01`,
       };
-
-    case "range":
+    }
+    case "range": {
       return {
-        ...(date.from && {
-          date_time_min: `${toDateOnly(date.from)} 00:00:00`,
-        }),
-        ...(date.to && { date_time_max: `${toDateOnly(date.to)} 23:59:59` }),
+        ...(date.from && { date_time_min: date.from }),
+        ...(date.to && { date_time_max: addOneDay(date.to) }),
       };
-
+    }
     default:
       return {};
   }
@@ -154,3 +170,20 @@ export const formatMonthLabel = (dateStr) => {
   return d;
 };
 
+export const stableStringify = (obj) => {
+  if (!obj) return null;
+
+  return JSON.stringify(
+    Object.keys(obj)
+      .sort()
+      .reduce((acc, key) => {
+        const value = obj[key];
+
+        if (value !== undefined) {
+          acc[key] = value;
+        }
+
+        return acc;
+      }, {}),
+  );
+};

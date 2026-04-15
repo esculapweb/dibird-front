@@ -15,10 +15,11 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
   const mode = value?.type ?? "all";
   const year = value?.type === "year" ? value.year : null;
 
-  const from =
-    value?.type === "range" && value.from ? new Date(value.from) : null;
+  console.log(value);
 
-  const to = value?.type === "range" && value.to ? new Date(value.to) : null;
+  const from = value?.type === "range" && value.from ? value.from : null;
+
+  const to = value?.type === "range" && value.to ? value.to : null;
 
   const normalizeRange = (from, to) => {
     if (!from && !to) return null;
@@ -64,12 +65,12 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
 
   const handleFromChange = (newFrom) => {
     const normalized = normalizeRange(newFrom, to);
-    setDateFilter(normalized ? { type: "range", ...normalized } : null);
+    setDateFilter(normalized ? { type: "range", from: newFrom, to } : null);
   };
 
   const handleToChange = (newTo) => {
     const normalized = normalizeRange(from, newTo);
-    setDateFilter(normalized ? { type: "range", ...normalized } : null);
+    setDateFilter(normalized ? { type: "range", from, to: newTo } : null);
   };
 
   const yearOptions = useMemo(() => {

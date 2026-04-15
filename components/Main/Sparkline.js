@@ -16,10 +16,19 @@ const Sparkline = ({ filters }) => {
   const styles = stylesFn(Colors);
 
   const { data: activity } = useQuery({
-    queryKey: ["Activity", filters],
+    queryKey: [
+      "Activity",
+      filters?.territory ?? null,
+      filters?.date?.type ?? null,
+      filters?.date?.year ?? null,
+      filters?.date?.from ?? null,
+      filters?.date?.to ?? null,
+    ],
     queryFn: () => fetchMyActivity(filters),
     enabled: !!filters,
   });
+
+  console.log(activity)
 
   const data = activity?.data ?? [];
   const meta = activity?.meta ?? {};
@@ -41,7 +50,7 @@ const Sparkline = ({ filters }) => {
     date: labels[0],
     from: meta.from,
     to: meta.to,
-    month: formatMonthLabel(labels[0]), 
+    month: formatMonthLabel(labels[0]),
     months: meta.points,
     from_y: meta.from?.slice(0, 4),
     to_y: meta.to?.slice(0, 4),

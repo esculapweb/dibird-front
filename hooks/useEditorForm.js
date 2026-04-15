@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { getSession } from "../util/sessionStore";
+import { toDateOnly } from "../util/helpers";
 
 export const useEditorForm = ({
   item,
@@ -19,7 +20,7 @@ export const useEditorForm = ({
   const itemWithParsedDate = item
     ? {
         ...item,
-        date_time: item.date_time ? new Date(item.date_time) : undefined,
+        date_time: item.date_time ? toDateOnly(item.date_time) : undefined,
       }
     : undefined;
 
@@ -34,8 +35,9 @@ export const useEditorForm = ({
   );
 
   const [formData, setFormData] = useState(() => {
-    const initialDate =
-      itemWithParsedDate?.date_time ?? getSession("lastDate") ?? new Date();
+    const sessionDate = getSession("lastDate");
+    const fallback = sessionDate ?? toDateOnly(new Date());
+    const initialDate = itemWithParsedDate?.date_time ?? fallback;
 
     const base = {
       territory: territoryValue,
