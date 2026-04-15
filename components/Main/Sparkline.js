@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { useTheme } from "../../store/theme-context";
 import { fetchMyActivity } from "../../util/fetches";
-import { formatMonthLabel } from "../../util/helpers";
+import { formatMonthLabel, formatDayLabel } from "../../util/helpers";
 
 const H_PAD = 16;
 const SPARK_H = 52;
@@ -28,11 +28,9 @@ const Sparkline = ({ filters }) => {
     enabled: !!filters,
   });
 
-  console.log(activity)
 
   const data = activity?.data ?? [];
   const meta = activity?.meta ?? {};
-  const labels = activity?.labels ?? [];
 
   const INNER_W = width - H_PAD * 2 - 32;
   const barW = Math.max(
@@ -45,16 +43,17 @@ const Sparkline = ({ filters }) => {
   const periodLabelKey = meta.period_label_key ?? "activity_30d";
   const deltaLabelKey = meta.delta_label_key ?? "this_week";
 
-  const periodLabelParams = {
-    year: meta.year ?? meta.from?.slice(0, 4),
-    date: labels[0],
-    from: meta.from,
-    to: meta.to,
-    month: formatMonthLabel(labels[0]),
-    months: meta.points,
-    from_y: meta.from?.slice(0, 4),
-    to_y: meta.to?.slice(0, 4),
-  };
+  const labelParams = meta.label_params ?? {};
+
+  const periodLabelParams = Object.fromEntries(
+    Object.entries(labelParams).map(([k, v]) => {
+      if (k === "month") return [k, formatMonthLabel(v)]; // "2026-04" → "апр 2026"
+      if (k === "date") return [k, formatDayLabel(v)]; // "2026-04-05" → "5 апр"
+      if (k === "from") return [k, formatDayLabel(v)];
+      if (k === "to") return [k, formatDayLabel(v)];
+      return [k, v]; // year, months, from_y, to_y — числа, не трогаем
+    }),
+  );
 
   if (!data.length) return null;
 
@@ -144,6 +143,11 @@ const stylesFn = (Colors) =>
 // t("last_hours")
 // t("this_week")
 // t("this_month")
+// t("last_month")
 // t("this_quarter")
 // t("this_quarter")
 // t("last_quarter")
+  // t("today_vs_yesterday")
+  // t("last_day")         
+  // t("last_week")        
+  // t("last_month")       

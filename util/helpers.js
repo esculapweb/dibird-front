@@ -158,16 +158,16 @@ export const formatDateShort = (dateStr) => {
   };
 };
 
-export const formatMonthLabel = (dateStr) => {
-  if (!dateStr) return null;
+export const formatMonthLabel = (isoStr) => {
+  if (!isoStr) return "";
+  const d = new Date(isoStr);
+  return d.toLocaleDateString(i18n.language, { month: "short", year: "numeric" });
+};
 
-  const date = new Date(dateStr);
-  const d = new Intl.DateTimeFormat(i18n.language, {
-    month: "short",
-    year: "numeric",
-  }).format(date);
-
-  return d;
+export const formatDayLabel = (isoStr) => {
+  if (!isoStr) return "";
+  const d = new Date(isoStr);
+  return d.toLocaleDateString(i18n.language, { day: "numeric", month: "short" });
 };
 
 export const stableStringify = (obj) => {
