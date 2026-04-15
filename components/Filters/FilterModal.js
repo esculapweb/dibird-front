@@ -161,8 +161,6 @@ const FilterModal = ({
   const applyHandler = async () => {
     const newFilters = getNewFilters();
 
-    console.log(newFilters)
-
     setFilters(newFilters);
     onClose();
 

@@ -15,10 +15,7 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
   const mode = value?.type ?? "all";
   const year = value?.type === "year" ? value.year : null;
 
-  console.log(value);
-
   const from = value?.type === "range" && value.from ? value.from : null;
-
   const to = value?.type === "range" && value.to ? value.to : null;
 
   const normalizeRange = (from, to) => {
