@@ -98,6 +98,7 @@ export const fetchMyActivity = async (
   const params = {
     territory: filters?.territory,
     ...buildDateParams(filters?.date),
+    ...(filters?.new && { new: true }),
   };
 
   const res = await api.get("/myapi/observation2/activity/", { params });

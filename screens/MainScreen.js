@@ -71,7 +71,7 @@ const MainScreen = ({ navigation, route }) => {
       >
         <Stats data={dataStats} filters={filters} />
 
-        <Sparkline filters={filters} />
+        <Sparkline filters={filters} chartType="bar"  />
 
         <ChecklistHero data={dataChecklist} />
 

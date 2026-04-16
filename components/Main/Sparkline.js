@@ -1,21 +1,35 @@
-import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { useState } from "react";
+import {
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+  Pressable,
+} from "react-native";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
+import { Ionicons } from "@expo/vector-icons";
 
 import { useTheme } from "../../store/theme-context";
 import { fetchMyActivity } from "../../util/fetches";
-import { formatMonthLabel, formatDayLabel } from "../../util/helpers";
+import { SparklineSkeleton } from "./SparklineSkeleton";
 
 const H_PAD = 16;
 const SPARK_H = 52;
 
-const Sparkline = ({ filters }) => {
+const Sparkline = ({ filters, chartType = "bar" }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [mode, setMode] = useState("newSpecies");
+
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const { Colors } = useTheme();
-  const styles = stylesFn(Colors);
 
-  const { data: activity } = useQuery({
+  const mainColor = Colors.main100;
+  const mutedColor = Colors.main300;
+  const styles = stylesFn(Colors, mainColor, mutedColor);
+
+  const { data: activity, isLoading } = useQuery({
     queryKey: [
       "Activity",
       filters?.territory ?? null,
@@ -23,11 +37,16 @@ const Sparkline = ({ filters }) => {
       filters?.date?.year ?? null,
       filters?.date?.from ?? null,
       filters?.date?.to ?? null,
+      mode,
     ],
-    queryFn: () => fetchMyActivity(filters),
+    queryFn: () =>
+      fetchMyActivity({
+        ...filters,
+        ...(mode === "newSpecies" && { new: true }),
+      }),
+
     enabled: !!filters,
   });
-
 
   const data = activity?.data ?? [];
   const meta = activity?.meta ?? {};
@@ -40,29 +59,85 @@ const Sparkline = ({ filters }) => {
   const max = data.length ? Math.max(...data) : 1;
   const RECENT = meta.recent_threshold ?? 0;
   const sparkDelta = meta.delta_label ?? "0";
-  const periodLabelKey = meta.period_label_key ?? "activity_30d";
   const deltaLabelKey = meta.delta_label_key ?? "this_week";
 
-  const labelParams = meta.label_params ?? {};
-
-  const periodLabelParams = Object.fromEntries(
-    Object.entries(labelParams).map(([k, v]) => {
-      if (k === "month") return [k, formatMonthLabel(v)]; // "2026-04" → "апр 2026"
-      if (k === "date") return [k, formatDayLabel(v)]; // "2026-04-05" → "5 апр"
-      if (k === "from") return [k, formatDayLabel(v)];
-      if (k === "to") return [k, formatDayLabel(v)];
-      return [k, v]; // year, months, from_y, to_y — числа, не трогаем
-    }),
-  );
-
+  if (isLoading) return <SparklineSkeleton />;
   if (!data.length) return null;
+
+  const OPTIONS = [
+    { key: "newSpecies", label: t("new_species") },
+    { key: "observations", label: t("observations") },
+  ];
+
+  const BarItem = ({ h, mb, bg }) =>
+    chartType === "dot" ? (
+      <View
+        style={{
+          width: barW,
+          height: SPARK_H,
+          justifyContent: "flex-end",
+          alignItems: "center",
+        }}
+      >
+        <View
+          style={{
+            width: barW,
+            height: barW,
+            borderRadius: barW / 2,
+            backgroundColor: bg,
+            marginBottom: mb,
+          }}
+        />
+      </View>
+    ) : (
+      <View
+        style={[styles.bar, { width: barW, height: h, backgroundColor: bg }]}
+      />
+    );
 
   return (
     <View style={styles.card}>
       <View style={styles.sparkHead}>
-        <Text style={styles.sparkLabel}>
-          {t(periodLabelKey, periodLabelParams)}
-        </Text>
+        <View style={styles.dropdownWrapper}>
+          <Pressable
+            onPress={() => setIsOpen((v) => !v)}
+            style={styles.dropdownTrigger}
+          >
+            <Text style={styles.dropdownText}>
+              {mode === "newSpecies" ? t("new_species") : t("observations")}
+            </Text>
+            <Ionicons
+              name={isOpen ? "chevron-up" : "chevron-down"}
+              size={14}
+              color={Colors.textSecondary}
+              style={{ marginTop: 1 }}
+            />
+          </Pressable>
+
+          {isOpen && (
+            <View style={styles.dropdownMenu}>
+              {OPTIONS.map((opt) => {
+                const active = mode === opt.key;
+                return (
+                  <Pressable
+                    key={opt.key}
+                    onPress={() => {
+                      setMode(opt.key);
+                      setIsOpen(false);
+                    }}
+                    style={[
+                      styles.dropdownItem,
+                      active && styles.dropdownItemActive,
+                    ]}
+                  >
+                    <Text style={[styles.dropdownItemText, active && styles.dropdownItemTextActive]}>{t(opt.label)}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+        </View>
+
         <Text style={styles.sparkValue}>
           {sparkDelta} {t(deltaLabelKey, { n: meta.recent_window })}
         </Text>
@@ -71,23 +146,11 @@ const Sparkline = ({ filters }) => {
       <View style={styles.barsContainer}>
         {data.map((v, i) => {
           const h = Math.max(Math.round((v / max) * SPARK_H), 4);
+          const mb = Math.max(Math.round((v / max) * (SPARK_H - barW)), 0);
           const isRecent = i >= RECENT;
           const isTall = v >= max * 0.75;
-          const bg = isRecent
-            ? Colors.main100
-            : isTall
-              ? Colors.main300
-              : Colors.border;
-
-          return (
-            <View
-              key={i}
-              style={[
-                styles.bar,
-                { width: barW, height: h, backgroundColor: bg },
-              ]}
-            />
-          );
+          const bg = isRecent ? mainColor : isTall ? mutedColor : Colors.border;
+          return <BarItem key={i} h={h} mb={mb} bg={bg} />;
         })}
       </View>
     </View>
@@ -96,7 +159,7 @@ const Sparkline = ({ filters }) => {
 
 export default Sparkline;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors, mainColor, mutedColor) =>
   StyleSheet.create({
     card: {
       marginHorizontal: H_PAD,
@@ -106,6 +169,7 @@ const stylesFn = (Colors) =>
       borderWidth: 0.5,
       borderColor: Colors.border,
       padding: 16,
+      overflow: "visible",
     },
     sparkHead: {
       flexDirection: "row",
@@ -119,7 +183,7 @@ const stylesFn = (Colors) =>
     sparkValue: {
       fontSize: 13,
       fontWeight: "500",
-      color: Colors.main100,
+      color: mainColor,
     },
     barsContainer: {
       flexDirection: "row",
@@ -130,6 +194,62 @@ const stylesFn = (Colors) =>
     bar: {
       borderRadius: 3,
     },
+
+    dropdownWrapper: {
+      position: "relative",
+    },
+
+    dropdownTrigger: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+
+    dropdownText: {
+      fontSize: 13,
+      lineHeight: 16,
+      color: Colors.textSecondary,
+      marginRight: 4,
+    },
+
+    chevron: {
+      fontSize: 12,
+      color: Colors.textSecondary,
+    },
+
+    dropdownMenu: {
+      position: "absolute",
+      top: 26,
+      left: 0,
+      minWidth: 120,
+      backgroundColor: Colors.primary100,
+      borderRadius: 10,
+      borderWidth: 0.5,
+      borderColor: Colors.border,
+      paddingVertical: 6,
+      zIndex: 10,
+      shadowColor: Colors.shadow,
+      shadowOpacity: 0.1,
+      shadowRadius: 6,
+      elevation: 3,
+    },
+
+    dropdownItem: {
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+
+    dropdownItemActive: {
+      backgroundColor: mutedColor,
+    },
+
+    dropdownItemText: {
+      fontSize: 13,
+      color: Colors.textSecondary,
+    },
+
+    dropdownItemTextActive: {
+      color: mainColor,
+    }
   });
 
 // t("activity_today")
@@ -147,7 +267,7 @@ const stylesFn = (Colors) =>
 // t("this_quarter")
 // t("this_quarter")
 // t("last_quarter")
-  // t("today_vs_yesterday")
-  // t("last_day")         
-  // t("last_week")        
-  // t("last_month")       
+// t("today_vs_yesterday")
+// t("last_day")
+// t("last_week")
+// t("last_month")
