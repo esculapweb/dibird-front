@@ -15,7 +15,7 @@ const QuickActions = ({ filters }) => {
 
   return (
     <>
-      <Text style={styles.groupLabel}>{t("quick_actions")}</Text>
+      {/* <Text style={styles.groupLabel}>{t("quick_actions")}</Text> */}
       <View style={styles.quickRow}>
         <TouchableOpacity
           style={[styles.qbtn, { backgroundColor: Colors.main100 }]}

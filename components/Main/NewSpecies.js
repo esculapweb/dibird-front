@@ -197,7 +197,7 @@ const stylesFn = (Colors) =>
       alignItems: "center",
       gap: 12,
       paddingHorizontal: 14,
-      paddingVertical: 13,
+      paddingVertical: 10,
       backgroundColor: Colors.primary100,
     },
     nsRowDivider: {

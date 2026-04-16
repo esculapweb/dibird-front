@@ -102,6 +102,7 @@ const Sparkline = ({ filters, chartType = "bar" }) => {
           <Pressable
             onPress={() => setIsOpen((v) => !v)}
             style={styles.dropdownTrigger}
+            hitSlop={10}
           >
             <Text style={styles.dropdownText}>
               {mode === "newSpecies" ? t("new_species") : t("observations")}
