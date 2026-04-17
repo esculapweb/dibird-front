@@ -105,7 +105,7 @@ const stylesFn = (Colors) => {
       color: muted,
     },
     clBarBg: {
-      height: 5,
+      height: 4,
       borderRadius: 3,
       overflow: "hidden",
       backgroundColor: Colors.mainProgressBg,
