@@ -4,19 +4,23 @@ import { useNavigation } from "@react-navigation/native";
 
 import { useTheme } from "../../store/theme-context";
 import StatCard from "../ui/StatCard";
+import StatsSkeleton from "./StatsSkeleton";
 
 const H_PAD = 16;
 
-const Stats = ({ data, filters }) => {
+const Stats = ({ data, filters, isLoading }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const navigation = useNavigation();
 
+  if (isLoading) return <StatsSkeleton />;
+  if (!data) return null;
+
   return (
     <View style={styles.statsRow}>
       <StatCard
-        value={data.species}
+        value={data.seen}
         label={t("species")}
         onPress={() =>
           navigation.navigate("Stat", {

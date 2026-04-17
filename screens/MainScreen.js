@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useDropdownQuery } from "../hooks/useDropdownQuery";
+import { useQuery } from "@tanstack/react-query";
 
 import FloatingNavbar from "../components/Main/FloatingNavbar";
 import Stats from "../components/Main/Stats";
@@ -12,10 +14,12 @@ import QuickActions from "../components/Main/QuickActions";
 import Sections from "../components/Main/Sections";
 import FilterModal from "../components/Filters/FilterModal";
 import { useSyncedFilters } from "../hooks/useSyncedFIlters";
-
+import { fetchMyCountries, fetchMyDashboardStat } from "../util/fetches";
 import Layout from "../components/ui/Layout";
+import { useLanguage } from "../store/language-context";
 
 const MainScreen = ({ navigation, route }) => {
+  const { language } = useLanguage();
   const insets = useSafeAreaInsets();
   const NAVBAR_HEIGHT = insets.top + 60;
 
@@ -42,15 +46,28 @@ const MainScreen = ({ navigation, route }) => {
     allowedFilters,
   });
 
-  const dataStats = { species: 23, observations: 37, diaries: 10, rank: 1 };
-  const dataChecklist = {
-    country: "Беларусь",
-    year: 2026,
-    seen: 23,
-    total: 347,
-    newCount: 5,
-    monthKey: "april",
-  };
+  const { query: countriesQuery } = useDropdownQuery({
+    type: "CountriesDropdown",
+    queryFn: (sort) => fetchMyCountries(false, sort),
+    params: [language],
+    enabled: !!filters?.territory,
+  });
+  const country = countriesQuery.data?.filter(
+    (item) => item.value === filters?.territory,
+  )?.[0];
+
+  const { data: dataStats, isLoading: isLoadingDataStat } = useQuery({
+    queryKey: [
+      "DashboardStat",
+      filters?.territory ?? null,
+      filters?.date?.type ?? null,
+      filters?.date?.year ?? null,
+      filters?.date?.from ?? null,
+      filters?.date?.to ?? null,
+    ],
+    queryFn: () => fetchMyDashboardStat(filters),
+    enabled: !!filters,
+  });
 
   return (
     <Layout>
@@ -58,6 +75,7 @@ const MainScreen = ({ navigation, route }) => {
         showDivider={showDivider}
         onPress={() => setFilterModalVisible(true)}
         filters={filters}
+        country={country}
       />
 
       <ScrollView
@@ -69,11 +87,20 @@ const MainScreen = ({ navigation, route }) => {
         onScroll={onScroll}
         scrollEventThrottle={16}
       >
-        <Stats data={dataStats} filters={filters} />
+        <Stats
+          data={dataStats}
+          filters={filters}
+          isLoading={isLoadingDataStat}
+        />
 
-        <Sparkline filters={filters} chartType="bar"  />
+        <Sparkline filters={filters} chartType="bar" />
 
-        <ChecklistHero data={dataChecklist} />
+        <ChecklistHero
+          data={dataStats}
+          country={country}
+          filters={filters}
+          isLoading={isLoadingDataStat}
+        />
 
         <BirdOfTheDay filters={filters} />
 

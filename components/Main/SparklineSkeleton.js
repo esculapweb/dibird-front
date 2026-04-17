@@ -18,7 +18,7 @@ export const SparklineSkeleton = () => {
       {/* бары */}
       <View style={styles.bars}>
         {Array.from({ length: BAR_COUNT }).map((_, i) => {
-          const h = 8 + Math.sin(i * 0.8) * 18 + 14; // псевдослучайная высота
+          const h = 8 + Math.sin(i * 0.8) * 18 + 14; 
           return (
             <View
               key={i}

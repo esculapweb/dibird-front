@@ -2,15 +2,21 @@ import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+
 import { useTheme } from "../../store/theme-context";
+import { formatDateFilterCheckboxHero } from "../../util/helpers";
+import ChecklistHeroSkeleton from "./ChecklistHeroSkeleton";
 
 const H_PAD = 16;
 
-const ChecklistHero = ({ data }) => {
+const ChecklistHero = ({ data, country, filters, isLoading }) => {
   const navigation = useNavigation();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
+
+  if (isLoading) return <ChecklistHeroSkeleton />;
+  if (!data) return null;
 
   const clProgress = data.seen / data.total;
 
@@ -20,17 +26,21 @@ const ChecklistHero = ({ data }) => {
       activeOpacity={0.85}
       onPress={() => navigation.navigate("Checklist")}
     >
-      <Text style={styles.clTag} numberOfLines={1}>
-        {t("checklist") ?? "Чек-лист"} · {data.country} {data.year}
+      <Text style={styles.clTag} numberOfLines={2}>
+        {t("checklist")} ·{" "}
+        {country?.label ? country?.label : t("all_countries")} ·{" "}
+        {formatDateFilterCheckboxHero(filters?.date)}
       </Text>
 
       <View style={styles.clRow}>
         <View style={styles.clNumRow}>
           <Text style={styles.clNum}>{data.seen}</Text>
           <Text style={styles.clOf}>
-            {" "}{t("of") ?? "из"} {data.total}
+            {" "}
+            {t("of")} {data.total}
           </Text>
         </View>
+
         <Ionicons
           name="chevron-forward"
           size={24}
@@ -38,11 +48,6 @@ const ChecklistHero = ({ data }) => {
           style={{ opacity: 0.8 }}
         />
       </View>
-
-      <Text style={styles.clSub}>
-        +{data.newCount} {t("new_in") ?? "новых в"}{" "}
-        {t(data.monthKey) ?? "апреле"}
-      </Text>
 
       <View style={styles.clBarBg}>
         <View
@@ -74,13 +79,14 @@ const stylesFn = (Colors) => {
     },
     clTag: {
       fontSize: 14,
-      marginBottom: 8,
+      marginBottom: 12, 
       color: muted,
     },
     clRow: {
       flexDirection: "row",
-      alignItems: "flex-end",
+      alignItems: "center",
       justifyContent: "space-between",
+      marginBottom: 14,
     },
     clNumRow: {
       flexDirection: "row",
@@ -98,13 +104,7 @@ const stylesFn = (Colors) => {
       fontWeight: "400",
       color: muted,
     },
-    clSub: {
-      fontSize: 14,
-      marginTop: 5,
-      color: muted,
-    },
     clBarBg: {
-      marginTop: 14,
       height: 5,
       borderRadius: 3,
       overflow: "hidden",

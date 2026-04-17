@@ -5,30 +5,16 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { useTheme } from "../../store/theme-context";
 import { formatDateFilterMain } from "../../util/helpers";
-import { useDropdownQuery } from "../../hooks/useDropdownQuery";
-import { fetchMyCountries } from "../../util/fetches";
-import { useLanguage } from "../../store/language-context";
 
 const H_PAD = 16;
 
-const FloatingNavbar = ({ showDivider, onPress, filters }) => {
+const FloatingNavbar = ({ showDivider, onPress, filters, country }) => {
   const navigation = useNavigation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors, showDivider);
   const insets = useSafeAreaInsets();
-  const { language } = useLanguage();
 
-  const { query: countriesQuery } = useDropdownQuery({
-    type: "CountriesDropdown",
-    queryFn: (sort) => fetchMyCountries(false, sort),
-    params: [language],
-    enabled: !!filters?.territory,
-  });
-
-  const countryFlag =
-    countriesQuery.data?.filter(
-      (item) => item.value === filters?.territory,
-    )?.[0]?.icon ?? "   ";
+  const countryFlag = country?.icon ?? "   ";
 
   return (
     <View style={styles.navbarAbsolute}>

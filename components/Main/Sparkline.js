@@ -61,9 +61,6 @@ const Sparkline = ({ filters, chartType = "bar" }) => {
   const sparkDelta = meta.delta_label ?? "0";
   const deltaLabelKey = meta.delta_label_key ?? "this_week";
 
-  if (isLoading) return <SparklineSkeleton />;
-  if (!data.length) return null;
-
   const OPTIONS = [
     { key: "newSpecies", label: t("new_species") },
     { key: "observations", label: t("observations") },
@@ -94,6 +91,9 @@ const Sparkline = ({ filters, chartType = "bar" }) => {
         style={[styles.bar, { width: barW, height: h, backgroundColor: bg }]}
       />
     );
+
+  if (isLoading) return <SparklineSkeleton />;
+  if (!data.length) return null;
 
   return (
     <View style={styles.card}>
@@ -131,7 +131,14 @@ const Sparkline = ({ filters, chartType = "bar" }) => {
                       active && styles.dropdownItemActive,
                     ]}
                   >
-                    <Text style={[styles.dropdownItemText, active && styles.dropdownItemTextActive]}>{t(opt.label)}</Text>
+                    <Text
+                      style={[
+                        styles.dropdownItemText,
+                        active && styles.dropdownItemTextActive,
+                      ]}
+                    >
+                      {t(opt.label)}
+                    </Text>
                   </Pressable>
                 );
               })}
@@ -250,7 +257,7 @@ const stylesFn = (Colors, mainColor, mutedColor) =>
 
     dropdownItemTextActive: {
       color: mainColor,
-    }
+    },
   });
 
 // t("activity_today")
