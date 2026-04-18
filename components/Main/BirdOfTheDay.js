@@ -33,12 +33,12 @@ const BirdOfTheDay = ({
   const styles = stylesFn(Colors);
   const { language } = useLanguage();
   const { profile } = useProfile();
-  const territory = filters?.territory ?? profile.territory;
+  const territory = filters?.territory ?? profile?.territory ?? null;
 
   const { data, isLoading } = useQuery({
     queryKey: ["BirdOfDay", territory, language],
     queryFn: () => fetchBirdOfDay(territory),
-    enabled: !!filters,
+    enabled: !!filters && !!territory,
   });
 
   const { query } = useDropdownQuery({

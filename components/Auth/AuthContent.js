@@ -3,6 +3,7 @@ import { StyleSheet, View, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
 import { useNavigation } from "@react-navigation/native";
+import { useHeaderHeight } from "@react-navigation/elements";
 
 import AuthForm from "./AuthForm";
 import Logo from "../ui/Logo";
@@ -15,6 +16,7 @@ const AuthContent = ({ isLogin, onAuthenticate, loading }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
+  const headerHeight = useHeaderHeight();
 
   const [credentialsInvalid, setCredentialsInvalid] = useState({
     email: false,
@@ -85,6 +87,7 @@ const AuthContent = ({ isLogin, onAuthenticate, loading }) => {
 
   return (
     <FormWrapper
+      style={{ paddingTop: headerHeight }}
       header={
         <View style={styles.welcomeSection}>
           <Logo style={styles.logo} imageSize={70} withText={false} />

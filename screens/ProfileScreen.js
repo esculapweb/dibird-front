@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { View } from "react-native";
+import { useState, useLayoutEffect } from "react";
+import { View, TouchableOpacity, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
+import { Ionicons } from "@expo/vector-icons";
 
 import ProfileForm from "../components/Profile/ProfileForm";
 import { useProfile } from "../store/profile-context";
@@ -9,15 +10,35 @@ import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import FormWrapper from "../components/ui/FormWrapper";
 import { useInvalidateProfile } from "../hooks/Profile/useUpdateProfile";
+import { useTheme } from "../store/theme-context";
 
-const ProfileScreen = () => {
+const ProfileScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [formKey, setFormKey] = useState(0);
   const { profile, profileLoading, updateProfile, refreshProfile } =
     useProfile();
   const { t } = useTranslation();
+  const { Colors } = useTheme();
   const invalidateProfile = useInvalidateProfile();
+  const iconName = Platform.OS === "ios" ? "chevron-back" : "arrow-back";
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => navigation.navigate("MainDrawer")}
+          style={{ padding: 8 }}
+          hitSlop={8}
+        >
+          <Ionicons name={iconName} size={24} color={Colors.textMain} />
+        </TouchableOpacity>
+      ),
+      headerLeftContainerStyle: {
+        paddingLeft: Platform.OS === "android" ? 8 : 0,
+      },
+    });
+  }, [navigation, Colors, iconName]);
 
   const extractApiError = (err) => {
     const data = err.response.data;
@@ -67,7 +88,7 @@ const ProfileScreen = () => {
     <FormWrapper
       bottomButtonLabel={t("reset_form")}
       bottomButtonHandler={() => setFormKey((k) => k + 1)}
-      style={{marginTop: 24}}
+      style={{ marginTop: 24 }}
     >
       <ProfileForm
         key={formKey}

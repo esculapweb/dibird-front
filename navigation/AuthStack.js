@@ -8,6 +8,7 @@ import {
 import { View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
+import WelcomeScreen from "../screens/WelcomeScreen";
 import LoginScreen from "../screens/LoginScreen";
 import SignupScreen from "../screens/SignupScreen";
 import LanguageSwitcher from "../components/Language/LanguageSwitcher";
@@ -45,17 +46,27 @@ const AuthDrawer = () => {
       }}
     >
       <Drawer.Screen
+        name="Welcome"
+        component={WelcomeScreen}
+        options={{
+          headerTransparent: true,
+          headerTitle: () => null,
+          headerShadowVisible: false,
+          title: t("welcome"),
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="home-outline" color={color} size={size} />
+          ),
+        }}
+      />
+
+      <Drawer.Screen
         name="Login"
         component={LoginScreen}
         options={{
           title: t("login"),
-          drawerIcon: ({ color, size, focused }) => (
-            <Ionicons
-              name={focused ? "log-in" : "log-in-outline"}
-              color={color}
-              size={size}
-            />
-          ),
+          headerTransparent: true,
+          headerShadowVisible: false,
+          drawerItemStyle: { display: "none" },
         }}
       />
 
@@ -64,13 +75,9 @@ const AuthDrawer = () => {
         component={SignupScreen}
         options={{
           title: t("signup"),
-          drawerIcon: ({ color, size, focused }) => (
-            <Ionicons
-              name={focused ? "person-add" : "person-add-outline"}
-              color={color}
-              size={size}
-            />
-          ),
+          headerTransparent: true,
+          headerShadowVisible: false,
+          drawerItemStyle: { display: "none" },
         }}
       />
     </Drawer.Navigator>

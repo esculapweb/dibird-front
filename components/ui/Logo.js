@@ -24,7 +24,7 @@ const Logo = ({ style, imageSize = 100, withText = false }) => {
 
 export default Logo;
 
-const stylesFn = (Colors, imageSize) =>
+const stylesFn = (Colors, imageSize, withText) =>
   StyleSheet.create({
     imageContainer: {
       flexDirection: "row",
@@ -36,7 +36,6 @@ const stylesFn = (Colors, imageSize) =>
     },
     image: {
       resizeMode: "contain",
-      marginRight: 8,
       width: imageSize,
       height: imageSize,
       borderRadius: 8,
@@ -45,6 +44,7 @@ const stylesFn = (Colors, imageSize) =>
       fontSize: 18,
       fontWeight: "bold",
       color: Colors.logoText,
+      marginLeft: 8,
     },
     logoAccent: {
       color: Colors.logoAccent,
