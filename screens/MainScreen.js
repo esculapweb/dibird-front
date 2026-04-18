@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDropdownQuery } from "../hooks/useDropdownQuery";
@@ -14,9 +14,14 @@ import QuickActions from "../components/Main/QuickActions";
 import Sections from "../components/Main/Sections";
 import FilterModal from "../components/Filters/FilterModal";
 import { useSyncedFilters } from "../hooks/useSyncedFIlters";
-import { fetchMyCountries, fetchMyDashboardStat } from "../util/fetches";
+import {
+  fetchStat,
+  fetchMyCountries,
+  fetchMyDashboardStat,
+} from "../util/fetches";
 import Layout from "../components/ui/Layout";
 import { useLanguage } from "../store/language-context";
+import { useList } from "../hooks/useList";
 
 const MainScreen = ({ navigation, route }) => {
   const { language } = useLanguage();
@@ -50,7 +55,7 @@ const MainScreen = ({ navigation, route }) => {
     type: "CountriesDropdown",
     queryFn: (sort) => fetchMyCountries(false, sort),
     params: [language],
-    enabled: !!filters?.territory,
+    enabled: filtersLoaded,
   });
   const country = countriesQuery.data?.filter(
     (item) => item.value === filters?.territory,
@@ -66,8 +71,22 @@ const MainScreen = ({ navigation, route }) => {
       filters?.date?.to ?? null,
     ],
     queryFn: () => fetchMyDashboardStat(filters),
-    enabled: !!filters,
+    enabled: filtersLoaded,
   });
+
+  const fetchStatSeen = useCallback((filters, sort, search, page) => {
+    return fetchStat({ ...filters, seen: true }, sort, search, page);
+  }, []);
+
+  const { data: seenSpeciesData, isLoading: isLoadingSeenSpeciesData } =
+    useList({
+      screenName: "Stat",
+      fetchFunction: fetchStatSeen,
+      filters,
+      tabsMode: "seen",
+      sort: "-seen,-date_time",
+      enabled: filtersLoaded,
+    });
 
   return (
     <Layout>
@@ -102,9 +121,18 @@ const MainScreen = ({ navigation, route }) => {
           isLoading={isLoadingDataStat}
         />
 
-        <BirdOfTheDay filters={filters} />
+        <BirdOfTheDay
+          filters={filters}
+          seenSpeciesData={seenSpeciesData}
+          isLoadingSeenSpeciesData={isLoadingSeenSpeciesData}
+        />
 
-        <NewSpecies filters={filters} filtersLoaded={filtersLoaded} />
+        <NewSpecies
+          filters={filters}
+          filtersLoaded={filtersLoaded}
+          newSpeciesData={seenSpeciesData}
+          isLoading={isLoadingSeenSpeciesData}
+        />
 
         <QuickActions filters={filters} />
 

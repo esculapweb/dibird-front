@@ -1,36 +1,23 @@
-import { useCallback } from "react";
 import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 import { Image } from "expo-image";
 
 import { useTheme } from "../../store/theme-context";
-import { fetchStat } from "../../util/fetches";
-import { useList } from "../../hooks/useList";
+
 import { Config } from "../../constants/config";
 import { BirdSVG } from "../ui/Svgs";
 import { formatDateShort } from "../../util/helpers";
 
 const H_PAD = 16;
+const IMAGE_SIZE = 48;
 
-const NewSpecies = ({ filters, filtersLoaded }) => {
+const NewSpecies = ({ filters, newSpeciesData, isLoading }) => {
   const navigation = useNavigation();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
 
-  const fetchStatSeen = useCallback((filters, sort, search, page) => {
-    return fetchStat({ ...filters, seen: true }, sort, search, page);
-  }, []);
-
-  const { data: newSpeciesData, isLoading } = useList({
-    screenName: "Stat",
-    fetchFunction: fetchStatSeen,
-    filters,
-    tabsMode: "seen",
-    sort: "-seen,-date_time",
-    enabled: filtersLoaded,
-  });
 
   const isYearFilter =
     filters?.date?.type === "year" || filters?.date?.type === "this_year";
@@ -147,7 +134,7 @@ const NewSpecies = ({ filters, filtersLoaded }) => {
                 )}
               </View>
               <View style={styles.nsNames}>
-                <Text style={styles.nsCommon} numberOfLines={1}>{item.sp_name_lang}</Text>
+                <Text style={styles.nsCommon} numberOfLines={2}>{item.sp_name_lang}</Text>
                 <Text style={styles.nsLatin} numberOfLines={1}>{item.sp_latin}</Text>
               </View>
               <Text style={styles.nsDate}>
@@ -205,18 +192,18 @@ const stylesFn = (Colors) =>
       borderBottomColor: Colors.divider,
     },
     imageWrapper: {
-      width: 48,
-      height: 48,
+      width: IMAGE_SIZE,
+      height: IMAGE_SIZE,
     },
     image: {
-      width: 48,
-      height: 48,
+      width: IMAGE_SIZE,
+      height: IMAGE_SIZE,
       borderRadius: 12,
       backgroundColor: Colors.imageBg,
     },
     imagePlaceholder: {
-      width: 48,
-      height: 48,
+      width: IMAGE_SIZE,
+      height: IMAGE_SIZE,
       borderRadius: 12,
       backgroundColor: Colors.imageBg,
       justifyContent: "center",

@@ -114,6 +114,15 @@ export const fetchMyDashboardStat = async (filters) => {
   return res.data;
 };
 
+export const fetchBirdOfDay = async (territory) => {
+  const params = {
+    territory: territory,
+  };
+
+  const res = await api.get("/myapi/bird-of-day2/today/", { params });
+  return res.data;
+};
+
 const fetchAbstract = async (
   fetchUrl,
   filters = {},
