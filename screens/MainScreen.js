@@ -28,11 +28,11 @@ const MainScreen = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
   const NAVBAR_HEIGHT = insets.top + 60;
 
-  const [showDivider, setShowDivider] = useState(false);
-  const onScroll = (e) => {
-    const should = e.nativeEvent.contentOffset.y > 10;
-    setShowDivider((prev) => (prev === should ? prev : should));
-  };
+  // const [showDivider, setShowDivider] = useState(false);
+  // const onScroll = (e) => {
+  //   const should = e.nativeEvent.contentOffset.y > 10;
+  //   setShowDivider((prev) => (prev === should ? prev : should));
+  // };
 
   const allowedFilters = ["territory", "date"];
 
@@ -91,7 +91,7 @@ const MainScreen = ({ navigation, route }) => {
   return (
     <Layout>
       <FloatingNavbar
-        showDivider={showDivider}
+        // showDivider={showDivider}
         onPress={() => setFilterModalVisible(true)}
         filters={filters}
         country={country}
@@ -103,7 +103,7 @@ const MainScreen = ({ navigation, route }) => {
           paddingTop: NAVBAR_HEIGHT,
           paddingBottom: insets.bottom,
         }}
-        onScroll={onScroll}
+        // onScroll={onScroll}
         scrollEventThrottle={16}
       >
         <Stats

@@ -130,6 +130,8 @@ const MainDrawer = () => {
         component={ProfileScreen}
         options={{
           title: t("profile"),
+          headerTransparent: true,
+          headerShadowVisible: false,
           headerShown: true,
           drawerIcon: ({ color, size, focused }) => (
             <Ionicons

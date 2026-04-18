@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    marginBottom: 48,
+    marginBottom: 68,
   },
   logoBox: {
     alignItems: "center",

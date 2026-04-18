@@ -2,6 +2,7 @@ import { useState, useLayoutEffect } from "react";
 import { View, TouchableOpacity, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
+import { useHeaderHeight } from "@react-navigation/elements";
 
 import ProfileForm from "../components/Profile/ProfileForm";
 import { useProfile } from "../store/profile-context";
@@ -22,6 +23,7 @@ const ProfileScreen = ({ navigation }) => {
   const { Colors } = useTheme();
   const invalidateProfile = useInvalidateProfile();
   const iconName = Platform.OS === "ios" ? "chevron-back" : "arrow-back";
+  const headerHeight = useHeaderHeight();
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -88,7 +90,7 @@ const ProfileScreen = ({ navigation }) => {
     <FormWrapper
       bottomButtonLabel={t("reset_form")}
       bottomButtonHandler={() => setFormKey((k) => k + 1)}
-      style={{ marginTop: 24 }}
+      style={{ marginTop: 24, paddingTop: headerHeight }}
     >
       <ProfileForm
         key={formKey}
