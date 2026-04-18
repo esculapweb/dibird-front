@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
 import { ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDropdownQuery } from "../hooks/useDropdownQuery";
@@ -28,11 +28,6 @@ const MainScreen = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
   const NAVBAR_HEIGHT = insets.top + 60;
 
-  // const [showDivider, setShowDivider] = useState(false);
-  // const onScroll = (e) => {
-  //   const should = e.nativeEvent.contentOffset.y > 10;
-  //   setShowDivider((prev) => (prev === should ? prev : should));
-  // };
 
   const allowedFilters = ["territory", "date"];
 
@@ -91,7 +86,6 @@ const MainScreen = ({ navigation, route }) => {
   return (
     <Layout>
       <FloatingNavbar
-        // showDivider={showDivider}
         onPress={() => setFilterModalVisible(true)}
         filters={filters}
         country={country}
@@ -100,11 +94,9 @@ const MainScreen = ({ navigation, route }) => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingTop: NAVBAR_HEIGHT,
+          paddingTop: NAVBAR_HEIGHT + 8,
           paddingBottom: insets.bottom,
         }}
-        // onScroll={onScroll}
-        scrollEventThrottle={16}
       >
         <Stats
           data={dataStats}

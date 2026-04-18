@@ -5,24 +5,26 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { useTheme } from "../../store/theme-context";
 import { formatDateFilterMain } from "../../util/helpers";
+import BackgroundScene from "../ui/BackgroundScene";
 
 const H_PAD = 16;
 
-const FloatingNavbar = ({ showDivider, onPress, filters, country }) => {
+const FloatingNavbar = ({ onPress, filters, country }) => {
   const navigation = useNavigation();
   const { Colors } = useTheme();
-  const styles = stylesFn(Colors, showDivider);
+  const styles = stylesFn(Colors);
   const insets = useSafeAreaInsets();
 
   const countryFlag = country?.icon ?? "   ";
 
   return (
     <View style={styles.navbarAbsolute}>
+      <BackgroundScene />
       <View style={[styles.navbar, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity
           onPress={() => navigation.openDrawer()}
           hitSlop={8}
-          style={{ gap: 5 }}
+          style={styles.burgerWrapper}
         >
           <View style={styles.burgerLine} />
           <View style={styles.burgerLine} />
@@ -47,16 +49,15 @@ const FloatingNavbar = ({ showDivider, onPress, filters, country }) => {
           />
         </TouchableOpacity>
 
-        <View style={{ width: 8 }} />
+        <View style={{ width: 22 }} />
       </View>
-      <View style={[styles.divider, { opacity: showDivider ? 1 : 0 }]} />
     </View>
   );
 };
 
 export default FloatingNavbar;
 
-const stylesFn = (Colors, showDivider) =>
+const stylesFn = (Colors) =>
   StyleSheet.create({
     navbarAbsolute: {
       position: "absolute",
@@ -64,9 +65,8 @@ const stylesFn = (Colors, showDivider) =>
       left: 0,
       right: 0,
       zIndex: 10,
-      ...(showDivider && {
-        backgroundColor: Colors.backgroundMain,
-      }),
+      backgroundColor: Colors.backgroundMain,
+      overflow: 'hidden',
     },
     navbar: {
       flexDirection: "row",
@@ -74,6 +74,9 @@ const stylesFn = (Colors, showDivider) =>
       justifyContent: "space-between",
       paddingHorizontal: H_PAD,
       paddingBottom: 14,
+    },
+    burgerWrapper: {
+      gap: 5,
     },
     burgerLine: {
       width: 22,
@@ -101,5 +104,4 @@ const stylesFn = (Colors, showDivider) =>
       color: Colors.textMain,
       flexShrink: 1,
     },
-    divider: { height: 0.5, backgroundColor: Colors.divider },
   });

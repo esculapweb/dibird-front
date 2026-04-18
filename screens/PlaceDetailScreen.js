@@ -1,5 +1,5 @@
 import { useLayoutEffect, useCallback, useMemo } from "react";
-import { View, Text, StyleSheet, ScrollView, Alert } from "react-native";
+import { View, Text, StyleSheet, Alert } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import { useTheme } from "../store/theme-context";

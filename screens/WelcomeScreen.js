@@ -1,6 +1,13 @@
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useTheme } from "../store/theme-context";
 import Layout from "../components/ui/Layout";
@@ -9,10 +16,19 @@ import Logo from "../components/ui/Logo";
 const WelcomeScreen = ({ navigation }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <Layout>
-      <View style={[styles.container]}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.container,
+          {
+            paddingTop: insets.top,
+            paddingBottom: insets.bottom,
+          },
+        ]}
+      >
         <View style={styles.header}>
           <View style={[styles.logoBox, { backgroundColor: Colors.main20 }]}>
             <Logo withText={false} />
@@ -29,7 +45,10 @@ const WelcomeScreen = ({ navigation }) => {
           <TouchableOpacity
             style={[
               styles.button,
-              { backgroundColor: Colors.main100, borderColor: Colors.main100 },
+              {
+                backgroundColor: Colors.main100,
+                borderColor: Colors.main100,
+              },
             ]}
             onPress={() => navigation.navigate("Login")}
           >
@@ -44,7 +63,7 @@ const WelcomeScreen = ({ navigation }) => {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.button, { borderColor: Colors.border }]}
+            style={[styles.button, { backgroundColor: Colors.primary100, borderColor: Colors.border }]}
             onPress={() => {
               /* Apple Sign In */
             }}
@@ -56,7 +75,7 @@ const WelcomeScreen = ({ navigation }) => {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.button, { borderColor: Colors.border }]}
+            style={[styles.button, { backgroundColor: Colors.primary100, borderColor: Colors.border }]}
             onPress={() => {
               /* Google OAuth */
             }}
@@ -67,20 +86,20 @@ const WelcomeScreen = ({ navigation }) => {
             </Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </ScrollView>
     </Layout>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: "center",
     paddingHorizontal: 28,
   },
   header: {
     alignItems: "center",
-    marginBottom: 68,
+    marginBottom: 48,
   },
   logoBox: {
     alignItems: "center",
@@ -94,7 +113,7 @@ const styles = StyleSheet.create({
   },
   subtitle: { fontSize: 14 },
   buttons: {
-    gap: 10,
+    gap: 12,
     marginBottom: 24,
   },
   button: {
