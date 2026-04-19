@@ -1,4 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as AppleAuthentication from "expo-apple-authentication";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
 
 import api, { saveTokens, clearTokens, getRefreshToken } from "../services/api";
 
@@ -49,8 +51,58 @@ export const Logout = async (onLogoutCallback) => {
       }
     }
   } finally {
+    try {
+      await GoogleSignin.signOut();
+    } catch {}
     clearTokens();
     await AsyncStorage.multiRemove(["profile", "filters", "sorting", "global"]);
     if (typeof onLogoutCallback === "function") onLogoutCallback();
   }
+};
+
+export const initGoogleSignIn = () => {
+  GoogleSignin.configure({
+    // webClientId из Google Cloud Console → OAuth 2.0 → Web client
+    webClientId: "YOUR_WEB_CLIENT_ID.apps.googleusercontent.com",
+    offlineAccess: false,
+    scopes: ["profile", "email"],
+  });
+};
+
+// ─── Google ──────────────────────────────────────────────────────
+export const LoginWithGoogle = async () => {
+  await GoogleSignin.hasPlayServices();
+  const userInfo = await GoogleSignin.signIn();
+  const idToken = userInfo.data?.idToken;
+  if (!idToken) throw new Error("Google: no id_token");
+
+  const { access, refresh } = await post("/auth/google/", {
+    id_token: idToken,
+  });
+
+  await saveTokens({ access, refresh });
+  return access;
+};
+
+// ─── Apple (только iOS) ──────────────────────────────────────────
+export const LoginWithApple = async () => {
+  const credential = await AppleAuthentication.signInAsync({
+    requestedScopes: [
+      AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+      AppleAuthentication.AppleAuthenticationScope.EMAIL,
+    ],
+  });
+
+  const { identityToken, fullName } = credential;
+  if (!identityToken) throw new Error("Apple: no identity_token");
+
+  const { access, refresh } = await post("/auth/apple/", {
+    id_token: identityToken,
+    // Apple отдаёт имя только при первом входе, потом null
+    first_name: fullName?.givenName ?? "",
+    last_name: fullName?.familyName ?? "",
+  });
+
+  await saveTokens({ access, refresh });
+  return access;
 };

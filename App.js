@@ -18,6 +18,7 @@ import { LanguageProvider } from "./store/language-context";
 import { ThemeProvider, useTheme } from "./store/theme-context";
 import ThemedToast from "./components/ui/ThemedToast";
 import { showError } from "./services/api";
+import { initGoogleSignIn } from "./services/authService";
 
 import CustomSplash from "./components/ui/СustomSplash";
 

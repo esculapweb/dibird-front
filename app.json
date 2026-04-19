@@ -7,10 +7,7 @@
     "scheme": "dibird",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    // "entryPoint": "node_modules/expo-router/entry",
-
     "icon": "./assets/icon.png",
-
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -21,11 +18,9 @@
         "backgroundColor": "#0f0f0f"
       }
     },
-
     "updates": {
       "fallbackToCacheTimeout": 0
     },
-
     "ios": {
       "bundleIdentifier": "com.esculapweb.dibird",
       "buildNumber": "1",
@@ -41,30 +36,21 @@
         "ITSAppUsesNonExemptEncryption": false
       }
     },
-
     "android": {
       "package": "com.esculapweb.dibird",
       "versionCode": 1,
       "edgeToEdgeEnabled": true,
-
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff",
         "monochromeImage": "./assets/adaptive-icon-mono.png"
       },
-
-      // "notification": {
-      //   "icon": "./assets/notification-icon.png",
-      //   "color": "#22c55e"
-      // },
-
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
         "ACCESS_BACKGROUND_LOCATION",
         "POST_NOTIFICATIONS"
       ],
-
       "intentFilters": [
         {
           "action": "VIEW",
@@ -79,21 +65,26 @@
         }
       ]
     },
-
     "androidStatusBar": {
       "backgroundColor": "#ffffff",
       "barStyle": "dark-content",
       "translucent": false
     },
-
     "plugins": [
       "expo-location",
       "expo-secure-store",
       "expo-localization",
+      "expo-apple-authentication",
+      [
+        "@react-native-google-signin/google-signin", 
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.YOUR_REVERSED_CLIENT_ID"
+        }
+      ],
       "@react-native-community/datetimepicker",
-      "@maplibre/maplibre-react-native"
+      "@maplibre/maplibre-react-native",
+      "@react-native-google-signin/google-signin"
     ],
-
     "extra": {
       "eas": {
         "projectId": "37f32021-5695-4c3a-a023-a5e8c07346ce"
