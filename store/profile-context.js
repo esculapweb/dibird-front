@@ -73,7 +73,7 @@ export const ProfileProvider = ({ children, isAuthenticated }) => {
     setProfile(safeProfile);
     await AsyncStorage.setItem("profile", JSON.stringify(safeProfile));
     await initGlobalFilters(safeProfile.territory);
-    onProfileSavedCallbacks.forEach(cb => cb(safeProfile.territory));
+    onProfileSavedCallbacks.forEach((cb) => cb(safeProfile.territory));
   };
 
   const updateProfile = useCallback(async (updatedData) => {
@@ -83,15 +83,9 @@ export const ProfileProvider = ({ children, isAuthenticated }) => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      AsyncStorage.getItem("profile").then((stored) => {
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored);
-            if (parsed && typeof parsed === "object") setProfile(parsed);
-          } catch {}
-        }
+      AsyncStorage.removeItem("profile").then(() => {
+        refreshProfile();
       });
-      refreshProfile();
     } else {
       setProfile(null);
       setError(null);
