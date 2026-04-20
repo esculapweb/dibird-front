@@ -62,8 +62,10 @@ export const Logout = async (onLogoutCallback) => {
 
 export const initGoogleSignIn = () => {
   GoogleSignin.configure({
-    // webClientId из Google Cloud Console → OAuth 2.0 → Web client
-    webClientId: "YOUR_WEB_CLIENT_ID.apps.googleusercontent.com",
+    webClientId:
+      "450151091368-2c3vvb49mkuhloifvgfkmbgqgdkhqki7.apps.googleusercontent.com",
+    iosClientId:
+      "450151091368-ha8kdd4hq7vil079e10p59pcr7ln0pgj.apps.googleusercontent.com",
     offlineAccess: false,
     scopes: ["profile", "email"],
   });
@@ -73,10 +75,15 @@ export const initGoogleSignIn = () => {
 export const LoginWithGoogle = async () => {
   await GoogleSignin.hasPlayServices();
   const userInfo = await GoogleSignin.signIn();
+
+  const tokens = await GoogleSignin.getTokens();
+
   const idToken = userInfo.data?.idToken;
-  if (!idToken) throw new Error("Google: no id_token");
+  const accessToken = tokens.accessToken;
+  if (!idToken || !accessToken) throw new Error("Google: missing tokens");
 
   const { access, refresh } = await post("/auth/google/", {
+    access_token: accessToken,
     id_token: idToken,
   });
 

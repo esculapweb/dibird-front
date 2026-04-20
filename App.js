@@ -18,9 +18,11 @@ import { LanguageProvider } from "./store/language-context";
 import { ThemeProvider, useTheme } from "./store/theme-context";
 import ThemedToast from "./components/ui/ThemedToast";
 import { showError } from "./services/api";
-import { initGoogleSignIn } from "./services/authService";
+import { initGoogleSignIn } from "./util/auth";
 
 import CustomSplash from "./components/ui/СustomSplash";
+
+initGoogleSignIn();
 
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -78,12 +78,11 @@
       [
         "@react-native-google-signin/google-signin", 
         {
-          "iosUrlScheme": "com.googleusercontent.apps.YOUR_REVERSED_CLIENT_ID"
+          "iosUrlScheme": "com.googleusercontent.apps.450151091368-ha8kdd4hq7vil079e10p59pcr7ln0pgj"
         }
       ],
       "@react-native-community/datetimepicker",
       "@maplibre/maplibre-react-native",
-      "@react-native-google-signin/google-signin"
     ],
     "extra": {
       "eas": {

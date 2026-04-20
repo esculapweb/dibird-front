@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../store/theme-context";
 import Layout from "../components/ui/Layout";
 import Logo from "../components/ui/Logo";
-import { LoginWithGoogle, LoginWithApple } from "../services/authService";
+import { LoginWithGoogle, LoginWithApple } from "../util/auth";
 import { showError } from "../services/api";
 
 const WelcomeScreen = ({ navigation }) => {

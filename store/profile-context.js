@@ -10,6 +10,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import api, { getAccessToken } from "../services/api";
 import { initGlobalFilters } from "../util/storageHelper";
+import { setOnLogout } from "./auth-context";
 
 const EMPTY_PROFILE = {
   user_data: {
@@ -93,6 +94,15 @@ export const ProfileProvider = ({ children }) => {
     const { data } = await api.put(url, updatedData);
     return await saveProfile(data);
   }, []);
+
+  const clearProfile = useCallback(() => {
+    setProfile(null);
+    setError(null);
+  }, []);
+
+  useEffect(() => {
+    setOnLogout(clearProfile);
+  }, [clearProfile]);
 
   useEffect(() => {
     loadProfile();
