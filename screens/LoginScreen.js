@@ -5,15 +5,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { AuthContext } from "../store/auth-context";
 import AuthContent from "../components/Auth/AuthContent";
 import { Login } from "../util/auth";
-import { useProfile } from "../store/profile-context";
-import { useFilters } from "../store/filters-context";
 import { useTheme } from "../store/theme-context";
 
 const LoginScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const { authenticate } = useContext(AuthContext);
-  const { refreshProfile } = useProfile();
-  const { reload } = useFilters();
   const { Colors } = useTheme();
   const iconName = Platform.OS === "ios" ? "chevron-back" : "arrow-back";
 
@@ -24,8 +20,6 @@ const LoginScreen = ({ navigation }) => {
     try {
       const token = await Login(email, password);
       await authenticate(token);
-      await refreshProfile();
-      await reload();
     } catch (e) {
       throw e;
     } finally {

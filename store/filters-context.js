@@ -17,6 +17,8 @@ import {
   clearAllGlobalFilters,
 } from "../util/storageHelper";
 
+import { registerOnProfileSaved } from "./profile-context";
+
 const FiltersContext = createContext();
 
 export const FiltersProvider = ({ children }) => {
@@ -83,6 +85,12 @@ export const FiltersProvider = ({ children }) => {
     setDateState(date ?? null);
     setPlaceState(place ?? null);
     setSpeciesState(species ?? null);
+  }, []);
+
+  useEffect(() => {
+    return registerOnProfileSaved(async (territory) => {
+      await reload();
+    });
   }, []);
 
   return (

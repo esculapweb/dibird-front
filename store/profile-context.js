@@ -8,9 +8,18 @@ import {
 import { AppState } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import api, { getAccessToken } from "../services/api";
+import api from "../services/api";
 import { initGlobalFilters } from "../util/storageHelper";
-import { setOnLogout } from "./auth-context";
+
+let onProfileSavedCallbacks = [];
+export const registerOnProfileSaved = (callback) => {
+  onProfileSavedCallbacks.push(callback);
+  return () => {
+    onProfileSavedCallbacks = onProfileSavedCallbacks.filter(
+      (cb) => cb !== callback,
+    );
+  };
+};
 
 const EMPTY_PROFILE = {
   user_data: {
@@ -25,52 +34,31 @@ const EMPTY_PROFILE = {
   private: false,
   private_diary: false,
   user: null,
-  territory: null,
   registration_ip: "",
   timezone: "",
 };
 
 const ProfileContext = createContext({
   profile: null,
+  profileLoading: true,
   updateProfile: async (updatedData) => {},
   refreshProfile: async () => {},
   isTokenReady: false,
   error: null,
+  territory: null,
 });
 
-export const ProfileProvider = ({ children }) => {
+export const ProfileProvider = ({ children, isAuthenticated }) => {
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState(null);
   const [profileLoading, setProfileLoading] = useState(true);
-  const [isTokenReady, setIsTokenReady] = useState(false);
   const url = "/myapi/profile/me/";
-
-  const loadProfile = useCallback(async () => {
-    try {
-      const stored = await AsyncStorage.getItem("profile");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed && typeof parsed === "object") setProfile(parsed);
-      }
-    } catch (e) {
-      console.warn("Failed to load profile from storage", e);
-    } finally {
-      setProfileLoading(false);
-    }
-  }, []);
 
   const refreshProfile = useCallback(async () => {
     try {
       setProfileLoading(true);
       setError(null);
-
-      const token = await getAccessToken();
-      if (!token) return;
-
-      const { data } = await api.get(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
+      const { data } = await api.get(url);
       await saveProfile(data);
     } catch (e) {
       setError(e);
@@ -81,13 +69,11 @@ export const ProfileProvider = ({ children }) => {
   }, []);
 
   const saveProfile = async (data) => {
-    const safeProfile = {
-      ...EMPTY_PROFILE,
-      ...data,
-    };
+    const safeProfile = { ...EMPTY_PROFILE, ...data };
     setProfile(safeProfile);
     await AsyncStorage.setItem("profile", JSON.stringify(safeProfile));
     await initGlobalFilters(safeProfile.territory);
+    onProfileSavedCallbacks.forEach(cb => cb(safeProfile.territory));
   };
 
   const updateProfile = useCallback(async (updatedData) => {
@@ -95,42 +81,33 @@ export const ProfileProvider = ({ children }) => {
     return await saveProfile(data);
   }, []);
 
-  const clearProfile = useCallback(() => {
-    setProfile(null);
-    setError(null);
-  }, []);
-
   useEffect(() => {
-    setOnLogout(clearProfile);
-  }, [clearProfile]);
-
-  useEffect(() => {
-    loadProfile();
-  }, [loadProfile]);
-
-  useEffect(() => {
-    const init = async () => {
-      const token = await getAccessToken();
-      setIsTokenReady(!!token);
-    };
-    init();
-  }, []);
+    if (isAuthenticated) {
+      AsyncStorage.getItem("profile").then((stored) => {
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            if (parsed && typeof parsed === "object") setProfile(parsed);
+          } catch {}
+        }
+      });
+      refreshProfile();
+    } else {
+      setProfile(null);
+      setError(null);
+      setProfileLoading(false);
+      AsyncStorage.removeItem("profile");
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     const sub = AppState.addEventListener("change", (state) => {
-      if (state === "active" && isTokenReady) {
+      if (state === "active" && isAuthenticated) {
         refreshProfile();
       }
     });
-
     return () => sub.remove();
-  }, [isTokenReady]);
-
-  useEffect(() => {
-    if (isTokenReady) {
-      refreshProfile();
-    }
-  }, [isTokenReady, refreshProfile]);
+  }, [isAuthenticated, refreshProfile]);
 
   return (
     <ProfileContext.Provider
@@ -139,7 +116,7 @@ export const ProfileProvider = ({ children }) => {
         profileLoading,
         updateProfile,
         refreshProfile,
-        isTokenReady,
+        isTokenReady: isAuthenticated,
         error,
       }}
     >

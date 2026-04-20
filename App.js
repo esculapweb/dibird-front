@@ -42,18 +42,26 @@ const queryClient = new QueryClient({
       cacheTime: 5 * 60_000,
       refetchOnFocus: false,
       refetchOnReconnect: true,
-
-      mutations: {
-        onError: (error) => {
-          showError(error);
-        },
+    },
+    mutations: {
+      onError: (error) => {
+        showError(error);
       },
     },
   },
 });
 
+const AuthConsumerWrapper = ({ children }) => {
+  const { isAuthenticated } = useContext(AuthContext);
+  return (
+    <ProfileProvider isAuthenticated={isAuthenticated}>
+      {children}
+    </ProfileProvider>
+  );
+};
+
 const Root = () => {
-  const { isInitializing } = useContext(AuthContext);
+  const { isInitializing, isAuthenticated } = useContext(AuthContext);
   const { theme } = useTheme();
   const [splashFinished, setSplashFinished] = useState(false);
 
@@ -84,13 +92,13 @@ export default function App() {
           <LanguageProvider>
             <ThemeProvider>
               <AuthContextProvider>
-                <ProfileProvider>
+                <AuthConsumerWrapper>
                   <FiltersProvider>
                     <LocationProvider>
                       <Root />
                     </LocationProvider>
                   </FiltersProvider>
-                </ProfileProvider>
+                </AuthConsumerWrapper>
               </AuthContextProvider>
             </ThemeProvider>
           </LanguageProvider>
