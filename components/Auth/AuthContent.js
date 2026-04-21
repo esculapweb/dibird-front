@@ -11,7 +11,13 @@ import { showError } from "../../services/api";
 import { useTheme } from "../../store/theme-context";
 import FormWrapper from "../ui/FormWrapper";
 
-const AuthContent = ({ isLogin, onAuthenticate, loading }) => {
+const AuthContent = ({
+  isLogin,
+  onAuthenticate,
+  loading,
+  emailConfirmed,
+  prefillEmail,
+}) => {
   const navigation = useNavigation();
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -91,13 +97,22 @@ const AuthContent = ({ isLogin, onAuthenticate, loading }) => {
       header={
         <View style={styles.welcomeSection}>
           <Logo style={styles.logo} imageSize={70} withText={false} />
-          <View>
-            <Text style={styles.welcomeText}>
-              {isLogin ? t("welcome_back") : t("welcome")}
-            </Text>
-            <Text style={styles.dateText}>
-              {isLogin ? t("login_to_continue") : t("create_account")}
-            </Text>
+          <View style={styles.headerTextBlock}>
+            {isLogin && emailConfirmed ? (
+              <View>
+                <Text style={styles.dateText}>{t("email_confirmed")}</Text>
+                <Text style={styles.welcomeText}>{t("can_login_now")}</Text>
+              </View>
+            ) : (
+              <View>
+                <Text style={styles.welcomeText}>
+                  {isLogin ? t("welcome_back") : t("welcome")}
+                </Text>
+                <Text style={styles.dateText}>
+                  {isLogin ? t("login_to_continue") : t("create_account")}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
       }
@@ -109,6 +124,7 @@ const AuthContent = ({ isLogin, onAuthenticate, loading }) => {
         onSubmit={submitHandler}
         credentialsInvalid={credentialsInvalid}
         loading={loading}
+        prefillEmail={prefillEmail}
       />
     </FormWrapper>
   );
@@ -123,21 +139,27 @@ const stylesFn = (Colors) =>
       alignItems: "center",
       marginTop: 40,
       marginBottom: 24,
+      paddingRight: 16,
+    },
+    headerTextBlock: {
+      flex: 1,
+      minWidth: 0,
     },
     welcomeText: {
       fontSize: 16,
-      fontWeight: "500",
-      marginBottom: 4,
+      marginVertical: 4,
       color: Colors.textMiddle,
+      flexShrink: 1,
     },
     dateText: {
       fontSize: 22,
       fontWeight: "700",
       color: Colors.main100,
+      flexShrink: 1,
+      flexWrap: "wrap",
     },
     logo: {
       alignSelf: "center",
-      marginLeft: 24,
-      marginRight: 12,
+      marginRight: 16,
     },
   });

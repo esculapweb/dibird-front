@@ -6,8 +6,8 @@ import { useTheme } from "../../store/theme-context";
 import AnimatedLoadingButton from "../ui/AnimatedLoadingButton";
 import Input from "../ui/Input";
 
-const AuthForm = ({ isLogin, onSubmit, credentialsInvalid, loading }) => {
-  const [enteredEmail, setEnteredEmail] = useState("");
+const AuthForm = ({ isLogin, onSubmit, credentialsInvalid, loading, prefillEmail }) => {
+  const [enteredEmail, setEnteredEmail] = useState(prefillEmail ?? "");
   const [enteredUsername, setEnteredUsername] = useState("");
   const [enteredPassword, setEnteredPassword] = useState("");
   const [enteredConfirmPassword, setEnteredConfirmPassword] = useState("");
@@ -56,38 +56,61 @@ const AuthForm = ({ isLogin, onSubmit, credentialsInvalid, loading }) => {
         value={enteredEmail}
         keyboardType="email-address"
         isInvalid={emailIsInvalid}
+        textContentType="emailAddress"
+        autoComplete="email"
       />
-      {!isLogin && (
+      {isLogin && (
         <Input
-          label={t("username")}
-          onUpdateValue={updateInputValueHandler.bind(this, "userName")}
-          value={enteredUsername}
-          isInvalid={userNameIsInvalid}
+          label={t("password")}
+          onUpdateValue={updateInputValueHandler.bind(this, "password")}
+          secure
+          value={enteredPassword}
+          isInvalid={passwordIsInvalid}
+          textContentType="password"
+          autoComplete="current-password"
+          importantForAutofill="yes"
         />
       )}
-      <Input
-        label={t("password")}
-        onUpdateValue={updateInputValueHandler.bind(this, "password")}
-        secure
-        value={enteredPassword}
-        isInvalid={passwordIsInvalid}
-      />
       {!isLogin && (
-        <Input
-          label={t("confirm_password")}
-          onUpdateValue={updateInputValueHandler.bind(this, "confirmPassword")}
-          secure
-          value={enteredConfirmPassword}
-          isInvalid={passwordsDontMatch}
-        />
+        <>
+          <Input
+            label={t("username")}
+            onUpdateValue={updateInputValueHandler.bind(this, "userName")}
+            value={enteredUsername}
+            isInvalid={userNameIsInvalid}
+            textContentType="username"
+            autoComplete="username"
+          />
+          <Input
+            label={t("password")}
+            onUpdateValue={updateInputValueHandler.bind(this, "password")}
+            secure
+            value={enteredPassword}
+            isInvalid={passwordIsInvalid}
+            textContentType="newPassword"
+            autoComplete="new-password"
+            importantForAutofill="yes"
+          />
+
+          <Input
+            label={t("confirm_password")}
+            onUpdateValue={updateInputValueHandler.bind(
+              this,
+              "confirmPassword",
+            )}
+            secure
+            value={enteredConfirmPassword}
+            isInvalid={passwordsDontMatch}
+            textContentType="none"
+            autoComplete="off"
+            importantForAutofill="no"
+          />
+        </>
       )}
       <View style={styles.buttonContainer}>
-          <AnimatedLoadingButton
-            onPress={submitHandler}
-            loading={loading}
-          >
-            {isLogin ? t("log_in") : t("sign_up")}
-          </AnimatedLoadingButton>
+        <AnimatedLoadingButton onPress={submitHandler} loading={loading}>
+          {isLogin ? t("log_in") : t("sign_up")}
+        </AnimatedLoadingButton>
       </View>
     </View>
   );

@@ -47,12 +47,6 @@ export const LightColors = {
   toastInfo: "rgba(59,130,246,0.9)",
   toastBorder: "rgba(255,255,255,0.1)",
 
-  mainBlob1: "rgb(201, 228, 222, 0.75)",
-  mainBlob2: "rgb(201, 228, 222, 0.75)",
-  mainBlob3: "rgb(201, 228, 222, 0.75)",
-  // mainBlob2: "rgba(240, 194, 75, 0.2)",
-  // mainBlob3: "#fad2d8",
-
   compareP1: "#1d9e75",
   compareP2: "#f59e0b",
 

@@ -51,6 +51,7 @@ const linking = (isAuthenticated) => ({
       // AuthDrawer
       Login: "accounts/login",
       Signup: "accounts/signup",
+      ConfirmEmail: "accounts/confirm-email/:key",
     },
   },
 

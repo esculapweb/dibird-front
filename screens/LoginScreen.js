@@ -1,17 +1,23 @@
 import { useContext, useState, useLayoutEffect } from "react";
 import { TouchableOpacity, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
+import Toast from "react-native-toast-message";
 
 import { AuthContext } from "../store/auth-context";
 import AuthContent from "../components/Auth/AuthContent";
 import { Login } from "../util/auth";
 import { useTheme } from "../store/theme-context";
 
-const LoginScreen = ({ navigation }) => {
+const LoginScreen = ({ route, navigation }) => {
   const [loading, setLoading] = useState(false);
   const { authenticate } = useContext(AuthContext);
   const { Colors } = useTheme();
+  const { t } = useTranslation();
   const iconName = Platform.OS === "ios" ? "chevron-back" : "arrow-back";
+  
+  const emailConfirmed = route.params?.emailConfirmed;
+  const prefillEmail = route.params?.prefillEmail;
 
   const LoginHandler = async ({ email, password }) => {
     if (loading) return;
@@ -42,7 +48,13 @@ const LoginScreen = ({ navigation }) => {
   }, [navigation, Colors, iconName]);
 
   return (
-    <AuthContent onAuthenticate={LoginHandler} loading={loading} isLogin />
+    <AuthContent
+      onAuthenticate={LoginHandler}
+      loading={loading}
+      emailConfirmed={emailConfirmed}
+      prefillEmail={prefillEmail}
+      isLogin
+    />
   );
 };
 

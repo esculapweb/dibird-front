@@ -11,6 +11,8 @@ import { Ionicons } from "@expo/vector-icons";
 import WelcomeScreen from "../screens/WelcomeScreen";
 import LoginScreen from "../screens/LoginScreen";
 import SignupScreen from "../screens/SignupScreen";
+import CheckEmailScreen from "../screens/CheckEmailScreen";
+import ConfirmEmailScreen from "../screens/ConfirmEmailScreen";
 import LanguageSwitcher from "../components/Language/LanguageSwitcher";
 import { useTheme } from "../store/theme-context";
 import ThemeSwitcher from "../components/Theme/ThemeSwitcher";
@@ -52,7 +54,7 @@ const AuthDrawer = () => {
           headerTransparent: true,
           headerTitle: () => null,
           headerShadowVisible: false,
-          title: t("welcome"),
+          title: t("sign_in_or_sign_up"),
           drawerIcon: ({ color, size }) => (
             <Ionicons name="home-outline" color={color} size={size} />
           ),
@@ -75,6 +77,28 @@ const AuthDrawer = () => {
         component={SignupScreen}
         options={{
           title: t("signup"),
+          headerTransparent: true,
+          headerShadowVisible: false,
+          drawerItemStyle: { display: "none" },
+        }}
+      />
+
+      <Drawer.Screen
+        name={"CheckEmail"}
+        component={CheckEmailScreen}
+        options={{
+          title: t("check_email"),
+          headerTransparent: true,
+          headerShadowVisible: false,
+          drawerItemStyle: { display: "none" },
+        }}
+      />
+
+      <Drawer.Screen
+        name={"ConfirmEmail"}
+        component={ConfirmEmailScreen}
+        options={{
+          title: t("confirm_email"),
           headerTransparent: true,
           headerShadowVisible: false,
           drawerItemStyle: { display: "none" },

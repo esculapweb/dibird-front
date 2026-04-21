@@ -5,7 +5,6 @@ import {
   TextInput,
   StyleSheet,
   TouchableOpacity,
-  Animated,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { BirdSVG } from "./Svgs";
@@ -23,27 +22,17 @@ const Input = ({
   multiline,
   icon,
   birdSvg,
-  placeholder
+  placeholder,
+  textContentType,
+  autoComplete,
+  importantForAutofill,
 }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
-
   const [isSecure, setIsSecure] = useState(secure);
 
-  const iconOpacity = useRef(new Animated.Value(1)).current;
   const toggleSecure = () => {
-    Animated.timing(iconOpacity, {
-      toValue: 0,
-      duration: 100,
-      useNativeDriver: true,
-    }).start(() => {
       setIsSecure((prev) => !prev);
-      Animated.timing(iconOpacity, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
-      }).start();
-    });
   };
 
   return (
@@ -55,6 +44,7 @@ const Input = ({
         <TextInput
           style={[styles.input, isInvalid && styles.inputInvalid]}
           autoCapitalize="none"
+          autoCorrect={false}
           keyboardType={keyboardType}
           secureTextEntry={isSecure}
           onChangeText={onUpdateValue}
@@ -62,16 +52,17 @@ const Input = ({
           multiline={multiline}
           placeholder={placeholder} 
           placeholderTextColor={Colors.textSecondary}
+          textContentType={textContentType}
+          autoComplete={autoComplete}
+          importantForAutofill={importantForAutofill}
         />
         {secure && (
           <TouchableOpacity onPress={toggleSecure} style={styles.iconSecure}>
-            <Animated.View style={{ opacity: iconOpacity }}>
               <Ionicons
                 name={isSecure ? "eye-off-outline" : "eye-outline"}
                 size={24}
                 color={Colors.textMain}
               />
-            </Animated.View>
           </TouchableOpacity>
         )}
         {icon && (
@@ -129,9 +120,6 @@ const stylesFn = (Colors) =>
     inputInvalid: {
       backgroundColor: Colors.error100,
       borderColor: Colors.error500,
-    },
-    iconSecure: {
-      marginLeft: 8,
     },
     iconSecure: {
       marginLeft: 4,

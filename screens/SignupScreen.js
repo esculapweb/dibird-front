@@ -1,5 +1,5 @@
 import { useState, useLayoutEffect } from "react";
-import { Alert, TouchableOpacity, Platform } from "react-native";
+import { TouchableOpacity, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -19,8 +19,15 @@ const SignupScreen = ({ navigation }) => {
     setLoading(true);
     try {
       await CreateUser(email, password, userName);
-      Alert.alert(t("email_confirmation"), t("check_email"));
-      navigation.navigate("Login");
+      navigation.reset({
+        index: 0,
+        routes: [
+          {
+            name: "CheckEmail",
+            params: { email },
+          },
+        ],
+      });
     } catch (e) {
       throw e;
     } finally {

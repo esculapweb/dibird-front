@@ -10,6 +10,7 @@
   "diearies": "",
   "distance": "",
   "distande_desc": "Расстоянию (дальние)",
+  "email_confirmation": "Подтверждение почты",
   "errors": {
     "something_went_wrong": "Что-то пошло не так",
     "unknown": ""
