@@ -22,7 +22,7 @@
       "fallbackToCacheTimeout": 0
     },
     "ios": {
-      "bundleIdentifier": "com.esculapweb.dibird",
+      "bundleIdentifier": "com.dibird.app",
       "buildNumber": "1",
       "supportsTablet": true,
       "requireFullScreen": true,
@@ -41,7 +41,7 @@
       }
     },
     "android": {
-      "package": "com.esculapweb.dibird",
+      "package": "com.dibird.app",
       "versionCode": 1,
       "edgeToEdgeEnabled": true,
       "adaptiveIcon": {

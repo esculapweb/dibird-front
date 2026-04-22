@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "135122891711",
+    "project_id": "dibird-11780",
+    "storage_bucket": "dibird-11780.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:135122891711:android:29a71537e279ea23bce70a",
+        "android_client_info": {
+          "package_name": "com.dibird.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDQSIK1dUiDzKORNa66GwdbawAQIvNBa_M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
