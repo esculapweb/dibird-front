@@ -2,9 +2,10 @@ import axios from "axios";
 import i18n from "./i18n";
 
 import { createTranslatedError } from "./api";
+import { Config } from "../constants/config";
 
 const nominatimApi = axios.create({
-  baseURL: "https://nominatim.openstreetmap.org",
+  baseURL: Config.geoCodingBaseUrl,
   timeout: 5000,
 });
 

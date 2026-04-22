@@ -3,6 +3,7 @@ import * as AppleAuthentication from "expo-apple-authentication";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 
 import api, { saveTokens, clearTokens, getRefreshToken } from "../services/api";
+import { Config } from "../constants/config";
 
 const post = async (url, data) => {
   try {
@@ -62,10 +63,8 @@ export const Logout = async (onLogoutCallback) => {
 
 export const initGoogleSignIn = () => {
   GoogleSignin.configure({
-    webClientId:
-      "450151091368-2c3vvb49mkuhloifvgfkmbgqgdkhqki7.apps.googleusercontent.com",
-    iosClientId:
-      "450151091368-ha8kdd4hq7vil079e10p59pcr7ln0pgj.apps.googleusercontent.com",
+    webClientId: Config.googleWebClientId,
+    iosClientId: Config.googleIosClientId,
     offlineAccess: false,
     scopes: ["profile", "email"],
   });
@@ -105,7 +104,6 @@ export const LoginWithApple = async () => {
 
   const { access, refresh } = await post("/auth/apple/", {
     id_token: identityToken,
-    // Apple отдаёт имя только при первом входе, потом null
     first_name: fullName?.givenName ?? "",
     last_name: fullName?.familyName ?? "",
   });

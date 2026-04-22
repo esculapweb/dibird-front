@@ -9,7 +9,7 @@ import { ActionSheetProvider } from "@expo/react-native-action-sheet";
 import "./services/i18n";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
-import * as Sentry from '@sentry/react-native';
+import * as Sentry from "@sentry/react-native";
 
 import AuthContextProvider, { AuthContext } from "./store/auth-context";
 import { ProfileProvider } from "./store/profile-context";
@@ -23,15 +23,15 @@ import { initGoogleSignIn } from "./util/auth";
 
 import CustomSplash from "./components/ui/СustomSplash";
 
-
 Sentry.init({
-  dsn: 'https://07550e875517782f7abd2afb7feef9cc@o4511264033406976.ingest.de.sentry.io/4511264049791056',
+  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+  environment: process.env.EXPO_PUBLIC_ENV,
+  // enabled: !__DEV__,
 
   // Adds more context data to events (IP address, cookies, user, etc.)
   // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
   sendDefaultPii: true,
 
-  // Enable Logs
   enableLogs: true,
 
   // uncomment the line below to enable Spotlight (https://spotlightjs.com)

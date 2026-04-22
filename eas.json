@@ -12,12 +12,14 @@
         "resourceClass": "medium"
       },
       "android": {
-        "buildType": "apk",
-        "gradleCommand": ":app:assembleDebug"
+        "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_USE_DEV_CLIENT": "true"
-      }
+        "EXPO_PUBLIC_ENV": "development",
+        "EXPO_PUBLIC_BASE_URL": "http://192.168.0.102:8000",
+        "EXPO_PUBLIC_MEDIA_URL": "http://192.168.0.102:8000"
+      },
+      "channel": "development"
     },
     "preview": {
       "distribution": "internal",
@@ -26,13 +28,25 @@
       },
       "android": {
         "buildType": "apk"
-      }
+      },
+      "env": {
+        "EXPO_PUBLIC_ENV": "preview",
+        "EXPO_PUBLIC_BASE_URL": "https://dibird.com",
+        "EXPO_PUBLIC_MEDIA_URL": "https://s.dibird.com"
+      },
+      "channel": "preview"
     },
     "production": {
       "autoIncrement": true,
       "ios": {
         "resourceClass": "medium"
-      }
+      },
+      "env": {
+        "EXPO_PUBLIC_ENV": "production",
+        "EXPO_PUBLIC_BASE_URL": "https://dibird.com",
+        "EXPO_PUBLIC_MEDIA_URL": "https://s.dibird.com"
+      },
+      "channel": "production"
     }
   },
   "submit": {
