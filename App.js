@@ -10,6 +10,7 @@ import "./services/i18n";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import * as Sentry from "@sentry/react-native";
+import analytics from '@react-native-firebase/analytics';
 
 import AuthContextProvider, { AuthContext } from "./store/auth-context";
 import { ProfileProvider } from "./store/profile-context";
@@ -37,6 +38,7 @@ Sentry.init({
   // uncomment the line below to enable Spotlight (https://spotlightjs.com)
   // spotlight: __DEV__,
 });
+await analytics().setAnalyticsCollectionEnabled(!__DEV__);
 
 initGoogleSignIn();
 
