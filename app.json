@@ -26,13 +26,17 @@
       "buildNumber": "1",
       "supportsTablet": true,
       "requireFullScreen": true,
-      "associatedDomains": ["applinks:dibird.com"],
+      "associatedDomains": [
+        "applinks:dibird.com"
+      ],
       "infoPlist": {
         "NSFaceIDUsageDescription": "Used to sign in to DiBird using Face ID.",
         "NSLocationWhenInUseUsageDescription": "DiBird uses your location to show and save bird places on the map.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "DiBird uses your location to track and save bird locations.",
         "NSLocationAlwaysUsageDescription": "DiBird uses your location to track and save bird locations.",
-        "UIBackgroundModes": ["location"],
+        "UIBackgroundModes": [
+          "location"
+        ],
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -58,10 +62,34 @@
           "data": [
             {
               "scheme": "https",
-              "host": "dibird.com"
+              "host": "dibird.com",
+              "pathPrefix": "/accounts/confirm-email/"
+            },
+            {
+              "scheme": "https",
+              "host": "dibird.com",
+              "pathPrefix": "/accounts/login/"
+            },
+            {
+              "scheme": "https",
+              "host": "dibird.com",
+              "pathPrefix": "/accounts/signup/"
+            },
+            {
+              "scheme": "https",
+              "host": "dibird.com",
+              "pathPrefix": "/my/"
+            },
+            {
+              "scheme": "https",
+              "host": "dibird.com",
+              "pathPrefix": "/users/"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -76,13 +104,24 @@
       "expo-localization",
       "expo-apple-authentication",
       [
-        "@react-native-google-signin/google-signin", 
+        "@react-native-google-signin/google-signin",
         {
           "iosUrlScheme": "com.googleusercontent.apps.450151091368-ha8kdd4hq7vil079e10p59pcr7ln0pgj"
         }
       ],
       "@react-native-community/datetimepicker",
       "@maplibre/maplibre-react-native",
+      "@react-native-firebase/app",
+      "@react-native-firebase/crashlytics",
+      "@sentry/react-native",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "react-native",
+          "organization": "dibirdcom"
+        }
+      ]
     ],
     "extra": {
       "eas": {

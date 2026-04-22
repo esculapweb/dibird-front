@@ -49,9 +49,9 @@ const linking = (isAuthenticated) => ({
       UserStat: withFilters("users/stat/:profileId"),
 
       // AuthDrawer
+      ConfirmEmail: "accounts/confirm-email/:key",
       Login: "accounts/login",
       Signup: "accounts/signup",
-      ConfirmEmail: "accounts/confirm-email/:key",
     },
   },
 
