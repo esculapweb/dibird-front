@@ -59,7 +59,7 @@ const AuthContent = ({
 
     const emailIsValid = email.includes("@");
     const passwordIsValid = password.length > 6;
-    const userNameIsValid = userName !== email;
+    const userNameIsValid = userName.length > 0 && userName !== email;
     const passwordsAreEqual = password === confirmPassword;
     const authData = isLogin
       ? { email, password }
