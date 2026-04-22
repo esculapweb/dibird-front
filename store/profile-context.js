@@ -7,6 +7,7 @@ import {
 } from "react";
 import { AppState } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import analytics from "@react-native-firebase/analytics";
 
 import api from "../services/api";
 import { initGlobalFilters } from "../util/storageHelper";
@@ -74,6 +75,10 @@ export const ProfileProvider = ({ children, isAuthenticated }) => {
     await AsyncStorage.setItem("profile", JSON.stringify(safeProfile));
     await initGlobalFilters(safeProfile.territory);
     onProfileSavedCallbacks.forEach((cb) => cb(safeProfile.territory));
+
+    if (safeProfile.user) {
+      await analytics().setUserId(safeProfile.user.toString());
+    }
   };
 
   const updateProfile = useCallback(async (updatedData) => {
@@ -82,16 +87,20 @@ export const ProfileProvider = ({ children, isAuthenticated }) => {
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      AsyncStorage.removeItem("profile").then(() => {
-        refreshProfile();
-      });
-    } else {
-      setProfile(null);
-      setError(null);
-      setProfileLoading(false);
-      AsyncStorage.removeItem("profile");
-    }
+    const updateAnalytics = async () => {
+      if (isAuthenticated) {
+        AsyncStorage.removeItem("profile").then(() => {
+          refreshProfile();
+        });
+      } else {
+        setProfile(null);
+        setError(null);
+        setProfileLoading(false);
+        AsyncStorage.removeItem("profile");
+        await analytics().setUserId(null); // теперь await работает
+      }
+    };
+    updateAnalytics();
   }, [isAuthenticated]);
 
   useEffect(() => {

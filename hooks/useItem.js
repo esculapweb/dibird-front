@@ -31,10 +31,7 @@ export const useItem = (id, type) => {
     cacheTime: 1000 * 60 * 60 * 24,
     refetchOnWindowFocus: false,
     onError: (error) => {
-      console.info("Query error:", {
-        queryKey: [type, id],
-        error: getTranslatedError(error),
-      });
+      console.warn("Query error:", type, error);
       showErrorToast(error);
     },
   });

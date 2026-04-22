@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import analytics from "@react-native-firebase/analytics";
 
 import api, { saveTokens, clearTokens, getRefreshToken } from "../services/api";
 import { Config } from "../constants/config";
@@ -27,6 +28,8 @@ export const Login = async (email, password) => {
     refresh,
   });
 
+  analytics().logLogin({ method: 'email' });
+
   return access;
 };
 
@@ -37,6 +40,7 @@ export const CreateUser = async (email, password, username) => {
     password1: password,
     password2: password,
   });
+  analytics().logSignUp({ method: 'email' });
   return data;
 };
 
@@ -70,7 +74,6 @@ export const initGoogleSignIn = () => {
   });
 };
 
-// ─── Google ──────────────────────────────────────────────────────
 export const LoginWithGoogle = async () => {
   await GoogleSignin.hasPlayServices();
   const userInfo = await GoogleSignin.signIn();
@@ -87,10 +90,10 @@ export const LoginWithGoogle = async () => {
   });
 
   await saveTokens({ access, refresh });
+  analytics().logLogin({ method: 'google' });
   return access;
 };
 
-// ─── Apple (только iOS) ──────────────────────────────────────────
 export const LoginWithApple = async () => {
   const credential = await AppleAuthentication.signInAsync({
     requestedScopes: [
@@ -109,5 +112,6 @@ export const LoginWithApple = async () => {
   });
 
   await saveTokens({ access, refresh });
+  analytics().logLogin({ method: 'apple' });
   return access;
 };

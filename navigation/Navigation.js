@@ -1,5 +1,6 @@
-import { useContext } from "react";
+import { useContext, useRef } from "react";
 import { NavigationContainer } from "@react-navigation/native";
+import analytics from "@react-native-firebase/analytics";
 
 import { AuthContext } from "../store/auth-context";
 import AuthDrawer from "./AuthStack";
@@ -13,11 +14,29 @@ import linking from "../linking";
 
 const Navigation = () => {
   const { theme } = useTheme();
-  const {isAuthenticated} = useContext(AuthContext);
+  const { isAuthenticated } = useContext(AuthContext);
+  const navigationRef = useRef();
+  const routeNameRef = useRef();
+
   return (
     <NavigationContainer
-    linking={linking(isAuthenticated)}
+      ref={navigationRef}
+      linking={linking(isAuthenticated)}
       theme={theme === "dark" ? DarkNavigationTheme : LightNavigationTheme}
+      onReady={() => {
+        routeNameRef.current = navigationRef.current.getCurrentRoute().name;
+      }}
+      onStateChange={async () => {
+        const previous = routeNameRef.current;
+        const current = navigationRef.current.getCurrentRoute().name;
+        if (previous !== current) {
+          analytics().logScreenView({
+            screen_name: current,
+            screen_class: current,
+          });
+          routeNameRef.current = current;
+        }
+      }}
     >
       {isAuthenticated ? <AppNavigator /> : <AuthDrawer />}
     </NavigationContainer>

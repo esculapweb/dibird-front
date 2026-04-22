@@ -44,10 +44,7 @@ export const useDropdownQuery = ({
       ? (data) => new Map(data.map((i) => [i.value, i?.name_lang ?? i.label]))
       : undefined,
     onError: (error) => {
-      console.info("Query error:", {
-        queryKey: [type, ...params, sort],
-        error: getTranslatedError(error),
-      });
+      console.warn("Query error:", type, error);
       showErrorToast(error);
     },
   });

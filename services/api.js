@@ -2,6 +2,7 @@ import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 import i18n from "./i18n";
 import Toast from "react-native-toast-message";
+import * as Sentry from '@sentry/react-native';
 
 import { Config } from "../constants/config";
 import { notifyTokenUpdate } from "./authService";
@@ -198,14 +199,6 @@ api.interceptors.request.use(
       token
     )
       config.headers.Authorization = `Bearer ${token}`;
-
-    // console.info(
-    //   "API request:",
-    //   config.method,
-    //   config.url,
-    //   config.headers.Authorization ? "with token" : "no token"
-    // );
-
     return config;
   },
   (error) => Promise.reject(error),
@@ -217,6 +210,7 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     if (!originalRequest) {
+      Sentry.captureException(error);
       return Promise.reject(createTranslatedError(error));
     }
 
@@ -248,6 +242,10 @@ api.interceptors.response.use(
         }
         return Promise.reject(createTranslatedError(e));
       }
+    }
+
+    if (error.response?.status >= 500) {
+      Sentry.captureException(error);
     }
 
     return Promise.reject(createTranslatedError(error));

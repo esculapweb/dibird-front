@@ -1,7 +1,7 @@
 import "react-native-gesture-handler";
 import "react-native-reanimated";
 import { StatusBar } from "expo-status-bar";
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Navigation from "./navigation/Navigation";
 import Toast from "react-native-toast-message";
@@ -38,7 +38,6 @@ Sentry.init({
   // uncomment the line below to enable Spotlight (https://spotlightjs.com)
   // spotlight: __DEV__,
 });
-await analytics().setAnalyticsCollectionEnabled(!__DEV__);
 
 initGoogleSignIn();
 
@@ -103,6 +102,14 @@ const Root = () => {
 };
 
 export default Sentry.wrap(function App() {
+  useEffect(() => {
+    const init = async () => {
+      await analytics().setAnalyticsCollectionEnabled(!__DEV__);
+    };
+    init();
+  }, []);
+
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <BottomSheetModalProvider>

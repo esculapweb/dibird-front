@@ -42,11 +42,7 @@ export const useApiError = () => {
         });
       }
 
-      console.info("API Error:", {
-        title,
-        message,
-        originalError: error,
-      });
+      console.warn("API Error:", title, message, error)
     },
     [getTranslatedError],
   );
