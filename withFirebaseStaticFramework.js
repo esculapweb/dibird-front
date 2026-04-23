@@ -16,14 +16,14 @@ module.exports = function withFirebaseStaticFramework(config) {
         contents = `$RNFirebaseAsStaticFramework = true\n` + contents;
       }
 
-      if (!contents.includes("DEFINES_MODULE")) {
+      if (!contents.includes("ALLOW_NON_MODULAR")) {
         contents = contents.replace(
           /post_install do \|installer\|/,
           `post_install do |installer|
   installer.pods_project.targets.each do |target|
     if ['RNFBApp', 'RNFBCrashlytics', 'RNFBAnalytics'].include?(target.name)
       target.build_configurations.each do |config|
-        config.build_settings['DEFINES_MODULE'] = 'YES'
+        config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
       end
     end
   end`,
