@@ -112,7 +112,8 @@
           "project": "react-native",
           "organization": "dibirdcom"
         }
-      ]
+      ],
+      "@react-native-firebase/app"
     ],
     "extra": {
       "eas": {
