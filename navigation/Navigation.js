@@ -1,6 +1,5 @@
 import { useContext, useRef } from "react";
 import { NavigationContainer } from "@react-navigation/native";
-import { getAnalytics, logEvent } from "firebase/analytics";
 
 import { AuthContext } from "../store/auth-context";
 import AuthDrawer from "./AuthStack";
@@ -11,8 +10,6 @@ import {
   DarkNavigationTheme,
 } from "../constants/NavigationTheme";
 import linking from "../linking";
-
-const analytics = getAnalytics();
 
 const Navigation = () => {
   const { theme } = useTheme();
@@ -32,10 +29,10 @@ const Navigation = () => {
         const previous = routeNameRef.current;
         const current = navigationRef.current.getCurrentRoute().name;
         if (previous !== current) {
-          logEvent(analytics, "screen_view", {
-            screen_name: current,
-            screen_class: current,
-          });
+          // logEvent(analytics, "screen_view", {
+          //   screen_name: current,
+          //   screen_class: current,
+          // });
           routeNameRef.current = current;
         }
       }}

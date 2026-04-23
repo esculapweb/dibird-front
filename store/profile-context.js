@@ -7,11 +7,8 @@ import {
 } from "react";
 import { AppState } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getAnalytics, setUserId } from "firebase/analytics";
 import api from "../services/api";
 import { initGlobalFilters } from "../util/storageHelper";
-
-const analytics = getAnalytics();
 
 let onProfileSavedCallbacks = [];
 export const registerOnProfileSaved = (callback) => {
@@ -78,7 +75,7 @@ export const ProfileProvider = ({ children, isAuthenticated }) => {
     onProfileSavedCallbacks.forEach((cb) => cb(safeProfile.territory));
 
     if (safeProfile.user) {
-      setUserId(analytics, safeProfile.user.toString());
+      // setUserId(analytics, safeProfile.user.toString());
     }
   };
 
@@ -97,7 +94,7 @@ export const ProfileProvider = ({ children, isAuthenticated }) => {
       setError(null);
       setProfileLoading(false);
       AsyncStorage.removeItem("profile");
-      setUserId(analytics, null);
+      // setUserId(analytics, null);
     }
   }, [isAuthenticated]);
 
