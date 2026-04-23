@@ -17,18 +17,17 @@ module.exports = function withFirebaseStaticFramework(config) {
       }
 
       if (!contents.includes("DEFINES_MODULE")) {
-        const postInstallHook = `
-post_install do |installer|
+        contents = contents.replace(
+          /post_install do \|installer\|/,
+          `post_install do |installer|
   installer.pods_project.targets.each do |target|
     if ['RNFBApp', 'RNFBCrashlytics', 'RNFBAnalytics'].include?(target.name)
       target.build_configurations.each do |config|
         config.build_settings['DEFINES_MODULE'] = 'YES'
       end
     end
-  end
-end
-`;
-        contents = contents + postInstallHook;
+  end`,
+        );
       }
 
       fs.writeFileSync(podfilePath, contents);
