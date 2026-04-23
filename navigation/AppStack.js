@@ -117,7 +117,7 @@ const MainDrawer = () => {
           title: t("main"),
           drawerIcon: ({ color, size, focused }) => (
             <Ionicons
-              name={focused ? "home" : "home-outline"}
+              name={focused ? "leaf" : "leaf-outline"}
               color={color}
               size={size}
             />
