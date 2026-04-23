@@ -27,6 +27,7 @@
       "supportsTablet": true,
       "requireFullScreen": true,
       "associatedDomains": ["applinks:dibird.com"],
+      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSFaceIDUsageDescription": "Used to sign in to DiBird using Face ID.",
         "NSLocationWhenInUseUsageDescription": "DiBird uses your location to show and save bird places on the map.",
@@ -40,6 +41,7 @@
       "package": "com.dibird.app",
       "versionCode": 1,
       "edgeToEdgeEnabled": true,
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff",
