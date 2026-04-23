@@ -95,6 +95,7 @@
       "translucent": false
     },
     "plugins": [
+      "./withFirebaseStaticFramework",
       "expo-location",
       "expo-secure-store",
       "expo-localization",
