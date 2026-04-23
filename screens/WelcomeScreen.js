@@ -6,13 +6,12 @@ import {
   StyleSheet,
   ScrollView,
   Platform,
-  Button
+  Button,
 } from "react-native";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import * as Sentry from "@sentry/react-native";
 
 import { useTheme } from "../store/theme-context";
 import Layout from "../components/ui/Layout";
@@ -92,8 +91,6 @@ const WelcomeScreen = ({ navigation }) => {
             <Text style={styles.buttonText}>{t("continue_with_google")}</Text>
           </TouchableOpacity>
         </View>
-
-        <Button title='Try!' onPress={ () => { Sentry.captureException(new Error('First error')) }}/>
       </ScrollView>
     </Layout>
   );
