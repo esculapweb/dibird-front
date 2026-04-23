@@ -24,7 +24,6 @@
     },
     "ios": {
       "bundleIdentifier": "com.dibird.app",
-      "googleServicesFile": "./GoogleService-Info.plist",
       "supportsTablet": true,
       "requireFullScreen": true,
       "associatedDomains": ["applinks:dibird.com"],
@@ -39,7 +38,6 @@
     },
     "android": {
       "package": "com.dibird.app",
-      "googleServicesFile": "./google-services.json",
       "versionCode": 1,
       "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
@@ -94,7 +92,6 @@
       "translucent": false
     },
     "plugins": [
-      "./withFirebaseStaticFramework",
       "expo-location",
       "expo-secure-store",
       "expo-localization",
@@ -107,8 +104,6 @@
       ],
       "@react-native-community/datetimepicker",
       "@maplibre/maplibre-react-native",
-      "@react-native-firebase/app",
-      "@react-native-firebase/crashlytics",
       "@sentry/react-native",
       [
         "@sentry/react-native/expo",
@@ -116,14 +111,6 @@
           "url": "https://sentry.io/",
           "project": "react-native",
           "organization": "dibirdcom"
-        }
-      ],
-      [
-        "expo-build-properties",
-        {
-          "ios": {
-            "useFrameworks": "static"
-          }
         }
       ]
     ],

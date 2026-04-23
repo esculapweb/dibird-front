@@ -1,10 +1,12 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
-import analytics from "@react-native-firebase/analytics";
+import { getAnalytics, logEvent } from "firebase/analytics";
 
 import api, { saveTokens, clearTokens, getRefreshToken } from "../services/api";
 import { Config } from "../constants/config";
+
+const analytics = getAnalytics();
 
 const post = async (url, data) => {
   try {
@@ -28,7 +30,7 @@ export const Login = async (email, password) => {
     refresh,
   });
 
-  analytics().logLogin({ method: 'email' });
+  logEvent(analytics, 'login', { method: 'email' });
 
   return access;
 };
@@ -40,7 +42,7 @@ export const CreateUser = async (email, password, username) => {
     password1: password,
     password2: password,
   });
-  analytics().logSignUp({ method: 'email' });
+  logEvent(analytics, 'sign_up', { method: 'email' });
   return data;
 };
 
@@ -90,7 +92,7 @@ export const LoginWithGoogle = async () => {
   });
 
   await saveTokens({ access, refresh });
-  analytics().logLogin({ method: 'google' });
+  logEvent(analytics, 'login', { method: 'google' });
   return access;
 };
 
@@ -112,6 +114,6 @@ export const LoginWithApple = async () => {
   });
 
   await saveTokens({ access, refresh });
-  analytics().logLogin({ method: 'apple' });
+  logEvent(analytics, 'login', { method: 'apple' });
   return access;
 };
