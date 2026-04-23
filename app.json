@@ -115,6 +115,7 @@
           "organization": "dibirdcom"
         }
       ],
+      "./plugins/withModularHeaders",
       "@react-native-firebase/app"
     ],
     "extra": {
