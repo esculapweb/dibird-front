@@ -28,17 +28,13 @@
       "buildNumber": "1",
       "supportsTablet": true,
       "requireFullScreen": true,
-      "associatedDomains": [
-        "applinks:dibird.com"
-      ],
+      "associatedDomains": ["applinks:dibird.com"],
       "infoPlist": {
         "NSFaceIDUsageDescription": "Used to sign in to DiBird using Face ID.",
         "NSLocationWhenInUseUsageDescription": "DiBird uses your location to show and save bird places on the map.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "DiBird uses your location to track and save bird locations.",
         "NSLocationAlwaysUsageDescription": "DiBird uses your location to track and save bird locations.",
-        "UIBackgroundModes": [
-          "location"
-        ],
+        "UIBackgroundModes": ["location"],
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -89,10 +85,7 @@
               "pathPrefix": "/users/"
             }
           ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
+          "category": ["BROWSABLE", "DEFAULT"]
         }
       ]
     },
@@ -123,6 +116,14 @@
           "url": "https://sentry.io/",
           "project": "react-native",
           "organization": "dibirdcom"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useModularHeaders": true
+          }
         }
       ]
     ],
