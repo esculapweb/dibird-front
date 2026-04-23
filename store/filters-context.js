@@ -26,7 +26,7 @@ export const FiltersProvider = ({ children }) => {
   const [date, setDateState] = useState(undefined);
   const [place, setPlaceState] = useState(null);
   const [species, setSpeciesState] = useState(null);
-  const [seenMode, setSeenMode] = useState("seen");
+  const [seenMode, setSeenMode] = useState("all");
 
   useEffect(() => {
     loadGlobalTerritory().then((val) => {

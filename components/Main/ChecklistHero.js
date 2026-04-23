@@ -24,7 +24,14 @@ const ChecklistHero = ({ data, country, filters, isLoading }) => {
     <TouchableOpacity
       style={styles.clCard}
       activeOpacity={0.85}
-      onPress={() => navigation.navigate("Checklist")}
+      onPress={() =>
+        navigation.navigate("Checklist", {
+          filtersOverride: {
+            ...filters,
+          },
+          seenMode: "all",
+        })
+      }
     >
       <Text style={styles.clTag} numberOfLines={2}>
         {t("checklist")} ·{" "}
@@ -79,7 +86,7 @@ const stylesFn = (Colors) => {
     },
     clTag: {
       fontSize: 14,
-      marginBottom: 12, 
+      marginBottom: 12,
       color: muted,
     },
     clRow: {
