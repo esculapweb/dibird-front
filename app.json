@@ -25,7 +25,6 @@
     "ios": {
       "bundleIdentifier": "com.dibird.app",
       "googleServicesFile": "./GoogleService-Info.plist",
-      "buildNumber": "1",
       "supportsTablet": true,
       "requireFullScreen": true,
       "associatedDomains": ["applinks:dibird.com"],
