@@ -35,7 +35,6 @@
         "NSLocationAlwaysUsageDescription": "DiBird uses your location to track and save bird locations.",
         "UIBackgroundModes": ["location"],
         "ITSAppUsesNonExemptEncryption": false,
-        "FIRAnalyticsDebugEnabled": true
       }
     },
     "android": {
