@@ -1,5 +1,6 @@
 import { useContext, useRef } from "react";
 import { NavigationContainer } from "@react-navigation/native";
+import { getAnalytics, logEvent } from "@react-native-firebase/analytics";
 
 import { AuthContext } from "../store/auth-context";
 import AuthDrawer from "./AuthStack";
@@ -25,14 +26,14 @@ const Navigation = () => {
       onReady={() => {
         routeNameRef.current = navigationRef.current.getCurrentRoute().name;
       }}
-      onStateChange={() => {
+      onStateChange={async () => {
         const previous = routeNameRef.current;
         const current = navigationRef.current.getCurrentRoute().name;
         if (previous !== current) {
-          // logEvent(analytics, "screen_view", {
-          //   screen_name: current,
-          //   screen_class: current,
-          // });
+          logEvent(getAnalytics(), "screen_view", {
+            screen_name: current,
+            screen_class: current,
+          });
           routeNameRef.current = current;
         }
       }}

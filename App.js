@@ -10,6 +10,7 @@ import "./services/i18n";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import * as Sentry from "@sentry/react-native";
+import analytics, { getAnalytics, setAnalyticsCollectionEnabled } from "@react-native-firebase/analytics";
 
 import AuthContextProvider, { AuthContext } from "./store/auth-context";
 import { ProfileProvider } from "./store/profile-context";
@@ -101,6 +102,13 @@ const Root = () => {
 };
 
 export default Sentry.wrap(function App() {
+  useEffect(() => {
+    const init = async () => {
+      await setAnalyticsCollectionEnabled(getAnalytics(), true);
+      // await setAnalyticsCollectionEnabled(getAnalytics(), !__DEV__);
+    };
+    init();
+  }, []);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

@@ -106,7 +106,6 @@
       ],
       "@react-native-community/datetimepicker",
       "@maplibre/maplibre-react-native",
-      "@sentry/react-native",
       [
         "@sentry/react-native/expo",
         {
