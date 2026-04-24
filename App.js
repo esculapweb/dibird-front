@@ -27,7 +27,7 @@ import CustomSplash from "./components/ui/СustomSplash";
 Sentry.init({
   dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
   environment: process.env.EXPO_PUBLIC_ENV,
-  // enabled: !__DEV__,
+  enabled: !__DEV__,
 
   // Adds more context data to events (IP address, cookies, user, etc.)
   // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
@@ -104,8 +104,7 @@ const Root = () => {
 export default Sentry.wrap(function App() {
   useEffect(() => {
     const init = async () => {
-      await setAnalyticsCollectionEnabled(getAnalytics(), true);
-      // await setAnalyticsCollectionEnabled(getAnalytics(), !__DEV__);
+      await setAnalyticsCollectionEnabled(getAnalytics(), !__DEV__);
     };
     init();
   }, []);

@@ -1,6 +1,8 @@
 import { useContext, useRef } from "react";
 import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { getAnalytics, logEvent } from "@react-native-firebase/analytics";
+import { useTranslation } from "react-i18next";
 
 import { AuthContext } from "../store/auth-context";
 import AuthDrawer from "./AuthStack";
@@ -11,8 +13,12 @@ import {
   DarkNavigationTheme,
 } from "../constants/NavigationTheme";
 import linking from "../linking";
+import StaticScreen from "../screens/StaticScreen";
+
+const RootStack = createNativeStackNavigator();
 
 const Navigation = () => {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const { isAuthenticated } = useContext(AuthContext);
   const navigationRef = useRef();
@@ -38,7 +44,35 @@ const Navigation = () => {
         }
       }}
     >
-      {isAuthenticated ? <AppNavigator /> : <AuthDrawer />}
+      <RootStack.Navigator
+        screenOptions={{
+          headerShown: false,
+          headerBackTitleVisible: false,
+          headerBackButtonDisplayMode: "minimal",
+          headerBackTitle: "",
+        }}
+      >
+        <RootStack.Screen
+          name="Main"
+          component={isAuthenticated ? AppNavigator : AuthDrawer}
+        />
+        <RootStack.Screen
+          name="Privacy"
+          component={StaticScreen}
+          options={{
+            headerShown: true,
+            title: t("privacy_policy"),
+          }}
+        />
+        <RootStack.Screen
+          name="Terms"
+          component={StaticScreen}
+          options={{
+            headerShown: true,
+            title: t("terms_of_service"),
+          }}
+        />
+      </RootStack.Navigator>
     </NavigationContainer>
   );
 };

@@ -11,6 +11,7 @@ const Layout = ({
   withKeyboard = false,
   withScroll = false,
   style,
+  contentContainerStyle,
 }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -30,7 +31,7 @@ const Layout = ({
           {children}
         </KeyboardAwareScrollView>
       ) : withScroll ? (
-        <ScrollView style={[styles.inner, style]}>
+        <ScrollView style={[styles.inner, style]} contentContainerStyle={contentContainerStyle}>
           {top}
           {children}
         </ScrollView>

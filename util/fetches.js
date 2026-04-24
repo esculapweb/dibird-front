@@ -9,6 +9,11 @@ export const fetchTimezones = async () => {
   }));
 };
 
+export const fetchPage = async (slug) => {
+  const res = await api.get(`/api/page2/${slug}/`);
+  return res.data?.content;
+};
+
 export const fetchMyCountries = async (favOnly = false, order) => {
   const params = {
     o: order,

@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ScrollView,
   Platform,
+  Linking,
 } from "react-native";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { Ionicons } from "@expo/vector-icons";
@@ -51,8 +52,31 @@ const WelcomeScreen = ({ navigation }) => {
     }
   }, []);
 
+  const Agreement = () => (
+    <View style={styles.agreement}>
+      <Text style={[styles.legalText, { color: Colors.textMiddle }]}>
+        {t("by_continuing")}{" "}
+        <Text
+          style={[styles.legalLink, { color: Colors.main100 }]}
+          onPress={() => navigation.navigate("Terms")}
+          hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+        >
+          {t("terms_of_service_")}
+        </Text>{" "}
+        {t("and")}{" "}
+        <Text
+          style={[styles.legalLink, { color: Colors.main100 }]}
+          onPress={() => navigation.navigate("Privacy")}
+          hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+        >
+          {t("privacy_policy_")}
+        </Text>
+      </Text>
+    </View>
+  );
+
   return (
-    <Layout>
+    <Layout bottom={<Agreement />}>
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.header}>
           <Logo withText={false} style={styles.logoBox} />
@@ -61,6 +85,24 @@ const WelcomeScreen = ({ navigation }) => {
         </View>
 
         <View style={styles.buttons}>
+          {appleAvailable && (
+            <TouchableOpacity style={styles.button} onPress={handleApple}>
+              <Ionicons name="logo-apple" size={20} color={Colors.textMain} />
+              <Text style={styles.buttonText}>{t("continue_with_apple")}</Text>
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity style={styles.button} onPress={handleGoogle}>
+            <Ionicons name="logo-google" size={20} color={Colors.textMain} />
+            <Text style={styles.buttonText}>{t("continue_with_google")}</Text>
+          </TouchableOpacity>
+
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>{t("or")}</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
           <TouchableOpacity
             style={[
               styles.button,
@@ -76,18 +118,6 @@ const WelcomeScreen = ({ navigation }) => {
             <Text style={[styles.buttonText, { color: Colors.textOpposite }]}>
               {t("continue_with_email")}
             </Text>
-          </TouchableOpacity>
-
-          {appleAvailable && (
-            <TouchableOpacity style={styles.button} onPress={handleApple}>
-              <Ionicons name="logo-apple" size={20} color={Colors.textMain} />
-              <Text style={styles.buttonText}>{t("continue_with_apple")}</Text>
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity style={styles.button} onPress={handleGoogle}>
-            <Ionicons name="logo-google" size={20} color={Colors.textMain} />
-            <Text style={styles.buttonText}>{t("continue_with_google")}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -123,7 +153,6 @@ const stylesFn = (Colors, insets) =>
     },
     buttons: {
       gap: 12,
-      marginBottom: 24,
     },
     button: {
       flexDirection: "row",
@@ -140,9 +169,36 @@ const stylesFn = (Colors, insets) =>
       fontSize: 15,
       color: Colors.textMain,
     },
-    footer: {
-      textAlign: "center",
+    dividerRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginVertical: 4,
+    },
+    dividerLine: {
+      flex: 1,
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: Colors.tabBorder,
+    },
+    dividerText: {
+      marginHorizontal: 12,
       fontSize: 13,
+      color: Colors.textMiddle,
+    },
+    agreement: {
+      paddingTop: 6,
+      paddingBottom: insets.bottom,
+      marginHorizontal: 28,
+      borderTopColor: Colors.border,
+      borderTopWidth: StyleSheet.hairlineWidth,
+    },
+    legalText: {
+      textAlign: "center",
+      fontSize: 12,
+      lineHeight: 18,
+      paddingHorizontal: 8,
+    },
+    legalLink: {
+      textDecorationLine: "underline",
     },
   });
 
