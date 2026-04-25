@@ -8,7 +8,7 @@ import { useLocationUnavailable } from "../hooks/useLocationUnavailable";
 
 const PlacesScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
-  const { locationCoords, locationAvailable, permissionStatus } = useLocationCoords();
+  const { locationCoords, locationAvailable } = useLocationCoords();
 
   const fetchFunction = (filters, sort, search, page, openFilters, coords) =>
     fetchPlaces(filters, sort, search, page, coords);

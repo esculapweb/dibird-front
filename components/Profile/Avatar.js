@@ -13,16 +13,15 @@ import { useActionSheet } from "@expo/react-native-action-sheet";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../../store/theme-context";
 import { patchAvatar } from "../../util/requests";
-import Toast from "react-native-toast-message";
 
 import { useProfile } from "../../store/profile-context";
 import api, { showError } from "../../services/api";
 import ProfileAvatar from "./ProfileAvatar";
 import { useProfileDisplay } from "../../hooks/Profile/useProfileDisplay";
 import { useInvalidateProfile } from "../../hooks/Profile/useUpdateProfile";
+import { useMediaLibraryUnavailable } from "../../hooks/useMediaLibraryUnavailable";
 
 const AVATAR_SIZE = 100;
-const INDICATOR_SIZE = 32;
 
 const Avatar = () => {
   const { showActionSheetWithOptions } = useActionSheet();
@@ -39,6 +38,8 @@ const Avatar = () => {
   const lastName = profile?.user_data?.last_name;
   const username = profile?.user_data?.username ?? "";
   const { fullName } = useProfileDisplay({ firstName, lastName, username });
+
+  const handleMediaLibraryUnavailable = useMediaLibraryUnavailable();
 
   useEffect(() => {
     setAvatar(profile?.avatar_thumbnail ?? null);
@@ -76,31 +77,35 @@ const Avatar = () => {
     if (loading) return;
     setLoading(true);
 
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (status !== "granted") {
-      Toast.show({
-        type: "error",
-        text1: t("permission_denied"),
-        text2: t("allow_access_photo"),
-      });
-      setLoading(false);
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-
-    if (result.canceled || !result.assets || result.assets.length === 0) {
-      setLoading(false);
-      return;
-    }
-
     try {
+      const { status: existingStatus } =
+        await ImagePicker.getMediaLibraryPermissionsAsync();
+
+      if (existingStatus === "denied") {
+        handleMediaLibraryUnavailable();
+        return;
+      }
+
+      let finalStatus = existingStatus;
+      if (existingStatus !== "granted") {
+        const { status } =
+          await ImagePicker.requestMediaLibraryPermissionsAsync();
+        finalStatus = status;
+      }
+
+      if (finalStatus !== "granted") return;
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (result.canceled || !result.assets || result.assets.length === 0) {
+        return;
+      }
+
       const manipulated = await ImageManipulator.manipulateAsync(
         result.assets[0].uri,
         [],
@@ -141,7 +146,7 @@ const Avatar = () => {
     <>
       <Pressable style={styles.container} onPress={onPress} disabled={loading}>
         <ProfileAvatar
-          avatar={avatar} 
+          avatar={avatar}
           firstName={firstName}
           lastName={lastName}
           username={username}
@@ -149,17 +154,7 @@ const Avatar = () => {
         />
         {loading && (
           <View style={styles.overlay}>
-            <ActivityIndicator
-              size="large"
-              color={Colors.primary100}
-              style={{
-                position: "absolute",
-                top: "50%",
-                left: "50%",
-                marginLeft: -INDICATOR_SIZE / 2,
-                marginTop: -INDICATOR_SIZE / 2,
-              }}
-            />
+            <ActivityIndicator size="large" color={Colors.primary100} />
           </View>
         )}
 
@@ -219,6 +214,8 @@ const stylesFn = (Colors) =>
       ...StyleSheet.absoluteFillObject,
       backgroundColor: Colors.overlay,
       borderRadius: AVATAR_SIZE / 2,
+      justifyContent: "center",
+      alignItems: "center",
     },
     smallText: {
       marginTop: 8,

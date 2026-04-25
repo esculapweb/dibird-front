@@ -11,9 +11,6 @@ export const useFilterLabels = (effectiveTerritory, hints = {}) => {
   const { language } = useLanguage();
   const {
     locationCoords,
-    locationAvailable,
-    permissionStatus,
-    refreshLocation,
   } = useLocationCoords();
 
   const { query: countriesQuery } = useDropdownQuery({
