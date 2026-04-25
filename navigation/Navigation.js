@@ -53,7 +53,7 @@ const Navigation = () => {
         }}
       >
         <RootStack.Screen
-          name="Main"
+          name="Root"
           component={isAuthenticated ? AppNavigator : AuthDrawer}
         />
         <RootStack.Screen

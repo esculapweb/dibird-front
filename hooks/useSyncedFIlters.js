@@ -7,13 +7,13 @@ import { parseDeepLinkParams } from "../util/parseDeepLinkParams";
 import { useFilters } from "../store/filters-context";
 import { sortOptionsList } from "../util/sortOptionsList";
 import { useDebounce } from "../util/useDebounce";
+import { useLocationCoords } from "../store/location-context";
 
 export const useSyncedFilters = ({
   route,
   navigation,
   screenName,
   allowSort = true,
-  permissionStatus = false,
   allowedFilters,
 }) => {
   const {
@@ -40,6 +40,9 @@ export const useSyncedFilters = ({
   const [ignoreContextSync, setIgnoreContextSync] = useState(false);
   const initFiltersRef = useRef(false);
   const overrideAppliedRef = useRef(false);
+  const { locationCoords, permissionStatus, refreshLocation } = useLocationCoords();
+  const userChangedSortRef = useRef(false);
+  const defaultSortRef = useRef(null);
 
   const hasActiveFilters = filters
     ? allowedFilters.some((key) => {
@@ -67,6 +70,11 @@ export const useSyncedFilters = ({
   };
 
   const handleClearSearch = () => setSearch("");
+
+  const handleSetSort = useCallback((val) => {
+    userChangedSortRef.current = true;
+    setSort(val);
+  }, []);
 
   const handleClearFiltersSearch = () => {
     handleClearSearch();
@@ -143,13 +151,25 @@ export const useSyncedFilters = ({
             storedSort,
             sortOptions.map((i) => i.value),
           );
+
+          defaultSortRef.current = resolved;
+
+          const shouldFallback =
+            isDistanceSort(resolved) &&
+            (permissionStatus === "denied" || locationCoords === null);
+
           setSort(
-            isDistanceSort(resolved) && permissionStatus === "denied"
+            shouldFallback
               ? (sortOptions.find((o) => !isDistanceSort(o.value))?.value ??
                   resolved)
               : resolved,
           );
           setSortReady(true);
+
+          if (isDistanceSort(resolved) && permissionStatus !== "denied") {
+            refreshLocation();
+          }
+
         } else {
           setSortReady(true);
         }
@@ -216,6 +236,16 @@ export const useSyncedFilters = ({
     }, [date, territory, place, species, filtersLoaded, ignoreContextSync]),
   );
 
+  useEffect(() => {
+    if (
+      locationCoords &&
+      isDistanceSort(defaultSortRef.current) &&
+      !userChangedSortRef.current
+    ) {
+      setSort(defaultSortRef.current);
+    }
+  }, [locationCoords]);
+
   return {
     filters,
     filtersLoaded,
@@ -225,7 +255,7 @@ export const useSyncedFilters = ({
     removeFilter,
     filterHints,
     sort,
-    setSort,
+    setSort: handleSetSort,
     sortOptions,
     sortReady,
     search,

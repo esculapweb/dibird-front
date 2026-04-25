@@ -9,7 +9,12 @@ import { useLocationCoords } from "../store/location-context";
 export const useFilterLabels = (effectiveTerritory, hints = {}) => {
   const { t } = useTranslation();
   const { language } = useLanguage();
-  const { locationCoords } = useLocationCoords();
+  const {
+    locationCoords,
+    locationAvailable,
+    permissionStatus,
+    refreshLocation,
+  } = useLocationCoords();
 
   const { query: countriesQuery } = useDropdownQuery({
     type: "CountriesDropdown",
@@ -79,7 +84,10 @@ export const useFilterLabels = (effectiveTerritory, hints = {}) => {
 const formatDateFilter = (value, t) => {
   if (value.type === "range") {
     if (value.from && value.to)
-      return [t("period"), `${formatDate(value.from)} – ${formatDate(value.to)}`];
+      return [
+        t("period"),
+        `${formatDate(value.from)} – ${formatDate(value.to)}`,
+      ];
 
     if (value.from)
       return [t("period"), `${t("from")} ${formatDate(value.from)}`];
@@ -89,11 +97,9 @@ const formatDateFilter = (value, t) => {
   if (value.type === "year" && value.year)
     return [t("year"), value.year.toString()];
 
-  if (value.type === "today")
-    return [t("period"), t("today")];
+  if (value.type === "today") return [t("period"), t("today")];
 
-  if (value.type === "this_year")
-    return [t("period"), t("this_year")];
+  if (value.type === "this_year") return [t("period"), t("this_year")];
 
   return "";
 };

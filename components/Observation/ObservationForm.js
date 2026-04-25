@@ -4,7 +4,6 @@ import {
   Pressable,
   StyleSheet,
   View,
-  Alert,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
@@ -27,6 +26,7 @@ import { useLocationCoords } from "../../store/location-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 import { useTheme } from "../../store/theme-context";
 import { useFilters } from "../../store/filters-context";
+import { useLocationUnavailable } from "../../hooks/useLocationUnavailable";
 
 const ObservationForm = ({
   formData,
@@ -52,13 +52,11 @@ const ObservationForm = ({
   const { t } = useTranslation();
   const { language } = useLanguage();
   const { Colors } = useTheme();
-  const { locationCoords, locationAvailable, permissionStatus } =
+  const { locationCoords, locationAvailable, permissionStatus, refreshLocation } =
     useLocationCoords();
   const { date } = useFilters();
 
-  const handleLocationUnavailable = () => {
-    Alert.alert(t("location_unavailable"), t("location_unavailable_hint"));
-  };
+  const handleLocationUnavailable = useLocationUnavailable();
 
   const isDiaryCreate = isDiaryMode && !isEditMode;
   const isDiaryEdit = isDiaryMode && isEditMode;
@@ -85,6 +83,7 @@ const ObservationForm = ({
     params: [territoryValue, locationCoords],
     enabled: !!territoryValue && !hideDiaryFields,
     locationAvailable,
+    refreshLocation,
     permissionStatus,
     onLocationUnavailable: handleLocationUnavailable,
   });

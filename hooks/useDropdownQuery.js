@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSavedSort } from "./useSavedSort";
 import { useApiError } from "./useApiError";
@@ -12,24 +13,46 @@ export const useDropdownQuery = ({
   locationAvailable = true,
   permissionStatus,
   onLocationUnavailable,
+  refreshLocation,
 }) => {
   const { sort, loaded, onChange } = useSavedSort(type);
   const { getTranslatedError, showErrorToast } = useApiError();
+  const pendingSortRef = useRef(null);
 
   const isDistanceSort = (val) => val === "distance" || val === "-distance";
 
   const effectiveSort =
     isDistanceSort(sort) && permissionStatus === "denied"
-      ? sortOptionsList(type).find((o) => !isDistanceSort(o.value))?.value ?? sort
+      ? (sortOptionsList(type).find((o) => !isDistanceSort(o.value))?.value ??
+        sort)
       : sort;
 
+
   const handleSortChange = async (val) => {
-    if (isDistanceSort(val) && !locationAvailable) {
-      onLocationUnavailable?.();
-      return;
+    if (isDistanceSort(val)) {
+      if (permissionStatus === "denied") {
+        onLocationUnavailable?.();
+        return;
+      }
+      if (
+        permissionStatus === "undetermined" ||
+        permissionStatus === null ||
+        !locationAvailable
+      ) {
+        pendingSortRef.current = val;
+        await refreshLocation?.();
+        return;
+      }
     }
     await onChange(val);
   };
+
+  useEffect(() => {
+    if (locationAvailable && pendingSortRef.current) {
+      onChange(pendingSortRef.current);
+      pendingSortRef.current = null;
+    }
+  }, [locationAvailable]);
 
   const query = useQuery({
     queryKey: [type, ...params, effectiveSort],

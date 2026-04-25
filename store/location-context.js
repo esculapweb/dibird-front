@@ -20,6 +20,28 @@ export const LocationProvider = ({ children }) => {
   const [permissionStatus, setPermissionStatus] = useState(null);
   const isRequestingRef = useRef(false);
 
+  useEffect(() => {
+    const checkExistingPermission = async () => {
+      const { status } = await Location.getForegroundPermissionsAsync();
+      setPermissionStatus(status);
+
+      if (status === "granted") {
+        await requestLocation();
+      }
+    };
+    checkExistingPermission();
+  }, []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active" && permissionStatus === "granted") {
+        requestLocation();
+      }
+    });
+
+    return () => subscription.remove();
+  }, [permissionStatus]);
+
   const requestLocation = useCallback(async () => {
     if (isRequestingRef.current) return;
     isRequestingRef.current = true;
@@ -45,29 +67,16 @@ export const LocationProvider = ({ children }) => {
       setPermissionStatus("granted");
     } catch (e) {
       try {
-        
         console.warn("Failed to get location:", e);
         const last = await Location.getLastKnownPositionAsync();
         if (last) {
           setLocationCoords([last.coords.longitude, last.coords.latitude]);
           setPermissionStatus("granted");
         }
-      } catch {
-        
-      }
+      } catch {}
     } finally {
       isRequestingRef.current = false;
     }
-  }, []);
-
-  useEffect(() => {
-    requestLocation();
-
-    const subscription = AppState.addEventListener("change", (state) => {
-      if (state === "active") requestLocation();
-    });
-
-    return () => subscription.remove();
   }, []);
 
   return (

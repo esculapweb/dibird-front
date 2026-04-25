@@ -1,10 +1,10 @@
 import { useTranslation } from "react-i18next";
-import { Alert } from "react-native";
 
 import ListScreen from "./ListScreen";
 import { fetchPlaces } from "../util/fetches";
 import PlaceCard from "../components/Place/PlaceCard";
 import { useLocationCoords } from "../store/location-context";
+import { useLocationUnavailable } from "../hooks/useLocationUnavailable";
 
 const PlacesScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
@@ -13,8 +13,7 @@ const PlacesScreen = ({ route, navigation }) => {
   const fetchFunction = (filters, sort, search, page, openFilters, coords) =>
     fetchPlaces(filters, sort, search, page, coords);
 
-  const handleLocationUnavailable = () =>
-    Alert.alert(t("location_unavailable"), t("location_unavailable_hint"));
+  const handleLocationUnavailable = useLocationUnavailable();
 
   const handleAdd = () => navigation.navigate("PlaceEditor");
 
@@ -42,7 +41,6 @@ const PlacesScreen = ({ route, navigation }) => {
       title={t("places")}
       locationCoords={locationCoords}
       locationAvailable={locationAvailable}
-      permissionStatus={permissionStatus}
       onLocationUnavailable={handleLocationUnavailable}
     />
   );

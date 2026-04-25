@@ -1,4 +1,3 @@
-import { Alert } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import DropdownInput from "../ui/DropdownInput";
@@ -11,6 +10,7 @@ import PrivacyToggle from "../ui/PrivacyToggle";
 import PlaceBlock from "../Place/PlaceBlock";
 import { useLocationCoords } from "../../store/location-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
+import { useLocationUnavailable } from "../../hooks/useLocationUnavailable";
 
 const DiaryForm = ({
   formData,
@@ -28,11 +28,14 @@ const DiaryForm = ({
 }) => {
   const { t } = useTranslation();
   const { language } = useLanguage();
-  const { locationCoords, locationAvailable, permissionStatus } = useLocationCoords();
+  const {
+    locationCoords,
+    locationAvailable,
+    permissionStatus,
+    refreshLocation,
+  } = useLocationCoords();
 
-  const handleLocationUnavailable = () => {
-    Alert.alert(t("location_unavailable"), t("location_unavailable_hint"));
-  };
+  const handleLocationUnavailable = useLocationUnavailable();
 
   const {
     query: queryMyCountries,
@@ -54,6 +57,7 @@ const DiaryForm = ({
     params: [territoryValue, locationCoords],
     enabled: !!territoryValue,
     locationAvailable,
+    refreshLocation,
     permissionStatus,
     onLocationUnavailable: handleLocationUnavailable,
   });

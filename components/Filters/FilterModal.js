@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { View, ScrollView, StyleSheet, Alert } from "react-native";
+import { View, ScrollView, StyleSheet } from "react-native";
 
 import ModalWrapper from "../ui/ModalWrapper";
 import DropdownInput from "../ui/DropdownInput";
@@ -17,6 +17,7 @@ import SpeciesOptionRow from "../ui/SpeciesOptionRow";
 import { useLocationCoords } from "../../store/location-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 import { useFilters } from "../../store/filters-context";
+import { useLocationUnavailable } from "../../hooks/useLocationUnavailable";
 
 const FilterModal = ({
   visible,
@@ -30,12 +31,23 @@ const FilterModal = ({
   const { language } = useLanguage();
   const { t } = useTranslation();
   const { setTerritory, date, setDate, setPlace, setSpecies } = useFilters();
-  const { locationCoords, locationAvailable, permissionStatus } =
-    useLocationCoords();
+  const {
+    locationCoords,
+    locationAvailable,
+    permissionStatus,
+    refreshLocation,
+  } = useLocationCoords();
 
-  const handleLocationUnavailable = () => {
-    Alert.alert(t("location_unavailable"), t("location_unavailable_hint"));
-  };
+  useEffect(() => {
+    if (!visible) return;
+    if (!allowed.includes("place")) return;
+    if (permissionStatus === "denied") return;
+    if (locationAvailable) return; // координаты уже есть
+
+    refreshLocation();
+  }, [visible]);
+
+  const handleLocationUnavailable = useLocationUnavailable();
 
   const favouriteOptions = [
     { label: t("all"), value: null },
@@ -86,6 +98,7 @@ const FilterModal = ({
     params: [effectiveTerritory, locationCoords],
     enabled: !!effectiveTerritory && allowed.includes("place"),
     locationAvailable,
+    refreshLocation,
     permissionStatus,
     onLocationUnavailable: handleLocationUnavailable,
   });

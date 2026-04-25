@@ -38,7 +38,6 @@ const ListScreen = ({
   onSortChange,
   locationCoords,
   locationAvailable = true,
-  permissionStatus,
   onLocationUnavailable,
   screenNameOverride,
   allowSort = true,
@@ -77,7 +76,6 @@ const ListScreen = ({
     navigation,
     screenName,
     allowSort,
-    permissionStatus,
     allowedFilters,
   });
 
