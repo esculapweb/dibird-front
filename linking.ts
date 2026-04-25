@@ -1,8 +1,8 @@
 import { getStateFromPath } from "@react-navigation/native";
 
-const parseString = (v) => v || undefined;
+const parseString = (v: string | null): string | undefined => v || undefined;
 
-const withFilters = (path) => ({
+const withFilters = (path: string) => ({
   path,
   parse: {
     territory: parseString,
@@ -17,7 +17,7 @@ const withFilters = (path) => ({
   },
 });
 
-const withBasicFilters = (path) => ({
+const withBasicFilters = (path: string) => ({
   path,
   parse: {
     territory: parseString,
@@ -25,7 +25,7 @@ const withBasicFilters = (path) => ({
   },
 });
 
-const linking = (isAuthenticated) => ({
+const linking = (isAuthenticated: boolean) => ({
   prefixes: ["dibird://", "https://dibird.com"],
 
   config: {
@@ -55,7 +55,7 @@ const linking = (isAuthenticated) => ({
     },
   },
 
-  getStateFromPath(path, options) {
+  getStateFromPath(path: string, options?: Parameters<typeof getStateFromPath>[1]) {
     const locales = ["ru"];
     const normalizedPath2 = path.startsWith("/") ? path : `/${path}`;
     const localePrefix = locales.find((l) =>

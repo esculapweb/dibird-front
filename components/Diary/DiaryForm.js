@@ -8,7 +8,7 @@ import Input from "../ui/Input";
 import Section from "../ui/Section";
 import PrivacyToggle from "../ui/PrivacyToggle";
 import PlaceBlock from "../Place/PlaceBlock";
-import { useLocationCoords } from "../../store/location-context";
+import { useLocation } from "../../store/location-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 import { useLocationUnavailable } from "../../hooks/useLocationUnavailable";
 
@@ -32,8 +32,8 @@ const DiaryForm = ({
     locationCoords,
     locationAvailable,
     permissionStatus,
-    refreshLocation,
-  } = useLocationCoords();
+    requestLocation,
+  } = useLocation();
 
   const handleLocationUnavailable = useLocationUnavailable();
 
@@ -57,7 +57,7 @@ const DiaryForm = ({
     params: [territoryValue, locationCoords],
     enabled: !!territoryValue,
     locationAvailable,
-    refreshLocation,
+    requestLocation,
     permissionStatus,
     onLocationUnavailable: handleLocationUnavailable,
   });

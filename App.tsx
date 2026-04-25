@@ -2,7 +2,7 @@ import React from "react";
 import "react-native-gesture-handler";
 import "react-native-reanimated";
 import { StatusBar } from "expo-status-bar";
-import { useContext, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Navigation from "./navigation/Navigation";
 import Toast from "react-native-toast-message";
@@ -21,7 +21,7 @@ import {
   setAnalyticsCollectionEnabled,
 } from "@react-native-firebase/analytics";
 
-import AuthContextProvider, { AuthContext } from "./store/auth-context";
+import AuthContextProvider, { useAuth } from "./store/auth-context";
 import { ProfileProvider } from "./store/profile-context";
 import { FiltersProvider } from "./store/filters-context";
 import { LocationProvider } from "./store/location-context";
@@ -74,7 +74,7 @@ const queryClient = new QueryClient({
 });
 
 const AuthConsumerWrapper = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated } = useContext(AuthContext);
+  const { isAuthenticated } = useAuth();
   return (
     <ProfileProvider isAuthenticated={isAuthenticated}>
       {children}
@@ -83,7 +83,7 @@ const AuthConsumerWrapper = ({ children }: { children: React.ReactNode }) => {
 };
 
 const Root = () => {
-  const { isInitializing } = useContext(AuthContext);
+  const { isInitializing } = useAuth();
   const { theme } = useTheme();
   const [splashFinished, setSplashFinished] = useState(false);
 

@@ -21,7 +21,7 @@ export interface AppError extends Error {
 
 let onUnauthorizedCallback: (() => void) | null = null;
 
-export const setOnUnauthorized = (fn: () => void) => {
+export const setOnUnauthorized = (fn: (() => void) | null) => {
   onUnauthorizedCallback = fn;
 };
 
@@ -130,7 +130,7 @@ export const showError = (e: AppError, extractApiErrorFn?: ((e: AppError) => { t
   });
 };
 
-const createTranslatedError = (error: AxiosError): AppError => {
+export const createTranslatedError = (error: AxiosError): AppError => {
   const normalizedError = normalizeApiError(error);
 
   const { title, message } = mapErrorToToast(normalizedError, null);

@@ -4,14 +4,14 @@ import { useDropdownQuery } from "./useDropdownQuery";
 
 import { formatDate } from "../util/helpers";
 import { fetchMyCountries, fetchMyPlaces, fetchSpecies } from "../util/fetches";
-import { useLocationCoords } from "../store/location-context";
+import { useLocation } from "../store/location-context";
 
 export const useFilterLabels = (effectiveTerritory, hints = {}) => {
   const { t } = useTranslation();
   const { language } = useLanguage();
   const {
     locationCoords,
-  } = useLocationCoords();
+  } = useLocation();
 
   const { query: countriesQuery } = useDropdownQuery({
     type: "CountriesDropdown",

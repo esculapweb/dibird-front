@@ -3,7 +3,7 @@ import { useState, useCallback, useRef } from "react";
 import { cachedReverseGeocode } from "../../services/geocoding";
 import { Config } from "../../constants/config";
 import { useLocationUnavailable } from "../useLocationUnavailable";
-import { useLocationCoords } from "../../store/location-context";
+import { useLocation } from "../../store/location-context";
 
 export const normalizeCoords = (
   lngInput,
@@ -57,7 +57,7 @@ export const usePlaceLocation = () => {
   const [lngText, setLngText] = useState("");
   const [details, setDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const { permissionStatus, refreshLocation } = useLocationCoords();
+  const { permissionStatus, requestLocation } = useLocation();
   const handleLocationUnavailable = useLocationUnavailable();
 
   const geocodeTimeout = useRef(null);
@@ -109,7 +109,7 @@ export const usePlaceLocation = () => {
 
     setIsLoading(true);
     try {
-      const result = await refreshLocation();
+      const result = await requestLocation();
       if (result?.coords) {
         setAccuracy(result.accuracy ?? 0);
         updateCoords(result.coords);
@@ -123,7 +123,7 @@ export const usePlaceLocation = () => {
     }
   }, [
     permissionStatus,
-    refreshLocation,
+    requestLocation,
     updateCoords,
     handleLocationUnavailable,
   ]);

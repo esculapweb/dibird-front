@@ -14,7 +14,7 @@ import FlatButtonBottom from "../ui/FlatButtonBottom";
 import { useLanguage } from "../../store/language-context";
 import RadioGroup from "../ui/RadioGroup";
 import SpeciesOptionRow from "../ui/SpeciesOptionRow";
-import { useLocationCoords } from "../../store/location-context";
+import { useLocation } from "../../store/location-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 import { useFilters } from "../../store/filters-context";
 import { useLocationUnavailable } from "../../hooks/useLocationUnavailable";
@@ -35,8 +35,8 @@ const FilterModal = ({
     locationCoords,
     locationAvailable,
     permissionStatus,
-    refreshLocation,
-  } = useLocationCoords();
+    requestLocation,
+  } = useLocation();
 
   useEffect(() => {
     if (!visible) return;
@@ -44,7 +44,7 @@ const FilterModal = ({
     if (permissionStatus === "denied") return;
     if (locationAvailable) return; // координаты уже есть
 
-    refreshLocation();
+    requestLocation();
   }, [visible]);
 
   const handleLocationUnavailable = useLocationUnavailable();
@@ -98,7 +98,7 @@ const FilterModal = ({
     params: [effectiveTerritory, locationCoords],
     enabled: !!effectiveTerritory && allowed.includes("place"),
     locationAvailable,
-    refreshLocation,
+    requestLocation,
     permissionStatus,
     onLocationUnavailable: handleLocationUnavailable,
   });

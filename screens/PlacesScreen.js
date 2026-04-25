@@ -3,12 +3,12 @@ import { useTranslation } from "react-i18next";
 import ListScreen from "./ListScreen";
 import { fetchPlaces } from "../util/fetches";
 import PlaceCard from "../components/Place/PlaceCard";
-import { useLocationCoords } from "../store/location-context";
+import { useLocation } from "../store/location-context";
 import { useLocationUnavailable } from "../hooks/useLocationUnavailable";
 
 const PlacesScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
-  const { locationCoords, locationAvailable } = useLocationCoords();
+  const { locationCoords, locationAvailable } = useLocation();
 
   const fetchFunction = (filters, sort, search, page, openFilters, coords) =>
     fetchPlaces(filters, sort, search, page, coords);

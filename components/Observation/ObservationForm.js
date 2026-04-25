@@ -22,7 +22,7 @@ import Input from "../ui/Input";
 import Section from "../ui/Section";
 import PrivacyToggle from "../ui/PrivacyToggle";
 import PlaceBlock from "../Place/PlaceBlock";
-import { useLocationCoords } from "../../store/location-context";
+import { useLocation } from "../../store/location-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 import { useTheme } from "../../store/theme-context";
 import { useFilters } from "../../store/filters-context";
@@ -52,8 +52,8 @@ const ObservationForm = ({
   const { t } = useTranslation();
   const { language } = useLanguage();
   const { Colors } = useTheme();
-  const { locationCoords, locationAvailable, permissionStatus, refreshLocation } =
-    useLocationCoords();
+  const { locationCoords, locationAvailable, permissionStatus, requestLocation } =
+    useLocation();
   const { date } = useFilters();
 
   const handleLocationUnavailable = useLocationUnavailable();
@@ -83,7 +83,7 @@ const ObservationForm = ({
     params: [territoryValue, locationCoords],
     enabled: !!territoryValue && !hideDiaryFields,
     locationAvailable,
-    refreshLocation,
+    requestLocation,
     permissionStatus,
     onLocationUnavailable: handleLocationUnavailable,
   });

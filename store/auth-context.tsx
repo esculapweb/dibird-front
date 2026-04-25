@@ -1,5 +1,5 @@
 import * as SecureStore from "expo-secure-store";
-import { createContext, useState, useEffect } from "react";
+import { createContext, useState, useEffect, useContext } from "react";
 import * as LocalAuthentication from "expo-local-authentication";
 
 import { setOnTokenUpdate } from "../services/authService";
@@ -8,25 +8,31 @@ import { Logout } from "../util/auth";
 import i18n from "../services/i18n";
 import { setOnUnauthorized } from "../services/api";
 
-let onLogoutCallback = null;
+interface AuthContextType {
+  token: string | null;
+  isAuthenticated: boolean;
+  isInitializing: boolean;
+  authenticate: (access: string | null) => Promise<void>;
+  logout: () => Promise<void>;
+}
 
-export const setOnLogout = (fn) => {
+let onLogoutCallback: (() => void) | null = null;
+
+export const setOnLogout = (fn: (() => void) | null) => {
   onLogoutCallback = fn;
 };
 
-export const AuthContext = createContext({
-  token: "",
-  isAuthenticated: false,
-  isInitializing: true,
-  authenticate: async (access) => {},
-  logout: async () => {},
-});
+const AuthContext = createContext<AuthContextType | null>(null);
 
-const AuthContextProvider = ({ children }) => {
-  const [authToken, setAuthToken] = useState();
+export const AuthContextProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
+  const [authToken, setAuthToken] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
 
-  const authenticate = async (access) => {
+  const authenticate = async (access: string | null) => {
     setAuthToken(access);
     if (access) await SecureStore.setItemAsync("access", access);
   };
@@ -91,3 +97,10 @@ const AuthContextProvider = ({ children }) => {
 };
 
 export default AuthContextProvider;
+
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  if (!context)
+    throw new Error("AuthContext must be used within AuthContextProvider");
+  return context;
+};

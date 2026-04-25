@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import i18n from "./i18n";
 
 import { createTranslatedError } from "./api";
@@ -18,7 +18,7 @@ nominatimApi.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-export const reverseGeocode = async (latitude, longitude) => {
+export const reverseGeocode = async (latitude: number, longitude: number) => {
   try {
     const params = {
       format: "json",
@@ -37,13 +37,13 @@ export const reverseGeocode = async (latitude, longitude) => {
       raw: data.address,
     };
   } catch (error) {
-    throw createTranslatedError(error);
+    throw createTranslatedError(error as AxiosError);
   }
 };
 
 const geocodeCache = new Map();
 
-export const cachedReverseGeocode = async (latitude, longitude) => {
+export const cachedReverseGeocode = async (latitude: number, longitude: number) => {
   const cacheKey = `${latitude.toFixed(4)},${longitude.toFixed(4)}`;
 
   if (geocodeCache.has(cacheKey)) {

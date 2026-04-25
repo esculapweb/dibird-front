@@ -3,18 +3,24 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import i18n from "../services/i18n";
 import * as Localization from "expo-localization";
 
-const LanguageContext = createContext({
-  language: "en",
-  changeLanguage: async (lang) => {},
-  isReady: false,
-});
+interface LanguageContextType {
+  language: string;
+  changeLanguage: (lang: string) => Promise<void>;
+  isReady: boolean;
+}
+
+const LanguageContext = createContext<LanguageContextType | null>(null);
 
 const getDeviceLanguage = () => {
   const locales = Localization.getLocales();
   return locales?.[0]?.languageCode || "en";
 };
 
-export const LanguageProvider = ({ children }) => {
+export const LanguageProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
   const [language, setLanguage] = useState("en");
   const [isReady, setIsReady] = useState(false);
 
@@ -31,7 +37,7 @@ export const LanguageProvider = ({ children }) => {
     init();
   }, []);
 
-  const changeLanguage = async (lang) => {
+  const changeLanguage = async (lang: string) => {
     await i18n.changeLanguage(lang);
     setLanguage(lang);
     await AsyncStorage.setItem("language", lang);
@@ -44,4 +50,9 @@ export const LanguageProvider = ({ children }) => {
   );
 };
 
-export const useLanguage = () => useContext(LanguageContext);
+export const useLanguage = () => {
+  const context = useContext(LanguageContext);
+  if (!context)
+    throw new Error("useLanguage must be used within LanguageProvider");
+  return context;
+};

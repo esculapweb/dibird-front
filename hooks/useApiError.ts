@@ -2,13 +2,13 @@ import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
 
-import { getErrorDetails } from "../services/api";
+import { getErrorDetails, AppError} from "../services/api";
 
 export const useApiError = () => {
   const { t } = useTranslation();
 
   const getTranslatedError = useCallback(
-    (error) => {
+    (error: AppError | null) => {
       if (!error) {
         return {
           title: t("unexpected_error"),
@@ -31,7 +31,7 @@ export const useApiError = () => {
   );
 
   const showErrorToast = useCallback(
-    (error) => {
+    (error: AppError | null) => {
       const { title, message } = getTranslatedError(error);
 
       if (typeof Toast?.show === "function") {
@@ -48,7 +48,6 @@ export const useApiError = () => {
   );
 
   return {
-    getTranslatedError,
     showErrorToast,
   };
 };

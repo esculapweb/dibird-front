@@ -13,10 +13,10 @@ export const useDropdownQuery = ({
   locationAvailable = true,
   permissionStatus,
   onLocationUnavailable,
-  refreshLocation,
+  requestLocation,
 }) => {
   const { sort, loaded, onChange } = useSavedSort(type);
-  const { getTranslatedError, showErrorToast } = useApiError();
+  const { showErrorToast } = useApiError();
   const pendingSortRef = useRef(null);
 
   const isDistanceSort = (val) => val === "distance" || val === "-distance";
@@ -40,7 +40,7 @@ export const useDropdownQuery = ({
         !locationAvailable
       ) {
         pendingSortRef.current = val;
-        await refreshLocation?.();
+        await requestLocation?.();
         return;
       }
     }

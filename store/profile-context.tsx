@@ -9,11 +9,43 @@ import { AppState } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getAnalytics, setUserId } from "@react-native-firebase/analytics";
 
-import api from "../services/api";
+import api, { AppError } from "../services/api";
 import { initGlobalFilters } from "../util/storageHelper";
 
-let onProfileSavedCallbacks = [];
-export const registerOnProfileSaved = (callback) => {
+interface UserData {
+  username: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  is_active: boolean;
+}
+
+interface Profile {
+  user_data: UserData;
+  avatar: string;
+  avatar_thumbnail: string;
+  private: boolean;
+  private_diary: boolean;
+  user: number | null;
+  registration_ip: string;
+  timezone: string;
+  territory?: string | null;
+}
+
+interface ProfileContextType {
+  profile: Profile | null;
+  profileLoading: boolean;
+  updateProfile: (updatedData: Partial<Profile>) => Promise<void>;
+  refreshProfile: () => Promise<void>;
+  isTokenReady: boolean;
+  error: unknown;
+}
+
+type ProfileCallback = (territory: string | null) => void;
+
+let onProfileSavedCallbacks: ProfileCallback[] = [];
+
+export const registerOnProfileSaved = (callback: ProfileCallback) => {
   onProfileSavedCallbacks.push(callback);
   return () => {
     onProfileSavedCallbacks = onProfileSavedCallbacks.filter(
@@ -39,19 +71,16 @@ const EMPTY_PROFILE = {
   timezone: "",
 };
 
-const ProfileContext = createContext({
-  profile: null,
-  profileLoading: true,
-  updateProfile: async (updatedData) => {},
-  refreshProfile: async () => {},
-  isTokenReady: false,
-  error: null,
-  territory: null,
-});
-
-export const ProfileProvider = ({ children, isAuthenticated }) => {
-  const [profile, setProfile] = useState(null);
-  const [error, setError] = useState(null);
+const ProfileContext = createContext<ProfileContextType | null>(null);
+export const ProfileProvider = ({
+  children,
+  isAuthenticated,
+}: {
+  children: React.ReactNode;
+  isAuthenticated: boolean;
+}) => {
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const url = "/myapi/profile/me/";
 
@@ -63,25 +92,26 @@ export const ProfileProvider = ({ children, isAuthenticated }) => {
       await saveProfile(data);
     } catch (e) {
       setError(e);
-      console.warn("Failed to refresh profile:", e.code, e.message);
+      const err = e as AppError;
+      console.warn("Failed to refresh profile:", err.code, err.message);
     } finally {
       setProfileLoading(false);
     }
   }, []);
 
-  const saveProfile = async (data) => {
+  const saveProfile = async (data: Partial<Profile>) => {
     const safeProfile = { ...EMPTY_PROFILE, ...data };
     setProfile(safeProfile);
     await AsyncStorage.setItem("profile", JSON.stringify(safeProfile));
     await initGlobalFilters(safeProfile.territory);
-    onProfileSavedCallbacks.forEach((cb) => cb(safeProfile.territory));
+    onProfileSavedCallbacks.forEach((cb) => cb(safeProfile.territory ?? null));
 
     if (safeProfile.user) {
       await setUserId(getAnalytics(), safeProfile.user.toString());
     }
   };
 
-  const updateProfile = useCallback(async (updatedData) => {
+  const updateProfile = useCallback(async (updatedData: Partial<Profile>) => {
     const { data } = await api.put(url, updatedData);
     return await saveProfile(data);
   }, []);
@@ -128,4 +158,9 @@ export const ProfileProvider = ({ children, isAuthenticated }) => {
   );
 };
 
-export const useProfile = () => useContext(ProfileContext);
+export const useProfile = (): ProfileContextType => {
+  const context = useContext(ProfileContext);
+  if (!context)
+    throw new Error("useProfile must be used within ProfileProvider");
+  return context;
+};

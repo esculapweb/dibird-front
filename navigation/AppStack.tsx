@@ -4,8 +4,9 @@ import {
   DrawerContentScrollView,
   DrawerItemList,
   DrawerItem,
+  DrawerContentComponentProps,
 } from "@react-navigation/drawer";
-import { useContext, useEffect } from "react";
+import { useEffect } from "react";
 import { View, StyleSheet, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
@@ -29,19 +30,20 @@ import RatingsCompareScreen from "../screens/RatingsCompareScreen";
 import UserStatScreen from "../screens/UserStatScreen";
 // import SettingsScreen from "../screens/SettingsScreen";
 
-import { AuthContext, setOnLogout } from "../store/auth-context";
+import { useAuth, setOnLogout } from "../store/auth-context";
 import { useProfile } from "../store/profile-context";
 import Avatar from "../components/Profile/Avatar";
 import LanguageSwitcher from "../components/Language/LanguageSwitcher";
 import ThemeSwitcher from "../components/Theme/ThemeSwitcher";
 import { useTheme } from "../store/theme-context";
 import { useFilters } from "../store/filters-context";
+import { LightColors } from "../constants/colors/light";
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
 
-const CustomDrawerContent = (props) => {
-  const { logout } = useContext(AuthContext);
+const CustomDrawerContent = (props: DrawerContentComponentProps) => {
+  const { logout } = useAuth();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -106,7 +108,6 @@ const MainDrawer = () => {
         drawerActiveTintColor: Colors.textOpposite,
         drawerActiveBackgroundColor: Colors.main100,
         headerShown: false,
-        headerBackTitleVisible: false,
         headerBackButtonDisplayMode: "minimal",
       }}
     >
@@ -178,7 +179,6 @@ const AppNavigator = () => {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerBackTitleVisible: false,
         headerBackButtonDisplayMode: "minimal",
         headerBackTitle: "",
       }}
@@ -264,7 +264,7 @@ const AppNavigator = () => {
 
 export default AppNavigator;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: typeof LightColors) =>
   StyleSheet.create({
     header: { paddingHorizontal: 16, alignItems: "center", marginBottom: 24 },
     logout: { borderTopWidth: 1, borderColor: Colors.divider },

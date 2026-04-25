@@ -1,10 +1,10 @@
-import { useContext, useRef } from "react";
-import { NavigationContainer } from "@react-navigation/native";
+import { useRef } from "react";
+import { NavigationContainer, NavigationContainerRef} from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { getAnalytics, logEvent } from "@react-native-firebase/analytics";
 import { useTranslation } from "react-i18next";
 
-import { AuthContext } from "../store/auth-context";
+import { useAuth } from "../store/auth-context";
 import AuthDrawer from "./AuthStack";
 import AppNavigator from "./AppStack";
 import { useTheme } from "../store/theme-context";
@@ -20,9 +20,10 @@ const RootStack = createNativeStackNavigator();
 const Navigation = () => {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const { isAuthenticated } = useContext(AuthContext);
-  const navigationRef = useRef();
-  const routeNameRef = useRef();
+  const { isAuthenticated } = useAuth();
+  const navigationRef =
+    useRef<NavigationContainerRef<ReactNavigation.RootParamList>>(null);
+  const routeNameRef = useRef<string | undefined>(undefined);
 
   return (
     <NavigationContainer
@@ -30,11 +31,11 @@ const Navigation = () => {
       linking={linking(isAuthenticated)}
       theme={theme === "dark" ? DarkNavigationTheme : LightNavigationTheme}
       onReady={() => {
-        routeNameRef.current = navigationRef.current.getCurrentRoute().name;
+        routeNameRef.current = navigationRef.current?.getCurrentRoute()?.name;
       }}
       onStateChange={async () => {
         const previous = routeNameRef.current;
-        const current = navigationRef.current.getCurrentRoute().name;
+        const current = navigationRef.current?.getCurrentRoute()?.name;
         if (previous !== current) {
           logEvent(getAnalytics(), "screen_view", {
             screen_name: current,
@@ -47,7 +48,6 @@ const Navigation = () => {
       <RootStack.Navigator
         screenOptions={{
           headerShown: false,
-          headerBackTitleVisible: false,
           headerBackButtonDisplayMode: "minimal",
           headerBackTitle: "",
         }}

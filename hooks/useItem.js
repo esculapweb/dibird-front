@@ -18,7 +18,7 @@ const TYPE_PLURAL = {
 };
 
 export const useItem = (id, type) => {
-  const { getTranslatedError, showErrorToast } = useApiError();
+  const { showErrorToast } = useApiError();
 
   return useQuery({
     queryKey: [type, id],

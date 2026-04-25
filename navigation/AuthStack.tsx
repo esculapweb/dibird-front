@@ -3,6 +3,7 @@ import {
   createDrawerNavigator,
   DrawerContentScrollView,
   DrawerItemList,
+  DrawerContentComponentProps,
 } from "@react-navigation/drawer";
 
 import { View } from "react-native";
@@ -19,7 +20,7 @@ import ThemeSwitcher from "../components/Theme/ThemeSwitcher";
 
 const Drawer = createDrawerNavigator();
 
-const CustomDrawerContent = (props) => {
+const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   return (
     <View style={{ flex: 1 }}>
       <DrawerContentScrollView

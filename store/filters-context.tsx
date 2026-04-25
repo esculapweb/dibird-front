@@ -19,13 +19,37 @@ import {
 
 import { registerOnProfileSaved } from "./profile-context";
 
-const FiltersContext = createContext();
+interface DateFilter {
+  type: string;
+  [key: string]: any;
+}
 
-export const FiltersProvider = ({ children }) => {
-  const [territory, setTerritoryState] = useState(null);
-  const [date, setDateState] = useState(undefined);
-  const [place, setPlaceState] = useState(null);
-  const [species, setSpeciesState] = useState(null);
+interface FiltersContextType {
+  territory: string | null;
+  setTerritory: (val: string | null) => Promise<void>;
+  date: DateFilter | null;
+  setDate: (val: DateFilter | null) => Promise<void>;
+  place: string | null;
+  setPlace: (val: string | null) => Promise<void>;
+  species: string | null;
+  setSpecies: (val: string | null) => Promise<void>;
+  seenMode: string;
+  setSeenMode: (val: string) => void;
+  resetFilters: () => Promise<void>;
+  reload: () => Promise<void>;
+}
+
+const FiltersContext = createContext<FiltersContextType | null>(null);
+
+export const FiltersProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
+  const [territory, setTerritoryState] = useState<string | null>(null);
+  const [date, setDateState] = useState<DateFilter | null>(null);
+  const [place, setPlaceState] = useState<string | null>(null);
+  const [species, setSpeciesState] = useState<string | null>(null);
   const [seenMode, setSeenMode] = useState("all");
 
   useEffect(() => {
@@ -44,7 +68,7 @@ export const FiltersProvider = ({ children }) => {
     });
   }, []);
 
-  const setTerritory = async (val) => {
+  const setTerritory = async (val: string | null) => {
     setTerritoryState(val);
     if (!val) {
       setPlaceState(null);
@@ -53,17 +77,17 @@ export const FiltersProvider = ({ children }) => {
     await saveGlobalTerritory(val);
   };
 
-  const setDate = async (val) => {
+  const setDate = async (val: DateFilter | null) => {
     setDateState(val);
     await saveGlobalDateFilter(val);
   };
 
-  const setPlace = async (val) => {
+  const setPlace = async (val: string | null) => {
     setPlaceState(val);
     await saveGlobalPlace(val);
   };
 
-  const setSpecies = async (val) => {
+  const setSpecies = async (val: string | null) => {
     setSpeciesState(val);
     await saveGlobalSpecies(val);
   };
@@ -88,7 +112,7 @@ export const FiltersProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    return registerOnProfileSaved(async (territory) => {
+    return registerOnProfileSaved(async () => {
       await reload();
     });
   }, []);
@@ -115,4 +139,9 @@ export const FiltersProvider = ({ children }) => {
   );
 };
 
-export const useFilters = () => useContext(FiltersContext);
+export const useFilters = (): FiltersContextType => {
+  const context = useContext(FiltersContext);
+  if (!context)
+    throw new Error("useFilters must be used within FiltersProvider");
+  return context;
+};

@@ -7,7 +7,7 @@ import { parseDeepLinkParams } from "../util/parseDeepLinkParams";
 import { useFilters } from "../store/filters-context";
 import { sortOptionsList } from "../util/sortOptionsList";
 import { useDebounce } from "../util/useDebounce";
-import { useLocationCoords } from "../store/location-context";
+import { useLocation } from "../store/location-context";
 
 export const useSyncedFilters = ({
   route,
@@ -40,7 +40,7 @@ export const useSyncedFilters = ({
   const [ignoreContextSync, setIgnoreContextSync] = useState(false);
   const initFiltersRef = useRef(false);
   const overrideAppliedRef = useRef(false);
-  const { locationCoords, permissionStatus, refreshLocation } = useLocationCoords();
+  const { locationCoords, permissionStatus, requestLocation } = useLocation();
   const userChangedSortRef = useRef(false);
   const defaultSortRef = useRef(null);
 
@@ -167,7 +167,7 @@ export const useSyncedFilters = ({
           setSortReady(true);
 
           if (isDistanceSort(resolved) && permissionStatus !== "denied") {
-            refreshLocation();
+            requestLocation();
           }
 
         } else {

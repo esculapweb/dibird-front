@@ -9,15 +9,21 @@ import {
 import { AppState } from "react-native";
 import * as Location from "expo-location";
 
-const LocationContext = createContext({
-  locationCoords: null,
-  locationAvailable: false,
-  refreshLocation: () => {},
-});
+interface LocationContextType {
+  locationCoords: [number, number] | null;
+  locationAvailable: boolean;
+  permissionStatus: string | null;
+  requestLocation: () => Promise<{
+    coords: [number, number];
+    accuracy: number | null;
+  } | null>;
+}
 
-export const LocationProvider = ({ children }) => {
-  const [locationCoords, setLocationCoords] = useState(null);
-  const [permissionStatus, setPermissionStatus] = useState(null);
+const LocationContext = createContext<LocationContextType | null>(null);
+
+export const LocationProvider = ({ children }: { children: React.ReactNode }) => {
+  const [locationCoords, setLocationCoords] = useState<[number, number] | null>(null);
+  const [permissionStatus, setPermissionStatus] = useState<string | null>(null);
   const isRequestingRef = useRef(false);
 
   const requestLocation = useCallback(async () => {
@@ -39,12 +45,12 @@ export const LocationProvider = ({ children }) => {
         Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Balanced,
         }),
-        new Promise((_, reject) =>
+        new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error("Location timeout")), 5000),
         ),
       ]);
       const { latitude, longitude, accuracy: acc } = loc.coords;
-      const coords = [longitude, latitude];
+      const coords: [number, number] = [longitude, latitude];
       setLocationCoords(coords);
       setPermissionStatus("granted");
       return { coords, accuracy: acc }; // ← возвращаем результат
@@ -53,7 +59,7 @@ export const LocationProvider = ({ children }) => {
         console.warn("Failed to get location:", e);
         const last = await Location.getLastKnownPositionAsync();
         if (last) {
-          const coords = [last.coords.longitude, last.coords.latitude];
+          const coords: [number, number] = [last.coords.longitude, last.coords.latitude];
           setLocationCoords(coords);
           setPermissionStatus("granted");
           return { coords, accuracy: 0 };
@@ -64,7 +70,6 @@ export const LocationProvider = ({ children }) => {
       isRequestingRef.current = false;
     }
   }, []);
-  
 
   useEffect(() => {
     const checkExistingPermission = async () => {
@@ -94,7 +99,7 @@ export const LocationProvider = ({ children }) => {
         locationCoords,
         locationAvailable: !!locationCoords,
         permissionStatus,
-        refreshLocation: requestLocation,
+        requestLocation,
       }}
     >
       {children}
@@ -102,4 +107,10 @@ export const LocationProvider = ({ children }) => {
   );
 };
 
-export const useLocationCoords = () => useContext(LocationContext);
+export const useLocation = () => {
+  const context = useContext(LocationContext);
+  if (!context) {
+    throw new Error("useLocation must be used within LocationProvider");
+  }
+  return context;
+};
