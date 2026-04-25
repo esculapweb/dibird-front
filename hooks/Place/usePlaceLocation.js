@@ -1,8 +1,9 @@
 import { useState, useCallback, useRef } from "react";
-import * as Location from "expo-location";
 
 import { cachedReverseGeocode } from "../../services/geocoding";
 import { Config } from "../../constants/config";
+import { useLocationUnavailable } from "../useLocationUnavailable";
+import { useLocationCoords } from "../../store/location-context";
 
 export const normalizeCoords = (
   lngInput,
@@ -56,47 +57,12 @@ export const usePlaceLocation = () => {
   const [lngText, setLngText] = useState("");
   const [details, setDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { permissionStatus, refreshLocation } = useLocationCoords();
+  const handleLocationUnavailable = useLocationUnavailable();
 
   const geocodeTimeout = useRef(null);
 
   const rnd = (c) => Math.round(c * 100) / 100;
-
-  const updateCoords = useCallback(([lng, lat], options = {}) => {
-    if (lng != null && lat != null) {
-      setCoords([lng, lat]);
-      setRoundedCoords([rnd(lng), rnd(lat)]);
-    }
-
-    if (options.fromManual) {
-      if (options.latText) setLatText(options.latText);
-      if (options.lngText) setLngText(options.lngText);
-    } else {
-      if (lng != null) setLngText(lng.toFixed(4));
-      if (lat != null) setLatText(lat.toFixed(4));
-    }
-
-    if (options.withGeocode !== false && lat != null && lng != null) {
-      reverseGeocode(lat, lng);
-    }
-  }, []);
-
-  const useMyLocation = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") return;
-      const loc = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
-      const { latitude, longitude, accuracy: acc } = loc.coords;
-      setAccuracy(acc);
-      updateCoords([longitude, latitude]);
-    } catch (e) {
-      console.warn("Failed to get location:", e);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [updateCoords]);
 
   const reverseGeocode = useCallback(async (lat, lng) => {
     if (geocodeTimeout.current) clearTimeout(geocodeTimeout.current);
@@ -112,6 +78,55 @@ export const usePlaceLocation = () => {
       }
     }, 400);
   }, []);
+
+  const updateCoords = useCallback(
+    ([lng, lat], options = {}) => {
+      if (lng != null && lat != null) {
+        setCoords([lng, lat]);
+        setRoundedCoords([rnd(lng), rnd(lat)]);
+      }
+
+      if (options.fromManual) {
+        if (options.latText) setLatText(options.latText);
+        if (options.lngText) setLngText(options.lngText);
+      } else {
+        if (lng != null) setLngText(lng.toFixed(4));
+        if (lat != null) setLatText(lat.toFixed(4));
+      }
+
+      if (options.withGeocode !== false && lat != null && lng != null) {
+        reverseGeocode(lat, lng);
+      }
+    },
+    [reverseGeocode],
+  );
+
+  const useMyLocation = useCallback(async () => {
+    if (permissionStatus === "denied") {
+      handleLocationUnavailable();
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await refreshLocation();
+      if (result?.coords) {
+        setAccuracy(result.accuracy ?? 0);
+        updateCoords(result.coords);
+      } else if (permissionStatus === "denied") {
+        handleLocationUnavailable();
+      }
+    } catch (e) {
+      console.warn("Failed to use location:", e);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [
+    permissionStatus,
+    refreshLocation,
+    updateCoords,
+    handleLocationUnavailable,
+  ]);
 
   return {
     coords,
