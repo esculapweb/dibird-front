@@ -1,3 +1,4 @@
+import React from "react";
 import "react-native-gesture-handler";
 import "react-native-reanimated";
 import { StatusBar } from "expo-status-bar";
@@ -7,10 +8,18 @@ import Navigation from "./navigation/Navigation";
 import Toast from "react-native-toast-message";
 import { ActionSheetProvider } from "@expo/react-native-action-sheet";
 import "./services/i18n";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  QueryClient,
+  QueryClientProvider,
+  QueryCache,
+  MutationCache,
+} from "@tanstack/react-query";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import * as Sentry from "@sentry/react-native";
-import analytics, { getAnalytics, setAnalyticsCollectionEnabled } from "@react-native-firebase/analytics";
+import {
+  getAnalytics,
+  setAnalyticsCollectionEnabled,
+} from "@react-native-firebase/analytics";
 
 import AuthContextProvider, { AuthContext } from "./store/auth-context";
 import { ProfileProvider } from "./store/profile-context";
@@ -21,6 +30,7 @@ import { ThemeProvider, useTheme } from "./store/theme-context";
 import ThemedToast from "./components/ui/ThemedToast";
 import { showError } from "./services/api";
 import { initGoogleSignIn } from "./util/auth";
+import { AppError } from "./services/api";
 
 import CustomSplash from "./components/ui/СustomSplash";
 
@@ -28,47 +38,42 @@ Sentry.init({
   dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
   environment: process.env.EXPO_PUBLIC_ENV,
   enabled: !__DEV__,
-
-  // Adds more context data to events (IP address, cookies, user, etc.)
-  // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
   sendDefaultPii: true,
-
   enableLogs: true,
-
-  // uncomment the line below to enable Spotlight (https://spotlightjs.com)
-  // spotlight: __DEV__,
 });
 
 initGoogleSignIn();
 
 const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: (error) => showError(error),
+  }),
+  mutationCache: new MutationCache({
+    onError: (error) => showError(error),
+  }),
   defaultOptions: {
     queries: {
-      retry: (failureCount, error) => {
+      retry: (failureCount: number, error: AppError) => {
         if (error.code === "UNAUTHORIZED") return false;
 
         if (error.isServerError) return false;
 
         return failureCount < 1;
       },
-
-      onError: (error) => {
-        showError(error);
-      },
       staleTime: 10_000,
-      cacheTime: 5 * 60_000,
-      refetchOnFocus: false,
+      gcTime: 5 * 60_000,
+      refetchOnWindowFocus: false,
       refetchOnReconnect: true,
     },
     mutations: {
-      onError: (error) => {
+      onError: (error: any) => {
         showError(error);
       },
     },
   },
 });
 
-const AuthConsumerWrapper = ({ children }) => {
+const AuthConsumerWrapper = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useContext(AuthContext);
   return (
     <ProfileProvider isAuthenticated={isAuthenticated}>
@@ -78,7 +83,7 @@ const AuthConsumerWrapper = ({ children }) => {
 };
 
 const Root = () => {
-  const { isInitializing, isAuthenticated } = useContext(AuthContext);
+  const { isInitializing } = useContext(AuthContext);
   const { theme } = useTheme();
   const [splashFinished, setSplashFinished] = useState(false);
 

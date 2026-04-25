@@ -4,13 +4,24 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LightColors } from "../constants/colors/light";
 import { DarkColors } from "../constants/colors/dark";
 
-const ThemeContext = createContext(null);
+
+type Theme = "light" | "dark";
+
+interface ThemeContextType {
+  theme: Theme;
+  manualTheme: Theme | null;
+  Colors: typeof LightColors;
+  isDark: boolean;
+  toggleTheme: (newTheme: Theme | null) => void;
+}
+
+const ThemeContext = createContext<ThemeContextType | null>(null);
 
 const THEME_KEY = "theme";
 
-export const ThemeProvider = ({ children }) => {
+export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const systemScheme = useColorScheme();
-  const [manualTheme, setManualTheme] = useState(null);
+  const [manualTheme, setManualTheme] = useState<Theme | null>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -30,7 +41,7 @@ export const ThemeProvider = ({ children }) => {
 
   const theme = manualTheme ?? systemScheme ?? "light";
 
-  const toggleTheme = (newTheme) => {
+  const toggleTheme = (newTheme: "light" | "dark" | null) => {
     if (newTheme === null) {
       setManualTheme(null);
       AsyncStorage.removeItem(THEME_KEY).catch(() =>
@@ -65,4 +76,8 @@ export const ThemeProvider = ({ children }) => {
   );
 };
 
-export const useTheme = () => useContext(ThemeContext);
+export const useTheme = (): ThemeContextType => {
+  const context = useContext(ThemeContext);
+  if (!context) throw new Error("useTheme must be used within ThemeProvider");
+  return context;
+};

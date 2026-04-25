@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import * as SecureStore from "expo-secure-store";
 import i18n from "./i18n";
 import Toast from "react-native-toast-message";
@@ -8,9 +8,20 @@ import { Config } from "../constants/config";
 import { notifyTokenUpdate } from "./authService";
 import { canUseBiometrics } from "./bio";
 
-let onUnauthorizedCallback = null;
+export interface AppError extends Error {
+  code?: string;
+  status?: number;
+  title?: string;
+  isTimeout?: boolean;
+  isNetworkError?: boolean;
+  isServerError?: boolean;
+  originalError?: unknown;
+  response?: any;
+}
 
-export const setOnUnauthorized = (fn) => {
+let onUnauthorizedCallback: (() => void) | null = null;
+
+export const setOnUnauthorized = (fn: () => void) => {
   onUnauthorizedCallback = fn;
 };
 
@@ -23,9 +34,9 @@ const API_ERROR = {
 };
 
 let isRefreshing = false;
-let refreshPromise = null;
+let refreshPromise: Promise<string> | null = null;
 
-const normalizeApiError = (error) => {
+const normalizeApiError = (error: AxiosError): AxiosError & AppError => {
   if (error.code === "ECONNABORTED") {
     return {
       ...error,
@@ -80,7 +91,7 @@ const normalizeApiError = (error) => {
   };
 };
 
-export const mapErrorToToast = (e, extractApiErrorFn = null) => {
+export const mapErrorToToast = (e: AppError, extractApiErrorFn: ((error: AppError) => { title: string; message: string }) | null = null) => {
   if (e.code === API_ERROR.TIMEOUT)
     return {
       title: i18n.t("connection_timeout"),
@@ -110,7 +121,7 @@ export const mapErrorToToast = (e, extractApiErrorFn = null) => {
   };
 };
 
-export const showError = (e, extractApiErrorFn = null) => {
+export const showError = (e: AppError, extractApiErrorFn?: ((e: AppError) => { title: string; message: string }) | null) => {
   const { title, message } = mapErrorToToast(e, extractApiErrorFn);
   Toast.show({
     type: "error",
@@ -119,12 +130,12 @@ export const showError = (e, extractApiErrorFn = null) => {
   });
 };
 
-export const createTranslatedError = (error) => {
+const createTranslatedError = (error: AxiosError): AppError => {
   const normalizedError = normalizeApiError(error);
 
   const { title, message } = mapErrorToToast(normalizedError, null);
 
-  const translatedError = new Error(message);
+  const translatedError = new Error(message) as AppError;
 
   translatedError.title = title;
   translatedError.message = message;
@@ -168,7 +179,8 @@ const refreshAccessToken = async () => {
   return res.data.access;
 };
 
-export const saveTokens = async ({ access, refresh }) => {
+export const saveTokens = async ({ access, refresh }: { access?: string; refresh?: string }) => {
+
   if (access) {
     await SecureStore.setItemAsync("access", access);
     notifyTokenUpdate(access);
@@ -188,6 +200,8 @@ export const clearTokens = async () => {
 
 api.interceptors.request.use(
   async (config) => {
+    if (!config.url) return config;
+    
     const lang = i18n.language || "en";
     const token = await getAccessToken();
 
@@ -236,11 +250,12 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (e) {
         await clearTokens();
-        const status = e?.response?.status;
+        const axiosError = e as AxiosError;
+        const status = axiosError?.response?.status;
         if (status === 401 || status === 400) {
           onUnauthorizedCallback?.();
         }
-        return Promise.reject(createTranslatedError(e));
+        return Promise.reject(createTranslatedError(axiosError));
       }
     }
 
@@ -252,7 +267,7 @@ api.interceptors.response.use(
   },
 );
 
-export const getErrorDetails = (error) => {
+export const getErrorDetails = (error: AppError) => {
   if (error?.title && error?.message) {
     return {
       title: error.title,
