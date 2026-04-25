@@ -5,16 +5,19 @@ import {
 } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import RenderHtml from "react-native-render-html";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { EdgeInsets, useSafeAreaInsets } from "react-native-safe-area-context";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import Layout from "../components/ui/Layout";
 import { fetchPage } from "../util/fetches";
 import { useLanguage } from "../store/language-context";
 import { useTheme } from "../store/theme-context";
+import { LightColors } from "../constants/colors/light";
 
 const H_PAD = 16;
 
-const StaticScreen = ({ route }) => {
+
+const StaticScreen = ({ route }: NativeStackScreenProps<any, any>) => {
   const { Colors } = useTheme();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -22,7 +25,7 @@ const StaticScreen = ({ route }) => {
   const { language } = useLanguage();
   const page = route?.name;
 
-  const slugs = {
+  const slugs: Record<string, string> = {
     Privacy: "privacy",
     Terms: "cookie",
   };
@@ -33,12 +36,17 @@ const StaticScreen = ({ route }) => {
     enabled: !!page,
   });
 
-  if (isLoading) return <ActivityIndicator size="large" style={styles.loader} />;
+  if (isLoading)
+    return <ActivityIndicator size="large" style={styles.loader} />;
 
   if (!data) return null;
 
   return (
-    <Layout withScroll={true} style={styles.base} contentContainerStyle={styles.content}>
+    <Layout
+      withScroll={true}
+      style={styles.base}
+      contentContainerStyle={styles.content}
+    >
       <RenderHtml
         contentWidth={width - 32}
         source={{ html: data }}
@@ -66,7 +74,7 @@ const StaticScreen = ({ route }) => {
 
 export default StaticScreen;
 
-const stylesFn = (Colors, insets) =>
+const stylesFn = (Colors: typeof LightColors, insets: EdgeInsets) =>
   StyleSheet.create({
     base: {
       paddingHorizontal: H_PAD,

@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useCallback,
+  ReactNode,
 } from "react";
 import { AppState } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -76,7 +77,7 @@ export const ProfileProvider = ({
   children,
   isAuthenticated,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   isAuthenticated: boolean;
 }) => {
   const [profile, setProfile] = useState<Profile | null>(null);

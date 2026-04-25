@@ -1,8 +1,7 @@
-import React from "react";
+import { useState, useEffect, ReactNode } from "react";
 import "react-native-gesture-handler";
 import "react-native-reanimated";
 import { StatusBar } from "expo-status-bar";
-import { useState, useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Navigation from "./navigation/Navigation";
 import Toast from "react-native-toast-message";
@@ -73,7 +72,7 @@ const queryClient = new QueryClient({
   },
 });
 
-const AuthConsumerWrapper = ({ children }: { children: React.ReactNode }) => {
+const AuthConsumerWrapper = ({ children }: { children: ReactNode }) => {
   const { isAuthenticated } = useAuth();
   return (
     <ProfileProvider isAuthenticated={isAuthenticated}>

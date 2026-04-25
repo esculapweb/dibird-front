@@ -1,5 +1,5 @@
+import { createContext, useState, useEffect, useContext, ReactNode} from "react";
 import * as SecureStore from "expo-secure-store";
-import { createContext, useState, useEffect, useContext } from "react";
 import * as LocalAuthentication from "expo-local-authentication";
 
 import { setOnTokenUpdate } from "../services/authService";
@@ -27,7 +27,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthContextProvider = ({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) => {
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);

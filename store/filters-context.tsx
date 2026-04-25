@@ -4,6 +4,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  ReactNode,
 } from "react";
 import {
   loadGlobalTerritory,
@@ -41,11 +42,7 @@ interface FiltersContextType {
 
 const FiltersContext = createContext<FiltersContextType | null>(null);
 
-export const FiltersProvider = ({
-  children,
-}: {
-  children: React.ReactNode;
-}) => {
+export const FiltersProvider = ({ children }: { children: ReactNode }) => {
   const [territory, setTerritoryState] = useState<string | null>(null);
   const [date, setDateState] = useState<DateFilter | null>(null);
   const [place, setPlaceState] = useState<string | null>(null);

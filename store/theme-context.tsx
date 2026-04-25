@@ -1,9 +1,15 @@
-import { createContext, useMemo, useContext, useState, useEffect } from "react";
+import {
+  createContext,
+  useMemo,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
 import { useColorScheme } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LightColors } from "../constants/colors/light";
 import { DarkColors } from "../constants/colors/dark";
-
 
 type Theme = "light" | "dark";
 
@@ -19,7 +25,7 @@ const ThemeContext = createContext<ThemeContextType | null>(null);
 
 const THEME_KEY = "theme";
 
-export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
+export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const systemScheme = useColorScheme();
   const [manualTheme, setManualTheme] = useState<Theme | null>(null);
   const [ready, setReady] = useState(false);

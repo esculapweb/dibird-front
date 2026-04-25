@@ -1,4 +1,10 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import i18n from "../services/i18n";
 import * as Localization from "expo-localization";
@@ -16,11 +22,7 @@ const getDeviceLanguage = () => {
   return locales?.[0]?.languageCode || "en";
 };
 
-export const LanguageProvider = ({
-  children,
-}: {
-  children: React.ReactNode;
-}) => {
+export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [language, setLanguage] = useState("en");
   const [isReady, setIsReady] = useState(false);
 

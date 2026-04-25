@@ -6,20 +6,21 @@ import {
   StyleSheet,
   ScrollView,
   Platform,
-  Linking,
 } from "react-native";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSafeAreaInsets, EdgeInsets } from "react-native-safe-area-context";
+import { NavigationProp } from "@react-navigation/native";
 
 import { useTheme } from "../store/theme-context";
 import Layout from "../components/ui/Layout";
 import Logo from "../components/ui/Logo";
 import { LoginWithGoogle, LoginWithApple } from "../util/auth";
-import { showError } from "../services/api";
+import { showError, AppError } from "../services/api";
+import { LightColors } from "../constants/colors/light";
 
-const WelcomeScreen = ({ navigation }) => {
+const WelcomeScreen = ({ navigation }: { navigation: NavigationProp<any> }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -29,8 +30,9 @@ const WelcomeScreen = ({ navigation }) => {
     try {
       await LoginWithGoogle();
     } catch (e) {
-      if (e.code !== "SIGN_IN_CANCELLED") {
-        showError(e);
+      const err = e as AppError;
+      if (err.code !== "SIGN_IN_CANCELLED") {
+        showError(err);
       }
     }
   };
@@ -39,8 +41,9 @@ const WelcomeScreen = ({ navigation }) => {
     try {
       await LoginWithApple();
     } catch (e) {
-      if (e.code !== "ERR_REQUEST_CANCELED") {
-        showError(e);
+      const err = e as AppError;
+      if (err.code !== "ERR_REQUEST_CANCELED") {
+        showError(err);
       }
     }
   };
@@ -59,7 +62,6 @@ const WelcomeScreen = ({ navigation }) => {
         <Text
           style={[styles.legalLink, { color: Colors.main100 }]}
           onPress={() => navigation.navigate("Terms")}
-          hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
         >
           {t("terms_of_service_")}
         </Text>{" "}
@@ -67,7 +69,6 @@ const WelcomeScreen = ({ navigation }) => {
         <Text
           style={[styles.legalLink, { color: Colors.main100 }]}
           onPress={() => navigation.navigate("Privacy")}
-          hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
         >
           {t("privacy_policy_")}
         </Text>
@@ -125,7 +126,7 @@ const WelcomeScreen = ({ navigation }) => {
   );
 };
 
-const stylesFn = (Colors, insets) =>
+const stylesFn = (Colors: typeof LightColors, insets: EdgeInsets) =>
   StyleSheet.create({
     container: {
       flexGrow: 1,

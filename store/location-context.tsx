@@ -5,6 +5,7 @@ import {
   useEffect,
   useCallback,
   useRef,
+  ReactNode,
 } from "react";
 import { AppState } from "react-native";
 import * as Location from "expo-location";
@@ -21,8 +22,10 @@ interface LocationContextType {
 
 const LocationContext = createContext<LocationContextType | null>(null);
 
-export const LocationProvider = ({ children }: { children: React.ReactNode }) => {
-  const [locationCoords, setLocationCoords] = useState<[number, number] | null>(null);
+export const LocationProvider = ({ children }: { children: ReactNode }) => {
+  const [locationCoords, setLocationCoords] = useState<[number, number] | null>(
+    null,
+  );
   const [permissionStatus, setPermissionStatus] = useState<string | null>(null);
   const isRequestingRef = useRef(false);
 
@@ -59,7 +62,10 @@ export const LocationProvider = ({ children }: { children: React.ReactNode }) =>
         console.warn("Failed to get location:", e);
         const last = await Location.getLastKnownPositionAsync();
         if (last) {
-          const coords: [number, number] = [last.coords.longitude, last.coords.latitude];
+          const coords: [number, number] = [
+            last.coords.longitude,
+            last.coords.latitude,
+          ];
           setLocationCoords(coords);
           setPermissionStatus("granted");
           return { coords, accuracy: 0 };
