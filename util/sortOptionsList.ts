@@ -1,6 +1,6 @@
 import i18n from "../services/i18n";
 
-export const sortOptionsList = (screen) => {
+export const sortOptionsList = (screen: string | undefined) => {
   switch (screen) {
     case "Stat":
     case "UserStat":

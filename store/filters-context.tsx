@@ -48,17 +48,17 @@ export const FiltersProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     loadGlobalTerritory().then((val) => {
-      setTerritoryState(val ?? null);
+      setTerritoryState((val as number | null) ?? null);
       setSeenMode(val ? "all" : "seen");
     });
     loadGlobalDateFilter().then((val) => {
-      setDateState(val ?? null);
+      setDateState((val as DateFilter | null) ?? null);
     });
     loadGlobalPlace().then((val) => {
-      setPlaceState(val ?? null);
+      setPlaceState((val as number | null) ?? null);
     });
     loadGlobalSpecies().then((val) => {
-      setSpeciesState(val ?? null);
+      setSpeciesState((val as number | null) ?? null);
     });
   }, []);
 
@@ -99,10 +99,10 @@ export const FiltersProvider = ({ children }: { children: ReactNode }) => {
     const date = await loadGlobalDateFilter();
     const place = await loadGlobalPlace();
     const species = await loadGlobalSpecies();
-    setTerritoryState(territory ?? null);
-    setDateState(date ?? null);
-    setPlaceState(place ?? null);
-    setSpeciesState(species ?? null);
+    setTerritoryState((territory as number | null) ?? null);
+    setDateState((date as DateFilter | null) ?? null);
+    setPlaceState((place as number | null) ?? null);
+    setSpeciesState((species as number | null) ?? null);
   }, []);
 
   useEffect(() => {

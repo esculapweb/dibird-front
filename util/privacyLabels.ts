@@ -1,6 +1,6 @@
 import i18n from "../services/i18n";
 
-export const privacyLabels = (gender) => {
+export const privacyLabels = (gender: string | undefined) => {
   switch (gender) {
     case "male":
       return {

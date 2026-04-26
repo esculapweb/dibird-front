@@ -2,10 +2,10 @@ import { useCallback } from "react";
 import { Alert, Linking, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 
-export const useMediaLibraryUnavailable = () => {
+export const useMediaLibraryUnavailable = (): (() => void) => {
   const { t } = useTranslation();
 
-  return useCallback(() => {
+  return useCallback((): void => {
     Alert.alert(t("permission_denied"), t("allow_access_photo"), [
       { text: t("cancel"), style: "cancel" },
       {

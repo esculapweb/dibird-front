@@ -1,4 +1,18 @@
-export const parseDeepLinkParams = (params = {}) => {
+import { Filters } from "../types";
+
+interface DeepLinkParams {
+  territory?: number | string | null;
+  place?: number | string | null;
+  species?: number | string | null;
+  year?: number | string | null;
+  date_time_min?: string | null;
+  date_time_max?: string | null;
+  o?: string | null;
+  seenMode?: string | null;
+  filtersOverride?: Filters;
+}
+
+export const parseDeepLinkParams = (params: DeepLinkParams = {}) => {
   const {
     territory,
     place,
@@ -10,7 +24,7 @@ export const parseDeepLinkParams = (params = {}) => {
     seenMode,
   } = params;
 
-  const filters = {
+  const filters: Filters = {
     territory: territory ? Number(territory) : null,
     place: place ? Number(place) : null,
     species: species ? Number(species) : null,
@@ -43,7 +57,7 @@ export const parseDeepLinkParams = (params = {}) => {
   return { filters, sort, hasParams, seenMode: seenMode ?? null };
 };
 
-const parseWebDate = (str) => {
+const parseWebDate = (str: string | null): string | null => {
   if (!str) return null;
   const decoded = decodeURIComponent(str);
 

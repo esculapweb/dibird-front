@@ -5,19 +5,21 @@ import { getAnalytics, logEvent } from "@react-native-firebase/analytics";
 
 import api, { saveTokens, clearTokens, getRefreshToken } from "../services/api";
 import { Config } from "../constants/config";
+import { AppError } from "../types";
 
-const post = async (url, data) => {
+const post = async (url: string, data: unknown) => {
   try {
     const response = await api.post(url, data, { withCredentials: false });
     return response?.data;
   } catch (e) {
+    const err = e as AppError;
     console.warn("AUTH API ERROR:", url);
-    console.warn(e.response?.data || e.message);
-    throw e;
+    console.warn(err.response?.data || err.message);
+    throw err;
   }
 };
 
-export const Login = async (email, password) => {
+export const Login = async (email: string, password: string) => {
   const { access, refresh } = await post("/api-auth/login/", {
     email,
     password,
@@ -33,7 +35,7 @@ export const Login = async (email, password) => {
   return access;
 };
 
-export const CreateUser = async (email, password, username) => {
+export const CreateUser = async (email: string, password: string, username: string) => {
   const data = await post("/api-auth/registration/", {
     email,
     username,
@@ -44,15 +46,16 @@ export const CreateUser = async (email, password, username) => {
   return data;
 };
 
-export const Logout = async (onLogoutCallback) => {
+export const Logout = async (onLogoutCallback: () => void) => {
   try {
     const refresh = await getRefreshToken();
     if (refresh) {
       try {
         await api.post("/api-auth/logout/", { refresh });
       } catch (e) {
-        if (e.response?.status !== 401)
-          console.warn("Logout request failed", e.response?.status, e.message);
+        const err = e as AppError;
+        if (err.response?.status !== 401)
+          console.warn("Logout request failed", err.response?.status, err.message);
       }
     }
   } finally {

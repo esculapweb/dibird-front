@@ -31,7 +31,7 @@ interface Profile {
   user: number | null;
   registration_ip: string;
   timezone: string;
-  territory?: string | null;
+  territory?: number | null;
 }
 
 interface ProfileContextType {
@@ -43,7 +43,7 @@ interface ProfileContextType {
   error: AppError | null;
 }
 
-type ProfileCallback = (territory: string | null) => void;
+type ProfileCallback = (territory: number | null) => void;
 
 let onProfileSavedCallbacks: ProfileCallback[] = [];
 
@@ -105,7 +105,7 @@ export const ProfileProvider = ({
     const safeProfile = { ...EMPTY_PROFILE, ...data };
     setProfile(safeProfile);
     await AsyncStorage.setItem("profile", JSON.stringify(safeProfile));
-    await initGlobalFilters(safeProfile.territory);
+    await initGlobalFilters(safeProfile.territory ?? null);
     onProfileSavedCallbacks.forEach((cb) => cb(safeProfile.territory ?? null));
 
     if (safeProfile.user) {

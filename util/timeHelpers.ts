@@ -1,20 +1,20 @@
 // "10:30:00" или "10:30" → "10:30"
-export const formatTimeString = (value) => {
+export const formatTimeString = (value: string | undefined): string => {
   if (!value) return "";
   const parts = value.split(":");
   if (parts.length < 2) return value;
   return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}`;
 };
 
-export const dateToTimeString = (date) => {
+export const dateToTimeString = (date: Date | undefined): string | null => {
   if (!date) return null;
   const h = String(date.getHours()).padStart(2, "0");
   const m = String(date.getMinutes()).padStart(2, "0");
   return `${h}:${m}:00`;
 };
 
-export const timeStringToDate = (value) => {
-  const base = new Date(); // сегодня
+export const timeStringToDate = (value: string | undefined): Date => {
+  const base = new Date(); 
   if (!value) return base;
   const parts = value.split(":");
   base.setHours(parseInt(parts[0], 10) || 0);

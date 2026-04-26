@@ -7,7 +7,7 @@ import { normalizeValue } from "../util/helpers";
 import { parseDeepLinkParams } from "../util/parseDeepLinkParams";
 import { useFilters } from "../store/filters-context";
 import { sortOptionsList } from "../util/sortOptionsList";
-import { useDebounce } from "../util/useDebounce";
+import { useDebounce } from "./useDebounce";
 import { useLocation } from "../store/location-context";
 import { Filters, FilterKey, NavigationProp} from "../types";
 
@@ -161,7 +161,7 @@ export const useSyncedFilters = ({
         });
 
         if (allowSort) {
-          const storedSort = await loadSort(screenName);
+          const storedSort = await loadSort(screenName) as string | null;;
           const resolved = normalizeValue(
             storedSort,
             sortOptions.map((i) => i.value),
