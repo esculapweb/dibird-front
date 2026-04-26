@@ -3,7 +3,7 @@ import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 
 import { Config } from "../../constants/config";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import { BirdSVG } from "./Svgs";
 
 const SpeciesOptionRow = ({

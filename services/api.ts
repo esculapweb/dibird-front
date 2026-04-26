@@ -7,17 +7,7 @@ import * as Sentry from '@sentry/react-native';
 import { Config } from "../constants/config";
 import { notifyTokenUpdate } from "./authService";
 import { canUseBiometrics } from "./bio";
-
-export interface AppError extends Error {
-  code?: string;
-  status?: number;
-  title?: string;
-  isTimeout?: boolean;
-  isNetworkError?: boolean;
-  isServerError?: boolean;
-  originalError?: unknown;
-  response?: any;
-}
+import { AppError } from "../types";
 
 let onUnauthorizedCallback: (() => void) | null = null;
 

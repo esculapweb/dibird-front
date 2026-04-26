@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 
 const FlatButton = ({ children, onPress, style }) => {
   const { Colors } = useTheme();
@@ -19,7 +19,7 @@ const FlatButton = ({ children, onPress, style }) => {
 
 export default FlatButton;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     button: {
       paddingVertical: 6,

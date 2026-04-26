@@ -1,23 +1,40 @@
+import { FC } from "react";
 import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 import { Image } from "expo-image";
+import { InfiniteData } from "@tanstack/react-query";
 
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 
 import { Config } from "../../constants/config";
 import { BirdSVG } from "../ui/Svgs";
 import { formatDateShort } from "../../util/helpers";
+import {
+  Filters,
+  PaginatedResult,
+  SpeciesItem,
+  NavigationProp,
+} from "../../types";
 
 const H_PAD = 16;
 const IMAGE_SIZE = 48;
 
-const NewSpecies = ({ filters, newSpeciesData, isLoading }) => {
-  const navigation = useNavigation();
+interface NewSpeciesProps {
+  filters: Filters;
+  newSpeciesData: InfiniteData<PaginatedResult<SpeciesItem>> | undefined;
+  isLoading: boolean;
+}
+
+const NewSpecies: FC<NewSpeciesProps> = ({
+  filters,
+  newSpeciesData,
+  isLoading,
+}) => {
+  const navigation = useNavigation<NavigationProp>();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
-
 
   const isYearFilter =
     filters?.date?.type === "year" || filters?.date?.type === "this_year";
@@ -32,10 +49,10 @@ const NewSpecies = ({ filters, newSpeciesData, isLoading }) => {
         </View>
         <View style={styles.nsList}>
           {[0, 1, 2].map((i) => (
-            <View key={i} style={[styles.nsRow, i < 2 && styles.nsRowDivider]}>
+            <View key={i} style={[styles.nsRow, i < 2 ? styles.nsRowDivider : null]}>
               <View
                 style={[
-                  styles.nsImgBox,
+                  styles.image,
                   { opacity: 0.2, backgroundColor: Colors.textMain },
                 ]}
               />
@@ -80,9 +97,7 @@ const NewSpecies = ({ filters, newSpeciesData, isLoading }) => {
   return (
     <>
       <View style={styles.sectionHeader}>
-        <Text style={styles.groupLabel}>
-          {t("new_species")}
-        </Text>
+        <Text style={styles.groupLabel}>{t("new_species")}</Text>
         <TouchableOpacity
           onPress={() =>
             navigation.navigate("Stat", {
@@ -101,11 +116,13 @@ const NewSpecies = ({ filters, newSpeciesData, isLoading }) => {
 
       <View style={styles.nsList}>
         {data.map((item, i) => {
-          const { d, y } = formatDateShort(item.min_date);
+          const dateShort = formatDateShort(item.min_date);
+          if (!dateShort) return null;
+          const { d, y } = dateShort;
           return (
             <TouchableOpacity
               key={item.species_id}
-              style={[styles.nsRow, i < data.length - 1 && styles.nsRowDivider]}
+              style={[styles.nsRow, i < data.length - 1 ? styles.nsRowDivider : null]}
               activeOpacity={0.7}
               onPress={() =>
                 navigation.navigate("Observations", {
@@ -134,8 +151,12 @@ const NewSpecies = ({ filters, newSpeciesData, isLoading }) => {
                 )}
               </View>
               <View style={styles.nsNames}>
-                <Text style={styles.nsCommon} numberOfLines={2}>{item.sp_name_lang}</Text>
-                <Text style={styles.nsLatin} numberOfLines={1}>{item.sp_latin}</Text>
+                <Text style={styles.nsCommon} numberOfLines={2}>
+                  {item.sp_name_lang}
+                </Text>
+                <Text style={styles.nsLatin} numberOfLines={1}>
+                  {item.sp_latin}
+                </Text>
               </View>
               <Text style={styles.nsDate}>
                 {d}
@@ -151,7 +172,7 @@ const NewSpecies = ({ filters, newSpeciesData, isLoading }) => {
 
 export default NewSpecies;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     sectionHeader: {
       flexDirection: "row",

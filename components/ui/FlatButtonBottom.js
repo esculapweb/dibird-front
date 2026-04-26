@@ -8,7 +8,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 
 const FlatButtonBottom = ({
   children,

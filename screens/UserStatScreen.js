@@ -8,7 +8,7 @@ import { fetchStat, fetchUserProfile } from "../util/fetches";
 import StatCard from "../components/Stats/StatCard";
 import Tabs from "../components/ui/Tabs";
 import { useFilters } from "../store/filters-context";
-import { useTheme } from "../store/theme-context";
+import { useTheme, ThemeColors } from "../store/theme-context";
 import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
 import { buildShareUrl } from "../util/helpers";
@@ -146,7 +146,7 @@ const UserStatScreen = ({ route, navigation }) => {
 
 export default UserStatScreen;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     profileHeader: {
       flexDirection: "row",

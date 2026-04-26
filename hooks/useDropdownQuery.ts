@@ -4,13 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useSavedSort } from "./useSavedSort";
 import { useApiError } from "./useApiError";
 import { sortOptionsList } from "../util/sortOptionsList";
-import { AppError } from "../services/api";
-
-interface DropdownItem {
-  value: string;
-  label: string;
-  name_lang?: string;
-}
+import { DropdownItem, AppError } from "../types";
 
 interface UseDropdownQueryProps {
   type: string;

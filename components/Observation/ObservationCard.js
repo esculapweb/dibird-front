@@ -1,4 +1,4 @@
-import React from "react";
+import { useMemo, memo } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -7,12 +7,12 @@ import { Image } from "expo-image";
 import { BirdSVG } from "../ui/Svgs";
 import { formatDateLong, isoToFlagEmoji } from "../../util/helpers";
 import { Config } from "../../constants/config";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import { formatTimeString } from "../../util/timeHelpers";
 
-const useStyles = (Colors) => React.useMemo(() => stylesFn(Colors), [Colors]);
+const useStyles = (Colors) => useMemo(() => stylesFn(Colors), [Colors]);
 
-const ObservationCard = React.memo(({ item, index }) => {
+const ObservationCard = memo(({ item, index }) => {
   const { Colors } = useTheme();
   const styles = useStyles(Colors);
   const navigation = useNavigation();
@@ -149,7 +149,7 @@ const ObservationCard = React.memo(({ item, index }) => {
 
 export default ObservationCard;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     card: {
       backgroundColor: Colors.primary100,

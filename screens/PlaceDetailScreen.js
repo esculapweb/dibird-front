@@ -2,7 +2,7 @@ import { useLayoutEffect, useCallback, useMemo } from "react";
 import { View, Text, StyleSheet, Alert } from "react-native";
 import { useTranslation } from "react-i18next";
 
-import { useTheme } from "../store/theme-context";
+import { useTheme, ThemeColors } from "../store/theme-context";
 import { isoToFlagEmoji, formatDate, formatDateTime } from "../util/helpers";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
@@ -222,7 +222,7 @@ const PlaceDetailScreen = ({ route, navigation }) => {
 
 export default PlaceDetailScreen;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     header: {
       flexDirection: "row",

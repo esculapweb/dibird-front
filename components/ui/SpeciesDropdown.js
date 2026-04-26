@@ -9,7 +9,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { Image } from "expo-image";
 
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import { Config } from "../../constants/config";
 import { BirdSVG } from "./Svgs";
 
@@ -155,7 +155,7 @@ const SpeciesDropdown = ({
 
 export default SpeciesDropdown;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     card: {
       flexDirection: "row",

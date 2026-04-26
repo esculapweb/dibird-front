@@ -1,5 +1,5 @@
 import { StyleSheet, Text, TouchableOpacity } from "react-native";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 
 const StatCard = ({ value, label, onPress }) => {
   const { Colors } = useTheme();
@@ -14,7 +14,7 @@ const StatCard = ({ value, label, onPress }) => {
 
 export default StatCard;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     statCard: {
       flex: 1,

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Text, ActivityIndicator, View, StyleSheet } from "react-native";
-import { useTheme } from "../store/theme-context";
+import { useTheme, ThemeColors } from "../store/theme-context";
 import { useTranslation } from "react-i18next";
 
 import Layout from "../components/ui/Layout";
@@ -90,7 +90,7 @@ const ConfirmEmailScreen = ({ route, navigation }) => {
 
 export default ConfirmEmailScreen;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     container: {
       flex: 1,

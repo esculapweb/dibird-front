@@ -9,7 +9,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { BirdSVG } from "./Svgs";
 
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 
 const Input = ({
   label,
@@ -90,7 +90,7 @@ const Input = ({
 
 export default Input;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     inputContainer: {
       marginBottom: 16,

@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { StyleSheet } from "react-native";
 import IconButton from "./IconButton";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 
 const IconsHeader = ({
   hasActiveFilters,
@@ -61,7 +61,7 @@ const IconsHeader = ({
 
 export default memo(IconsHeader);
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     headerButtons: {
       flexDirection: "row",

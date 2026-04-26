@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View, Image } from "react-native";
 
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 
 const Logo = ({ style, imageSize = 100, withText = false }) => {
   const { Colors } = useTheme();

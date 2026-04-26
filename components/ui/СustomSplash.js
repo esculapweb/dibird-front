@@ -3,7 +3,7 @@ import { View, Image, Animated, StyleSheet } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -42,7 +42,7 @@ const CustomSplash = ({ onFinish }) => {
 
 export default CustomSplash;
 
-const stylesFn = (Colors) => StyleSheet.create({
+const stylesFn = (Colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.primary100,

@@ -1,5 +1,5 @@
 import { BaseToast } from "react-native-toast-message";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 
 const createToast = (colorKey) => (props) => {
   const { Colors } = useTheme();

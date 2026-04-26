@@ -24,7 +24,7 @@ import PrivacyToggle from "../ui/PrivacyToggle";
 import PlaceBlock from "../Place/PlaceBlock";
 import { useLocation } from "../../store/location-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import { useFilters } from "../../store/filters-context";
 import { useLocationUnavailable } from "../../hooks/useLocationUnavailable";
 

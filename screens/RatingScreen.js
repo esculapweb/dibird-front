@@ -7,7 +7,7 @@ import ListScreen from "./ListScreen";
 import { fetchRating } from "../util/fetches";
 import RatingCard from "../components/Rating/RatingCard";
 import { useFilters } from "../store/filters-context";
-import { useTheme } from "../store/theme-context";
+import { useTheme, ThemeColors } from "../store/theme-context";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import { useProfile } from "../store/profile-context";
 import { buildShareUrl } from "../util/helpers";

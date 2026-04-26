@@ -11,7 +11,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import Layout from "../components/ui/Layout";
 import { fetchPage } from "../util/fetches";
 import { useLanguage } from "../store/language-context";
-import { useTheme } from "../store/theme-context";
+import { useTheme, ThemeColors } from "../store/theme-context";
 import { LightColors } from "../constants/colors/light";
 
 const H_PAD = 16;

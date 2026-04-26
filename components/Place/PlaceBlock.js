@@ -2,7 +2,7 @@ import { StyleSheet, View, Text, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import DropdownInput from "../ui/DropdownInput";
 
 const PlaceBlock = ({
@@ -88,7 +88,7 @@ const PlaceBlock = ({
 
 export default PlaceBlock;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     mapWrap: {
       marginTop: 10,

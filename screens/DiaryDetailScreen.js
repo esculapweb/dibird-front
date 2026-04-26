@@ -12,7 +12,7 @@ import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 
-import { useTheme } from "../store/theme-context";
+import { useTheme, ThemeColors } from "../store/theme-context";
 import { formatDateLong, buildShareUrl, isoToFlagEmoji } from "../util/helpers";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
@@ -321,7 +321,7 @@ const DiaryDetailScreen = ({ route, navigation }) => {
 
 export default DiaryDetailScreen;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     container: {
       flex: 1,

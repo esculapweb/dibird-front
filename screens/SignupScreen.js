@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import AuthContent from "../components/Auth/AuthContent";
 import { CreateUser } from "../util/auth";
-import { useTheme } from "../store/theme-context";
+import { useTheme, ThemeColors } from "../store/theme-context";
 
 const SignupScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);

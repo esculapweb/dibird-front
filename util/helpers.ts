@@ -1,6 +1,7 @@
 import { Config } from "../constants/config";
 import i18n from "../services/i18n";
 import { buildDeepLinkParams } from "./buildDeepLinkParams";
+import { DateFilter } from "../types";
 
 export const isoToFlagEmoji = (isoCode) => {
   if (!isoCode) return "";
@@ -101,7 +102,7 @@ export const toDateOnly = (date) => {
   return `${year}-${month}-${day}`;
 };
 
-export const buildDateParams = (date) => {
+export const buildDateParams = (date: DateFilter | null | undefined): Record<string, string | null> => {
   if (!date || date.type === "any") return {};
 
   switch (date.type) {
@@ -117,6 +118,7 @@ export const buildDateParams = (date) => {
       };
     }
     case "year": {
+      if (!date.year) return {};
       const y = date.year;
       return {
         date_time_min: `${y}-01-01`,
@@ -158,7 +160,7 @@ export const buildShareUrl = (path, filters = null, sort = null) => {
   return query ? `${base}?${query}` : base;
 };
 
-export const formatDateShort = (dateStr) => {
+export const formatDateShort = (dateStr: string | null): { d: string; y: string } | null => {
   if (!dateStr) return null;
 
   const date = new Date(dateStr);

@@ -10,7 +10,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import { fetchMyActivity } from "../../util/fetches";
 import { SparklineSkeleton } from "./SparklineSkeleton";
 

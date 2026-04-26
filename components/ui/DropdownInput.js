@@ -10,7 +10,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 
 import SelectListModal from "./SelectListModal";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import SpeciesDropdown from "./SpeciesDropdown";
 import PlaceDropdown from "./PlaceDropdown";
 
@@ -267,7 +267,7 @@ const DropdownInput = ({
 
 export default DropdownInput;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     wrapper: { marginBottom: 16 },
     title: { marginBottom: 4, fontSize: 14, color: Colors.textMain },

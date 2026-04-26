@@ -18,6 +18,18 @@ import { useLocation } from "../../store/location-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 import { useFilters } from "../../store/filters-context";
 import { useLocationUnavailable } from "../../hooks/useLocationUnavailable";
+import { Filters, FilterKey } from "../../types";
+
+
+interface FilterModalProps {
+  visible: boolean;
+  onClose: () => void;
+  filters: Filters;
+  allowed: FilterKey[];
+  setFilters: (filters: Filters) => void;
+  clearFilters: () => void;
+  extraTerritory?: number | null;
+}
 
 const FilterModal = ({
   visible,
@@ -27,7 +39,7 @@ const FilterModal = ({
   setFilters,
   clearFilters,
   extraTerritory,
-}) => {
+}: FilterModalProps) => {
   const { language } = useLanguage();
   const { t } = useTranslation();
   const { setTerritory, date, setDate, setPlace, setSpecies } = useFilters();

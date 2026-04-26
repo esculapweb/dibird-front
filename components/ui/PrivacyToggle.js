@@ -2,7 +2,7 @@ import { StyleSheet, View, Text, Pressable, Switch } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import { privacyLabels } from "../../util/privacyLabels";
 
 const PrivacyToggle = ({ value, onChange, style, gender, labelAdditional }) => {
@@ -47,7 +47,7 @@ const PrivacyToggle = ({ value, onChange, style, gender, labelAdditional }) => {
 
 export default PrivacyToggle;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     row: {
       flexDirection: "row",

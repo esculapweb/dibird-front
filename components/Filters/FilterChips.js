@@ -1,7 +1,7 @@
 import { ScrollView, View, Pressable, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import { useFilterLabels } from "../../hooks/useFilterLabels";
 
 const FilterChips = ({ filters, onRemove, extraFilters, hints, allowed}) => {
@@ -60,7 +60,7 @@ const FilterChips = ({ filters, onRemove, extraFilters, hints, allowed}) => {
 
 export default FilterChips;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     wrapper: {
       paddingTop: 10,

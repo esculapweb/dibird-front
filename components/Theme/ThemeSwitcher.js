@@ -1,6 +1,6 @@
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import { useTranslation } from "react-i18next";
 
 const ThemeSwitcher = () => {
@@ -56,7 +56,7 @@ const ThemeSwitcher = () => {
 
 export default ThemeSwitcher;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     container: {
       paddingHorizontal: 16,

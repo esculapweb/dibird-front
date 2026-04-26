@@ -2,7 +2,7 @@ import { StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import StatCard from "../ui/StatCard";
 import StatsSkeleton from "./StatsSkeleton";
 
@@ -53,7 +53,7 @@ const Stats = ({ data, filters, isLoading }) => {
 
 export default Stats;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     statsRow: {
       flexDirection: "row",

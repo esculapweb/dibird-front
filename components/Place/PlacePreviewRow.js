@@ -11,7 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { Image } from "expo-image";
 
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import { isoToFlagEmoji } from "../../util/helpers";
 import { fetchMapPreview } from "../../util/fetches";
 import { Config } from "../../constants/config";
@@ -149,7 +149,7 @@ const PlacePreviewRow = ({ placeData, territoryData, style }) => {
 
 export default PlacePreviewRow;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     card: {
       flexDirection: "row",

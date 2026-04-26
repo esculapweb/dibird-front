@@ -1,4 +1,4 @@
-import React from "react";
+import { useMemo, memo } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -6,13 +6,13 @@ import { useTranslation } from "react-i18next";
 
 import { formatDate, isoToFlagEmoji } from "../../util/helpers";
 import { Config } from "../../constants/config";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import MetaItem from "../ui/MetaItem";
 import { BirdSVG } from "../ui/Svgs";
 
-const useStyles = (Colors) => React.useMemo(() => stylesFn(Colors), [Colors]);
+const useStyles = (Colors) => useMemo(() => stylesFn(Colors), [Colors]);
 
-const StatCard = React.memo(
+const StatCard = memo(
   ({ item, index, seenMode, onPress, personal = false }) => {
     const { t } = useTranslation();
     const { Colors } = useTheme();
@@ -150,7 +150,7 @@ const StatCard = React.memo(
 
 export default StatCard;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     card: {
       backgroundColor: Colors.primary100,

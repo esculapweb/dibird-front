@@ -7,7 +7,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import EmptyState from "../Empty/EmptyState";
 
 const ItemsList = ({
@@ -92,7 +92,7 @@ const ItemsList = ({
 
 export default ItemsList;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     list: { paddingHorizontal: 12, paddingVertical: 8 },
     fab: {

@@ -1,9 +1,7 @@
 import { useCallback } from "react";
 import { ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useDropdownQuery } from "../hooks/useDropdownQuery";
 import { useQuery } from "@tanstack/react-query";
-import { NavigationProp } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import FloatingNavbar from "../components/Main/FloatingNavbar";
@@ -16,6 +14,7 @@ import QuickActions from "../components/Main/QuickActions";
 import Sections from "../components/Main/Sections";
 import FilterModal from "../components/Filters/FilterModal";
 import { useSyncedFilters } from "../hooks/useSyncedFIlters";
+import { useDropdownQuery } from "../hooks/useDropdownQuery";
 import {
   fetchStat,
   fetchMyCountries,
@@ -24,19 +23,20 @@ import {
 import Layout from "../components/ui/Layout";
 import { useLanguage } from "../store/language-context";
 import { useList } from "../hooks/useList";
+import { Filters, FilterKey, DropdownItem, RootStackParamList, NavigationProp} from "../types";
 
 const MainScreen = ({
-  navigation,
   route,
+  navigation,
 }: {
-  navigation: NavigationProp<any>;
-  route: NativeStackScreenProps<any, any>;
+  route: NativeStackScreenProps<RootStackParamList>["route"];
+  navigation: NavigationProp;
 }) => {
   const { language } = useLanguage();
   const insets = useSafeAreaInsets();
   const NAVBAR_HEIGHT = insets.top + 60;
 
-  const allowedFilters = ["territory", "date"];
+  const allowedFilters: FilterKey[] = ["territory", "date"];
 
   const {
     filters,
@@ -59,9 +59,9 @@ const MainScreen = ({
     params: [language],
     enabled: filtersLoaded,
   });
-  const country = countriesQuery.data?.filter(
+  const country = (countriesQuery.data as DropdownItem[] | undefined)?.find(
     (item) => item.value === filters?.territory,
-  )?.[0];
+  );
 
   const { data: dataStats, isLoading: isLoadingDataStat } = useQuery({
     queryKey: [
@@ -76,17 +76,30 @@ const MainScreen = ({
     enabled: filtersLoaded,
   });
 
-  const fetchStatSeen = useCallback((filters, sort, search, page) => {
-    return fetchStat({ ...filters, seen: true }, sort, search, page);
-  }, []);
+  const fetchStatSeen = useCallback(
+    (
+      filters: Filters,
+      sort: string | null,
+      search: string | null,
+      page: number,
+    ) => {
+      return fetchStat(
+        { ...filters, seen: true },
+        sort ?? undefined,
+        search ?? "",
+        page,
+      );
+    },
+    [],
+  );
 
   const { data: seenSpeciesData, isLoading: isLoadingSeenSpeciesData } =
     useList({
       screenName: "Stat",
       fetchFunction: fetchStatSeen,
       filters,
-      tabsMode: "seen",
       sort: "-seen,-date_time",
+      tabsMode: "seen",
       enabled: filtersLoaded,
     });
 
@@ -128,7 +141,6 @@ const MainScreen = ({
 
         <NewSpecies
           filters={filters}
-          filtersLoaded={filtersLoaded}
           newSpeciesData={seenSpeciesData}
           isLoading={isLoadingSeenSpeciesData}
         />

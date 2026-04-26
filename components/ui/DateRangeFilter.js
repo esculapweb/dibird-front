@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import RadioGroup from "./RadioGroup";
 import DropdownInput from "./DropdownInput";
 import DateInput from "./DateInput";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 
 const DateRangeFilter = ({ value, setDateFilter }) => {
   const { t } = useTranslation();
@@ -138,7 +138,7 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
 
 export default DateRangeFilter;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     wrapper: {
       marginTop: 12,

@@ -35,7 +35,7 @@ import { useProfile } from "../store/profile-context";
 import Avatar from "../components/Profile/Avatar";
 import LanguageSwitcher from "../components/Language/LanguageSwitcher";
 import ThemeSwitcher from "../components/Theme/ThemeSwitcher";
-import { useTheme } from "../store/theme-context";
+import { useTheme, ThemeColors } from "../store/theme-context";
 import { useFilters } from "../store/filters-context";
 import { LightColors } from "../constants/colors/light";
 

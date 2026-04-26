@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { useTheme } from "../store/theme-context";
+import { useTheme, ThemeColors } from "../store/theme-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ObservationForm from "../components/Observation/ObservationForm";
 import { useCreateObservation } from "../hooks/Observation/useCreateObservation";

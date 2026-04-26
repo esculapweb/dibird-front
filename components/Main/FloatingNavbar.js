@@ -3,7 +3,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import { formatDateFilterMain } from "../../util/helpers";
 import BackgroundScene from "../ui/BackgroundScene";
 
@@ -57,7 +57,7 @@ const FloatingNavbar = ({ onPress, filters, country }) => {
 
 export default FloatingNavbar;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     navbarAbsolute: {
       position: "absolute",

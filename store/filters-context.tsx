@@ -19,6 +19,7 @@ import {
 } from "../util/storageHelper";
 
 import { registerOnProfileSaved } from "./profile-context";
+import { seenMode } from "../types";
 
 interface DateFilter {
   type: string;
@@ -26,16 +27,16 @@ interface DateFilter {
 }
 
 interface FiltersContextType {
-  territory: string | null;
-  setTerritory: (val: string | null) => Promise<void>;
+  territory: number | null;
+  setTerritory: (val: number | null) => Promise<void>;
   date: DateFilter | null;
   setDate: (val: DateFilter | null) => Promise<void>;
-  place: string | null;
-  setPlace: (val: string | null) => Promise<void>;
-  species: string | null;
-  setSpecies: (val: string | null) => Promise<void>;
-  seenMode: string;
-  setSeenMode: (val: string) => void;
+  place: number | null;
+  setPlace: (val: number | null) => Promise<void>;
+  species: number | null;
+  setSpecies: (val: number | null) => Promise<void>;
+  seenMode: seenMode;
+  setSeenMode: (val: seenMode) => void;
   resetFilters: () => Promise<void>;
   reload: () => Promise<void>;
 }
@@ -43,11 +44,11 @@ interface FiltersContextType {
 const FiltersContext = createContext<FiltersContextType | null>(null);
 
 export const FiltersProvider = ({ children }: { children: ReactNode }) => {
-  const [territory, setTerritoryState] = useState<string | null>(null);
+  const [territory, setTerritoryState] = useState<number | null>(null);
   const [date, setDateState] = useState<DateFilter | null>(null);
-  const [place, setPlaceState] = useState<string | null>(null);
-  const [species, setSpeciesState] = useState<string | null>(null);
-  const [seenMode, setSeenMode] = useState("all");
+  const [place, setPlaceState] = useState<number | null>(null);
+  const [species, setSpeciesState] = useState<number | null>(null);
+  const [seenMode, setSeenMode] = useState<seenMode>("all");
 
   useEffect(() => {
     loadGlobalTerritory().then((val) => {
@@ -65,7 +66,7 @@ export const FiltersProvider = ({ children }: { children: ReactNode }) => {
     });
   }, []);
 
-  const setTerritory = async (val: string | null) => {
+  const setTerritory = async (val: number | null) => {
     setTerritoryState(val);
     if (!val) {
       setPlaceState(null);
@@ -79,12 +80,12 @@ export const FiltersProvider = ({ children }: { children: ReactNode }) => {
     await saveGlobalDateFilter(val);
   };
 
-  const setPlace = async (val: string | null) => {
+  const setPlace = async (val: number | null) => {
     setPlaceState(val);
     await saveGlobalPlace(val);
   };
 
-  const setSpecies = async (val: string | null) => {
+  const setSpecies = async (val: number | null) => {
     setSpeciesState(val);
     await saveGlobalSpecies(val);
   };

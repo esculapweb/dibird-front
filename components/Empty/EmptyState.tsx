@@ -1,13 +1,26 @@
+import { ComponentProps } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import FlatButton from "../ui/FlatButton";
+import { LightColors } from "../../constants/colors/light";
+
+interface EmptyStateAction {
+  label: string;
+  onPress: () => void;
+}
+
+interface EmptyStateProps {
+  icon?: ComponentProps<typeof Ionicons>["name"];
+  message: string;
+  actions?: EmptyStateAction[];
+}
 
 const EmptyState = ({
   icon = "alert-circle-outline",
   message,
   actions = [],
-}) => {
+}: EmptyStateProps) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
 
@@ -27,7 +40,7 @@ const EmptyState = ({
 
 export default EmptyState;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: typeof LightColors) =>
   StyleSheet.create({
     container: {
       alignItems: "center",

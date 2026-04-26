@@ -11,7 +11,7 @@ import * as ImageManipulator from "expo-image-manipulator";
 import { Ionicons } from "@expo/vector-icons";
 import { useActionSheet } from "@expo/react-native-action-sheet";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import { patchAvatar } from "../../util/requests";
 
 import { useProfile } from "../../store/profile-context";
@@ -171,7 +171,7 @@ const Avatar = () => {
 
 export default Avatar;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     container: {
       width: AVATAR_SIZE,

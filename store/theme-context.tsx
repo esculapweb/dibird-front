@@ -13,10 +13,12 @@ import { DarkColors } from "../constants/colors/dark";
 
 type Theme = "light" | "dark";
 
+export type ThemeColors = typeof LightColors;
+
 interface ThemeContextType {
   theme: Theme;
   manualTheme: Theme | null;
-  Colors: typeof LightColors;
+  Colors: ThemeColors;
   isDark: boolean;
   toggleTheme: (newTheme: Theme | null) => void;
 }

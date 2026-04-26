@@ -1,4 +1,4 @@
-import React from "react";
+import { useMemo, memo } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -6,12 +6,12 @@ import { Image } from "expo-image";
 
 import { BirdSVG } from "../ui/Svgs";
 import { Config } from "../../constants/config";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import { formatTimeString } from "../../util/timeHelpers";
 
-const useStyles = (Colors) => React.useMemo(() => stylesFn(Colors), [Colors]);
+const useStyles = (Colors) => useMemo(() => stylesFn(Colors), [Colors]);
 
-const DiaryObservationCard = React.memo(({ item, index }) => {
+const DiaryObservationCard = memo(({ item, index }) => {
   const { Colors } = useTheme();
   const styles = useStyles(Colors);
   const navigation = useNavigation();
@@ -97,7 +97,7 @@ const DiaryObservationCard = React.memo(({ item, index }) => {
 
 export default DiaryObservationCard;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     card: {
       backgroundColor: Colors.primary100,

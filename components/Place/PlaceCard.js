@@ -1,17 +1,17 @@
-import React from "react";
+import { useMemo, memo } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import { isoToFlagEmoji } from "../../util/helpers";
 import { BirdSVG } from "../ui/Svgs";
 import StatItem from "../ui/StatItem";
 
-const useStyles = (Colors) => React.useMemo(() => stylesFn(Colors), [Colors]);
+const useStyles = (Colors) => useMemo(() => stylesFn(Colors), [Colors]);
 
-const PlaceCard = React.memo(({ item, index }) => {
+const PlaceCard = memo(({ item, index }) => {
   const { Colors } = useTheme();
   const styles = useStyles(Colors);
   const { t } = useTranslation();
@@ -82,7 +82,7 @@ const PlaceCard = React.memo(({ item, index }) => {
 
 export default PlaceCard;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     card: {
       backgroundColor: Colors.primary100,

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import { formatDateFilterCheckboxHero } from "../../util/helpers";
 import ChecklistHeroSkeleton from "./ChecklistHeroSkeleton";
 
@@ -70,7 +70,7 @@ const ChecklistHero = ({ data, country, filters, isLoading }) => {
 
 export default ChecklistHero;
 
-const stylesFn = (Colors) => {
+const stylesFn = (Colors: ThemeColors) => {
   const muted =
     Colors.textOpposite === "#ffffff"
       ? "rgba(255,255,255,0.8)"

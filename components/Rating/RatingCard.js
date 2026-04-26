@@ -1,4 +1,5 @@
-import React from "react";
+import { useMemo } from "react";
+
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -6,10 +7,10 @@ import { useTranslation } from "react-i18next";
 
 import { BirdSVG } from "../ui/Svgs";
 import { formatDateLong, isoToFlagEmoji } from "../../util/helpers";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import ProfileAvatar from "../Profile/ProfileAvatar";
 import { useProfileDisplay } from "../../hooks/Profile/useProfileDisplay";
-const useStyles = (Colors) => React.useMemo(() => stylesFn(Colors), [Colors]);
+const useStyles = (Colors) => useMemo(() => stylesFn(Colors), [Colors]);
 
 const RatingCard = ({ item, index, isSelected, onToggle, profile }) => {
   const { t } = useTranslation();
@@ -94,7 +95,7 @@ const RatingCard = ({ item, index, isSelected, onToggle, profile }) => {
 
 export default RatingCard;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     card: {
       backgroundColor: Colors.primary100,

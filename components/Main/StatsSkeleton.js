@@ -1,5 +1,5 @@
 import { StyleSheet, View } from "react-native";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 
 const H_PAD = 16;
 
@@ -32,7 +32,7 @@ const StatCardSkeleton = () => {
   );
 };
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     statsRow: {
       flexDirection: "row",

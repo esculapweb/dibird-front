@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Image } from "expo-image";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import { Config } from "../../constants/config";
 
 const DOT_SIZE = 10;
@@ -73,7 +73,7 @@ const dotStyles = StyleSheet.create({
   },
 });
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     card: {
       backgroundColor: Colors.primary100,

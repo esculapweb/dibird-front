@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View, Text, Pressable, Platform, StyleSheet } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import i18n from "../../services/i18n";
 
 const toDateOnly = (date) => {

@@ -8,7 +8,7 @@ import { useHeaderHeight } from "@react-navigation/elements";
 import AuthForm from "./AuthForm";
 import Logo from "../ui/Logo";
 import { showError } from "../../services/api";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import FormWrapper from "../ui/FormWrapper";
 
 const AuthContent = ({
@@ -132,7 +132,7 @@ const AuthContent = ({
 
 export default AuthContent;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     welcomeSection: {
       flexDirection: "row",

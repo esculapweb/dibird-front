@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import { Config } from "../../constants/config";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import { useProfileDisplay } from "../../hooks/Profile/useProfileDisplay";
 
 const ProfileAvatar = ({

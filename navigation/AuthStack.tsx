@@ -15,7 +15,7 @@ import SignupScreen from "../screens/SignupScreen";
 import CheckEmailScreen from "../screens/CheckEmailScreen";
 import ConfirmEmailScreen from "../screens/ConfirmEmailScreen";
 import LanguageSwitcher from "../components/Language/LanguageSwitcher";
-import { useTheme } from "../store/theme-context";
+import { useTheme, ThemeColors } from "../store/theme-context";
 import ThemeSwitcher from "../components/Theme/ThemeSwitcher";
 
 const Drawer = createDrawerNavigator();

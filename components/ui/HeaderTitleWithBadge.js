@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from "react-native";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 
 const HeaderTitleWithBadge = ({ title, badgeCount }) => {
   const { Colors } = useTheme();
@@ -19,7 +19,7 @@ const HeaderTitleWithBadge = ({ title, badgeCount }) => {
 
 export default HeaderTitleWithBadge;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     container: {
       flexDirection: "row",

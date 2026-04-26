@@ -13,7 +13,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import { toDateOnly } from "../../util/helpers";
 
 if (
@@ -237,7 +237,7 @@ const DateInput = ({
 
 export default DateInput;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     label: { fontSize: 14, marginBottom: 4, color: Colors.textMain },
     input: {

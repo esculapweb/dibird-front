@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 
 const H_PAD = 16;
 
@@ -60,7 +60,7 @@ const QuickActions = ({ filters }) => {
 
 export default QuickActions;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     groupLabel: {
       fontSize: 15,

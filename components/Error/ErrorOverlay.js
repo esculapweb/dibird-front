@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import Logo from "../ui/Logo";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import FlatButton from "../ui/FlatButton";
 
 const ErrorOverlay = ({ title, message, onPress, logo }) => {
@@ -24,7 +24,7 @@ const ErrorOverlay = ({ title, message, onPress, logo }) => {
 
 export default ErrorOverlay;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     rootContainer: {
       flex: 1,

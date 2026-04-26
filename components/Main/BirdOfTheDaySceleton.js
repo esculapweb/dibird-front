@@ -1,5 +1,5 @@
 import { View, StyleSheet } from "react-native";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 
 const H_PAD = 16;
 const IMAGE_SIZE = 64;
@@ -32,7 +32,7 @@ const BirdOfTheDaySkeleton = () => {
 
 export default BirdOfTheDaySkeleton;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     botdCard: {
       marginHorizontal: H_PAD,

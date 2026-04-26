@@ -10,7 +10,7 @@ import { useProfile } from "../../store/profile-context";
 import { fetchTimezones, fetchMyCountries } from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 
 const ProfileForm = ({ submitHandler, loading, success }) => {
   const { language } = useLanguage();
@@ -170,7 +170,7 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
 
 export default ProfileForm;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     outer: {
       paddingBottom: 8,

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { loadSort } from "../util/storageHelper";
 import { normalizeValue } from "../util/helpers";
@@ -8,6 +9,8 @@ import { useFilters } from "../store/filters-context";
 import { sortOptionsList } from "../util/sortOptionsList";
 import { useDebounce } from "../util/useDebounce";
 import { useLocation } from "../store/location-context";
+import { Filters, FilterKey, NavigationProp, RootStackParamList } from "../types";
+
 
 export const useSyncedFilters = ({
   route,
@@ -15,6 +18,12 @@ export const useSyncedFilters = ({
   screenName,
   allowSort = true,
   allowedFilters,
+}: {
+  route: NativeStackScreenProps<RootStackParamList>["route"];
+  navigation: NavigationProp;
+  screenName: string;
+  allowSort?: boolean;
+  allowedFilters: FilterKey[];
 }) => {
   const {
     territory,
@@ -27,16 +36,22 @@ export const useSyncedFilters = ({
     setSpecies,
   } = useFilters();
 
-  const [filters, setFilters] = useState({});
-  const [sort, setSort] = useState(null);
+  const [filters, setFilters] = useState<Filters>({});
+  const [sort, setSort] = useState<string | null>(null);
   const [sortReady, setSortReady] = useState(false);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
 
   const [filtersLoaded, setFiltersLoaded] = useState(false);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search);
-  const sortOptions = sortOptionsList(screenName);
-  const [filterHints, setFilterHints] = useState({});
+  const sortOptions = sortOptionsList(screenName) as {
+    label: string;
+    value: string;
+  }[];
+  const [filterHints, setFilterHints] = useState<{
+    speciesName?: string;
+    [key: string]: unknown;
+  }>({});
   const [ignoreContextSync, setIgnoreContextSync] = useState(false);
   const initFiltersRef = useRef(false);
   const overrideAppliedRef = useRef(false);
@@ -44,17 +59,17 @@ export const useSyncedFilters = ({
   const userChangedSortRef = useRef(false);
   const defaultSortRef = useRef(null);
 
-  const hasActiveFilters = filters
+  const hasActiveFilters: boolean = filters
     ? allowedFilters.some((key) => {
         const v = filters[key];
-        return Array.isArray(v) ? v.length > 0 : v != null && v !== "";
+        return Array.isArray(v) ? v.length > 0 : v != null;
       })
     : false;
 
-  const isSearchActive = debouncedSearch.length > 0;
-  const isDistanceSort = (val) => val === "distance" || val === "-distance";
+  const isSearchActive: boolean = debouncedSearch.length > 0;
+  const isDistanceSort = (val: string | null): boolean => val === "distance" || val === "-distance";
 
-  const handleFiltersApplied = (newFilters) => {
+  const handleFiltersApplied = (newFilters: Filters): void => {
     setIgnoreContextSync(false);
     setFilters(newFilters);
   };
@@ -69,19 +84,19 @@ export const useSyncedFilters = ({
     setFilterModalVisible(false);
   };
 
-  const handleClearSearch = () => setSearch("");
+  const handleClearSearch = (): void => setSearch("");
 
-  const handleSetSort = useCallback((val) => {
+  const handleSetSort = useCallback((val: string): void => {
     userChangedSortRef.current = true;
     setSort(val);
   }, []);
 
-  const handleClearFiltersSearch = () => {
+  const handleClearFiltersSearch = (): void => {
     handleClearSearch();
     handleClearFilters();
   };
 
-  const removeFilter = (key) => {
+  const removeFilter = (key: FilterKey): void => {
     setIgnoreContextSync(true);
     if (key === "date") setDate(null);
     if (key === "territory") {
@@ -94,7 +109,7 @@ export const useSyncedFilters = ({
 
     if (!route.params?.filtersOverride && !overrideAppliedRef.current) {
       setFilters((prev) => {
-        const newFilters = { ...prev };
+        const newFilters: Filters = { ...prev };
         newFilters[key] = undefined;
         if (key === "territory") {
           newFilters.place = undefined;
@@ -110,7 +125,7 @@ export const useSyncedFilters = ({
       if (route.params?.filtersOverride && !initFiltersRef.current) {
         const { speciesName, ...overrideFilters } =
           route.params.filtersOverride;
-        setFilters(overrideFilters);
+        setFilters(overrideFilters as Filters);
         setFilterHints({ speciesName });
         setIgnoreContextSync(true);
 
@@ -133,7 +148,7 @@ export const useSyncedFilters = ({
 
       if (hasParams) {
         overrideAppliedRef.current = true;
-        setFilters({ ...deepFilters });
+        setFilters({ ...deepFilters } as Filters);
         setIgnoreContextSync(true);
         if (deepSort) setSort(deepSort);
         setSortReady(true);
@@ -169,7 +184,6 @@ export const useSyncedFilters = ({
           if (isDistanceSort(resolved) && permissionStatus !== "denied") {
             requestLocation();
           }
-
         } else {
           setSortReady(true);
         }

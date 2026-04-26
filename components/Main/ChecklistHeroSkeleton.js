@@ -1,5 +1,5 @@
 import { StyleSheet, View } from "react-native";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 
 const H_PAD = 16;
 
@@ -25,7 +25,7 @@ const ChecklistHeroSkeleton = () => {
 
 export default ChecklistHeroSkeleton;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     clCard: {
       marginHorizontal: H_PAD,

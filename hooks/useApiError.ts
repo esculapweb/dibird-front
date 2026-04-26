@@ -2,7 +2,8 @@ import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
 
-import { getErrorDetails, AppError} from "../services/api";
+import { getErrorDetails} from "../services/api";
+import {AppError} from "../types";
 
 export const useApiError = () => {
   const { t } = useTranslation();

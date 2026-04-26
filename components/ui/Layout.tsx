@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { View, ScrollView, StyleSheet } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import BackgroundScene from "./BackgroundScene";
 import { LightColors } from "../../constants/colors/light";
 

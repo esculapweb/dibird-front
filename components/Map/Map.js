@@ -22,7 +22,7 @@ import Clipboard from "@react-native-clipboard/clipboard";
 import { useTranslation } from "react-i18next";
 
 import { Config } from "../../constants/config";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 
 const Map = ({
   currentCoords,

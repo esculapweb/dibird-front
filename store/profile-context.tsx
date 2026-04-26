@@ -10,8 +10,9 @@ import { AppState } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getAnalytics, setUserId } from "@react-native-firebase/analytics";
 
-import api, { AppError } from "../services/api";
+import api from "../services/api";
 import { initGlobalFilters } from "../util/storageHelper";
+import { AppError } from "../types";
 
 interface UserData {
   username: string;
@@ -39,7 +40,7 @@ interface ProfileContextType {
   updateProfile: (updatedData: Partial<Profile>) => Promise<void>;
   refreshProfile: () => Promise<void>;
   isTokenReady: boolean;
-  error: unknown;
+  error: AppError | null;
 }
 
 type ProfileCallback = (territory: string | null) => void;
@@ -81,7 +82,7 @@ export const ProfileProvider = ({
   isAuthenticated: boolean;
 }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [error, setError] = useState<unknown>(null);
+  const [error, setError] = useState<AppError | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const url = "/myapi/profile/me/";
 
@@ -92,8 +93,8 @@ export const ProfileProvider = ({
       const { data } = await api.get(url);
       await saveProfile(data);
     } catch (e) {
-      setError(e);
       const err = e as AppError;
+      setError(err);
       console.warn("Failed to refresh profile:", err.code, err.message);
     } finally {
       setProfileLoading(false);

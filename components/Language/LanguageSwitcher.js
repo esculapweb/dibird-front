@@ -3,7 +3,7 @@ import { useLanguage } from "../../store/language-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 
 const LanguageSwitcher = () => {
   const { language, changeLanguage } = useLanguage();
@@ -47,7 +47,7 @@ const LanguageSwitcher = () => {
 
 export default LanguageSwitcher;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     container: {
       paddingHorizontal: 16,

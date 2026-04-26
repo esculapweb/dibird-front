@@ -9,7 +9,7 @@ import {
   UIManager,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 
 if (
   Platform.OS === "android" &&

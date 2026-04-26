@@ -1,6 +1,6 @@
 import { View, Dimensions } from "react-native";
 import Svg, { Path } from "react-native-svg";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 
 const { width, height } = Dimensions.get("screen");
 
@@ -14,7 +14,7 @@ const BackgroundScene = () => {
   const W = width;
   const H = height;
 
-  const ring = (cx, cy, rOuter, rInner) => {
+const ring = (cx: number, cy: number, rOuter: number, rInner: number): string => {
     const o = `M ${cx + rOuter} ${cy} A ${rOuter} ${rOuter} 0 1 0 ${cx - rOuter} ${cy} A ${rOuter} ${rOuter} 0 1 0 ${cx + rOuter} ${cy} Z`;
     const i = `M ${cx + rInner} ${cy} A ${rInner} ${rInner} 0 1 0 ${cx - rInner} ${cy} A ${rInner} ${rInner} 0 1 0 ${cx + rInner} ${cy} Z`;
     return `${o} ${i}`;

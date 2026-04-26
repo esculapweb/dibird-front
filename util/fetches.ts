@@ -1,25 +1,33 @@
 import api from "../services/api";
 import { isoToFlagEmoji, buildDateParams, cleanFilters } from "./helpers";
+import { Filters, DateFilter, PaginatedResponse, SpeciesItem } from "../types";
 
 export const fetchTimezones = async () => {
-  const res = await api.get("/api/timezones2/");
+  const res = await api.get<[string, string][]>("/api/timezones2/");
   return res.data.map(([value, label]) => ({
     value,
     label,
   }));
 };
 
-export const fetchPage = async (slug) => {
+export const fetchPage = async (slug: string) => {
   const res = await api.get(`/api/page2/${slug}/`);
   return res.data?.content;
 };
 
-export const fetchMyCountries = async (favOnly = false, order) => {
-  const params = {
+interface CountryItem {
+  territory_id: number;
+  name: string;
+  code: string;
+  favourite: boolean;
+}
+
+export const fetchMyCountries = async (favOnly = false, order: string) => {
+  const params: { o: string; fav_only?: boolean } = {
     o: order,
   };
   if (favOnly) params.fav_only = true;
-  const res = await api.get("/myapi/territory2/", { params });
+  const res = await api.get<CountryItem[]>("/myapi/territory2/", { params });
   return res.data.map((item) => ({
     value: item.territory_id,
     label: item.name,
@@ -29,12 +37,33 @@ export const fetchMyCountries = async (favOnly = false, order) => {
   }));
 };
 
-export const fetchMyPlaces = async (territory = null, coords = null, order) => {
+interface PlaceItem {
+  id: number;
+  name: string;
+  favourite: boolean;
+  location: {
+    type: string;
+    coordinates: [number, number];
+  } | null;
+  distance?: number | null;
+  preview?: string | null;
+}
+
+export const fetchMyPlaces = async (
+  territory: number | null = null,
+  coords: [number, number] | null = null,
+  order: string,
+) => {
   if (!territory) return [];
 
   const isDistanceSort = order === "distance" || order === "-distance";
 
-  const params = {
+  const params: {
+    territory: number | null;
+    o: string;
+    lng?: number;
+    lat?: number;
+  } = {
     territory,
     o: order,
   };
@@ -45,7 +74,7 @@ export const fetchMyPlaces = async (territory = null, coords = null, order) => {
     params.lat = lat;
   }
 
-  const res = await api.get("/myapi/place-dropdown2/", { params });
+  const res = await api.get<PlaceItem[]>("/myapi/place-dropdown2/", { params });
 
   return res.data.map((item) => ({
     value: item.id,
@@ -57,7 +86,11 @@ export const fetchMyPlaces = async (territory = null, coords = null, order) => {
   }));
 };
 
-export const fetchSpecies = async (territory = null, order, dateFilter) => {
+export const fetchSpecies = async (
+  territory = null,
+  order: string,
+  dateFilter: DateFilter | null = null,
+) => {
   if (!territory) return [];
   const params = {
     territory,
@@ -65,7 +98,9 @@ export const fetchSpecies = async (territory = null, order, dateFilter) => {
     o: order,
     ...buildDateParams(dateFilter),
   };
-  const res = await api.get("/myapi/stat2/", { params });
+  const res = await api.get<PaginatedResponse<SpeciesItem>>("/myapi/stat2/", {
+    params,
+  });
 
   return res.data?.results.map((item) => ({
     value: item.species_id,
@@ -77,7 +112,7 @@ export const fetchSpecies = async (territory = null, order, dateFilter) => {
   }));
 };
 
-export const fetchDiarySpeciesIds = async (diaryId) => {
+export const fetchDiarySpeciesIds = async (diaryId: number) => {
   const params = {
     diary: diaryId,
   };
@@ -87,17 +122,17 @@ export const fetchDiarySpeciesIds = async (diaryId) => {
   return res.data;
 };
 
-export const fetchMapPreview = async (placeId) => {
+export const fetchMapPreview = async (placeId: number) => {
   const res = await api.get(`/myapi/place2/${placeId}/map_preview/`);
   return res.data;
 };
 
-export const fetchUserProfile = async (profileId) => {
+export const fetchUserProfile = async (profileId: number) => {
   const res = await api.get(`/myapi/user-profile/${profileId}/`);
   return res.data;
 };
 
-export const fetchMyActivity = async (filters) => {
+export const fetchMyActivity = async (filters: Filters) => {
   const params = {
     territory: filters?.territory,
     ...buildDateParams(filters?.date),
@@ -109,7 +144,7 @@ export const fetchMyActivity = async (filters) => {
   return res.data;
 };
 
-export const fetchMyDashboardStat = async (filters) => {
+export const fetchMyDashboardStat = async (filters: Filters) => {
   const params = {
     territory: filters?.territory,
     ...buildDateParams(filters?.date),
@@ -119,7 +154,7 @@ export const fetchMyDashboardStat = async (filters) => {
   return res.data;
 };
 
-export const fetchBirdOfDay = async (territory) => {
+export const fetchBirdOfDay = async (territory: number) => {
   const params = {
     territory: territory,
   };
@@ -128,14 +163,14 @@ export const fetchBirdOfDay = async (territory) => {
   return res.data;
 };
 
-const fetchAbstract = async (
-  fetchUrl,
-  filters = {},
-  order,
+const fetchAbstract = async <T>(
+  fetchUrl: string,
+  filters: Filters = {},
+  order: string,
   search = "",
   page = 1,
-  extraParams = {},
-) => {
+  extraParams: Record<string, unknown> = {},
+): Promise<T> => {
   const { date, ...restFilters } = filters;
 
   const apiFilters = {
@@ -143,7 +178,7 @@ const fetchAbstract = async (
     ...buildDateParams(date),
   };
 
-  const params = {
+  const params: Record<string, unknown> = {
     ...cleanFilters(apiFilters),
     ...extraParams,
     per_page: 100,
@@ -152,25 +187,35 @@ const fetchAbstract = async (
   if (search) params.name = search;
   if (page > 1) params.page = page;
 
-  const res = await api.get(fetchUrl, { params });
+  const res = await api.get<T>(fetchUrl, { params });
   return res.data;
 };
 
-export const fetchStat = (filters, order = "-date_time", search, page) => {
+export const fetchStat = (
+  filters: Filters,
+  order = "-date_time",
+  search: string,
+  page?: number,
+) => {
   filters = { ...filters };
-  return fetchAbstract("/myapi/stat2/", filters, order, search, page);
+  return fetchAbstract<PaginatedResponse<SpeciesItem>>("/myapi/stat2/", filters, order, search, page);
 };
 
-export const fetchChecklist = (filters, order = "-ioc_id", search, page) => {
+export const fetchChecklist = (
+  filters: Filters,
+  order = "-ioc_id",
+  search?: string,
+  page?: number,
+) => {
   filters = { ...filters };
   return fetchAbstract("/myapi/checklist2/", filters, order, search, page);
 };
 
 export const fetchPlaces = (
-  filters,
+  filters: Filters & Record<string, unknown>,
   order = "distance",
-  search,
-  page,
+  search?: string,
+  page?: number,
   coords = null,
 ) => {
   const isDistanceSort = order === "distance" || order === "-distance";
@@ -187,21 +232,24 @@ export const fetchPlaces = (
 };
 
 export const fetchObservations = (
-  filters,
+  filters: Filters,
   order = "-date_time",
-  search,
-  page,
+  search?: string,
+  page?: number,
 ) => fetchAbstract("/myapi/observation2/", filters, order, search, page);
 
-export const fetchDiaries = (filters, order = "-date_time", search, page) =>
-  fetchAbstract("/myapi/diary2/", filters, order, search, page);
+export const fetchDiaries = (
+  filters: Filters,
+  order = "-date_time",
+  search?: string,
+  page?: number,
+) => fetchAbstract("/myapi/diary2/", filters, order, search, page);
 
 export const fetchDiaryObservations = (
-  filters,
+  filters: Filters,
   order = "-created_at",
-  search,
-  page,
-  id,
+  search?: string,
+  page?: number,
 ) => {
   return fetchAbstract(
     "/myapi/diary-observation2/",
@@ -212,12 +260,21 @@ export const fetchDiaryObservations = (
   );
 };
 
-export const fetchRating = (filters, order = "-observations", search, page) => {
+export const fetchRating = (
+  filters: Filters,
+  order = "-observations",
+  search?: string,
+  page?: number,
+) => {
   filters = { ...filters };
   return fetchAbstract("/myapi/rating2/", filters, order, search, page);
 };
 
-export const fetchRatingCompareHeader = async (profile1, profile2, filters) => {
+export const fetchRatingCompareHeader = async (
+  profile1: number,
+  profile2: number,
+  filters: Filters,
+) => {
   const { date, ...restFilters } = filters;
 
   const apiFilters = {
@@ -234,7 +291,12 @@ export const fetchRatingCompareHeader = async (profile1, profile2, filters) => {
   return res.data;
 };
 
-export const fetchRatingCompare = (filters, order = "ioc_id", search, page) => {
+export const fetchRatingCompare = (
+  filters: Filters,
+  order = "ioc_id",
+  search?: string,
+  page?: number,
+) => {
   filters = { ...filters };
   return fetchAbstract("/myapi/rating-compare2/", filters, order, search, page);
 };

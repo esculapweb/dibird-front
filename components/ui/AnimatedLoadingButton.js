@@ -8,7 +8,7 @@ import {
   Animated,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 
 const BUTTON_HEIGHT = 48;
 const SUCCESS_DISPLAY_TIME = 3000; 
@@ -78,7 +78,7 @@ const AnimatedLoadingButton = ({ onPress, loading, success, children }) => {
 
 export default AnimatedLoadingButton;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     button: {
       borderRadius: 8,

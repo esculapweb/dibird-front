@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 
-import { useTheme } from "../store/theme-context";
+import { useTheme, ThemeColors } from "../store/theme-context";
 import Layout from "../components/ui/Layout";
 import Logo from "../components/ui/Logo";
 
@@ -26,7 +26,7 @@ const CheckEmailScreen = ({ route, navigation }) => {
 
 export default CheckEmailScreen;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     container: {
       flex: 1,

@@ -2,9 +2,26 @@ import { useMemo } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useLanguage } from "../store/language-context";
 import { stableStringify } from "../util/helpers";
+import { Filters, PaginatedResult, seenMode } from "../types";
 
+interface useListProps<T> {
+  screenName: string;
+  fetchFunction: (
+    filters: Filters,
+    sort: string | null,
+    search: string,
+    page: number,
+  ) => Promise<PaginatedResult<T>>;
+  filters: Filters | null;
+  sort: string | null;
+  search?: string | null;
+  tabsMode?: seenMode;
+  extraFilters?: Filters | null;
+  locationCoords?: { lat: number | null; lng: number | null } | null;
+  enabled: boolean;
+}
 
-export const useList = ({
+export const useList = <T>({
   screenName,
   fetchFunction,
   filters,
@@ -14,7 +31,7 @@ export const useList = ({
   extraFilters,
   locationCoords,
   enabled,
-}) => {
+}: useListProps<T>) => {
   const { language } = useLanguage();
 
   const mergedFilters = useMemo(() => {
@@ -46,18 +63,18 @@ export const useList = ({
     ];
   }, [screenName, filtersKey, sort, search, tabsMode, language, locationKey]);
 
-  return useInfiniteQuery({
+  return useInfiniteQuery<PaginatedResult<T>>({
     queryKey,
-
-    queryFn: ({ pageParam = 1 }) =>
-      fetchFunction(mergedFilters, sort, search, pageParam),
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
+      fetchFunction(mergedFilters, sort, search ?? "", pageParam as number),
     getNextPageParam: (lastPage) => {
       const { pagination } = lastPage;
       return pagination.current < pagination.final
         ? pagination.current + 1
         : undefined;
     },
-    keepPreviousData: true,
+    placeholderData: (previousData) => previousData,
     staleTime: 1000 * 60,
     refetchOnWindowFocus: false,
     refetchOnMount: false,

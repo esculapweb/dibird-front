@@ -13,7 +13,7 @@ import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 
-import { useTheme } from "../store/theme-context";
+import { useTheme, ThemeColors } from "../store/theme-context";
 import { formatDate, formatDateTime, formatDateLong } from "../util/helpers";
 import { Config } from "../constants/config";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
@@ -399,7 +399,7 @@ const ObservationDetailScreen = ({ route, navigation }) => {
 
 export default ObservationDetailScreen;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     header: {
       flexDirection: "row",

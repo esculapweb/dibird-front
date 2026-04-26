@@ -8,7 +8,7 @@ import {
 import { Text, Pressable, StyleSheet } from "react-native";
 import { BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet";
 
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 
 const ConfirmBottomSheet = forwardRef(
   (
@@ -91,7 +91,7 @@ const ConfirmBottomSheet = forwardRef(
 
 export default ConfirmBottomSheet;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     container: {
       padding: 20,

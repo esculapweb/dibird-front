@@ -1,5 +1,5 @@
 import { View, StyleSheet } from "react-native";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 
 const H_PAD = 16;
 const SPARK_H = 52;

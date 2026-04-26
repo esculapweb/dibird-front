@@ -29,7 +29,7 @@ import { ThemeProvider, useTheme } from "./store/theme-context";
 import ThemedToast from "./components/ui/ThemedToast";
 import { showError } from "./services/api";
 import { initGoogleSignIn } from "./util/auth";
-import { AppError } from "./services/api";
+import { AppError } from "./types";
 
 import CustomSplash from "./components/ui/СustomSplash";
 

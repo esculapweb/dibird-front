@@ -1,12 +1,12 @@
-import React from "react";
+import { useMemo, memo } from "react";
 import { View, Text, StyleSheet} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 
-const useStyles = (Colors) => React.useMemo(() => stylesFn(Colors), [Colors]);
+const useStyles = (Colors) => useMemo(() => stylesFn(Colors), [Colors]);
 
-const StatItem = React.memo(({ icon, txt, children, style }) => {
+const StatItem = memo(({ icon, txt, children, style }) => {
   const { Colors } = useTheme();
   const styles = useStyles(Colors);
   return (
@@ -26,7 +26,7 @@ const StatItem = React.memo(({ icon, txt, children, style }) => {
 export default StatItem;
 
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     statItem: {
       flexDirection: "row",

@@ -11,7 +11,7 @@ import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import FormWrapper from "../components/ui/FormWrapper";
 import { useInvalidateProfile } from "../hooks/Profile/useUpdateProfile";
-import { useTheme } from "../store/theme-context";
+import { useTheme, ThemeColors } from "../store/theme-context";
 
 const ProfileScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);

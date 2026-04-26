@@ -5,7 +5,7 @@ import Layout from "../components/ui/Layout";
 
 const ErrorScreen = () => {
   const { error, refreshProfile } = useProfile();
-
+  if (!error) return null;
   const { title, message } = mapErrorToToast(error);
 
   return (

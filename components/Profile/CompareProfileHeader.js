@@ -1,7 +1,7 @@
 // CompareProfileHeader.js
 import { View, Text, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import ProfileAvatar from "./ProfileAvatar";
 import { useProfileDisplay } from "../../hooks/Profile/useProfileDisplay";
 
@@ -69,7 +69,7 @@ export default CompareProfileHeader;
 
 const DOT_SIZE = 12;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     container: {
       flexDirection: "row",

@@ -2,7 +2,7 @@ import { FlatList, View, StyleSheet, Text } from "react-native";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import ModalWrapper from "./ModalWrapper";
 import DefaultOptionRow from "./DefaultOptionRow";
 import SearchInput from "./SearchInput";
@@ -156,7 +156,7 @@ const SelectListModal = ({
 
 export default SelectListModal;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     empty: {
       flex: 1,

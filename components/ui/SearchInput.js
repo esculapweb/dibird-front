@@ -2,7 +2,7 @@ import { View, TextInput, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 
 const SearchInput = ({ value, onChange, placeholder, onClear, style }) => {
   const { t } = useTranslation();
@@ -44,7 +44,7 @@ const SearchInput = ({ value, onChange, placeholder, onClear, style }) => {
 
 export default SearchInput;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     container: {
       flexDirection: "row",

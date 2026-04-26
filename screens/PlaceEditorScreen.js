@@ -8,7 +8,7 @@ import {
 import { View } from "react-native";
 import { useTranslation } from "react-i18next";
 
-import { useTheme } from "../store/theme-context";
+import { useTheme, ThemeColors } from "../store/theme-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import { useUpdateItem } from "../hooks/useItem";
 import { useCreatePlace } from "../hooks/Place/usePlaceMutation";

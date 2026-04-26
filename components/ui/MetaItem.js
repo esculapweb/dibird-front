@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 
 const MetaItem = ({ icon, text }) => {
   if (!text) return null;
@@ -18,7 +18,7 @@ const MetaItem = ({ icon, text }) => {
 
 export default MetaItem;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     metaItem: {
       flexDirection: "row",

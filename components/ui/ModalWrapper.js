@@ -1,5 +1,5 @@
 import { Modal, View, Text, StyleSheet } from "react-native";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import IconButton from "./IconButton";
@@ -70,7 +70,7 @@ const ModalWrapper = ({
 
 export default ModalWrapper;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     container: {
       flex: 1,

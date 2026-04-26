@@ -6,7 +6,7 @@ import { Image } from "expo-image";
 import { useQuery } from "@tanstack/react-query";
 
 import { fetchBirdOfDay, fetchSpecies } from "../../util/fetches";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import { Config } from "../../constants/config";
 import BirdOfTheDaySkeleton from "./BirdOfTheDaySceleton";
 import { useProfile } from "../../store/profile-context";
@@ -122,7 +122,7 @@ const BirdOfTheDay = ({
 
 export default BirdOfTheDay;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     botdCard: {
       marginHorizontal: H_PAD,

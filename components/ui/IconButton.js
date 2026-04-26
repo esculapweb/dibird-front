@@ -1,7 +1,7 @@
 import { View, StyleSheet, Pressable, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 
 const IconButton = ({
   tintColor,
@@ -42,7 +42,7 @@ const IconButton = ({
 
 export default IconButton;
 
-const stylesFn = (Colors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     active: {
       position: "absolute",

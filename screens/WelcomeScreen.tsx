@@ -11,16 +11,16 @@ import * as AppleAuthentication from "expo-apple-authentication";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets, EdgeInsets } from "react-native-safe-area-context";
-import { NavigationProp } from "@react-navigation/native";
 
 import { useTheme } from "../store/theme-context";
 import Layout from "../components/ui/Layout";
 import Logo from "../components/ui/Logo";
 import { LoginWithGoogle, LoginWithApple } from "../util/auth";
-import { showError, AppError } from "../services/api";
+import { showError } from "../services/api";
 import { LightColors } from "../constants/colors/light";
+import { AppError, NavigationProp} from "../types";
 
-const WelcomeScreen = ({ navigation }: { navigation: NavigationProp<any> }) => {
+const WelcomeScreen = ({ navigation }: { navigation: NavigationProp }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const insets = useSafeAreaInsets();
