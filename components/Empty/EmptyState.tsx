@@ -1,7 +1,7 @@
 import { ComponentProps } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme, ThemeColors } from "../../store/theme-context";
+import { useTheme } from "../../store/theme-context";
 import FlatButton from "../ui/FlatButton";
 import { LightColors } from "../../constants/colors/light";
 

@@ -1,6 +1,26 @@
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  ViewStyle,
+  StyleProp,
+} from "react-native";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
+
+interface RadioGroupProps {
+  value: string | number | boolean | null;
+  label?: string;
+  options: { label: string; value: string | number | boolean | null }[];
+  onChange: (value: string | number | boolean | null) => void;
+  direction?: "row" | "column";
+  disabled?: boolean;
+  isInvalid?: boolean;
+  style?: StyleProp<ViewStyle>;
+  disabledValues?: (string | number | boolean | null)[];
+  onDisabledPress?: (value: string | number | boolean | null) => void;
+}
 
 export const RadioGroup = ({
   value,
@@ -13,7 +33,7 @@ export const RadioGroup = ({
   style,
   disabledValues = [],
   onDisabledPress,
-}) => {
+}: RadioGroupProps) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const isRow = direction === "row";
@@ -32,7 +52,7 @@ export const RadioGroup = ({
 
           return (
             <Pressable
-              key={option.value}
+              key={String(option.value ?? index)}
               onPress={() => {
                 if (disabled) return;
                 if (disabledValues.includes(option.value)) {

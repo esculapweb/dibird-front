@@ -20,11 +20,7 @@ import {
 
 import { registerOnProfileSaved } from "./profile-context";
 import { seenMode } from "../types";
-
-interface DateFilter {
-  type: string;
-  [key: string]: any;
-}
+import { DateFilter } from "../types";
 
 interface FiltersContextType {
   territory: number | null;

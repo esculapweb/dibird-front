@@ -12,7 +12,6 @@ import Layout from "../components/ui/Layout";
 import { fetchPage } from "../util/fetches";
 import { useLanguage } from "../store/language-context";
 import { useTheme, ThemeColors } from "../store/theme-context";
-import { LightColors } from "../constants/colors/light";
 
 const H_PAD = 16;
 
@@ -74,7 +73,7 @@ const StaticScreen = ({ route }: NativeStackScreenProps<any, any>) => {
 
 export default StaticScreen;
 
-const stylesFn = (Colors: typeof LightColors, insets: EdgeInsets) =>
+const stylesFn = (Colors: ThemeColors, insets: EdgeInsets) =>
   StyleSheet.create({
     base: {
       paddingHorizontal: H_PAD,

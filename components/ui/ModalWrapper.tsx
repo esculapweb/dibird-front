@@ -1,3 +1,4 @@
+import { ReactNode } from "react";
 import { Modal, View, Text, StyleSheet } from "react-native";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -7,6 +8,16 @@ import IconButton from "./IconButton";
 const ICON_SIZE = 18;
 const BUTTON_SIZE = 36;
 
+interface ModalWrapperProps {
+  children: ReactNode;
+  onClose: () => void;
+  onApply?: () => void;
+  visible: boolean;
+  title: string;
+  onSort?: () => void;
+  showSortIcon?: boolean;
+}
+
 const ModalWrapper = ({
   children,
   onClose,
@@ -15,7 +26,7 @@ const ModalWrapper = ({
   title,
   onSort,
   showSortIcon,
-}) => {
+}: ModalWrapperProps) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
 
@@ -44,12 +55,14 @@ const ModalWrapper = ({
             </Text>
 
             {showSortIcon && onSort && (
-              <View style={styles.sortWrapper}><IconButton
-                onPress={onSort}
-                icon="swap-vertical"
-                size={ICON_SIZE}
-                tintColor={Colors.textSecondary}
-              /></View>
+              <View style={styles.sortWrapper}>
+                <IconButton
+                  onPress={onSort}
+                  icon="swap-vertical"
+                  size={ICON_SIZE}
+                  tintColor={Colors.textSecondary}
+                />
+              </View>
             )}
 
             {onApply && (
@@ -82,7 +95,6 @@ const stylesFn = (Colors: ThemeColors) =>
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      // backgroundColor: Colors.primary100,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: Colors.border,
     },
@@ -99,7 +111,7 @@ const stylesFn = (Colors: ThemeColors) =>
       borderRadius: 14,
       width: 28,
       height: 28,
-      alignItems: 'center',
-      justifyContent: 'center',
-    }
+      alignItems: "center",
+      justifyContent: "center",
+    },
   });

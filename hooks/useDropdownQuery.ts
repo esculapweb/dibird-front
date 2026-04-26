@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, UseQueryResult } from "@tanstack/react-query";
 
 import { useSavedSort } from "./useSavedSort";
 import { useApiError } from "./useApiError";
@@ -18,7 +18,23 @@ interface UseDropdownQueryProps {
   requestLocation?: () => Promise<unknown>;
 }
 
-export const useDropdownQuery = ({
+export function useDropdownQuery(
+  props: UseDropdownQueryProps & { mapResult: true },
+): {
+  query: UseQueryResult<Map<string | number, string>, AppError>;
+  sort: string;
+  onSortChange: (val: string) => Promise<void>;
+};
+
+export function useDropdownQuery(
+  props: UseDropdownQueryProps & { mapResult?: false },
+): {
+  query: UseQueryResult<DropdownItem[], AppError>;
+  sort: string;
+  onSortChange: (val: string) => Promise<void>;
+};
+
+export function useDropdownQuery({
   type,
   queryFn,
   params,
@@ -28,7 +44,7 @@ export const useDropdownQuery = ({
   permissionStatus,
   onLocationUnavailable,
   requestLocation,
-}: UseDropdownQueryProps) => {
+}: UseDropdownQueryProps) {
   const { sort, loaded, onChange } = useSavedSort(type);
   const { showErrorToast } = useApiError();
   const pendingSortRef = useRef<string | null>(null);
@@ -68,7 +84,11 @@ export const useDropdownQuery = ({
     }
   }, [locationAvailable]);
 
-  const query = useQuery({
+  const query = useQuery<
+    DropdownItem[],
+    AppError,
+    DropdownItem[] | Map<string | number, string>
+  >({
     queryKey: [type, ...params, effectiveSort],
     queryFn: () => queryFn(effectiveSort),
     enabled: enabled !== false && !!loaded,
@@ -90,4 +110,4 @@ export const useDropdownQuery = ({
   }, [query.error]);
 
   return { query, sort: effectiveSort, onSortChange: handleSortChange };
-};
+}

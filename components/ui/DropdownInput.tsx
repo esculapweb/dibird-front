@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactNode, ComponentProps } from "react";
 import {
   Pressable,
   Text,
@@ -13,6 +13,56 @@ import SelectListModal from "./SelectListModal";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import SpeciesDropdown from "./SpeciesDropdown";
 import PlaceDropdown from "./PlaceDropdown";
+import { DropdownItem } from "../../types";
+
+interface SpeciesData {
+  id: number;
+  name: string;
+  name_lang: string;
+  segment: string;
+  thumb: string | null;
+}
+
+interface PlaceData {
+  id: number;
+  name: string;
+  preview: string | null;
+  location: {
+    type: string;
+    coordinates: [number, number];
+  } | null;
+}
+
+interface DropdownInputProps {
+  title?: string;
+  placeholder?: string;
+  value: string | number | null;
+  setValue: (value: string | number | null) => void;
+  error?: string;
+  allowReset?: boolean;
+  query: {
+    data: DropdownItem[] | undefined;
+    isLoading: boolean;
+    isError: boolean;
+    refetch?: () => void;
+  };
+  disabled?: boolean;
+  disabledMessage?: string;
+  renderOption?: (props: {
+    item: DropdownItem;
+    selected: boolean;
+    onSelect: () => void;
+    onClose: () => void;
+  }) => ReactNode;
+  speciesData?: SpeciesData[];
+  placeData?: PlaceData[];
+  isLocating?: boolean;
+  type?: string;
+  sort?: string;
+  onSortChange?: (newSort: string) => void;
+  locationAvailable?: boolean;
+  onLocationUnavailable?: () => void;
+}
 
 const DropdownInput = ({
   title,
@@ -33,7 +83,7 @@ const DropdownInput = ({
   onSortChange,
   locationAvailable = true,
   onLocationUnavailable,
-}) => {
+}: DropdownInputProps) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -42,11 +92,11 @@ const DropdownInput = ({
   const [search, setSearch] = useState("");
   const [label, setLabel] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
-  const [icon, setIcon] = useState(null);
-  const [iconLabel, setIconLabel] = useState(null);
+  const [icon, setIcon] = useState<string | null>(null);
+  const [iconLabel, setIconLabel] = useState<string | null>(null);
 
-  const onSelectValue = (selectedValue) => {
-    const option = query.data.find((o) => o.value === selectedValue);
+  const onSelectValue = (selectedValue: string | number | null) => {
+    const option = query.data?.find((o) => o.value === selectedValue);
     setValue(selectedValue);
     setLabel(option?.label || "");
     setIcon(option?.icon || null);
@@ -161,7 +211,7 @@ const DropdownInput = ({
                   {iconLabel && (
                     <View style={styles.icon}>
                       <Ionicons
-                        name={iconLabel}
+                        name={iconLabel as ComponentProps<typeof Ionicons>["name"]}
                         size={14}
                         color={Colors.yellow}
                       />

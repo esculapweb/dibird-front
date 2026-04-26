@@ -1,3 +1,4 @@
+import {  ReactNode, ComponentProps } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -6,9 +7,18 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {  EdgeInsets, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
+
+interface FlatButtonBottomProps {
+  children: ReactNode;
+  onPress?: () => void;
+  textColor?: string;
+  icon?: ComponentProps<typeof Ionicons>["name"];
+  loading?: boolean;
+  savedLabel?: string;
+}
 
 const FlatButtonBottom = ({
   children,
@@ -17,7 +27,7 @@ const FlatButtonBottom = ({
   icon,
   loading,
   savedLabel,
-}) => {
+}: FlatButtonBottomProps) => {
   const { Colors } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = stylesFn(Colors, insets);
@@ -61,7 +71,7 @@ const FlatButtonBottom = ({
 
 export default FlatButtonBottom;
 
-const stylesFn = (Colors, insets) =>
+const stylesFn = (Colors: ThemeColors, insets: EdgeInsets) =>
   StyleSheet.create({
     pressed: {
       opacity: 0.7,

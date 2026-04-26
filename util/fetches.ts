@@ -79,7 +79,7 @@ export const fetchMyPlaces = async (
   return res.data.map((item) => ({
     value: item.id,
     label: item.name,
-    iconLabel: item.favourite && "star",
+    iconLabel: item.favourite ? "star" : null,
     location: item.location,
     distance: item.distance ?? null,
     preview: item.preview,
@@ -87,7 +87,7 @@ export const fetchMyPlaces = async (
 };
 
 export const fetchSpecies = async (
-  territory = null,
+  territory: number | null = null,
   order: string,
   dateFilter: DateFilter | null = null,
 ) => {

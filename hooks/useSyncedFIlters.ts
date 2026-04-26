@@ -9,7 +9,7 @@ import { useFilters } from "../store/filters-context";
 import { sortOptionsList } from "../util/sortOptionsList";
 import { useDebounce } from "../util/useDebounce";
 import { useLocation } from "../store/location-context";
-import { Filters, FilterKey, NavigationProp, RootStackParamList } from "../types";
+import { Filters, FilterKey, NavigationProp} from "../types";
 
 
 export const useSyncedFilters = ({
@@ -19,7 +19,7 @@ export const useSyncedFilters = ({
   allowSort = true,
   allowedFilters,
 }: {
-  route: NativeStackScreenProps<RootStackParamList>["route"];
+  route: NativeStackScreenProps<any, any>["route"];
   navigation: NavigationProp;
   screenName: string;
   allowSort?: boolean;
@@ -57,7 +57,7 @@ export const useSyncedFilters = ({
   const overrideAppliedRef = useRef(false);
   const { locationCoords, permissionStatus, requestLocation } = useLocation();
   const userChangedSortRef = useRef(false);
-  const defaultSortRef = useRef(null);
+  const defaultSortRef = useRef<string | null>(null);
 
   const hasActiveFilters: boolean = filters
     ? allowedFilters.some((key) => {

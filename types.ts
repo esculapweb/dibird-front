@@ -14,13 +14,21 @@ export interface AppError extends Error {
 export type seenMode = "seen" | "unseen" | "all";
 
 export interface DateFilter {
-  type?: string;
-  year?: number;
-  from?: string;
-  to?: string;
+  type?: "any" | "today" | "this_year" | "range" | "exact" | "year";
+  year?: number | null;
+  from?: string | null;
+  to?: string | null;
+  mode?: "any" | "exact" | "range";
+  this_year?: boolean | null;
+  today?: boolean | null;
 }
 
-export type FilterKey = "territory" | "date" | "place" | "species";
+export type FilterKey =
+  | "territory"
+  | "date"
+  | "place"
+  | "species"
+  | "favourite";
 
 export interface Filters {
   territory?: number | null;
@@ -29,6 +37,7 @@ export interface Filters {
   species?: number | null;
   seen?: boolean | null;
   new?: boolean;
+  favourite?: boolean | null;
   [key: string]: unknown;
 }
 
@@ -48,6 +57,8 @@ export interface DropdownItem {
   value: string | number;
   label: string;
   name_lang?: string;
+  icon?: string | null;
+  iconLabel?: string | null;
 }
 
 export interface PaginatedResult<T> {

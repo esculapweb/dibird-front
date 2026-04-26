@@ -12,12 +12,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets, EdgeInsets } from "react-native-safe-area-context";
 
-import { useTheme } from "../store/theme-context";
+import { ThemeColors, useTheme } from "../store/theme-context";
 import Layout from "../components/ui/Layout";
 import Logo from "../components/ui/Logo";
 import { LoginWithGoogle, LoginWithApple } from "../util/auth";
 import { showError } from "../services/api";
-import { LightColors } from "../constants/colors/light";
 import { AppError, NavigationProp} from "../types";
 
 const WelcomeScreen = ({ navigation }: { navigation: NavigationProp }) => {
@@ -126,7 +125,7 @@ const WelcomeScreen = ({ navigation }: { navigation: NavigationProp }) => {
   );
 };
 
-const stylesFn = (Colors: typeof LightColors, insets: EdgeInsets) =>
+const stylesFn = (Colors: ThemeColors, insets: EdgeInsets) =>
   StyleSheet.create({
     container: {
       flexGrow: 1,

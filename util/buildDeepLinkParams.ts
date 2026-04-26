@@ -1,11 +1,13 @@
-export const buildDeepLinkParams = (filters = {}, sort = null) => {
-  const params = {};
+import { Filters } from "../types";
 
-  if (filters.territory) params.territory = filters.territory;
-  if (filters.place) params.place = filters.place;
-  if (filters.species) params.species = filters.species;
+export const buildDeepLinkParams = (filters: Filters | null = {}, sort: string | null = null): Filters => {
+  const params:Filters = {};
 
-  if (filters.date) {
+  if (filters?.territory) params.territory = filters.territory;
+  if (filters?.place) params.place = filters.place;
+  if (filters?.species) params.species = filters.species;
+
+  if (filters?.date) {
     if (filters.date.type === "year") {
       params.year = filters.date.year;
     } else if (filters.date.type === "range") {
@@ -19,7 +21,7 @@ export const buildDeepLinkParams = (filters = {}, sort = null) => {
   return params;
 };
 
-const formatWebDate = (date) => {
+const formatWebDate = (date: string | Date | null | undefined): string | null => {
   if (!date) return null;
   const d = new Date(date);
   const year = d.getUTCFullYear();

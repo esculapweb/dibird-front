@@ -18,7 +18,7 @@ import { useLocation } from "../../store/location-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 import { useFilters } from "../../store/filters-context";
 import { useLocationUnavailable } from "../../hooks/useLocationUnavailable";
-import { Filters, FilterKey } from "../../types";
+import { Filters, FilterKey, DateFilter } from "../../types";
 
 
 interface FilterModalProps {
@@ -61,13 +61,13 @@ const FilterModal = ({
 
   const handleLocationUnavailable = useLocationUnavailable();
 
-  const favouriteOptions = [
+  const favouriteOptions: { label: string; value: boolean | null }[] = [
     { label: t("all"), value: null },
     { label: t("favourites_only"), value: true },
     { label: t("non_favourites_only"), value: false },
   ];
 
-  const dateFilterInitial = {
+  const dateFilterInitial: DateFilter = {
     mode: "any",
     from: null,
     to: null,
@@ -76,19 +76,19 @@ const FilterModal = ({
     today: null,
   };
 
-  const [territoryValue, setTerritoryValue] = useState(
+  const [territoryValue, setTerritoryValue] = useState<number | null>(
     filters?.territory ?? null,
   );
-  const [placeValue, setPlaceValue] = useState(filters?.place ?? null);
-  const [speciesValue, setSpeciesValue] = useState(filters?.species ?? null);
-  const [dateFilter, setDateFilter] = useState(dateFilterInitial);
+  const [placeValue, setPlaceValue] = useState<number | null>(filters?.place ?? null);
+  const [speciesValue, setSpeciesValue] = useState<number | null>(filters?.species ?? null);
+  const [dateFilter, setDateFilter] = useState<DateFilter>(dateFilterInitial);
   const [favouriteValue, setFavouriteValue] = useState(
     filters?.favourite ?? null,
   );
 
-  const effectiveTerritory = allowed.includes("territory")
+  const effectiveTerritory: number | null = (allowed.includes("territory")
     ? territoryValue
-    : extraTerritory;
+    : extraTerritory) ?? null;
 
   const {
     query: queryMyCountries,
@@ -127,7 +127,7 @@ const FilterModal = ({
       !!effectiveTerritory && date !== undefined && allowed.includes("species"),
   });
 
-  const prevTerritoryRef = useRef(null);
+  const prevTerritoryRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (prevTerritoryRef.current === null && effectiveTerritory !== null) {
@@ -160,7 +160,7 @@ const FilterModal = ({
     setFavouriteValue(filters?.favourite ?? null);
   }, [visible, filters]);
 
-  const isDateFilterActive = (d) => {
+  const isDateFilterActive = (d: DateFilter | null | undefined): boolean => {
     if (!d) return false;
     if (d.mode === "any") return false;
     return !!(
@@ -172,8 +172,8 @@ const FilterModal = ({
     );
   };
 
-  const getNewFilters = () => {
-    let res = {};
+  const getNewFilters = (): Filters => {
+    let res: Filters = {};
     if (allowed.includes("territory")) res.territory = territoryValue;
     if (allowed.includes("place")) res.place = placeValue;
     if (allowed.includes("species")) res.species = speciesValue;
@@ -223,7 +223,7 @@ const FilterModal = ({
               title={t("country")}
               placeholder={t("all_countries")}
               value={territoryValue}
-              setValue={setTerritoryValue}
+              setValue={(value) => setTerritoryValue(value as number | null)}
               query={queryMyCountries}
               type="CountriesDropdown"
               sort={countriesSort}
@@ -236,7 +236,7 @@ const FilterModal = ({
               title={t("location")}
               placeholder={t("all_locations")}
               value={placeValue}
-              setValue={setPlaceValue}
+              setValue={(value) => setPlaceValue(value as number | null)}
               query={queryPlaces}
               type="PlacesDropdown"
               sort={placesSort}
@@ -254,7 +254,7 @@ const FilterModal = ({
               title={t("species")}
               placeholder={t("all_species")}
               value={speciesValue}
-              setValue={setSpeciesValue}
+              setValue={(value) => setSpeciesValue(value as number | null)}
               query={querySpecies}
               type="SpeciesDropdown"
               sort={speciesSort}
@@ -278,7 +278,7 @@ const FilterModal = ({
               <RadioGroup
                 label={`${t("favourites")}:`}
                 value={favouriteValue}
-                onChange={setFavouriteValue}
+                onChange={(value) => setFavouriteValue(value as boolean | null)}
                 direction="column"
                 options={favouriteOptions}
               />

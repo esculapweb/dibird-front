@@ -1,7 +1,19 @@
-import { View, StyleSheet, Pressable, ActivityIndicator } from "react-native";
+import {ComponentProps} from "react";
+import { View, StyleSheet, Pressable, ActivityIndicator, ViewStyle, StyleProp } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
+
+interface IconButtonProps {
+  icon: ComponentProps<typeof Ionicons>["name"];
+  onPress: () => void;
+  tintColor?: string;
+  active?: boolean;
+  style?: StyleProp<ViewStyle>;
+  size?: number;
+  disabled?: boolean;
+  loading?: boolean;
+}
 
 const IconButton = ({
   tintColor,
@@ -12,7 +24,7 @@ const IconButton = ({
   size = 22,
   disabled,
   loading,
-}) => {
+}: IconButtonProps) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
 
