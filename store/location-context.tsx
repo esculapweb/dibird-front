@@ -9,13 +9,14 @@ import {
 } from "react";
 import { AppState } from "react-native";
 import * as Location from "expo-location";
+import { Coords } from "../types";
 
 interface LocationContextType {
-  locationCoords: [number, number] | null;
+  locationCoords: Coords | null;
   locationAvailable: boolean;
   permissionStatus: string | null;
   requestLocation: () => Promise<{
-    coords: [number, number];
+    coords: Coords;
     accuracy: number | null;
   } | null>;
 }
@@ -23,7 +24,7 @@ interface LocationContextType {
 const LocationContext = createContext<LocationContextType | null>(null);
 
 export const LocationProvider = ({ children }: { children: ReactNode }) => {
-  const [locationCoords, setLocationCoords] = useState<[number, number] | null>(
+  const [locationCoords, setLocationCoords] = useState<Coords | null>(
     null,
   );
   const [permissionStatus, setPermissionStatus] = useState<string | null>(null);
@@ -53,7 +54,7 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
         ),
       ]);
       const { latitude, longitude, accuracy: acc } = loc.coords;
-      const coords: [number, number] = [longitude, latitude];
+      const coords: Coords = [longitude, latitude];
       setLocationCoords(coords);
       setPermissionStatus("granted");
       return { coords, accuracy: acc }; // ← возвращаем результат
@@ -62,7 +63,7 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
         console.warn("Failed to get location:", e);
         const last = await Location.getLastKnownPositionAsync();
         if (last) {
-          const coords: [number, number] = [
+          const coords: Coords = [
             last.coords.longitude,
             last.coords.latitude,
           ];

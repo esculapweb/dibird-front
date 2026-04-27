@@ -4,14 +4,29 @@ import { cachedReverseGeocode } from "../../services/geocoding";
 import { Config } from "../../constants/config";
 import { useLocationUnavailable } from "../useLocationUnavailable";
 import { useLocation } from "../../store/location-context";
+import { Coords, GeoDetails } from "../../types";
+
+interface NormalizedCoords {
+  lng: number;
+  lat: number;
+  lngText: string;
+  latText: string;
+}
+
+interface UpdateCoordsOptions {
+  fromManual?: boolean;
+  latText?: string;
+  lngText?: string;
+  withGeocode?: boolean;
+}
 
 export const normalizeCoords = (
-  lngInput,
-  latInput,
+  lngInput: string | number | null | undefined,
+  latInput: string | number | null | undefined,
   precision = 4,
   preserveInput = false,
-) => {
-  const toNum = (v) => {
+): NormalizedCoords | null => {
+  const toNum = (v: string | number | null | undefined): number => {
     if (v == null) return NaN;
     if (typeof v === "string") v = v.trim();
     return v === "" ? NaN : Number(v);
@@ -49,22 +64,24 @@ export const normalizeCoords = (
 };
 
 export const usePlaceLocation = () => {
-  const [coords, setCoords] = useState(Config.defaultCoords);
-  const [roundedCoords, setRoundedCoords] = useState(Config.defaultCoords);
+  const [coords, setCoords] = useState<Coords>(Config.defaultCoords);
+  const [roundedCoords, setRoundedCoords] = useState<Coords>(
+    Config.defaultCoords,
+  );
   const [zoom, setZoom] = useState(12);
   const [accuracy, setAccuracy] = useState(0);
   const [latText, setLatText] = useState("");
   const [lngText, setLngText] = useState("");
-  const [details, setDetails] = useState(null);
+  const [details, setDetails] = useState<GeoDetails | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { permissionStatus, requestLocation } = useLocation();
   const handleLocationUnavailable = useLocationUnavailable();
 
-  const geocodeTimeout = useRef(null);
+  const geocodeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const rnd = (c) => Math.round(c * 100) / 100;
+  const rnd = (c: number): number => Math.round(c * 100) / 100;
 
-  const reverseGeocode = useCallback(async (lat, lng) => {
+  const reverseGeocode = useCallback(async (lat: number, lng: number) => {
     if (geocodeTimeout.current) clearTimeout(geocodeTimeout.current);
     geocodeTimeout.current = setTimeout(async () => {
       try {
@@ -80,7 +97,7 @@ export const usePlaceLocation = () => {
   }, []);
 
   const updateCoords = useCallback(
-    ([lng, lat], options = {}) => {
+    ([lng, lat]: Coords, options: UpdateCoordsOptions = {}) => {
       if (lng != null && lat != null) {
         setCoords([lng, lat]);
         setRoundedCoords([rnd(lng), rnd(lat)]);

@@ -3,32 +3,40 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { getSession } from "../util/sessionStore";
 import { toDateOnly } from "../util/helpers";
-import { Profile } from "../types";
+import {
+  Profile,
+  EditorItem,
+  SpeciesDropdownItem,
+  PlaceDropdownItem,
+} from "../types";
 
-// interface EditorItem {
-//   territory?: number | null;
-//   place?: number | null;
-//   species?: number | null;
-//   date_time?: string | null;
-//   time?: string | null;
-//   private?: boolean | null;
-//   quantity?: number | null;
-//   notes?: string | null;
-//   name?: string | null;
-//   species_data?: SpeciesData | null;
-//   place_data?: PlaceData | null;
-// }
+interface UseEditorFormParams {
+  item: EditorItem | null;
+  defaultTerritory?: number | "";
+  defaultPlace?: number | null;
+  defaultSpecies?: number | null;
+  profile?: Profile | null;
+  hasSpecies?: boolean;
+  requiredFields?: string[];
+  diaryId?: number | null;
+}
 
-// interface UseEditorFormParams {
-//   item?: any;
-//   defaultTerritory?: number | "";
-//   defaultPlace?: number | null;
-//   defaultSpecies?: number | null;
-//   profile?: Profile | null;
-//   hasSpecies?: boolean;
-//   requiredFields?: string[];
-//   diaryId?: number | null;
-// }
+export interface EditorFormData {
+  territory: number | "";
+  place: number | null;
+  date_time: string | null | undefined;
+  time: string | null;
+  private: boolean | undefined;
+  quantity: number | null;
+  notes: string | null;
+  name: string | null;
+  diary: number | null;
+  species?: number | null;
+}
+
+type ParsedEditorItem = Omit<EditorItem, "date_time"> & {
+  date_time?: string | null;
+};
 
 export const useEditorForm = ({
   item,
@@ -39,11 +47,11 @@ export const useEditorForm = ({
   hasSpecies = false,
   requiredFields = [],
   diaryId = null,
-}) => {
+}: UseEditorFormParams) => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
 
-  const itemWithParsedDate = item
+  const itemWithParsedDate: ParsedEditorItem | undefined = item
     ? {
         ...item,
         date_time: item.date_time ? toDateOnly(item.date_time) : undefined,
@@ -61,11 +69,11 @@ export const useEditorForm = ({
   );
 
   const [formData, setFormData] = useState(() => {
-    const sessionDate = getSession("lastDate");
+    const sessionDate = getSession<string>("lastDate");
     const fallback = sessionDate ?? toDateOnly(new Date());
     const initialDate = itemWithParsedDate?.date_time ?? fallback;
 
-    const base = {
+    const base: EditorFormData = {
       territory: territoryValue,
       place: placeValue,
       date_time: initialDate,
@@ -81,17 +89,35 @@ export const useEditorForm = ({
     return base;
   });
 
-  const [errors, setErrors] = useState({});
-  const [speciesData, setSpeciesData] = useState(
-    itemWithParsedDate?.species_data ?? null,
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [speciesData, setSpeciesData] = useState<SpeciesDropdownItem | null>(
+    itemWithParsedDate
+      ? {
+          value: itemWithParsedDate.species_data.id,
+          label: itemWithParsedDate.species_data.name_lang,
+          name: itemWithParsedDate.species_data.name,
+          name_lang: itemWithParsedDate.species_data.name_lang,
+          thumb: itemWithParsedDate.species_data.thumb,
+        }
+      : null,
   );
-  const [placeData, setPlaceData] = useState(
-    itemWithParsedDate?.place_data ?? null,
+  const [placeData, setPlaceData] = useState<PlaceDropdownItem | null>(
+    itemWithParsedDate?.place_data
+      ? {
+          value: itemWithParsedDate.place_data.id,
+          label: itemWithParsedDate.place_data.name,
+          preview: itemWithParsedDate.place_data.preview ?? undefined,
+          location: itemWithParsedDate.place_data.location,
+        }
+      : null,
   );
 
   useEffect(() => {
     if (!speciesValue || speciesData) return;
-    const cache = queryClient.getQueriesData({ queryKey: ["SpeciesDropdown"] });
+    const cache = queryClient.getQueriesData<SpeciesDropdownItem[]>({
+      queryKey: ["SpeciesDropdown"],
+    });
+
     for (const [, data] of cache) {
       const found = data?.find?.((item) => item.value === speciesValue);
       if (found) {
@@ -103,7 +129,9 @@ export const useEditorForm = ({
 
   useEffect(() => {
     if (!placeValue || placeData) return;
-    const cache = queryClient.getQueriesData({ queryKey: ["PlacesDropdown"] });
+    const cache = queryClient.getQueriesData<PlaceDropdownItem[]>({
+      queryKey: ["PlacesDropdown"],
+    });
     for (const [, data] of cache) {
       const found = data?.find?.((item) => item.value === placeValue);
       if (found) {
@@ -114,7 +142,7 @@ export const useEditorForm = ({
   }, [placeValue]);
 
   const validateForm = useCallback(() => {
-    const newErrors = {};
+    const newErrors: Record<string, string> = {};
     if (requiredFields.includes("territory") && !territoryValue)
       newErrors.territory = t("territory_required");
     if (requiredFields.includes("species") && !speciesValue)

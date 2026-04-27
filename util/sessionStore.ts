@@ -4,6 +4,6 @@ export const setSession = (key: string, value: unknown): void => {
   session[key] = value;
 };
 
-export const getSession = (key: string): unknown => {
-  return session[key] ?? null;
+export const getSession = <T = unknown>(key: string): T | null => {
+  return (session[key] as T) ?? null;
 };

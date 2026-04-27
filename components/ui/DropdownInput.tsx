@@ -13,7 +13,7 @@ import SelectListModal from "./SelectListModal";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import SpeciesDropdown from "./SpeciesDropdown";
 import PlaceDropdown from "./PlaceDropdown";
-import { DropdownItem } from "../../types";
+import { DropdownItem, Coords } from "../../types";
 
 interface SpeciesData {
   id: number;
@@ -29,7 +29,7 @@ interface PlaceData {
   preview: string | null;
   location: {
     type: string;
-    coordinates: [number, number];
+    coordinates: Coords;
   } | null;
 }
 

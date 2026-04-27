@@ -1,6 +1,12 @@
 import api from "../services/api";
 import { isoToFlagEmoji, buildDateParams, cleanFilters } from "./helpers";
-import { Filters, DateFilter, PaginatedResponse, SpeciesItem } from "../types";
+import {
+  Filters,
+  DateFilter,
+  PaginatedResponse,
+  SpeciesItem,
+  Coords,
+} from "../types";
 
 export const fetchTimezones = async () => {
   const res = await api.get<[string, string][]>("/api/timezones2/");
@@ -43,7 +49,7 @@ interface PlaceItem {
   favourite: boolean;
   location: {
     type: string;
-    coordinates: [number, number];
+    coordinates: Coords;
   } | null;
   distance?: number | null;
   preview?: string | null;
@@ -51,7 +57,7 @@ interface PlaceItem {
 
 export const fetchMyPlaces = async (
   territory: number | null = null,
-  coords: [number, number] | null = null,
+  coords: Coords | null = null,
   order: string,
 ) => {
   if (!territory) return [];
@@ -198,7 +204,13 @@ export const fetchStat = (
   page?: number,
 ) => {
   filters = { ...filters };
-  return fetchAbstract<PaginatedResponse<SpeciesItem>>("/myapi/stat2/", filters, order, search, page);
+  return fetchAbstract<PaginatedResponse<SpeciesItem>>(
+    "/myapi/stat2/",
+    filters,
+    order,
+    search,
+    page,
+  );
 };
 
 export const fetchChecklist = (

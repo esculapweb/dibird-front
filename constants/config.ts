@@ -20,7 +20,7 @@ export const Config = {
   env,
   baseUrl,
   mediaUrl: `${mediaBaseUrl}/media`,
-  defaultCoords: [-0.1423, 51.5048],
+  defaultCoords: [-0.1423, 51.5048] as [number, number],
   mapTileUrl: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
   geoCodingBaseUrl: "https://nominatim.openstreetmap.org",
   isDev: __DEV__,

@@ -3,6 +3,7 @@ import i18n from "./i18n";
 
 import { createTranslatedError } from "./api";
 import { Config } from "../constants/config";
+import { GeoDetails } from "../types";
 
 const nominatimApi = axios.create({
   baseURL: Config.geoCodingBaseUrl,
@@ -41,7 +42,7 @@ export const reverseGeocode = async (latitude: number, longitude: number) => {
   }
 };
 
-const geocodeCache = new Map();
+const geocodeCache = new Map<string, GeoDetails>();
 
 export const cachedReverseGeocode = async (latitude: number, longitude: number) => {
   const cacheKey = `${latitude.toFixed(4)},${longitude.toFixed(4)}`;
