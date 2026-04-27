@@ -12,27 +12,9 @@ import { getAnalytics, setUserId } from "@react-native-firebase/analytics";
 
 import api from "../services/api";
 import { initGlobalFilters } from "../util/storageHelper";
-import { AppError } from "../types";
+import { AppError, Profile} from "../types";
 
-interface UserData {
-  username: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  is_active: boolean;
-}
 
-interface Profile {
-  user_data: UserData;
-  avatar: string;
-  avatar_thumbnail: string;
-  private: boolean;
-  private_diary: boolean;
-  user: number | null;
-  registration_ip: string;
-  timezone: string;
-  territory?: number | null;
-}
 
 interface ProfileContextType {
   profile: Profile | null;

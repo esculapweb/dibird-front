@@ -3,6 +3,32 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { getSession } from "../util/sessionStore";
 import { toDateOnly } from "../util/helpers";
+import { Profile } from "../types";
+
+// interface EditorItem {
+//   territory?: number | null;
+//   place?: number | null;
+//   species?: number | null;
+//   date_time?: string | null;
+//   time?: string | null;
+//   private?: boolean | null;
+//   quantity?: number | null;
+//   notes?: string | null;
+//   name?: string | null;
+//   species_data?: SpeciesData | null;
+//   place_data?: PlaceData | null;
+// }
+
+// interface UseEditorFormParams {
+//   item?: any;
+//   defaultTerritory?: number | "";
+//   defaultPlace?: number | null;
+//   defaultSpecies?: number | null;
+//   profile?: Profile | null;
+//   hasSpecies?: boolean;
+//   requiredFields?: string[];
+//   diaryId?: number | null;
+// }
 
 export const useEditorForm = ({
   item,

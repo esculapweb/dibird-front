@@ -6,12 +6,20 @@ import { formatDate } from "../util/helpers";
 import { fetchMyCountries, fetchMyPlaces, fetchSpecies } from "../util/fetches";
 import { useLocation } from "../store/location-context";
 
-export const useFilterLabels = (effectiveTerritory, hints = {}) => {
+import { DateFilter, FilterKey } from "../types";
+
+interface FilterHints {
+  speciesName?: string;
+  [key: string]: unknown;
+}
+
+export const useFilterLabels = (
+  effectiveTerritory: number | null,
+  hints: FilterHints = {},
+) => {
   const { t } = useTranslation();
   const { language } = useLanguage();
-  const {
-    locationCoords,
-  } = useLocation();
+  const { locationCoords } = useLocation();
 
   const { query: countriesQuery } = useDropdownQuery({
     type: "CountriesDropdown",
@@ -34,10 +42,13 @@ export const useFilterLabels = (effectiveTerritory, hints = {}) => {
     queryFn: (sort) => fetchSpecies(effectiveTerritory, sort, null),
     params: [effectiveTerritory, language, null],
     mapResult: true,
-    enabled: effectiveTerritory,
+    enabled: !!effectiveTerritory,
   });
 
-  const getFilterLabel = (key, value) => {
+  const getFilterLabel = (
+    key: FilterKey | string,
+    value: unknown,
+  ): string | [string, string] => {
     if (value === null || value === undefined) return "";
 
     const placeholder = "...";
@@ -67,7 +78,7 @@ export const useFilterLabels = (effectiveTerritory, hints = {}) => {
         return [t("favourite"), value ? t("yes") : t("no")];
 
       case "date":
-        return formatDateFilter(value, t);
+        return formatDateFilter(value as DateFilter, t);
 
       default:
         if (Array.isArray(value)) return value.join(", ");
@@ -78,7 +89,10 @@ export const useFilterLabels = (effectiveTerritory, hints = {}) => {
   return { getFilterLabel };
 };
 
-const formatDateFilter = (value, t) => {
+const formatDateFilter = (
+  value: DateFilter,
+  t: (key: string) => string,
+): [string, string] | "" => {
   if (value.type === "range") {
     if (value.from && value.to)
       return [

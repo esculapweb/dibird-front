@@ -1,5 +1,4 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useMutationWithTranslation } from "../useMutationWithTranslation";
 import { INVALIDATION_MAP } from "../../util/invalidationMap";
 
 export const useInvalidateProfile = () => {

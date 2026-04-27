@@ -1,4 +1,5 @@
-export const useProfileDisplay = ({ firstName, lastName, username }) => {
+
+export const useProfileDisplay = ({ firstName, lastName, username }: { firstName?: string; lastName?: string; username?: string }) => {
   const fullName =
     firstName && lastName ? `${firstName} ${lastName}` : (username ?? "");
 

@@ -4,11 +4,13 @@ import { useMutationWithTranslation } from "../useMutationWithTranslation";
 import api from "../../services/api";
 import { INVALIDATION_MAP } from "../../util/invalidationMap";
 
+import { DiaryFormData } from "../../types";
+
 export const useCreateDiary = () => {
   const queryClient = useQueryClient();
 
   return useMutationWithTranslation({
-    mutationFn: (data) => {
+    mutationFn: (data: DiaryFormData) => {
       const formattedData = {
         territory: data.territory,
         place: data.place ?? null,
@@ -20,14 +22,19 @@ export const useCreateDiary = () => {
       return api.post(`/myapi/diary2/`, formattedData);
     },
     onSuccess: (response) => {
-      queryClient.setQueryData(["Diaries"], (old) => {
-        if (!old?.results) return old;
-        return {
-          ...old,
-          results: [response.data, ...old.results],
-          count: old.count ? old.count + 1 : old.count,
-        };
-      });
+      queryClient.setQueryData(
+        ["Diaries"],
+        (old: Record<string, unknown> | undefined) => {
+          if (!old?.results) return old;
+          const results = old.results as unknown[];
+
+          return {
+            ...old,
+            results: [(response as any).data, ...results],
+            count: typeof old.count === "number" ? old.count + 1 : old.count,
+          };
+        },
+      );
     },
     onSettled: () => {
       const extraKeys = INVALIDATION_MAP["Diary"]?.add ?? [];

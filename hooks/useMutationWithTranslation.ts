@@ -1,13 +1,17 @@
 import {
   useMutation,
   MutationOptions,
-  DefaultError,
 } from "@tanstack/react-query";
 import { useApiError } from "./useApiError";
 import { AppError } from "../types";
 
-export const useMutationWithTranslation = (
-  options: MutationOptions<unknown, DefaultError, unknown, unknown> & {
+export const useMutationWithTranslation = <
+  TData = unknown,
+  TError extends AppError = AppError,
+  TVariables = unknown,
+  TContext = unknown,
+>(
+  options: MutationOptions<TData, TError, TVariables, TContext> & {
     showErrorToast?: boolean;
   },
 ) => {

@@ -3,12 +3,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useMutationWithTranslation } from "../useMutationWithTranslation";
 import api from "../../services/api";
 import { INVALIDATION_MAP } from "../../util/invalidationMap";
+import { ObservationFormData } from "../../types";
 
 export const useCreateObservation = () => {
   const queryClient = useQueryClient();
 
   return useMutationWithTranslation({
-    mutationFn: (data) => {
+    mutationFn: (data: ObservationFormData) => {
       const isDiary = !!data.diary;
 
       const formattedData = isDiary
@@ -33,12 +34,13 @@ export const useCreateObservation = () => {
       return api.post(`/myapi/observation2/`, formattedData);
     },
     onSuccess: (response) => {
-      queryClient.setQueryData(["Observations"], (old) => {
+      queryClient.setQueryData(["Observations"], (old: Record<string, unknown> | undefined) => {
         if (!old?.results) return old;
+        const results = old.results as unknown[];
         return {
           ...old,
-          results: [response.data, ...old.results],
-          count: old.count ? old.count + 1 : old.count,
+            results: [(response as any).data, ...results],
+            count: typeof old.count === "number" ? old.count + 1 : old.count,
         };
       });
     },

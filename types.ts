@@ -11,6 +11,26 @@ export interface AppError extends Error {
   response?: any;
 }
 
+interface UserData {
+  username: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  is_active: boolean;
+}
+
+export interface Profile {
+  user_data: UserData;
+  avatar: string;
+  avatar_thumbnail: string;
+  private: boolean;
+  private_diary: boolean;
+  user: number | null;
+  registration_ip: string;
+  timezone: string;
+  territory?: number | null;
+}
+
 export type seenMode = "seen" | "unseen" | "all";
 
 export interface DateFilter {
@@ -83,6 +103,36 @@ export interface SpeciesItem {
   min_created_at: string | null;
   min_territory: string | null;
   max_territory: string | null;
+}
+
+export interface DiaryFormData {
+  territory: number;
+  place?: number | null;
+  date_time: string;
+  private?: boolean;
+  notes?: string | null;
+}
+
+export interface ObservationFormData {
+  species: number;
+  territory?: number;
+  place?: number | null;
+  date_time?: string;
+  time?: string | null;
+  private?: boolean;
+  quantity?: number | null;
+  notes?: string | null;
+  diary?: number | null;
+}
+
+export interface PlaceFormData {
+  name: string;
+  territory: number;
+  favourite: boolean;
+  location?: {
+    type: string;
+    coordinates: [number, number];
+  } | null;
 }
 
 export type RootStackParamList = {
