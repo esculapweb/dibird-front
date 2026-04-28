@@ -26,7 +26,7 @@ const TYPE_PLURAL = {
   Diary: "Diaries",
 };
 
-export const useItem = (id: number | null | undefined, type: ItemType) => {
+export const useItem = (id: string | number | null | undefined, type: ItemType) => {
   const { showErrorToast } = useApiError();
 
   const query = useQuery({

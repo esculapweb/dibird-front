@@ -14,20 +14,41 @@ import { Image } from "expo-image";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { fetchMapPreview } from "../../util/fetches";
 import { Config } from "../../constants/config";
+import {
+  AppStackNavigationProp,
+  PlaceDropdownItem,
+  QueryType,
+} from "../../types";
 
-const ImagePart = ({ query, value, placeData, previewUri, previewLoading }) => {
+interface ImageTextPartProps {
+  query?: QueryType;
+  value?: string | number | null;
+  placeData?: PlaceDropdownItem;
+  previewUri?: string | null;
+  previewLoading?: boolean;
+  name?: string;
+  disabled?: boolean;
+}
+
+const ImagePart = ({
+  query,
+  value,
+  placeData,
+  previewUri,
+  previewLoading,
+}: ImageTextPartProps) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
-  const navigation = useNavigation();
+  const navigation = useNavigation<AppStackNavigationProp>();
 
-  if (query.isLoading || previewLoading)
+  if (query?.isLoading || previewLoading)
     return (
       <View style={[styles.image, styles.imageEmpty]}>
         <ActivityIndicator size="small" color={Colors.dropdownIcon} />
       </View>
     );
 
-  if (query.isError)
+  if (query?.isError)
     return (
       <View style={[styles.image, styles.imageEmpty]}>
         <Ionicons name="refresh" size={32} color={Colors.main100} />
@@ -50,7 +71,11 @@ const ImagePart = ({ query, value, placeData, previewUri, previewLoading }) => {
             navigation.navigate("PlaceDetail", { placeId: value });
           }}
         >
-          <Ionicons name="expand-outline" size={16} color={Colors.markerBorder} />
+          <Ionicons
+            name="expand-outline"
+            size={16}
+            color={Colors.markerBorder}
+          />
         </Pressable>
       </View>
     );
@@ -81,18 +106,18 @@ const TextPart = ({
   name,
   disabled,
   previewLoading,
-}) => {
+}: ImageTextPartProps) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const { t } = useTranslation();
-  if (query.isLoading || previewLoading)
+  if (query?.isLoading || previewLoading)
     return (
       <Text style={styles.name} numberOfLines={1}>
         {t("loading_")}
       </Text>
     );
 
-  if (query.isError)
+  if (query?.isError)
     return (
       <Text
         style={[styles.name, { color: Colors.error500 }]}
@@ -115,16 +140,26 @@ const TextPart = ({
 
   return (
     <>
-        <Text style={[styles.name, styles.promptTitle]}>
-          {disabled ? t("place") : t("select_place")}
-        </Text>
+      <Text style={[styles.name, styles.promptTitle]}>
+        {disabled ? t("place") : t("select_place")}
+      </Text>
 
-        <Text style={styles.promptSub}>
-          {disabled ? t("select_country_first") : t("place_tap_hint")}
-        </Text>
-      </>
+      <Text style={styles.promptSub}>
+        {disabled ? t("select_country_first") : t("place_tap_hint")}
+      </Text>
+    </>
   );
 };
+
+interface PlaceDropdownProps {
+  placeData: PlaceDropdownItem;
+  value: string | number | null;
+  onPress: () => void;
+  onClear?: () => void;
+  disabled: boolean;
+  error?: string;
+  query: QueryType;
+}
 
 const PlaceDropdown = ({
   placeData,
@@ -134,12 +169,12 @@ const PlaceDropdown = ({
   disabled,
   error,
   query,
-}) => {
+}: PlaceDropdownProps) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const name = placeData?.label ?? placeData?.name;
 
-  const [previewUri, setPreviewUri] = useState(null);
+  const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
 
   const handlePress = () => {

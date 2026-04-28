@@ -128,7 +128,7 @@ export const fetchDiarySpeciesIds = async (diaryId: number) => {
   return res.data;
 };
 
-export const fetchMapPreview = async (placeId: number) => {
+export const fetchMapPreview = async (placeId: string | number| null) => {
   const res = await api.get(`/myapi/place2/${placeId}/map_preview/`);
   return res.data;
 };

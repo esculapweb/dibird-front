@@ -8,6 +8,8 @@ import {
   EditorItem,
   SpeciesDropdownItem,
   PlaceDropdownItem,
+  SpeciesData,
+  PlaceData,
 } from "../types";
 
 interface UseEditorFormParams {
@@ -90,26 +92,12 @@ export const useEditorForm = ({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [speciesData, setSpeciesData] = useState<SpeciesDropdownItem | null>(
-    itemWithParsedDate
-      ? {
-          value: itemWithParsedDate.species_data?.id,
-          label: itemWithParsedDate.species_data?.name_lang,
-          name: itemWithParsedDate.species_data?.name,
-          name_lang: itemWithParsedDate.species_data?.name_lang,
-          thumb: itemWithParsedDate.species_data?.thumb,
-        }
-      : null,
+
+  const [speciesData, setSpeciesData] = useState<SpeciesData | SpeciesDropdownItem | null>(
+    itemWithParsedDate?.species_data ?? null,
   );
-  const [placeData, setPlaceData] = useState<PlaceDropdownItem | null>(
-    itemWithParsedDate?.place_data
-      ? {
-          value: itemWithParsedDate.place_data.id,
-          label: itemWithParsedDate.place_data.name,
-          preview: itemWithParsedDate.place_data.preview ?? undefined,
-          location: itemWithParsedDate.place_data.location,
-        }
-      : null,
+  const [placeData, setPlaceData] = useState<PlaceData |  PlaceDropdownItem | null>(
+    itemWithParsedDate?.place_data ?? null,
   );
 
   useEffect(() => {

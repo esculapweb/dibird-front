@@ -13,25 +13,7 @@ import SelectListModal from "./SelectListModal";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import SpeciesDropdown from "./SpeciesDropdown";
 import PlaceDropdown from "./PlaceDropdown";
-import { DropdownItem, Coords, IconType} from "../../types";
-
-interface SpeciesData {
-  id: number;
-  name: string;
-  name_lang: string;
-  segment: string;
-  thumb: string | null;
-}
-
-interface PlaceData {
-  id: number;
-  name: string;
-  preview: string | null;
-  location: {
-    type: string;
-    coordinates: Coords;
-  } | null;
-}
+import { DropdownItem, IconType, PlaceDropdownItem, SpeciesData, QueryType } from "../../types";
 
 interface DropdownInputProps {
   title?: string;
@@ -40,12 +22,7 @@ interface DropdownInputProps {
   setValue: (value: string | number | null) => void;
   error?: string;
   allowReset?: boolean;
-  query: {
-    data: DropdownItem[] | undefined;
-    isLoading?: boolean;
-    isError?: boolean;
-    refetch?: () => void;
-  };
+  query: QueryType;
   disabled?: boolean;
   disabledMessage?: string;
   renderOption?: (props: {
@@ -55,7 +32,7 @@ interface DropdownInputProps {
     onClose: () => void;
   }) => ReactNode;
   speciesData?: SpeciesData[];
-  placeData?: PlaceData[];
+  placeData?: PlaceDropdownItem;
   isLocating?: boolean;
   type?: string;
   sort?: string;

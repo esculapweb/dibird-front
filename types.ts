@@ -28,6 +28,13 @@ export interface AppError extends Error {
   response?: any;
 }
 
+export interface QueryType {
+  data: DropdownItem[] | undefined;
+    isLoading?: boolean;
+    isError?: boolean;
+    refetch?: () => void;
+}
+
 interface UserData {
   username: string;
   first_name: string;
@@ -123,6 +130,7 @@ export interface PlaceDropdownItem extends DropdownItem {
     type: string;
   };
   distance?: number;
+  name?: string;
 }
 
 export interface PaginatedResult<T> {
@@ -154,7 +162,7 @@ export interface SpeciesData {
   name: string;
   name_lang: string;
   segment: string;
-  thumb: string;
+  thumb: string | null;
 }
 
 export interface DiaryFormData {
@@ -191,12 +199,12 @@ export interface PlaceFormData {
 
 export interface PlaceData {
   id: number;
-  location: {
-    coordinates: Coords;
-    type: string;
-  };
   name: string;
   preview: string | null;
+  location: {
+    type: string;
+    coordinates: Coords;
+  } | null;
 }
 
 export interface GeoDetails {
@@ -278,7 +286,7 @@ export type AppStackParamList = {
   Stat: { filtersOverride?: Filters; seenMode?: seenMode; o?: string };
   Checklist: { filtersOverride?: Filters; seenMode?: seenMode; o?: string };
   Places: { filtersOverride?: Filters };
-  PlaceDetail: { id: number };
+  PlaceDetail: { placeId?: string | number | null };
   PlaceEditor: { id?: number };
   Observations: { filtersOverride?: Filters };
   ObservationDetail: { id: number };
