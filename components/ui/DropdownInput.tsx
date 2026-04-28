@@ -1,4 +1,4 @@
-import { useState, useEffect, ReactNode } from "react";
+import { useState, useEffect, ReactElement } from "react";
 import {
   Pressable,
   Text,
@@ -13,7 +13,7 @@ import SelectListModal from "./SelectListModal";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import SpeciesDropdown from "./SpeciesDropdown";
 import PlaceDropdown from "./PlaceDropdown";
-import { DropdownItem, IconType, PlaceDropdownItem, SpeciesData, QueryType } from "../../types";
+import { DropdownItem, IconType, PlaceDropdownItem, SpeciesDropdownItem, QueryType } from "../../types";
 
 interface DropdownInputProps {
   title?: string;
@@ -27,16 +27,16 @@ interface DropdownInputProps {
   disabledMessage?: string;
   renderOption?: (props: {
     item: DropdownItem;
-    selected: boolean;
-    onSelect: () => void;
+    selected: string | number | null;
+    onSelect: (value: string | number | null) => void;
     onClose: () => void;
-  }) => ReactNode;
-  speciesData?: SpeciesData[];
+  }) => ReactElement | null;
+  speciesData?: SpeciesDropdownItem;
   placeData?: PlaceDropdownItem;
   isLocating?: boolean;
   type?: string;
   sort?: string;
-  onSortChange?: (newSort: string) => void;
+  onSortChange?: (newSort: string | number | boolean | null) => void;
   locationAvailable?: boolean;
   onLocationUnavailable?: () => void;
 }

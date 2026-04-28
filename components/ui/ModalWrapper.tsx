@@ -13,7 +13,7 @@ interface ModalWrapperProps {
   onClose: () => void;
   onApply?: () => void;
   visible: boolean;
-  title: string;
+  title?: string;
   onSort?: () => void;
   showSortIcon?: boolean;
 }
@@ -50,9 +50,11 @@ const ModalWrapper = ({
               tintColor={Colors.radioBorder}
             />
 
-            <Text style={styles.title} numberOfLines={1}>
-              {title}
-            </Text>
+            {title && (
+              <Text style={styles.title} numberOfLines={1}>
+                {title}
+              </Text>
+            )}
 
             {showSortIcon && onSort && (
               <View style={styles.sortWrapper}>

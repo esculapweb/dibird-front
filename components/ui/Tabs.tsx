@@ -1,11 +1,18 @@
 import { StyleSheet, View, Pressable, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { EdgeInsets, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
+import { TabOption, seenMode } from "../../types";
 
-const Tabs = ({ tabOptions, tabsMode, setTabsMode }) => {
+interface TabsProps {
+  tabOptions: TabOption[];
+  tabsMode: seenMode;
+  setTabsMode: (value: seenMode) => void;
+}
+
+const Tabs = ({ tabOptions, tabsMode, setTabsMode }: TabsProps) => {
   const { Colors } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = stylesFn(Colors, insets);
@@ -49,7 +56,7 @@ const Tabs = ({ tabOptions, tabsMode, setTabsMode }) => {
 
 export default Tabs;
 
-const stylesFn = (Colors, insets) =>
+const stylesFn = (Colors: ThemeColors, insets: EdgeInsets) =>
   StyleSheet.create({
     container: {
       flexDirection: "row",

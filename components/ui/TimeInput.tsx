@@ -8,15 +8,29 @@ import {
   Animated,
   LayoutAnimation,
 } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
 
-import { formatTimeString, timeStringToDate, dateToTimeString } from "../../util/timeHelpers";
+import {
+  formatTimeString,
+  timeStringToDate,
+  dateToTimeString,
+} from "../../util/timeHelpers";
 
+interface TimeInputProps {
+  label?: string;
+  value: string;
+  onChange: (value: string | null) => void;
+  error: boolean | string | null;
+  allowClear?: boolean;
+  disabled?: boolean;
+}
 
 const TimeInput = ({
   label,
@@ -25,7 +39,7 @@ const TimeInput = ({
   error,
   allowClear = true,
   disabled = false,
-}) => {
+}: TimeInputProps) => {
   const { t } = useTranslation();
   const { Colors, theme } = useTheme();
   const styles = stylesFn(Colors);
@@ -40,14 +54,17 @@ const TimeInput = ({
 
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
-  const animatePress = useCallback((toValue) => {
+  const animatePress = useCallback(
+    (toValue: number) => {
       Animated.spring(scaleAnim, {
         toValue,
         useNativeDriver: true,
         speed: 30,
         bounciness: 4,
       }).start();
-  }, [scaleAnim]);
+    },
+    [scaleAnim],
+  );
 
   const handleFieldPress = useCallback(() => {
     if (disabled) return;
@@ -68,19 +85,25 @@ const TimeInput = ({
     }
   }, [disabled, value, onChange]);
 
-  const handleAndroidChange = useCallback((event, selectedDate) => {
+  const handleAndroidChange = useCallback(
+    (event: DateTimePickerEvent, selectedDate: Date | undefined) => {
       setAndroidPickerOpen(false);
       if (event.type === "set" && selectedDate) {
         onChange(dateToTimeString(selectedDate));
         Haptics.selectionAsync();
       }
-  }, [onChange]);
+    },
+    [onChange],
+  );
 
-  const handleIosChange = useCallback((_event, selectedDate) => {
+  const handleIosChange = useCallback(
+    (_event: DateTimePickerEvent, selectedDate: Date | undefined) => {
       if (!selectedDate) return;
-    setTempDate(selectedDate);
+      setTempDate(selectedDate);
       onChange(dateToTimeString(selectedDate));
-  }, [onChange]);
+    },
+    [onChange],
+  );
 
   const handleClose = useCallback(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -113,14 +136,24 @@ const TimeInput = ({
           ]}
           disabled={disabled}
         >
-          <Text style={[styles.text, !displayValue && styles.placeholder, disabled && styles.textDisabled]}>
+          <Text
+            style={[
+              styles.text,
+              !displayValue && styles.placeholder,
+              disabled && styles.textDisabled,
+            ]}
+          >
             {displayValue ?? placeholder}
           </Text>
 
           <View style={styles.icons}>
             {allowClear && displayValue && !disabled && (
               <Pressable onPress={handleClear} hitSlop={8}>
-                <Ionicons name="close-circle" size={18} color={Colors.dropdownIcon} />
+                <Ionicons
+                  name="close-circle"
+                  size={18}
+                  color={Colors.dropdownIcon}
+                />
               </Pressable>
             )}
             <Ionicons
@@ -145,23 +178,23 @@ const TimeInput = ({
       )}
 
       {Platform.OS === "ios" && iosOpen && (
-          <View style={styles.panel}>
-            <View style={styles.panelHeader}>
-              <Pressable onPress={handleClose} hitSlop={8}>
-                <Text style={styles.doneText}>{t("done")}</Text>
-              </Pressable>
-            </View>
-            <DateTimePicker
-            value={tempDate}
-              mode="time"
-              maximumDate={new Date(9999, 11, 31, 23, 59, 59)}
-              is24Hour
-              display="spinner"
-              themeVariant={theme === "dark" ? "dark" : "light"}
-              onChange={handleIosChange}
-              style={styles.picker}
-            />
+        <View style={styles.panel}>
+          <View style={styles.panelHeader}>
+            <Pressable onPress={handleClose} hitSlop={8}>
+              <Text style={styles.doneText}>{t("done")}</Text>
+            </Pressable>
           </View>
+          <DateTimePicker
+            value={tempDate}
+            mode="time"
+            maximumDate={new Date(9999, 11, 31, 23, 59, 59)}
+            is24Hour
+            display="spinner"
+            themeVariant={theme === "dark" ? "dark" : "light"}
+            onChange={handleIosChange}
+            style={styles.picker}
+          />
+        </View>
       )}
     </View>
   );

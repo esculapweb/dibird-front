@@ -13,6 +13,18 @@ import { useTheme, ThemeColors } from "../../store/theme-context";
 import { Config } from "../../constants/config";
 import { BirdSVG } from "./Svgs";
 
+import { QueryType, SpeciesDropdownItem } from "../../types";
+
+interface SpeciesDropdownProps {
+  query: QueryType;
+  onPress: () => void;
+  value: string | number | null;
+  speciesData?: SpeciesDropdownItem;
+  name?: string;
+  disabled?: boolean;
+  error?: string;
+}
+
 const SpeciesDropdown = ({
   speciesData,
   value,
@@ -20,7 +32,7 @@ const SpeciesDropdown = ({
   disabled,
   error,
   query,
-}) => {
+}: SpeciesDropdownProps) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);

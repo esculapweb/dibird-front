@@ -3,8 +3,23 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
+import { StyleType } from "../../types";
 
-const SearchInput = ({ value, onChange, placeholder, onClear, style }) => {
+interface SearchInputProps {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  onClear: () => void;
+  style?: StyleType;
+}
+
+const SearchInput = ({
+  value,
+  onChange,
+  placeholder,
+  onClear,
+  style,
+}: SearchInputProps) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);

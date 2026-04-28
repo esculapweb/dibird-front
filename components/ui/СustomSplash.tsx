@@ -7,10 +7,10 @@ import { useTheme, ThemeColors } from "../../store/theme-context";
 
 SplashScreen.preventAutoHideAsync();
 
-const CustomSplash = ({ onFinish }) => {
+const CustomSplash = ({ onFinish }: { onFinish: () => void }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const { t } = useTranslation();
-  const {Colors} = useTheme();
+  const { Colors } = useTheme();
   const styles = stylesFn(Colors);
 
   useEffect(() => {
@@ -42,27 +42,28 @@ const CustomSplash = ({ onFinish }) => {
 
 export default CustomSplash;
 
-const stylesFn = (Colors: ThemeColors) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.primary100,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  logo: {
-    maxWidth: "40%",
-    aspectRatio: 1,
-  },
-  bottomContainer: {
-    position: "absolute",
-    bottom: 40,
-    left: 0,
-    right: 0,
-    alignItems: "center",
-  },
-  bottomText: {
-    fontSize: 16,
-    color: Colors.textSecondary,
-    textAlign: "center",
-  },
-});
+const stylesFn = (Colors: ThemeColors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: Colors.primary100,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    logo: {
+      maxWidth: "40%",
+      aspectRatio: 1,
+    },
+    bottomContainer: {
+      position: "absolute",
+      bottom: 40,
+      left: 0,
+      right: 0,
+      alignItems: "center",
+    },
+    bottomText: {
+      fontSize: 16,
+      color: Colors.textSecondary,
+      textAlign: "center",
+    },
+  });

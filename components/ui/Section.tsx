@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { ReactNode, useState } from "react";
 import {
   StyleSheet,
   View,
@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme, ThemeColors } from "../../store/theme-context";
+import { StyleType } from "../../types";
 
 if (
   Platform.OS === "android" &&
@@ -18,16 +19,27 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
+interface SectionProps {
+  title: string;
+  children: ReactNode;
+  hint?: string;
+  hintBlock?: ReactNode;
+  style?: StyleType;
+  collapsed?: boolean;
+  collapsible?: boolean;
+  required?: boolean;
+}
+
 const Section = ({
   title,
-  required,
+  required=false,
   children,
   hint,
   hintBlock,
   style,
   collapsed: initialCollapsed = false,
   collapsible = false,
-}) => {
+}: SectionProps) => {
   const { Colors } = useTheme();
   const styles = sectionFn(Colors);
 
@@ -76,7 +88,7 @@ const Section = ({
 
 export default Section;
 
-const sectionFn = (Colors) =>
+const sectionFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     section: {
       marginBottom: 8,

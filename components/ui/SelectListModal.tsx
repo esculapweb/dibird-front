@@ -1,5 +1,5 @@
 import { FlatList, View, StyleSheet, Text } from "react-native";
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo, ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
@@ -8,6 +8,31 @@ import DefaultOptionRow from "./DefaultOptionRow";
 import SearchInput from "./SearchInput";
 import { sortOptionsList } from "../../util/sortOptionsList";
 import RadioGroup from "./RadioGroup";
+import { QueryType, DropdownItem } from "../../types";
+
+const ItemHeight = 52;
+
+interface SelectListModalProps {
+  visible: boolean;
+  options: QueryType["data"];
+  selected: string | number | null;
+  onSelect: (value: string | number | null) => void;
+  onClose: () => void;
+  search: string;
+  setSearch: (val: string) => void;
+  title?: string;
+  renderOption?: (props: {
+    item: DropdownItem;
+    selected: string | number | null;
+    onSelect: (value: string | number | null) => void;
+    onClose: () => void;
+  }) => ReactElement | null;
+  type?: string;
+  sort?: string | number | boolean | null;
+  onSortChange?: (newSort: string | number | boolean | null) => void;
+  locationAvailable?: boolean;
+  onLocationUnavailable?: () => void;
+}
 
 const SelectListModal = ({
   visible,
@@ -19,14 +44,13 @@ const SelectListModal = ({
   setSearch,
   title,
   renderOption,
-  itemHeight = 52,
   type,
   sort,
   onSortChange,
   locationAvailable = true,
   onLocationUnavailable,
-}) => {
-  const flatListRef = useRef(null);
+}: SelectListModalProps) => {
+  const flatListRef = useRef<FlatList<DropdownItem>>(null);
   const [hasScrolled, setHasScrolled] = useState(false);
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -42,17 +66,17 @@ const SelectListModal = ({
     : [];
 
   const filteredOptions = useMemo(() => {
-    if (!search) return options;
-    return options.filter((o) =>
+    if (!options || !search) return options ?? [];
+    return options?.filter((o) =>
       o.label.toLowerCase().includes(search.toLowerCase()),
     );
   }, [options, search]);
 
   useEffect(() => {
-    setSortOrder(sort);
+    setSortOrder(sort ?? null);
   }, [sort]);
 
-  const handleSortChange = (val) => {
+  const handleSortChange = (val: string | number | boolean | null) => {
     setSortOrder(val);
     setSortMenuVisible(false);
     onSortChange?.(val);
@@ -67,7 +91,7 @@ const SelectListModal = ({
       if (selectedIndex >= 0 && selectedIndex < filteredOptions.length) {
         setTimeout(() => {
           try {
-            flatListRef.current.scrollToIndex({
+            flatListRef.current?.scrollToIndex({
               index: selectedIndex,
               animated: false,
               viewPosition: 0.5,
@@ -91,7 +115,7 @@ const SelectListModal = ({
       showSortIcon={!!type}
       onSort={() => setSortMenuVisible((prev) => !prev)}
     >
-      {options.length === 0 ? (
+      {options?.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyText}>{t("no_options_available")}</Text>
         </View>
@@ -127,10 +151,10 @@ const SelectListModal = ({
             <FlatList
               ref={flatListRef}
               data={filteredOptions}
-              keyExtractor={(item) => item.value}
+              keyExtractor={(item) => String(item.value)}
               getItemLayout={(_, index) => ({
-                length: itemHeight,
-                offset: itemHeight * index,
+                length: ItemHeight,
+                offset: ItemHeight * index,
                 index,
               })}
               renderItem={({ item }) =>
@@ -142,7 +166,7 @@ const SelectListModal = ({
                     selected={selected}
                     onSelect={onSelect}
                     onClose={onClose}
-                    itemHeight={itemHeight}
+                    itemHeight={ItemHeight}
                   />
                 )
               }

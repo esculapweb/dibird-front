@@ -5,15 +5,13 @@ import { useTranslation } from "react-i18next";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { DropdownItem } from "../../types";
 
-
 interface DefaultOptionRowProps {
   item: DropdownItem;
-  selected: string | number;
-  onSelect: (value: any) => void;
+  selected: string | number | null;
+  onSelect: (value: string | number | null) => void;
   onClose: () => void;
   itemHeight: number;
-}   
-
+}
 
 const DefaultOptionRow = ({
   item,
@@ -25,7 +23,7 @@ const DefaultOptionRow = ({
   const { Colors } = useTheme();
   const { t } = useTranslation();
   const styles = stylesFn(Colors, itemHeight);
-  const isActive = item.value === selected;
+  const isActive = item.value == selected;
 
   return (
     <Pressable
@@ -41,7 +39,7 @@ const DefaultOptionRow = ({
     >
       <View style={styles.row}>
         <View style={styles.left}>
-           {item.iconLabel && (
+          {item.iconLabel && (
             <Ionicons
               name={item.iconLabel}
               size={16}
@@ -69,7 +67,7 @@ const DefaultOptionRow = ({
           />
         )}
 
-        {item.distance != null && (
+        {item.distance != null && !isNaN(item.distance) && (
           <Text style={styles.distance}>
             {item.distance >= 1000
               ? `~${(item.distance / 1000).toFixed(1)} ${t("km")}`

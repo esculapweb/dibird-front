@@ -5,6 +5,17 @@ import { Ionicons } from "@expo/vector-icons";
 import { Config } from "../../constants/config";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { BirdSVG } from "./Svgs";
+import { SpeciesDropdownItem } from "../../types";
+
+
+interface SpeciesOptionRow {
+  item: SpeciesDropdownItem,
+  selected: string | number | null,
+  onSelect: (value: string | number | null)=>void,
+  onClose: ()=>void,
+  itemHeight?: number;
+  disabled?: boolean;
+}
 
 const SpeciesOptionRow = ({
   item,
@@ -13,7 +24,7 @@ const SpeciesOptionRow = ({
   onClose,
   itemHeight = 52,
   disabled = false,
-}) => {
+}: SpeciesOptionRow) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors, itemHeight);
   const isActive = item.value === selected;
@@ -81,7 +92,7 @@ const SpeciesOptionRow = ({
 
 export default SpeciesOptionRow;
 
-const stylesFn = (Colors, itemHeight) =>
+const stylesFn = (Colors: ThemeColors, itemHeight: number) =>
   StyleSheet.create({
     item: {
       height: itemHeight,
@@ -149,7 +160,7 @@ const stylesFn = (Colors, itemHeight) =>
 
     itemActive: {
       borderLeftColor: Colors.main100,
-      backgroundColor: Colors.main300, 
+      backgroundColor: Colors.main300,
     },
     labelActive: {
       fontWeight: "600",

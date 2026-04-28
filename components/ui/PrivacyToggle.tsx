@@ -4,8 +4,23 @@ import { useTranslation } from "react-i18next";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { privacyLabels } from "../../util/privacyLabels";
+import { StyleType } from "../../types";
 
-const PrivacyToggle = ({ value, onChange, style, gender, labelAdditional }) => {
+interface PrivacyToggleProps {
+  value: boolean,
+  onChange?: (value: boolean)=>void;
+  style?: StyleType;
+  gender?: string;
+  labelAdditional?: string,
+}
+
+const PrivacyToggle = ({
+  value,
+  onChange,
+  style,
+  gender,
+  labelAdditional,
+}: PrivacyToggleProps) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const { t } = useTranslation();
@@ -18,7 +33,7 @@ const PrivacyToggle = ({ value, onChange, style, gender, labelAdditional }) => {
       disabled={!onChange}
       onPress={() => onChange && onChange(!value)}
     >
-      <View style={[styles.left, onChange && {flex: 1}]}>
+      <View style={[styles.left, onChange && { flex: 1 }]}>
         <View style={[styles.iconWrap, value && styles.iconWrapActive]}>
           <Ionicons
             name={value ? "lock-closed" : "globe-outline"}
@@ -27,7 +42,10 @@ const PrivacyToggle = ({ value, onChange, style, gender, labelAdditional }) => {
           />
         </View>
         <View>
-          <Text style={styles.label}>{labelAdditional}{value ? labels.private : labels.public}</Text>
+          <Text style={styles.label}>
+            {labelAdditional}
+            {value ? labels.private : labels.public}
+          </Text>
           <Text style={styles.desc}>
             {value ? t("visible_only_to_you") : t("visible_to_everyone")}
           </Text>

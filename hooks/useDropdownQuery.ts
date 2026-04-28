@@ -31,7 +31,7 @@ export function useDropdownQuery(
 ): {
   query: UseQueryResult<DropdownItem[], AppError>;
   sort: string;
-  onSortChange: (val: string) => Promise<void>;
+  onSortChange: (val: string | number | boolean | null) => Promise<void>;
 };
 
 export function useDropdownQuery({

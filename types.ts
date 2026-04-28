@@ -30,9 +30,9 @@ export interface AppError extends Error {
 
 export interface QueryType {
   data: DropdownItem[] | undefined;
-    isLoading?: boolean;
-    isError?: boolean;
-    refetch?: () => void;
+  isLoading?: boolean;
+  isError?: boolean;
+  refetch?: () => void;
 }
 
 interface UserData {
@@ -66,6 +66,14 @@ export interface Profile {
 }
 
 export type seenMode = "seen" | "unseen" | "all";
+
+export interface TabOption {
+  value: "seen" | "unseen" | "all";
+  icon: IconType;
+  iconInactive: IconType;
+  labelKey: string;
+  count?: number;
+}
 
 export interface DateFilter {
   type?: "any" | "today" | "this_year" | "range" | "exact" | "year";
