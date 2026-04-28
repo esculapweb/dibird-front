@@ -259,28 +259,51 @@ export interface ObservationItem {
   quantity: number | null;
   species: number;
   species_data: SpeciesData;
-  territory: number;
   territory_data: TerritoryData;
   time: string | null;
   updated_at: string;
 }
 
+
+
 export interface DiaryItem {
-  created_at: string;
+
   date_time: string;
   id: number;
-  is_owner: boolean;
   name: string | null;
   observation_count: number;
-  owner: OwnerData;
   place: number | null;
   place_data: PlaceData | null;
   private: boolean;
   profile: number;
   territory: number;
   territory_data: TerritoryData;
+
+  is_owner: boolean;
+  owner: OwnerData;
+  created_at: string;
   updated_at: string;
   user_data: Omit<OwnerData, "private">;
+}
+
+export interface DiaryListItem {  
+  observation_data: Array<{
+    species_data: {
+      name_lang: string;
+      segment: string;
+      thumb: string;
+    };
+  }>;
+  date_time: string;
+  id: number;
+  name: string | null;
+  observation_count: number;
+  place: number | null;
+  place_data: PlaceData | null;
+  private: boolean;
+  profile: number;
+  territory: number;
+  territory_data: TerritoryData;
 }
 
 export type EditorItem = DiaryItem & ObservationItem;
@@ -315,8 +338,8 @@ export type AppStackParamList = {
   ObservationDetail: { id: number };
   ObservationEditor: { id?: number };
   Diaries: { filtersOverride?: Filters };
-  DiaryDetail: { id: number };
-  DiaryEditor: { id?: number };
+  DiaryDetail: { diaryId: number };
+  DiaryEditor: { diaryId?: number };
   Rating: { filtersOverride?: Filters };
   RatingsCompare: { filtersOverride?: Filters };
   UserStat: { userId: number };

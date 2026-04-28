@@ -8,13 +8,14 @@ import { BirdSVG } from "../ui/Svgs";
 import { formatDateLong, isoToFlagEmoji } from "../../util/helpers";
 import { Config } from "../../constants/config";
 import { useTheme, ThemeColors } from "../../store/theme-context";
+import { AppStackNavigationProp, DiaryListItem } from "../../types";
 
-const useStyles = (Colors) => useMemo(() => stylesFn(Colors), [Colors]);
+const useStyles = (Colors: ThemeColors) => useMemo(() => stylesFn(Colors), [Colors]);
 
-const DiaryCard = ({ item, index }) => {
+const DiaryCard = ({ item, index }: {item: DiaryListItem; index: number}) => {
   const { Colors } = useTheme();
   const styles = useStyles(Colors);
-  const navigation = useNavigation();
+  const navigation = useNavigation<AppStackNavigationProp>();
 
   const territoryFlag = item.territory_data
     ? isoToFlagEmoji(item.territory_data.code)
@@ -25,6 +26,7 @@ const DiaryCard = ({ item, index }) => {
   const handlePress = () => {
     navigation.navigate("DiaryDetail", { diaryId: item.id });
   };
+
 
   return (
     <Pressable

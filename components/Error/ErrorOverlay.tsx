@@ -5,7 +5,19 @@ import Logo from "../ui/Logo";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import FlatButton from "../ui/FlatButton";
 
-const ErrorOverlay = ({ title, message, onPress, logo }) => {
+interface ErrorOverlayProps {
+  title: string;
+  message: string;
+  onPress: () => Promise<void>;
+  logo?: boolean;
+}
+
+const ErrorOverlay = ({
+  title,
+  message,
+  onPress,
+  logo = false,
+}: ErrorOverlayProps) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -16,7 +28,7 @@ const ErrorOverlay = ({ title, message, onPress, logo }) => {
       <Text style={styles.messageTitle}>{title}</Text>
       <Text style={styles.messageDescription}>{message}</Text>
       <View style={styles.buttonWrapper}>
-        <FlatButton onPress={onPress} >{t("try_again")}</FlatButton>
+        <FlatButton onPress={onPress}>{t("try_again")}</FlatButton>
       </View>
     </View>
   );
