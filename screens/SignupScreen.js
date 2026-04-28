@@ -1,6 +1,5 @@
 import { useState, useLayoutEffect } from "react";
 import { TouchableOpacity, Platform } from "react-native";
-import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 
 import AuthContent from "../components/Auth/AuthContent";
@@ -9,7 +8,6 @@ import { useTheme } from "../store/theme-context";
 
 const SignupScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
-  const { t } = useTranslation();
   const { Colors } = useTheme();
   const iconName = Platform.OS === "ios" ? "chevron-back" : "arrow-back";
 

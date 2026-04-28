@@ -5,8 +5,25 @@ import { useTheme, ThemeColors } from "../../store/theme-context";
 
 import AnimatedLoadingButton from "../ui/AnimatedLoadingButton";
 import Input from "../ui/Input";
+import { Credentials, CredentialsValidation } from "../../types";
 
-const AuthForm = ({ isLogin, onSubmit, credentialsInvalid, loading, prefillEmail }) => {
+interface AuthFormProps {
+  isLogin?: boolean;
+  onSubmit: (credentials: Credentials) => Promise<void>;
+  credentialsInvalid: CredentialsValidation;
+  loading: boolean;
+  prefillEmail?: string;
+}
+
+type inputTypes = "email" | "userName" | "password" | "confirmPassword";
+
+const AuthForm = ({
+  isLogin,
+  onSubmit,
+  credentialsInvalid,
+  loading,
+  prefillEmail,
+}: AuthFormProps) => {
   const [enteredEmail, setEnteredEmail] = useState(prefillEmail ?? "");
   const [enteredUsername, setEnteredUsername] = useState("");
   const [enteredPassword, setEnteredPassword] = useState("");
@@ -22,7 +39,7 @@ const AuthForm = ({ isLogin, onSubmit, credentialsInvalid, loading, prefillEmail
     confirmPassword: passwordsDontMatch,
   } = credentialsInvalid;
 
-  const updateInputValueHandler = (inputType, enteredValue) => {
+  const updateInputValueHandler = (inputType: inputTypes, enteredValue: string) => {
     switch (inputType) {
       case "email":
         setEnteredEmail(enteredValue);

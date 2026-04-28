@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { StyleSheet, View, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
@@ -10,15 +10,24 @@ import Logo from "../ui/Logo";
 import { showError } from "../../services/api";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import FormWrapper from "../ui/FormWrapper";
+import { AppError, AuthDrawerNavigationProp, Credentials } from "../../types";
+
+interface AuthContent {
+  onAuthenticate: (data: Credentials) => Promise<void>;
+  loading: boolean;
+  isLogin?: boolean;
+  emailConfirmed?: boolean;
+  prefillEmail?: string;
+}
 
 const AuthContent = ({
   isLogin,
   onAuthenticate,
-  loading,
+  loading = false,
   emailConfirmed,
   prefillEmail,
-}) => {
-  const navigation = useNavigation();
+}: AuthContent) => {
+  const navigation = useNavigation<AuthDrawerNavigationProp>();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -32,26 +41,41 @@ const AuthContent = ({
   });
 
   const switchAuthModeHandler = () => {
-    navigation.navigate(isLogin ? "Signup" : "Login");
+    if (isLogin) {
+      navigation.navigate("Signup");
+    } else {
+      navigation.navigate("Login", {
+        emailConfirmed,
+        prefillEmail,
+      });
+    }
   };
 
-  const extractApiError = (err) => {
-    const data = err.response.data;
-    if (!data) return null;
-    const apiMessage =
-      data?.non_field_errors?.[0] ||
-      data?.email?.[0] ||
-      data?.username?.[0] ||
-      data?.password?.[0] ||
-      Object.values(data).flat().join("\n");
-    return {
-      title: isLogin ? t("login_failed") : t("registration_failed"),
-      message:
-        apiMessage || (isLogin ? t("could_not_login") : t("could_not_signup")),
-    };
-  };
+  const extractApiError = useCallback(
+    (err: AppError) => {
+      const data = err.response?.data;
+      if (!data)
+        return {
+          title: isLogin ? t("login_failed") : t("registration_failed"),
+          message: isLogin ? t("could_not_login") : t("could_not_signup"),
+        };
+      const apiMessage =
+        data?.non_field_errors?.[0] ||
+        data?.email?.[0] ||
+        data?.username?.[0] ||
+        data?.password?.[0] ||
+        Object.values(data).flat().join("\n");
+      return {
+        title: isLogin ? t("login_failed") : t("registration_failed"),
+        message:
+          apiMessage ||
+          (isLogin ? t("could_not_login") : t("could_not_signup")),
+      };
+    },
+    [isLogin, t],
+  );
 
-  const submitHandler = async (credentials) => {
+  const submitHandler = async (credentials: Credentials) => {
     let { email, userName, password, confirmPassword } = credentials;
 
     email = email.trim();
@@ -59,11 +83,12 @@ const AuthContent = ({
 
     const emailIsValid = email.includes("@");
     const passwordIsValid = password.length > 6;
-    const userNameIsValid = userName.length > 0 && userName !== email;
-    const passwordsAreEqual = password === confirmPassword;
+    const userNameIsValid =
+      !isLogin && userName && userName.length > 0 && userName !== email;
+    const passwordsAreEqual = !isLogin ? confirmPassword === password : true;
     const authData = isLogin
       ? { email, password }
-      : { email, password, userName };
+      : { email, password, userName: userName! };
 
     if (
       !emailIsValid ||
@@ -77,9 +102,9 @@ const AuthContent = ({
       });
       setCredentialsInvalid({
         email: !emailIsValid,
-        userName: !userNameIsValid,
+        userName: !isLogin && !userNameIsValid,
         password: !passwordIsValid,
-        confirmPassword: !passwordIsValid || !passwordsAreEqual,
+        confirmPassword: !isLogin && !passwordsAreEqual,
       });
       return;
     }
@@ -87,7 +112,7 @@ const AuthContent = ({
     try {
       await onAuthenticate(authData);
     } catch (e) {
-      showError(e, extractApiError);
+      showError(e as AppError, extractApiError);
     }
   };
 

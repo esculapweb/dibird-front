@@ -2,13 +2,22 @@ import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { useTranslation } from "react-i18next";
+import { IconType } from "../../types";
+import { Theme } from "../../types";
 
 const ThemeSwitcher = () => {
   const { manualTheme, toggleTheme, Colors } = useTheme();
   const { t } = useTranslation();
   const styles = stylesFn(Colors);
 
-  const options = [
+  interface OptionType{
+    value: Theme| null;
+    text?: string;
+    label: string;
+    icon?: IconType
+  }
+
+  const options: OptionType[] = [
     { value: null, text: t("auto"), label: t("auto") },
     { value: "light", icon: "sunny-outline", label: t("light") },
     { value: "dark", icon: "moon-outline", label: t("dark") },

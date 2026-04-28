@@ -16,6 +16,7 @@ import {
 
 export type IconType = ComponentProps<typeof Ionicons>["name"];
 export type StyleType = StyleProp<ViewStyle>;
+export type Theme = "light" | "dark";
 
 export interface AppError extends Error {
   code?: string;
@@ -33,6 +34,20 @@ export interface QueryType {
   isLoading?: boolean;
   isError?: boolean;
   refetch?: () => void;
+}
+
+export interface Credentials {
+  email: string;
+  password: string;
+  userName?: string;
+  confirmPassword?: string;
+}
+
+export interface CredentialsValidation {
+  email: boolean;
+  password: boolean;
+  userName: boolean;
+  confirmPassword: boolean;
 }
 
 interface UserData {
