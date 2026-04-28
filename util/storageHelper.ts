@@ -37,7 +37,7 @@ const clearItem = async (key: string, screen: string): Promise<void> => {
   }
 };
 
-export const saveSort = (screen: string, value: string): Promise<void> => saveItem(SORT_KEY, screen, value);
+export const saveSort = (screen: string, value: string | null): Promise<void> => saveItem(SORT_KEY, screen, value);
 export const loadSort = (screen: string): Promise<unknown> => loadItem(SORT_KEY, screen);
 export const clearSort = (screen: string): Promise<void> => clearItem(SORT_KEY, screen);
 

@@ -7,87 +7,40 @@ import { useTranslation } from "react-i18next";
 import { Config } from "../../constants/config";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { BirdSVG } from "../ui/Svgs";
+import { ChecklistItem, seenMode } from "../../types";
 
-const useStyles = (Colors) => useMemo(() => stylesFn(Colors), [Colors]);
+const useStyles = (Colors: ThemeColors) =>
+  useMemo(() => stylesFn(Colors), [Colors]);
 
-const ChecklistCard = memo(({ item, index, seenMode, onPress }) => {
-  const { t } = useTranslation();
-  const { Colors } = useTheme();
-  const styles = useStyles(Colors);
+interface ChecklistCardProps {
+  item: ChecklistItem;
+  index: number;
+  seenMode: seenMode;
+  onPress: () => void;
+}
 
-  const isAllMode = seenMode === "all";
+const ChecklistCard = memo(
+  ({ item, index, seenMode, onPress }: ChecklistCardProps) => {
+    const { t } = useTranslation();
+    const { Colors } = useTheme();
+    const styles = useStyles(Colors);
 
-  if (item.type === "order") {
-    const total = item.total ?? 0;
-    const seenCount = item.seen_count ?? 0;
-    const isComplete = total > 0 && seenCount >= total;
-    const progress = total > 0 ? seenCount / total : 0;
+    const isAllMode = seenMode === "all";
 
-    return (
-      <View
-        style={[styles.orderDivider, index > 0 && styles.orderDividerSpaced]}
-      >
-        {index > 0 && <View style={styles.orderTopLine} />}
-        <Text style={styles.taxonType}>{t("order")}</Text>
-        <View style={styles.taxonRow}>
-          <Text style={styles.orderName} numberOfLines={1}>
-            {item.name_lang}
-          </Text>
-          {item.latin ? (
-            <>
-              <Text style={styles.taxonDot}>·</Text>
-              <Text style={styles.taxonLatin} numberOfLines={1}>
-                {item.latin}
-              </Text>
-            </>
-          ) : null}
-          {isAllMode && total > 0 ? (
-            isComplete ? (
-              <View style={styles.doneBadge}>
-                <Ionicons
-                  name="checkmark"
-                  size={10}
-                  color={Colors.main100}
-                />
-                <Text style={styles.doneBadgeText}>{t("all")}</Text>
-              </View>
-            ) : (
-              <Text style={styles.taxonCount}>
-                {seenCount} / {total}
-              </Text>
-            )
-          ) : null}
-        </View>
-        {isAllMode && total > 0 && (
-          <View style={styles.progressTrack}>
-            <View
-              style={[
-                styles.progressFill,
-                isComplete && styles.progressFillComplete,
-                { width: `${Math.round(progress * 100)}%` },
-              ]}
-            />
-          </View>
-        )}
-        {!(isAllMode && total > 0) && <View style={styles.taxonLine} />}
-      </View>
-    );
-  }
+    if (item.type === "order") {
+      const total = item.total ?? 0;
+      const seenCount = item.seen_count ?? 0;
+      const isComplete = total > 0 && seenCount >= total;
+      const progress = total > 0 ? seenCount / total : 0;
 
-  if (item.type === "family") {
-    const total = item.total ?? 0;
-    const seenCount = item.seen_count ?? 0;
-    const isComplete = total > 0 && seenCount >= total;
-    const progress = total > 0 ? seenCount / total : 0;
-
-    return (
-      <View
-        style={styles.familyWrapper}
-      >
-        <View style={styles.familyDivider}>
-          <Text style={styles.taxonTypeFaded}>{t("family")}</Text>
+      return (
+        <View
+          style={[styles.orderDivider, index > 0 && styles.orderDividerSpaced]}
+        >
+          {index > 0 && <View style={styles.orderTopLine} />}
+          <Text style={styles.taxonType}>{t("order")}</Text>
           <View style={styles.taxonRow}>
-            <Text style={styles.familyName} numberOfLines={1}>
+            <Text style={styles.orderName} numberOfLines={1}>
               {item.name_lang}
             </Text>
             {item.latin ? (
@@ -101,11 +54,7 @@ const ChecklistCard = memo(({ item, index, seenMode, onPress }) => {
             {isAllMode && total > 0 ? (
               isComplete ? (
                 <View style={styles.doneBadge}>
-                  <Ionicons
-                    name="checkmark"
-                    size={10}
-                    color={Colors.main100}
-                  />
+                  <Ionicons name="checkmark" size={10} color={Colors.main100} />
                   <Text style={styles.doneBadgeText}>{t("all")}</Text>
                 </View>
               ) : (
@@ -116,7 +65,7 @@ const ChecklistCard = memo(({ item, index, seenMode, onPress }) => {
             ) : null}
           </View>
           {isAllMode && total > 0 && (
-            <View style={styles.progressTrackThin}>
+            <View style={styles.progressTrack}>
               <View
                 style={[
                   styles.progressFill,
@@ -128,61 +77,117 @@ const ChecklistCard = memo(({ item, index, seenMode, onPress }) => {
           )}
           {!(isAllMode && total > 0) && <View style={styles.taxonLine} />}
         </View>
-      </View>
-    );
-  }
+      );
+    }
 
-  const isSeen = item.seen;
+    if (item.type === "family") {
+      const total = item.total ?? 0;
+      const seenCount = item.seen_count ?? 0;
+      const isComplete = total > 0 && seenCount >= total;
+      const progress = total > 0 ? seenCount / total : 0;
 
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.card,
-        !isSeen && styles.cardUnseen,
-        pressed && styles.pressedCard,
-      ]}
-    >
-      <View style={styles.row}>
-        <View style={styles.imageWrapper}>
-          {item.thumb ? (
-            <Image
-              source={{ uri: `${Config.mediaUrl}/${item.thumb}` }}
-              style={styles.image}
-              contentFit="cover"
-              cachePolicy="disk"
-            />
-          ) : (
-            <View style={styles.imagePlaceholder}>
-              <BirdSVG size={26} color={Colors.textSecondary} />
+      return (
+        <View style={styles.familyWrapper}>
+          <View style={styles.familyDivider}>
+            <Text style={styles.taxonTypeFaded}>{t("family")}</Text>
+            <View style={styles.taxonRow}>
+              <Text style={styles.familyName} numberOfLines={1}>
+                {item.name_lang}
+              </Text>
+              {item.latin ? (
+                <>
+                  <Text style={styles.taxonDot}>·</Text>
+                  <Text style={styles.taxonLatin} numberOfLines={1}>
+                    {item.latin}
+                  </Text>
+                </>
+              ) : null}
+              {isAllMode && total > 0 ? (
+                isComplete ? (
+                  <View style={styles.doneBadge}>
+                    <Ionicons
+                      name="checkmark"
+                      size={10}
+                      color={Colors.main100}
+                    />
+                    <Text style={styles.doneBadgeText}>{t("all")}</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.taxonCount}>
+                    {seenCount} / {total}
+                  </Text>
+                )
+              ) : null}
             </View>
-          )}
+            {isAllMode && total > 0 && (
+              <View style={styles.progressTrackThin}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    isComplete && styles.progressFillComplete,
+                    { width: `${Math.round(progress * 100)}%` },
+                  ]}
+                />
+              </View>
+            )}
+            {!(isAllMode && total > 0) && <View style={styles.taxonLine} />}
+          </View>
         </View>
-        <View style={styles.content}>
-          <Text
-            style={[styles.title, isAllMode && !isSeen && styles.titleUnseen]}
-            numberOfLines={1}
-          >
-            {item.name_lang}
-          </Text>
-          <Text
-            style={[styles.latin, !isSeen && styles.latinUnseen]}
-            numberOfLines={1}
-          >
-            {item.latin}
-          </Text>
+      );
+    }
+
+    const isSeen = item.seen;
+
+    return (
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.card,
+          !isSeen && styles.cardUnseen,
+          pressed && styles.pressedCard,
+        ]}
+      >
+        <View style={styles.row}>
+          <View style={styles.imageWrapper}>
+            {item.thumb ? (
+              <Image
+                source={{ uri: `${Config.mediaUrl}/${item.thumb}` }}
+                style={styles.image}
+                contentFit="cover"
+                cachePolicy="disk"
+              />
+            ) : (
+              <View style={styles.imagePlaceholder}>
+                <BirdSVG size={26} color={Colors.textSecondary} />
+              </View>
+            )}
+          </View>
+          <View style={styles.content}>
+            <Text
+              style={[styles.title, isAllMode && !isSeen && styles.titleUnseen]}
+              numberOfLines={1}
+            >
+              {item.name_lang}
+            </Text>
+            <Text
+              style={[styles.latin, !isSeen && styles.latinUnseen]}
+              numberOfLines={1}
+            >
+              {item.latin}
+            </Text>
+          </View>
+          <View style={styles.addIcon}>
+            <Ionicons
+              name={isSeen ? "checkbox" : "square-outline"}
+              size={28}
+              color={isSeen ? Colors.main100 : Colors.textSecondary}
+            />
+          </View>
         </View>
-        <View style={styles.addIcon}>
-          <Ionicons
-            name={isSeen ? "checkbox" : "square-outline"}
-            size={28}
-            color={isSeen ? Colors.main100 : Colors.textSecondary}
-          />
-        </View>
-      </View>
-    </Pressable>
-  );
-});
+      </Pressable>
+    );
+  },
+);
 
 export default ChecklistCard;
 

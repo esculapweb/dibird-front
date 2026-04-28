@@ -5,7 +5,7 @@ import { useTheme, ThemeColors } from "../../store/theme-context";
 import { IconType } from "../../types";
 
 
-const MetaItem = ({ icon, text }: { icon?: IconType; text?: string }) => {
+const MetaItem = ({ icon, text }: { icon?: IconType; text?: string | null }) => {
   if (!text) return null;
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);

@@ -17,7 +17,7 @@ interface LayoutProps {
   withKeyboard?: boolean;
   withScroll?: boolean;
   style?: StyleType;
-  contentContainerStyle?: any;
+  contentContainerStyle?: StyleType;
 }
 
 const Layout = ({

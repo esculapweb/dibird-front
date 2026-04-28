@@ -1,8 +1,18 @@
 import { View, Text, StyleSheet } from "react-native";
-import { Image } from "expo-image";
+import { Image, ImageStyle } from "expo-image";
 import { Config } from "../../constants/config";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { useProfileDisplay } from "../../hooks/Profile/useProfileDisplay";
+
+interface ProfileAvatarProps {
+  avatar: string | null;
+  firstName: string;
+  lastName: string;
+  username: string;
+  size: number;
+  borderRadius: number;
+  style: ImageStyle;
+}
 
 const ProfileAvatar = ({
   avatar,
@@ -11,8 +21,8 @@ const ProfileAvatar = ({
   username,
   size = 44,
   borderRadius,
-  style
-}) => {
+  style,
+}: ProfileAvatarProps) => {
   const { Colors } = useTheme();
   const { initials } = useProfileDisplay({ firstName, lastName, username });
   const radius = borderRadius ?? size / 2;
@@ -25,7 +35,7 @@ const ProfileAvatar = ({
           ? avatar
           : `${Config.mediaUrl}/${avatar}`,
       }}
-      style={[styles.avatar, style]}    
+      style={[styles.avatar, style]}
       contentFit="cover"
       cachePolicy="disk"
     />
@@ -38,7 +48,7 @@ const ProfileAvatar = ({
 
 export default ProfileAvatar;
 
-const stylesFn = (Colors, size, borderRadius) =>
+const stylesFn = (Colors: ThemeColors, size: number, borderRadius: number) =>
   StyleSheet.create({
     avatar: {
       width: size,

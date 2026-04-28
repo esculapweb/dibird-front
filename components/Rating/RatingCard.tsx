@@ -10,13 +10,29 @@ import { formatDateLong, isoToFlagEmoji } from "../../util/helpers";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import ProfileAvatar from "../Profile/ProfileAvatar";
 import { useProfileDisplay } from "../../hooks/Profile/useProfileDisplay";
-const useStyles = (Colors) => useMemo(() => stylesFn(Colors), [Colors]);
+import { AppStackNavigationProp, Profile, RatingItem } from "../../types";
+const useStyles = (Colors: ThemeColors) =>
+  useMemo(() => stylesFn(Colors), [Colors]);
 
-const RatingCard = ({ item, index, isSelected, onToggle, profile }) => {
+interface RatingCardProps {
+  item: RatingItem;
+  index: number;
+  isSelected: boolean;
+  onToggle: () => void;
+  profile: Profile;
+}
+
+const RatingCard = ({
+  item,
+  index,
+  isSelected,
+  onToggle,
+  profile,
+}: RatingCardProps) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = useStyles(Colors);
-  const navigation = useNavigation();
+  const navigation = useNavigation<AppStackNavigationProp>();
 
   const { fullName } = useProfileDisplay({
     firstName: item.first_name,
@@ -57,9 +73,7 @@ const RatingCard = ({ item, index, isSelected, onToggle, profile }) => {
         <View style={styles.content}>
           <View style={styles.titleRow}>
             <View style={styles.titleLeft}>
-              <View style={styles.indexBadge}>
-                <Text style={styles.index}>{index + 1}.</Text>
-              </View>
+              <Text style={styles.index}>{index + 1}.</Text>
               {territoryFlag && (
                 <Text style={styles.flag}>{territoryFlag}</Text>
               )}

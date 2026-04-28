@@ -8,92 +8,92 @@ import { BirdSVG } from "../ui/Svgs";
 import { Config } from "../../constants/config";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { formatTimeString } from "../../util/timeHelpers";
+import { AppStackNavigationProp, DiaryObservationItem } from "../../types";
 
-const useStyles = (Colors) => useMemo(() => stylesFn(Colors), [Colors]);
+const useStyles = (Colors: ThemeColors) =>
+  useMemo(() => stylesFn(Colors), [Colors]);
 
-const DiaryObservationCard = memo(({ item, index }) => {
-  const { Colors } = useTheme();
-  const styles = useStyles(Colors);
-  const navigation = useNavigation();
+const DiaryObservationCard = memo(
+  ({ item, index }: { item: DiaryObservationItem; index: number }) => {
+    const { Colors } = useTheme();
+    const styles = useStyles(Colors);
+    const navigation = useNavigation<AppStackNavigationProp>();
 
-  const handlePress = () => {
-    navigation.navigate("ObservationDetail", { observationId: item.id });
-  };
+    const handlePress = () => {
+      navigation.navigate("ObservationDetail", { observationId: item.id });
+    };
 
-  return (
-    <Pressable
-      style={({ pressed }) => [styles.card, pressed && styles.pressedCard]}
-      onPress={handlePress}
-    >
-      <View style={styles.row}>
-        {item.species_data?.thumb ? (
-          <Image
-            source={{
-              uri: `${Config.mediaUrl}/${item.species_data.thumb}`,
-            }}
-            style={styles.image}
-            contentFit="cover"
-            transition={0}
-            cachePolicy="disk"
-          />
-        ) : (
-          <View style={styles.imagePlaceholder}>
-            <BirdSVG size={38} color={Colors.textSecondary} />
-          </View>
-        )}
-
-        <View style={styles.content}>
-          <View style={styles.titleRow}>
-            <View style={styles.titleLeft}>
-              <View style={styles.indexBadge}>
-                <Text style={styles.index}>{index + 1}.</Text>
-              </View>
-              <Text style={styles.title} numberOfLines={1}>
-                {item.species_data?.name_lang}
-              </Text>
+    return (
+      <Pressable
+        style={({ pressed }) => [styles.card, pressed && styles.pressedCard]}
+        onPress={handlePress}
+      >
+        <View style={styles.row}>
+          {item.species_data?.thumb ? (
+            <Image
+              source={{
+                uri: `${Config.mediaUrl}/${item.species_data.thumb}`,
+              }}
+              style={styles.image}
+              contentFit="cover"
+              transition={0}
+              cachePolicy="disk"
+            />
+          ) : (
+            <View style={styles.imagePlaceholder}>
+              <BirdSVG size={38} color={Colors.textSecondary} />
             </View>
-            {item.notes && (
-              <Ionicons
-                name="document-text-outline"
-                size={13}
-                color={Colors.textSecondary}
-              />
-            )}
-          </View>
+          )}
 
-          <View style={styles.metaRow}>
-            <Text style={styles.latin} numberOfLines={1}>
-              {item.species_data?.name}
-            </Text>
-
-            <View style={styles.metaRight}>
-              {item.quantity && (
-                <View style={styles.badge}>
-                  <BirdSVG size={14} color={Colors.textMain} />
-                  <Text style={styles.badgeText}>{item.quantity}</Text>
-                </View>
+          <View style={styles.content}>
+            <View style={styles.titleRow}>
+              <View style={styles.titleLeft}>
+                <Text style={styles.index}>{index + 1}.</Text>
+                <Text style={styles.title} numberOfLines={1}>
+                  {item.species_data?.name_lang}
+                </Text>
+              </View>
+              {item.notes && (
+                <Ionicons
+                  name="document-text-outline"
+                  size={13}
+                  color={Colors.textSecondary}
+                />
               )}
-              {item.time && (
-                <View style={styles.time}>
-                  <Ionicons
-                    name="time-outline"
-                    size={13}
-                    color={Colors.textSecondary}
-                  />
-                  <Text style={styles.metaText}>
-                    {formatTimeString(item.time)}
-                  </Text>
-                </View>
-              )}
+            </View>
 
-              
+            <View style={styles.metaRow}>
+              <Text style={styles.latin} numberOfLines={1}>
+                {item.species_data?.name}
+              </Text>
+
+              <View style={styles.metaRight}>
+                {item.quantity && (
+                  <View style={styles.badge}>
+                    <BirdSVG size={14} color={Colors.textMain} />
+                    <Text style={styles.badgeText}>{item.quantity}</Text>
+                  </View>
+                )}
+                {item.time && (
+                  <View style={styles.time}>
+                    <Ionicons
+                      name="time-outline"
+                      size={13}
+                      color={Colors.textSecondary}
+                    />
+                    <Text style={styles.metaText}>
+                      {formatTimeString(item.time)}
+                    </Text>
+                  </View>
+                )}
+              </View>
             </View>
           </View>
         </View>
-      </View>
-    </Pressable>
-  );
-});
+      </Pressable>
+    );
+  },
+);
 
 export default DiaryObservationCard;
 

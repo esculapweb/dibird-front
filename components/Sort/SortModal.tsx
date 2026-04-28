@@ -6,6 +6,20 @@ import { saveSort } from "../../util/storageHelper";
 import ModalWrapper from "../ui/ModalWrapper";
 import RadioGroup from "../ui/RadioGroup";
 
+interface SortModalProps {
+  screen: string;
+  options: {
+    label: string;
+    value: string;
+  }[];
+  visible: boolean;
+  onClose: () => void;
+  sort: string | null;
+  setSort: (sort: string | null) => void;
+  locationAvailable?: boolean;
+  onLocationUnavailable: () => void;
+}
+
 const SortModal = ({
   screen,
   options,
@@ -15,10 +29,10 @@ const SortModal = ({
   setSort,
   locationAvailable = true,
   onLocationUnavailable,
-}) => {
+}: SortModalProps) => {
   const { t } = useTranslation();
 
-  const [sortInternal, setSortInternal] = useState(null);
+  const [sortInternal, setSortInternal] = useState<string | null>(null);
 
   const disabledSortValues = !locationAvailable
     ? options
@@ -30,6 +44,12 @@ const SortModal = ({
     setSort(sortInternal);
     await saveSort(screen, sortInternal);
     onClose();
+  };
+
+  const handleSortChange = (value: string | number | boolean | null) => {
+    if (typeof value === "string" || value === null) {
+      setSortInternal(value);
+    }
   };
 
   useEffect(() => {
@@ -52,7 +72,7 @@ const SortModal = ({
           <RadioGroup
             label={`${t("sort_by")}:`}
             value={sortInternal}
-            onChange={setSortInternal}
+            onChange={handleSortChange}
             direction="column"
             options={options}
             disabledValues={disabledSortValues}

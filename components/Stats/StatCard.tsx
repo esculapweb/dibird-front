@@ -9,11 +9,21 @@ import { Config } from "../../constants/config";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import MetaItem from "../ui/MetaItem";
 import { BirdSVG } from "../ui/Svgs";
+import { seenMode, SpeciesItem } from "../../types";
 
-const useStyles = (Colors) => useMemo(() => stylesFn(Colors), [Colors]);
+const useStyles = (Colors: ThemeColors) =>
+  useMemo(() => stylesFn(Colors), [Colors]);
+
+interface StatCardProps {
+  item: SpeciesItem;
+  index: number;
+  seenMode: seenMode;
+  onPress: () => void;
+  personal?: boolean;
+}
 
 const StatCard = memo(
-  ({ item, index, seenMode, onPress, personal = false }) => {
+  ({ item, index, seenMode, onPress, personal = false }: StatCardProps) => {
     const { t } = useTranslation();
     const { Colors } = useTheme();
     const styles = useStyles(Colors);
@@ -30,12 +40,14 @@ const StatCard = memo(
         ? `${minDate} – ${maxDate}`
         : minDate || maxDate;
 
+    const qty = item?.qty_countries ?? 0;
+
     const countriesText = item?.min_territory
       ? `${isoToFlagEmoji(item.min_territory)}${
           item?.max_territory && item.max_territory !== item.min_territory
             ? isoToFlagEmoji(item.max_territory)
             : ""
-        }${item?.qty_countries > 2 ? ` +${item.qty_countries - 2}` : ""}`
+        }${qty > 2 ? ` +${qty - 2}` : ""}`
       : null;
 
     return (

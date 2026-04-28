@@ -180,6 +180,18 @@ export interface SpeciesItem {
   max_territory: string | null;
 }
 
+export interface ChecklistItem {
+  latin: string;
+  name_lang: string;
+  seen: boolean;
+  species_id: number;
+  status: string | null;
+  thumb: string | null;
+  type: "order" | "family" | "genus" | "species";
+  total?: number;
+  seen_count?: number;
+}
+
 export interface SpeciesData {
   id: number;
   name: string;
@@ -245,29 +257,33 @@ export interface TerritoryData {
   segment: string;
 }
 
-export interface ObservationItem {
+interface ObservationBaseItem {
   created_at: string;
+  id: number;
+  notes: string | null;
+  quantity: number | null;
+  time: string | null;
+}
+
+export interface ObservationItem extends ObservationBaseItem {
   date_time: string;
   diary: number | null;
-  id: number;
   is_owner: boolean;
-  notes: string | null;
   owner: OwnerData;
   place: number | null;
   place_data: PlaceData | null;
   private: boolean;
-  quantity: number | null;
   species: number;
   species_data: SpeciesData;
   territory_data: TerritoryData;
-  time: string | null;
   updated_at: string;
 }
 
+export interface DiaryObservationItem extends ObservationBaseItem {
+  species_data: SpeciesData;
+}
 
-
-export interface DiaryItem {
-
+interface DiaryBase {
   date_time: string;
   id: number;
   name: string | null;
@@ -278,7 +294,9 @@ export interface DiaryItem {
   profile: number;
   territory: number;
   territory_data: TerritoryData;
+}
 
+export interface DiaryItem extends DiaryBase {
   is_owner: boolean;
   owner: OwnerData;
   created_at: string;
@@ -286,24 +304,14 @@ export interface DiaryItem {
   user_data: Omit<OwnerData, "private">;
 }
 
-export interface DiaryListItem {  
-  observation_data: Array<{
+export interface DiaryListItem extends DiaryBase {
+  observation_data: {
     species_data: {
       name_lang: string;
       segment: string;
       thumb: string;
     };
-  }>;
-  date_time: string;
-  id: number;
-  name: string | null;
-  observation_count: number;
-  place: number | null;
-  place_data: PlaceData | null;
-  private: boolean;
-  profile: number;
-  territory: number;
-  territory_data: TerritoryData;
+  }[];
 }
 
 export type EditorItem = DiaryItem & ObservationItem;
@@ -329,20 +337,29 @@ export type RootStackParamList = {
 
 export type AppStackParamList = {
   Main: { filtersOverride?: Filters };
-  Stat: { filtersOverride?: Filters; seenMode?: seenMode; o?: string };
+  Stat: {
+    filtersOverride?: Filters;
+    seenMode?: seenMode;
+    o?: string;
+    backTitle?: string;
+  };
   Checklist: { filtersOverride?: Filters; seenMode?: seenMode; o?: string };
   Places: { filtersOverride?: Filters };
-  PlaceDetail: { placeId?: string | number | null };
-  PlaceEditor: { id?: number };
+  PlaceDetail: { placeId: number };
+  PlaceEditor: { placeId?: number };
   Observations: { filtersOverride?: Filters };
-  ObservationDetail: { id: number };
-  ObservationEditor: { id?: number };
+  ObservationDetail: { observationId: number };
+  ObservationEditor: { observationId?: number };
   Diaries: { filtersOverride?: Filters };
   DiaryDetail: { diaryId: number };
   DiaryEditor: { diaryId?: number };
   Rating: { filtersOverride?: Filters };
-  RatingsCompare: { filtersOverride?: Filters };
-  UserStat: { userId: number };
+  RatingsCompare: {
+    profile1: number;
+    profile2: number;
+    filtersOverride?: Filters;
+  };
+  UserStat: { profileId: number };
 };
 
 export type AppDrawerParamList = {
@@ -357,6 +374,27 @@ export type AuthDrawerParamList = {
   Signup: undefined;
   ConfirmEmail: { key: string };
 };
+
+export interface RatingItem {
+  avatar: string | null;
+  first_name: string;
+  last_name: string;
+  username: string;
+  native_territory: number | null;
+  profile_id: number;
+  seen_qty: number;
+  territory_code: string | null;
+  territory_name: string | null;
+  last_update: string;
+}
+
+export interface RatingCompareItem {
+  in_object: [boolean, boolean];
+  name_lang: string;
+  name_latin: string;
+  taxon_id: number;
+  thumb: string | null;
+}
 
 // --- Navigation Props ---
 

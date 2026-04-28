@@ -6,6 +6,7 @@ import {
   PaginatedResponse,
   SpeciesItem,
   Coords,
+  ChecklistItem,
 } from "../types";
 
 export const fetchTimezones = async () => {
@@ -220,7 +221,7 @@ export const fetchChecklist = (
   page?: number,
 ) => {
   filters = { ...filters };
-  return fetchAbstract("/myapi/checklist2/", filters, order, search, page);
+  return fetchAbstract<PaginatedResponse<ChecklistItem>>("/myapi/checklist2/", filters, order, search, page);
 };
 
 export const fetchPlaces = (

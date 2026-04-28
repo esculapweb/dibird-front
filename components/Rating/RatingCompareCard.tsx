@@ -2,10 +2,17 @@ import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Image } from "expo-image";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { Config } from "../../constants/config";
+import { RatingCompareItem } from "../../types";
 
 const DOT_SIZE = 10;
 
-const ProfileDot = ({ color, visible }) => {
+const ProfileDot = ({
+  color,
+  visible,
+}: {
+  color: string;
+  visible: boolean;
+}) => {
   const { Colors } = useTheme();
   return (
     <View
@@ -17,10 +24,17 @@ const ProfileDot = ({ color, visible }) => {
   );
 };
 
-const RatingCompareCard = ({ item, index, onPress }) => {
+const RatingCompareCard = ({
+  item,
+  index,
+  onPress,
+}: {
+  item: RatingCompareItem;
+  index: number;
+  onPress: () => void;
+}) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
-
   const [in0, in1] = item.in_object ?? [false, false];
 
   const thumbUri = item.thumb ? `${Config.mediaUrl}/${item.thumb}` : null;
