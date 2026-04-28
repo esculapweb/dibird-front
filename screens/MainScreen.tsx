@@ -2,7 +2,6 @@ import { useCallback } from "react";
 import { ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import FloatingNavbar from "../components/Main/FloatingNavbar";
 import Stats from "../components/Main/Stats";
@@ -23,15 +22,16 @@ import {
 import Layout from "../components/ui/Layout";
 import { useLanguage } from "../store/language-context";
 import { useList } from "../hooks/useList";
-import { Filters, FilterKey, DropdownItem, RootStackParamList, NavigationProp} from "../types";
+import {
+  Filters,
+  FilterKey,
+  DropdownItem,
+  AppStackNavigationProp,
+} from "../types";
+import { useNavigation, useRoute } from "@react-navigation/native";
 
-const MainScreen = ({
-  route,
-  navigation,
-}: {
-  route: NativeStackScreenProps<RootStackParamList>["route"];
-  navigation: NavigationProp;
-}) => {
+const MainScreen = () => {
+  const navigation = useNavigation<AppStackNavigationProp>();
   const { language } = useLanguage();
   const insets = useSafeAreaInsets();
   const NAVBAR_HEIGHT = insets.top + 60;
@@ -46,7 +46,7 @@ const MainScreen = ({
     handleFiltersApplied,
     handleClearFilters,
   } = useSyncedFilters({
-    route,
+    route: useRoute(),
     navigation,
     screenName: "Main",
     allowSort: false,

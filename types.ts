@@ -265,6 +265,8 @@ export interface IconButtonProps {
   loading?: boolean;
 }
 
+// --- Navigation ---
+
 export type RootStackParamList = {
   Root: undefined;
   Privacy: undefined;
@@ -272,20 +274,20 @@ export type RootStackParamList = {
 };
 
 export type AppStackParamList = {
-  Main: undefined;
+  Main: { filtersOverride?: Filters };
   Stat: { filtersOverride?: Filters; seenMode?: seenMode; o?: string };
-  Checklist: undefined;
-  Places: undefined;
+  Checklist: { filtersOverride?: Filters; seenMode?: seenMode; o?: string };
+  Places: { filtersOverride?: Filters };
   PlaceDetail: { id: number };
   PlaceEditor: { id?: number };
   Observations: { filtersOverride?: Filters };
   ObservationDetail: { id: number };
   ObservationEditor: { id?: number };
-  Diaries: undefined;
+  Diaries: { filtersOverride?: Filters };
   DiaryDetail: { id: number };
   DiaryEditor: { id?: number };
-  Rating: undefined;
-  RatingsCompare: undefined;
+  Rating: { filtersOverride?: Filters };
+  RatingsCompare: { filtersOverride?: Filters };
   UserStat: { userId: number };
 };
 

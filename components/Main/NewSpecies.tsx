@@ -14,7 +14,7 @@ import {
   Filters,
   PaginatedResult,
   SpeciesItem,
-  NavigationProp,
+  AppStackNavigationProp,
 } from "../../types";
 
 const H_PAD = 16;
@@ -31,7 +31,7 @@ const NewSpecies: FC<NewSpeciesProps> = ({
   newSpeciesData,
   isLoading,
 }) => {
-  const navigation = useNavigation<NavigationProp>();
+  const navigation = useNavigation<AppStackNavigationProp>();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
