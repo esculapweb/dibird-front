@@ -1,15 +1,35 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import {
   View,
   Text,
   TextInput,
   StyleSheet,
   TouchableOpacity,
+  TextInputProps,
+  KeyboardTypeOptions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { BirdSVG } from "./Svgs";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
+import { IconType } from "../../types";
+
+interface InputProps {
+  label?: string;
+  keyboardType?: KeyboardTypeOptions;
+  secure?: boolean;
+  onUpdateValue: (value: string) => void;
+  value: string;
+  isInvalid?: boolean;
+  error?: string;
+  multiline?: boolean;
+  icon?: IconType;
+  birdSvg?: boolean;
+  placeholder?: string;
+  textContentType?: TextInputProps["textContentType"];
+  autoComplete?: TextInputProps["autoComplete"];
+  importantForAutofill?: TextInputProps["importantForAutofill"];
+}
 
 const Input = ({
   label,
@@ -26,20 +46,22 @@ const Input = ({
   textContentType,
   autoComplete,
   importantForAutofill,
-}) => {
+}: InputProps) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const [isSecure, setIsSecure] = useState(secure);
 
   const toggleSecure = () => {
-      setIsSecure((prev) => !prev);
+    setIsSecure((prev) => !prev);
   };
 
   return (
     <View style={styles.inputContainer}>
-      {label && (<Text style={[styles.label, isInvalid && styles.labelInvalid]}>
-        {label}
-      </Text>)}
+      {label && (
+        <Text style={[styles.label, isInvalid && styles.labelInvalid]}>
+          {label}
+        </Text>
+      )}
       <View style={[styles.inputWrapper, isInvalid && styles.inputInvalid]}>
         <TextInput
           style={[styles.input, isInvalid && styles.inputInvalid]}
@@ -50,7 +72,7 @@ const Input = ({
           onChangeText={onUpdateValue}
           value={value}
           multiline={multiline}
-          placeholder={placeholder} 
+          placeholder={placeholder}
           placeholderTextColor={Colors.textSecondary}
           textContentType={textContentType}
           autoComplete={autoComplete}
@@ -58,30 +80,17 @@ const Input = ({
         />
         {secure && (
           <TouchableOpacity onPress={toggleSecure} style={styles.iconSecure}>
-              <Ionicons
-                name={isSecure ? "eye-off-outline" : "eye-outline"}
-                size={24}
-                color={Colors.textMain}
-              />
+            <Ionicons
+              name={isSecure ? "eye-off-outline" : "eye-outline"}
+              size={24}
+              color={Colors.textMain}
+            />
           </TouchableOpacity>
         )}
         {icon && (
-          <View style={styles.icon}>
-            <Ionicons
-              name={icon}
-              size={20}
-              color={Colors.textSecondary}
-            />
-          </View>
+          <Ionicons name={icon} size={20} color={Colors.textSecondary} />
         )}
-        {birdSvg && (
-          <View style={styles.icon}>
-            <BirdSVG
-              size={20}
-              color={Colors.textMain}
-            />
-          </View>
-        )}
+        {birdSvg && <BirdSVG size={20} color={Colors.textMain} />}
       </View>
       {error && <Text style={styles.errorText}>{error}</Text>}
     </View>

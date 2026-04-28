@@ -1,4 +1,4 @@
-import { useState, useEffect, ReactNode, ComponentProps } from "react";
+import { useState, useEffect, ReactNode } from "react";
 import {
   Pressable,
   Text,
@@ -13,7 +13,7 @@ import SelectListModal from "./SelectListModal";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import SpeciesDropdown from "./SpeciesDropdown";
 import PlaceDropdown from "./PlaceDropdown";
-import { DropdownItem, Coords } from "../../types";
+import { DropdownItem, Coords, IconType} from "../../types";
 
 interface SpeciesData {
   id: number;
@@ -42,8 +42,8 @@ interface DropdownInputProps {
   allowReset?: boolean;
   query: {
     data: DropdownItem[] | undefined;
-    isLoading: boolean;
-    isError: boolean;
+    isLoading?: boolean;
+    isError?: boolean;
     refetch?: () => void;
   };
   disabled?: boolean;
@@ -93,7 +93,7 @@ const DropdownInput = ({
   const [label, setLabel] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
   const [icon, setIcon] = useState<string | null>(null);
-  const [iconLabel, setIconLabel] = useState<string | null>(null);
+  const [iconLabel, setIconLabel] = useState<IconType | null>(null);
 
   const onSelectValue = (selectedValue: string | number | null) => {
     const option = query.data?.find((o) => o.value === selectedValue);
@@ -211,7 +211,7 @@ const DropdownInput = ({
                   {iconLabel && (
                     <View style={styles.icon}>
                       <Ionicons
-                        name={iconLabel as ComponentProps<typeof Ionicons>["name"]}
+                        name={iconLabel}
                         size={14}
                         color={Colors.yellow}
                       />

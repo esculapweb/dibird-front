@@ -93,11 +93,11 @@ export const useEditorForm = ({
   const [speciesData, setSpeciesData] = useState<SpeciesDropdownItem | null>(
     itemWithParsedDate
       ? {
-          value: itemWithParsedDate.species_data.id,
-          label: itemWithParsedDate.species_data.name_lang,
-          name: itemWithParsedDate.species_data.name,
-          name_lang: itemWithParsedDate.species_data.name_lang,
-          thumb: itemWithParsedDate.species_data.thumb,
+          value: itemWithParsedDate.species_data?.id,
+          label: itemWithParsedDate.species_data?.name_lang,
+          name: itemWithParsedDate.species_data?.name,
+          name_lang: itemWithParsedDate.species_data?.name_lang,
+          thumb: itemWithParsedDate.species_data?.thumb,
         }
       : null,
   );

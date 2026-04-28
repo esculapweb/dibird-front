@@ -1,13 +1,32 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { ReactNode } from "react";
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
+import { StyleType } from "../../types";
 
-const FlatButton = ({ children, onPress, style }) => {
+const FlatButton = ({
+  children,
+  onPress,
+  style,
+}: {
+  children: ReactNode;
+  onPress: () => void;
+  style?: StyleType;
+}) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   return (
     <Pressable
-      style={({ pressed }) => [styles.button, style && style, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.button,
+        style && style,
+        pressed && styles.pressed,
+      ]}
       onPress={onPress}
     >
       <View>

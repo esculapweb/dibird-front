@@ -9,12 +9,13 @@ import {
   LayoutAnimation,
   UIManager,
 } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import DateTimePicker, {DateTimePickerEvent} from "@react-native-community/datetimepicker";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { toDateOnly } from "../../util/helpers";
+import { StyleType } from "../../types";
 
 if (
   Platform.OS === "android" &&
@@ -23,7 +24,7 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const formatDate = (dateStr, locale = "ru") => {
+const formatDate = (dateStr: string | Date | null, locale = "ru"): string => {
   if (!dateStr) return "";
   const d = new Date(dateStr + "T00:00:00");
   return d.toLocaleDateString(locale, {
@@ -33,30 +34,41 @@ const formatDate = (dateStr, locale = "ru") => {
   });
 };
 
-
-const toPickerDate = (value) => {
+const toPickerDate = (value: string | Date | null): Date => {
   if (!value) return new Date();
   if (value instanceof Date) return value;
   return new Date(value + "T00:00:00");
 };
 
-const getTodayEnd = () => {
+const getTodayEnd = (): Date => {
   const d = new Date();
   d.setHours(23, 59, 59, 999);
   return d;
 };
 
+interface DateInputProps {
+  label?: string;
+  value: string | Date | null;
+  onChange: (value: string | null) => void;
+  placeholder: string;
+  error: boolean | string | null;
+  minimumDate?: string | Date | undefined;
+  allowClear?: boolean;
+  disabled?: boolean;
+  style?: StyleType;
+}
+
 const DateInput = ({
   label,
-  value, // string "YYYY-MM-DD" | null
-  onChange, // (string "YYYY-MM-DD" | null) => void
+  value,
+  onChange,
   placeholder = "Select date",
   error,
-  minimumDate, // string "YYYY-MM-DD" | Date | undefined
+  minimumDate,
   allowClear = true,
   disabled = false,
   style,
-}) => {
+}: DateInputProps) => {
   const { t, i18n } = useTranslation();
   const { Colors, theme } = useTheme();
   const styles = stylesFn(Colors);
@@ -70,7 +82,7 @@ const DateInput = ({
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const animatePress = useCallback(
-    (toValue) => {
+    (toValue: number) => {
       Animated.spring(scaleAnim, {
         toValue,
         useNativeDriver: true,
@@ -95,7 +107,7 @@ const DateInput = ({
   }, [disabled, value]);
 
   const handleAndroidChange = useCallback(
-    (event, selectedDate) => {
+    (event: DateTimePickerEvent, selectedDate: Date | undefined) => {
       setAndroidPickerOpen(false);
       if (event.type === "set" && selectedDate) {
         onChange(toDateOnly(selectedDate));
@@ -106,7 +118,7 @@ const DateInput = ({
   );
 
   const handleIosChange = useCallback(
-    (_event, selectedDate) => {
+    (_event: DateTimePickerEvent, selectedDate: Date | undefined) => {
       if (!selectedDate) return;
       setTempDate(selectedDate);
       onChange(toDateOnly(selectedDate));
@@ -136,7 +148,6 @@ const DateInput = ({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   }, [onChange]);
 
-  // minimumDate может прийти строкой — пикер требует Date
   const minDateObj = minimumDate ? toPickerDate(minimumDate) : undefined;
 
   const isOpen = Platform.OS === "ios" ? iosOpen : false;

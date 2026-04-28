@@ -1,17 +1,16 @@
-import { ComponentProps } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../../store/theme-context";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import FlatButton from "../ui/FlatButton";
-import { LightColors } from "../../constants/colors/light";
+import { IconType } from "../../types";
 
-interface EmptyStateAction {
+export interface EmptyStateAction {
   label: string;
   onPress: () => void;
 }
 
-interface EmptyStateProps {
-  icon?: ComponentProps<typeof Ionicons>["name"];
+export interface EmptyStateProps {
+  icon?: IconType;
   message: string;
   actions?: EmptyStateAction[];
 }
@@ -40,7 +39,7 @@ const EmptyState = ({
 
 export default EmptyState;
 
-const stylesFn = (Colors: typeof LightColors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     container: {
       alignItems: "center",

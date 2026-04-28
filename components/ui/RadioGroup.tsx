@@ -3,11 +3,10 @@ import {
   Text,
   Pressable,
   StyleSheet,
-  ViewStyle,
-  StyleProp,
 } from "react-native";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
+import { StyleType } from "../../types";
 
 interface RadioGroupProps {
   value: string | number | boolean | null;
@@ -17,7 +16,7 @@ interface RadioGroupProps {
   direction?: "row" | "column";
   disabled?: boolean;
   isInvalid?: boolean;
-  style?: StyleProp<ViewStyle>;
+  style?: StyleType;
   disabledValues?: (string | number | boolean | null)[];
   onDisabledPress?: (value: string | number | boolean | null) => void;
 }

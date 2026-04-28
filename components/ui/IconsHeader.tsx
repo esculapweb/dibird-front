@@ -2,6 +2,20 @@ import { memo } from "react";
 import { StyleSheet } from "react-native";
 import IconButton from "./IconButton";
 import { useTheme, ThemeColors } from "../../store/theme-context";
+import { IconButtonProps } from "../../types";
+
+interface IconButtonConfig extends IconButtonProps{
+  condition: boolean;
+}
+
+interface IconsHeaderProps {
+  hasActiveFilters?: boolean;
+  onSortPress?: () => void;
+  onFilterPress?: () => void;
+  onSharePress?: () => void;
+  headerRightBeginning?: IconButtonConfig[];
+  headerRightEnd?: IconButtonConfig[];
+}
 
 const IconsHeader = ({
   hasActiveFilters,
@@ -10,11 +24,11 @@ const IconsHeader = ({
   onSharePress,
   headerRightBeginning = [],
   headerRightEnd = [],
-}) => {
+}: IconsHeaderProps) => {
   const { Colors } = useTheme();
-  const styles = stylesFn();
+  const styles = stylesFn(Colors);
 
-  const iconButtons = [
+  const iconButtons: IconButtonConfig[] = [
     ...(Array.isArray(headerRightBeginning) ? headerRightBeginning : []),
     {
       condition: !!onSortPress,

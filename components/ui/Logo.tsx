@@ -1,17 +1,28 @@
-import { StyleSheet, Text, View, Image } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  View,
+  Image,
+} from "react-native";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
+import { StyleType } from "../../types";
 
-const Logo = ({ style, imageSize = 100, withText = false }) => {
+const Logo = ({
+  style,
+  imageSize = 100,
+  withText = false,
+}: {
+  style?: StyleType;
+  imageSize?: number;
+  withText?: boolean;
+}) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors, imageSize);
   return (
     <View style={[styles.imageContainer, style]}>
       <View style={styles.logo}>
-        <Image
-          source={require("../../assets/icon.png")}
-          style={styles.image}
-        />
+        <Image source={require("../../assets/icon.png")} style={styles.image} />
       </View>
       {withText && (
         <Text style={styles.logoText}>
@@ -24,7 +35,7 @@ const Logo = ({ style, imageSize = 100, withText = false }) => {
 
 export default Logo;
 
-const stylesFn = (Colors, imageSize, withText) =>
+const stylesFn = (Colors: ThemeColors, imageSize: number) =>
   StyleSheet.create({
     imageContainer: {
       flexDirection: "row",

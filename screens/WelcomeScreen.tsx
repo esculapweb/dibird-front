@@ -11,15 +11,20 @@ import * as AppleAuthentication from "expo-apple-authentication";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets, EdgeInsets } from "react-native-safe-area-context";
+import { DrawerNavigationProp } from "@react-navigation/drawer";
 
 import { ThemeColors, useTheme } from "../store/theme-context";
 import Layout from "../components/ui/Layout";
 import Logo from "../components/ui/Logo";
 import { LoginWithGoogle, LoginWithApple } from "../util/auth";
 import { showError } from "../services/api";
-import { AppError, NavigationProp} from "../types";
+import { AppError, AuthDrawerParamList } from "../types";
 
-const WelcomeScreen = ({ navigation }: { navigation: NavigationProp }) => {
+const WelcomeScreen = ({
+  navigation,
+}: {
+  navigation: DrawerNavigationProp<AuthDrawerParamList>;
+}) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -60,14 +65,14 @@ const WelcomeScreen = ({ navigation }: { navigation: NavigationProp }) => {
         {t("by_continuing")}{" "}
         <Text
           style={[styles.legalLink, { color: Colors.main100 }]}
-          onPress={() => navigation.navigate("Terms")}
+          onPress={() => navigation.navigate("Terms" as never)}
         >
           {t("terms_of_service_")}
         </Text>{" "}
         {t("and")}{" "}
         <Text
           style={[styles.legalLink, { color: Colors.main100 }]}
-          onPress={() => navigation.navigate("Privacy")}
+          onPress={() => navigation.navigate("Privacy" as never)}
         >
           {t("privacy_policy_")}
         </Text>
@@ -108,7 +113,7 @@ const WelcomeScreen = ({ navigation }: { navigation: NavigationProp }) => {
               styles.button,
               { backgroundColor: Colors.main100, borderColor: Colors.main100 },
             ]}
-            onPress={() => navigation.navigate("Login")}
+            onPress={() => navigation.navigate("Login" as never)}
           >
             <Ionicons
               name="mail-outline"

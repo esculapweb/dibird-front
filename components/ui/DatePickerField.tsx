@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { View, Text, Pressable, Platform, StyleSheet } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import { useTheme, ThemeColors } from "../../store/theme-context";
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
+import { useTheme } from "../../store/theme-context";
 import i18n from "../../services/i18n";
 
-const toDateOnly = (date) => {
+const toDateOnly = (date: string | Date | null): string | null => {
   if (!date) return null;
   const d = date instanceof Date ? date : new Date(date + "T00:00:00");
   const year = d.getFullYear();
@@ -13,37 +15,48 @@ const toDateOnly = (date) => {
   return `${year}-${month}-${day}`;
 };
 
-const toPickerDate = (value) => {
+const toPickerDate = (value: string | Date | null): Date => {
   if (!value) return new Date();
   if (value instanceof Date) return value;
   return new Date(value + "T00:00:00");
 };
 
-const formatDate = (dateStr) => {
+const formatDate = (dateStr: string | null): string => {
   if (!dateStr) return "—";
   return new Date(dateStr + "T00:00:00").toLocaleDateString(i18n.language);
 };
 
 // value: string "YYYY-MM-DD" | null
 // setDate: (string "YYYY-MM-DD" | null) => void
-const DatePickerField = ({ label, date, setDate }) => {
+const DatePickerField = ({
+  label,
+  date,
+  setDate,
+}: {
+  label: string;
+  date: string | null;
+  setDate: (date: string | null) => void;
+}) => {
   const { Colors } = useTheme();
   const [show, setShow] = useState(false);
 
-  const onChange = (event, selectedDate) => {
+  const onChange = (
+    event: DateTimePickerEvent,
+    selectedDate: Date | undefined,
+  ) => {
     if (Platform.OS === "android") setShow(false);
     if (selectedDate) setDate(toDateOnly(selectedDate));
   };
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.label, { color: Colors.text }]}>{label}</Text>
+      <Text style={[styles.label, { color: Colors.textMain }]}>{label}</Text>
 
       <Pressable
         onPress={() => setShow(true)}
         style={[styles.button, { borderColor: Colors.border }]}
       >
-        <Text style={{ color: Colors.text }}>{formatDate(date)}</Text>
+        <Text style={{ color: Colors.textMain }}>{formatDate(date)}</Text>
       </Pressable>
 
       {show && (

@@ -37,7 +37,7 @@ import LanguageSwitcher from "../components/Language/LanguageSwitcher";
 import ThemeSwitcher from "../components/Theme/ThemeSwitcher";
 import { useTheme, ThemeColors } from "../store/theme-context";
 import { useFilters } from "../store/filters-context";
-import { LightColors } from "../constants/colors/light";
+import StaticScreen from "../screens/StaticScreen";
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -258,13 +258,24 @@ const AppNavigator = () => {
       />
 
       <Stack.Screen name="UserStat" component={UserStatScreen} />
+
+      <Stack.Screen
+        name="Privacy"
+        component={StaticScreen}
+        options={{ title: t("privacy_policy") }}
+      />
+      <Stack.Screen
+        name="Terms"
+        component={StaticScreen}
+        options={{ title: t("terms_of_service") }}
+      />
     </Stack.Navigator>
   );
 };
 
 export default AppNavigator;
 
-const stylesFn = (Colors: typeof LightColors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     header: { paddingHorizontal: 16, alignItems: "center", marginBottom: 24 },
     logout: { borderTopWidth: 1, borderColor: Colors.divider },

@@ -1,5 +1,15 @@
+import { ReactNode } from "react";
 import FlatButtonBottom from "./FlatButtonBottom";
 import Layout from "./Layout";
+import { StyleType } from "../../types";
+
+interface FormWrapperProps {
+  header?: ReactNode;
+  bottomButtonLabel?: string;
+  bottomButtonHandler?: () => void;
+  style?: StyleType;
+  children: ReactNode;
+}
 
 const FormWrapper = ({
   header,
@@ -7,7 +17,7 @@ const FormWrapper = ({
   bottomButtonHandler,
   style,
   children,
-}) => {
+}: FormWrapperProps) => {
   const bottomEl = bottomButtonLabel && (
     <FlatButtonBottom onPress={bottomButtonHandler}>
       {bottomButtonLabel}

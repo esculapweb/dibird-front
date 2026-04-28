@@ -1,4 +1,4 @@
-import {  ReactNode, ComponentProps } from "react";
+import {  ReactNode } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -10,12 +10,13 @@ import { Ionicons } from "@expo/vector-icons";
 import {  EdgeInsets, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
+import { IconType } from "../../types";
 
 interface FlatButtonBottomProps {
   children: ReactNode;
   onPress?: () => void;
   textColor?: string;
-  icon?: ComponentProps<typeof Ionicons>["name"];
+  icon?: IconType;
   loading?: boolean;
   savedLabel?: string;
 }

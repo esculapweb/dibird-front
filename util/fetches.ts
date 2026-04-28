@@ -39,7 +39,7 @@ export const fetchMyCountries = async (favOnly = false, order: string) => {
     label: item.name,
     code: item.code,
     icon: isoToFlagEmoji(item.code),
-    iconLabelRight: item.favourite && "flag",
+    iconLabelRight: item.favourite ? "flag" as const : undefined,
   }));
 };
 
@@ -85,7 +85,7 @@ export const fetchMyPlaces = async (
   return res.data.map((item) => ({
     value: item.id,
     label: item.name,
-    iconLabel: item.favourite ? "star" : null,
+    iconLabel: item.favourite ? "star" as const : undefined,
     location: item.location,
     distance: item.distance ?? null,
     preview: item.preview,

@@ -1,13 +1,21 @@
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 
-const HeaderTitleWithBadge = ({ title, badgeCount }) => {
+const HeaderTitleWithBadge = ({
+  title,
+  badgeCount,
+}: {
+  title: string;
+  badgeCount?: number | null;
+}) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">{title}</Text>
+      <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
+        {title}
+      </Text>
       {badgeCount !== undefined && badgeCount !== null && (
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{badgeCount}</Text>
@@ -41,7 +49,7 @@ const stylesFn = (Colors: ThemeColors) =>
       paddingHorizontal: 5,
       backgroundColor: Colors.primary100,
       borderWidth: 1,
-      borderColor: Colors.main100, 
+      borderColor: Colors.main100,
     },
     badgeText: {
       color: Colors.textMain,

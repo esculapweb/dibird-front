@@ -17,8 +17,10 @@ import ConfirmEmailScreen from "../screens/ConfirmEmailScreen";
 import LanguageSwitcher from "../components/Language/LanguageSwitcher";
 import { useTheme } from "../store/theme-context";
 import ThemeSwitcher from "../components/Theme/ThemeSwitcher";
+import { AuthDrawerParamList } from "../types";
+import StaticScreen from "../screens/StaticScreen";
 
-const Drawer = createDrawerNavigator();
+const Drawer = createDrawerNavigator<AuthDrawerParamList>();
 
 const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   return (
@@ -103,6 +105,23 @@ const AuthDrawer = () => {
           headerTransparent: true,
           headerShadowVisible: false,
           drawerItemStyle: { display: "none" },
+        }}
+      />
+
+      <Drawer.Screen
+        name="Privacy"
+        component={StaticScreen}
+        options={{
+          drawerItemStyle: { display: "none" },
+          title: t("privacy_policy"),
+        }}
+      />
+      <Drawer.Screen
+        name="Terms"
+        component={StaticScreen}
+        options={{
+          drawerItemStyle: { display: "none" },
+          title: t("terms_of_service"),
         }}
       />
     </Drawer.Navigator>

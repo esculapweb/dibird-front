@@ -1,4 +1,21 @@
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { ComponentProps } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { StyleProp, ViewStyle } from "react-native";
+import {
+  NativeStackNavigationProp,
+  NativeStackScreenProps,
+} from "@react-navigation/native-stack";
+import {
+  DrawerNavigationProp,
+  DrawerScreenProps,
+} from "@react-navigation/drawer";
+import {
+  CompositeNavigationProp,
+  CompositeScreenProps,
+} from "@react-navigation/native";
+
+export type IconType = ComponentProps<typeof Ionicons>["name"];
+export type StyleType = StyleProp<ViewStyle>;
 
 export interface AppError extends Error {
   code?: string;
@@ -17,6 +34,16 @@ interface UserData {
   last_name: string;
   email: string;
   is_active: boolean;
+}
+
+export interface OwnerData {
+  avatar: string;
+  first_name: string;
+  id: number;
+  last_name: string;
+  private: boolean;
+  timezone_id: string;
+  username: string;
 }
 
 export interface Profile {
@@ -78,7 +105,9 @@ export interface DropdownItem {
   label: string;
   name_lang?: string;
   icon?: string | null;
-  iconLabel?: string | null;
+  iconLabel?: IconType | null;
+  iconLabelRight?: IconType | null;
+  distance?: number | null;
 }
 
 export interface SpeciesDropdownItem extends DropdownItem {
@@ -95,7 +124,6 @@ export interface PlaceDropdownItem extends DropdownItem {
   };
   distance?: number;
 }
-
 
 export interface PaginatedResult<T> {
   pagination: {
@@ -121,7 +149,6 @@ export interface SpeciesItem {
   max_territory: string | null;
 }
 
-
 export interface SpeciesData {
   id: number;
   name: string;
@@ -129,7 +156,6 @@ export interface SpeciesData {
   segment: string;
   thumb: string;
 }
-
 
 export interface DiaryFormData {
   territory: number;
@@ -151,7 +177,7 @@ export interface ObservationFormData {
   diary?: number | null;
 }
 
-export type Coords = [number, number]
+export type Coords = [number, number];
 
 export interface PlaceFormData {
   name: string;
@@ -173,8 +199,6 @@ export interface PlaceData {
   preview: string | null;
 }
 
-
-
 export interface GeoDetails {
   country: string | undefined;
   countryCode: string | undefined;
@@ -183,48 +207,12 @@ export interface GeoDetails {
   raw: Record<string, unknown> | undefined;
 }
 
-
-
-export type RootStackParamList = {
-  Stat: {
-    filtersOverride?: Filters;
-    seenMode?: seenMode;
-    o?: string;
-  };
-  Observations: {
-    filtersOverride?: Filters;
-  };
-  Privacy: undefined;
-  Terms: undefined;
-  Login: undefined;
-
-  // остальные экраны
-};
-
-export type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
-
-
-
-
-
-
-export interface OwnerData {
-  avatar: string;
-  first_name: string;
-  id: number;
-  last_name: string;
-  private: boolean;
-  timezone_id: string;
-  username: string;
-}
-
 export interface TerritoryData {
   code: string;
   id: number;
   name: string;
   segment: string;
 }
-
 
 export interface ObservationItem {
   created_at: string;
@@ -265,3 +253,89 @@ export interface DiaryItem {
 }
 
 export type EditorItem = DiaryItem & ObservationItem;
+
+export interface IconButtonProps {
+  icon: IconType;
+  onPress?: () => void | undefined;
+  tintColor?: string;
+  active?: boolean;
+  style?: StyleType;
+  size?: number;
+  disabled?: boolean;
+  loading?: boolean;
+}
+
+export type RootStackParamList = {
+  Root: undefined;
+  Privacy: undefined;
+  Terms: undefined;
+};
+
+export type AppStackParamList = {
+  Main: undefined;
+  Stat: { filtersOverride?: Filters; seenMode?: seenMode; o?: string };
+  Checklist: undefined;
+  Places: undefined;
+  PlaceDetail: { id: number };
+  PlaceEditor: { id?: number };
+  Observations: { filtersOverride?: Filters };
+  ObservationDetail: { id: number };
+  ObservationEditor: { id?: number };
+  Diaries: undefined;
+  DiaryDetail: { id: number };
+  DiaryEditor: { id?: number };
+  Rating: undefined;
+  RatingsCompare: undefined;
+  UserStat: { userId: number };
+};
+
+export type AppDrawerParamList = {
+  MainDrawer: undefined;
+  Profile: undefined;
+};
+
+export type AuthDrawerParamList = {
+  Welcome: undefined;
+  CheckEmail: { email?: string };
+  Login: { emailConfirmed?: boolean; prefillEmail?: string };
+  Signup: undefined;
+  ConfirmEmail: { key: string };
+};
+
+// --- Navigation Props ---
+
+export type RootStackNavigationProp =
+  NativeStackNavigationProp<RootStackParamList>;
+
+export type AppStackNavigationProp =
+  NativeStackNavigationProp<AppStackParamList>;
+
+export type AuthDrawerNavigationProp = CompositeNavigationProp<
+  DrawerNavigationProp<AuthDrawerParamList>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
+
+export type AppDrawerNavigationProp = CompositeNavigationProp<
+  DrawerNavigationProp<AppDrawerParamList>,
+  NativeStackNavigationProp<AppStackParamList>
+>;
+
+// --- Screen Props ---
+
+export type AppStackScreenProps<T extends keyof AppStackParamList> =
+  NativeStackScreenProps<AppStackParamList, T>;
+
+export type AuthDrawerScreenProps<T extends keyof AuthDrawerParamList> =
+  DrawerScreenProps<AuthDrawerParamList, T>;
+
+export type AppDrawerScreenProps<T extends keyof AppDrawerParamList> =
+  CompositeScreenProps<
+    DrawerScreenProps<AppDrawerParamList, T>,
+    NativeStackScreenProps<AppStackParamList>
+  >;
+
+declare global {
+  namespace ReactNavigation {
+    interface RootParamList extends RootStackParamList {}
+  }
+}

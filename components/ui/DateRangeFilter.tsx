@@ -6,8 +6,15 @@ import RadioGroup from "./RadioGroup";
 import DropdownInput from "./DropdownInput";
 import DateInput from "./DateInput";
 import { useTheme, ThemeColors } from "../../store/theme-context";
+import { DateFilter } from "../../types";
 
-const DateRangeFilter = ({ value, setDateFilter }) => {
+const DateRangeFilter = ({
+  value,
+  setDateFilter,
+}: {
+  value: DateFilter;
+  setDateFilter: (value: any) => void;
+}) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -18,7 +25,7 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
   const from = value?.type === "range" && value.from ? value.from : null;
   const to = value?.type === "range" && value.to ? value.to : null;
 
-  const normalizeRange = (from, to) => {
+  const normalizeRange = (from: string | null, to: string | null) => {
     if (!from && !to) return null;
     if (from && to && from > to) return null;
 
@@ -30,7 +37,7 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
 
   const rangeInvalid = mode === "range" && from && to && from > to;
 
-  const handleModeChange = (newMode) => {
+  const handleModeChange = (newMode: string | number | boolean | null) => {
     if (newMode === "all") {
       setDateFilter(null);
       return;
@@ -56,16 +63,16 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
     }
   };
 
-  const handleYearChange = (newYear) => {
+  const handleYearChange = (newYear: string | number | null) => {
     setDateFilter(newYear ? { type: "year", year: newYear } : null);
   };
 
-  const handleFromChange = (newFrom) => {
+  const handleFromChange = (newFrom: string | null) => {
     const normalized = normalizeRange(newFrom, to);
     setDateFilter(normalized ? { type: "range", from: newFrom, to } : null);
   };
 
-  const handleToChange = (newTo) => {
+  const handleToChange = (newTo: string | null) => {
     const normalized = normalizeRange(from, newTo);
     setDateFilter(normalized ? { type: "range", from, to: newTo } : null);
   };
@@ -100,7 +107,7 @@ const DateRangeFilter = ({ value, setDateFilter }) => {
         <DropdownInput
           title={t("year")}
           placeholder={t("select_year")}
-          value={year}
+          value={year as number | null}
           setValue={handleYearChange}
           query={{ data: yearOptions }}
           allowReset

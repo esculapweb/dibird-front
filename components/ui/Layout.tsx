@@ -1,10 +1,14 @@
 import { ReactNode } from "react";
-import { View, ScrollView, StyleSheet } from "react-native";
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+} from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import BackgroundScene from "./BackgroundScene";
-import { LightColors } from "../../constants/colors/light";
+import { StyleType } from "../../types";
 
 interface LayoutProps {
   children: ReactNode;
@@ -12,7 +16,7 @@ interface LayoutProps {
   bottom?: ReactNode;
   withKeyboard?: boolean;
   withScroll?: boolean;
-  style?: any;
+  style?: StyleType;
   contentContainerStyle?: any;
 }
 
@@ -43,7 +47,10 @@ const Layout = ({
           {children}
         </KeyboardAwareScrollView>
       ) : withScroll ? (
-        <ScrollView style={[styles.inner, style]} contentContainerStyle={contentContainerStyle}>
+        <ScrollView
+          style={[styles.inner, style]}
+          contentContainerStyle={contentContainerStyle}
+        >
           {top}
           {children}
         </ScrollView>
@@ -60,7 +67,7 @@ const Layout = ({
 
 export default Layout;
 
-const stylesFn = (Colors: typeof LightColors) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     container: {
       flex: 1,

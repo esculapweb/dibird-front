@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
+
 import { loadSort } from "../util/storageHelper";
 import { normalizeValue } from "../util/helpers";
 import { parseDeepLinkParams } from "../util/parseDeepLinkParams";
@@ -9,7 +10,7 @@ import { useFilters } from "../store/filters-context";
 import { sortOptionsList } from "../util/sortOptionsList";
 import { useDebounce } from "./useDebounce";
 import { useLocation } from "../store/location-context";
-import { Filters, FilterKey, NavigationProp} from "../types";
+import { Filters, FilterKey, AppStackNavigationProp} from "../types";
 
 
 export const useSyncedFilters = ({
@@ -20,7 +21,7 @@ export const useSyncedFilters = ({
   allowedFilters,
 }: {
   route: NativeStackScreenProps<any, any>["route"];
-  navigation: NavigationProp;
+  navigation: AppStackNavigationProp;
   screenName: string;
   allowSort?: boolean;
   allowedFilters: FilterKey[];

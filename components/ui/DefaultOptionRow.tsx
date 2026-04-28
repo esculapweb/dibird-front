@@ -3,6 +3,17 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
+import { DropdownItem } from "../../types";
+
+
+interface DefaultOptionRowProps {
+  item: DropdownItem;
+  selected: string | number;
+  onSelect: (value: any) => void;
+  onClose: () => void;
+  itemHeight: number;
+}   
+
 
 const DefaultOptionRow = ({
   item,
@@ -10,7 +21,7 @@ const DefaultOptionRow = ({
   onSelect,
   onClose,
   itemHeight,
-}) => {
+}: DefaultOptionRowProps) => {
   const { Colors } = useTheme();
   const { t } = useTranslation();
   const styles = stylesFn(Colors, itemHeight);
@@ -72,7 +83,7 @@ const DefaultOptionRow = ({
 
 export default DefaultOptionRow;
 
-const stylesFn = (Colors, itemHeight) =>
+const stylesFn = (Colors: ThemeColors, itemHeight: number) =>
   StyleSheet.create({
     item: {
       minHeight: itemHeight,

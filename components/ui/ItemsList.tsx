@@ -3,14 +3,31 @@ import {
   StyleSheet,
   Pressable,
   ActivityIndicator,
+  FlatListProps,
+  ListRenderItem,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
-import EmptyState from "../Empty/EmptyState";
+import EmptyState, { EmptyStateProps } from "../Empty/EmptyState";
+import { IconType } from "../../types";
 
-const ItemsList = ({
+interface ItemsListProps<T> {
+  data: T[];
+  onEndReached?: () => void;
+  isLoadingMore?: boolean;
+  onAdd?: () => void;
+  renderItem: ListRenderItem<T>;
+  keyExtractor: (item: T, index: number) => string;
+  emptyType?: "filtered" | string;
+  onClear?: () => void;
+  noItems?: EmptyStateProps;
+  listHeader?: FlatListProps<T>["ListHeaderComponent"];
+  fabIcon?: IconType;
+}
+
+const ItemsList = <T,>({
   data,
   onEndReached,
   isLoadingMore,
@@ -21,24 +38,26 @@ const ItemsList = ({
   onClear,
   noItems,
   listHeader,
-  fabIcon="add",
-}) => {
+  fabIcon = "add",
+}: ItemsListProps<T>) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const { t } = useTranslation();
 
-  const getEmptyProps = () => {
+  const getEmptyProps = (): EmptyStateProps | null => {
     if (!emptyType) return null;
 
     if (emptyType === "filtered") {
       return {
         icon: "search-outline",
         message: t("nothing_found"),
-        actions: [{ label: t("reset_filters"), onPress: onClear }],
+        actions: [
+          { label: t("reset_filters"), onPress: onClear ?? (() => {}) },
+        ],
       };
     }
 
-    return noItems;
+    return noItems ?? null;
   };
 
   const emptyProps = getEmptyProps();
@@ -62,7 +81,10 @@ const ItemsList = ({
         ListHeaderComponent={listHeader}
         ListEmptyComponent={
           data.length === 0 && emptyProps ? (
-            <EmptyState key="empty-state" {...emptyProps} />
+            <EmptyState
+              key="empty-state"
+              {...(emptyProps as EmptyStateProps)}
+            />
           ) : null
         }
         ListFooterComponent={

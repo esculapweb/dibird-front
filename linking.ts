@@ -1,4 +1,6 @@
 import { getStateFromPath } from "@react-navigation/native";
+import { RootStackParamList } from "./types";
+import { LinkingOptions } from "@react-navigation/native";
 
 const parseString = (v: string | null): string | undefined => v || undefined;
 
@@ -25,37 +27,49 @@ const withBasicFilters = (path: string) => ({
   },
 });
 
-const linking = (isAuthenticated: boolean) => ({
+const linking = (
+  isAuthenticated: boolean,
+): LinkingOptions<RootStackParamList> => ({
   prefixes: ["dibird://", "https://dibird.com"],
 
   config: {
     screens: {
-      Main: {
-        screens: {
-          MainDrawer: "my",
-          Profile: "my/profile",
-        },
+      Root: {
+        screens: isAuthenticated
+          ? {
+              Main: {
+                screens: {
+                  MainDrawer: "my",
+                  Profile: "my/profile",
+                },
+              },
+              Stat: withFilters("my/stat"),
+              Checklist: withFilters("my/checklist"),
+              Places: withBasicFilters("my/place"),
+              PlaceDetail: "my/place/:placeId",
+              Observations: withFilters("my/observation"),
+              ObservationDetail: "my/observation/:observationId",
+              Diaries: withFilters("my/diary"),
+              DiaryDetail: "my/diary/:diaryId",
+              Rating: withFilters("users"),
+              RatingsCompare: withFilters("users/compare/:profile1/:profile2"),
+              UserStat: withFilters("users/stat/:profileId"),
+            }
+          : {
+              ConfirmEmail: "accounts/confirm-email/:key",
+              Login: "accounts/login",
+              Signup: "accounts/signup",
+            },
       },
-      Stat: withFilters("my/stat"),
-      Checklist: withFilters("my/checklist"),
-      Places: withBasicFilters("my/place"),
-      PlaceDetail: "my/place/:placeId",
-      Observations: withFilters("my/observation"),
-      ObservationDetail: "my/observation/:observationId",
-      Diaries: withFilters("my/diary"),
-      DiaryDetail: "my/diary/:diaryId",
-      Rating: withFilters("users"),
-      RatingsCompare: withFilters("users/compare/:profile1/:profile2"),
-      UserStat: withFilters("users/stat/:profileId"),
-
-      // AuthDrawer
-      ConfirmEmail: "accounts/confirm-email/:key",
-      Login: "accounts/login",
-      Signup: "accounts/signup",
+      Privacy: "privacy",
+      Terms: "terms",
     },
   },
 
-  getStateFromPath(path: string, options?: Parameters<typeof getStateFromPath>[1]) {
+  getStateFromPath(
+    path: string,
+    options?: Parameters<typeof getStateFromPath>[1],
+  ) {
     const locales = ["ru"];
     const normalizedPath2 = path.startsWith("/") ? path : `/${path}`;
     const localePrefix = locales.find((l) =>
