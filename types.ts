@@ -13,6 +13,7 @@ import {
   CompositeNavigationProp,
   CompositeScreenProps,
 } from "@react-navigation/native";
+import { AxiosResponse } from "axios";
 
 export type IconType = ComponentProps<typeof Ionicons>["name"];
 export type StyleType = StyleProp<ViewStyle>;
@@ -26,7 +27,7 @@ export interface AppError extends Error {
   isNetworkError?: boolean;
   isServerError?: boolean;
   originalError?: unknown;
-  response?: any;
+  response?: AxiosResponse;
 }
 
 export interface QueryType {
@@ -115,6 +116,7 @@ export interface Filters {
   seen?: boolean | null;
   new?: boolean;
   favourite?: boolean | null;
+  speciesName?: string;
   [key: string]: unknown;
 }
 
@@ -154,6 +156,10 @@ export interface PlaceDropdownItem extends DropdownItem {
   };
   distance?: number;
   name?: string;
+}
+
+export interface TerritoryDropdownItem extends DropdownItem {
+  code: string;
 }
 
 export interface PaginatedResult<T> {
@@ -218,6 +224,16 @@ export interface ObservationFormData {
   quantity?: number | null;
   notes?: string | null;
   diary?: number | null;
+}
+
+export interface ProfileFormData {
+  first_name: string;
+  last_name: string;
+  username: string;
+  territory?: number | null;
+  timezone?: string;
+  private: boolean;
+  private_diary: boolean;
 }
 
 export type Coords = [number, number];
@@ -314,6 +330,28 @@ export interface DiaryListItem extends DiaryBase {
   }[];
 }
 
+export interface PlaceItemBase {
+  id: number;
+  name: string;
+  favourite: boolean;
+  location: {
+    type: string;
+    coordinates: Coords;
+  };
+  distance?: number | null;
+  preview?: string | null;
+}
+
+export interface PlaceItem extends PlaceItemBase {
+  diary_count: number;
+  observation_count: number;
+  species_count: number;
+  territory: number;
+  territory_data: TerritoryData;
+  created_at: string;
+  updated_at: string;
+}
+
 export type EditorItem = DiaryItem & ObservationItem;
 
 export interface IconButtonProps {
@@ -335,29 +373,30 @@ export type RootStackParamList = {
   Terms: undefined;
 };
 
+export interface ScreenWithFilters {
+  filtersOverride?: Filters;
+  o?: string;
+  seenMode?: seenMode;
+  backTitle?: string;
+}
+
 export type AppStackParamList = {
-  Main: { filtersOverride?: Filters };
-  Stat: {
-    filtersOverride?: Filters;
-    seenMode?: seenMode;
-    o?: string;
-    backTitle?: string;
-  };
-  Checklist: { filtersOverride?: Filters; seenMode?: seenMode; o?: string };
-  Places: { filtersOverride?: Filters };
+  Main: ScreenWithFilters;
+  Stat: ScreenWithFilters;
+  Checklist: ScreenWithFilters;
+  Places: ScreenWithFilters;
   PlaceDetail: { placeId: number };
   PlaceEditor: { placeId?: number };
-  Observations: { filtersOverride?: Filters };
+  Observations: ScreenWithFilters;
   ObservationDetail: { observationId: number };
   ObservationEditor: { observationId?: number };
-  Diaries: { filtersOverride?: Filters };
+  Diaries: ScreenWithFilters;
   DiaryDetail: { diaryId: number };
   DiaryEditor: { diaryId?: number };
-  Rating: { filtersOverride?: Filters };
-  RatingsCompare: {
+  Rating: ScreenWithFilters;
+  RatingsCompare: ScreenWithFilters & {
     profile1: number;
     profile2: number;
-    filtersOverride?: Filters;
   };
   UserStat: { profileId: number };
 };
@@ -396,6 +435,22 @@ export interface RatingCompareItem {
   thumb: string | null;
 }
 
+export interface RatingCompareProfileCounts {
+  all: number;
+  common: number;
+  different: number;
+  profile: [number, number];
+  profile_diff: [number, number];
+}
+
+export interface RatingCompareProfile {
+  avatar: string;
+  first_name: string;
+  user_id: number;
+  last_name: string;
+  username: string;
+}
+
 // --- Navigation Props ---
 
 export type RootStackNavigationProp =
@@ -415,6 +470,9 @@ export type AppDrawerNavigationProp = CompositeNavigationProp<
 >;
 
 // --- Screen Props ---
+
+export type RootStackScreenProps<T extends keyof RootStackParamList> =
+  NativeStackScreenProps<RootStackParamList, T>;
 
 export type AppStackScreenProps<T extends keyof AppStackParamList> =
   NativeStackScreenProps<AppStackParamList, T>;

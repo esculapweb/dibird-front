@@ -11,8 +11,17 @@ import { fetchTimezones, fetchMyCountries } from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 import { useTheme, ThemeColors } from "../../store/theme-context";
+import { ProfileFormData } from "../../types";
 
-const ProfileForm = ({ submitHandler, loading, success }) => {
+const ProfileForm = ({
+  submitHandler,
+  loading,
+  success,
+}: {
+  submitHandler: (data: ProfileFormData) => void;
+  loading: boolean;
+  success: boolean;
+}) => {
   const { language } = useLanguage();
   const { t } = useTranslation();
   const { profile } = useProfile();
@@ -22,10 +31,14 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [userName, setUserName] = useState("");
-  const [territoryValue, setTerritoryValue] = useState("");
+  const [territoryValue, setTerritoryValue] = useState<string | number | null>(
+    null,
+  );
   const [privateProfile, setPrivateProfile] = useState(false);
   const [privateDiaries, setPrivateDiaries] = useState(false);
-  const [timezoneValue, setTimezoneValue] = useState("");
+  const [timezoneValue, setTimezoneValue] = useState<string | number | null>(
+    null,
+  );
 
   const [invalid, setInvalid] = useState({
     firstName: false,
@@ -36,20 +49,22 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
   });
 
   const setInitialValues = () => {
-    setFirstName(profile.user_data.first_name ?? "");
-    setLastName(profile.user_data.last_name ?? "");
-    setUserName(profile.user_data.username ?? "");
-    setPrivateProfile(profile.private ?? false);
-    setPrivateDiaries(profile.private_diary ?? false);
-    setTerritoryValue(profile.territory ?? "");
-    setTimezoneValue(profile.timezone ?? "");
+    setFirstName(profile?.user_data.first_name ?? "");
+    setLastName(profile?.user_data.last_name ?? "");
+    setUserName(profile?.user_data.username ?? "");
+    setPrivateProfile(profile?.private ?? false);
+    setPrivateDiaries(profile?.private_diary ?? false);
+    setTerritoryValue(profile?.territory ?? null);
+    setTimezoneValue(profile?.timezone ?? null);
   };
 
   const validateForm = () => {
     const newInvalid = {
+      firstName: false,
+      lastName: false,
       userName: !userName.trim(),
-      territory: !String(territoryValue ?? "").trim(),
-      timezone: !String(timezoneValue ?? "").trim(),
+      territory: !territoryValue,
+      timezone: !timezoneValue,
     };
     setInvalid(newInvalid);
     return !Object.values(newInvalid).some((v) => v);
@@ -61,8 +76,8 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
       first_name: firstName,
       last_name: lastName,
       username: userName,
-      territory: territoryValue,
-      timezone: timezoneValue,
+      territory: typeof territoryValue === "string" ? null : territoryValue,
+      timezone: timezoneValue?.toString() ?? "",
       private: privateProfile,
       private_diary: privateDiaries,
     });
@@ -115,7 +130,6 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
         value={userName}
         onUpdateValue={setUserName}
         isInvalid={invalid.userName}
-        prefix="@"
       />
 
       <View style={styles.hairline} />
@@ -140,20 +154,22 @@ const ProfileForm = ({ submitHandler, loading, success }) => {
       />
 
       <View style={styles.hairline} />
-        <Text style={styles.privacyLabel}>{t("profile")}</Text>
-        <PrivacyToggle
-          value={privateProfile}
-          onChange={setPrivateProfile}
-          gender="male"
-          style={{marginBottom: 12}}
-        />
-        <View style={styles.hairline} />
-        <Text style={styles.privacyLabel}>{t("new_observations_and_diaries")}</Text>
-        <PrivacyToggle
-          value={privateDiaries}
-          onChange={setPrivateDiaries}
-          gender="multiple"
-        />
+      <Text style={styles.privacyLabel}>{t("profile")}</Text>
+      <PrivacyToggle
+        value={privateProfile}
+        onChange={setPrivateProfile}
+        gender="male"
+        style={{ marginBottom: 12 }}
+      />
+      <View style={styles.hairline} />
+      <Text style={styles.privacyLabel}>
+        {t("new_observations_and_diaries")}
+      </Text>
+      <PrivacyToggle
+        value={privateDiaries}
+        onChange={setPrivateDiaries}
+        gender="multiple"
+      />
 
       <View style={styles.buttonContainer}>
         <AnimatedLoadingButton
@@ -203,6 +219,5 @@ const stylesFn = (Colors: ThemeColors) =>
       color: Colors.textSecondary,
       textTransform: "uppercase",
       letterSpacing: 0.8,
-
     },
   });

@@ -7,6 +7,16 @@ import {
   SpeciesItem,
   Coords,
   ChecklistItem,
+  PlaceItemBase,
+  TerritoryDropdownItem,
+  PlaceDropdownItem,
+  SpeciesDropdownItem,
+  ObservationItem,
+  RatingCompareItem,
+  RatingItem,
+  DiaryItem,
+  DiaryObservationItem,
+  PlaceItem,
 } from "../types";
 
 export const fetchTimezones = async () => {
@@ -29,7 +39,10 @@ interface CountryItem {
   favourite: boolean;
 }
 
-export const fetchMyCountries = async (favOnly = false, order: string) => {
+export const fetchMyCountries = async (
+  favOnly = false,
+  order: string,
+): Promise<TerritoryDropdownItem[]> => {
   const params: { o: string; fav_only?: boolean } = {
     o: order,
   };
@@ -40,27 +53,15 @@ export const fetchMyCountries = async (favOnly = false, order: string) => {
     label: item.name,
     code: item.code,
     icon: isoToFlagEmoji(item.code),
-    iconLabelRight: item.favourite ? "flag" as const : undefined,
+    iconLabelRight: item.favourite ? ("flag" as const) : undefined,
   }));
 };
-
-interface PlaceItem {
-  id: number;
-  name: string;
-  favourite: boolean;
-  location: {
-    type: string;
-    coordinates: Coords;
-  } | null;
-  distance?: number | null;
-  preview?: string | null;
-}
 
 export const fetchMyPlaces = async (
   territory: number | null = null,
   coords: Coords | null = null,
   order: string,
-) => {
+): Promise<PlaceDropdownItem[]> => {
   if (!territory) return [];
 
   const isDistanceSort = order === "distance" || order === "-distance";
@@ -81,15 +82,17 @@ export const fetchMyPlaces = async (
     params.lat = lat;
   }
 
-  const res = await api.get<PlaceItem[]>("/myapi/place-dropdown2/", { params });
+  const res = await api.get<PlaceItemBase[]>("/myapi/place-dropdown2/", {
+    params,
+  });
 
   return res.data.map((item) => ({
     value: item.id,
     label: item.name,
-    iconLabel: item.favourite ? "star" as const : undefined,
+    iconLabel: item.favourite ? ("star" as const) : undefined,
     location: item.location,
-    distance: item.distance ?? null,
-    preview: item.preview,
+    distance: item.distance ?? undefined,
+    preview: item.preview ?? undefined,
   }));
 };
 
@@ -97,7 +100,7 @@ export const fetchSpecies = async (
   territory: number | null = null,
   order: string,
   dateFilter: DateFilter | null = null,
-) => {
+): Promise<SpeciesDropdownItem[]> => {
   if (!territory) return [];
   const params = {
     territory,
@@ -114,7 +117,7 @@ export const fetchSpecies = async (
     label: item.sp_name,
     name: item.sp_latin,
     name_lang: item.sp_name_lang,
-    thumb: item.sp_thumb,
+    thumb: item.sp_thumb ?? undefined,
     seen: item.seen,
   }));
 };
@@ -129,7 +132,7 @@ export const fetchDiarySpeciesIds = async (diaryId: number) => {
   return res.data;
 };
 
-export const fetchMapPreview = async (placeId: string | number| null) => {
+export const fetchMapPreview = async (placeId: string | number | null) => {
   const res = await api.get(`/myapi/place2/${placeId}/map_preview/`);
   return res.data;
 };
@@ -221,7 +224,13 @@ export const fetchChecklist = (
   page?: number,
 ) => {
   filters = { ...filters };
-  return fetchAbstract<PaginatedResponse<ChecklistItem>>("/myapi/checklist2/", filters, order, search, page);
+  return fetchAbstract<PaginatedResponse<ChecklistItem>>(
+    "/myapi/checklist2/",
+    filters,
+    order,
+    search,
+    page,
+  );
 };
 
 export const fetchPlaces = (
@@ -234,7 +243,7 @@ export const fetchPlaces = (
   const isDistanceSort = order === "distance" || order === "-distance";
   const extraParams =
     isDistanceSort && coords ? { lng: coords[0], lat: coords[1] } : {};
-  return fetchAbstract(
+  return fetchAbstract<PaginatedResponse<PlaceItem>>(
     "/myapi/place2/",
     filters,
     order,
@@ -249,14 +258,28 @@ export const fetchObservations = (
   order = "-date_time",
   search?: string,
   page?: number,
-) => fetchAbstract("/myapi/observation2/", filters, order, search, page);
+) =>
+  fetchAbstract<PaginatedResponse<ObservationItem>>(
+    "/myapi/observation2/",
+    filters,
+    order,
+    search,
+    page,
+  );
 
 export const fetchDiaries = (
   filters: Filters,
   order = "-date_time",
   search?: string,
   page?: number,
-) => fetchAbstract("/myapi/diary2/", filters, order, search, page);
+) =>
+  fetchAbstract<PaginatedResponse<DiaryItem>>(
+    "/myapi/diary2/",
+    filters,
+    order,
+    search,
+    page,
+  );
 
 export const fetchDiaryObservations = (
   filters: Filters,
@@ -264,7 +287,7 @@ export const fetchDiaryObservations = (
   search?: string,
   page?: number,
 ) => {
-  return fetchAbstract(
+  return fetchAbstract<PaginatedResponse<DiaryObservationItem>>(
     "/myapi/diary-observation2/",
     filters,
     order,
@@ -280,7 +303,13 @@ export const fetchRating = (
   page?: number,
 ) => {
   filters = { ...filters };
-  return fetchAbstract("/myapi/rating2/", filters, order, search, page);
+  return fetchAbstract<PaginatedResponse<RatingItem>>(
+    "/myapi/rating2/",
+    filters,
+    order,
+    search,
+    page,
+  );
 };
 
 export const fetchRatingCompareHeader = async (
@@ -311,5 +340,11 @@ export const fetchRatingCompare = (
   page?: number,
 ) => {
   filters = { ...filters };
-  return fetchAbstract("/myapi/rating-compare2/", filters, order, search, page);
+  return fetchAbstract<PaginatedResponse<RatingCompareItem>>(
+    "/myapi/rating-compare2/",
+    filters,
+    order,
+    search,
+    page,
+  );
 };

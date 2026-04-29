@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Dispatch, SetStateAction } from "react";
 import { StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme, ThemeColors } from "../../store/theme-context";
@@ -7,6 +7,33 @@ import DropdownInput from "../ui/DropdownInput";
 import { fetchMyCountries } from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
+import { Coords, GeoDetails } from "../../types";
+
+interface Errors {
+  name?: string;
+  latitude?: string;
+  longitude?: string;
+  territory?: string;
+}
+
+interface PlaceFormProps {
+  onCoordsChange: (
+    coords: [string, string],
+    options?: { fromManual?: boolean },
+  ) => void;
+  formData: { name: string; territory?: number | null };
+  setFormData: Dispatch<
+    SetStateAction<{ name: string; territory?: number | null }>
+  >;
+  coords: Coords;
+  latText: string;
+  lngText: string;
+  setLatText: (value: string) => void;
+  setLngText: (value: string) => void;
+  errors: Errors;
+  setErrors: Dispatch<SetStateAction<Errors>>;
+  locationDetails?: GeoDetails | null;
+}
 
 const PlaceForm = ({
   onCoordsChange,
@@ -20,13 +47,13 @@ const PlaceForm = ({
   errors,
   setErrors,
   locationDetails,
-}) => {
+}: PlaceFormProps) => {
   const { Colors } = useTheme();
   const { t } = useTranslation();
   const styles = stylesFn(Colors);
   const { language } = useLanguage();
 
-  const [territory, setTerritory] = useState(null);
+  const [territory, setTerritory] = useState<string | number | null>(null);
 
   const {
     query: queryMyCountries,
@@ -41,10 +68,11 @@ const PlaceForm = ({
   const territories = queryMyCountries.data ?? [];
 
   useEffect(() => {
-    if (!territories.length || !locationDetails?.countryCode) return;
+    const countryCode = locationDetails?.countryCode;
+    if (!territories.length || !countryCode) return;
 
     const countryValue = territories.find(
-      (c) => c.code.toLowerCase() === locationDetails.countryCode.toLowerCase(),
+      (c) => c.code.toLowerCase() === countryCode.toLowerCase(),
     )?.value;
 
     if (countryValue) {
@@ -54,24 +82,24 @@ const PlaceForm = ({
     }
   }, [territories, locationDetails?.countryCode, coords]);
 
-  const onChangeName = (text) => {
+  const onChangeName = (text: string) => {
     setFormData((prev) => ({ ...prev, name: text }));
     setErrors((prev) => ({ ...prev, name: undefined }));
   };
 
-  const onChangeLat = (text) => {
+  const onChangeLat = (text: string) => {
     const sanitized = text.replace(",", ".");
     setLatText(sanitized);
     onCoordsChange([lngText, sanitized], { fromManual: true });
   };
 
-  const onChangeLng = (text) => {
+  const onChangeLng = (text: string) => {
     const sanitized = text.replace(",", ".");
     setLngText(sanitized);
     onCoordsChange([sanitized, latText], { fromManual: true });
   };
 
-  const onChangeTerritory = (value) => {
+  const onChangeTerritory = (value: string | number | null) => {
     setTerritory(value);
     setFormData((prev) => ({ ...prev, territory: value }));
     setErrors((prev) => ({ ...prev, territory: undefined }));
@@ -83,7 +111,7 @@ const PlaceForm = ({
         label={t("place_name")}
         value={formData.name}
         onUpdateValue={onChangeName}
-        isInvalid={errors.name}
+        isInvalid={!!errors.name}
         error={errors.name}
       />
 
@@ -94,7 +122,7 @@ const PlaceForm = ({
             value={latText}
             onUpdateValue={onChangeLat}
             keyboardType="numbers-and-punctuation"
-            isInvalid={errors.latitude}
+            isInvalid={!!errors.latitude}
             error={errors.latitude}
           />
         </View>
@@ -104,7 +132,7 @@ const PlaceForm = ({
             value={lngText}
             onUpdateValue={onChangeLng}
             keyboardType="numbers-and-punctuation"
-            isInvalid={errors.longitude}
+            isInvalid={!!errors.longitude}
             error={errors.longitude}
           />
         </View>

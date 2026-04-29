@@ -1,21 +1,32 @@
 import { useEffect, useRef, useState } from "react";
 import { Text, ActivityIndicator, View, StyleSheet } from "react-native";
-import { useTheme, ThemeColors } from "../store/theme-context";
 import { useTranslation } from "react-i18next";
+import { useNavigation } from "@react-navigation/native";
 
+import { useTheme, ThemeColors } from "../store/theme-context";
 import Layout from "../components/ui/Layout";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import api from "../services/api";
 import Logo from "../components/ui/Logo";
+import {
+  AppError,
+  AuthDrawerNavigationProp,
+  AuthDrawerScreenProps,
+} from "../types";
 
-const ConfirmEmailScreen = ({ route, navigation }) => {
+const ConfirmEmailScreen = ({
+  route,
+}: AuthDrawerScreenProps<"ConfirmEmail">) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const { t } = useTranslation();
   const { key } = route.params;
   const isConfirmedRef = useRef(false);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<{ title: string; message: string } | null>(
+    null,
+  );
+  const navigation = useNavigation<AuthDrawerNavigationProp>();
 
   const confirmEmail = async () => {
     if (!key || isConfirmedRef.current) return;
@@ -48,12 +59,16 @@ const ConfirmEmailScreen = ({ route, navigation }) => {
         });
       }
     } catch (e) {
-      console.warn("ConfirmEmail API ERROR:", e.response?.data || e.message);
+      const error = e as AppError;
+      console.warn(
+        "ConfirmEmail API ERROR:",
+        error.response?.data || error.message,
+      );
       setError({
         title: t("error"),
         message:
-          e.response?.data?.detail ||
-          e.response?.data?.message ||
+          error.response?.data?.detail ||
+          error.response?.data?.message ||
           t("email_confirmation_failed"),
       });
     } finally {

@@ -6,17 +6,18 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import RenderHtml from "react-native-render-html";
 import { EdgeInsets, useSafeAreaInsets } from "react-native-safe-area-context";
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import Layout from "../components/ui/Layout";
 import { fetchPage } from "../util/fetches";
 import { useLanguage } from "../store/language-context";
 import { useTheme, ThemeColors } from "../store/theme-context";
+import { RootStackScreenProps } from "../types";
 
 const H_PAD = 16;
 
-
-const StaticScreen = ({ route }: NativeStackScreenProps<any, any>) => {
+const StaticScreen = ({
+  route,
+}: RootStackScreenProps<"Privacy" | "Terms">) => {
   const { Colors } = useTheme();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();

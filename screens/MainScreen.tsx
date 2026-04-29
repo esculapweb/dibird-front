@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigation } from "@react-navigation/native";
 
 import FloatingNavbar from "../components/Main/FloatingNavbar";
 import Stats from "../components/Main/Stats";
@@ -25,12 +26,11 @@ import { useList } from "../hooks/useList";
 import {
   Filters,
   FilterKey,
-  DropdownItem,
   AppStackNavigationProp,
+  AppStackScreenProps,
 } from "../types";
-import { useNavigation, useRoute } from "@react-navigation/native";
 
-const MainScreen = () => {
+const MainScreen = ({ route }: AppStackScreenProps<"Main">) => {
   const navigation = useNavigation<AppStackNavigationProp>();
   const { language } = useLanguage();
   const insets = useSafeAreaInsets();
@@ -46,7 +46,7 @@ const MainScreen = () => {
     handleFiltersApplied,
     handleClearFilters,
   } = useSyncedFilters({
-    route: useRoute(),
+    route: route,
     navigation,
     screenName: "Main",
     allowSort: false,
@@ -59,7 +59,7 @@ const MainScreen = () => {
     params: [language],
     enabled: filtersLoaded,
   });
-  const country = (countriesQuery.data as DropdownItem[] | undefined)?.find(
+  const country = countriesQuery.data?.find(
     (item) => item.value === filters?.territory,
   );
 

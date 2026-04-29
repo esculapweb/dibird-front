@@ -15,8 +15,8 @@ const StatItem = memo(
     children,
   }: {
     icon?: IconType;
-    txt: string;
-    children: ReactNode;
+    txt: number;
+    children?: ReactNode;
   }) => {
     const { Colors } = useTheme();
     const styles = useStyles(Colors);

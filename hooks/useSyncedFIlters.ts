@@ -1,7 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useFocusEffect } from "@react-navigation/native";
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
-
+import { useFocusEffect, RouteProp } from "@react-navigation/native";
 
 import { loadSort } from "../util/storageHelper";
 import { normalizeValue } from "../util/helpers";
@@ -10,8 +8,12 @@ import { useFilters } from "../store/filters-context";
 import { sortOptionsList } from "../util/sortOptionsList";
 import { useDebounce } from "./useDebounce";
 import { useLocation } from "../store/location-context";
-import { Filters, FilterKey, AppStackNavigationProp} from "../types";
-
+import {
+  Filters,
+  FilterKey,
+  AppStackNavigationProp,
+  ScreenWithFilters,
+} from "../types";
 
 export const useSyncedFilters = ({
   route,
@@ -20,7 +22,7 @@ export const useSyncedFilters = ({
   allowSort = true,
   allowedFilters,
 }: {
-  route: NativeStackScreenProps<any, any>["route"];
+route: RouteProp<Record<string, ScreenWithFilters | undefined>>;
   navigation: AppStackNavigationProp;
   screenName: string;
   allowSort?: boolean;
@@ -68,7 +70,8 @@ export const useSyncedFilters = ({
     : false;
 
   const isSearchActive: boolean = debouncedSearch.length > 0;
-  const isDistanceSort = (val: string | null): boolean => val === "distance" || val === "-distance";
+  const isDistanceSort = (val: string | null): boolean =>
+    val === "distance" || val === "-distance";
 
   const handleFiltersApplied = (newFilters: Filters): void => {
     setIgnoreContextSync(false);
@@ -162,7 +165,7 @@ export const useSyncedFilters = ({
         });
 
         if (allowSort) {
-          const storedSort = await loadSort(screenName) as string | null;;
+          const storedSort = (await loadSort(screenName)) as string | null;
           const resolved = normalizeValue(
             storedSort,
             sortOptions.map((i) => i.value),

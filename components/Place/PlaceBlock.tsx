@@ -1,9 +1,28 @@
 import { StyleSheet, View, Text, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+import { UseQueryResult } from "@tanstack/react-query";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import DropdownInput from "../ui/DropdownInput";
+import { EditorFormData } from "../../hooks/useEditorForm";
+import { PlaceDropdownItem, AppError } from "../../types";
+
+interface PlaceBlockProps {
+  territoryValue: number | "";
+  placeValue: string | number | null;
+  setPlaceValue: (value: string | number | null) => void;
+  setFormData: (updater: (prev: EditorFormData) => EditorFormData) => void;
+  onAddNewPlace: (callback: (newPlace: string | number) => void) => void;
+  queryPlaces: UseQueryResult<PlaceDropdownItem[], AppError>;
+  isLocating: boolean;
+  sort: string;
+  onSortChange: (value: string | number | boolean | null) => void;
+  placeData?: PlaceDropdownItem;
+  setPlaceData: (value: PlaceDropdownItem | undefined) => void;
+  locationAvailable?: boolean;
+  onLocationUnavailable?: () => void;
+}
 
 const PlaceBlock = ({
   territoryValue,
@@ -18,8 +37,8 @@ const PlaceBlock = ({
   placeData,
   setPlaceData,
   locationAvailable,
-  onLocationUnavailable
-}) => {
+  onLocationUnavailable,
+}: PlaceBlockProps) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -31,9 +50,9 @@ const PlaceBlock = ({
         value={placeValue}
         setValue={(val) => {
           setPlaceValue(val);
-          setFormData((prev) => ({ ...prev, place: val }));
+          setFormData((prev) => ({ ...prev, place: typeof val === "string" ? null : val }));
           const found = queryPlaces.data?.find((item) => item.value === val);
-          setPlaceData(found ?? null);
+          setPlaceData(found);
         }}
         query={queryPlaces}
         allowReset

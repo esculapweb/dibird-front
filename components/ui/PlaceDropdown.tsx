@@ -22,7 +22,7 @@ import {
 
 interface ImageTextPartProps {
   query?: QueryType;
-  value?: string | number | null;
+  value?: number | null;
   placeData?: PlaceDropdownItem;
   previewUri?: string | null;
   previewLoading?: boolean;
@@ -223,7 +223,7 @@ const PlaceDropdown = ({
     >
       <ImagePart
         query={query}
-        value={value}
+        value={value as number}
         placeData={placeData}
         previewUri={previewUri}
         previewLoading={previewLoading}
@@ -233,7 +233,7 @@ const PlaceDropdown = ({
         <TextPart
           query={query}
           placeData={placeData}
-          value={value}
+          value={value as number}
           name={name}
           disabled={disabled}
           previewLoading={previewLoading}

@@ -15,8 +15,20 @@ import { useTheme, ThemeColors } from "../../store/theme-context";
 import { isoToFlagEmoji } from "../../util/helpers";
 import { fetchMapPreview } from "../../util/fetches";
 import { Config } from "../../constants/config";
+import {
+  AppStackNavigationProp,
+  PlaceData,
+  StyleType,
+  TerritoryData,
+} from "../../types";
 
-const ImagePart = ({ previewUri, previewLoading }) => {
+const ImagePart = ({
+  previewUri,
+  previewLoading,
+}: {
+  previewUri: string | null;
+  previewLoading: boolean;
+}) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
 
@@ -37,7 +49,11 @@ const ImagePart = ({ previewUri, previewLoading }) => {
           cachePolicy="disk"
         />
         <View style={styles.mapOverlay}>
-          <Ionicons name="expand-outline" size={16} color={Colors.markerBorder} />
+          <Ionicons
+            name="expand-outline"
+            size={16}
+            color={Colors.markerBorder}
+          />
         </View>
       </View>
     );
@@ -53,7 +69,15 @@ const ImagePart = ({ previewUri, previewLoading }) => {
   );
 };
 
-const TextPart = ({ placeData, territoryData, previewLoading }) => {
+const TextPart = ({
+  placeData,
+  territoryData,
+  previewLoading,
+}: {
+  placeData: PlaceData;
+  territoryData: TerritoryData;
+  previewLoading: boolean;
+}) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -77,11 +101,19 @@ const TextPart = ({ placeData, territoryData, previewLoading }) => {
   );
 };
 
-const PlacePreviewRow = ({ placeData, territoryData, style }) => {
+const PlacePreviewRow = ({
+  placeData,
+  territoryData,
+  style,
+}: {
+  placeData: PlaceData;
+  territoryData: TerritoryData;
+  style?: StyleType;
+}) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
-  const navigation = useNavigation();
-  const [previewUri, setPreviewUri] = useState(null);
+  const navigation = useNavigation<AppStackNavigationProp>();
+  const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
 
   const handlePlaceNavigate = () => {

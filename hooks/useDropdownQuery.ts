@@ -6,9 +6,9 @@ import { useApiError } from "./useApiError";
 import { sortOptionsList } from "../util/sortOptionsList";
 import { DropdownItem, AppError } from "../types";
 
-interface UseDropdownQueryProps {
+interface UseDropdownQueryProps<T extends DropdownItem = DropdownItem> {
   type: string;
-  queryFn: (sort: string) => Promise<DropdownItem[]>;
+  queryFn: (sort: string) => Promise<T[]>;
   params: unknown[];
   enabled?: boolean;
   mapResult?: boolean;
@@ -18,23 +18,23 @@ interface UseDropdownQueryProps {
   requestLocation?: () => Promise<unknown>;
 }
 
-export function useDropdownQuery(
-  props: UseDropdownQueryProps & { mapResult: true },
+export function useDropdownQuery<T extends DropdownItem = DropdownItem>(
+  props: UseDropdownQueryProps<T> & { mapResult: true },
 ): {
   query: UseQueryResult<Map<string | number, string>, AppError>;
   sort: string;
   onSortChange: (val: string) => Promise<void>;
 };
 
-export function useDropdownQuery(
-  props: UseDropdownQueryProps & { mapResult?: false },
+export function useDropdownQuery<T extends DropdownItem = DropdownItem>(
+  props: UseDropdownQueryProps<T> & { mapResult?: false },
 ): {
-  query: UseQueryResult<DropdownItem[], AppError>;
+  query: UseQueryResult<T[], AppError>;
   sort: string;
   onSortChange: (val: string | number | boolean | null) => Promise<void>;
 };
 
-export function useDropdownQuery({
+export function useDropdownQuery<T extends DropdownItem = DropdownItem>({
   type,
   queryFn,
   params,
@@ -44,7 +44,7 @@ export function useDropdownQuery({
   permissionStatus,
   onLocationUnavailable,
   requestLocation,
-}: UseDropdownQueryProps) {
+}: UseDropdownQueryProps<T>) {
   const { sort, loaded, onChange } = useSavedSort(type);
   const { showErrorToast } = useApiError();
   const pendingSortRef = useRef<string | null>(null);

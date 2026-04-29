@@ -4,9 +4,15 @@ import { useTranslation } from "react-i18next";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import ProfileAvatar from "./ProfileAvatar";
 import { useProfileDisplay } from "../../hooks/Profile/useProfileDisplay";
-import { OwnerData } from "../../types";
+import { RatingCompareProfile, RatingCompareProfileCounts } from "../../types";
 
-const ProfileColumn = ({ profile, color }: {profile: OwnerData, color: string;}) => {
+const ProfileColumn = ({
+  profile,
+  color,
+}: {
+  profile: RatingCompareProfile & { count: number };
+  color: string;
+}) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const { shortName } = useProfileDisplay({
@@ -30,14 +36,18 @@ const ProfileColumn = ({ profile, color }: {profile: OwnerData, color: string;})
       <Text style={styles.profileName} numberOfLines={1}>
         {shortName}
       </Text>
-      <Text style={[styles.profileCount, { color }]}>
-        {profile.count}
-      </Text>
+      <Text style={[styles.profileCount, { color }]}>{profile.count}</Text>
     </View>
   );
 };
 
-const CompareProfileHeader = ({ profileData, counts }) => {
+const CompareProfileHeader = ({
+  profileData,
+  counts,
+}: {
+  profileData: RatingCompareProfile[];
+  counts: RatingCompareProfileCounts;
+}) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);

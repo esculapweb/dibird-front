@@ -8,14 +8,15 @@ import { useTheme, ThemeColors } from "../../store/theme-context";
 import { isoToFlagEmoji } from "../../util/helpers";
 import { BirdSVG } from "../ui/Svgs";
 import StatItem from "../ui/StatItem";
+import { AppStackNavigationProp, PlaceItem } from "../../types";
 
-const useStyles = (Colors) => useMemo(() => stylesFn(Colors), [Colors]);
+const useStyles = (Colors: ThemeColors) => useMemo(() => stylesFn(Colors), [Colors]);
 
-const PlaceCard = memo(({ item, index }) => {
+const PlaceCard = memo(({ item, index }: {item: PlaceItem, index: number}) => {
   const { Colors } = useTheme();
   const styles = useStyles(Colors);
   const { t } = useTranslation();
-  const navigation = useNavigation();
+  const navigation = useNavigation<AppStackNavigationProp>();
 
   const territoryText = item.territory_data
     ? isoToFlagEmoji(item.territory_data.code)

@@ -1,31 +1,37 @@
 import { useState, useLayoutEffect } from "react";
 import { TouchableOpacity, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 
+import { useAuth } from "../store/auth-context";
 import AuthContent from "../components/Auth/AuthContent";
-import { CreateUser } from "../util/auth";
+import { Login } from "../util/auth";
 import { useTheme } from "../store/theme-context";
+import { AuthDrawerNavigationProp,  AuthDrawerScreenProps } from "../types";
 
-const SignupScreen = ({ navigation }) => {
+const LoginScreen = ({route}:  AuthDrawerScreenProps<"Login">) => {
   const [loading, setLoading] = useState(false);
+  const { authenticate } = useAuth();
   const { Colors } = useTheme();
   const iconName = Platform.OS === "ios" ? "chevron-back" : "arrow-back";
+  const navigation = useNavigation<AuthDrawerNavigationProp>();
 
-  const signUpHandler = async ({ email, password, userName }) => {
+  const emailConfirmed = route.params?.emailConfirmed;
+  const prefillEmail = route.params?.prefillEmail;
+
+  const LoginHandler = async ({
+    email,
+    password,
+  }: {
+    email: string;
+    password: string;
+  }) => {
     if (loading) return;
 
     setLoading(true);
     try {
-      await CreateUser(email, password, userName);
-      navigation.reset({
-        index: 0,
-        routes: [
-          {
-            name: "CheckEmail",
-            params: { email },
-          },
-        ],
-      });
+      const token = await Login(email, password);
+      await authenticate(token);
     } catch (e) {
       throw e;
     } finally {
@@ -47,7 +53,15 @@ const SignupScreen = ({ navigation }) => {
     });
   }, [navigation, Colors, iconName]);
 
-  return <AuthContent onAuthenticate={signUpHandler} loading={loading} />;
+  return (
+    <AuthContent
+      onAuthenticate={LoginHandler}
+      loading={loading}
+      emailConfirmed={emailConfirmed}
+      prefillEmail={prefillEmail}
+      isLogin
+    />
+  );
 };
 
-export default SignupScreen;
+export default LoginScreen;
