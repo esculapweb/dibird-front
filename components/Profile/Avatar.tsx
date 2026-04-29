@@ -20,12 +20,13 @@ import ProfileAvatar from "./ProfileAvatar";
 import { useProfileDisplay } from "../../hooks/Profile/useProfileDisplay";
 import { useInvalidateProfile } from "../../hooks/Profile/useUpdateProfile";
 import { useMediaLibraryUnavailable } from "../../hooks/useMediaLibraryUnavailable";
+import { AppError } from "../../types";
 
 const AVATAR_SIZE = 100;
 
 const Avatar = () => {
   const { showActionSheetWithOptions } = useActionSheet();
-  const [avatar, setAvatar] = useState();
+  const [avatar, setAvatar] = useState<string | null>();
   const [loading, setLoading] = useState(false);
   const invalidateProfile = useInvalidateProfile();
 
@@ -86,14 +87,11 @@ const Avatar = () => {
         return;
       }
 
-      let finalStatus = existingStatus;
       if (existingStatus !== "granted") {
         const { status } =
           await ImagePicker.requestMediaLibraryPermissionsAsync();
-        finalStatus = status;
+        if (status !== "granted") return;
       }
-
-      if (finalStatus !== "granted") return;
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ["images"],
@@ -117,8 +115,9 @@ const Avatar = () => {
       refreshProfile();
       invalidateProfile();
     } catch (e) {
-      console.warn("Image manipulation error:", e.code, e.message);
-      showError(e);
+      const error = e as AppError;
+      console.warn("Image manipulation error:", error.code, error.message);
+      showError(error);
     } finally {
       setLoading(false);
     }
@@ -135,8 +134,9 @@ const Avatar = () => {
         invalidateProfile();
       }
     } catch (e) {
-      console.warn("Delete Avatar error:", e.code, e.message);
-      showError(e);
+      const error = e as AppError;
+      console.warn("Delete Avatar error:", error.code, error.message);
+      showError(error);
     } finally {
       setLoading(false);
     }

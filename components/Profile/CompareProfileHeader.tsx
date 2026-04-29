@@ -4,8 +4,9 @@ import { useTranslation } from "react-i18next";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import ProfileAvatar from "./ProfileAvatar";
 import { useProfileDisplay } from "../../hooks/Profile/useProfileDisplay";
+import { OwnerData } from "../../types";
 
-const ProfileColumn = ({ profile, color }) => {
+const ProfileColumn = ({ profile, color }: {profile: OwnerData, color: string;}) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const { shortName } = useProfileDisplay({

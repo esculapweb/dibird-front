@@ -5,13 +5,13 @@ import { useTheme, ThemeColors } from "../../store/theme-context";
 import { useProfileDisplay } from "../../hooks/Profile/useProfileDisplay";
 
 interface ProfileAvatarProps {
-  avatar: string | null;
-  firstName: string;
-  lastName: string;
+  avatar?: string | null;
+  firstName?: string;
+  lastName?: string;
   username: string;
   size: number;
-  borderRadius: number;
-  style: ImageStyle;
+  borderRadius?: number;
+  style?: ImageStyle;
 }
 
 const ProfileAvatar = ({
