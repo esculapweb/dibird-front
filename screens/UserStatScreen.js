@@ -13,7 +13,7 @@ import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
 import { buildShareUrl } from "../util/helpers";
 
-const UserStatScreen = ({ route, navigation }) => {
+const UserStatScreen = ({ route }) => {
   const { t } = useTranslation();
   const { profileId } = route.params;
   const { seenMode, setSeenMode } = useFilters();
@@ -118,7 +118,6 @@ const UserStatScreen = ({ route, navigation }) => {
   return (
     <ListScreen
       route={route}
-      navigation={navigation}
       fetchFunction={fetchData}
       title={t("statistics")}
       errorTitle={t("stat_unavailable")}

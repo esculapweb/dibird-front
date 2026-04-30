@@ -11,6 +11,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
+import { useNavigation } from "@react-navigation/native";
 
 import { useTheme, ThemeColors } from "../store/theme-context";
 import { formatDateLong, buildShareUrl, isoToFlagEmoji } from "../util/helpers";
@@ -28,10 +29,12 @@ import DiaryObservationCard from "../components/Diary/DiaryObservationCard";
 import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
 import Map from "../components/Map/Map";
+import { AppStackNavigationProp } from "../types";
 
-const DiaryDetailScreen = ({ route, navigation }) => {
+const DiaryDetailScreen = ({ route }) => {
   const { diaryId } = route.params;
   const type = "Diary";
+  const navigation = useNavigation<AppStackNavigationProp>();
   const [currentFilters, setCurrentFilters] = useState(null);
   const [currentSort, setCurrentSort] = useState(null);
 
@@ -300,7 +303,6 @@ const DiaryDetailScreen = ({ route, navigation }) => {
   return (
     <ListScreen
       route={route}
-      navigation={navigation}
       fetchFunction={fetchDiaryObservations}
       extraFilters={{ diary: diaryId, territory: diary.territory }}
       allowedFilters={["species"]}

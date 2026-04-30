@@ -247,7 +247,6 @@ const StatScreen = ({ route, navigation }) => {
     <>
       <ListScreen
         route={route}
-        navigation={navigation}
         fetchFunction={fetchData}
         title={config.title}
         errorTitle={config.errorTitle}

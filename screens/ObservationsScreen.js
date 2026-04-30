@@ -35,7 +35,6 @@ const ObservationsScreen = ({ route, navigation }) => {
   return (
     <ListScreen
       route={route}
-      navigation={navigation}
       fetchFunction={fetchObservations}
       errorTitle={t("observations_unavailable")}
       onFiltersChange={setCurrentFilters}

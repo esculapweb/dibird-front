@@ -22,7 +22,7 @@ export const useSyncedFilters = ({
   allowSort = true,
   allowedFilters,
 }: {
-route: RouteProp<Record<string, ScreenWithFilters | undefined>>;
+  route: RouteProp<Record<string, ScreenWithFilters | undefined>>;
   navigation: AppStackNavigationProp;
   screenName: string;
   allowSort?: boolean;
@@ -90,7 +90,7 @@ route: RouteProp<Record<string, ScreenWithFilters | undefined>>;
 
   const handleClearSearch = (): void => setSearch("");
 
-  const handleSetSort = useCallback((val: string): void => {
+  const handleSetSort = useCallback((val: string | null): void => {
     userChangedSortRef.current = true;
     setSort(val);
   }, []);

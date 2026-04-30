@@ -12,7 +12,7 @@ import RatingCompareCard from "../components/Rating/RatingCompareCard";
 import { useProfile } from "../store/profile-context";
 import { buildShareUrl } from "../util/helpers";
 
-const RatingsCompareScreen = ({ route, navigation }) => {
+const RatingsCompareScreen = ({ route }) => {
   const { t } = useTranslation();
   const { profile1, profile2 } = route.params;
   const [tabMode, setTabMode] = useState("all");
@@ -96,7 +96,6 @@ const RatingsCompareScreen = ({ route, navigation }) => {
   return (
     <ListScreen
       route={route}
-      navigation={navigation}
       fetchFunction={fetchRatingCompare}
       getItemId={(item) => item.taxon_id}
       title={t("comparison")}

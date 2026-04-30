@@ -1,12 +1,19 @@
-import { useState, useEffect, useCallback, useLayoutEffect } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useLayoutEffect,
+  ReactNode,
+} from "react";
+import { ListRenderItem, FlatListProps } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useNavigation, RouteProp } from "@react-navigation/native";
 
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import FilterModal from "../components/Filters/FilterModal";
 import SortModal from "../components/Sort/SortModal";
 import IconsHeader from "../components/ui/IconsHeader";
 import FilterChips from "../components/Filters/FilterChips";
-
 import { useList } from "../hooks/useList";
 import ItemsList from "../components/ui/ItemsList";
 import HeaderTitleWithBadge from "../components/ui/HeaderTitleWithBadge";
@@ -14,17 +21,58 @@ import SearchInput from "../components/ui/SearchInput";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import { useSyncedFilters } from "../hooks/useSyncedFIlters";
 import Layout from "../components/ui/Layout";
+import {
+  AppStackNavigationProp,
+  ScreenWithFilters,
+  FilterKey,
+  seenMode,
+  Filters,
+  IconType,
+  IconButtonConfig,
+  EmptyStateProps,
+  FetchFunction,
+  LocationCoords
+} from "../types";
 
-const ListScreen = ({
+interface ListScreenProps<T> {
+  route: RouteProp<Record<string, ScreenWithFilters | undefined>>;
+  fetchFunction: FetchFunction<T>;
+  allowedFilters: FilterKey[];
+  errorTitle: string;
+  onAdd: () => void;
+  renderItem: ListRenderItem<T>;
+  noItems: EmptyStateProps;
+  showSearch?: boolean;
+  title: string;
+  tabsMode: seenMode;
+  listHeader?: FlatListProps<T>["ListHeaderComponent"];
+  extraFilters: Filters | null;
+  headerRightBeginning: IconButtonConfig[];
+  headerRightEnd: IconButtonConfig[];
+  handleSharePress?: () => Promise<void>;
+  fabIcon?: IconType;
+  getItemId?: (item: T) => void;
+  onFiltersChange: (val: Filters | null) => Promise<void>;
+  onSortChange: (val: string | null) => Promise<void>;
+  locationCoords?: LocationCoords;
+  locationAvailable?: boolean;
+  onLocationUnavailable: () => void;
+  allowSort?: boolean;
+  onOpenFilterModal?: (fn: () => void) => void;
+  showHeaderBadge?: boolean;
+  topEl?: ReactNode;
+  bottomEl?: ReactNode;
+}
+
+const ListScreen = <T extends { id: string | number }>({
   route,
-  navigation,
   fetchFunction,
   allowedFilters = ["territory", "place", "date", "species"],
   errorTitle,
   onAdd,
   renderItem,
   noItems,
-  showSearch,
+  showSearch = false,
   title,
   tabsMode,
   listHeader,
@@ -39,17 +87,18 @@ const ListScreen = ({
   locationCoords,
   locationAvailable = true,
   onLocationUnavailable,
-  screenNameOverride,
   allowSort = true,
   onOpenFilterModal,
   showHeaderBadge = true,
   topEl,
   bottomEl,
-}) => {
-  const screenName = screenNameOverride ?? route.name;
+}: ListScreenProps<T>) => {
+  const screenName = route.name;
   const { t } = useTranslation();
-  const keyExtractor = (item, _) => `${screenName}-${getItemId(item)}`;
+  const keyExtractor = (item: T, _: number) =>
+    `${screenName}-${getItemId(item)}`;
   const [sortModalVisible, setSortModalVisible] = useState(false);
+  const navigation = useNavigation<AppStackNavigationProp>();
 
   const {
     filters,
@@ -84,13 +133,12 @@ const ListScreen = ({
   }, []);
 
   const fetchDataWrapper = useCallback(
-    (filters, sort, search, page) => {
+    (filters: Filters, sort: string | null, search: string, page: number) => {
       return fetchFunction(
         filters,
         sort,
         search,
         page,
-        () => setFilterModalVisible(true),
         locationCoords,
       );
     },
@@ -134,7 +182,7 @@ const ListScreen = ({
       ? isSearchActive || hasActiveFilters
         ? "filtered"
         : "initial"
-      : null;
+      : undefined;
 
   const handleLoadMore = () => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -164,7 +212,7 @@ const ListScreen = ({
         <IconsHeader
           key={`header-icons-${iconCount}`}
           hasActiveFilters={hasActiveFilters}
-          onSortPress={allowSort ? () => setSortModalVisible(true) : null}
+          onSortPress={allowSort ? () => setSortModalVisible(true) : undefined}
           onFilterPress={() => setFilterModalVisible(true)}
           onSharePress={handleSharePress}
           headerRightBeginning={headerRightBeginning}
@@ -210,14 +258,16 @@ const ListScreen = ({
       <ErrorOverlay
         title={errorTitle}
         message={error.message}
-        onPress={refetch}
+        onPress={async () => {
+          await refetch();
+        }}
         logo
       />
     );
   if (isLoading || !data) return <LoadingOverlay />;
 
   return (
-    <Layout keyBoard={true} bottom={bottomEl} top={topEl ?? searchEl}>
+    <Layout bottom={bottomEl} top={topEl ?? searchEl}>
       {hasActiveFilters && (
         <FilterChips
           filters={filters}

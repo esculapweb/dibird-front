@@ -1,7 +1,7 @@
 import { useCallback, useLayoutEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
-import { useRoute, RouteProp, useNavigation } from "@react-navigation/native";
+import { useRoute, useNavigation } from "@react-navigation/native";
 
 import { useTheme } from "../store/theme-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
@@ -15,7 +15,7 @@ import { setNavigationCallback } from "../util/navigationCallbacks";
 import { useEditorForm } from "../hooks/useEditorForm";
 import IconsHeader from "../components/ui/IconsHeader";
 import Layout from "../components/ui/Layout";
-import { AppError, AppStackNavigationProp, AppStackParamList } from "../types";
+import { AppError, AppStackNavigationProp, AppStackRouteProp } from "../types";
 
 const FORM_FIELDS = ["territory", "place", "date_time", "private", "name"];
 
@@ -24,7 +24,7 @@ const DiaryEditorScreen = () => {
   const { Colors } = useTheme();
   const { profile } = useProfile();
   const navigation = useNavigation<AppStackNavigationProp>();
-  const route = useRoute<RouteProp<AppStackParamList, "DiaryEditor">>();
+  const route = useRoute<AppStackRouteProp<"DiaryEditor">>();
 
   const { diary, defaultTerritory, defaultPlace } = route.params || {};
   const isEditMode = !!diary;

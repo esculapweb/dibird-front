@@ -1,16 +1,16 @@
 import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useRoute, RouteProp } from "@react-navigation/native";
+import { useRoute } from "@react-navigation/native";
 
 import { useTheme, ThemeColors } from "../store/theme-context";
 import Layout from "../components/ui/Layout";
 import Logo from "../components/ui/Logo";
-import { AuthDrawerParamList } from "../types";
+import { AuthDrawerRouteProp } from "../types";
 
 const CheckEmailScreen = () => {
   const { Colors } = useTheme();
   const { t } = useTranslation();
-  const route = useRoute<RouteProp<AuthDrawerParamList, "CheckEmail">>();
+  const route = useRoute<AuthDrawerRouteProp<"CheckEmail">>();
   const styles = stylesFn(Colors);
   const email = route.params?.email;
 

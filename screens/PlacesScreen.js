@@ -10,7 +10,7 @@ const PlacesScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
   const { locationCoords, locationAvailable } = useLocation();
 
-  const fetchFunction = (filters, sort, search, page, openFilters, coords) =>
+  const fetchFunction = (filters, sort, search, page, coords) =>
     fetchPlaces(filters, sort, search, page, coords);
 
   const handleLocationUnavailable = useLocationUnavailable();
@@ -30,18 +30,17 @@ const PlacesScreen = ({ route, navigation }) => {
   return (
     <ListScreen
       route={route}
-      navigation={navigation}
       fetchFunction={fetchFunction}
       allowedFilters={["territory", "favourite"]}
       errorTitle={t("places_unavailable")}
       onAdd={handleAdd}
       renderItem={renderItem}
       noItems={noItems}
-      showSearch={true}
       title={t("places")}
       locationCoords={locationCoords}
       locationAvailable={locationAvailable}
       onLocationUnavailable={handleLocationUnavailable}
+      showSearch
     />
   );
 };

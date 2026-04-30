@@ -6,13 +6,13 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import RenderHtml from "react-native-render-html";
 import { EdgeInsets, useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRoute, RouteProp } from "@react-navigation/native";
+import { useRoute } from "@react-navigation/native";
 
 import Layout from "../components/ui/Layout";
 import { fetchPage } from "../util/fetches";
 import { useLanguage } from "../store/language-context";
 import { useTheme, ThemeColors } from "../store/theme-context";
-import { RootStackParamList } from "../types";
+import { RootStackProp } from "../types";
 
 const H_PAD = 16;
 
@@ -22,7 +22,7 @@ const StaticScreen = () => {
   const insets = useSafeAreaInsets();
   const styles = stylesFn(Colors, insets);
   const { language } = useLanguage();
-  const route = useRoute<RouteProp<RootStackParamList, "Privacy" | "Terms">>();
+  const route = useRoute<RootStackProp<"Privacy" | "Terms">>();
   const page = route?.name;
 
   const slugs: Record<string, string> = {

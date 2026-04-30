@@ -2,22 +2,17 @@ import { useMemo } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useLanguage } from "../store/language-context";
 import { stableStringify } from "../util/helpers";
-import { Filters, PaginatedResult, seenMode } from "../types";
+import { FetchFunction, Filters, PaginatedResponse, seenMode, LocationCoords} from "../types";
 
 interface useListProps<T> {
   screenName: string;
-  fetchFunction: (
-    filters: Filters,
-    sort: string | null,
-    search: string,
-    page: number,
-  ) => Promise<PaginatedResult<T>>;
+  fetchFunction: FetchFunction<T>;
   filters: Filters | null;
   sort: string | null;
   search?: string | null;
   tabsMode?: seenMode;
   extraFilters?: Filters | null;
-  locationCoords?: { lat: number | null; lng: number | null } | null;
+  locationCoords?: LocationCoords;
   enabled: boolean;
 }
 
@@ -63,7 +58,7 @@ export const useList = <T>({
     ];
   }, [screenName, filtersKey, sort, search, tabsMode, language, locationKey]);
 
-  return useInfiniteQuery<PaginatedResult<T>>({
+  return useInfiniteQuery<PaginatedResponse<T>>({
     queryKey,
     initialPageParam: 1,
     queryFn: ({ pageParam }) =>

@@ -12,12 +12,31 @@ import {
 import {
   CompositeNavigationProp,
   CompositeScreenProps,
+  RouteProp,
 } from "@react-navigation/native";
 import { AxiosResponse } from "axios";
 
 export type IconType = ComponentProps<typeof Ionicons>["name"];
 export type StyleType = StyleProp<ViewStyle>;
 export type Theme = "light" | "dark";
+
+export interface IconButtonConfig extends IconButtonProps {
+  condition: boolean;
+}
+
+export type Coords = [number, number];
+
+export type LocationCoords = { lat: number | null; lng: number | null } | null;
+
+export type LocationType = {
+  type: string;
+  coordinates: Coords;
+};
+
+export type PolygonGeometry = {
+  type: "Polygon";
+  coordinates: Coords[][];
+};
 
 export interface AppError extends Error {
   code?: string;
@@ -30,11 +49,30 @@ export interface AppError extends Error {
   response?: AxiosResponse;
 }
 
+interface EmptyStateAction {
+  label: string;
+  onPress: () => void;
+}
+
+export interface EmptyStateProps {
+  icon?: IconType;
+  message: string;
+  actions?: EmptyStateAction[];
+}
+
+export type FetchFunction<T> = (
+  filters: Filters,
+  sort: string | null,
+  search: string,
+  page: number,
+  locationCoords?: LocationCoords,
+) => Promise<PaginatedResponse<T>>;
+
 export interface QueryType {
   data: DropdownItem[] | undefined;
   isLoading?: boolean;
   isError?: boolean;
-  refetch?: () => void;
+  refetch?: () => Promise<void>;
 }
 
 export interface Credentials {
@@ -159,14 +197,6 @@ export interface TerritoryDropdownItem extends DropdownItem {
   code: string;
 }
 
-export interface PaginatedResult<T> {
-  pagination: {
-    current: number;
-    final: number;
-  };
-  results: T[];
-}
-
 export interface SpeciesItem {
   species_id: number;
   sp_name: string;
@@ -232,18 +262,6 @@ export interface ProfileFormData {
   private: boolean;
   private_diary: boolean;
 }
-
-export type Coords = [number, number];
-
-export type LocationType = {
-  type: string;
-  coordinates: Coords;
-};
-
-export type PolygonGeometry = {
-  type: "Polygon";
-  coordinates: Coords[][];
-};
 
 export interface PlaceFormData {
   name: string;
@@ -539,22 +557,20 @@ export type AppDrawerNavigationProp = CompositeNavigationProp<
   NativeStackNavigationProp<AppStackParamList>
 >;
 
-// --- Screen Props ---
+// -- Route Props
 
-export type RootStackScreenProps<T extends keyof RootStackParamList> =
-  NativeStackScreenProps<RootStackParamList, T>;
+export type RootStackProp<T extends keyof RootStackParamList> = RouteProp<
+  RootStackParamList,
+  T
+>;
 
-export type AppStackScreenProps<T extends keyof AppStackParamList> =
-  NativeStackScreenProps<AppStackParamList, T>;
+export type AppStackRouteProp<T extends keyof AppStackParamList> = RouteProp<
+  AppStackParamList,
+  T
+>;
 
-export type AuthDrawerScreenProps<T extends keyof AuthDrawerParamList> =
-  DrawerScreenProps<AuthDrawerParamList, T>;
-
-export type AppDrawerScreenProps<T extends keyof AppDrawerParamList> =
-  CompositeScreenProps<
-    DrawerScreenProps<AppDrawerParamList, T>,
-    NativeStackScreenProps<AppStackParamList>
-  >;
+export type AuthDrawerRouteProp<T extends keyof AuthDrawerParamList> =
+  RouteProp<AuthDrawerParamList, T>;
 
 declare global {
   namespace ReactNavigation {

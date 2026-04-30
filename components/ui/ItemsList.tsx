@@ -10,8 +10,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
-import EmptyState, { EmptyStateProps } from "../Empty/EmptyState";
-import { IconType } from "../../types";
+import EmptyState from "../Empty/EmptyState";
+import { IconType, EmptyStateProps } from "../../types";
 
 interface ItemsListProps<T> {
   data: T[];

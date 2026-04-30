@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Text, ActivityIndicator, View, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 
 import { useTheme, ThemeColors } from "../store/theme-context";
 import Layout from "../components/ui/Layout";
@@ -11,13 +11,13 @@ import Logo from "../components/ui/Logo";
 import {
   AppError,
   AuthDrawerNavigationProp,
-  AuthDrawerParamList,
+  AuthDrawerRouteProp,
 } from "../types";
 
 const ConfirmEmailScreen = () => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
-  const route = useRoute<RouteProp<AuthDrawerParamList, "ConfirmEmail">>();
+  const route = useRoute<AuthDrawerRouteProp<"ConfirmEmail">>();
   const { t } = useTranslation();
   const { key } = route.params;
   const navigation = useNavigation<AuthDrawerNavigationProp>();

@@ -92,7 +92,6 @@ const RatingScreen = ({ route, navigation }) => {
   return (
     <ListScreen
       route={route}
-      navigation={navigation}
       fetchFunction={fetchRating}
       errorTitle={t("rating_unavailable")}
       allowedFilters={["territory", "date"]}

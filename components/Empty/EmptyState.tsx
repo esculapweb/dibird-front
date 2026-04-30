@@ -2,18 +2,8 @@ import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import FlatButton from "../ui/FlatButton";
-import { IconType } from "../../types";
+import { EmptyStateProps } from "../../types";
 
-export interface EmptyStateAction {
-  label: string;
-  onPress: () => void;
-}
-
-export interface EmptyStateProps {
-  icon?: IconType;
-  message: string;
-  actions?: EmptyStateAction[];
-}
 
 const EmptyState = ({
   icon = "alert-circle-outline",

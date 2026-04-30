@@ -1,7 +1,7 @@
 import { ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 
 import FloatingNavbar from "../components/Main/FloatingNavbar";
 import Stats from "../components/Main/Stats";
@@ -14,17 +14,10 @@ import Sections from "../components/Main/Sections";
 import FilterModal from "../components/Filters/FilterModal";
 import { useSyncedFilters } from "../hooks/useSyncedFIlters";
 import { useDropdownQuery } from "../hooks/useDropdownQuery";
-import {
-  fetchMyCountries,
-  fetchMyDashboardStat,
-} from "../util/fetches";
+import { fetchMyCountries, fetchMyDashboardStat } from "../util/fetches";
 import Layout from "../components/ui/Layout";
 import { useLanguage } from "../store/language-context";
-import {
-  FilterKey,
-  AppStackNavigationProp,
-  AppStackParamList,
-} from "../types";
+import { FilterKey, AppStackNavigationProp, AppStackRouteProp } from "../types";
 
 const MainScreen = () => {
   const { language } = useLanguage();
@@ -33,7 +26,7 @@ const MainScreen = () => {
 
   const allowedFilters: FilterKey[] = ["territory", "date"];
   const navigation = useNavigation<AppStackNavigationProp>();
-  const route = useRoute<RouteProp<AppStackParamList, "Main">>();
+  const route = useRoute<AppStackRouteProp<"Main">>();
 
   const {
     filters,
@@ -73,8 +66,6 @@ const MainScreen = () => {
     enabled: filtersLoaded,
   });
 
-
-
   return (
     <Layout>
       <FloatingNavbar
@@ -107,10 +98,7 @@ const MainScreen = () => {
 
         <BirdOfTheDay filters={filters} />
 
-        <NewSpecies
-          filters={filters}
-          filtersLoaded={filtersLoaded}
-        />
+        <NewSpecies filters={filters} filtersLoaded={filtersLoaded} />
 
         <QuickActions filters={filters} />
 

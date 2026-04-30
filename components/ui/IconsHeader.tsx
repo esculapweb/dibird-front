@@ -2,11 +2,8 @@ import { memo } from "react";
 import { StyleSheet } from "react-native";
 import IconButton from "./IconButton";
 import { useTheme, ThemeColors } from "../../store/theme-context";
-import { IconButtonProps } from "../../types";
+import { IconButtonConfig } from "../../types";
 
-interface IconButtonConfig extends IconButtonProps{
-  condition: boolean;
-}
 
 interface IconsHeaderProps {
   hasActiveFilters?: boolean;

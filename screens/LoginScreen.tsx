@@ -1,7 +1,7 @@
 import { useState, useLayoutEffect } from "react";
 import { TouchableOpacity, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 
 import { useAuth } from "../store/auth-context";
 import AuthContent from "../components/Auth/AuthContent";
@@ -9,7 +9,7 @@ import { Login } from "../util/auth";
 import { useTheme } from "../store/theme-context";
 import {
   AuthDrawerNavigationProp,
-  AuthDrawerParamList,
+  AuthDrawerRouteProp,
 } from "../types";
 
 const LoginScreen = () => {
@@ -17,7 +17,7 @@ const LoginScreen = () => {
   const { authenticate } = useAuth();
   const { Colors } = useTheme();
   const navigation = useNavigation<AuthDrawerNavigationProp>();
-  const route = useRoute<RouteProp<AuthDrawerParamList, "Login">>();
+  const route = useRoute<AuthDrawerRouteProp<"Login">>();
 
   const iconName = Platform.OS === "ios" ? "chevron-back" : "arrow-back";
 

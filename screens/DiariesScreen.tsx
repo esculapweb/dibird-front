@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 
 import ListScreen from "./ListScreen";
 import { fetchDiaries } from "../util/fetches";
@@ -8,7 +8,7 @@ import DiaryCard from "../components/Diary/DiaryCard";
 import { useFilters } from "../store/filters-context";
 import {
   AppStackNavigationProp,
-  AppStackParamList,
+  AppStackRouteProp,
   DiaryListItem,
   Filters,
 } from "../types";
@@ -18,7 +18,7 @@ const DiariesScreen = () => {
   const { territory } = useFilters();
   const [currentFilters, setCurrentFilters] = useState<Filters | null>(null);
   const navigation = useNavigation<AppStackNavigationProp>();
-  const route = useRoute<RouteProp<AppStackParamList, "Diaries">>();
+  const route = useRoute<AppStackRouteProp<"Diaries">>();
 
   const handleAdd = useCallback(async () => {
     const defaultTerritory = currentFilters?.territory ?? territory ?? "";
@@ -43,7 +43,6 @@ const DiariesScreen = () => {
   return (
     <ListScreen
       route={route}
-      navigation={navigation}
       fetchFunction={fetchDiaries}
       errorTitle={t("diaries_unavailable")}
       onFiltersChange={setCurrentFilters}
