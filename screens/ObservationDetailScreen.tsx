@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
+import { useNavigation, useRoute } from "@react-navigation/native";
 
 import { useTheme, ThemeColors } from "../store/theme-context";
 import { formatDate, formatDateTime, formatDateLong } from "../util/helpers";
@@ -31,8 +32,11 @@ import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
 import IconsHeader from "../components/ui/IconsHeader";
 import Layout from "../components/ui/Layout";
+import { AppStackNavigationProp, AppStackRouteProp } from "../types";
 
-const ObservationDetailScreen = ({ route, navigation }) => {
+const ObservationDetailScreen = () => {
+  const navigation = useNavigation<AppStackNavigationProp>();
+  const route = useRoute<AppStackRouteProp<"ObservationDetail">>();
   const { observationId } = route.params;
   const type = "Observation";
 
@@ -97,7 +101,7 @@ const ObservationDetailScreen = ({ route, navigation }) => {
               territoryValue: observation.territory,
             }),
           }),
-        icon: "create-outline",
+        icon: "create-outline" as const,
         disabled: !observation || updateMutation.isPending,
       },
     ],
@@ -136,7 +140,9 @@ const ObservationDetailScreen = ({ route, navigation }) => {
       <ErrorOverlay
         title={t("observations_unavailable")}
         message={error.message}
-        onPress={refetch}
+        onPress={async () => {
+          await refetch();
+        }}
         logo
       />
     );
@@ -374,13 +380,12 @@ const ObservationDetailScreen = ({ route, navigation }) => {
           </Pressable>
         )}
         <View
-          style={[
-            styles.meta,
+          style={
             (observation.notes ||
               observation?.diary_data ||
               observation?.place_data) &&
-              styles.metaBorder,
-          ]}
+            styles.metaBorder
+          }
         >
           <Text style={styles.metaText}>
             {t("created")}: {formatDateTime(observation.created_at)}

@@ -7,7 +7,7 @@ import DropdownInput from "../ui/DropdownInput";
 import { fetchMyCountries } from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
-import { Coords, GeoDetails } from "../../types";
+import { Coords, GeoDetails, PlaceFormData } from "../../types";
 
 interface Errors {
   name?: string;
@@ -22,9 +22,7 @@ interface PlaceFormProps {
     options?: { fromManual?: boolean },
   ) => void;
   formData: { name: string; territory?: number | null };
-  setFormData: Dispatch<
-    SetStateAction<{ name: string; territory?: number | null }>
-  >;
+  setFormData: Dispatch<SetStateAction<PlaceFormData>>;
   coords: Coords;
   latText: string;
   lngText: string;
@@ -77,7 +75,7 @@ const PlaceForm = ({
 
     if (countryValue) {
       setTerritory(countryValue);
-      setFormData((prev) => ({ ...prev, territory: countryValue }));
+      setFormData((prev) => ({ ...prev, territory: Number(countryValue) }));
       setErrors((prev) => ({ ...prev, territory: undefined }));
     }
   }, [territories, locationDetails?.countryCode, coords]);
@@ -101,7 +99,7 @@ const PlaceForm = ({
 
   const onChangeTerritory = (value: string | number | null) => {
     setTerritory(value);
-    setFormData((prev) => ({ ...prev, territory: value }));
+    setFormData((prev) => ({ ...prev, territory: Number(value) }));
     setErrors((prev) => ({ ...prev, territory: undefined }));
   };
 

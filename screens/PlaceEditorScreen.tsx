@@ -5,10 +5,10 @@ import {
   useLayoutEffect,
   useMemo,
 } from "react";
-import { View } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useRoute, useNavigation } from "@react-navigation/native";
 
-import { useTheme, ThemeColors } from "../store/theme-context";
+import { useTheme } from "../store/theme-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import { useUpdateItem } from "../hooks/useItem";
 import { useCreatePlace } from "../hooks/Place/usePlaceMutation";
@@ -22,10 +22,27 @@ import { showError } from "../services/api";
 import { callNavigationCallback } from "../util/navigationCallbacks";
 import IconsHeader from "../components/ui/IconsHeader";
 import Layout from "../components/ui/Layout";
+import {
+  AppStackNavigationProp,
+  AppStackRouteProp,
+  AppError,
+  GeoDetails,
+  MapPressEvent,
+  PlaceFormData,
+} from "../types";
 
-const PlaceEditorScreen = ({ navigation, route }) => {
+type FormErrors = {
+  name?: string;
+  territory?: string;
+  latitude?: string;
+  longitude?: string;
+};
+
+const PlaceEditorScreen = () => {
   const { Colors } = useTheme();
   const { t } = useTranslation();
+  const navigation = useNavigation<AppStackNavigationProp>();
+  const route = useRoute<AppStackRouteProp<"PlaceEditor">>();
   const type = "Place";
 
   const FORM_FIELDS = ["name", "territory", "latitude", "longitude"];
@@ -44,22 +61,23 @@ const PlaceEditorScreen = ({ navigation, route }) => {
     setLngText,
     isLoading: isLocating,
     updateCoords,
-    useMyLocation,
+    locateMe,
   } = usePlaceLocation();
 
   const createPlaceMutation = useCreatePlace();
   const updatePlaceMutation = useUpdateItem(place?.id, type);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<PlaceFormData>({
     name: place?.name ?? "",
-    territory: place?.territory ?? "",
+    territory: place?.territory ? Number(place.territory) : 0,
   });
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<FormErrors>({});
   const initialCoords = place?.location?.coordinates ?? [0, 0];
 
   const handleMapPress = useCallback(
-    (e) => {
+    (e: MapPressEvent) => {
       if (isLocating) return;
+      if (e.geometry.type !== "Point") return;
       const [lng, lat] = e.geometry.coordinates;
       const normalized = normalizeCoords(lng, lat);
       if (!normalized) return;
@@ -86,7 +104,7 @@ const PlaceEditorScreen = ({ navigation, route }) => {
 
   useEffect(() => {
     if (!isEditMode) {
-      useMyLocation();
+      locateMe();
     } else {
       const normalized = normalizeCoords(initialCoords[0], initialCoords[1]);
       if (normalized) {
@@ -96,11 +114,11 @@ const PlaceEditorScreen = ({ navigation, route }) => {
         setLngText(lngText);
       }
     }
-  }, []);
+  }, [isEditMode]);
 
   useEffect(() => {
     if (!details || isEditMode) return;
-    const getSuggestedName = (d) => {
+    const getSuggestedName = (d: GeoDetails) => {
       if (d?.city && d?.raw?.county) return `${d.city}, ${d?.raw?.county}`;
       if (d?.city) return d.city;
       if (d?.address) return d.address;
@@ -113,7 +131,7 @@ const PlaceEditorScreen = ({ navigation, route }) => {
   }, [details, isEditMode]);
 
   const validateForm = useCallback(() => {
-    const newErrors = {};
+    const newErrors: FormErrors = {};
     if (!formData.name.trim()) newErrors.name = t("name_required");
     else if (formData.name.trim().length > 254)
       newErrors.name = t("name_too_long");
@@ -136,14 +154,14 @@ const PlaceEditorScreen = ({ navigation, route }) => {
     return Object.keys(newErrors).length === 0;
   }, [formData, latText, lngText, t]);
 
-  const extractApiError = (e) => ({
+  const extractApiError = (e: AppError) => ({
     title: isEditMode ? t("update_failed") : t("create_failed"),
     message:
       Object.values(e?.response?.data).flat().join("\n") ||
       (isEditMode ? t("could_not_update_place") : t("could_not_create_place")),
   });
 
-  const handleMutateError = (e) => {
+  const handleMutateError = (e: AppError) => {
     const data = e?.response?.data;
     if (!data) {
       showError(e, extractApiError);
@@ -155,31 +173,42 @@ const PlaceEditorScreen = ({ navigation, route }) => {
       : showError(e, extractApiError);
   };
 
-  const handleCoordsChange = ([lngInput, latInput], options) => {
-    const normalized = normalizeCoords(lngInput, latInput, 4, true);
-    if (normalized) {
-      const { lngText: newLngText, latText: newLatText, lng, lat } = normalized;
-      updateCoords([lng, lat], {
-        ...options,
-        latText: newLatText,
-        lngText: newLngText,
-        withGeocode: true,
-      });
-      setErrors((prev) => ({
-        ...prev,
-        latitude: undefined,
-        longitude: undefined,
-      }));
-    } else {
-      setLatText(latInput ?? "");
-      setLngText(lngInput ?? "");
-      setErrors((prev) => ({
-        ...prev,
-        latitude: latInput ? undefined : t("invalid_latitude"),
-        longitude: lngInput ? undefined : t("invalid_longitude"),
-      }));
-    }
-  };
+  const handleCoordsChange = useCallback(
+    (
+      [lngInput, latInput]: [string, string],
+      options?: { fromManual?: boolean },
+    ) => {
+      const normalized = normalizeCoords(lngInput, latInput, 4, true);
+      if (normalized) {
+        const {
+          lngText: newLngText,
+          latText: newLatText,
+          lng,
+          lat,
+        } = normalized;
+        updateCoords([lng, lat], {
+          ...options,
+          latText: newLatText,
+          lngText: newLngText,
+          withGeocode: true,
+        });
+        setErrors((prev) => ({
+          ...prev,
+          latitude: undefined,
+          longitude: undefined,
+        }));
+      } else {
+        setLatText(String(latInput) ?? "");
+        setLngText(String(lngInput) ?? "");
+        setErrors((prev) => ({
+          ...prev,
+          latitude: latInput ? undefined : t("invalid_latitude"),
+          longitude: lngInput ? undefined : t("invalid_longitude"),
+        }));
+      }
+    },
+    [updateCoords, setLatText, setLngText, t],
+  );
 
   const handleSavePlace = useCallback(() => {
     if (!validateForm()) return;
@@ -194,7 +223,7 @@ const PlaceEditorScreen = ({ navigation, route }) => {
     setLatText(newLatText);
     setLngText(newLngText);
 
-    const placeData = {
+    const placeData: PlaceFormData = {
       name: formData.name.trim(),
       location: { type: "Point", coordinates: [lng, lat] },
       territory: formData.territory,
@@ -233,7 +262,7 @@ const PlaceEditorScreen = ({ navigation, route }) => {
       {
         condition: true,
         onPress: handleSavePlace,
-        icon: "checkmark-circle",
+        icon: "checkmark-circle" as const,
         size: 36,
         tintColor: Colors.main100,
         disabled:
@@ -275,7 +304,7 @@ const PlaceEditorScreen = ({ navigation, route }) => {
         currentCoords={coords}
         currentZoom={zoom}
         accuracy={accuracy}
-        onUseMyLocation={useMyLocation}
+        onUseMyLocation={locateMe}
         isLocating={isLocating}
       />
       <PlaceForm

@@ -2,8 +2,9 @@ import { useState, useCallback, useLayoutEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRoute, useNavigation } from "@react-navigation/native";
 
-import { useTheme, ThemeColors } from "../store/theme-context";
+import { useTheme } from "../store/theme-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ObservationForm from "../components/Observation/ObservationForm";
 import { useCreateObservation } from "../hooks/Observation/useCreateObservation";
@@ -11,12 +12,19 @@ import { useUpdateItem } from "../hooks/useItem";
 import { showError } from "../services/api";
 import { useProfile } from "../store/profile-context";
 import { setSession } from "../util/sessionStore";
-import { setNavigationCallback } from "../util/navigationCallbacks";
+import { setTypedNavigationCallback } from "../util/navigationCallbacks";
 import { useEditorForm } from "../hooks/useEditorForm";
 import { fetchDiarySpeciesIds } from "../util/fetches";
 import IconsHeader from "../components/ui/IconsHeader";
 import Layout from "../components/ui/Layout";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
+import {
+  AppError,
+  AppStackNavigationProp,
+  AppStackRouteProp,
+  ObservationFormData,
+  PlaceData,
+} from "../types";
 
 const FORM_FIELDS = [
   "species",
@@ -29,12 +37,14 @@ const FORM_FIELDS = [
   "notes",
 ];
 
-const ObservationEditorScreen = ({ navigation, route }) => {
+const ObservationEditorScreen = () => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const { profile } = useProfile();
   const [justSaved, setJustSaved] = useState(false);
   const queryClient = useQueryClient();
+  const navigation = useNavigation<AppStackNavigationProp>();
+  const route = useRoute<AppStackRouteProp<"ObservationEditor">>();
 
   const {
     observation,
@@ -65,8 +75,8 @@ const ObservationEditorScreen = ({ navigation, route }) => {
     setPlaceData,
     validateForm,
   } = useEditorForm({
-    item: observation,
-    defaultTerritory: defaultTerritory ?? diaryTerritoryValue ?? null,
+    item: observation ?? null,
+    defaultTerritory: defaultTerritory ?? diaryTerritoryValue ?? undefined,
     defaultPlace,
     defaultSpecies,
     profile,
@@ -77,14 +87,14 @@ const ObservationEditorScreen = ({ navigation, route }) => {
 
   const { data: diarySpeciesIds } = useQuery({
     queryKey: ["DiarySpecies", diaryId],
-    queryFn: () => fetchDiarySpeciesIds(diaryId),
+    queryFn: () => fetchDiarySpeciesIds(diaryId!),
     enabled: !!diaryId,
     staleTime: 0,
   });
 
   const existingSpecies = new Set(
     (diarySpeciesIds ?? []).filter(
-      (id) => id !== observationWithParsedDate?.species,
+      (id: number) => id !== observationWithParsedDate?.species,
     ),
   );
 
@@ -94,7 +104,7 @@ const ObservationEditorScreen = ({ navigation, route }) => {
     "Observation",
   );
 
-  const extractApiError = (e) => ({
+  const extractApiError = (e: AppError) => ({
     title: isEditMode ? t("update_failed") : t("create_failed"),
     message:
       Object.values(e?.response?.data).flat().join("\n") ||
@@ -103,7 +113,7 @@ const ObservationEditorScreen = ({ navigation, route }) => {
         : t("could_not_create_observation")),
   });
 
-  const handleMutateError = (e) => {
+  const handleMutateError = (e: AppError) => {
     const data = e?.response?.data;
     if (!data) {
       showError(e, extractApiError);
@@ -117,8 +127,11 @@ const ObservationEditorScreen = ({ navigation, route }) => {
 
   const handleSaveObservation = useCallback(() => {
     if (!validateForm()) return;
-    const observationData = {
+    if (speciesValue === null || !territoryValue || !formData.date_time) return;
+    const observationData: ObservationFormData = {
       ...formData,
+      date_time: formData.date_time!,
+      private: formData.private ?? false,
       species: speciesValue,
       territory: territoryValue,
       place: placeValue,
@@ -162,8 +175,12 @@ const ObservationEditorScreen = ({ navigation, route }) => {
 
   const handleSaveAndAddAnother = useCallback(() => {
     if (!validateForm()) return;
-    const observationData = {
+    if (speciesValue === null || !territoryValue || !formData.date_time) return;
+
+    const observationData: ObservationFormData = {
       ...formData,
+      date_time: formData.date_time!,
+      private: formData.private ?? false,
       species: speciesValue,
       territory: territoryValue,
       place: placeValue,
@@ -200,7 +217,7 @@ const ObservationEditorScreen = ({ navigation, route }) => {
   ]);
 
   const handleAddNewPlace = useCallback(() => {
-    setNavigationCallback(
+    setTypedNavigationCallback<[number, number, PlaceData]>(
       "onPlaceCreated",
       (newPlaceId, newPlaceTerritory, newPlaceData) => {
         setPlaceValue(newPlaceId);
@@ -236,7 +253,7 @@ const ObservationEditorScreen = ({ navigation, route }) => {
       {
         condition: true,
         onPress: handleSaveObservation,
-        icon: "checkmark-circle",
+        icon: "checkmark-circle" as const,
         size: 36,
         tintColor: Colors.main100,
         disabled: isEditMode
@@ -275,7 +292,7 @@ const ObservationEditorScreen = ({ navigation, route }) => {
       onPress={handleSaveAndAddAnother}
       icon="add-outline"
       loading={createObservationMutation.isPending}
-      savedLabel={justSaved ? t("observation_added") : null}
+      savedLabel={justSaved ? t("observation_added") : undefined}
     >
       {t("save_and_add_another")}
     </FlatButtonBottom>

@@ -23,14 +23,14 @@ import { useTranslation } from "react-i18next";
 
 import { Config } from "../../constants/config";
 import { useTheme, ThemeColors } from "../../store/theme-context";
-import { Coords, PolygonGeometry } from "../../types";
+import { Coords, PolygonGeometry, MapPressEvent } from "../../types";
 
 interface MapProps {
   currentCoords: Coords;
   mapHeight?: number;
   showCoords?: boolean;
-  currentZoom: number;
-  onPress?: () => void;
+  currentZoom?: number;
+  onPress?: (e: MapPressEvent) => void;
   accuracy?: number;
   onUseMyLocation?: () => void;
   isLocating?: boolean;

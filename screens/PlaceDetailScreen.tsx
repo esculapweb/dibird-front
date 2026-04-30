@@ -1,6 +1,7 @@
 import { useLayoutEffect, useCallback, useMemo } from "react";
 import { View, Text, StyleSheet, Alert } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useNavigation, useRoute } from "@react-navigation/native";
 
 import { useTheme, ThemeColors } from "../store/theme-context";
 import { isoToFlagEmoji, formatDate, formatDateTime } from "../util/helpers";
@@ -15,10 +16,13 @@ import StatCard from "../components/ui/StatCard";
 import { useItem, useUpdateItem, useDeleteItem } from "../hooks/useItem";
 import { showError } from "../services/api";
 import { useFilters } from "../store/filters-context";
+import { AppStackNavigationProp, AppStackRouteProp } from "../types";
 
 const H_PAD = 12;
 
-const PlaceDetailScreen = ({ route, navigation }) => {
+const PlaceDetailScreen = () => {
+  const navigation = useNavigation<AppStackNavigationProp>();
+  const route = useRoute<AppStackRouteProp<"PlaceDetail">>();
   const { placeId } = route.params;
   const type = "Place";
 
@@ -52,13 +56,13 @@ const PlaceDetailScreen = ({ route, navigation }) => {
       {
         condition: !!place,
         onPress: () => navigation.navigate("PlaceEditor", { place }),
-        icon: "create-outline",
+        icon: "create-outline" as const,
         disabled: !place || updateMutation.isPending,
       },
       {
         condition: !!place,
         onPress: handleFavourite,
-        icon: place?.favourite ? "star" : "star-outline",
+        icon: place?.favourite ? ("star" as const) : ("star-outline" as const),
         tintColor: Colors.yellow,
         disabled: updateMutation.isPending || !place,
         loading: updateMutation.isPending,
@@ -151,7 +155,9 @@ const PlaceDetailScreen = ({ route, navigation }) => {
       <ErrorOverlay
         title={t("places_unavailable")}
         message={error.message}
-        onPress={refetch}
+        onPress={async () => {
+          await refetch();
+        }}
         logo
       />
     );

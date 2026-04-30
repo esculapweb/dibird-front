@@ -6,7 +6,7 @@ import { DrawerNavigationProp } from "@react-navigation/drawer";
 import { CompositeNavigationProp, RouteProp } from "@react-navigation/native";
 import { AxiosResponse } from "axios";
 import { QueryObserverResult } from "@tanstack/react-query";
-
+import type { Feature, Geometry, GeoJsonProperties } from "geojson";
 
 export type IconType = ComponentProps<typeof Ionicons>["name"];
 export type StyleType = StyleProp<ViewStyle>;
@@ -271,8 +271,8 @@ export interface ProfileFormData {
 
 export interface PlaceFormData {
   name: string;
-  territory: number;
-  favourite: boolean;
+  territory: number | null;
+  favourite?: boolean;
   location?: LocationType | null;
 }
 
@@ -290,6 +290,8 @@ export interface GeoDetails {
   address: string | undefined;
   raw: Record<string, unknown> | undefined;
 }
+
+export type MapPressEvent = Feature<Geometry, GeoJsonProperties>;
 
 export interface TerritoryData {
   code: string;
@@ -345,6 +347,8 @@ export interface DiaryItem extends DiaryBase {
   user_data: Omit<OwnerData, "private">;
 }
 
+export type EditorItem = DiaryItem & ObservationItem;
+
 export interface DiaryListItem extends DiaryBase {
   observation_data: {
     species_data: {
@@ -373,8 +377,6 @@ export interface PlaceItem extends PlaceItemBase {
   created_at: string;
   updated_at: string;
 }
-
-export type EditorItem = DiaryItem & ObservationItem;
 
 export interface IconButtonProps {
   icon: IconType;
@@ -504,14 +506,15 @@ export type AppStackParamList = {
   Checklist: ScreenWithFilters | undefined;
   Places: ScreenWithFilters | undefined;
   PlaceDetail: { placeId: number };
-  PlaceEditor: { placeId?: number; returnToScreen?: string } | undefined;
+  PlaceEditor: { place?: PlaceItem; returnToScreen?: string } | undefined;
   Observations: ScreenWithFilters | undefined;
   ObservationDetail: { observationId: number };
   ObservationEditor: {
+    observation?: ObservationItem;
     observationId?: number;
     diaryId?: number;
     territoryValue?: number;
-    defaultTerritory?: string | number | null;
+    defaultTerritory?: number | null;
     defaultPlace?: number | null;
     defaultSpecies?: number | null;
     returnMode?: string;

@@ -18,6 +18,7 @@ interface UpdateCoordsOptions {
   latText?: string;
   lngText?: string;
   withGeocode?: boolean;
+  normalizeOnSave? : boolean;
 }
 
 export const normalizeCoords = (
@@ -118,7 +119,7 @@ export const usePlaceLocation = () => {
     [reverseGeocode],
   );
 
-  const useMyLocation = useCallback(async () => {
+  const locateMe = useCallback(async () => {
     if (permissionStatus === "denied") {
       handleLocationUnavailable();
       return;
@@ -157,6 +158,6 @@ export const usePlaceLocation = () => {
     setLngText,
     isLoading,
     updateCoords,
-    useMyLocation,
+    locateMe,
   };
 };

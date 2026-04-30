@@ -6,6 +6,8 @@ import { toDateOnly } from "../util/helpers";
 import {
   Profile,
   EditorItem,
+  DiaryItem,
+  ObservationItem,
   SpeciesDropdownItem,
   PlaceDropdownItem,
   SpeciesData,
@@ -13,7 +15,7 @@ import {
 } from "../types";
 
 interface UseEditorFormParams {
-  item: EditorItem | null;
+  item: EditorItem | DiaryItem | ObservationItem | null;
   defaultTerritory?: number | "";
   defaultPlace?: number | null;
   defaultSpecies?: number | null;
@@ -36,8 +38,20 @@ export interface EditorFormData {
   species?: number | null;
 }
 
-type ParsedEditorItem = Omit<EditorItem, "date_time"> & {
+type ParsedEditorItem = {
   date_time?: string | null;
+  id?: number;
+  territory?: number;
+  place?: number | null;
+  place_data?: PlaceData | null;
+  private?: boolean;
+  name?: string | null;
+  notes?: string | null;
+  time?: string | null;
+  quantity?: number | null;
+  diary?: number | null;
+  species?: number | null;
+  species_data?: SpeciesData | null;
 };
 
 export const useEditorForm = ({
@@ -55,7 +69,7 @@ export const useEditorForm = ({
 
   const itemWithParsedDate: ParsedEditorItem | undefined = item
     ? {
-        ...item,
+        ...(item as DiaryItem | ObservationItem | EditorItem),
         date_time: item.date_time ? toDateOnly(item.date_time) : undefined,
       }
     : undefined;
@@ -93,12 +107,12 @@ export const useEditorForm = ({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const [speciesData, setSpeciesData] = useState<SpeciesData | SpeciesDropdownItem | null>(
-    itemWithParsedDate?.species_data ?? null,
-  );
-  const [placeData, setPlaceData] = useState<PlaceData |  PlaceDropdownItem | null>(
-    itemWithParsedDate?.place_data ?? null,
-  );
+  const [speciesData, setSpeciesData] = useState<
+    SpeciesData | SpeciesDropdownItem | null
+  >(itemWithParsedDate?.species_data ?? null);
+  const [placeData, setPlaceData] = useState<
+    PlaceData | PlaceDropdownItem | null
+  >(itemWithParsedDate?.place_data ?? null);
 
   useEffect(() => {
     if (!speciesValue || speciesData) return;

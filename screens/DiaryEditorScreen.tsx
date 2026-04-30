@@ -11,11 +11,20 @@ import { useUpdateItem } from "../hooks/useItem";
 import { showError } from "../services/api";
 import { useProfile } from "../store/profile-context";
 import { setSession } from "../util/sessionStore";
-import { setNavigationCallback } from "../util/navigationCallbacks";
+import {
+  setNavigationCallback,
+  setTypedNavigationCallback,
+} from "../util/navigationCallbacks";
 import { useEditorForm } from "../hooks/useEditorForm";
 import IconsHeader from "../components/ui/IconsHeader";
 import Layout from "../components/ui/Layout";
-import { AppError, AppStackNavigationProp, AppStackRouteProp } from "../types";
+import {
+  AppError,
+  AppStackNavigationProp,
+  AppStackRouteProp,
+  DiaryFormData,
+  PlaceData,
+} from "../types";
 
 const FORM_FIELDS = ["territory", "place", "date_time", "private", "name"];
 
@@ -43,7 +52,7 @@ const DiaryEditorScreen = () => {
     setPlaceData,
     validateForm,
   } = useEditorForm({
-    item: diary,
+    item: diary ?? null,
     defaultTerritory,
     defaultPlace,
     profile,
@@ -75,10 +84,12 @@ const DiaryEditorScreen = () => {
 
   const handleSaveDiary = useCallback(() => {
     if (!validateForm()) return;
-    const diaryData = {
-      ...formData,
-      territory: territoryValue,
+    const diaryData: DiaryFormData = {
+      territory: territoryValue as number,
       place: placeValue,
+      date_time: formData.date_time!,
+      private: formData.private!,
+      notes: formData.notes,
     };
 
     if (isEditMode) {
@@ -101,7 +112,7 @@ const DiaryEditorScreen = () => {
 
   const handleAddNewPlace = useCallback(() => {
     setNavigationCallback("onPlaceCreated", null);
-    setNavigationCallback(
+    setTypedNavigationCallback<[number, number, PlaceData]>(
       "onPlaceCreated",
       (newPlaceId, newPlaceTerritory, newPlaceData) => {
         setPlaceValue(newPlaceId);
@@ -132,7 +143,7 @@ const DiaryEditorScreen = () => {
       {
         condition: true,
         onPress: handleSaveDiary,
-        icon: "checkmark-circle",
+        icon: "checkmark-circle" as const,
         size: 36,
         tintColor: Colors.main100,
         disabled: isEditMode
@@ -165,7 +176,7 @@ const DiaryEditorScreen = () => {
   }
 
   return (
-    <Layout withKeyboard={true} style={{ padding: 12 }}>
+    <Layout withKeyboard style={{ padding: 12 }}>
       <DiaryForm
         formData={formData}
         setFormData={setFormData}
