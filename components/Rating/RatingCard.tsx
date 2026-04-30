@@ -19,7 +19,7 @@ interface RatingCardProps {
   index: number;
   isSelected: boolean;
   onToggle: () => void;
-  profile: Profile;
+  profile: Profile | null;
 }
 
 const RatingCard = ({

@@ -27,7 +27,7 @@ const DiariesScreen = () => {
   }, [navigation, currentFilters, territory]);
 
   const noItems = {
-    icon: "book-outline",
+    icon: "book-outline" as const,
     message: t("no_diaries_yet"),
     actions: [{ label: t("add_first_diary"), onPress: handleAdd }],
   };
@@ -45,7 +45,7 @@ const DiariesScreen = () => {
       route={route}
       fetchFunction={fetchDiaries}
       errorTitle={t("diaries_unavailable")}
-      onFiltersChange={setCurrentFilters}
+      onFiltersChange={async (val) => setCurrentFilters(val)}
       onAdd={handleAdd}
       renderItem={renderItem}
       noItems={noItems}

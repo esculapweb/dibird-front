@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import { Share, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
+import { useNavigation, useRoute } from "@react-navigation/native";
 
 import ListScreen from "./ListScreen";
 import { fetchStat, fetchChecklist } from "../util/fetches";
@@ -9,21 +10,36 @@ import StatCard from "../components/Stats/StatCard";
 import ChecklistCard from "../components/Stats/ChecklistCard";
 import Tabs from "../components/ui/Tabs";
 import { useFilters } from "../store/filters-context";
-import ConfirmBottomSheet from "../components/ui/ConfirmBottomSheet";
+import ConfirmBottomSheet, {
+  ConfirmBottomSheetRef,
+} from "../components/ui/ConfirmBottomSheet";
 import { useProfile } from "../store/profile-context";
 import { buildShareUrl } from "../util/helpers";
 import { parseDeepLinkParams } from "../util/parseDeepLinkParams";
+import {
+  AppStackNavigationProp,
+  AppStackRouteProp,
+  ChecklistItem,
+  Filters,
+  PaginatedResponse,
+  emptyPaginatedResponse,
+  SpeciesItem,
+  seenMode,
+} from "../types";
 
-const StatScreen = ({ route, navigation }) => {
+const StatScreen = () => {
   const { t } = useTranslation();
-  const confirmRef = useRef(null);
-  const openFilterModalRef = useRef(null);
-  const openUncheckSheet = (item) => {
+  const navigation = useNavigation<AppStackNavigationProp>();
+  const route = useRoute<AppStackRouteProp<"Stat" | "Checklist">>();
+  const confirmRef = useRef<ConfirmBottomSheetRef | null>(null);
+
+  const openFilterModalRef = useRef<(() => void) | null>(null);
+  const openUncheckSheet = (item: SpeciesItem | ChecklistItem) => {
     confirmRef.current?.present(item);
   };
   const { territory, seenMode, setSeenMode } = useFilters();
-  const [currentFilters, setCurrentFilters] = useState({});
-  const [currentSort, setCurrentSort] = useState(null);
+  const [currentFilters, setCurrentFilters] = useState<Filters | null>({});
+  const [currentSort, setCurrentSort] = useState<string | null>(null);
   const { profile } = useProfile();
   const { seenMode: initialSeenMode } = useMemo(
     () => parseDeepLinkParams(route.params),
@@ -38,24 +54,26 @@ const StatScreen = ({ route, navigation }) => {
         fetch: fetchStat,
         component: StatCard,
         allowSort: true,
-        getItemId: (item) => item.species_id,
+        getItemId: (item: SpeciesItem | ChecklistItem) =>
+          (item as SpeciesItem).species_id,
         title: t("statistics"),
         errorTitle: t("stat_unavailable"),
         showUncheckWarning: false,
-        icon: "stats-chart",
-        iconOpposite: "checkbox-outline",
+        icon: "stats-chart" as const,
+        iconOpposite: "checkbox-outline" as const,
         noItemsMessage: t("no_stat_yet"),
       },
       checklist: {
         fetch: fetchChecklist,
         component: ChecklistCard,
         allowSort: false,
-        getItemId: (item) => item.species_id ?? item.id,
+        getItemId: (item: SpeciesItem | ChecklistItem) =>
+          (item as ChecklistItem).species_id ?? (item as ChecklistItem).id!,
         title: t("checklist"),
         errorTitle: t("checklist_unavailable"),
         showUncheckWarning: true,
-        icon: "checkbox-outline",
-        iconOpposite: "stats-chart",
+        icon: "checkbox-outline" as const,
+        iconOpposite: "stats-chart" as const,
         noItemsMessage: t("no_checklist_yet"),
       },
     }),
@@ -75,7 +93,7 @@ const StatScreen = ({ route, navigation }) => {
     navigation.replace(targetRoute);
   }, [navigation, route.name]);
 
-  const handleOpenFilterModal = useCallback((fn) => {
+  const handleOpenFilterModal = useCallback((fn: () => void) => {
     openFilterModalRef.current = fn;
   }, []);
 
@@ -90,14 +108,14 @@ const StatScreen = ({ route, navigation }) => {
   }, [navigation, currentFilters, territory]);
 
   const handleShowObservations = useCallback(
-    (item) => {
+    (item: SpeciesItem) => {
       navigation.navigate("Observations", {
         filtersOverride: {
-          territory: currentFilters.territory ?? null,
-          place: currentFilters.place ?? null,
+          territory: currentFilters?.territory ?? null,
+          place: currentFilters?.place ?? null,
           species: item.species_id,
           speciesName: item.sp_name_lang,
-          date: currentFilters.date ?? null,
+          date: currentFilters?.date ?? null,
         },
       });
     },
@@ -105,11 +123,11 @@ const StatScreen = ({ route, navigation }) => {
   );
 
   const handleStatCardPress = useCallback(
-    (item) => {
+    (item: SpeciesItem | ChecklistItem) => {
       if (!item.seen) {
         navigation.navigate("ObservationEditor", {
-          defaultTerritory: currentFilters.territory ?? null,
-          defaultPlace: currentFilters.place ?? null,
+          defaultTerritory: currentFilters?.territory ?? null,
+          defaultPlace: currentFilters?.place ?? null,
           defaultSpecies: item.species_id,
           returnMode: "back",
         });
@@ -119,7 +137,7 @@ const StatScreen = ({ route, navigation }) => {
         openUncheckSheet(item);
         return;
       }
-      handleShowObservations(item);
+      handleShowObservations(item as SpeciesItem);
     },
     [currentFilters, navigation, config],
   );
@@ -130,14 +148,14 @@ const StatScreen = ({ route, navigation }) => {
 
     if (viewMode === "checklist" && noTerritory) {
       return {
-        icon: "checkbox-outline",
+        icon: "checkbox-outline" as const,
         message: t("select_territory_to_view_checklist"),
         actions: [{ label: t("select_territory"), onPress: openFilter }],
       };
     }
     if (viewMode !== "checklist" && noTerritory && seenMode !== "seen") {
       return {
-        icon: "stats-chart",
+        icon: "stats-chart" as const,
         message:
           seenMode === "unseen"
             ? t("select_territory_to_view_not_seen")
@@ -153,18 +171,27 @@ const StatScreen = ({ route, navigation }) => {
   }, [currentFilters, viewMode, seenMode, config, t, handleAdd]);
 
   const fetchData = useCallback(
-    (filters, sort, search, page) => {
+    (
+      filters: Filters | null,
+      sort: string | null,
+      search: string,
+      page: number,
+    ) => {
       const safeFilters = { ...filters };
 
       if (viewMode === "checklist" && !safeFilters.territory) {
-        return Promise.resolve({ results: [], pagination: { count: 0 } });
+        return Promise.resolve<PaginatedResponse<ChecklistItem>>(
+          emptyPaginatedResponse(),
+        );
       }
       if (
         viewMode !== "checklist" &&
         !safeFilters.territory &&
         seenMode !== "seen"
       ) {
-        return Promise.resolve({ results: [], pagination: { count: 0 } });
+        return Promise.resolve<PaginatedResponse<SpeciesItem>>(
+          emptyPaginatedResponse(),
+        );
       }
 
       safeFilters.seen =
@@ -175,15 +202,24 @@ const StatScreen = ({ route, navigation }) => {
   );
 
   const renderItem = useCallback(
-    ({ item, index }) => {
-      const Component = config.component;
+    ({ item, index }: { item: SpeciesItem | ChecklistItem; index: number }) => {
+      if (viewMode === "checklist") {
+        return (
+          <ChecklistCard
+            item={item as ChecklistItem}
+            index={index}
+            seenMode={seenMode}
+            onPress={() => handleStatCardPress(item)}
+          />
+        );
+      }
       return (
-        <Component
-          item={item}
+        <StatCard
+          item={item as SpeciesItem}
           index={index}
           seenMode={seenMode}
           onPress={() => handleStatCardPress(item)}
-          personal={true}
+          personal
         />
       );
     },
@@ -224,21 +260,21 @@ const StatScreen = ({ route, navigation }) => {
 
   const tabOptions = [
     {
-      value: "seen",
-      icon: "eye",
-      iconInactive: "eye-outline",
+      value: "seen" as const,
+      icon: "eye" as const,
+      iconInactive: "eye-outline" as const,
       labelKey: t("seen"),
     },
     {
-      value: "all",
-      icon: "apps",
-      iconInactive: "apps-outline",
+      value: "all" as const,
+      icon: "apps" as const,
+      iconInactive: "apps-outline" as const,
       labelKey: t("all"),
     },
     {
-      value: "unseen",
-      icon: "eye-off",
-      iconInactive: "eye-off-outline",
+      value: "unseen" as const,
+      icon: "eye-off" as const,
+      iconInactive: "eye-off-outline" as const,
       labelKey: t("not_seen"),
     },
   ];
@@ -254,8 +290,8 @@ const StatScreen = ({ route, navigation }) => {
         noItems={noItems}
         tabsMode={seenMode}
         getItemId={config.getItemId}
-        onFiltersChange={setCurrentFilters}
-        onSortChange={setCurrentSort}
+        onFiltersChange={async (val) => setCurrentFilters(val)}
+        onSortChange={async (val) => setCurrentSort(val)}
         allowSort={config.allowSort}
         headerRightBeginning={headerRightBeginning}
         handleSharePress={viewMode === "stats" ? handleShare : undefined}
@@ -264,7 +300,7 @@ const StatScreen = ({ route, navigation }) => {
           <Tabs
             tabOptions={tabOptions}
             tabsMode={seenMode}
-            setTabsMode={setSeenMode}
+            setTabsMode={(val) => setSeenMode(val as seenMode)}
           />
         }
       />
@@ -275,7 +311,7 @@ const StatScreen = ({ route, navigation }) => {
         description={t("uncheck_descriptions")}
         confirmText={t("view_species_observations")}
         cancelText={t("cancel")}
-        onConfirm={handleShowObservations}
+        onConfirm={(item) => handleShowObservations(item as SpeciesItem)}
       />
     </>
   );

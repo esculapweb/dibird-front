@@ -3,6 +3,7 @@ import { Share, Platform } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
+import { useRoute } from "@react-navigation/native";
 
 import { fetchRatingCompareHeader, fetchRatingCompare } from "../util/fetches";
 import ListScreen from "./ListScreen";
@@ -11,13 +12,21 @@ import CompareProfileHeader from "../components/Profile/CompareProfileHeader";
 import RatingCompareCard from "../components/Rating/RatingCompareCard";
 import { useProfile } from "../store/profile-context";
 import { buildShareUrl } from "../util/helpers";
+import {
+  AppStackRouteProp,
+  compareMode,
+  Filters,
+  RatingCompareItem,
+  seenMode,
+} from "../types";
 
-const RatingsCompareScreen = ({ route }) => {
+const RatingsCompareScreen = () => {
   const { t } = useTranslation();
+  const route = useRoute<AppStackRouteProp<"RatingsCompare">>();
   const { profile1, profile2 } = route.params;
-  const [tabMode, setTabMode] = useState("all");
-  const [currentFilters, setCurrentFilters] = useState({});
-  const [currentSort, setCurrentSort] = useState(null);
+  const [tabMode, setTabMode] = useState<seenMode | compareMode>("all");
+  const [currentFilters, setCurrentFilters] = useState<Filters | null>(null);
+  const [currentSort, setCurrentSort] = useState<string | null>(null);
   const { profile } = useProfile();
 
   const { data: headerData } = useQuery({
@@ -27,7 +36,7 @@ const RatingsCompareScreen = ({ route }) => {
   });
 
   const renderItem = useCallback(
-    ({ item, index }) => (
+    ({ item, index }: { item: RatingCompareItem; index: number }) => (
       <RatingCompareCard item={item} index={index} onPress={() => {}} />
     ),
     [headerData?.profile_data],
@@ -58,7 +67,7 @@ const RatingsCompareScreen = ({ route }) => {
   }, [profile, currentFilters, currentSort, profile1, profile2, t]);
 
   const noItems = {
-    icon: "list-outline",
+    icon: "list-outline" as const,
     message: t("no_observations_yet"),
   };
 
@@ -71,23 +80,23 @@ const RatingsCompareScreen = ({ route }) => {
 
   const tabOptions = [
     {
-      value: "common",
-      icon: "checkmark-circle",
-      iconInactive: "checkmark-circle-outline",
+      value: "common" as const,
+      icon: "checkmark-circle" as const,
+      iconInactive: "checkmark-circle-outline" as const,
       labelKey: t("common"),
       count: headerData?.counts?.common,
     },
     {
-      value: "all",
-      icon: "list",
-      iconInactive: "list-outline",
+      value: "all" as const,
+      icon: "list" as const,
+      iconInactive: "list-outline" as const,
       labelKey: t("all"),
       count: headerData?.counts?.all,
     },
     {
-      value: "different",
-      icon: "remove-circle",
-      iconInactive: "remove-circle-outline",
+      value: "different" as const,
+      icon: "remove-circle" as const,
+      iconInactive: "remove-circle-outline" as const,
       labelKey: t("different"),
       count: headerData?.counts?.different,
     },
@@ -104,8 +113,8 @@ const RatingsCompareScreen = ({ route }) => {
       allowedFilters={["territory", "date", "species"]}
       renderItem={renderItem}
       noItems={noItems}
-      onFiltersChange={setCurrentFilters}
-      onSortChange={setCurrentSort}
+      onFiltersChange={async (val) => setCurrentFilters(val)}
+      onSortChange={async (val) => setCurrentSort(val)}
       showHeaderBadge={false}
       handleSharePress={handleShare}
       listHeader={topEl}
@@ -113,7 +122,7 @@ const RatingsCompareScreen = ({ route }) => {
         <Tabs
           tabOptions={tabOptions}
           tabsMode={tabMode}
-          setTabsMode={setTabMode}
+          setTabsMode={(val) => setTabMode(val)}
         />
       }
     />

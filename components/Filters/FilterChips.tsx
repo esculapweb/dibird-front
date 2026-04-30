@@ -8,7 +8,7 @@ import { FilterKey, Filters } from "../../types";
 interface FilterChipsProps {
   filters: Filters;
   onRemove: (key: FilterKey) => void;
-  extraFilters: Filters | null;
+  extraFilters?: Filters | null;
   hints: {
     speciesName?: string;
     [key: string]: unknown;

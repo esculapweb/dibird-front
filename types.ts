@@ -1,19 +1,9 @@
 import { ComponentProps } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { StyleProp, ViewStyle } from "react-native";
-import {
-  NativeStackNavigationProp,
-  NativeStackScreenProps,
-} from "@react-navigation/native-stack";
-import {
-  DrawerNavigationProp,
-  DrawerScreenProps,
-} from "@react-navigation/drawer";
-import {
-  CompositeNavigationProp,
-  CompositeScreenProps,
-  RouteProp,
-} from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { DrawerNavigationProp } from "@react-navigation/drawer";
+import { CompositeNavigationProp, RouteProp } from "@react-navigation/native";
 import { AxiosResponse } from "axios";
 
 export type IconType = ComponentProps<typeof Ionicons>["name"];
@@ -120,9 +110,10 @@ export interface Profile {
 }
 
 export type seenMode = "seen" | "unseen" | "all";
+export type compareMode = "common" | "different" | "all";
 
 export interface TabOption {
-  value: "seen" | "unseen" | "all";
+  value: seenMode | compareMode;
   icon: IconType;
   iconInactive: IconType;
   labelKey: string;
@@ -169,6 +160,18 @@ export interface PaginatedResponse<T> {
   };
   results: T[];
 }
+
+export const emptyPaginatedResponse = <T>(): PaginatedResponse<T> => ({
+  results: [],
+  pagination: {
+    count: 0,
+    per_page: 0,
+    current: 1,
+    final: 1,
+    next: null,
+    previous: null,
+  },
+});
 
 export interface DropdownItem {
   value: string | number;
@@ -217,7 +220,8 @@ export interface ChecklistItem {
   latin: string;
   name_lang: string;
   seen: boolean;
-  species_id: number;
+  species_id?: number;
+  id?: number;
   status: string | null;
   thumb: string | null;
   type: "order" | "family" | "genus" | "species";
@@ -505,7 +509,7 @@ export type AppStackParamList = {
     observationId?: number;
     defaultTerritory?: number | null;
     defaultPlace?: number | null;
-    defaultSpecies?: number;
+    defaultSpecies?: number | null;
     returnMode?: string;
   };
   Diaries: ScreenWithFilters | undefined;
@@ -517,13 +521,11 @@ export type AppStackParamList = {
     returnMode?: string;
   };
   Rating: ScreenWithFilters | undefined;
-  RatingsCompare:
-    | (ScreenWithFilters & {
-        profile1: number;
-        profile2: number;
-      })
-    | undefined;
-  UserStat: { profileId: number };
+  RatingsCompare: ScreenWithFilters & {
+    profile1: number;
+    profile2: number;
+  };
+  UserStat: ScreenWithFilters & { profileId: number };
 };
 
 export type AppDrawerParamList = {

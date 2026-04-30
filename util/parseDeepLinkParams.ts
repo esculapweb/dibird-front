@@ -1,4 +1,4 @@
-import { Filters } from "../types";
+import { Filters, seenMode } from "../types";
 
 interface DeepLinkParams {
   territory?: number | string | null;
@@ -8,7 +8,7 @@ interface DeepLinkParams {
   date_time_min?: string | null;
   date_time_max?: string | null;
   o?: string | null;
-  seenMode?: string | null;
+  seenMode?: seenMode | null;
   filtersOverride?: Filters;
 }
 

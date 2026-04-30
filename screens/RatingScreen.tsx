@@ -2,27 +2,37 @@ import { useCallback, useState } from "react";
 import { Share, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
+import { useNavigation, useRoute } from "@react-navigation/native";
 
 import ListScreen from "./ListScreen";
 import { fetchRating } from "../util/fetches";
 import RatingCard from "../components/Rating/RatingCard";
 import { useFilters } from "../store/filters-context";
-import { useTheme, ThemeColors } from "../store/theme-context";
+import { useTheme } from "../store/theme-context";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import { useProfile } from "../store/profile-context";
 import { buildShareUrl } from "../util/helpers";
+import {
+  AppStackNavigationProp,
+  AppStackRouteProp,
+  RatingItem,
+  Filters
+} from "../types";
 
-const RatingScreen = ({ route, navigation }) => {
+const RatingScreen = () => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
-  const { territory } = useFilters();
-  const [currentFilters, setCurrentFilters] = useState(null);
-  const [currentSort, setCurrentSort] = useState(null);
+  const navigation = useNavigation<AppStackNavigationProp>();
+  const route = useRoute<AppStackRouteProp<"Rating">>();
 
-  const [selectedIds, setSelectedIds] = useState([]);
+  const { territory } = useFilters();
+  const [currentFilters, setCurrentFilters] = useState<Filters | null>(null);
+  const [currentSort, setCurrentSort] = useState<string | null>(null);
+
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const { profile } = useProfile();
 
-  const handleToggle = useCallback((profileId) => {
+  const handleToggle = useCallback((profileId: number) => {
     setSelectedIds((prev) => {
       const isSelected = prev.includes(profileId);
       if (isSelected) return prev.filter((id) => id !== profileId);
@@ -63,12 +73,12 @@ const RatingScreen = ({ route, navigation }) => {
   }, [currentFilters, currentSort]);
 
   const noItems = {
-    icon: "trophy-outline",
+    icon: "trophy-outline" as const,
     message: t("no_rating_yet"),
     actions: [{ label: t("add_first_observation"), onPress: handleAdd }],
   };
 
-  const renderItem = ({ item, index }) => (
+  const renderItem = ({ item, index }: { item: RatingItem; index: number }) => (
     <RatingCard
       item={item}
       index={index}
@@ -95,10 +105,10 @@ const RatingScreen = ({ route, navigation }) => {
       fetchFunction={fetchRating}
       errorTitle={t("rating_unavailable")}
       allowedFilters={["territory", "date"]}
-      onFiltersChange={setCurrentFilters}
-      onSortChange={setCurrentSort}
+      onFiltersChange={async (val) => setCurrentFilters(val)}
+      onSortChange={async (val) => setCurrentSort(val)}
       renderItem={renderItem}
-      getItemId={(item) => item.profile_id}
+      getItemId={(item: RatingItem) => item.profile_id}
       noItems={noItems}
       title={t("rating")}
       fabIcon="people-outline"

@@ -17,7 +17,7 @@ interface SortModalProps {
   sort: string | null;
   setSort: (sort: string | null) => void;
   locationAvailable?: boolean;
-  onLocationUnavailable: () => void;
+  onLocationUnavailable?: () => void;
 }
 
 const SortModal = ({

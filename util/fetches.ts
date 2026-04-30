@@ -14,11 +14,11 @@ import {
   ObservationItem,
   RatingCompareItem,
   RatingItem,
-  DiaryItem,
   DiaryObservationItem,
   PlaceItem,
   BirdOfTheDayType,
-  ActivityResponse
+  ActivityResponse,
+  DiaryListItem
 } from "../types";
 
 export const fetchTimezones = async () => {
@@ -178,7 +178,7 @@ export const fetchBirdOfDay = async (territory: number | null) => {
 const fetchAbstract = async <T>(
   fetchUrl: string,
   filters: Filters = {},
-  order: string,
+  order: string | null,
   search = "",
   page = 1,
   extraParams: Record<string, unknown> = {},
@@ -205,7 +205,7 @@ const fetchAbstract = async <T>(
 
 export const fetchStat = (
   filters: Filters,
-  order = "-date_time",
+  order: string | null = "-date_time",
   search: string,
   page?: number,
 ) => {
@@ -221,7 +221,7 @@ export const fetchStat = (
 
 export const fetchChecklist = (
   filters: Filters,
-  order = "-ioc_id",
+  order: string | null = "-ioc_id",
   search?: string,
   page?: number,
 ) => {
@@ -271,11 +271,11 @@ export const fetchObservations = (
 
 export const fetchDiaries = (
   filters: Filters,
-  order = "-date_time",
+  order: string | null = "-date_time",
   search?: string,
   page?: number,
 ) =>
-  fetchAbstract<PaginatedResponse<DiaryItem>>(
+  fetchAbstract<PaginatedResponse<DiaryListItem>>(
     "/myapi/diary2/",
     filters,
     order,
@@ -285,7 +285,7 @@ export const fetchDiaries = (
 
 export const fetchDiaryObservations = (
   filters: Filters,
-  order = "-created_at",
+  order: string | null = "-created_at",
   search?: string,
   page?: number,
 ) => {
@@ -300,7 +300,7 @@ export const fetchDiaryObservations = (
 
 export const fetchRating = (
   filters: Filters,
-  order = "-observations",
+  order: string | null = "-observations",
   search?: string,
   page?: number,
 ) => {
@@ -317,9 +317,9 @@ export const fetchRating = (
 export const fetchRatingCompareHeader = async (
   profile1: number,
   profile2: number,
-  filters: Filters,
+  filters: Filters | null,
 ) => {
-  const { date, ...restFilters } = filters;
+  const { date, ...restFilters } = filters ?? {};
 
   const apiFilters = {
     ...restFilters,
@@ -337,8 +337,8 @@ export const fetchRatingCompareHeader = async (
 
 export const fetchRatingCompare = (
   filters: Filters,
-  order = "ioc_id",
-  search?: string,
+  order: string | null = "ioc_id",
+  search?: string ,
   page?: number,
 ) => {
   filters = { ...filters };

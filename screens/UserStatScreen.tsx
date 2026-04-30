@@ -1,7 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { View, Text, StyleSheet, Share, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
+import { useRoute } from "@react-navigation/native";
 
 import ListScreen from "./ListScreen";
 import { fetchStat, fetchUserProfile } from "../util/fetches";
@@ -12,15 +13,26 @@ import { useTheme, ThemeColors } from "../store/theme-context";
 import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
 import { buildShareUrl } from "../util/helpers";
+import {
+  AppStackRouteProp,
+  emptyPaginatedResponse,
+  EmptyStateProps,
+  Filters,
+  PaginatedResponse,
+  seenMode,
+  SpeciesItem,
+} from "../types";
 
-const UserStatScreen = ({ route }) => {
+const UserStatScreen = () => {
   const { t } = useTranslation();
+  const route = useRoute<AppStackRouteProp<"UserStat">>();
   const { profileId } = route.params;
   const { seenMode, setSeenMode } = useFilters();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
-  const [currentFilters, setCurrentFilters] = useState(null);
-  const [currentSort, setCurrentSort] = useState(null);
+  const [currentFilters, setCurrentFilters] = useState<Filters | null>(null);
+  const [currentSort, setCurrentSort] = useState<string | null>(null);
+  const openFilterModalRef = useRef<(() => void) | null>(null);
 
   const { data: userProfile } = useQuery({
     queryKey: ["userProfile", profileId],
@@ -33,23 +45,20 @@ const UserStatScreen = ({ route }) => {
   const username = userProfile?.user_data_public.username ?? "";
   const { fullName } = useProfileDisplay({ firstName, lastName, username });
 
-  const [noItems, setNoItems] = useState({
-    icon: "stats-chart",
+  const [noItems, setNoItems] = useState<EmptyStateProps>({
+    icon: "stats-chart" as const,
     message: t("no_stat_yet"),
     actions: [],
   });
 
   const fetchData = useCallback(
-    (filters, sort, search, page, openFilterModal) => {
+    (filters: Filters, sort: string | null, search: string, page: number) => {
       const safeFilters = { ...filters };
 
       if (!safeFilters.territory && seenMode !== "seen") {
-        setNoItems({
-          icon: "stats-chart",
-          message: t("select_territory_to_view_not_seen"),
-          actions: [{ label: t("select_territory"), onPress: openFilterModal }],
-        });
-        return Promise.resolve({ results: [], pagination: { count: 0 } });
+        return Promise.resolve<PaginatedResponse<SpeciesItem>>(
+          emptyPaginatedResponse(),
+        );
       }
 
       safeFilters.seen =
@@ -70,7 +79,7 @@ const UserStatScreen = ({ route }) => {
   }, [profileId, currentFilters, currentSort]);
 
   const renderItem = useCallback(
-    ({ item, index }) => (
+    ({ item, index }: { item: SpeciesItem; index: number }) => (
       <StatCard
         item={item}
         index={index}
@@ -83,21 +92,21 @@ const UserStatScreen = ({ route }) => {
 
   const tabOptions = [
     {
-      value: "seen",
-      icon: "eye",
-      iconInactive: "eye-outline",
+      value: "seen" as const,
+      icon: "eye" as const,
+      iconInactive: "eye-outline" as const,
       labelKey: t("seen"),
     },
     {
-      value: "all",
-      icon: "apps",
-      iconInactive: "apps-outline",
+      value: "all" as const,
+      icon: "apps" as const,
+      iconInactive: "apps-outline" as const,
       labelKey: t("all"),
     },
     {
-      value: "unseen",
-      icon: "eye-off",
-      iconInactive: "eye-off-outline",
+      value: "unseen" as const,
+      icon: "eye-off" as const,
+      iconInactive: "eye-off-outline" as const,
       labelKey: t("not_seen"),
     },
   ];
@@ -117,7 +126,7 @@ const UserStatScreen = ({ route }) => {
 
   return (
     <ListScreen
-      route={route}
+      route={route as AppStackRouteProp<"UserStat">}
       fetchFunction={fetchData}
       title={t("statistics")}
       errorTitle={t("stat_unavailable")}
@@ -128,15 +137,32 @@ const UserStatScreen = ({ route }) => {
       allowSort={true}
       extraFilters={{ user_id: profileId }}
       allowedFilters={["territory", "species", "date"]}
-      onFiltersChange={setCurrentFilters}
-      onSortChange={setCurrentSort}
+      onOpenFilterModal={(fn) => {
+        openFilterModalRef.current = fn;
+      }}
+      onFiltersChange={async (val) => {
+        if (!val?.territory && seenMode !== "seen") {
+          setNoItems({
+            icon: "stats-chart" as const,
+            message: t("select_territory_to_view_not_seen"),
+            actions: [
+              {
+                label: t("select_territory"),
+                onPress: () => openFilterModalRef.current?.(),
+              },
+            ],
+          });
+        }
+        setCurrentFilters(val);
+      }}
+      onSortChange={async (val) => setCurrentSort(val)}
       handleSharePress={handleShare}
       topEl={topEl}
       bottomEl={
         <Tabs
           tabOptions={tabOptions}
           tabsMode={seenMode}
-          setTabsMode={setSeenMode}
+          setTabsMode={(val) => setSeenMode(val as seenMode)}
         />
       }
     />

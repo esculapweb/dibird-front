@@ -17,7 +17,7 @@ interface ConfirmBottomSheetProps {
   cancelText: string;
   onConfirm?: (data: unknown) => void;
 }
-interface ConfirmBottomSheetRef {
+export interface ConfirmBottomSheetRef {
   present: (payload: unknown) => void;
   dismiss: () => void;
 }

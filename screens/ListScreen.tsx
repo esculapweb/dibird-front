@@ -31,32 +31,32 @@ import {
   IconButtonConfig,
   EmptyStateProps,
   FetchFunction,
-  LocationCoords
+  LocationCoords,
 } from "../types";
 
 interface ListScreenProps<T> {
   route: RouteProp<Record<string, ScreenWithFilters | undefined>>;
   fetchFunction: FetchFunction<T>;
-  allowedFilters: FilterKey[];
+  allowedFilters?: FilterKey[];
   errorTitle: string;
-  onAdd: () => void;
+  onAdd?: () => void;
   renderItem: ListRenderItem<T>;
   noItems: EmptyStateProps;
   showSearch?: boolean;
   title: string;
-  tabsMode: seenMode;
+  tabsMode?: seenMode;
   listHeader?: FlatListProps<T>["ListHeaderComponent"];
-  extraFilters: Filters | null;
-  headerRightBeginning: IconButtonConfig[];
-  headerRightEnd: IconButtonConfig[];
+  extraFilters?: Filters | null;
+  headerRightBeginning?: IconButtonConfig[];
+  headerRightEnd?: IconButtonConfig[];
   handleSharePress?: () => Promise<void>;
   fabIcon?: IconType;
-  getItemId?: (item: T) => void;
+  getItemId?: (item: T) => string | number;
   onFiltersChange: (val: Filters | null) => Promise<void>;
-  onSortChange: (val: string | null) => Promise<void>;
+  onSortChange?: (val: string | null) => Promise<void>;
   locationCoords?: LocationCoords;
   locationAvailable?: boolean;
-  onLocationUnavailable: () => void;
+  onLocationUnavailable?: () => void;
   allowSort?: boolean;
   onOpenFilterModal?: (fn: () => void) => void;
   showHeaderBadge?: boolean;
@@ -64,7 +64,7 @@ interface ListScreenProps<T> {
   bottomEl?: ReactNode;
 }
 
-const ListScreen = <T extends { id: string | number }>({
+const ListScreen = <T,>({
   route,
   fetchFunction,
   allowedFilters = ["territory", "place", "date", "species"],
@@ -81,7 +81,7 @@ const ListScreen = <T extends { id: string | number }>({
   headerRightEnd,
   handleSharePress,
   fabIcon,
-  getItemId = (item) => item.id,
+  getItemId,
   onFiltersChange,
   onSortChange,
   locationCoords,
@@ -95,8 +95,12 @@ const ListScreen = <T extends { id: string | number }>({
 }: ListScreenProps<T>) => {
   const screenName = route.name;
   const { t } = useTranslation();
+  const resolvedGetItemId = (item: T): string | number =>
+    getItemId
+      ? getItemId(item)
+      : (item as unknown as { id: string | number }).id;
   const keyExtractor = (item: T, _: number) =>
-    `${screenName}-${getItemId(item)}`;
+    `${screenName}-${resolvedGetItemId(item)}`;
   const [sortModalVisible, setSortModalVisible] = useState(false);
   const navigation = useNavigation<AppStackNavigationProp>();
 
@@ -134,13 +138,7 @@ const ListScreen = <T extends { id: string | number }>({
 
   const fetchDataWrapper = useCallback(
     (filters: Filters, sort: string | null, search: string, page: number) => {
-      return fetchFunction(
-        filters,
-        sort,
-        search,
-        page,
-        locationCoords,
-      );
+      return fetchFunction(filters, sort, search, page, locationCoords);
     },
     [fetchFunction, locationCoords],
   );
@@ -169,7 +167,7 @@ const ListScreen = <T extends { id: string | number }>({
   const rawItems = data?.pages.flatMap((page) => page.results) ?? [];
   const objects = new Set();
   const items = rawItems.filter((item) => {
-    const id = getItemId(item);
+    const id = resolvedGetItemId(item);
     if (objects.has(id)) return false;
     objects.add(id);
     return true;

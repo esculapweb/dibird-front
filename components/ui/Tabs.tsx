@@ -4,12 +4,12 @@ import * as Haptics from "expo-haptics";
 import { EdgeInsets, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
-import { TabOption, seenMode } from "../../types";
+import { TabOption, compareMode, seenMode } from "../../types";
 
 interface TabsProps {
   tabOptions: TabOption[];
-  tabsMode: seenMode;
-  setTabsMode: (value: seenMode) => void;
+  tabsMode: seenMode | compareMode;
+  setTabsMode: (value: seenMode | compareMode) => void;
 }
 
 const Tabs = ({ tabOptions, tabsMode, setTabsMode }: TabsProps) => {
