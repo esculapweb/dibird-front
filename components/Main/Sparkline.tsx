@@ -13,11 +13,18 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { fetchMyActivity } from "../../util/fetches";
 import { SparklineSkeleton } from "./SparklineSkeleton";
+import { ActivityResponse, Filters } from "../../types";
 
 const H_PAD = 16;
 const SPARK_H = 52;
 
-const Sparkline = ({ filters, chartType = "bar" }) => {
+const Sparkline = ({
+  filters,
+  chartType = "bar",
+}: {
+  filters: Filters;
+  chartType?: "bar" | "dot";
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState("newSpecies");
 
@@ -49,7 +56,7 @@ const Sparkline = ({ filters, chartType = "bar" }) => {
   });
 
   const data = activity?.data ?? [];
-  const meta = activity?.meta ?? {};
+  const meta = activity?.meta ?? {} as ActivityResponse['meta'];
 
   const INNER_W = width - H_PAD * 2 - 32;
   const barW = Math.max(
@@ -66,7 +73,7 @@ const Sparkline = ({ filters, chartType = "bar" }) => {
     { key: "observations", label: t("observations") },
   ];
 
-  const BarItem = ({ h, mb, bg }) =>
+  const BarItem = ({ h, mb, bg }: { h: number; mb: number; bg: string }) =>
     chartType === "dot" ? (
       <View
         style={{
@@ -167,7 +174,7 @@ const Sparkline = ({ filters, chartType = "bar" }) => {
 
 export default Sparkline;
 
-const stylesFn = (Colors, mainColor, mutedColor) =>
+const stylesFn = (Colors: ThemeColors, mainColor: string, mutedColor: string) =>
   StyleSheet.create({
     card: {
       marginHorizontal: H_PAD,

@@ -36,6 +36,7 @@ export const INVALIDATION_MAP = {
       ["RatingCompare"],
       ["RatingCompareHeader"],
       ["DashboardStat"],
+      ["BirdOfDay"],
     ],
     update: [
       ["Observations"],
@@ -53,6 +54,7 @@ export const INVALIDATION_MAP = {
       ["RatingCompare"],
       ["RatingCompareHeader"],
       ["DashboardStat"],
+      ["BirdOfDay"],
     ],
     delete: [
       ["Observations"],
@@ -69,6 +71,7 @@ export const INVALIDATION_MAP = {
       ["RatingCompare"],
       ["RatingCompareHeader"],
       ["DashboardStat"],
+      ["BirdOfDay"],
     ],
   },
   Diary: {
@@ -95,6 +98,7 @@ export const INVALIDATION_MAP = {
       ["RatingCompare"],
       ["RatingCompareHeader"],
       ["DashboardStat"],
+      ["BirdOfDay"],
     ],
   },
   Profile: {

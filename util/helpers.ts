@@ -50,7 +50,7 @@ export const formatDateTime = (
 };
 
 export const formatDateFilterMain = (value?: DateFilter | null): string => {
-  if (!value) return "";
+  if (!value) return i18n.t("all_period");
   if (value?.type === "range") {
     if (value?.from && value?.to)
       return `${formatDate(value?.from)} – ${formatDate(value?.to)}`;

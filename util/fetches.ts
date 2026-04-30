@@ -17,6 +17,8 @@ import {
   DiaryItem,
   DiaryObservationItem,
   PlaceItem,
+  BirdOfTheDayType,
+  ActivityResponse
 } from "../types";
 
 export const fetchTimezones = async () => {
@@ -149,7 +151,7 @@ export const fetchMyActivity = async (filters: Filters) => {
     ...(filters?.new && { new: true }),
   };
 
-  const res = await api.get("/myapi/observation2/activity/", { params });
+  const res = await api.get<ActivityResponse>("/myapi/observation2/activity/", { params });
 
   return res.data;
 };
@@ -164,12 +166,12 @@ export const fetchMyDashboardStat = async (filters: Filters) => {
   return res.data;
 };
 
-export const fetchBirdOfDay = async (territory: number) => {
+export const fetchBirdOfDay = async (territory: number | null) => {
   const params = {
     territory: territory,
   };
 
-  const res = await api.get("/myapi/bird-of-day2/today/", { params });
+  const res = await api.get<BirdOfTheDayType>("/myapi/bird-of-day2/today/", { params });
   return res.data;
 };
 

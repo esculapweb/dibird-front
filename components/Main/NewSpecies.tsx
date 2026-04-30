@@ -1,19 +1,17 @@
-import { FC } from "react";
+import { FC, useCallback} from "react";
 import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 import { Image } from "expo-image";
-import { InfiniteData } from "@tanstack/react-query";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
-
+import { useList } from "../../hooks/useList";
 import { Config } from "../../constants/config";
 import { BirdSVG } from "../ui/Svgs";
 import { formatDateShort } from "../../util/helpers";
+import { fetchStat } from "../../util/fetches";
 import {
   Filters,
-  PaginatedResult,
-  SpeciesItem,
   AppStackNavigationProp,
 } from "../../types";
 
@@ -22,19 +20,42 @@ const IMAGE_SIZE = 48;
 
 interface NewSpeciesProps {
   filters: Filters;
-  newSpeciesData: InfiniteData<PaginatedResult<SpeciesItem>> | undefined;
-  isLoading: boolean;
+  filtersLoaded: boolean;
 }
 
-const NewSpecies: FC<NewSpeciesProps> = ({
-  filters,
-  newSpeciesData,
-  isLoading,
-}) => {
+const NewSpecies: FC<NewSpeciesProps> = ({ filters, filtersLoaded }) => {
   const navigation = useNavigation<AppStackNavigationProp>();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
+
+    const fetchStatSeen = useCallback(
+    (
+      filters: Filters,
+      sort: string | null,
+      search: string | null,
+      page: number,
+    ) => {
+      const { place, species, ...seenFilters } = filters;
+      return fetchStat(
+        { ...seenFilters, seen: true },
+        sort ?? undefined,
+        search ?? "",
+        page,
+      );
+    },
+    [],
+  );
+
+  const { data: newSpeciesData, isLoading } =
+    useList({
+      screenName: "Stat",
+      fetchFunction: fetchStatSeen,
+      filters,
+      sort: "-seen,-date_time",
+      tabsMode: "seen",
+      enabled: filtersLoaded,
+    });
 
   const isYearFilter =
     filters?.date?.type === "year" || filters?.date?.type === "this_year";
@@ -49,7 +70,10 @@ const NewSpecies: FC<NewSpeciesProps> = ({
         </View>
         <View style={styles.nsList}>
           {[0, 1, 2].map((i) => (
-            <View key={i} style={[styles.nsRow, i < 2 ? styles.nsRowDivider : null]}>
+            <View
+              key={i}
+              style={[styles.nsRow, i < 2 ? styles.nsRowDivider : null]}
+            >
               <View
                 style={[
                   styles.image,
@@ -122,7 +146,10 @@ const NewSpecies: FC<NewSpeciesProps> = ({
           return (
             <TouchableOpacity
               key={item.species_id}
-              style={[styles.nsRow, i < data.length - 1 ? styles.nsRowDivider : null]}
+              style={[
+                styles.nsRow,
+                i < data.length - 1 ? styles.nsRowDivider : null,
+              ]}
               activeOpacity={0.7}
               onPress={() =>
                 navigation.navigate("Observations", {

@@ -150,10 +150,7 @@ export interface SpeciesDropdownItem extends DropdownItem {
 
 export interface PlaceDropdownItem extends DropdownItem {
   preview?: string;
-  location?: {
-    coordinates: Coords;
-    type: string;
-  };
+  location?: LocationType;
   distance?: number;
   name?: string;
 }
@@ -238,24 +235,28 @@ export interface ProfileFormData {
 
 export type Coords = [number, number];
 
+export type LocationType = {
+  type: string;
+  coordinates: Coords;
+};
+
+export type PolygonGeometry = {
+  type: "Polygon";
+  coordinates: Coords[][];
+};
+
 export interface PlaceFormData {
   name: string;
   territory: number;
   favourite: boolean;
-  location?: {
-    type: string;
-    coordinates: Coords;
-  } | null;
+  location?: LocationType | null;
 }
 
 export interface PlaceData {
   id: number;
   name: string;
   preview: string | null;
-  location: {
-    type: string;
-    coordinates: Coords;
-  } | null;
+  location: LocationType | null;
 }
 
 export interface GeoDetails {
@@ -334,10 +335,7 @@ export interface PlaceItemBase {
   id: number;
   name: string;
   favourite: boolean;
-  location: {
-    type: string;
-    coordinates: Coords;
-  };
+  location: LocationType;
   distance?: number | null;
   preview?: string | null;
 }
@@ -410,6 +408,57 @@ export interface DashboardStat {
   total: number;
 }
 
+export interface ActivityResponse {
+  data: number[];
+  meta: {
+    group: string;
+    from: string;
+    to: string;
+    points: number;
+    total: number;
+    delta: number;
+    delta_label: string;
+    recent_threshold: number;
+    recent_window: number;
+    period_label_key: string;
+    delta_label_key: string;
+    label_params: {
+      year: number;
+    };
+  };
+}
+
+export interface ReasonBirdOfTheDay {
+  avibase_status: string | null;
+  avibase_weight: number;
+  ioc_status: string | null;
+  ioc_weight: number;
+  obs_30d: number;
+  obs_90d: number;
+  days_since_community: number;
+  recency_score: number;
+  user_seen_state:
+    | "never_seen"
+    | "seen_outside_window"
+    | "seen_60d_outside"
+    | "seen_in_window"
+    | "seen_recently";
+  final_score: number;
+  hint_key: string;
+}
+
+export interface BirdOfTheDayType {
+  taxon_id: number;
+  territory_id: number;
+  date: string;
+  sp_name_lang: string;
+  sp_latin: string;
+  sp_thumb: string | null;
+  sp_segment: string;
+  featured_count_year: number;
+  reason: ReasonBirdOfTheDay;
+}
+
 // --- Navigation ---
 
 export type RootStackParamList = {
@@ -434,7 +483,13 @@ export type AppStackParamList = {
   PlaceEditor: { placeId?: number; returnToScreen?: string };
   Observations: ScreenWithFilters | undefined;
   ObservationDetail: { observationId: number };
-  ObservationEditor: { observationId?: number; defaultTerritory?: number | "" };
+  ObservationEditor: {
+    observationId?: number;
+    defaultTerritory?: number | null;
+    defaultPlace?: number | null;
+    defaultSpecies?: number;
+    returnMode?: string;
+  };
   Diaries: ScreenWithFilters | undefined;
   DiaryDetail: { diaryId: number };
   DiaryEditor: {

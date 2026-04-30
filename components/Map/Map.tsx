@@ -23,6 +23,20 @@ import { useTranslation } from "react-i18next";
 
 import { Config } from "../../constants/config";
 import { useTheme, ThemeColors } from "../../store/theme-context";
+import { Coords, PolygonGeometry } from "../../types";
+
+interface MapProps {
+  currentCoords: Coords;
+  mapHeight?: number;
+  showCoords?: boolean;
+  currentZoom: number;
+  onPress?: () => void;
+  accuracy?: number;
+  onUseMyLocation?: () => void;
+  isLocating?: boolean;
+  polygon?: PolygonGeometry;
+  approximateArea?: boolean;
+}
 
 const Map = ({
   currentCoords,
@@ -35,14 +49,14 @@ const Map = ({
   showCoords,
   polygon,
   approximateArea,
-}) => {
+}: MapProps) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors, mapHeight);
   const { t } = useTranslation();
 
   const [lng, lat] = currentCoords ?? [];
 
-  const metersToPixels = (meters, latitude, zoom) => {
+  const metersToPixels = (meters: number, latitude: number, zoom: number) => {
     const earthCircumference = 40075016.686;
     const latRad = (latitude * Math.PI) / 180;
     const mapWidth = 512 * Math.pow(2, zoom);
@@ -56,12 +70,12 @@ const Map = ({
           attributionPosition={{ bottom: 16, left: 16 }}
           style={{ flex: 1 }}
           onPress={onPress}
-          minZoomLevel={1}
-          maxZoomLevel={19}
         >
           <Camera
             centerCoordinate={[lng, lat]}
             zoomLevel={Math.min(currentZoom, 19)}
+            minZoomLevel={1}
+            maxZoomLevel={19}
             animationDuration={500}
           />
           <RasterSource
@@ -75,7 +89,7 @@ const Map = ({
           {polygon ? (
             <ShapeSource
               id="privatePolygon"
-              shape={{ type: "Feature", geometry: polygon }}
+              shape={{ type: "Feature", geometry: polygon, properties: {} }}
             >
               <FillLayer
                 id="privatePolygonFill"
@@ -92,6 +106,7 @@ const Map = ({
               shape={{
                 type: "Feature",
                 geometry: { type: "Point", coordinates: [lng, lat] },
+                properties: {},
               }}
             >
               {accuracy && accuracy > 0 && (
@@ -178,7 +193,7 @@ const Map = ({
 
 export default Map;
 
-const stylesFn = (Colors, mapHeight) =>
+const stylesFn = (Colors: ThemeColors, mapHeight?: number) =>
   StyleSheet.create({
     mapSection:
       mapHeight != null

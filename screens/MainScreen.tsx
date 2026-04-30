@@ -1,4 +1,3 @@
-import { useCallback } from "react";
 import { ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
@@ -16,15 +15,12 @@ import FilterModal from "../components/Filters/FilterModal";
 import { useSyncedFilters } from "../hooks/useSyncedFIlters";
 import { useDropdownQuery } from "../hooks/useDropdownQuery";
 import {
-  fetchStat,
   fetchMyCountries,
   fetchMyDashboardStat,
 } from "../util/fetches";
 import Layout from "../components/ui/Layout";
 import { useLanguage } from "../store/language-context";
-import { useList } from "../hooks/useList";
 import {
-  Filters,
   FilterKey,
   AppStackNavigationProp,
   AppStackParamList,
@@ -77,32 +73,7 @@ const MainScreen = () => {
     enabled: filtersLoaded,
   });
 
-  const fetchStatSeen = useCallback(
-    (
-      filters: Filters,
-      sort: string | null,
-      search: string | null,
-      page: number,
-    ) => {
-      return fetchStat(
-        { ...filters, seen: true },
-        sort ?? undefined,
-        search ?? "",
-        page,
-      );
-    },
-    [],
-  );
 
-  const { data: seenSpeciesData, isLoading: isLoadingSeenSpeciesData } =
-    useList({
-      screenName: "Stat",
-      fetchFunction: fetchStatSeen,
-      filters,
-      sort: "-seen,-date_time",
-      tabsMode: "seen",
-      enabled: filtersLoaded,
-    });
 
   return (
     <Layout>
@@ -134,16 +105,11 @@ const MainScreen = () => {
           isLoading={isLoadingDataStat}
         />
 
-        <BirdOfTheDay
-          filters={filters}
-          seenSpeciesData={seenSpeciesData}
-          isLoadingSeenSpeciesData={isLoadingSeenSpeciesData}
-        />
+        <BirdOfTheDay filters={filters} />
 
         <NewSpecies
           filters={filters}
-          newSpeciesData={seenSpeciesData}
-          isLoading={isLoadingSeenSpeciesData}
+          filtersLoaded={filtersLoaded}
         />
 
         <QuickActions filters={filters} />

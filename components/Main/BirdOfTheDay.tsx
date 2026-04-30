@@ -6,33 +6,24 @@ import { Image } from "expo-image";
 import { useQuery } from "@tanstack/react-query";
 
 import { fetchBirdOfDay, fetchSpecies } from "../../util/fetches";
+import { BirdSVG } from "../ui/Svgs";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { Config } from "../../constants/config";
 import BirdOfTheDaySkeleton from "./BirdOfTheDaySceleton";
 import { useProfile } from "../../store/profile-context";
 import { useLanguage } from "../../store/language-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
-import { Filters } from "../../types";
+import { AppStackNavigationProp, BirdOfTheDayType, Filters } from "../../types";
 
 const H_PAD = 16;
 const IMAGE_SIZE = 64;
 
-const getHintKey = (data, isAlreadySeen) => {
-  if (isAlreadySeen) return "hint_seen_recently";
-  if (!data?.reason?.hint_key) return "hint_seasonal";
-  return data.reason.hint_key;
+const getHintKey = (data: BirdOfTheDayType): string => {
+  return data?.reason?.hint_key ?? "hint_seasonal";
 };
 
-const BirdOfTheDay = ({
-  filters,
-  seenSpeciesData,
-  isLoadingSeenSpeciesData,
-}: {
-  filters: Filters;
-  seenSpeciesData?: any;
-  isLoadingSeenSpeciesData: boolean;
-}) => {
-  const navigation = useNavigation();
+const BirdOfTheDay = ({ filters }: { filters: Filters }) => {
+  const navigation = useNavigation<AppStackNavigationProp>();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -46,21 +37,22 @@ const BirdOfTheDay = ({
     enabled: !!filters && !!territory,
   });
 
-  const { query } = useDropdownQuery({
+  useDropdownQuery({
     type: "SpeciesDropdown",
-    queryFn: (sort) => fetchSpecies(territory, "-seen,name"),
+    queryFn: () => fetchSpecies(territory, "-seen,name"),
     params: [territory, language],
     enabled: !!territory,
   });
 
-  if (isLoading || isLoadingSeenSpeciesData) return <BirdOfTheDaySkeleton />;
+  if (isLoading) return <BirdOfTheDaySkeleton />;
   if (!data) return null;
 
-  const isAlreadySeen = seenSpeciesData?.pages?.[0]?.results?.some(
-    (s) => s.species_id === data?.taxon_id,
-  );
-
-  const hintKey = getHintKey(data, isAlreadySeen);
+  const isAlreadySeen = [
+    "seen_60d_outside",
+    "seen_in_window",
+    "seen_recently",
+  ].includes(data.reason?.user_seen_state);
+  const hintKey = getHintKey(data);
 
   return (
     <TouchableOpacity
@@ -82,9 +74,9 @@ const BirdOfTheDay = ({
         </View>
         <View style={{ flexDirection: "row" }}>
           <Text style={styles.botdStripSub}>
-            {isAlreadySeen ? t("found_today") : t("find_today")}
+            {isAlreadySeen ? t(data.reason.user_seen_state) : t("find_today")}
           </Text>
-          {isAlreadySeen && (
+          {data?.reason.user_seen_state === "seen_recently" && (
             <Ionicons
               name="checkmark-circle"
               size={16}
@@ -210,3 +202,9 @@ const stylesFn = (Colors: ThemeColors) =>
 // t("hint_endemic")
 // t("hint_threatened")
 // t("hint_seasonal")
+
+// t("never_seen")
+// t("seen_outside_window")
+// t("seen_60d_outside")
+// t("seen_in_window")
+// t("seen_recently")
