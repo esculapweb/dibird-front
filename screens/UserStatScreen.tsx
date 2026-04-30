@@ -126,7 +126,7 @@ const UserStatScreen = () => {
 
   return (
     <ListScreen
-      route={route as AppStackRouteProp<"UserStat">}
+      route={route}
       fetchFunction={fetchData}
       title={t("statistics")}
       errorTitle={t("stat_unavailable")}

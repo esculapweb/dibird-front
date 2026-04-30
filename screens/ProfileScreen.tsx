@@ -1,8 +1,9 @@
 import { useState, useLayoutEffect } from "react";
-import { View, TouchableOpacity, Platform } from "react-native";
+import { TouchableOpacity, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { useHeaderHeight } from "@react-navigation/elements";
+import { useNavigation } from "@react-navigation/native";
 
 import ProfileForm from "../components/Profile/ProfileForm";
 import { useProfile } from "../store/profile-context";
@@ -11,9 +12,11 @@ import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import FormWrapper from "../components/ui/FormWrapper";
 import { useInvalidateProfile } from "../hooks/Profile/useUpdateProfile";
-import { useTheme, ThemeColors } from "../store/theme-context";
+import { useTheme } from "../store/theme-context";
+import { AppDrawerNavigationProp, AppError, ProfileFormData } from "../types";
 
-const ProfileScreen = ({ navigation }) => {
+const ProfileScreen = () => {
+  const navigation = useNavigation<AppDrawerNavigationProp>();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [formKey, setFormKey] = useState(0);
@@ -42,22 +45,23 @@ const ProfileScreen = ({ navigation }) => {
     });
   }, [navigation, Colors, iconName]);
 
-  const extractApiError = (err) => {
-    const data = err.response.data;
-    if (!data) return null;
-    const apiMessage =
-      data?.non_field_errors?.[0] ||
-      data?.first_name?.[0] ||
-      data?.last_name?.[0] ||
-      data?.username?.[0] ||
-      Object.values(data).flat().join("\n");
+  const extractApiError = (e: AppError): { title: string; message: string } => {
+    const data = e?.response?.data;
+    const apiMessage = data
+      ? data?.non_field_errors?.[0] ||
+        data?.first_name?.[0] ||
+        data?.last_name?.[0] ||
+        data?.username?.[0] ||
+        Object.values(data).flat().join("\n")
+      : null;
+
     return {
       title: t("update_failed"),
       message: apiMessage || t("could_not_update_profile"),
     };
   };
 
-  const submitHandler = async (updatedData) => {
+  const submitHandler = async (updatedData: ProfileFormData) => {
     if (loading) return;
 
     setLoading(true);
@@ -69,7 +73,8 @@ const ProfileScreen = ({ navigation }) => {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 1500);
     } catch (e) {
-      showError(e, extractApiError);
+      const error = e as AppError;
+      showError(error, extractApiError);
     } finally {
       setLoading(false);
     }

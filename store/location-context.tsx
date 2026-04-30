@@ -57,7 +57,7 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
       const coords: Coords = [longitude, latitude];
       setLocationCoords(coords);
       setPermissionStatus("granted");
-      return { coords, accuracy: acc }; // ← возвращаем результат
+      return { coords, accuracy: acc }; 
     } catch (e) {
       try {
         console.warn("Failed to get location:", e);

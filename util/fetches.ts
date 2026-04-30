@@ -237,10 +237,10 @@ export const fetchChecklist = (
 
 export const fetchPlaces = (
   filters: Filters & Record<string, unknown>,
-  order = "distance",
+  order: string | null = "distance",
   search?: string,
   page?: number,
-  coords = null,
+  coords?: Coords | null,
 ) => {
   const isDistanceSort = order === "distance" || order === "-distance";
   const extraParams =
@@ -257,7 +257,7 @@ export const fetchPlaces = (
 
 export const fetchObservations = (
   filters: Filters,
-  order = "-date_time",
+  order: string | null = "-date_time",
   search?: string,
   page?: number,
 ) =>

@@ -1,36 +1,51 @@
 import { useTranslation } from "react-i18next";
+import { useNavigation, useRoute } from "@react-navigation/native";
 
 import ListScreen from "./ListScreen";
 import { fetchPlaces } from "../util/fetches";
 import PlaceCard from "../components/Place/PlaceCard";
 import { useLocation } from "../store/location-context";
 import { useLocationUnavailable } from "../hooks/useLocationUnavailable";
+import {
+  AppStackNavigationProp,
+  AppStackRouteProp,
+  Coords,
+  Filters,
+  PlaceItem,
+} from "../types";
 
-const PlacesScreen = ({ route, navigation }) => {
+const PlacesScreen = () => {
   const { t } = useTranslation();
+  const navigation = useNavigation<AppStackNavigationProp>();
+  const route = useRoute<AppStackRouteProp<"Places">>();
   const { locationCoords, locationAvailable } = useLocation();
 
-  const fetchFunction = (filters, sort, search, page, coords) =>
-    fetchPlaces(filters, sort, search, page, coords);
+  const fetchFunction = (
+    filters: Filters,
+    sort: string | null,
+    search: string,
+    page: number,
+    coords: Coords | null,
+  ) => fetchPlaces(filters, sort, search, page, coords);
 
   const handleLocationUnavailable = useLocationUnavailable();
 
   const handleAdd = () => navigation.navigate("PlaceEditor");
 
   const noItems = {
-    icon: "location-outline",
+    icon: "location-outline" as const,
     message: t("no_places_yet"),
     actions: [{ label: t("add_first_place"), onPress: handleAdd }],
   };
 
-  const renderItem = ({ item, index }) => (
+  const renderItem = ({ item, index }: { item: PlaceItem; index: number }) => (
     <PlaceCard item={item} index={index} />
   );
 
   return (
     <ListScreen
       route={route}
-      fetchFunction={fetchFunction}
+      fetchFunction={fetchPlaces}
       allowedFilters={["territory", "favourite"]}
       errorTitle={t("places_unavailable")}
       onAdd={handleAdd}

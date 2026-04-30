@@ -1,15 +1,24 @@
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigation, useRoute } from "@react-navigation/native";
 
 import ListScreen from "./ListScreen";
 import { fetchObservations } from "../util/fetches";
 import ObservationCard from "../components/Observation/ObservationCard";
 import { useFilters } from "../store/filters-context";
+import {
+  AppStackNavigationProp,
+  AppStackRouteProp,
+  Filters,
+  ObservationItem,
+} from "../types";
 
-const ObservationsScreen = ({ route, navigation }) => {
+const ObservationsScreen = () => {
   const { t } = useTranslation();
+  const navigation = useNavigation<AppStackNavigationProp>();
+  const route = useRoute<AppStackRouteProp<"Observations">>();
   const { territory } = useFilters();
-  const [currentFilters, setCurrentFilters] = useState({});
+  const [currentFilters, setCurrentFilters] = useState<Filters | null>({});
 
   const handleAdd = useCallback(async () => {
     const defaultTerritory = currentFilters?.territory ?? territory ?? null;
@@ -23,21 +32,25 @@ const ObservationsScreen = ({ route, navigation }) => {
   }, [navigation, currentFilters, territory]);
 
   const noItems = {
-    icon: "binoculars-outline",
+    icon: "binoculars-outline" as const,
     message: t("no_observations_yet"),
     actions: [{ label: t("add_first_observation"), onPress: handleAdd }],
   };
 
-  const renderItem = ({ item, index }) => (
-    <ObservationCard item={item} index={index} />
-  );
+  const renderItem = ({
+    item,
+    index,
+  }: {
+    item: ObservationItem;
+    index: number;
+  }) => <ObservationCard item={item} index={index} />;
 
   return (
     <ListScreen
       route={route}
       fetchFunction={fetchObservations}
       errorTitle={t("observations_unavailable")}
-      onFiltersChange={setCurrentFilters}
+      onFiltersChange={async (val) => setCurrentFilters(val)}
       onAdd={handleAdd}
       renderItem={renderItem}
       noItems={noItems}

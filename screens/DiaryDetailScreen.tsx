@@ -11,7 +11,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 
 import { useTheme, ThemeColors } from "../store/theme-context";
 import { formatDateLong, buildShareUrl, isoToFlagEmoji } from "../util/helpers";
@@ -29,14 +29,21 @@ import DiaryObservationCard from "../components/Diary/DiaryObservationCard";
 import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
 import Map from "../components/Map/Map";
-import { AppStackNavigationProp } from "../types";
+import {
+  AppStackNavigationProp,
+  AppStackRouteProp,
+  DiaryObservationItem,
+  Filters,
+} from "../types";
 
-const DiaryDetailScreen = ({ route }) => {
+const DiaryDetailScreen = () => {
+  const navigation = useNavigation<AppStackNavigationProp>();
+  const route = useRoute<AppStackRouteProp<"DiaryDetail">>();
   const { diaryId } = route.params;
   const type = "Diary";
-  const navigation = useNavigation<AppStackNavigationProp>();
-  const [currentFilters, setCurrentFilters] = useState(null);
-  const [currentSort, setCurrentSort] = useState(null);
+
+  const [currentFilters, setCurrentFilters] = useState<Filters | null>(null);
+  const [currentSort, setCurrentSort] = useState<string | null>(null);
 
   const {
     data: diary,
@@ -127,7 +134,6 @@ const DiaryDetailScreen = ({ route }) => {
           <PlacePreviewRow
             placeData={diary?.place_data}
             territoryData={diary.territory_data}
-            onPress={handlePlaceNavigate}
           />
         )}
 
@@ -212,14 +218,18 @@ const DiaryDetailScreen = ({ route }) => {
   }, [diary, diaryId, currentFilters, currentSort]);
 
   const noItems = {
-    icon: "binoculars-outline",
+    icon: "binoculars-outline" as const,
     message: t("no_observations_yet"),
     actions: [{ label: t("add_first_observation"), onPress: handleAdd }],
   };
 
-  const renderItem = ({ item, index }) => (
-    <DiaryObservationCard item={item} index={index} />
-  );
+  const renderItem = ({
+    item,
+    index,
+  }: {
+    item: DiaryObservationItem;
+    index: number;
+  }) => <DiaryObservationCard item={item} index={index} />;
 
   const handleDelete = useCallback(() => {
     if (!diary) return;
@@ -262,7 +272,7 @@ const DiaryDetailScreen = ({ route }) => {
       {
         condition: diary?.is_owner,
         onPress: handleOpenEdit,
-        icon: "create-outline",
+        icon: "create-outline" as const,
         disabled: !diary || updateMutation.isPending,
       },
     ],
@@ -274,7 +284,9 @@ const DiaryDetailScreen = ({ route }) => {
       <ErrorOverlay
         title={t("diaries_unavailable")}
         message={error.message}
-        onPress={refetch}
+        onPress={async () => {
+          await refetch();
+        }}
         logo
       />
     );
@@ -282,12 +294,6 @@ const DiaryDetailScreen = ({ route }) => {
 
   if (isLoading || !diary) return <LoadingOverlay />;
 
-  const handlePlaceNavigate = () => {
-    if (!diary.place) return;
-    navigation.navigate("PlaceDetail", {
-      placeId: diary.place,
-    });
-  };
 
   const bottomEl = diary?.is_owner && (
     <FlatButtonBottom
@@ -306,8 +312,8 @@ const DiaryDetailScreen = ({ route }) => {
       fetchFunction={fetchDiaryObservations}
       extraFilters={{ diary: diaryId, territory: diary.territory }}
       allowedFilters={["species"]}
-      onFiltersChange={setCurrentFilters}
-      onSortChange={setCurrentSort}
+      onFiltersChange={async (val) => setCurrentFilters(val)}
+      onSortChange={async (val) => setCurrentSort(val)}
       errorTitle={t("observations_unavailable")}
       onAdd={diary.is_owner ? handleAdd : undefined}
       renderItem={renderItem}

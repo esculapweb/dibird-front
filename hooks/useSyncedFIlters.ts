@@ -12,19 +12,23 @@ import {
   Filters,
   FilterKey,
   AppStackNavigationProp,
-  ScreenWithFilters,
+  ScreenWithFiltersOnly,
+  ScreenWithFiltersParamList,
+  ScreenWithFilters
 } from "../types";
 
-export const useSyncedFilters = ({
+export const useSyncedFilters = <
+  RouteName extends ScreenWithFiltersOnly
+>({
   route,
   navigation,
   screenName,
   allowSort = true,
   allowedFilters,
 }: {
-  route: RouteProp<Record<string, ScreenWithFilters | undefined>>;
+  route: RouteProp<ScreenWithFiltersParamList, RouteName>;
   navigation: AppStackNavigationProp;
-  screenName: string;
+  screenName: RouteName;
   allowSort?: boolean;
   allowedFilters: FilterKey[];
 }) => {
@@ -38,6 +42,8 @@ export const useSyncedFilters = ({
     species,
     setSpecies,
   } = useFilters();
+
+  const params = route.params as ScreenWithFilters | undefined;
 
   const [filters, setFilters] = useState<Filters>({});
   const [sort, setSort] = useState<string | null>(null);
@@ -111,7 +117,7 @@ export const useSyncedFilters = ({
     if (key === "place") setPlace(null);
     if (key === "species") setSpecies(null);
 
-    if (!route.params?.filtersOverride && !overrideAppliedRef.current) {
+    if (!params?.filtersOverride && !overrideAppliedRef.current) {
       setFilters((prev) => {
         const newFilters: Filters = { ...prev };
         newFilters[key] = undefined;
@@ -126,15 +132,15 @@ export const useSyncedFilters = ({
 
   useEffect(() => {
     const initFilters = async () => {
-      if (route.params?.filtersOverride && !initFiltersRef.current) {
+      if (params?.filtersOverride && !initFiltersRef.current) {
         const { speciesName, ...overrideFilters } =
-          route.params.filtersOverride;
+          params.filtersOverride;
         setFilters(overrideFilters as Filters);
         setFilterHints({ speciesName });
         setIgnoreContextSync(true);
 
         initFiltersRef.current = true;
-        if (route.params?.o) setSort(route.params.o);
+        if (params?.o) setSort(params.o);
 
         navigation.setParams({ filtersOverride: undefined });
         setSortReady(true);
@@ -148,7 +154,7 @@ export const useSyncedFilters = ({
         filters: deepFilters,
         sort: deepSort,
         hasParams,
-      } = parseDeepLinkParams(route.params);
+      } = parseDeepLinkParams(params);
 
       if (hasParams) {
         overrideAppliedRef.current = true;
@@ -200,7 +206,7 @@ export const useSyncedFilters = ({
 
   useFocusEffect(
     useCallback(() => {
-      if (route.params?.filtersOverride) return;
+      if (params?.filtersOverride) return;
       if (!filtersLoaded) return;
 
       setFilters((prev) => {

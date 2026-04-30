@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useLanguage } from "../store/language-context";
 import { stableStringify } from "../util/helpers";
-import { FetchFunction, Filters, PaginatedResponse, seenMode, LocationCoords} from "../types";
+import { FetchFunction, Filters, PaginatedResponse, seenMode, LocationCoords, Coords} from "../types";
 
 interface useListProps<T> {
   screenName: string;
@@ -12,7 +12,7 @@ interface useListProps<T> {
   search?: string | null;
   tabsMode?: seenMode;
   extraFilters?: Filters | null;
-  locationCoords?: LocationCoords;
+  locationCoords?: Coords | null;
   enabled: boolean;
 }
 
@@ -43,7 +43,7 @@ export const useList = <T>({
 
   const locationKey = useMemo(() => {
     if (!locationCoords) return null;
-    return `${locationCoords.lat ?? ""},${locationCoords.lng ?? ""}`;
+    return `${locationCoords?.[1] ?? ""},${locationCoords?.[1] ?? ""}`;
   }, [locationCoords]);
 
   const queryKey = useMemo(() => {

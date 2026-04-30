@@ -23,7 +23,8 @@ import { useSyncedFilters } from "../hooks/useSyncedFIlters";
 import Layout from "../components/ui/Layout";
 import {
   AppStackNavigationProp,
-  ScreenWithFilters,
+  ScreenWithFiltersParamList,
+  ScreenWithFiltersOnly,
   FilterKey,
   seenMode,
   Filters,
@@ -31,11 +32,11 @@ import {
   IconButtonConfig,
   EmptyStateProps,
   FetchFunction,
-  LocationCoords,
+  Coords,
 } from "../types";
 
-interface ListScreenProps<T> {
-  route: RouteProp<Record<string, ScreenWithFilters | undefined>>;
+interface ListScreenProps<T, RouteName extends ScreenWithFiltersOnly> {
+  route: RouteProp<ScreenWithFiltersParamList, RouteName>;
   fetchFunction: FetchFunction<T>;
   allowedFilters?: FilterKey[];
   errorTitle: string;
@@ -52,9 +53,9 @@ interface ListScreenProps<T> {
   handleSharePress?: () => Promise<void>;
   fabIcon?: IconType;
   getItemId?: (item: T) => string | number;
-  onFiltersChange: (val: Filters | null) => Promise<void>;
+  onFiltersChange?: (val: Filters | null) => Promise<void>;
   onSortChange?: (val: string | null) => Promise<void>;
-  locationCoords?: LocationCoords;
+  locationCoords?: Coords | null;
   locationAvailable?: boolean;
   onLocationUnavailable?: () => void;
   allowSort?: boolean;
@@ -64,7 +65,7 @@ interface ListScreenProps<T> {
   bottomEl?: ReactNode;
 }
 
-const ListScreen = <T,>({
+const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
   route,
   fetchFunction,
   allowedFilters = ["territory", "place", "date", "species"],
@@ -92,7 +93,7 @@ const ListScreen = <T,>({
   showHeaderBadge = true,
   topEl,
   bottomEl,
-}: ListScreenProps<T>) => {
+}: ListScreenProps<T, RouteName>) => {
   const screenName = route.name;
   const { t } = useTranslation();
   const resolvedGetItemId = (item: T): string | number =>

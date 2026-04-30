@@ -5,6 +5,8 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { DrawerNavigationProp } from "@react-navigation/drawer";
 import { CompositeNavigationProp, RouteProp } from "@react-navigation/native";
 import { AxiosResponse } from "axios";
+import { QueryObserverResult } from "@tanstack/react-query";
+
 
 export type IconType = ComponentProps<typeof Ionicons>["name"];
 export type StyleType = StyleProp<ViewStyle>;
@@ -55,14 +57,14 @@ export type FetchFunction<T> = (
   sort: string | null,
   search: string,
   page: number,
-  locationCoords?: LocationCoords,
+  locationCoords?: Coords | null,
 ) => Promise<PaginatedResponse<T>>;
 
 export interface QueryType {
   data: DropdownItem[] | undefined;
   isLoading?: boolean;
   isError?: boolean;
-  refetch?: () => Promise<void>;
+  refetch?: () => Promise<QueryObserverResult<DropdownItem[], AppError>>;
 }
 
 export interface Credentials {
@@ -502,18 +504,20 @@ export type AppStackParamList = {
   Checklist: ScreenWithFilters | undefined;
   Places: ScreenWithFilters | undefined;
   PlaceDetail: { placeId: number };
-  PlaceEditor: { placeId?: number; returnToScreen?: string };
+  PlaceEditor: { placeId?: number; returnToScreen?: string } | undefined;
   Observations: ScreenWithFilters | undefined;
   ObservationDetail: { observationId: number };
   ObservationEditor: {
     observationId?: number;
-    defaultTerritory?: number | null;
+    diaryId?: number;
+    territoryValue?: number;
+    defaultTerritory?: string | number | null;
     defaultPlace?: number | null;
     defaultSpecies?: number | null;
     returnMode?: string;
   };
   Diaries: ScreenWithFilters | undefined;
-  DiaryDetail: { diaryId: number };
+  DiaryDetail: ScreenWithFilters & { diaryId: number };
   DiaryEditor: {
     diary?: DiaryItem;
     defaultTerritory?: number | "";
@@ -526,6 +530,24 @@ export type AppStackParamList = {
     profile2: number;
   };
   UserStat: ScreenWithFilters & { profileId: number };
+};
+
+export type ScreenWithFiltersOnly =
+  | "Main"
+  | "Stat"
+  | "Checklist"
+  | "Places"
+  | "Observations"
+  | "Diaries"
+  | "DiaryDetail"
+  | "Rating"
+  | "RatingsCompare"
+  | "UserStat";
+
+export type ScreenWithFiltersParamList = {
+  [K in ScreenWithFiltersOnly]: AppStackParamList[K] extends undefined
+    ? ScreenWithFilters | undefined
+    : AppStackParamList[K];
 };
 
 export type AppDrawerParamList = {
