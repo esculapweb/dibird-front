@@ -6,7 +6,7 @@ const StatCard = ({
   label,
   onPress,
 }: {
-  value: string;
+  value: string | number;
   label: string;
   onPress: () => void;
 }) => {

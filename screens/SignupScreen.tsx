@@ -14,11 +14,7 @@ const SignupScreen = () => {
   const iconName = Platform.OS === "ios" ? "chevron-back" : "arrow-back";
   const navigation = useNavigation<AuthDrawerNavigationProp>();
 
-  const signUpHandler = async ({
-    email,
-    password,
-    userName,
-  }: Credentials) => {
+  const signUpHandler = async ({ email, password, userName }: Credentials) => {
     if (loading) return;
 
     setLoading(true);

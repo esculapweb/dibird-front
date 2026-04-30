@@ -6,11 +6,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { formatDateFilterMain } from "../../util/helpers";
 import BackgroundScene from "../ui/BackgroundScene";
+import { AppDrawerNavigationProp, Filters, TerritoryDropdownItem } from "../../types";
 
 const H_PAD = 16;
 
-const FloatingNavbar = ({ onPress, filters, country }) => {
-  const navigation = useNavigation();
+const FloatingNavbar = ({ onPress, filters, country }: { onPress: () => void; filters: Filters; country?: TerritoryDropdownItem }) => {
+  const navigation = useNavigation<AppDrawerNavigationProp>();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const insets = useSafeAreaInsets();

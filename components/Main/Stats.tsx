@@ -5,14 +5,23 @@ import { useNavigation } from "@react-navigation/native";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import StatCard from "../ui/StatCard";
 import StatsSkeleton from "./StatsSkeleton";
+import { AppStackNavigationProp, Filters, DashboardStat} from "../../types";
 
 const H_PAD = 16;
 
-const Stats = ({ data, filters, isLoading }) => {
+const Stats = ({
+  data,
+  filters,
+  isLoading,
+}: {
+  data?: DashboardStat;
+  filters: Filters;
+  isLoading: boolean;
+}) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
-  const navigation = useNavigation();
+  const navigation = useNavigation<AppStackNavigationProp>();
 
   if (isLoading) return <StatsSkeleton />;
   if (!data) return null;

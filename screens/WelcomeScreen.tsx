@@ -11,6 +11,7 @@ import * as AppleAuthentication from "expo-apple-authentication";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets, EdgeInsets } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
 
 import { ThemeColors, useTheme } from "../store/theme-context";
 import Layout from "../components/ui/Layout";
@@ -19,15 +20,12 @@ import { LoginWithGoogle, LoginWithApple } from "../util/auth";
 import { showError } from "../services/api";
 import { AppError, AuthDrawerNavigationProp } from "../types";
 
-const WelcomeScreen = ({
-  navigation,
-}: {
-  navigation: AuthDrawerNavigationProp;
-}) => {
+const WelcomeScreen = () => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = stylesFn(Colors, insets);
+  const navigation = useNavigation<AuthDrawerNavigationProp>();
 
   const handleGoogle = async () => {
     try {
@@ -113,10 +111,7 @@ const WelcomeScreen = ({
               { backgroundColor: Colors.main100, borderColor: Colors.main100 },
             ]}
             onPress={() =>
-              navigation.navigate("Login", {
-                emailConfirmed: undefined,
-                prefillEmail: undefined,
-              })
+              navigation.navigate("Login")
             }
           >
             <Ionicons

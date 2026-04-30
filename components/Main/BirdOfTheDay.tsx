@@ -12,6 +12,7 @@ import BirdOfTheDaySkeleton from "./BirdOfTheDaySceleton";
 import { useProfile } from "../../store/profile-context";
 import { useLanguage } from "../../store/language-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
+import { Filters } from "../../types";
 
 const H_PAD = 16;
 const IMAGE_SIZE = 64;
@@ -26,6 +27,10 @@ const BirdOfTheDay = ({
   filters,
   seenSpeciesData,
   isLoadingSeenSpeciesData,
+}: {
+  filters: Filters;
+  seenSpeciesData?: any;
+  isLoadingSeenSpeciesData: boolean;
 }) => {
   const navigation = useNavigation();
   const { t } = useTranslation();

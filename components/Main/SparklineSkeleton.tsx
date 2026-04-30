@@ -1,5 +1,5 @@
 import { View, StyleSheet } from "react-native";
-import { useTheme, ThemeColors } from "../../store/theme-context";
+import { useTheme } from "../../store/theme-context";
 
 const H_PAD = 16;
 const SPARK_H = 52;
@@ -9,16 +9,25 @@ export const SparklineSkeleton = () => {
   const { Colors } = useTheme();
 
   return (
-    <View style={[styles.card, { backgroundColor: Colors.primary100, borderColor: Colors.border }]}>
+    <View
+      style={[
+        styles.card,
+        { backgroundColor: Colors.primary100, borderColor: Colors.border },
+      ]}
+    >
       <View style={styles.head}>
-        <View style={[styles.pill, { width: 120, backgroundColor: Colors.border }]} />
-        <View style={[styles.pill, { width: 80, backgroundColor: Colors.border }]} />
+        <View
+          style={[styles.pill, { width: 120, backgroundColor: Colors.border }]}
+        />
+        <View
+          style={[styles.pill, { width: 80, backgroundColor: Colors.border }]}
+        />
       </View>
 
       {/* бары */}
       <View style={styles.bars}>
         {Array.from({ length: BAR_COUNT }).map((_, i) => {
-          const h = 8 + Math.sin(i * 0.8) * 18 + 14; 
+          const h = 8 + Math.sin(i * 0.8) * 18 + 14;
           return (
             <View
               key={i}

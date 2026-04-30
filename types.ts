@@ -365,55 +365,6 @@ export interface IconButtonProps {
   loading?: boolean;
 }
 
-// --- Navigation ---
-
-export type RootStackParamList = {
-  Root: undefined;
-  Privacy: undefined;
-  Terms: undefined;
-};
-
-export interface ScreenWithFilters {
-  filtersOverride?: Filters;
-  o?: string;
-  seenMode?: seenMode;
-  backTitle?: string;
-}
-
-export type AppStackParamList = {
-  Main: ScreenWithFilters;
-  Stat: ScreenWithFilters;
-  Checklist: ScreenWithFilters;
-  Places: ScreenWithFilters;
-  PlaceDetail: { placeId: number };
-  PlaceEditor: { placeId?: number };
-  Observations: ScreenWithFilters;
-  ObservationDetail: { observationId: number };
-  ObservationEditor: { observationId?: number };
-  Diaries: ScreenWithFilters;
-  DiaryDetail: { diaryId: number };
-  DiaryEditor: { diaryId?: number };
-  Rating: ScreenWithFilters;
-  RatingsCompare: ScreenWithFilters & {
-    profile1: number;
-    profile2: number;
-  };
-  UserStat: { profileId: number };
-};
-
-export type AppDrawerParamList = {
-  MainDrawer: undefined;
-  Profile: undefined;
-};
-
-export type AuthDrawerParamList = {
-  Welcome: undefined;
-  CheckEmail: { email?: string };
-  Login: { emailConfirmed?: boolean; prefillEmail?: string };
-  Signup: undefined;
-  ConfirmEmail: { key: string };
-};
-
 export interface RatingItem {
   avatar: string | null;
   first_name: string;
@@ -450,6 +401,70 @@ export interface RatingCompareProfile {
   last_name: string;
   username: string;
 }
+
+export interface DashboardStat {
+  seen: number;
+  observations: number;
+  diaries: number;
+  rank: number;
+  total: number;
+}
+
+// --- Navigation ---
+
+export type RootStackParamList = {
+  Root: undefined;
+  Privacy: undefined;
+  Terms: undefined;
+};
+
+export interface ScreenWithFilters {
+  filtersOverride?: Filters;
+  o?: string;
+  seenMode?: seenMode;
+  backTitle?: string;
+}
+
+export type AppStackParamList = {
+  Main: ScreenWithFilters | undefined;
+  Stat: ScreenWithFilters | undefined;
+  Checklist: ScreenWithFilters | undefined;
+  Places: ScreenWithFilters | undefined;
+  PlaceDetail: { placeId: number };
+  PlaceEditor: { placeId?: number; returnToScreen?: string };
+  Observations: ScreenWithFilters | undefined;
+  ObservationDetail: { observationId: number };
+  ObservationEditor: { observationId?: number; defaultTerritory?: number | "" };
+  Diaries: ScreenWithFilters | undefined;
+  DiaryDetail: { diaryId: number };
+  DiaryEditor: {
+    diary?: DiaryItem;
+    defaultTerritory?: number | "";
+    defaultPlace?: number | null;
+    returnMode?: string;
+  };
+  Rating: ScreenWithFilters | undefined;
+  RatingsCompare:
+    | (ScreenWithFilters & {
+        profile1: number;
+        profile2: number;
+      })
+    | undefined;
+  UserStat: { profileId: number };
+};
+
+export type AppDrawerParamList = {
+  MainDrawer: undefined;
+  Profile: undefined;
+};
+
+export type AuthDrawerParamList = {
+  Welcome: undefined;
+  CheckEmail: { email?: string };
+  Login: { emailConfirmed?: boolean; prefillEmail?: string } | undefined;
+  Signup: undefined;
+  ConfirmEmail: { key: string };
+};
 
 // --- Navigation Props ---
 

@@ -4,11 +4,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
+import { AppStackNavigationProp, Filters } from "../../types";
 
 const H_PAD = 16;
 
-const QuickActions = ({ filters }) => {
-  const navigation = useNavigation();
+const QuickActions = ({ filters }: {filters: Filters}) => {
+  const navigation = useNavigation<AppStackNavigationProp>();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -22,7 +23,7 @@ const QuickActions = ({ filters }) => {
           activeOpacity={0.85}
           onPress={() =>
             navigation.navigate("DiaryEditor", {
-              defaultTerritory: filters.territory ?? null,
+              defaultTerritory: filters.territory ?? "",
               returnMode: "back",
             })
           }
@@ -44,7 +45,7 @@ const QuickActions = ({ filters }) => {
           activeOpacity={0.85}
           onPress={() =>
             navigation.navigate("ObservationEditor", {
-              defaultTerritory: filters.territory ?? null,
+              defaultTerritory: filters.territory ?? "",
             })
           }
         >

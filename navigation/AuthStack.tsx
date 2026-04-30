@@ -107,23 +107,6 @@ const AuthDrawer = () => {
           drawerItemStyle: { display: "none" },
         }}
       />
-
-      <Drawer.Screen
-        name="Privacy"
-        component={StaticScreen}
-        options={{
-          drawerItemStyle: { display: "none" },
-          title: t("privacy_policy"),
-        }}
-      />
-      <Drawer.Screen
-        name="Terms"
-        component={StaticScreen}
-        options={{
-          drawerItemStyle: { display: "none" },
-          title: t("terms_of_service"),
-        }}
-      />
     </Drawer.Navigator>
   );
 };

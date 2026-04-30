@@ -10,13 +10,34 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
+import {
+  AppStackNavigationProp,
+  AppStackParamList,
+  DashboardStat,
+  IconType,
+} from "../../types";
 
 const H_PAD = 16;
 const SEC_GAP = 8;
 const SEC_COLS = 3;
 
-const Sections = ({ data }) => {
-  const navigation = useNavigation();
+type SectionKey =
+  | "Observations"
+  | "Places"
+  | "Stat"
+  | "Diaries"
+  | "Rating"
+  | "Checklist";
+
+interface Section {
+  key: SectionKey;
+  icon: IconType;
+  labelKey: string;
+  showBadge?: boolean;
+}
+
+const Sections = ({ data }: { data: DashboardStat }) => {
+  const navigation = useNavigation<AppStackNavigationProp>();
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const { Colors } = useTheme();
@@ -24,7 +45,7 @@ const Sections = ({ data }) => {
 
   const SEC_W = (width - H_PAD * 2 - SEC_GAP * (SEC_COLS - 1)) / SEC_COLS;
 
-  const SECTIONS = [
+  const SECTIONS: Section[] = [
     { key: "Observations", icon: "binoculars", labelKey: "observations" },
     { key: "Places", icon: "location", labelKey: "places" },
     { key: "Stat", icon: "stats-chart", labelKey: "statistics" },

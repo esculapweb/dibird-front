@@ -6,23 +6,23 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import RenderHtml from "react-native-render-html";
 import { EdgeInsets, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRoute, RouteProp } from "@react-navigation/native";
 
 import Layout from "../components/ui/Layout";
 import { fetchPage } from "../util/fetches";
 import { useLanguage } from "../store/language-context";
 import { useTheme, ThemeColors } from "../store/theme-context";
-import { RootStackScreenProps } from "../types";
+import { RootStackParamList } from "../types";
 
 const H_PAD = 16;
 
-const StaticScreen = ({
-  route,
-}: RootStackScreenProps<"Privacy" | "Terms">) => {
+const StaticScreen = () => {
   const { Colors } = useTheme();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const styles = stylesFn(Colors, insets);
   const { language } = useLanguage();
+  const route = useRoute<RouteProp<RootStackParamList, "Privacy" | "Terms">>();
   const page = route?.name;
 
   const slugs: Record<string, string> = {

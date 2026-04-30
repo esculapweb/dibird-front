@@ -49,7 +49,8 @@ export const formatDateTime = (
   }).format(d);
 };
 
-export const formatDateFilterMain = (value: DateFilter): string => {
+export const formatDateFilterMain = (value?: DateFilter | null): string => {
+  if (!value) return "";
   if (value?.type === "range") {
     if (value?.from && value?.to)
       return `${formatDate(value?.from)} – ${formatDate(value?.to)}`;
@@ -64,7 +65,10 @@ export const formatDateFilterMain = (value: DateFilter): string => {
   return i18n.t("all_period");
 };
 
-export const formatDateFilterCheckboxHero = (value: DateFilter): string => {
+export const formatDateFilterCheckboxHero = (
+  value?: DateFilter | null,
+): string => {
+  if (!value) return "";
   if (value?.type === "range") {
     if (value?.from && value?.to)
       return `${formatDate(value?.from)} – ${formatDate(value?.to)}`;

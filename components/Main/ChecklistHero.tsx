@@ -6,11 +6,17 @@ import { useNavigation } from "@react-navigation/native";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { formatDateFilterCheckboxHero } from "../../util/helpers";
 import ChecklistHeroSkeleton from "./ChecklistHeroSkeleton";
+import { AppStackNavigationProp, DashboardStat, Filters, TerritoryDropdownItem } from "../../types";
 
 const H_PAD = 16;
 
-const ChecklistHero = ({ data, country, filters, isLoading }) => {
-  const navigation = useNavigation();
+const ChecklistHero = ({ data, country, filters, isLoading }: {
+  data?:DashboardStat;
+  country?: TerritoryDropdownItem;
+  filters: Filters;
+  isLoading: boolean;
+}) => {
+  const navigation = useNavigation<AppStackNavigationProp>();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);

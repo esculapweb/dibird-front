@@ -1,6 +1,7 @@
 import { useCallback, useLayoutEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
+import { useRoute, RouteProp, useNavigation } from "@react-navigation/native";
 
 import { useTheme } from "../store/theme-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
@@ -14,13 +15,16 @@ import { setNavigationCallback } from "../util/navigationCallbacks";
 import { useEditorForm } from "../hooks/useEditorForm";
 import IconsHeader from "../components/ui/IconsHeader";
 import Layout from "../components/ui/Layout";
+import { AppError, AppStackNavigationProp, AppStackParamList } from "../types";
 
 const FORM_FIELDS = ["territory", "place", "date_time", "private", "name"];
 
-const DiaryEditorScreen = ({ navigation, route }) => {
+const DiaryEditorScreen = () => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const { profile } = useProfile();
+  const navigation = useNavigation<AppStackNavigationProp>();
+  const route = useRoute<RouteProp<AppStackParamList, "DiaryEditor">>();
 
   const { diary, defaultTerritory, defaultPlace } = route.params || {};
   const isEditMode = !!diary;
@@ -50,14 +54,14 @@ const DiaryEditorScreen = ({ navigation, route }) => {
   const createDiaryMutation = useCreateDiary();
   const updateDiaryMutation = useUpdateItem(diaryWithParsedDate?.id, "Diary");
 
-  const extractApiError = (e) => ({
+  const extractApiError = (e: AppError) => ({
     title: isEditMode ? t("update_failed") : t("create_failed"),
     message:
       Object.values(e?.response?.data).flat().join("\n") ||
       (isEditMode ? t("could_not_update_diary") : t("could_not_create_diary")),
   });
 
-  const handleMutateError = (e) => {
+  const handleMutateError = (e: AppError) => {
     const data = e?.response?.data;
     if (!data) {
       showError(e, extractApiError);

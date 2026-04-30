@@ -42,7 +42,7 @@ const stylesFn = (Colors: ThemeColors) =>
     },
   });
 
-const cardStylesFn = (Colors) =>
+const cardStylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     statCard: {
       flex: 1,
