@@ -120,10 +120,10 @@ export const useSyncedFilters = <
     if (!params?.filtersOverride && !overrideAppliedRef.current) {
       setFilters((prev) => {
         const newFilters: Filters = { ...prev };
-        newFilters[key] = undefined;
+        newFilters[key] = null;
         if (key === "territory") {
-          newFilters.place = undefined;
-          newFilters.species = undefined;
+          newFilters.place = null;
+          newFilters.species = null;
         }
         return newFilters;
       });

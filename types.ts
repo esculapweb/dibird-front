@@ -157,7 +157,15 @@ export interface Filters {
   new?: boolean;
   favourite?: boolean | null;
   speciesName?: string;
-  [key: string]: unknown;
+  diary?: number | null;
+  user_id?: number | null;
+  profile1?: number | null;
+  profile2?: number | null;
+  tab?: seenMode | compareMode | null;
+  year?: number | null;
+  date_time_min?: string | null;
+  date_time_max?: string | null;
+  o?: string | null;
 }
 
 export interface PaginatedResponse<T> {
@@ -291,7 +299,6 @@ export interface EditorFormData {
   diary: number | null;
   species?: number | null;
 }
-
 
 export interface PlaceFormData {
   name: string;

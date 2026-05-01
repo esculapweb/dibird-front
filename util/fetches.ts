@@ -236,7 +236,7 @@ export const fetchChecklist = (
 };
 
 export const fetchPlaces = (
-  filters: Filters & Record<string, unknown>,
+  filters: Filters,
   order: string | null = "distance",
   search?: string,
   page?: number,
