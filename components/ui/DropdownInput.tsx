@@ -13,7 +13,13 @@ import SelectListModal from "./SelectListModal";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import SpeciesDropdown from "./SpeciesDropdown";
 import PlaceDropdown from "./PlaceDropdown";
-import { DropdownItem, IconType, PlaceDropdownItem, SpeciesDropdownItem, QueryType } from "../../types";
+import {
+  DropdownItem,
+  IconType,
+  PlaceDropdownItem,
+  SpeciesDropdownItem,
+  QueryType,
+} from "../../types";
 
 interface DropdownInputProps {
   title?: string;
@@ -126,7 +132,7 @@ const DropdownInput = ({
 
   return (
     <>
-      {speciesData !== undefined ? (
+      {type === "SpeciesDropdown" ? (
         <SpeciesDropdown
           speciesData={speciesData}
           value={value}
@@ -135,9 +141,9 @@ const DropdownInput = ({
           onPress={openModal}
           query={query}
         />
-      ) : placeData !== undefined ? (
+      ) : type === "PlacesDropdown" ? (
         <PlaceDropdown
-          placeData={placeData}
+          placeData={placeData ?? null}
           value={value}
           disabled={disabled}
           error={error}
