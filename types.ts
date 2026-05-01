@@ -279,6 +279,20 @@ export interface ProfileFormData {
   private_diary: boolean;
 }
 
+export interface EditorFormData {
+  territory: number | null;
+  place: number | null;
+  date_time: string | null | undefined;
+  time: string | null;
+  private: boolean | undefined;
+  quantity: number | null;
+  notes: string | null;
+  name?: string | null;
+  diary: number | null;
+  species?: number | null;
+}
+
+
 export interface PlaceFormData {
   name: string;
   territory: number | null;

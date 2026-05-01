@@ -1,4 +1,10 @@
-import { useCallback, useLayoutEffect, useMemo } from "react";
+import {
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  Dispatch,
+  SetStateAction,
+} from "react";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
 import { useRoute, useNavigation } from "@react-navigation/native";
@@ -116,7 +122,13 @@ const DiaryEditorScreen = () => {
       "onPlaceCreated",
       (newPlaceId, newPlaceTerritory, newPlaceData) => {
         setPlaceValue(newPlaceId);
-        setPlaceData(newPlaceData);
+        setPlaceData({
+          value: newPlaceData.id,
+          label: newPlaceData.name,
+          ...newPlaceData,
+          preview: newPlaceData.preview ?? undefined,
+          location: newPlaceData.location ?? undefined,
+        });
 
         if (newPlaceTerritory && newPlaceTerritory !== territoryValue) {
           setTerritoryValue(newPlaceTerritory);
@@ -179,7 +191,7 @@ const DiaryEditorScreen = () => {
     <Layout withKeyboard style={{ padding: 12 }}>
       <DiaryForm
         formData={formData}
-        setFormData={setFormData}
+        setFormData={setFormData as Dispatch<SetStateAction<DiaryFormData>>}
         errors={errors}
         setErrors={setErrors}
         territoryValue={territoryValue}

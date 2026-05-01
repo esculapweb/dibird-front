@@ -13,6 +13,7 @@ import {
   SpeciesData,
   PlaceData,
   Errors,
+  EditorFormData,
 } from "../types";
 
 interface UseEditorFormParams {
@@ -24,19 +25,6 @@ interface UseEditorFormParams {
   hasSpecies?: boolean;
   requiredFields?: string[];
   diaryId?: number | null;
-}
-
-export interface EditorFormData {
-  territory: number | null;
-  place: number | null;
-  date_time: string | null | undefined;
-  time: string | null;
-  private: boolean | undefined;
-  quantity: number | null;
-  notes: string | null;
-  name: string | null;
-  diary: number | null;
-  species?: number | null;
 }
 
 type ParsedEditorItem = {
@@ -108,12 +96,12 @@ export const useEditorForm = ({
 
   const [errors, setErrors] = useState<Errors>({});
 
-  const [speciesData, setSpeciesData] = useState<
-    SpeciesData | SpeciesDropdownItem | null
-  >(itemWithParsedDate?.species_data ?? null);
-  const [placeData, setPlaceData] = useState<
-    PlaceData | PlaceDropdownItem | null
-  >(itemWithParsedDate?.place_data ?? null);
+  const [speciesData, setSpeciesData] = useState<SpeciesDropdownItem | null>(
+    (itemWithParsedDate?.species_data as unknown as SpeciesDropdownItem) ?? null,
+  );
+  const [placeData, setPlaceData] = useState<PlaceDropdownItem | null>(
+    (itemWithParsedDate?.place_data as unknown as PlaceDropdownItem) ?? null,
+  );
 
   useEffect(() => {
     if (!speciesValue || speciesData) return;

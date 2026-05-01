@@ -44,7 +44,7 @@ interface ObservationFormProps {
   isEditMode?: boolean;
   speciesValue: number | null;
   setSpeciesValue: Dispatch<SetStateAction<number | null>>;
-  speciesData: SpeciesDropdownItem;
+  speciesData: SpeciesDropdownItem | null;
   setSpeciesData: Dispatch<SetStateAction<SpeciesDropdownItem | null>>;
   isDiaryMode?: boolean;
   onEditDiary: () => void;
@@ -273,7 +273,7 @@ const ObservationForm = ({
               disabled={existingSpecies?.has(item.value)}
             />
           )}
-          speciesData={speciesData}
+          speciesData={speciesData ?? undefined}
           type="SpeciesDropdown"
           sort={speciesSort}
           onSortChange={onSpeciesSortChange}

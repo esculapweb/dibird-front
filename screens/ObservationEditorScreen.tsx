@@ -1,4 +1,11 @@
-import { useState, useCallback, useLayoutEffect, useMemo } from "react";
+import {
+  useState,
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  Dispatch,
+  SetStateAction,
+} from "react";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -221,7 +228,13 @@ const ObservationEditorScreen = () => {
       "onPlaceCreated",
       (newPlaceId, newPlaceTerritory, newPlaceData) => {
         setPlaceValue(newPlaceId);
-        setPlaceData(newPlaceData);
+        setPlaceData({
+          value: newPlaceData.id,
+          label: newPlaceData.name,
+          ...newPlaceData,
+          preview: newPlaceData.preview ?? undefined,
+          location: newPlaceData.location ?? undefined,
+        });
 
         if (newPlaceTerritory && newPlaceTerritory !== territoryValue) {
           setTerritoryValue(newPlaceTerritory);
@@ -302,7 +315,9 @@ const ObservationEditorScreen = () => {
     <Layout withKeyboard={true} bottom={bottomEl}>
       <ObservationForm
         formData={formData}
-        setFormData={setFormData}
+        setFormData={
+          setFormData as Dispatch<SetStateAction<ObservationFormData>>
+        }
         errors={errors}
         setErrors={setErrors}
         territoryValue={territoryValue}
