@@ -41,7 +41,7 @@ const FiltersContext = createContext<FiltersContextType | null>(null);
 
 export const FiltersProvider = ({ children }: { children: ReactNode }) => {
   const [territory, setTerritoryState] = useState<number | null>(null);
-  const [date, setDateState] = useState<DateFilter | null>(null);
+  const [date, setDateState] = useState<DateFilter>(null);
   const [place, setPlaceState] = useState<number | null>(null);
   const [species, setSpeciesState] = useState<number | null>(null);
   const [seenMode, setSeenMode] = useState<seenMode>("all");
@@ -52,7 +52,7 @@ export const FiltersProvider = ({ children }: { children: ReactNode }) => {
       setSeenMode(val ? "all" : "seen");
     });
     loadGlobalDateFilter().then((val) => {
-      setDateState((val as DateFilter | null) ?? null);
+      setDateState((val) ?? null);
     });
     loadGlobalPlace().then((val) => {
       setPlaceState((val as number | null) ?? null);

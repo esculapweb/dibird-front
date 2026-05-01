@@ -131,15 +131,23 @@ export interface TabOption {
   count?: number;
 }
 
-export interface DateFilter {
-  type?: "any" | "today" | "this_year" | "range" | "exact" | "year";
+export type DateFilterType =
+  | "all"
+  | "today"
+  | "this_year"
+  | "range"
+  | "exact"
+  | "year";
+
+export type DateFilter = {
+  type?: "all" | "today" | "this_year" | "range" | "year";
   year?: number | null;
   from?: string | null;
   to?: string | null;
   mode?: "any" | "exact" | "range";
   this_year?: boolean | null;
   today?: boolean | null;
-}
+} | null;
 
 export type FilterKey =
   | "territory"
@@ -150,7 +158,7 @@ export type FilterKey =
 
 export interface Filters {
   territory?: number | null;
-  date?: DateFilter | null;
+  date?: DateFilter;
   place?: number | null;
   species?: number | null;
   seen?: boolean | null;

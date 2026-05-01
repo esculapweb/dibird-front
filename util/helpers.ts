@@ -118,9 +118,9 @@ export const toDateOnly = (
 };
 
 export const buildDateParams = (
-  date: DateFilter | null | undefined,
+  date: DateFilter,
 ): Record<string, string | null> => {
-  if (!date || date.type === "any") return {};
+  if (!date || date.type === "all") return {};
 
   switch (date.type) {
     case "today": {

@@ -9,8 +9,6 @@ import { useLocationUnavailable } from "../hooks/useLocationUnavailable";
 import {
   AppStackNavigationProp,
   AppStackRouteProp,
-  Coords,
-  Filters,
   PlaceItem,
 } from "../types";
 
@@ -19,14 +17,6 @@ const PlacesScreen = () => {
   const navigation = useNavigation<AppStackNavigationProp>();
   const route = useRoute<AppStackRouteProp<"Places">>();
   const { locationCoords, locationAvailable } = useLocation();
-
-  const fetchFunction = (
-    filters: Filters,
-    sort: string | null,
-    search: string,
-    page: number,
-    coords: Coords | null,
-  ) => fetchPlaces(filters, sort, search, page, coords);
 
   const handleLocationUnavailable = useLocationUnavailable();
 

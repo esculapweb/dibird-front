@@ -17,7 +17,7 @@ interface SortModalProps {
   sort: string | null;
   setSort: (sort: string | null) => void;
   locationAvailable?: boolean;
-  onLocationUnavailable: () => void;
+  onLocationUnavailable?: () => void;
 }
 
 const SortModal = ({
@@ -46,12 +46,6 @@ const SortModal = ({
     onClose();
   };
 
-  const handleSortChange = (value: string | number | boolean | null) => {
-    if (typeof value === "string" || value === null) {
-      setSortInternal(value);
-    }
-  };
-
   useEffect(() => {
     if (!visible) return;
     setSortInternal(sort);
@@ -72,7 +66,7 @@ const SortModal = ({
           <RadioGroup
             label={`${t("sort_by")}:`}
             value={sortInternal}
-            onChange={handleSortChange}
+            onChange={setSortInternal}
             direction="column"
             options={options}
             disabledValues={disabledSortValues}

@@ -21,11 +21,11 @@ import {
   QueryType,
 } from "../../types";
 
-interface DropdownInputProps {
+interface DropdownInputProps<T extends string | number | null = string | number | null> {
   title?: string;
   placeholder?: string;
-  value: string | number | null;
-  setValue: (value: string | number | null) => void;
+  value: T;
+  setValue: (value: T) => void;
   error?: string;
   allowReset?: boolean;
   query: QueryType;
@@ -47,7 +47,7 @@ interface DropdownInputProps {
   onLocationUnavailable?: () => void;
 }
 
-const DropdownInput = ({
+const DropdownInput = <T extends string | number | null>({
   title,
   placeholder,
   value,
@@ -66,7 +66,7 @@ const DropdownInput = ({
   onSortChange,
   locationAvailable = true,
   onLocationUnavailable,
-}: DropdownInputProps) => {
+}: DropdownInputProps<T>) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -80,7 +80,7 @@ const DropdownInput = ({
 
   const onSelectValue = (selectedValue: string | number | null) => {
     const option = query.data?.find((o) => o.value === selectedValue);
-    setValue(selectedValue);
+    setValue(selectedValue as T);
     setLabel(option?.label || "");
     setIcon(option?.icon || null);
     setIconLabel(option?.iconLabel || null);
@@ -101,14 +101,14 @@ const DropdownInput = ({
   };
 
   const clearValue = () => {
-    setValue(null);
+    setValue(null as T);
     setLabel("");
     setIcon(null);
     setIconLabel(null);
   };
 
   useEffect(() => {
-    if (value === null || value === undefined || value === "") {
+    if (value === null || value === undefined) {
       setLabel("");
       setIcon(null);
       setIconLabel(null);
@@ -281,7 +281,7 @@ const DropdownInput = ({
       <SelectListModal
         visible={modalVisible}
         options={query.data || []}
-        selected={value}
+        selected={value as string | number | null}
         search={search}
         setSearch={setSearch}
         onClose={() => setModalVisible(false)}

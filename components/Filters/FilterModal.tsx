@@ -160,7 +160,7 @@ const FilterModal = ({
     setFavouriteValue(filters?.favourite ?? null);
   }, [visible, filters]);
 
-  const isDateFilterActive = (d: DateFilter | null | undefined): boolean => {
+  const isDateFilterActive = (d: DateFilter): boolean => {
     if (!d) return false;
     if (d.mode === "any") return false;
     return !!(
