@@ -93,11 +93,11 @@ const DiaryEditorScreen = () => {
   const handleSaveDiary = useCallback(() => {
     if (!validateForm()) return;
     const diaryData: DiaryFormData = {
-      territory: territoryValue as number,
+      territory: territoryValue,
       place: placeValue,
       date_time: formData.date_time!,
       private: formData.private!,
-      notes: formData.notes,
+      name: formData.name,
     };
 
     if (isEditMode) {

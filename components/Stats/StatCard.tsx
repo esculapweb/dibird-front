@@ -255,7 +255,8 @@ const stylesFn = (Colors: ThemeColors) =>
     },
 
     flags: {
-      fontSize: 13,
+      color: Colors.textSecondary,
+      fontSize: 14,
     },
 
     meta: {

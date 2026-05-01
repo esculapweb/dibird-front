@@ -5,6 +5,7 @@ import {
   Text,
   Pressable,
   ActivityIndicator,
+  Alert
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
@@ -64,7 +65,21 @@ const Avatar = () => {
             pickAvatar();
             break;
           case 1:
-            removeAvatar();
+                Alert.alert(
+                  t("remove_title"),
+                  t("delete_avatar_message"),
+                  [
+                    { text: t("cancel"), style: "cancel" },
+                    {
+                      text: t("remove"),
+                      style: "destructive",
+                      onPress: () =>
+                        removeAvatar()
+                    },
+                  ],
+                  { cancelable: true },
+                );
+            
             break;
           case 2:
           default:

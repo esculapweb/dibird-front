@@ -235,7 +235,7 @@ const DiaryDetailScreen = () => {
     if (!diary) return;
 
     Alert.alert(
-      t("delete_title"),
+      t("are_you_sure"),
       t("delete_diary_message"),
       [
         { text: t("cancel"), style: "cancel" },

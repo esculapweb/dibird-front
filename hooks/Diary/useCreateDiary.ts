@@ -17,7 +17,7 @@ export const useCreateDiary = () => {
         place: data.place ?? null,
         date_time: data.date_time,
         private: data.private ?? false,
-        name: data.notes ?? "",
+        name: data.name ?? "",
       };
 
       return api.post(`/myapi/diary2/`, formattedData);

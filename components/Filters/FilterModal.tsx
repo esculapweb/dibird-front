@@ -20,7 +20,6 @@ import { useFilters } from "../../store/filters-context";
 import { useLocationUnavailable } from "../../hooks/useLocationUnavailable";
 import { Filters, AllowedFilterKey, DateFilter } from "../../types";
 
-
 interface FilterModalProps {
   visible: boolean;
   onClose: () => void;
@@ -79,16 +78,19 @@ const FilterModal = ({
   const [territoryValue, setTerritoryValue] = useState<number | null>(
     filters?.territory ?? null,
   );
-  const [placeValue, setPlaceValue] = useState<number | null>(filters?.place ?? null);
-  const [speciesValue, setSpeciesValue] = useState<number | null>(filters?.species ?? null);
+  const [placeValue, setPlaceValue] = useState<number | null>(
+    filters?.place ?? null,
+  );
+  const [speciesValue, setSpeciesValue] = useState<number | null>(
+    filters?.species ?? null,
+  );
   const [dateFilter, setDateFilter] = useState<DateFilter>(dateFilterInitial);
   const [favouriteValue, setFavouriteValue] = useState(
     filters?.favourite ?? null,
   );
 
-  const effectiveTerritory: number | null = (allowed.includes("territory")
-    ? territoryValue
-    : extraTerritory) ?? null;
+  const effectiveTerritory: number | null =
+    (allowed.includes("territory") ? territoryValue : extraTerritory) ?? null;
 
   const {
     query: queryMyCountries,
@@ -223,7 +225,7 @@ const FilterModal = ({
               title={t("country")}
               placeholder={t("all_countries")}
               value={territoryValue}
-              setValue={(value) => setTerritoryValue(value as number | null)}
+              setValue={(value) => setTerritoryValue(value)}
               query={queryMyCountries}
               type="CountriesDropdown"
               sort={countriesSort}
@@ -236,7 +238,7 @@ const FilterModal = ({
               title={t("location")}
               placeholder={t("all_locations")}
               value={placeValue}
-              setValue={(value) => setPlaceValue(value as number | null)}
+              setValue={(value) => setPlaceValue(value)}
               query={queryPlaces}
               type="PlacesDropdown"
               sort={placesSort}
@@ -246,6 +248,7 @@ const FilterModal = ({
               disabledMessage={t("select_country_first")}
               locationAvailable={locationAvailable}
               onLocationUnavailable={handleLocationUnavailable}
+              useDefault
             />
           )}
 
@@ -270,6 +273,7 @@ const FilterModal = ({
                   onClose={onClose}
                 />
               )}
+              useDefault
             />
           )}
 

@@ -45,6 +45,7 @@ interface DropdownInputProps<T extends string | number | null = string | number 
   onSortChange?: (newSort: string | number | boolean | null) => void;
   locationAvailable?: boolean;
   onLocationUnavailable?: () => void;
+  useDefault?: boolean;
 }
 
 const DropdownInput = <T extends string | number | null>({
@@ -66,6 +67,7 @@ const DropdownInput = <T extends string | number | null>({
   onSortChange,
   locationAvailable = true,
   onLocationUnavailable,
+  useDefault = false,
 }: DropdownInputProps<T>) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -132,7 +134,7 @@ const DropdownInput = <T extends string | number | null>({
 
   return (
     <>
-      {type === "SpeciesDropdown" ? (
+      {(type === "SpeciesDropdown" && !useDefault) ? (
         <SpeciesDropdown
           speciesData={speciesData}
           value={value}
@@ -141,7 +143,7 @@ const DropdownInput = <T extends string | number | null>({
           onPress={openModal}
           query={query}
         />
-      ) : type === "PlacesDropdown" ? (
+      ) : (type === "PlacesDropdown" && !useDefault) ? (
         <PlaceDropdown
           placeData={placeData ?? null}
           value={value}
