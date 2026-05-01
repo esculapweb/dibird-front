@@ -21,7 +21,7 @@ interface PlaceFormProps {
     coords: [string, string],
     options?: { fromManual?: boolean },
   ) => void;
-  formData: { name: string; territory?: number | null };
+  formData: PlaceFormData;
   setFormData: Dispatch<SetStateAction<PlaceFormData>>;
   coords: Coords;
   latText: string;

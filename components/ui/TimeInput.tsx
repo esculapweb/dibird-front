@@ -27,7 +27,7 @@ interface TimeInputProps {
   label?: string;
   value: string;
   onChange: (value: string | null) => void;
-  error: boolean | string | null;
+  error?: boolean | string | null;
   allowClear?: boolean;
   disabled?: boolean;
 }

@@ -12,11 +12,12 @@ import {
   PlaceDropdownItem,
   SpeciesData,
   PlaceData,
+  Errors,
 } from "../types";
 
 interface UseEditorFormParams {
   item: EditorItem | DiaryItem | ObservationItem | null;
-  defaultTerritory?: number | "";
+  defaultTerritory?: number | null;
   defaultPlace?: number | null;
   defaultSpecies?: number | null;
   profile?: Profile | null;
@@ -26,7 +27,7 @@ interface UseEditorFormParams {
 }
 
 export interface EditorFormData {
-  territory: number | "";
+  territory: number | null;
   place: number | null;
   date_time: string | null | undefined;
   time: string | null;
@@ -74,8 +75,8 @@ export const useEditorForm = ({
       }
     : undefined;
 
-  const [territoryValue, setTerritoryValue] = useState(
-    () => itemWithParsedDate?.territory ?? defaultTerritory ?? "",
+  const [territoryValue, setTerritoryValue] = useState<number | null>(
+    () => itemWithParsedDate?.territory ?? defaultTerritory ?? null,
   );
   const [speciesValue, setSpeciesValue] = useState(() =>
     hasSpecies ? (itemWithParsedDate?.species ?? defaultSpecies ?? null) : null,
@@ -105,7 +106,7 @@ export const useEditorForm = ({
     return base;
   });
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<Errors>({});
 
   const [speciesData, setSpeciesData] = useState<
     SpeciesData | SpeciesDropdownItem | null

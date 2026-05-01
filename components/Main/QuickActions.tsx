@@ -23,7 +23,7 @@ const QuickActions = ({ filters }: {filters: Filters}) => {
           activeOpacity={0.85}
           onPress={() =>
             navigation.navigate("DiaryEditor", {
-              defaultTerritory: filters.territory ?? "",
+              defaultTerritory: filters.territory ?? null,
               returnMode: "back",
             })
           }
@@ -45,7 +45,7 @@ const QuickActions = ({ filters }: {filters: Filters}) => {
           activeOpacity={0.85}
           onPress={() =>
             navigation.navigate("ObservationEditor", {
-              defaultTerritory: filters.territory ?? "",
+              defaultTerritory: filters.territory ?? null,
             })
           }
         >

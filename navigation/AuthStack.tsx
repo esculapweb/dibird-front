@@ -44,6 +44,7 @@ const AuthDrawer = () => {
 
   return (
     <Drawer.Navigator
+      id={undefined}
       drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={{
         drawerActiveTintColor: Colors.textOpposite,

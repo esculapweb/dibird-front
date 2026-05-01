@@ -1,5 +1,8 @@
 import { useRef } from "react";
-import { NavigationContainer, NavigationContainerRef} from "@react-navigation/native";
+import {
+  NavigationContainer,
+  NavigationContainerRef,
+} from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { getAnalytics, logEvent } from "@react-native-firebase/analytics";
 import { useTranslation } from "react-i18next";
@@ -46,6 +49,7 @@ const Navigation = () => {
       }}
     >
       <RootStack.Navigator
+        id={undefined}
         screenOptions={{
           headerShown: false,
           headerBackButtonDisplayMode: "minimal",

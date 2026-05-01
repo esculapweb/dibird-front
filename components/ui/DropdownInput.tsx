@@ -32,7 +32,7 @@ interface DropdownInputProps {
     onClose: () => void;
   }) => ReactElement | null;
   speciesData?: SpeciesDropdownItem;
-  placeData?: PlaceDropdownItem;
+  placeData?: PlaceDropdownItem | null;
   isLocating?: boolean;
   type?: string;
   sort?: string;

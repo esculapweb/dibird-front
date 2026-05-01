@@ -92,7 +92,7 @@ const ObservationEditorScreen = () => {
     staleTime: 0,
   });
 
-  const existingSpecies = new Set(
+  const existingSpecies: Set<string | number> = new Set(
     (diarySpeciesIds ?? []).filter(
       (id: number) => id !== observationWithParsedDate?.species,
     ),

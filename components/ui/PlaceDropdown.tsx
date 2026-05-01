@@ -23,7 +23,7 @@ import {
 interface ImageTextPartProps {
   query?: QueryType;
   value?: number | null;
-  placeData?: PlaceDropdownItem;
+  placeData?: PlaceDropdownItem | null;
   previewUri?: string | null;
   previewLoading?: boolean;
   name?: string;
@@ -152,7 +152,7 @@ const TextPart = ({
 };
 
 interface PlaceDropdownProps {
-  placeData: PlaceDropdownItem;
+  placeData: PlaceDropdownItem | null;
   value: string | number | null;
   onPress: () => void;
   onClear?: () => void;

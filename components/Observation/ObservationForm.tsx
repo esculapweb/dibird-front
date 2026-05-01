@@ -1,10 +1,5 @@
-import { useEffect } from "react";
-import {
-  Text,
-  Pressable,
-  StyleSheet,
-  View,
-} from "react-native";
+import { useEffect, Dispatch, SetStateAction } from "react";
+import { Text, Pressable, StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -27,6 +22,34 @@ import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 import { useTheme } from "../../store/theme-context";
 import { useFilters } from "../../store/filters-context";
 import { useLocationUnavailable } from "../../hooks/useLocationUnavailable";
+import {
+  ObservationFormData,
+  PlaceDropdownItem,
+  SpeciesDropdownItem,
+  Errors,
+} from "../../types";
+
+interface ObservationFormProps {
+  formData: ObservationFormData;
+  setFormData: Dispatch<SetStateAction<ObservationFormData>>;
+  errors: Errors;
+  setErrors: Dispatch<SetStateAction<Errors>>;
+  territoryValue: number | null;
+  setTerritoryValue: (value: number | null) => void;
+  placeValue: number | null;
+  setPlaceValue: (value: number | null) => void;
+  onAddNewPlace: () => void;
+  placeData: PlaceDropdownItem | null;
+  setPlaceData: Dispatch<SetStateAction<PlaceDropdownItem | null>>;
+  isEditMode?: boolean;
+  speciesValue: number | null;
+  setSpeciesValue: Dispatch<SetStateAction<number | null>>;
+  speciesData: SpeciesDropdownItem;
+  setSpeciesData: Dispatch<SetStateAction<SpeciesDropdownItem | null>>;
+  isDiaryMode?: boolean;
+  onEditDiary: () => void;
+  existingSpecies: Set<number | string>;
+}
 
 const ObservationForm = ({
   formData,
@@ -48,12 +71,16 @@ const ObservationForm = ({
   isEditMode = false,
   onEditDiary,
   existingSpecies,
-}) => {
+}: ObservationFormProps) => {
   const { t } = useTranslation();
   const { language } = useLanguage();
   const { Colors } = useTheme();
-  const { locationCoords, locationAvailable, permissionStatus, requestLocation } =
-    useLocation();
+  const {
+    locationCoords,
+    locationAvailable,
+    permissionStatus,
+    requestLocation,
+  } = useLocation();
   const { date } = useFilters();
 
   const handleLocationUnavailable = useLocationUnavailable();
@@ -208,14 +235,16 @@ const ObservationForm = ({
             placeholder={t("select_country")}
             value={territoryValue}
             setValue={(val) => {
-              setTerritoryValue(val);
-              setFormData((prev) => ({ ...prev, territory: val }));
+              setTerritoryValue(val as number | null);
+              setFormData((prev) => ({
+                ...prev,
+                territory: val as number | null,
+              }));
               setErrors((prev) => ({ ...prev, territory: undefined }));
               setPlaceValue(null);
             }}
             query={queryMyCountries}
             error={errors.territory}
-            label={t("country")}
             type="CountriesDropdown"
             sort={countriesSort}
             onSortChange={onCountriesSortChange}
@@ -226,8 +255,8 @@ const ObservationForm = ({
           placeholder={t("select_species")}
           value={speciesValue}
           setValue={(val) => {
-            setSpeciesValue(val);
-            setFormData((prev) => ({ ...prev, species: val }));
+            setSpeciesValue(val as number);
+            setFormData((prev) => ({ ...prev, species: val as number }));
             setErrors((prev) => ({ ...prev, species: undefined }));
             const found = querySpecies.data?.find((item) => item.value === val);
             setSpeciesData(found ?? null);
@@ -235,7 +264,6 @@ const ObservationForm = ({
           query={querySpecies}
           disabled={!territoryValue}
           error={errors.species}
-          hidden
           renderOption={({ item, selected, onSelect, onClose }) => (
             <SpeciesOptionRow
               item={item}
@@ -253,7 +281,7 @@ const ObservationForm = ({
 
         {!hideDiaryFields && (
           <DateInput
-            value={formData.date_time}
+            value={formData.date_time ?? null}
             onChange={(newDate) => {
               setFormData((prev) => ({ ...prev, date_time: newDate }));
               setErrors((prev) => ({ ...prev, date_time: undefined }));
@@ -267,7 +295,7 @@ const ObservationForm = ({
 
         {!hideDiaryFields && (
           <PrivacyToggle
-            value={formData.private}
+            value={formData.private ?? false}
             onChange={(val) =>
               setFormData((prev) => ({ ...prev, private: val }))
             }
@@ -307,34 +335,32 @@ const ObservationForm = ({
         }
       >
         <TimeInput
-          value={formData.time}
+          value={formData.time ?? ""}
           onChange={(newTime) =>
             setFormData((prev) => ({ ...prev, time: newTime }))
           }
         />
         <Input
-          value={
-            formData?.quantity != null ? formData.quantity.toString() : null
-          }
+          value={formData?.quantity != null ? formData.quantity.toString() : ""}
           keyboardType="numeric"
           onUpdateValue={(val) =>
             setFormData((prev) => ({
               ...prev,
-              quantity: val?.trim() === "" ? null : val.trim(),
+              quantity: val?.trim() === "" ? null : Number(val.trim()),
             }))
           }
           error={errors.quantity}
-          isInvalid={errors.quantity}
+          isInvalid={!!errors.quantity}
           placeholder={t("quantity_placeholder")}
           birdSvg
         />
         <Input
-          value={formData.notes}
+          value={formData.notes ?? ""}
           onUpdateValue={(val) =>
             setFormData((prev) => ({ ...prev, notes: val }))
           }
           error={errors.notes}
-          isInvalid={errors.notes}
+          isInvalid={!!errors.notes}
           icon="document-text-outline"
           placeholder={t("add_a_note")}
           multiline

@@ -21,7 +21,7 @@ const DiariesScreen = () => {
   const route = useRoute<AppStackRouteProp<"Diaries">>();
 
   const handleAdd = useCallback(async () => {
-    const defaultTerritory = currentFilters?.territory ?? territory ?? "";
+    const defaultTerritory = currentFilters?.territory ?? territory ?? null;
     const defaultPlace = currentFilters?.place ?? null;
     navigation.navigate("DiaryEditor", { defaultTerritory, defaultPlace });
   }, [navigation, currentFilters, territory]);

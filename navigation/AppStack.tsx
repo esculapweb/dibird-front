@@ -103,6 +103,7 @@ const MainDrawer = () => {
 
   return (
     <Drawer.Navigator
+      id={undefined}
       drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={{
         drawerActiveTintColor: Colors.textOpposite,
@@ -178,6 +179,7 @@ const AppNavigator = () => {
 
   return (
     <Stack.Navigator
+      id={undefined}
       screenOptions={{
         headerBackButtonDisplayMode: "minimal",
         headerBackTitle: "",

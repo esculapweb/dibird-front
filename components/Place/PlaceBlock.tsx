@@ -1,3 +1,4 @@
+import { Dispatch, SetStateAction } from "react";
 import { StyleSheet, View, Text, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
@@ -5,26 +6,25 @@ import { UseQueryResult } from "@tanstack/react-query";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import DropdownInput from "../ui/DropdownInput";
-import { EditorFormData } from "../../hooks/useEditorForm";
 import { PlaceDropdownItem, AppError } from "../../types";
 
-interface PlaceBlockProps {
-  territoryValue: number | "";
-  placeValue: string | number | null;
-  setPlaceValue: (value: string | number | null) => void;
-  setFormData: (updater: (prev: EditorFormData) => EditorFormData) => void;
-  onAddNewPlace: (callback: (newPlace: string | number) => void) => void;
+interface PlaceBlockProps<T extends { place?: number | null }> {
+  territoryValue: number | null;
+  placeValue: number | null;
+  setPlaceValue: (value: number | null) => void;
+  setFormData: (updater: (prev: T) => T) => void;
+  onAddNewPlace: (callback: (newPlace: number) => void) => void;
   queryPlaces: UseQueryResult<PlaceDropdownItem[], AppError>;
-  isLocating: boolean;
+  isLocating?: boolean;
   sort: string;
   onSortChange: (value: string | number | boolean | null) => void;
-  placeData?: PlaceDropdownItem;
-  setPlaceData: (value: PlaceDropdownItem | undefined) => void;
+  placeData: PlaceDropdownItem | null;
+  setPlaceData: Dispatch<SetStateAction<PlaceDropdownItem | null>>;
   locationAvailable?: boolean;
   onLocationUnavailable?: () => void;
 }
 
-const PlaceBlock = ({
+const PlaceBlock = <T extends { place?: number | null }>({
   territoryValue,
   placeValue,
   setPlaceValue,
@@ -38,7 +38,7 @@ const PlaceBlock = ({
   setPlaceData,
   locationAvailable,
   onLocationUnavailable,
-}: PlaceBlockProps) => {
+}: PlaceBlockProps<T>) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -49,10 +49,13 @@ const PlaceBlock = ({
         placeholder={t("select_location")}
         value={placeValue}
         setValue={(val) => {
-          setPlaceValue(val);
-          setFormData((prev) => ({ ...prev, place: typeof val === "string" ? null : val }));
+          setPlaceValue(val as number);
+          setFormData((prev) => ({
+            ...prev,
+            place: typeof val === "string" ? null : val,
+          }));
           const found = queryPlaces.data?.find((item) => item.value === val);
-          setPlaceData(found);
+          setPlaceData(found ?? null);
         }}
         query={queryPlaces}
         allowReset

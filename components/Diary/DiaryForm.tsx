@@ -1,3 +1,4 @@
+import { Dispatch, SetStateAction } from "react";
 import { useTranslation } from "react-i18next";
 
 import DropdownInput from "../ui/DropdownInput";
@@ -11,6 +12,23 @@ import PlaceBlock from "../Place/PlaceBlock";
 import { useLocation } from "../../store/location-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 import { useLocationUnavailable } from "../../hooks/useLocationUnavailable";
+import { DiaryFormData, PlaceDropdownItem, Errors } from "../../types";
+
+
+interface DiaryFormProps {
+  formData: DiaryFormData;
+  setFormData: Dispatch<SetStateAction<DiaryFormData>>;
+  errors: Errors;
+  setErrors: Dispatch<SetStateAction<Errors>>;
+  territoryValue: number | null;
+  setTerritoryValue: (value: number | null) => void;
+  placeValue: number | null;
+  setPlaceValue: (value: number | null) => void;
+  onAddNewPlace: () => void;
+  placeData: PlaceDropdownItem | null;
+  setPlaceData: Dispatch<SetStateAction<PlaceDropdownItem | null>>;
+  isEditMode?: boolean;
+}
 
 const DiaryForm = ({
   formData,
@@ -25,7 +43,7 @@ const DiaryForm = ({
   placeData,
   setPlaceData,
   isEditMode,
-}) => {
+}: DiaryFormProps) => {
   const { t } = useTranslation();
   const { language } = useLanguage();
   const {
@@ -69,14 +87,13 @@ const DiaryForm = ({
           placeholder={t("select_country")}
           value={territoryValue}
           setValue={(val) => {
-            setTerritoryValue(val);
-            setFormData((prev) => ({ ...prev, territory: val }));
+            setTerritoryValue(val as number | null);
+            setFormData((prev) => ({ ...prev, territory: val as number | null }));
             setErrors((prev) => ({ ...prev, territory: undefined }));
             setPlaceValue(null);
           }}
           query={queryMyCountries}
           error={errors.territory}
-          label={t("country")}
           type="CountriesDropdown"
           sort={countriesSort}
           onSortChange={onCountriesSortChange}
@@ -84,7 +101,7 @@ const DiaryForm = ({
         />
 
         <DateInput
-          value={formData.date_time}
+          value={formData.date_time ?? ""}
           onChange={(newDate) => {
             setFormData((prev) => ({ ...prev, date_time: newDate }));
             setErrors((prev) => ({ ...prev, date_time: undefined }));
@@ -96,19 +113,19 @@ const DiaryForm = ({
         />
 
         <Input
-          value={formData.name}
+          value={formData.name ?? ""}
           onUpdateValue={(val) =>
             setFormData((prev) => ({ ...prev, name: val }))
           }
           error={errors.name}
-          isInvalid={errors.name}
+          isInvalid={!!errors.name}
           icon="document-text-outline"
           placeholder={t("add_a_note")}
           multiline
         />
 
         <PrivacyToggle
-          value={formData.private}
+          value={formData.private ?? false}
           onChange={(val) => setFormData((prev) => ({ ...prev, private: val }))}
           gender="male"
         />

@@ -51,7 +51,7 @@ interface DateInputProps {
   value: string | Date | null;
   onChange: (value: string | null) => void;
   placeholder: string;
-  error: boolean | string | null;
+  error: boolean | string | null | undefined;
   minimumDate?: string | Date | undefined;
   allowClear?: boolean;
   disabled?: boolean;

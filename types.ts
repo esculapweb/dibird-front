@@ -41,6 +41,15 @@ export interface AppError extends Error {
   response?: AxiosResponse;
 }
 
+export interface Errors {
+  date_time?: string | boolean | null;
+  territory?: string;
+  species?: string;
+  quantity?: string;
+  notes?: string;
+  name?: string;
+}
+
 interface EmptyStateAction {
   label: string;
   onPress: () => void;
@@ -240,18 +249,19 @@ export interface SpeciesData {
 }
 
 export interface DiaryFormData {
-  territory: number;
-  date_time: string;
-  private: boolean;
+  territory: number | null;
+  date_time?: string | null;
+  private?: boolean;
   place?: number | null;
   notes?: string | null;
+  name?: string | null;
 }
 
 export interface ObservationFormData {
-  species: number;
-  territory: number;
-  date_time: string;
-  private: boolean;
+  species?: number | null;
+  territory?: number | null;
+  date_time?: string | null;
+  private?: boolean;
   place?: number | null;
   time?: string | null;
   quantity?: number | null;
@@ -523,7 +533,7 @@ export type AppStackParamList = {
   DiaryDetail: ScreenWithFilters & { diaryId: number };
   DiaryEditor: {
     diary?: DiaryItem;
-    defaultTerritory?: number | "";
+    defaultTerritory?: number | null;
     defaultPlace?: number | null;
     returnMode?: string;
   };
