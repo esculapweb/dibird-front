@@ -28,8 +28,8 @@ interface SelectListModalProps {
     onClose: () => void;
   }) => ReactElement | null;
   type?: string;
-  sort?: string | number | boolean | null;
-  onSortChange?: (newSort: string | number | boolean | null) => void;
+  sort?: string | null;
+  onSortChange?: (newSort: string | null) => void;
   locationAvailable?: boolean;
   onLocationUnavailable?: () => void;
 }
@@ -76,7 +76,7 @@ const SelectListModal = ({
     setSortOrder(sort ?? null);
   }, [sort]);
 
-  const handleSortChange = (val: string | number | boolean | null) => {
+  const handleSortChange = (val: string | null) => {
     setSortOrder(val);
     setSortMenuVisible(false);
     onSortChange?.(val);

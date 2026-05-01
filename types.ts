@@ -149,32 +149,34 @@ export type DateFilter = {
   today?: boolean | null;
 } | null;
 
-export type FilterKey =
+export type AllowedFilterKey =
   | "territory"
   | "date"
   | "place"
   | "species"
   | "favourite";
-
+  
 export interface Filters {
-  territory?: number | null;
-  date?: DateFilter;
-  place?: number | null;
-  species?: number | null;
-  seen?: boolean | null;
-  new?: boolean;
-  favourite?: boolean | null;
-  speciesName?: string;
+  date?: DateFilter | null;
+  date_time_max?: string | null;
+  date_time_min?: string | null;
   diary?: number | null;
-  user_id?: number | null;
+  favourite?: boolean | null;
+  new?: boolean;
+  o?: string | null;
+  place?: number | null;
   profile1?: number | null;
   profile2?: number | null;
+  seen?: boolean | null;
+  species?: number | null;
+  speciesName?: string;
   tab?: seenMode | compareMode | null;
+  territory?: number | null;
+  user_id?: number | null;
   year?: number | null;
-  date_time_min?: string | null;
-  date_time_max?: string | null;
-  o?: string | null;
 }
+
+export type AllFiltersKey = keyof Filters;
 
 export interface PaginatedResponse<T> {
   pagination: {

@@ -101,7 +101,7 @@ export const fetchMyPlaces = async (
 export const fetchSpecies = async (
   territory: number | null = null,
   order: string,
-  dateFilter: DateFilter | null = null,
+  dateFilter?: DateFilter,
 ): Promise<SpeciesDropdownItem[]> => {
   if (!territory) return [];
   const params = {

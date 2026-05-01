@@ -6,7 +6,7 @@ import { formatDate } from "../util/helpers";
 import { fetchMyCountries, fetchMyPlaces, fetchSpecies } from "../util/fetches";
 import { useLocation } from "../store/location-context";
 
-import { DateFilter, FilterKey } from "../types";
+import { DateFilter, AllFiltersKey } from "../types";
 
 interface FilterHints {
   speciesName?: string;
@@ -39,14 +39,14 @@ export const useFilterLabels = (
 
   const { query: speciesQuery } = useDropdownQuery({
     type: "SpeciesDropdown",
-    queryFn: (sort) => fetchSpecies(effectiveTerritory, sort, null),
+    queryFn: (sort) => fetchSpecies(effectiveTerritory, sort, undefined),
     params: [effectiveTerritory, language, null],
     mapResult: true,
     enabled: !!effectiveTerritory,
   });
 
   const getFilterLabel = (
-    key: FilterKey | string,
+    key: AllFiltersKey,
     value: unknown,
   ): string | [string, string] => {
     if (value === null || value === undefined) return "";
@@ -93,6 +93,7 @@ const formatDateFilter = (
   value: DateFilter,
   t: (key: string) => string,
 ): [string, string] | "" => {
+  if (!value) return "";
   if (value.type === "range") {
     if (value.from && value.to)
       return [

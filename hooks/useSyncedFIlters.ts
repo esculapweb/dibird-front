@@ -10,16 +10,15 @@ import { useDebounce } from "./useDebounce";
 import { useLocation } from "../store/location-context";
 import {
   Filters,
-  FilterKey,
+  AllowedFilterKey,
+  AllFiltersKey,
   AppStackNavigationProp,
   ScreenWithFiltersOnly,
   ScreenWithFiltersParamList,
-  ScreenWithFilters
+  ScreenWithFilters,
 } from "../types";
 
-export const useSyncedFilters = <
-  RouteName extends ScreenWithFiltersOnly
->({
+export const useSyncedFilters = <RouteName extends ScreenWithFiltersOnly>({
   route,
   navigation,
   screenName,
@@ -30,7 +29,7 @@ export const useSyncedFilters = <
   navigation: AppStackNavigationProp;
   screenName: RouteName;
   allowSort?: boolean;
-  allowedFilters: FilterKey[];
+  allowedFilters: AllowedFilterKey[];
 }) => {
   const {
     territory,
@@ -59,7 +58,6 @@ export const useSyncedFilters = <
   }[];
   const [filterHints, setFilterHints] = useState<{
     speciesName?: string;
-    [key: string]: unknown;
   }>({});
   const [ignoreContextSync, setIgnoreContextSync] = useState(false);
   const initFiltersRef = useRef(false);
@@ -106,8 +104,7 @@ export const useSyncedFilters = <
     handleClearFilters();
   };
 
-  const removeFilter = (key: FilterKey): void => {
-    setIgnoreContextSync(true);
+  function resetFilterContext(key: AllFiltersKey): void {
     if (key === "date") setDate(null);
     if (key === "territory") {
       setTerritory(null);
@@ -116,25 +113,38 @@ export const useSyncedFilters = <
     }
     if (key === "place") setPlace(null);
     if (key === "species") setSpecies(null);
+  }
+
+  function applyFilterRemoval(filters: Filters, key: AllFiltersKey): Filters {
+    switch (key) {
+      case "date":
+        return { ...filters, date: null };
+      case "territory":
+        return { ...filters, territory: null, place: null, species: null };
+      case "place":
+        return { ...filters, place: null };
+      case "species":
+        return { ...filters, species: null };
+      case "favourite":
+        return { ...filters, favourite: null };
+      default:
+        return filters;
+    }
+  }
+
+  const removeFilter = (key: AllFiltersKey): void => {
+    setIgnoreContextSync(true);
+    resetFilterContext(key);
 
     if (!params?.filtersOverride && !overrideAppliedRef.current) {
-      setFilters((prev) => {
-        const newFilters: Filters = { ...prev };
-        newFilters[key] = null;
-        if (key === "territory") {
-          newFilters.place = null;
-          newFilters.species = null;
-        }
-        return newFilters;
-      });
+      setFilters((prev) => applyFilterRemoval(prev, key));
     }
   };
 
   useEffect(() => {
     const initFilters = async () => {
       if (params?.filtersOverride && !initFiltersRef.current) {
-        const { speciesName, ...overrideFilters } =
-          params.filtersOverride;
+        const { speciesName, ...overrideFilters } = params.filtersOverride;
         setFilters(overrideFilters as Filters);
         setFilterHints({ speciesName });
         setIgnoreContextSync(true);

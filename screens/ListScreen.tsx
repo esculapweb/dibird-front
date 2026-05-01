@@ -19,13 +19,13 @@ import ItemsList from "../components/ui/ItemsList";
 import HeaderTitleWithBadge from "../components/ui/HeaderTitleWithBadge";
 import SearchInput from "../components/ui/SearchInput";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
-import { useSyncedFilters } from "../hooks/useSyncedFIlters";
+import { useSyncedFilters } from "../hooks/useSyncedFilters";
 import Layout from "../components/ui/Layout";
 import {
   AppStackNavigationProp,
   ScreenWithFiltersParamList,
   ScreenWithFiltersOnly,
-  FilterKey,
+  AllowedFilterKey,
   seenMode,
   Filters,
   IconType,
@@ -38,7 +38,7 @@ import {
 interface ListScreenProps<T, RouteName extends ScreenWithFiltersOnly> {
   route: RouteProp<ScreenWithFiltersParamList, RouteName>;
   fetchFunction: FetchFunction<T>;
-  allowedFilters?: FilterKey[];
+  allowedFilters?: AllowedFilterKey[];
   errorTitle: string;
   onAdd?: () => void;
   renderItem: ListRenderItem<T>;

@@ -18,14 +18,14 @@ import { useLocation } from "../../store/location-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 import { useFilters } from "../../store/filters-context";
 import { useLocationUnavailable } from "../../hooks/useLocationUnavailable";
-import { Filters, FilterKey, DateFilter } from "../../types";
+import { Filters, AllowedFilterKey, DateFilter } from "../../types";
 
 
 interface FilterModalProps {
   visible: boolean;
   onClose: () => void;
   filters: Filters;
-  allowed: FilterKey[];
+  allowed: AllowedFilterKey[];
   setFilters: (filters: Filters) => void;
   clearFilters: () => void;
   extraTerritory?: number | null;
@@ -178,7 +178,7 @@ const FilterModal = ({
     if (allowed.includes("place")) res.place = placeValue;
     if (allowed.includes("species")) res.species = speciesValue;
     if (allowed.includes("date"))
-      res.date = isDateFilterActive(dateFilter) ? dateFilter : null;
+      res.date = isDateFilterActive(dateFilter) ? dateFilter : undefined;
     if (allowed.includes("favourite")) res.favourite = favouriteValue;
     return res;
   };

@@ -66,7 +66,7 @@ const SortModal = ({
           <RadioGroup
             label={`${t("sort_by")}:`}
             value={sortInternal}
-            onChange={setSortInternal}
+            onChange={(val) => setSortInternal(val)}
             direction="column"
             options={options}
             disabledValues={disabledSortValues}

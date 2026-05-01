@@ -118,7 +118,7 @@ export const toDateOnly = (
 };
 
 export const buildDateParams = (
-  date: DateFilter,
+  date: DateFilter | undefined,
 ): Record<string, string | null> => {
   if (!date || date.type === "all") return {};
 
@@ -131,7 +131,7 @@ export const buildDateParams = (
       const year = new Date().getFullYear();
       return {
         date_time_min: `${year}-01-01`,
-        date_time_max: `${year + 1}-01-01`, // чище чем +1 день к 12-31
+        date_time_max: `${year + 1}-01-01`,
       };
     }
     case "year": {

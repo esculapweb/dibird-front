@@ -12,19 +12,19 @@ import NewSpecies from "../components/Main/NewSpecies";
 import QuickActions from "../components/Main/QuickActions";
 import Sections from "../components/Main/Sections";
 import FilterModal from "../components/Filters/FilterModal";
-import { useSyncedFilters } from "../hooks/useSyncedFIlters";
+import { useSyncedFilters } from "../hooks/useSyncedFilters";
 import { useDropdownQuery } from "../hooks/useDropdownQuery";
 import { fetchMyCountries, fetchMyDashboardStat } from "../util/fetches";
 import Layout from "../components/ui/Layout";
 import { useLanguage } from "../store/language-context";
-import { FilterKey, AppStackNavigationProp, AppStackRouteProp } from "../types";
+import { AppStackNavigationProp, AppStackRouteProp, AllowedFilterKey } from "../types";
 
 const MainScreen = () => {
   const { language } = useLanguage();
   const insets = useSafeAreaInsets();
   const NAVBAR_HEIGHT = insets.top + 60;
 
-  const allowedFilters: FilterKey[] = ["territory", "date"];
+  const allowedFilters: AllowedFilterKey[] = ["territory", "date"];
   const navigation = useNavigation<AppStackNavigationProp>();
   const route = useRoute<AppStackRouteProp<"Main">>();
 

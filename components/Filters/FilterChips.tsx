@@ -3,17 +3,16 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { useFilterLabels } from "../../hooks/useFilterLabels";
-import { FilterKey, Filters } from "../../types";
+import { AllowedFilterKey, Filters, AllFiltersKey } from "../../types";
 
 interface FilterChipsProps {
   filters: Filters;
-  onRemove: (key: FilterKey) => void;
+  onRemove: (key: AllFiltersKey) => void;
   extraFilters?: Filters | null;
   hints: {
     speciesName?: string;
-    [key: string]: unknown;
   };
-  allowed: FilterKey[];
+  allowed: AllowedFilterKey[];
 }
 
 const FilterChips = ({
@@ -31,9 +30,9 @@ const FilterChips = ({
     filters?.territory ?? extraFilters?.territory ?? null;
   const { getFilterLabel } = useFilterLabels(effectiveTerritory, hints);
 
-  const activeFilters = Object.entries(filters).filter(
+  const activeFilters = (Object.entries(filters) as [AllFiltersKey, unknown][]).filter(
     ([key, value]) =>
-      (!allowed || allowed.includes(key as FilterKey)) &&
+      (!allowed || allowed.includes(key as AllowedFilterKey)) &&
       value !== null &&
       value !== undefined &&
       !(Array.isArray(value) && value.length === 0),
@@ -61,7 +60,7 @@ const FilterChips = ({
                 <Text style={styles.filterValue}>{filterLabel}</Text>
               </Text>
               <View style={styles.removeIcon}>
-                <Pressable onPress={() => onRemove(key as FilterKey)} hitSlop={8}>
+                <Pressable onPress={() => onRemove(key)} hitSlop={8}>
                   <Ionicons
                     name="close-circle"
                     size={16}
