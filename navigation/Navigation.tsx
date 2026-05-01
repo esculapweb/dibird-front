@@ -10,7 +10,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../store/auth-context";
 import AuthDrawer from "./AuthStack";
 import AppNavigator from "./AppStack";
-import { useTheme, ThemeColors } from "../store/theme-context";
+import { useTheme } from "../store/theme-context";
 import {
   LightNavigationTheme,
   DarkNavigationTheme,

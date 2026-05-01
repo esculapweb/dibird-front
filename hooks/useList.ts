@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useLanguage } from "../store/language-context";
 import { stableStringify } from "../util/helpers";
-import { FetchFunction, Filters, PaginatedResponse, seenMode, LocationCoords, Coords} from "../types";
+import { FetchFunction, Filters, PaginatedResponse, seenMode, Coords} from "../types";
 
 interface useListProps<T> {
   screenName: string;

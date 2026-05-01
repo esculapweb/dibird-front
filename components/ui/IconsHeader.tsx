@@ -1,9 +1,8 @@
 import { memo } from "react";
 import { StyleSheet } from "react-native";
 import IconButton from "./IconButton";
-import { useTheme, ThemeColors } from "../../store/theme-context";
+import { useTheme } from "../../store/theme-context";
 import { IconButtonConfig } from "../../types";
-
 
 interface IconsHeaderProps {
   hasActiveFilters?: boolean;
@@ -23,7 +22,6 @@ const IconsHeader = ({
   headerRightEnd = [],
 }: IconsHeaderProps) => {
   const { Colors } = useTheme();
-  const styles = stylesFn(Colors);
 
   const iconButtons: IconButtonConfig[] = [
     ...(Array.isArray(headerRightBeginning) ? headerRightBeginning : []),
@@ -72,13 +70,12 @@ const IconsHeader = ({
 
 export default memo(IconsHeader);
 
-const stylesFn = (Colors: ThemeColors) =>
-  StyleSheet.create({
-    headerButtons: {
-      flexDirection: "row",
-      alignItems: "center",
-    },
-    iconButton: {
-      marginRight: 0,
-    },
-  });
+const styles = StyleSheet.create({
+  headerButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  iconButton: {
+    marginRight: 0,
+  },
+});

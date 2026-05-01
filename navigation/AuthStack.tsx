@@ -18,7 +18,6 @@ import LanguageSwitcher from "../components/Language/LanguageSwitcher";
 import { useTheme } from "../store/theme-context";
 import ThemeSwitcher from "../components/Theme/ThemeSwitcher";
 import { AuthDrawerParamList } from "../types";
-import StaticScreen from "../screens/StaticScreen";
 
 const Drawer = createDrawerNavigator<AuthDrawerParamList>();
 

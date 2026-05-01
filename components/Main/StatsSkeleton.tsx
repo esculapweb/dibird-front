@@ -4,8 +4,7 @@ import { useTheme, ThemeColors } from "../../store/theme-context";
 const H_PAD = 16;
 
 const StatsSkeleton = () => {
-  const { Colors } = useTheme();
-  const styles = stylesFn(Colors);
+  const styles = stylesFn();
 
   return (
     <View style={styles.statsRow}>
@@ -32,7 +31,7 @@ const StatCardSkeleton = () => {
   );
 };
 
-const stylesFn = (Colors: ThemeColors) =>
+const stylesFn = () =>
   StyleSheet.create({
     statsRow: {
       flexDirection: "row",

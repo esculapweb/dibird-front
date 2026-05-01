@@ -168,9 +168,11 @@ const PlaceEditorScreen = () => {
       return;
     }
     const errorField = FORM_FIELDS.find((field) => data?.[field]);
-    errorField
-      ? setErrors((prev) => ({ ...prev, [errorField]: data[errorField] }))
-      : showError(e, extractApiError);
+    if (errorField) {
+      setErrors((prev) => ({ ...prev, [errorField]: data[errorField] }));
+    } else {
+      showError(e, extractApiError);
+    }
   };
 
   const handleCoordsChange = useCallback(

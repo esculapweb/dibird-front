@@ -1,7 +1,6 @@
 import { useState, useEffect, Dispatch, SetStateAction } from "react";
 import { StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useTheme, ThemeColors } from "../../store/theme-context";
 import Input from "../ui/Input";
 import DropdownInput from "../ui/DropdownInput";
 import { fetchMyCountries } from "../../util/fetches";
@@ -46,9 +45,8 @@ const PlaceForm = ({
   setErrors,
   locationDetails,
 }: PlaceFormProps) => {
-  const { Colors } = useTheme();
   const { t } = useTranslation();
-  const styles = stylesFn(Colors);
+  const styles = stylesFn();
   const { language } = useLanguage();
 
   const [territory, setTerritory] = useState<string | number | null>(null);
@@ -153,7 +151,7 @@ const PlaceForm = ({
 
 export default PlaceForm;
 
-const stylesFn = (Colors: ThemeColors) =>
+const stylesFn = () =>
   StyleSheet.create({
     formSection: { padding: 16, marginBottom: 8 },
     coordsContainer: { flexDirection: "row", gap: 12 },

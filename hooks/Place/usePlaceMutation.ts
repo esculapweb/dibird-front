@@ -1,9 +1,10 @@
 import { useQueryClient } from "@tanstack/react-query";
+import { AxiosResponse } from "axios";
 
 import { useMutationWithTranslation } from "../useMutationWithTranslation";
 import api from "../../services/api";
 import { INVALIDATION_MAP } from "../../util/invalidationMap";
-import { PlaceFormData } from "../../types";
+import { PlaceFormData, PlaceItem } from "../../types";
 
 export const useCreatePlace = () => {
   const queryClient = useQueryClient();
@@ -27,7 +28,7 @@ export const useCreatePlace = () => {
       }
       return api.post(`/myapi/place2/`, formattedData);
     },
-    onSuccess: (response) => {
+    onSuccess: (response: AxiosResponse<PlaceItem>) => {
       queryClient.setQueryData(
         ["Places"],
         (old: Record<string, unknown> | undefined) => {
@@ -35,7 +36,7 @@ export const useCreatePlace = () => {
           const results = old.results as unknown[];
           return {
             ...old,
-            results: [(response as any).data, ...results],
+            results: [response.data, ...results],
             count: typeof old.count === "number" ? old.count + 1 : old.count,
           };
         },

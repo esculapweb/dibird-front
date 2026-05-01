@@ -40,7 +40,7 @@ export const useCreateObservation = () => {
         const results = old.results as unknown[];
         return {
           ...old,
-            results: [(response as any).data, ...results],
+            results: [response.data, ...results],
             count: typeof old.count === "number" ? old.count + 1 : old.count,
         };
       });

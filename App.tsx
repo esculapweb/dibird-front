@@ -65,7 +65,7 @@ const queryClient = new QueryClient({
       refetchOnReconnect: true,
     },
     mutations: {
-      onError: (error: any) => {
+      onError: (error: AppError) => {
         showError(error);
       },
     },

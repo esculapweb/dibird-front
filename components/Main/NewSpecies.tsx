@@ -1,4 +1,4 @@
-import { FC, useCallback} from "react";
+import { FC, useCallback } from "react";
 import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
@@ -10,10 +10,7 @@ import { Config } from "../../constants/config";
 import { BirdSVG } from "../ui/Svgs";
 import { formatDateShort } from "../../util/helpers";
 import { fetchStat } from "../../util/fetches";
-import {
-  Filters,
-  AppStackNavigationProp,
-} from "../../types";
+import { Filters, AppStackNavigationProp } from "../../types";
 
 const H_PAD = 16;
 const IMAGE_SIZE = 48;
@@ -29,14 +26,14 @@ const NewSpecies: FC<NewSpeciesProps> = ({ filters, filtersLoaded }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
 
-    const fetchStatSeen = useCallback(
+  const fetchStatSeen = useCallback(
     (
       filters: Filters,
       sort: string | null,
       search: string | null,
       page: number,
     ) => {
-      const { place, species, ...seenFilters } = filters;
+      const { place: _place, species: _species, ...seenFilters } = filters;
       return fetchStat(
         { ...seenFilters, seen: true },
         sort ?? undefined,
@@ -47,15 +44,14 @@ const NewSpecies: FC<NewSpeciesProps> = ({ filters, filtersLoaded }) => {
     [],
   );
 
-  const { data: newSpeciesData, isLoading } =
-    useList({
-      screenName: "Stat",
-      fetchFunction: fetchStatSeen,
-      filters,
-      sort: "-seen,-date_time",
-      tabsMode: "seen",
-      enabled: filtersLoaded,
-    });
+  const { data: newSpeciesData, isLoading } = useList({
+    screenName: "Stat",
+    fetchFunction: fetchStatSeen,
+    filters,
+    sort: "-seen,-date_time",
+    tabsMode: "seen",
+    enabled: filtersLoaded,
+  });
 
   const isYearFilter =
     filters?.date?.type === "year" || filters?.date?.type === "this_year";

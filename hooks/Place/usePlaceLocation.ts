@@ -69,7 +69,8 @@ export const usePlaceLocation = () => {
   const [roundedCoords, setRoundedCoords] = useState<Coords>(
     Config.defaultCoords,
   );
-  const [zoom, setZoom] = useState(12);
+  // const [zoom, setZoom] = useState(12);
+  const zoom = 12;
   const [accuracy, setAccuracy] = useState(0);
   const [latText, setLatText] = useState("");
   const [lngText, setLngText] = useState("");

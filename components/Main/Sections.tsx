@@ -12,7 +12,6 @@ import { useNavigation } from "@react-navigation/native";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import {
   AppStackNavigationProp,
-  AppStackParamList,
   DashboardStat,
   IconType,
 } from "../../types";

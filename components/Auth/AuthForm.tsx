@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useTheme, ThemeColors } from "../../store/theme-context";
 
 import AnimatedLoadingButton from "../ui/AnimatedLoadingButton";
 import Input from "../ui/Input";
@@ -29,8 +28,7 @@ const AuthForm = ({
   const [enteredPassword, setEnteredPassword] = useState("");
   const [enteredConfirmPassword, setEnteredConfirmPassword] = useState("");
   const { t } = useTranslation();
-  const { Colors } = useTheme();
-  const styles = stylesFn(Colors);
+  const styles = stylesFn();
 
   const {
     email: emailIsInvalid,
@@ -135,7 +133,7 @@ const AuthForm = ({
 
 export default AuthForm;
 
-const stylesFn = (Colors: ThemeColors) =>
+const stylesFn = () =>
   StyleSheet.create({
     buttonContainer: {
       marginVertical: 16,

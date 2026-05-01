@@ -2,10 +2,9 @@ import { StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 
-import { useTheme, ThemeColors } from "../../store/theme-context";
 import StatCard from "../ui/StatCard";
 import StatsSkeleton from "./StatsSkeleton";
-import { AppStackNavigationProp, Filters, DashboardStat} from "../../types";
+import { AppStackNavigationProp, Filters, DashboardStat } from "../../types";
 
 const H_PAD = 16;
 
@@ -19,8 +18,6 @@ const Stats = ({
   isLoading: boolean;
 }) => {
   const { t } = useTranslation();
-  const { Colors } = useTheme();
-  const styles = stylesFn(Colors);
   const navigation = useNavigation<AppStackNavigationProp>();
 
   if (isLoading) return <StatsSkeleton />;
@@ -62,12 +59,11 @@ const Stats = ({
 
 export default Stats;
 
-const stylesFn = (Colors: ThemeColors) =>
-  StyleSheet.create({
-    statsRow: {
-      flexDirection: "row",
-      gap: 6,
-      paddingHorizontal: H_PAD,
-      paddingBottom: 12,
-    },
-  });
+const styles = StyleSheet.create({
+  statsRow: {
+    flexDirection: "row",
+    gap: 6,
+    paddingHorizontal: H_PAD,
+    paddingBottom: 12,
+  },
+});

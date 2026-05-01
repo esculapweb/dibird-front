@@ -46,9 +46,11 @@ const RatingCard = ({
     : null;
 
   const handlePress = () => {
-    profile?.user === item.profile_id
-      ? navigation.navigate("Stat", { backTitle: t("rating") })
-      : navigation.navigate("UserStat", { profileId: item.profile_id });
+    if (profile?.user === item.profile_id) {
+      navigation.navigate("Stat", { backTitle: t("rating") });
+    } else {
+      navigation.navigate("UserStat", { profileId: item.profile_id });
+    }
   };
   return (
     <Pressable

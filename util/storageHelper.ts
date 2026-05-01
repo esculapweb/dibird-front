@@ -22,6 +22,7 @@ const loadItem = async (key: string, screen: string): Promise<unknown> => {
 
     return allData[screen] ?? null;
   } catch (e) {
+    console.warn(`Failed to load ${key}`, e);
     return null;
   }
 };
