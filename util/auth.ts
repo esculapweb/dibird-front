@@ -109,6 +109,7 @@ export const LoginWithApple = async () => {
   if (!identityToken) throw new Error("Apple: no identity_token");
 
   const { access, refresh } = await post("/auth/apple/", {
+    access_token: identityToken,
     id_token: identityToken,
     first_name: fullName?.givenName ?? "",
     last_name: fullName?.familyName ?? "",
