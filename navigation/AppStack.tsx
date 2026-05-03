@@ -28,7 +28,7 @@ import DiaryEditorScreen from "../screens/DiaryEditorScreen";
 import RatingScreen from "../screens/RatingScreen";
 import RatingsCompareScreen from "../screens/RatingsCompareScreen";
 import UserStatScreen from "../screens/UserStatScreen";
-// import SettingsScreen from "../screens/SettingsScreen";
+import SettingsScreen from "../screens/SettingsScreen";
 
 import { useAuth, setOnLogout } from "../store/auth-context";
 import { useProfile } from "../store/profile-context";
@@ -145,11 +145,14 @@ const MainDrawer = () => {
         }}
       />
 
-      {/* <Drawer.Screen
+      <Drawer.Screen
         name="Settings"
         component={SettingsScreen}
         options={{
           title: t("settings"),
+          headerTransparent: true,
+          headerShadowVisible: false,
+          headerShown: true,
           drawerIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? "settings" : "settings-outline"}
@@ -158,7 +161,7 @@ const MainDrawer = () => {
             />
           ),
         }}
-      /> */}
+      />
     </Drawer.Navigator>
   );
 };

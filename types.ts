@@ -597,6 +597,7 @@ export type ScreenWithFiltersParamList = {
 export type AppDrawerParamList = {
   MainDrawer: undefined;
   Profile: undefined;
+  Settings: undefined;
 };
 
 export type AuthDrawerParamList = {

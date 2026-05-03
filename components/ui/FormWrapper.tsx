@@ -26,7 +26,7 @@ const FormWrapper = ({
 
   return (
     <Layout
-      withKeyboard={true}
+      withKeyboard
       top={header}
       bottom={bottomEl}
       style={[style, { paddingHorizontal: 24 }]}
