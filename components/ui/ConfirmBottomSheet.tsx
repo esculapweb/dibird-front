@@ -121,12 +121,8 @@ const ConfirmBottomSheet = forwardRef<
     }, [isConfirmDisabled, onConfirm, onError, data, dismiss]);
 
     const confirmBg = danger
-      ? isConfirmDisabled
-        ? Colors.primary200
-        : Colors.error600
-      : isConfirmDisabled
-        ? Colors.primary200
-        : Colors.main100;
+      ? Colors.error600
+      : Colors.main100;
 
     return (
       <BottomSheetModal
@@ -184,7 +180,7 @@ const ConfirmBottomSheet = forwardRef<
           ) : null}
 
           <Pressable
-            style={[styles.primaryButton, { backgroundColor: confirmBg }]}
+            style={[styles.primaryButton, { backgroundColor: confirmBg }, isConfirmDisabled && { opacity: 0.6 }]}
             onPress={handleConfirm}
             disabled={isConfirmDisabled}
           >
@@ -194,7 +190,7 @@ const ConfirmBottomSheet = forwardRef<
               <Text
                 style={[
                   styles.primaryText,
-                  { color: danger ? "#fff" : Colors.textOpposite },
+                  { color: Colors.textOpposite },
                 ]}
               >
                 {confirmText}

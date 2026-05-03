@@ -14,7 +14,7 @@ const LanguageSwitcher = () => {
   return (
     <View style={styles.container}>
       <View style={styles.left}>
-        <Ionicons name="globe-outline" size={22} style={styles.icon} />
+        <Ionicons name="language-outline" size={22} style={styles.icon} />
         <Text style={styles.title}>{t("language")}:</Text>
       </View>
       <View style={styles.buttonsRight}>

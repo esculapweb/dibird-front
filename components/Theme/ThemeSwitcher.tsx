@@ -26,7 +26,7 @@ const ThemeSwitcher = () => {
   return (
     <View style={styles.container}>
       <View style={styles.left}>
-        <Ionicons name="contrast-outline" size={22} style={styles.icon} />
+        <Ionicons name="color-palette-outline" size={22} style={styles.icon} />
         <Text style={styles.title}>{t("theme")}:</Text>
       </View>
       <View style={styles.buttonsRight}>
