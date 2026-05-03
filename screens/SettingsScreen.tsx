@@ -46,6 +46,15 @@ const SettingsScreen = () => {
     }
   };
 
+  const extractApiError = (e: AppError): { title: string; message: string } => {
+    const data = e?.response?.data;
+    const apiMessage = data ? data?.detail : null;
+    return {
+      title: t("delete_failed"),
+      message: apiMessage || t("could_not_delete_profile"),
+    };
+  };
+
   return (
     <Layout style={{ marginTop: 24, paddingTop: headerHeight }}>
       <View style={styles.section}>
@@ -71,7 +80,7 @@ const SettingsScreen = () => {
         requiredInput={userEmail}
         inputPlaceholder={userEmail}
         onConfirm={handleDeleteConfirmed}
-        onError={(e) => showError(e as AppError)}
+        onError={(e) => showError(e as AppError, extractApiError)}
         inputLabel={t("delete_profile_input_label")}
       />
     </Layout>
