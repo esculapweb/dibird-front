@@ -32,7 +32,6 @@ import {
   IconType,
 } from "../types";
 import { Config } from "../constants/config";
-import PrivacyToggle from "../components/ui/PrivacyToggle";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 
 // ------------------------------------------------------------------
@@ -128,7 +127,7 @@ const SettingsScreen = () => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const { logout } = useAuth();
-  const { profile, updateProfile } = useProfile();
+  const { profile } = useProfile();
   const navigation = useNavigation<AppDrawerNavigationProp>();
   const rootNavigation = useNavigation<RootStackNavigationProp>();
 
@@ -139,9 +138,6 @@ const SettingsScreen = () => {
   const fullVersion = build ? `${version} (${build})` : version;
 
   const userEmail = profile?.user_data?.email ?? "";
-  const isPrivate = profile?.private ?? false;
-  const isPrivateDiary = profile?.private_diary ?? false;
-  const isObfuscatedCoordinates = true;
 
   const deleteSheetRef = useRef<ConfirmBottomSheetRef>(null);
   const iconName: IconType =
@@ -166,31 +162,6 @@ const SettingsScreen = () => {
     title: t("delete_failed"),
     message: e?.response?.data?.detail ?? t("could_not_delete_profile"),
   });
-
-  const handleTogglePrivate = async (val: boolean) => {
-    try {
-      await updateProfile({ private: val });
-    } catch (e) {
-      showError(e as AppError);
-    }
-  };
-
-  const handleTogglePrivateDiary = async (val: boolean) => {
-    try {
-      await updateProfile({ private_diary: val });
-    } catch (e) {
-      showError(e as AppError);
-    }
-  };
-
-  const handleToggleObfuscatedCoords = async (val: boolean) => {
-    try {
-      console.log(val)
-      // await updateProfile({ obfuscated_coords: val });
-    } catch (e) {
-      showError(e as AppError);
-    }
-  };
 
   const handleTellAFriend = async () => {
     await Share.share(
@@ -230,102 +201,10 @@ const SettingsScreen = () => {
       contentContainerStyle={[styles.scroll, { paddingTop: headerHeight + 16 }]}
       bottom={
         <FlatButtonBottom textColor={Colors.textSecondary} disabled>
-        {t("app_version", { version: fullVersion })}
-      </FlatButtonBottom>
+          {t("app_version", { version: fullVersion })}
+        </FlatButtonBottom>
       }
     >
-      {/* ── Account & Security ───────────────────────────── */}
-      <Section
-        title={t("settings_section_account")}
-        styles={styles}
-        colors={Colors}
-      >
-        <Row
-          icon="mail-outline"
-          label={t("settings_email_addresses")}
-          disabled // TODO
-          colors={Colors}
-          styles={styles}
-        />
-        <Divider styles={styles} />
-        <Row
-          icon="link-outline"
-          label={t("settings_linked_accounts")}
-          disabled // TODO
-          colors={Colors}
-          styles={styles}
-        />
-        <Divider styles={styles} />
-        <Row
-          icon="key-outline"
-          label={t("settings_change_password")}
-          disabled // TODO
-          colors={Colors}
-          styles={styles}
-        />
-      </Section>
-
-
-      {/* ── Data ─────────────────────────────────────────── */}
-      <Section
-        title={t("settings_section_data")}
-        styles={styles}
-        colors={Colors}
-      >
-        <Row
-          icon="download-outline"
-          label={t("export_data")}
-          disabled
-          colors={Colors}
-          styles={styles}
-        />
-        <Divider styles={styles} />
-        <Row
-          icon="cloud-upload-outline"
-          label={t("import_data")}
-          disabled
-          colors={Colors}
-          styles={styles}
-        />
-      </Section>
-
-
-      {/* ── Privacy ──────────────────────────────────────── */}
-      <Section title={t("profile")} styles={styles} colors={Colors}>
-        <PrivacyToggle
-          value={isPrivate}
-          onChange={handleTogglePrivate}
-          gender="male"
-          style={{ padding: 12 }}
-        />
-      </Section>
-      <Section
-        title={t("new_observations_and_diaries")}
-        styles={styles}
-        colors={Colors}
-      >
-        <PrivacyToggle
-          value={isPrivateDiary}
-          onChange={handleTogglePrivateDiary}
-          style={{ padding: 12 }}
-          gender="multiple"
-        />
-      </Section>
-
-      <Section
-        title={t("exact_locations_coordinates")}
-        styles={styles}
-        colors={Colors}
-      >
-        <PrivacyToggle
-          value={isObfuscatedCoordinates}
-          onChange={handleToggleObfuscatedCoords}
-          style={{ padding: 12 }}
-          gender="multiple"
-          disabled
-        />
-      </Section>
-
       {/* ── About ────────────────────────────────────────── */}
       <Section
         title={t("settings_section_about")}
@@ -362,6 +241,29 @@ const SettingsScreen = () => {
           icon="document-text-outline"
           label={t("terms_of_service")}
           onPress={() => rootNavigation.navigate("Terms")}
+          colors={Colors}
+          styles={styles}
+        />
+      </Section>
+
+      {/* ── Data ─────────────────────────────────────────── */}
+      <Section
+        title={t("settings_section_data")}
+        styles={styles}
+        colors={Colors}
+      >
+        <Row
+          icon="download-outline"
+          label={t("export_data")}
+          disabled
+          colors={Colors}
+          styles={styles}
+        />
+        <Divider styles={styles} />
+        <Row
+          icon="cloud-upload-outline"
+          label={t("import_data")}
+          disabled
           colors={Colors}
           styles={styles}
         />
