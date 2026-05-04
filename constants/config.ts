@@ -23,6 +23,7 @@ export const Config = {
   defaultCoords: [-0.1423, 51.5048] as [number, number],
   mapTileUrl: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
   geoCodingBaseUrl: "https://nominatim.openstreetmap.org",
+  email: "admin@dibird.com",
   isDev: __DEV__,
   isProd: env === "production",
   googleWebClientId:

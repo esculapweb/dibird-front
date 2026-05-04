@@ -5,6 +5,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
+  Share,
+  Linking,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -12,7 +14,6 @@ import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
-import { EdgeInsets, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import api, { clearTokens, showError } from "../services/api";
 import Layout from "../components/ui/Layout";
@@ -30,13 +31,16 @@ import {
   RootStackNavigationProp,
   IconType,
 } from "../types";
+import { Config } from "../constants/config";
+import PrivacyToggle from "../components/ui/PrivacyToggle";
+import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 
 // ------------------------------------------------------------------
 // Primitives
 // ------------------------------------------------------------------
 
 interface RowProps {
-  icon: string;
+  icon: IconType;
   label: string;
   onPress?: () => void;
   rightLabel?: string;
@@ -68,13 +72,15 @@ const Row = ({
       disabled={disabled}
       activeOpacity={0.55}
     >
-      <Ionicons name={icon as IconType} size={18} color={iconColor} />
+      <Ionicons name={icon} size={18} color={iconColor} />
       <Text style={[styles.rowLabel, { color: labelColor }]} numberOfLines={1}>
         {label}
       </Text>
       <View style={styles.rowRight}>
         {rightLabel ? (
-          <Text style={styles.rowRightLabel}>{rightLabel}</Text>
+          <Text style={[styles.rowRightLabel, { color: colors.textSecondary }]}>
+            {rightLabel}
+          </Text>
         ) : null}
         {!hideChevron && (
           <Ionicons
@@ -120,12 +126,12 @@ const SettingsScreen = () => {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
   const { Colors } = useTheme();
-  const insets = useSafeAreaInsets();
-  const styles = stylesFn(Colors, insets);
+  const styles = stylesFn(Colors);
   const { logout } = useAuth();
-  const { profile } = useProfile();
+  const { profile, updateProfile } = useProfile();
   const navigation = useNavigation<AppDrawerNavigationProp>();
   const rootNavigation = useNavigation<RootStackNavigationProp>();
+
   const version = Constants.expoConfig?.version ?? "—";
   const build =
     Constants.expoConfig?.ios?.buildNumber ??
@@ -133,9 +139,13 @@ const SettingsScreen = () => {
   const fullVersion = build ? `${version} (${build})` : version;
 
   const userEmail = profile?.user_data?.email ?? "";
-  const deleteSheetRef = useRef<ConfirmBottomSheetRef>(null);
+  const isPrivate = profile?.private ?? false;
+  const isPrivateDiary = profile?.private_diary ?? false;
+  const isObfuscatedCoordinates = true;
 
-  const iconName = Platform.OS === "ios" ? "chevron-back" : "arrow-back";
+  const deleteSheetRef = useRef<ConfirmBottomSheetRef>(null);
+  const iconName: IconType =
+    Platform.OS === "ios" ? "chevron-back" : "arrow-back";
 
   const clearAll = async () => {
     await clearTokens();
@@ -156,6 +166,46 @@ const SettingsScreen = () => {
     title: t("delete_failed"),
     message: e?.response?.data?.detail ?? t("could_not_delete_profile"),
   });
+
+  const handleTogglePrivate = async (val: boolean) => {
+    try {
+      await updateProfile({ private: val });
+    } catch (e) {
+      showError(e as AppError);
+    }
+  };
+
+  const handleTogglePrivateDiary = async (val: boolean) => {
+    try {
+      await updateProfile({ private_diary: val });
+    } catch (e) {
+      showError(e as AppError);
+    }
+  };
+
+  const handleToggleObfuscatedCoords = async (val: boolean) => {
+    try {
+      console.log(val)
+      // await updateProfile({ obfuscated_coords: val });
+    } catch (e) {
+      showError(e as AppError);
+    }
+  };
+
+  const handleTellAFriend = async () => {
+    await Share.share(
+      Platform.OS === "ios"
+        ? {
+            url: `${Config.baseUrl}/`,
+            message: t("tell_a_friend_message"),
+          }
+        : { message: t("tell_a_friend_message") },
+    );
+  };
+
+  const handleFeedback = () => {
+    Linking.openURL(`mailto:${Config.email}`);
+  };
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -179,25 +229,42 @@ const SettingsScreen = () => {
       withScroll
       contentContainerStyle={[styles.scroll, { paddingTop: headerHeight + 16 }]}
       bottom={
-        <Text style={styles.version}>
-          {t("app_version", { version: fullVersion })}
-        </Text>
+        <FlatButtonBottom textColor={Colors.textSecondary} disabled>
+        {t("app_version", { version: fullVersion })}
+      </FlatButtonBottom>
       }
     >
-      {/* ── Account ──────────────────────────────────────── */}
+      {/* ── Account & Security ───────────────────────────── */}
       <Section
         title={t("settings_section_account")}
         styles={styles}
         colors={Colors}
       >
         <Row
-          icon="person-outline"
-          label={t("profile")}
-          onPress={() => navigation.navigate("Profile")}
+          icon="mail-outline"
+          label={t("settings_email_addresses")}
+          disabled // TODO
+          colors={Colors}
+          styles={styles}
+        />
+        <Divider styles={styles} />
+        <Row
+          icon="link-outline"
+          label={t("settings_linked_accounts")}
+          disabled // TODO
+          colors={Colors}
+          styles={styles}
+        />
+        <Divider styles={styles} />
+        <Row
+          icon="key-outline"
+          label={t("settings_change_password")}
+          disabled // TODO
           colors={Colors}
           styles={styles}
         />
       </Section>
+
 
       {/* ── Data ─────────────────────────────────────────── */}
       <Section
@@ -222,12 +289,67 @@ const SettingsScreen = () => {
         />
       </Section>
 
+
       {/* ── Privacy ──────────────────────────────────────── */}
+      <Section title={t("profile")} styles={styles} colors={Colors}>
+        <PrivacyToggle
+          value={isPrivate}
+          onChange={handleTogglePrivate}
+          gender="male"
+          style={{ padding: 12 }}
+        />
+      </Section>
       <Section
-        title={t("settings_section_privacy")}
+        title={t("new_observations_and_diaries")}
         styles={styles}
         colors={Colors}
       >
+        <PrivacyToggle
+          value={isPrivateDiary}
+          onChange={handleTogglePrivateDiary}
+          style={{ padding: 12 }}
+          gender="multiple"
+        />
+      </Section>
+
+      <Section
+        title={t("exact_locations_coordinates")}
+        styles={styles}
+        colors={Colors}
+      >
+        <PrivacyToggle
+          value={isObfuscatedCoordinates}
+          onChange={handleToggleObfuscatedCoords}
+          style={{ padding: 12 }}
+          gender="multiple"
+          disabled
+        />
+      </Section>
+
+      {/* ── About ────────────────────────────────────────── */}
+      <Section
+        title={t("settings_section_about")}
+        styles={styles}
+        colors={Colors}
+      >
+        <Row
+          icon="share-social-outline"
+          label={t("settings_tell_a_friend")}
+          onPress={handleTellAFriend}
+          hideChevron
+          colors={Colors}
+          styles={styles}
+        />
+        <Divider styles={styles} />
+        <Row
+          icon="chatbubble-outline"
+          label={t("settings_send_feedback")}
+          onPress={handleFeedback}
+          hideChevron
+          colors={Colors}
+          styles={styles}
+        />
+        <Divider styles={styles} />
         <Row
           icon="shield-checkmark-outline"
           label={t("privacy_policy")}
@@ -243,7 +365,14 @@ const SettingsScreen = () => {
           colors={Colors}
           styles={styles}
         />
-        <Divider styles={styles} />
+      </Section>
+
+      {/* ── Danger zone ──────────────────────────────────── */}
+      <Section
+        title={t("settings_section_danger")}
+        styles={styles}
+        colors={Colors}
+      >
         <Row
           icon="trash-outline"
           label={t("delete_profile")}
@@ -278,12 +407,11 @@ export default SettingsScreen;
 // Styles
 // ------------------------------------------------------------------
 
-const stylesFn = (Colors: ThemeColors, insets: EdgeInsets) =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     scroll: {
       paddingHorizontal: 16,
     },
-    // Section
     section: {
       marginTop: 24,
     },
@@ -299,27 +427,24 @@ const stylesFn = (Colors: ThemeColors, insets: EdgeInsets) =>
       borderRadius: 14,
       overflow: "hidden",
     },
-    // Row
     row: {
       flexDirection: "row",
       alignItems: "center",
       paddingHorizontal: 14,
-      paddingVertical: 16,
+      paddingVertical: 14,
       gap: 12,
     },
     rowDisabled: {
       opacity: 0.35,
     },
-    rowIconWrap: {
-      width: 32,
-      height: 32,
-      borderRadius: 8,
-      alignItems: "center",
-      justifyContent: "center",
-    },
     rowLabel: {
       flex: 1,
       fontSize: 15,
+    },
+    rowDescription: {
+      fontSize: 12,
+      marginTop: 1,
+      lineHeight: 16,
     },
     rowRight: {
       flexDirection: "row",
@@ -328,35 +453,17 @@ const stylesFn = (Colors: ThemeColors, insets: EdgeInsets) =>
     },
     rowRightLabel: {
       fontSize: 14,
-      color: Colors.textSecondary,
     },
-    // Inline row (for embedded controls)
-    inlineRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingHorizontal: 14,
-      paddingVertical: 8,
-      gap: 12,
-    },
-    inlineRowLeft: {
-      flex: 1,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 12,
-    },
-    // Divider
     divider: {
       height: StyleSheet.hairlineWidth,
       backgroundColor: Colors.border,
-      marginHorizontal: 16,
+      marginLeft: 44,
+      marginRight: 16,
     },
-    // Footer
     version: {
-      paddingTop: 8,
-      paddingBottom: Math.max(16, insets.bottom),
       textAlign: "center",
       fontSize: 12,
       color: Colors.textSecondary,
-      opacity: 0.5,
+      opacity: 0.8,
     },
   });

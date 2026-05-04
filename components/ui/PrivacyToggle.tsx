@@ -7,11 +7,11 @@ import { privacyLabels } from "../../util/privacyLabels";
 import { StyleType } from "../../types";
 
 interface PrivacyToggleProps {
-  value: boolean,
-  onChange?: (value: boolean)=>void;
+  value: boolean;
+  onChange?: (value: boolean) => void;
   style?: StyleType;
   gender?: string;
-  labelAdditional?: string,
+  disabled?: boolean;
 }
 
 const PrivacyToggle = ({
@@ -19,7 +19,7 @@ const PrivacyToggle = ({
   onChange,
   style,
   gender,
-  labelAdditional,
+  disabled,
 }: PrivacyToggleProps) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -29,8 +29,8 @@ const PrivacyToggle = ({
 
   return (
     <Pressable
-      style={[styles.row, style]}
-      disabled={!onChange}
+      style={[styles.row, style, disabled && styles.disabled]}
+      disabled={!onChange || disabled}
       onPress={() => onChange && onChange(!value)}
     >
       <View style={[styles.left, onChange && { flex: 1 }]}>
@@ -43,7 +43,6 @@ const PrivacyToggle = ({
         </View>
         <View>
           <Text style={styles.label}>
-            {labelAdditional}
             {value ? labels.private : labels.public}
           </Text>
           <Text style={styles.desc}>
@@ -57,6 +56,7 @@ const PrivacyToggle = ({
           onValueChange={onChange}
           trackColor={{ false: Colors.border, true: Colors.main100 }}
           thumbColor={Colors.primary100}
+          disabled={disabled}
         />
       )}
     </Pressable>
@@ -98,4 +98,8 @@ const stylesFn = (Colors: ThemeColors) =>
       color: Colors.textSecondary,
       marginTop: 1,
     },
+    disabled: {
+      opacity: 0.35,
+    }
+
   });
