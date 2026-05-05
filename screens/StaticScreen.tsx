@@ -27,7 +27,7 @@ const StaticScreen = () => {
 
   const slugs: Record<string, string> = {
     Privacy: "privacy",
-    Terms: "cookie",
+    Terms: "terms",
   };
 
   const { data, isLoading } = useQuery({

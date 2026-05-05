@@ -37,6 +37,8 @@
   "section_privacy": "Privacy",
   "sections": "Sections",
   "serer_error": "Service unavailable",
+  "settings_section_account": "Account",
+  "settings_section_privacy": "Privacy & Security",
   "tap_map_to_change": "Tap on the map to change location",
   "uncheck_requires_delete": "",
   "user_statistics": "Participant statistics",

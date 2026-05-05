@@ -366,6 +366,6 @@ const stylesFn = (Colors: ThemeColors) =>
       textAlign: "center",
       fontSize: 12,
       color: Colors.textSecondary,
-      opacity: 0.8,
+      opacity: 0.5,
     },
   });
