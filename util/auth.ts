@@ -41,6 +41,7 @@ export const CreateUser = async (email: string, password: string, username: stri
     username,
     password1: password,
     password2: password,
+    agree_terms: true,
   });
   logEvent(getAnalytics(), "sign_up", { method: "email" });
   return data;
@@ -87,13 +88,15 @@ export const LoginWithGoogle = async () => {
   const accessToken = tokens.accessToken;
   if (!idToken || !accessToken) throw new Error("Google: missing tokens");
 
-  const { access, refresh } = await post("/auth/google/", {
+  const { access, refresh, is_new_user } = await post("/auth/google/", {
     access_token: accessToken,
     id_token: idToken,
+    agree_terms: true,
   });
 
-  await saveTokens({ access, refresh });
-  logEvent(getAnalytics(), "login", { method: "google" });
+  await saveTokens({ access, refresh});
+  const eventName = is_new_user ? "sign_up" : "login";
+  logEvent(getAnalytics(), eventName as string, { method: "google" });
   return access;
 };
 
@@ -108,14 +111,16 @@ export const LoginWithApple = async () => {
   const { identityToken, fullName } = credential;
   if (!identityToken) throw new Error("Apple: no identity_token");
 
-  const { access, refresh } = await post("/auth/apple/", {
+  const { access, refresh, is_new_user } = await post("/auth/apple/", {
     access_token: identityToken,
     id_token: identityToken,
     first_name: fullName?.givenName ?? "",
     last_name: fullName?.familyName ?? "",
+    agree_terms: true,
   });
 
   await saveTokens({ access, refresh });
-  logEvent(getAnalytics(), "login", { method: "apple" });
+  const eventName = is_new_user ? "sign_up" : "login";
+  logEvent(getAnalytics(), eventName as string, { method: "apple" });
   return access;
 };
