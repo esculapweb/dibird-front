@@ -78,6 +78,7 @@ const stylesFn = (Colors: ThemeColors, insets: EdgeInsets) =>
   StyleSheet.create({
     base: {
       paddingHorizontal: H_PAD,
+      paddingTop: H_PAD,
     },
     content: {
       paddingBottom: insets.bottom + 24,

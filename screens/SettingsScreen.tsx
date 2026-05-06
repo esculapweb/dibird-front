@@ -175,7 +175,7 @@ const SettingsScreen = () => {
   };
 
   const handleFeedback = () => {
-    Linking.openURL(`mailto:${Config.email}`);
+    Linking.openURL(`mailto:${Config.email}?subject=Support%20Request%20-%20[DiBird]`);
   };
 
   useLayoutEffect(() => {
