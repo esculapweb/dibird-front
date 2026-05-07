@@ -5,7 +5,6 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { formatDateFilterMain } from "../../util/helpers";
-import BackgroundScene from "../ui/BackgroundScene";
 import { AppDrawerNavigationProp, Filters, TerritoryDropdownItem } from "../../types";
 
 const H_PAD = 16;
@@ -20,7 +19,6 @@ const FloatingNavbar = ({ onPress, filters, country }: { onPress: () => void; fi
 
   return (
     <View style={styles.navbarAbsolute}>
-      <BackgroundScene />
       <View style={[styles.navbar, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity
           onPress={() => navigation.openDrawer()}

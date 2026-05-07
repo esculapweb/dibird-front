@@ -26,7 +26,9 @@
       "bundleIdentifier": "com.dibird.app",
       "supportsTablet": true,
       "requireFullScreen": true,
-      "associatedDomains": ["applinks:dibird.com"],
+      "associatedDomains": [
+        "applinks:dibird.com"
+      ],
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSFaceIDUsageDescription": "Used to sign in to DiBird using Face ID.",
@@ -80,7 +82,10 @@
               "pathPrefix": "/users/"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -112,7 +117,8 @@
       ],
       "./plugins/withLocationStrings",
       "./plugins/withModularHeaders",
-      "@react-native-firebase/app"
+      "@react-native-firebase/app",
+      "expo-font"
     ],
     "extra": {
       "eas": {

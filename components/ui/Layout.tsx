@@ -1,13 +1,9 @@
 import { ReactNode } from "react";
-import {
-  View,
-  ScrollView,
-  StyleSheet,
-} from "react-native";
+import { View, ScrollView, StyleSheet } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
-import BackgroundScene from "./BackgroundScene";
+import BackgroundScene2 from "./BackgroundScene2";
 import { StyleType } from "../../types";
 
 interface LayoutProps {
@@ -18,6 +14,7 @@ interface LayoutProps {
   withScroll?: boolean;
   style?: StyleType;
   contentContainerStyle?: StyleType;
+  hideBackground?: boolean;
 }
 
 const Layout = ({
@@ -28,13 +25,14 @@ const Layout = ({
   withScroll = false,
   style,
   contentContainerStyle,
+  hideBackground = false,
 }: LayoutProps) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
 
   return (
     <View style={styles.container}>
-      <BackgroundScene />
+      {!hideBackground && <BackgroundScene2 />}
       {withKeyboard ? (
         <KeyboardAwareScrollView
           contentContainerStyle={styles.kyeboardAware}
