@@ -8,7 +8,6 @@
       "developmentClient": true,
       "distribution": "internal",
       "ios": {
-        "simulator": true,
         "resourceClass": "medium"
       },
       "android": {
@@ -22,6 +21,10 @@
         "SENTRY_PROJECT": "react-native"
       },
       "channel": "development"
+    },
+    "development-simulator": {
+      "extends": "development", 
+      "ios": { "simulator": true, "resourceClass": "medium" }
     },
     "preview": {
       "distribution": "internal",
@@ -42,6 +45,7 @@
     },
     "production": {
       "autoIncrement": true,
+      "distribution": "store",
       "ios": {
         "resourceClass": "medium"
       },
@@ -56,6 +60,15 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "dibird.com@gmail.com",
+        // "ascAppId": "1234567890" // из App Store Connect → App → General → Apple ID
+      },
+      "android": {
+        // "serviceAccountKeyPath": "./google-service-account.json",
+        "track": "internal" // internal → alpha → beta → production
+      }
+    }
   }
 }
