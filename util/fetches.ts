@@ -18,8 +18,18 @@ import {
   PlaceItem,
   BirdOfTheDayType,
   ActivityResponse,
-  DiaryListItem
+  DiaryListItem,
+  GdprExport,
 } from "../types";
+
+export const exportProfileData = async (): Promise<void> => {
+  await api.post(`/myapi/gdpr/`);
+};
+
+export const pollExportStatus = async () => {
+  const res = await api.get<GdprExport>("/myapi/gdpr/status/");
+  return res.data;
+};
 
 export const fetchTimezones = async () => {
   const res = await api.get<[string, string][]>("/api/timezones2/");
@@ -151,7 +161,9 @@ export const fetchMyActivity = async (filters: Filters) => {
     ...(filters?.new && { new: true }),
   };
 
-  const res = await api.get<ActivityResponse>("/myapi/observation2/activity/", { params });
+  const res = await api.get<ActivityResponse>("/myapi/observation2/activity/", {
+    params,
+  });
 
   return res.data;
 };
@@ -171,7 +183,9 @@ export const fetchBirdOfDay = async (territory: number | null) => {
     territory: territory,
   };
 
-  const res = await api.get<BirdOfTheDayType>("/myapi/bird-of-day2/today/", { params });
+  const res = await api.get<BirdOfTheDayType>("/myapi/bird-of-day2/today/", {
+    params,
+  });
   return res.data;
 };
 
@@ -338,7 +352,7 @@ export const fetchRatingCompareHeader = async (
 export const fetchRatingCompare = (
   filters: Filters,
   order: string | null = "ioc_id",
-  search?: string ,
+  search?: string,
   page?: number,
 ) => {
   filters = { ...filters };

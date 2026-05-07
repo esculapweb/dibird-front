@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -33,6 +33,7 @@ import {
 } from "../types";
 import { Config } from "../constants/config";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
+import { useExportProfile } from "../hooks/Profile/useExportProfile";
 
 // ------------------------------------------------------------------
 // Primitives
@@ -130,6 +131,7 @@ const SettingsScreen = () => {
   const { profile } = useProfile();
   const navigation = useNavigation<AppDrawerNavigationProp>();
   const rootNavigation = useNavigation<RootStackNavigationProp>();
+  const { state: exportState, triggerExport, cleanup } = useExportProfile();
 
   const version = Constants.expoConfig?.version ?? "—";
   const build =
@@ -175,9 +177,12 @@ const SettingsScreen = () => {
   };
 
   const handleFeedback = () => {
-    const emailUrl = `mailto:${encodeURIComponent(Config.email)}?subject=${encodeURIComponent('Support Request - [DiBird]')}`;
+    const emailUrl = `mailto:${encodeURIComponent(Config.email)}?subject=${encodeURIComponent("Support Request - [DiBird]")}`;
     Linking.openURL(emailUrl);
   };
+
+  const isExporting = exportState === "pending" || exportState === "processing";
+  useEffect(() => () => cleanup(), []);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -255,8 +260,18 @@ const SettingsScreen = () => {
       >
         <Row
           icon="download-outline"
-          label={t("export_data")}
-          disabled
+          label={
+            isExporting
+              ? t("export_data_in_progress") 
+              : exportState === "completed"
+                ? t("export_data_done") 
+                : exportState === "failed"
+                  ? t("export_data_failed") 
+                  : t("export_data")
+          }
+          onPress={isExporting ? undefined : triggerExport}
+          disabled={isExporting}
+          hideChevron
           colors={Colors}
           styles={styles}
         />

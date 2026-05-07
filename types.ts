@@ -90,6 +90,17 @@ export interface CredentialsValidation {
   confirmPassword: boolean;
 }
 
+export type ExportStatus = "idle" | "pending" | "processing" | "completed" | "failed" | "expired" 
+
+export interface GdprExport {
+  id: number;
+  status: ExportStatus;
+  download_token?: string;
+  created_at: string;
+  downloaded_at: string;
+  expires_at: string;
+}
+
 interface UserData {
   username: string;
   first_name: string;
