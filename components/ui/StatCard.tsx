@@ -31,7 +31,7 @@ const stylesFn = (Colors: ThemeColors) =>
       borderWidth: 0.5,
       borderColor: Colors.border,
       paddingVertical: 14,
-      paddingHorizontal: 4,
+      paddingHorizontal: 2,
       alignItems: "center",
     },
     statNum: {

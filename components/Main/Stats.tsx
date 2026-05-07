@@ -62,7 +62,7 @@ export default Stats;
 const styles = StyleSheet.create({
   statsRow: {
     flexDirection: "row",
-    gap: 6,
+    gap: 3,
     paddingHorizontal: H_PAD,
     paddingBottom: 12,
   },
