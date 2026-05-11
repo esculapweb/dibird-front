@@ -88,11 +88,6 @@ const StatScreen = () => {
     }
   }, []);
 
-  const handleModeChange = useCallback(() => {
-    const targetRoute = route.name === "Checklist" ? "Stat" : "Checklist";
-    navigation.replace(targetRoute);
-  }, [navigation, route.name]);
-
   const handleOpenFilterModal = useCallback((fn: () => void) => {
     openFilterModalRef.current = fn;
   }, []);
@@ -226,17 +221,6 @@ const StatScreen = () => {
     [seenMode, handleStatCardPress, viewMode],
   );
 
-  const headerRightBeginning = useMemo(
-    () => [
-      {
-        condition: !!handleModeChange,
-        onPress: handleModeChange,
-        icon: config.iconOpposite,
-      },
-    ],
-    [handleModeChange, config.iconOpposite],
-  );
-
   const handleShare = useCallback(async () => {
     if (!profile?.user) return;
 
@@ -293,7 +277,6 @@ const StatScreen = () => {
         onFiltersChange={async (val) => setCurrentFilters(val)}
         onSortChange={async (val) => setCurrentSort(val)}
         allowSort={config.allowSort}
-        headerRightBeginning={headerRightBeginning}
         handleSharePress={viewMode === "stats" ? handleShare : undefined}
         onOpenFilterModal={handleOpenFilterModal}
         bottomEl={

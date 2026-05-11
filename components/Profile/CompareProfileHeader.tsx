@@ -1,28 +1,45 @@
 // CompareProfileHeader.js
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useNavigation } from "@react-navigation/native";
+
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import ProfileAvatar from "./ProfileAvatar";
 import { useProfileDisplay } from "../../hooks/Profile/useProfileDisplay";
 import { RatingCompareProfile, RatingCompareProfileCounts } from "../../types";
+import { AppStackNavigationProp } from "../../types";
 
 const ProfileColumn = ({
   profile,
+  myProfileId,
   color,
 }: {
   profile: RatingCompareProfile & { count: number };
+  myProfileId: number | null | undefined;
   color: string;
 }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
+  const navigation = useNavigation<AppStackNavigationProp>();
   const { shortName } = useProfileDisplay({
     firstName: profile.first_name,
     lastName: profile.last_name,
     username: profile.username,
   });
 
+  const handlePressProfile = (profileId: number) => {
+    if (profileId === myProfileId) {
+      navigation.navigate("Stat");
+    } else {
+      navigation.navigate("UserStat", { profileId: profileId });
+    }
+  };
+
   return (
-    <View style={styles.profileCol}>
+    <Pressable
+      style={styles.profileCol}
+      onPress={() => handlePressProfile(profile.user_id)}
+    >
       <View style={styles.avatarWrap}>
         <ProfileAvatar
           avatar={profile.avatar}
@@ -37,14 +54,16 @@ const ProfileColumn = ({
         {shortName}
       </Text>
       <Text style={[styles.profileCount, { color }]}>{profile.count}</Text>
-    </View>
+    </Pressable>
   );
 };
 
 const CompareProfileHeader = ({
+  myProfileId,
   profileData,
   counts,
 }: {
+  myProfileId: number | null | undefined;
   profileData: RatingCompareProfile[];
   counts: RatingCompareProfileCounts;
 }) => {
@@ -61,7 +80,11 @@ const CompareProfileHeader = ({
 
   return (
     <View style={styles.container}>
-      <ProfileColumn profile={profiles[0]} color={Colors.compareP1} />
+      <ProfileColumn
+        profile={profiles[0]}
+        myProfileId={myProfileId}
+        color={Colors.compareP1}
+      />
 
       <View style={styles.centerCol}>
         <Text style={styles.centerLabel}>{t("common_gent")}</Text>
@@ -71,7 +94,11 @@ const CompareProfileHeader = ({
         </Text>
       </View>
 
-      <ProfileColumn profile={profiles[1]} color={Colors.compareP2} />
+      <ProfileColumn
+        profile={profiles[1]}
+        myProfileId={myProfileId}
+        color={Colors.compareP2}
+      />
     </View>
   );
 };

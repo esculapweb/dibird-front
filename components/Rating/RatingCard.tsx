@@ -47,7 +47,7 @@ const RatingCard = ({
 
   const handlePress = () => {
     if (profile?.user === item.profile_id) {
-      navigation.navigate("Stat", { backTitle: t("rating") });
+      navigation.navigate("Stat");
     } else {
       navigation.navigate("UserStat", { profileId: item.profile_id });
     }

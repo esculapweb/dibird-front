@@ -192,7 +192,7 @@ const PlaceDetailScreen = () => {
         </View>
       </View>
 
-      <Map currentCoords={[lng, lat]} mapHeight={440} showCoords={true} />
+      <Map currentCoords={[lng, lat]} mapHeight={410} showCoords={true} />
 
       <View style={styles.statsRow}>
         <StatCard

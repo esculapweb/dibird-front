@@ -121,6 +121,7 @@ export const usePlaceLocation = () => {
   );
 
   const locateMe = useCallback(async () => {
+    // TODO - check
     if (permissionStatus === "denied") {
       handleLocationUnavailable();
       return;

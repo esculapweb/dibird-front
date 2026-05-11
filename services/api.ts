@@ -172,14 +172,7 @@ export const getRefreshToken = async () => {
 };
 
 const refreshAccessToken = async () => {
-  let refresh: string | null = null;
-
-  try {
-    refresh = await getRefreshToken();
-  } catch {
-    throw new Error("Biometric authentication failed or cancelled");
-  }
-
+  const refresh = await getRefreshToken();
   if (!refresh) throw new Error("No refresh token");
 
   const res = await axios.post(`${Config.baseUrl}/api-auth/token/refresh/`, {
@@ -267,14 +260,10 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (e) {
         const axiosError = e as AxiosError;
-        const isBioError = (e as Error)?.message?.includes("Biometric");
-
-        if (!isBioError) {
-          await clearTokens();
-          const status = axiosError?.response?.status;
-          if (status === 401 || status === 400) {
-            onUnauthorizedCallback?.();
-          }
+        await clearTokens();
+        const status = axiosError?.response?.status;
+        if (status === 401 || status === 400) {
+          onUnauthorizedCallback?.();
         }
         return Promise.reject(createTranslatedError(axiosError));
       }

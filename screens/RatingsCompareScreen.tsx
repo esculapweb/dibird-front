@@ -73,6 +73,7 @@ const RatingsCompareScreen = () => {
 
   const topEl = (
     <CompareProfileHeader
+      myProfileId={profile?.user}
       profileData={headerData?.profile_data}
       counts={headerData?.counts}
     />
