@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useCallback,
+  useRef,
   ReactNode,
 } from "react";
 import { AppState } from "react-native";
@@ -12,9 +13,7 @@ import { getAnalytics, setUserId } from "@react-native-firebase/analytics";
 
 import api from "../services/api";
 import { initGlobalFilters } from "../util/storageHelper";
-import { AppError, Profile} from "../types";
-
-
+import { AppError, Profile } from "../types";
 
 interface ProfileContextType {
   profile: Profile | null;
@@ -68,7 +67,10 @@ export const ProfileProvider = ({
   const [profileLoading, setProfileLoading] = useState(true);
   const url = "/myapi/profile/me/";
 
+  const lastRefreshRef = useRef<number>(0);
+
   const refreshProfile = useCallback(async () => {
+    lastRefreshRef.current = Date.now();
     try {
       setProfileLoading(true);
       setError(null);
@@ -117,14 +119,36 @@ export const ProfileProvider = ({
     updateAnalytics();
   }, [isAuthenticated]);
 
+  const isAuthenticatedRef = useRef(isAuthenticated);
   useEffect(() => {
+    isAuthenticatedRef.current = isAuthenticated;
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+    let prevState = AppState.currentState;
+
     const sub = AppState.addEventListener("change", (state) => {
-      if (state === "active" && isAuthenticated) {
-        refreshProfile();
+      const wasBackground =
+        prevState === "background" || prevState === "inactive";
+      prevState = state;
+
+      if (state === "active" && wasBackground && isAuthenticatedRef.current) {
+        if (timeout) clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          const secsSinceRefresh = (Date.now() - lastRefreshRef.current) / 1000;
+          if (secsSinceRefresh > 10) {
+            refreshProfile();
+          }
+        }, 500);
       }
     });
-    return () => sub.remove();
-  }, [isAuthenticated, refreshProfile]);
+
+    return () => {
+      sub.remove();
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [refreshProfile]);
 
   return (
     <ProfileContext.Provider

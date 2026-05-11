@@ -2,11 +2,10 @@ import axios, { AxiosError } from "axios";
 import * as SecureStore from "expo-secure-store";
 import i18n from "./i18n";
 import Toast from "react-native-toast-message";
-import * as Sentry from '@sentry/react-native';
+import * as Sentry from "@sentry/react-native";
 
 import { Config } from "../constants/config";
 import { notifyTokenUpdate } from "./authService";
-import { canUseBiometrics } from "./bio";
 import { AppError } from "../types";
 
 let onUnauthorizedCallback: (() => void) | null = null;
@@ -81,7 +80,12 @@ const normalizeApiError = (error: AxiosError): AxiosError & AppError => {
   };
 };
 
-export const mapErrorToToast = (e: AppError, extractApiErrorFn: ((error: AppError) => { title: string; message: string }) | null = null) => {
+export const mapErrorToToast = (
+  e: AppError,
+  extractApiErrorFn:
+    | ((error: AppError) => { title: string; message: string })
+    | null = null,
+) => {
   if (e.code === API_ERROR.TIMEOUT)
     return {
       title: i18n.t("connection_timeout"),
@@ -111,7 +115,12 @@ export const mapErrorToToast = (e: AppError, extractApiErrorFn: ((error: AppErro
   };
 };
 
-export const showError = (e: AppError, extractApiErrorFn?: ((e: AppError) => { title: string; message: string }) | null) => {
+export const showError = (
+  e: AppError,
+  extractApiErrorFn?:
+    | ((e: AppError) => { title: string; message: string })
+    | null,
+) => {
   const { title, message } = mapErrorToToast(e, extractApiErrorFn);
   Toast.show({
     type: "error",
@@ -153,12 +162,24 @@ export const getAccessToken = () => {
   return SecureStore.getItemAsync("access");
 };
 
-export const getRefreshToken = () => {
-  return SecureStore.getItemAsync("refresh");
+let cachedRefreshToken: string | null = null;
+
+export const getRefreshToken = async () => {
+  if (cachedRefreshToken) return cachedRefreshToken;
+  const token = await SecureStore.getItemAsync("refresh");
+  if (token) cachedRefreshToken = token;
+  return token;
 };
 
 const refreshAccessToken = async () => {
-  const refresh = await getRefreshToken();
+  let refresh: string | null = null;
+
+  try {
+    refresh = await getRefreshToken();
+  } catch {
+    throw new Error("Biometric authentication failed or cancelled");
+  }
+
   if (!refresh) throw new Error("No refresh token");
 
   const res = await axios.post(`${Config.baseUrl}/api-auth/token/refresh/`, {
@@ -169,21 +190,25 @@ const refreshAccessToken = async () => {
   return res.data.access;
 };
 
-export const saveTokens = async ({ access, refresh }: { access?: string; refresh?: string }) => {
-
+export const saveTokens = async ({
+  access,
+  refresh,
+}: {
+  access?: string;
+  refresh?: string;
+}) => {
   if (access) {
     await SecureStore.setItemAsync("access", access);
     notifyTokenUpdate(access);
   }
-
   if (refresh) {
-    await SecureStore.setItemAsync("refresh", refresh, {
-      requireAuthentication: await canUseBiometrics(),
-    });
+    cachedRefreshToken = refresh;
+    await SecureStore.setItemAsync("refresh", refresh);
   }
 };
 
 export const clearTokens = async () => {
+  cachedRefreshToken = null; // сбрасываем кэш
   await SecureStore.deleteItemAsync("access");
   await SecureStore.deleteItemAsync("refresh");
 };
@@ -191,7 +216,7 @@ export const clearTokens = async () => {
 api.interceptors.request.use(
   async (config) => {
     if (!config.url) return config;
-    
+
     const lang = i18n.language || "en";
     const token = await getAccessToken();
 
@@ -227,23 +252,29 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        if (!isRefreshing) {
-          isRefreshing = true;
-          refreshPromise = refreshAccessToken().finally(() => {
-            isRefreshing = false;
-            refreshPromise = null;
-          });
-        }
+        const newAccess = await (() => {
+          if (!isRefreshing) {
+            isRefreshing = true;
+            refreshPromise = refreshAccessToken().finally(() => {
+              isRefreshing = false;
+              refreshPromise = null;
+            });
+          }
+          return refreshPromise!;
+        })();
 
-        const newAccess = await refreshPromise;
         originalRequest.headers.Authorization = `Bearer ${newAccess}`;
         return api(originalRequest);
       } catch (e) {
-        await clearTokens();
         const axiosError = e as AxiosError;
-        const status = axiosError?.response?.status;
-        if (status === 401 || status === 400) {
-          onUnauthorizedCallback?.();
+        const isBioError = (e as Error)?.message?.includes("Biometric");
+
+        if (!isBioError) {
+          await clearTokens();
+          const status = axiosError?.response?.status;
+          if (status === 401 || status === 400) {
+            onUnauthorizedCallback?.();
+          }
         }
         return Promise.reject(createTranslatedError(axiosError));
       }

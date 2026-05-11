@@ -35,7 +35,11 @@ export const Login = async (email: string, password: string) => {
   return access;
 };
 
-export const CreateUser = async (email: string, password: string, username: string) => {
+export const CreateUser = async (
+  email: string,
+  password: string,
+  username: string,
+) => {
   const data = await post("/api-auth/registration/", {
     email,
     username,
@@ -49,14 +53,22 @@ export const CreateUser = async (email: string, password: string, username: stri
 
 export const Logout = async (onLogoutCallback: () => void) => {
   try {
-    const refresh = await getRefreshToken();
+    let refresh: string | null = null;
+    try {
+      refresh = await getRefreshToken();
+    } catch {}
+
     if (refresh) {
       try {
         await api.post("/api-auth/logout/", { refresh });
       } catch (e) {
         const err = e as AppError;
         if (err.response?.status !== 401)
-          console.warn("Logout request failed", err.response?.status, err.message);
+          console.warn(
+            "Logout request failed",
+            err.response?.status,
+            err.message,
+          );
       }
     }
   } finally {
@@ -94,7 +106,7 @@ export const LoginWithGoogle = async () => {
     agree_terms: true,
   });
 
-  await saveTokens({ access, refresh});
+  await saveTokens({ access, refresh });
   const eventName = is_new_user ? "sign_up" : "login";
   logEvent(getAnalytics(), eventName as string, { method: "google" });
   return access;
