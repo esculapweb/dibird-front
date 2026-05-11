@@ -21,6 +21,7 @@ export const DarkColors = {
   // accent: "#2DD4BF",
   green: "#1FA14F",
   yellow: "#F0C24B",
+  star: "#E8D8B0",
 
   primary100: "#1b1b1b",
   primary200: "#1e293b",

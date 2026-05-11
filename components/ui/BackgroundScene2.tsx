@@ -1,125 +1,169 @@
+import { useState } from "react";
 import { View, Dimensions } from "react-native";
-import Svg, { Path, Polygon, Circle, Ellipse } from "react-native-svg";
+import Svg, { Path, Circle } from "react-native-svg";
 import { useTheme } from "../../store/theme-context";
 
-const { width, height } = Dimensions.get("screen");
-
 const BackgroundScene2 = () => {
-  const { isDark } = useTheme();
+  const { isDark, Colors } = useTheme();
+  const [size, setSize] = useState(() => {
+    const { width, height } = Dimensions.get("window");
+    return { width, height };
+  });
 
-  const W = width;
-  const H = height;
+  const W = size.width;
+  const H = size.height;
 
-  const glowAmber = isDark ? "#F0C24B" : "#1d9e75";
-  const treeColor = isDark ? "#F0C24B" : "#1d9e75";
-  const starColor = "#E8D8B0";
-  const birdColor = isDark ? "#F0C24B" : "#1d9e75";
+  // Три слоя холмов — дальний, средний, ближний
+  const hillsFar = `
+    M0,${H}
+    L0,${H * 0.82}
+    Q${W * 0.25},${H * 0.68} ${W * 0.5},${H * 0.74}
+    Q${W * 0.75},${H * 0.8} ${W},${H * 0.72}
+    L${W},${H}
+    Z
+  `;
 
-  const trees = `
-  0,${H}
-  0,${H * 0.75}
-  ${W * 0.05},${H * 0.6}
-  ${W * 0.1},${H * 0.72}
-  ${W * 0.15},${H * 0.55}
-  ${W * 0.2},${H * 0.68}
-  ${W * 0.26},${H * 0.52}
-  ${W * 0.31},${H * 0.65}
-  ${W * 0.37},${H * 0.57}
-  ${W * 0.43},${H * 0.7}
-  ${W * 0.5},${H * 0.53}
-  ${W * 0.57},${H * 0.68}
-  ${W * 0.63},${H * 0.56}
-  ${W * 0.69},${H * 0.65}
-  ${W * 0.74},${H * 0.51}
-  ${W * 0.8},${H * 0.63}
-  ${W * 0.86},${H * 0.55}
-  ${W * 0.92},${H * 0.67}
-  ${W},${H * 0.6}
-  ${W},${H}
-`.replace(/\n\s+/g, " ").trim();
+  const hillsMid = `
+    M0,${H}
+    L0,${H * 0.88}
+    Q${W * 0.2},${H * 0.76} ${W * 0.45},${H * 0.82}
+    Q${W * 0.72},${H * 0.88} ${W},${H * 0.79}
+    L${W},${H}
+    Z
+  `;
 
-  const treesFar = `
-  0,${H}
-  0,${H * 0.8}
-  ${W * 0.08},${H * 0.7}
-  ${W * 0.16},${H * 0.78}
-  ${W * 0.25},${H * 0.67}
-  ${W * 0.34},${H * 0.75}
-  ${W * 0.43},${H * 0.69}
-  ${W * 0.52},${H * 0.76}
-  ${W * 0.61},${H * 0.68}
-  ${W * 0.7},${H * 0.74}
-  ${W * 0.79},${H * 0.67}
-  ${W * 0.88},${H * 0.73}
-  ${W},${H * 0.68}
-  ${W},${H}
-`.replace(/\n\s+/g, " ").trim();
+  const hillsNear = `
+    M0,${H}
+    L0,${H * 0.93}
+    Q${W * 0.3},${H * 0.84} ${W * 0.6},${H * 0.89}
+    Q${W * 0.82},${H * 0.93} ${W},${H * 0.87}
+    L${W},${H}
+    Z
+  `;
 
   return (
     <View
       style={{ position: "absolute", top: 0, bottom: 0, left: 0, right: 0 }}
       pointerEvents="none"
+      onLayout={(e) => {
+        const { width, height } = e.nativeEvent.layout;
+        setSize({ width, height });
+      }}
     >
       <Svg
-        style={{ position: "absolute", top: 0, left: 0, width: W, height: H }}
+        style={{ position: "absolute", top: 0, left: 0 }}
+        width={W}
+        height={H}
         viewBox={`0 0 ${W} ${H}`}
       >
-        {/* Свечение горизонта */}
-        <Ellipse
-          cx={W / 2} cy={H * 0.72}
-          rx={W * 0.9} ry={H * 0.18}
-          fill={glowAmber}
-          opacity={isDark ? 0.08 : 0.08}
-        />
-        <Ellipse
-          cx={W / 2} cy={H * 0.75}
-          rx={W * 0.6} ry={H * 0.1}
-          fill={glowAmber}
-          opacity={isDark ? 0.08 : 0.08}
-        />
-
-        {/* Звёзды */}
+        {/* Звёзды — равномерно по всей высоте до холмов */}
         {[
-          [0.08, 0.06], [0.18, 0.04], [0.30, 0.09], [0.42, 0.03],
-          [0.55, 0.07], [0.65, 0.02], [0.75, 0.08], [0.88, 0.05],
-          [0.12, 0.15], [0.35, 0.18], [0.60, 0.13], [0.80, 0.16],
-          [0.22, 0.24], [0.50, 0.22], [0.70, 0.20], [0.92, 0.18],
+          // верхняя зона (как было)
+          [0.08, 0.06],
+          [0.18, 0.04],
+          [0.3, 0.09],
+          [0.42, 0.03],
+          [0.55, 0.07],
+          [0.65, 0.02],
+          [0.75, 0.08],
+          [0.88, 0.05],
+          // средняя зона
+          [0.12, 0.18],
+          [0.35, 0.22],
+          [0.6, 0.16],
+          [0.8, 0.2],
+          [0.05, 0.3],
+          [0.28, 0.35],
+          [0.5, 0.28],
+          [0.72, 0.33],
+          [0.9, 0.27],
+          [0.15, 0.42],
+          [0.45, 0.4],
+          [0.68, 0.45],
+          // ближе к холмам (мельче и тусклее)
+          [0.22, 0.52],
+          [0.58, 0.55],
+          [0.85, 0.5],
+          [0.38, 0.6],
         ].map(([fx, fy], i) => (
           <Circle
             key={i}
-            cx={W * fx} cy={H * fy}
-            r={0.9 + (i % 3) * 0.3}
-            fill={starColor}
-            opacity={0.5 + (i % 4) * 0.12}
+            cx={W * fx}
+            cy={H * fy}
+            r={fy > 0.45 ? 0.6 : 0.9 + (i % 3) * 0.3} // мельче к горизонту
+            fill={Colors.star}
+            opacity={
+              fy > 0.45
+                ? 0.2 + (i % 3) * 0.08 // тусклее к горизонту
+                : 0.5 + (i % 4) * 0.12
+            }
           />
         ))}
 
-        {/* Дальний ряд деревьев */}
-        <Polygon points={treesFar} fill={treeColor} opacity={isDark ? 0.03 : 0.05} />
-
-        {/* Ближний ряд деревьев */}
-        <Polygon points={trees} fill={treeColor} opacity={isDark ? 0.06 : 0.08} />
+        {/* Холмы — три слоя глубины */}
+        <Path d={hillsFar} fill={Colors.main100} opacity={isDark ? 0.035 : 0.05} />
+        <Path d={hillsMid} fill={Colors.main100} opacity={isDark ? 0.06 : 0.08} />
+        <Path d={hillsNear} fill={Colors.main100} opacity={isDark ? 0.09 : 0.11} />
 
         {/* Птицы */}
         <Path
           d={`M${W * 0.04} ${H * 0.18} Q${W * 0.07} ${H * 0.15} ${W * 0.1} ${H * 0.18} Q${W * 0.13} ${H * 0.15} ${W * 0.16} ${H * 0.18}`}
-          stroke={birdColor} strokeWidth={1.4} fill="none"
-          opacity={isDark ? 0.3 : 0.25} strokeLinecap="round"
+          stroke={Colors.main100}
+          strokeWidth={1.4}
+          fill="none"
+          opacity={isDark ? 0.3 : 0.25}
+          strokeLinecap="round"
         />
         <Path
           d={`M${W * 0.08} ${H * 0.26} Q${W * 0.1} ${H * 0.24} ${W * 0.12} ${H * 0.26} Q${W * 0.14} ${H * 0.24} ${W * 0.16} ${H * 0.26}`}
-          stroke={birdColor} strokeWidth={1.0} fill="none"
-          opacity={isDark ? 0.25 : 0.18} strokeLinecap="round"
+          stroke={Colors.main100}
+          strokeWidth={1.0}
+          fill="none"
+          opacity={isDark ? 0.25 : 0.18}
+          strokeLinecap="round"
         />
         <Path
           d={`M${W * 0.78} ${H * 0.14} Q${W * 0.81} ${H * 0.11} ${W * 0.84} ${H * 0.14} Q${W * 0.87} ${H * 0.11} ${W * 0.9} ${H * 0.14}`}
-          stroke={birdColor} strokeWidth={1.4} fill="none"
-          opacity={isDark ? 0.23 : 0.16} strokeLinecap="round"
+          stroke={Colors.main100}
+          strokeWidth={1.4}
+          fill="none"
+          opacity={isDark ? 0.23 : 0.16}
+          strokeLinecap="round"
         />
         <Path
           d={`M${W * 0.84} ${H * 0.22} Q${W * 0.86} ${H * 0.2} ${W * 0.88} ${H * 0.22} Q${W * 0.9} ${H * 0.2} ${W * 0.92} ${H * 0.22}`}
-          stroke={birdColor} strokeWidth={1.0} fill="none"
-          opacity={isDark ? 0.2 : 0.15} strokeLinecap="round"
+          stroke={Colors.main100}
+          strokeWidth={1.0}
+          fill="none"
+          opacity={isDark ? 0.2 : 0.15}
+          strokeLinecap="round"
+        />
+        {/* средний ярус — мельче и тусклее */}
+        <Path
+          d={`M${W * 0.6} ${H * 0.38} Q${W * 0.62} ${H * 0.36} ${W * 0.64} ${H * 0.38} Q${W * 0.66} ${H * 0.36} ${W * 0.68} ${H * 0.38}`}
+          stroke={Colors.main100}
+          strokeWidth={0.9}
+          fill="none"
+          opacity={isDark ? 0.16 : 0.12}
+          strokeLinecap="round"
+        />
+        <Path
+          d={`M${W * 0.25} ${H * 0.44} Q${W * 0.27} ${H * 0.42} ${W * 0.29} ${H * 0.44} Q${W * 0.31} ${H * 0.42} ${W * 0.33} ${H * 0.44}`}
+          stroke={Colors.main100}
+          strokeWidth={0.8}
+          fill="none"
+          opacity={isDark ? 0.14 : 0.1}
+          strokeLinecap="round"
+        />
+
+        {/* совсем далёкие — у горизонта */}
+        <Path
+          d={`M${W * 0.5} ${H * 0.58} Q${W * 0.515} ${H * 0.565} ${W * 0.53} ${H * 0.58} Q${W * 0.545} ${H * 0.565} ${W * 0.56} ${H * 0.58}`}
+          stroke={Colors.main100}
+          strokeWidth={0.6}
+          fill="none"
+          opacity={isDark ? 0.1 : 0.08}
+          strokeLinecap="round"
         />
       </Svg>
     </View>
