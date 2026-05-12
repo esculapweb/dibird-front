@@ -40,7 +40,7 @@ export const CreateUser = async (
   password: string,
   username: string,
 ) => {
-  const data = await post("/api-auth/registration/", {
+  const data = await post("/api-auth/registration/?agree_terms=1", {
     email,
     username,
     password1: password,
@@ -75,7 +75,7 @@ export const Logout = async (onLogoutCallback: () => void) => {
     try {
       await GoogleSignin.signOut();
     } catch {}
-    clearTokens();
+    await clearTokens();
     await AsyncStorage.multiRemove(["profile", "filters", "sorting", "global"]);
     if (typeof onLogoutCallback === "function") onLogoutCallback();
   }
@@ -100,10 +100,9 @@ export const LoginWithGoogle = async () => {
   const accessToken = tokens.accessToken;
   if (!idToken || !accessToken) throw new Error("Google: missing tokens");
 
-  const { access, refresh, is_new_user } = await post("/auth/google/", {
+  const { access, refresh, is_new_user } = await post("/auth/google/?agree_terms=1", {
     access_token: accessToken,
     id_token: idToken,
-    agree_terms: true,
   });
 
   await saveTokens({ access, refresh });
@@ -123,12 +122,11 @@ export const LoginWithApple = async () => {
   const { identityToken, fullName } = credential;
   if (!identityToken) throw new Error("Apple: no identity_token");
 
-  const { access, refresh, is_new_user } = await post("/auth/apple/", {
+  const { access, refresh, is_new_user } = await post("/auth/apple/?agree_terms=1", {
     access_token: identityToken,
     id_token: identityToken,
     first_name: fullName?.givenName ?? "",
     last_name: fullName?.familyName ?? "",
-    agree_terms: true,
   });
 
   await saveTokens({ access, refresh });

@@ -83,6 +83,14 @@ const ObservationForm = ({
   } = useLocation();
   const { date } = useFilters();
 
+  useEffect(() => {
+    if (!territoryValue) return;
+    if (permissionStatus === "denied") return;
+    if (locationAvailable) return;
+
+    requestLocation();
+  }, [territoryValue]);
+
   const handleLocationUnavailable = useLocationUnavailable();
 
   const isDiaryCreate = isDiaryMode && !isEditMode;

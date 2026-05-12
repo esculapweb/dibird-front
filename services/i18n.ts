@@ -27,7 +27,6 @@ i18n.use(initReactI18next).init({
     escapeValue: false,
   },
   debug: false,
-  joinArrays: false,
 });
 
 export default i18n;

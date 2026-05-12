@@ -39,18 +39,9 @@ const ConfirmEmailScreen = () => {
 
       if (resp.status === 200) {
         isConfirmedRef.current = true;
-
-        navigation.reset({
-          index: 0,
-          routes: [
-            {
-              name: "Login",
-              params: {
-                emailConfirmed: true,
-                prefillEmail: resp.data?.email || "",
-              },
-            },
-          ],
+        navigation.navigate("Login", {
+          emailConfirmed: true,
+          prefillEmail: resp.data?.email || "",
         });
       } else {
         setError({

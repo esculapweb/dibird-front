@@ -51,13 +51,13 @@ export const sortOptionsList = (screen: string | undefined) => {
         { label: i18n.t("alphabetic_desc"), value: "-name" },
         { label: i18n.t("favourite_asc"), value: "-favourite,name" },
         { label: i18n.t("favourite_desc"), value: "favourite,name" },
-        { label: i18n.t("species_count"), value: "species_count,name" },
         { label: i18n.t("species_count_desc"), value: "-species_count,name" },
-        { label: i18n.t("observation_count"), value: "observation_count,name" },
+        { label: i18n.t("species_count"), value: "species_count,name" },
         {
           label: i18n.t("observation_count_desc"),
           value: "-observation_count,name",
         },
+        { label: i18n.t("observation_count"), value: "observation_count,name" },
       ];
 
     case "PlacesDropdown":

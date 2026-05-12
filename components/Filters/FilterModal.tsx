@@ -53,7 +53,7 @@ const FilterModal = ({
     if (!visible) return;
     if (!allowed.includes("place")) return;
     if (permissionStatus === "denied") return;
-    if (locationAvailable) return; // координаты уже есть
+    if (locationAvailable) return;
 
     requestLocation();
   }, [visible]);

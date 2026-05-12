@@ -82,6 +82,8 @@ const Map = ({
             id="osmTiles"
             tileUrlTemplates={[Config.mapTileUrl]}
             tileSize={256}
+            minZoomLevel={0}
+            maxZoomLevel={19}
           >
             <RasterLayer id="osmLayer" sourceID="osmTiles" />
           </RasterSource>

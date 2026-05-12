@@ -539,11 +539,24 @@ export interface BirdOfTheDayType {
 
 // --- Navigation ---
 
-export type RootStackParamList = {
-  Root: undefined;
+export type StaticScreensParamList = {
   Privacy: undefined;
   Terms: undefined;
 };
+
+export type RootStackParamList = {
+  Root: undefined;
+} & StaticScreensParamList;
+
+// Auth стек
+export type AuthRootParamList = {
+  Root: undefined;
+} & StaticScreensParamList;
+
+// App стек  
+export type AppRootParamList = {
+  Root: undefined;
+} & StaticScreensParamList;
 
 export interface ScreenWithFilters {
   filtersOverride?: Filters;
@@ -629,12 +642,12 @@ export type AppStackNavigationProp =
 
 export type AuthDrawerNavigationProp = CompositeNavigationProp<
   DrawerNavigationProp<AuthDrawerParamList>,
-  NativeStackNavigationProp<RootStackParamList>
+  NativeStackNavigationProp<AuthRootParamList>
 >;
 
 export type AppDrawerNavigationProp = CompositeNavigationProp<
   DrawerNavigationProp<AppDrawerParamList>,
-  NativeStackNavigationProp<AppStackParamList>
+  NativeStackNavigationProp<AppRootParamList>
 >;
 
 // -- Route Props

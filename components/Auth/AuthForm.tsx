@@ -37,7 +37,10 @@ const AuthForm = ({
     confirmPassword: passwordsDontMatch,
   } = credentialsInvalid;
 
-  const updateInputValueHandler = (inputType: inputTypes, enteredValue: string) => {
+  const updateInputValueHandler = (
+    inputType: inputTypes,
+    enteredValue: string,
+  ) => {
     switch (inputType) {
       case "email":
         setEnteredEmail(enteredValue);
@@ -65,14 +68,24 @@ const AuthForm = ({
 
   return (
     <View>
+      {!isLogin && (
+        <Input
+          label={t("username")}
+          onUpdateValue={updateInputValueHandler.bind(this, "userName")}
+          value={enteredUsername}
+          isInvalid={userNameIsInvalid}
+          textContentType="nickname"
+          autoComplete="username"
+        />
+      )}
       <Input
         label={t("email_address")}
         onUpdateValue={updateInputValueHandler.bind(this, "email")}
         value={enteredEmail}
         keyboardType="email-address"
         isInvalid={emailIsInvalid}
-        textContentType="emailAddress"
-        autoComplete="email"
+        textContentType="username"
+        autoComplete="username"
       />
       {isLogin && (
         <Input
@@ -83,19 +96,10 @@ const AuthForm = ({
           isInvalid={passwordIsInvalid}
           textContentType="password"
           autoComplete="current-password"
-          importantForAutofill="yes"
         />
       )}
       {!isLogin && (
         <>
-          <Input
-            label={t("username")}
-            onUpdateValue={updateInputValueHandler.bind(this, "userName")}
-            value={enteredUsername}
-            isInvalid={userNameIsInvalid}
-            textContentType="username"
-            autoComplete="username"
-          />
           <Input
             label={t("password")}
             onUpdateValue={updateInputValueHandler.bind(this, "password")}
@@ -104,7 +108,6 @@ const AuthForm = ({
             isInvalid={passwordIsInvalid}
             textContentType="newPassword"
             autoComplete="new-password"
-            importantForAutofill="yes"
           />
 
           <Input
@@ -118,7 +121,6 @@ const AuthForm = ({
             isInvalid={passwordsDontMatch}
             textContentType="none"
             autoComplete="off"
-            importantForAutofill="no"
           />
         </>
       )}

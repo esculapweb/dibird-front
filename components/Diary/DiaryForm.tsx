@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction } from "react";
+import { Dispatch, SetStateAction, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 import DropdownInput from "../ui/DropdownInput";
@@ -13,7 +13,6 @@ import { useLocation } from "../../store/location-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 import { useLocationUnavailable } from "../../hooks/useLocationUnavailable";
 import { DiaryFormData, PlaceDropdownItem, Errors } from "../../types";
-
 
 interface DiaryFormProps {
   formData: DiaryFormData;
@@ -53,6 +52,14 @@ const DiaryForm = ({
     requestLocation,
   } = useLocation();
 
+  useEffect(() => {
+    if (!territoryValue) return;
+    if (permissionStatus === "denied") return;
+    if (locationAvailable) return;
+
+    requestLocation();
+  }, [territoryValue]);
+
   const handleLocationUnavailable = useLocationUnavailable();
 
   const {
@@ -88,7 +95,10 @@ const DiaryForm = ({
           value={territoryValue}
           setValue={(val) => {
             setTerritoryValue(val as number | null);
-            setFormData((prev) => ({ ...prev, territory: val as number | null }));
+            setFormData((prev) => ({
+              ...prev,
+              territory: val as number | null,
+            }));
             setErrors((prev) => ({ ...prev, territory: undefined }));
             setPlaceValue(null);
           }}

@@ -9,20 +9,17 @@ import {
   Linking,
   Switch,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 
-import api, { clearTokens, showError } from "../services/api";
+import api, { showError } from "../services/api";
 import Layout from "../components/ui/Layout";
 import ConfirmBottomSheet, {
   ConfirmBottomSheetRef,
 } from "../components/ui/ConfirmBottomSheet";
-import { useFilters } from "../store/filters-context";
-import { useQueryClient } from "@tanstack/react-query";
 import { ThemeColors, useTheme } from "../store/theme-context";
 import { useProfile } from "../store/profile-context";
 import { useAuth } from "../store/auth-context";
@@ -162,8 +159,6 @@ const Section = ({ title, children, styles, colors }: SectionProps) => (
 
 const SettingsScreen = () => {
   const headerHeight = useHeaderHeight();
-  const { resetFilters } = useFilters();
-  const queryClient = useQueryClient();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -196,17 +191,9 @@ const SettingsScreen = () => {
     canUseBiometrics().then(setBioAvailable);
   }, []);
 
-  const clearAll = async () => {
-    await clearTokens();
-    await AsyncStorage.multiRemove(["profile", "filters", "sorting", "global"]);
-    await resetFilters();
-    queryClient.clear();
-  };
-
   const handleDeleteConfirmed = async () => {
     const res = await api.delete("/myapi/profile/delete-me/");
     if (res?.status === 204) {
-      await clearAll();
       await logout();
     }
   };

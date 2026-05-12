@@ -28,7 +28,6 @@ interface InputProps {
   placeholder?: string;
   textContentType?: TextInputProps["textContentType"];
   autoComplete?: TextInputProps["autoComplete"];
-  importantForAutofill?: TextInputProps["importantForAutofill"];
 }
 
 const Input = ({
@@ -45,7 +44,6 @@ const Input = ({
   placeholder,
   textContentType,
   autoComplete,
-  importantForAutofill,
 }: InputProps) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -76,7 +74,6 @@ const Input = ({
           placeholderTextColor={Colors.textSecondary}
           textContentType={textContentType}
           autoComplete={autoComplete}
-          importantForAutofill={importantForAutofill}
         />
         {secure && (
           <TouchableOpacity onPress={toggleSecure} style={styles.iconSecure}>

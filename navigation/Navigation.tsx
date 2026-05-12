@@ -17,11 +17,64 @@ import {
 } from "../constants/NavigationTheme";
 import linking from "../linking";
 import StaticScreen from "../screens/StaticScreen";
+import type { AuthRootParamList, AppRootParamList } from "../types";
 
-const RootStack = createNativeStackNavigator();
+const AuthStack = createNativeStackNavigator<AuthRootParamList>();
+const AppStack = createNativeStackNavigator<AppRootParamList>();
+
+const AuthNavigator = () => {
+  const { t } = useTranslation();
+  return (
+    <AuthStack.Navigator
+      id={undefined}
+      screenOptions={{
+        headerShown: false,
+        headerBackButtonDisplayMode: "minimal",
+        headerBackTitle: "",
+      }}
+    >
+      <AuthStack.Screen name="Root" component={AuthDrawer} />
+      <AuthStack.Screen
+        name="Privacy"
+        component={StaticScreen}
+        options={{ headerShown: true, title: t("privacy_policy") }}
+      />
+      <AuthStack.Screen
+        name="Terms"
+        component={StaticScreen}
+        options={{ headerShown: true, title: t("terms_of_service") }}
+      />
+    </AuthStack.Navigator>
+  );
+};
+
+const AppNavigatorWithStatic = () => {
+  const { t } = useTranslation();
+  return (
+    <AppStack.Navigator
+      id={undefined}
+      screenOptions={{
+        headerShown: false,
+        headerBackButtonDisplayMode: "minimal",
+        headerBackTitle: "",
+      }}
+    >
+      <AppStack.Screen name="Root" component={AppNavigator} />
+      <AppStack.Screen
+        name="Privacy"
+        component={StaticScreen}
+        options={{ headerShown: true, title: t("privacy_policy") }}
+      />
+      <AppStack.Screen
+        name="Terms"
+        component={StaticScreen}
+        options={{ headerShown: true, title: t("terms_of_service") }}
+      />
+    </AppStack.Navigator>
+  );
+};
 
 const Navigation = () => {
-  const { t } = useTranslation();
   const { theme } = useTheme();
   const { isAuthenticated } = useAuth();
   const navigationRef =
@@ -30,6 +83,7 @@ const Navigation = () => {
 
   return (
     <NavigationContainer
+      key={isAuthenticated ? "app" : "auth"}
       ref={navigationRef}
       linking={linking(isAuthenticated)}
       theme={theme === "dark" ? DarkNavigationTheme : LightNavigationTheme}
@@ -48,35 +102,7 @@ const Navigation = () => {
         }
       }}
     >
-      <RootStack.Navigator
-        id={undefined}
-        screenOptions={{
-          headerShown: false,
-          headerBackButtonDisplayMode: "minimal",
-          headerBackTitle: "",
-        }}
-      >
-        <RootStack.Screen
-          name="Root"
-          component={isAuthenticated ? AppNavigator : AuthDrawer}
-        />
-        <RootStack.Screen
-          name="Privacy"
-          component={StaticScreen}
-          options={{
-            headerShown: true,
-            title: t("privacy_policy"),
-          }}
-        />
-        <RootStack.Screen
-          name="Terms"
-          component={StaticScreen}
-          options={{
-            headerShown: true,
-            title: t("terms_of_service"),
-          }}
-        />
-      </RootStack.Navigator>
+      {isAuthenticated ? <AppNavigatorWithStatic /> : <AuthNavigator />}
     </NavigationContainer>
   );
 };
