@@ -120,25 +120,42 @@ const ConfirmBottomSheet = forwardRef<
       }
     }, [isConfirmDisabled, onConfirm, onError, data, dismiss]);
 
-    const confirmBg = danger
-      ? Colors.error600
-      : Colors.main100;
+    const confirmBg = danger ? Colors.error600 : Colors.main100;
 
     return (
       <BottomSheetModal
         ref={bottomSheetRef}
         snapPoints={snapPoints}
         enablePanDownToClose
-        keyboardBehavior={Platform.OS === "ios" ? "extend" : "interactive"}
+        keyboardBehavior="interactive"
         keyboardBlurBehavior="restore"
         android_keyboardInputMode="adjustResize"
-        handleStyle={{ backgroundColor: Colors.primary100 }}
+        style={{
+          shadowColor: Colors.shadow,
+          shadowOffset: { width: 0, height: -3 },
+          shadowOpacity: 0.08,
+          shadowRadius: 8,
+          elevation: 10,
+        }}
+        backgroundStyle={{
+          backgroundColor: Colors.primary100,
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+        }}
+        handleStyle={{
+          backgroundColor: "transparent",
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderLeftWidth: StyleSheet.hairlineWidth,
+          borderRightWidth: StyleSheet.hairlineWidth,
+          borderColor: Colors.border,
+        }}
         handleIndicatorStyle={{
           backgroundColor: Colors.textSecondary,
           width: 40,
           height: 4,
         }}
-        backgroundStyle={{ backgroundColor: Colors.primary100 }}
       >
         <BottomSheetView style={styles.container}>
           <Text style={[styles.title, danger && { color: Colors.error600 }]}>
@@ -180,7 +197,11 @@ const ConfirmBottomSheet = forwardRef<
           ) : null}
 
           <Pressable
-            style={[styles.primaryButton, { backgroundColor: confirmBg }, isConfirmDisabled && { opacity: 0.6 }]}
+            style={[
+              styles.primaryButton,
+              { backgroundColor: confirmBg },
+              isConfirmDisabled && { opacity: 0.6 },
+            ]}
             onPress={handleConfirm}
             disabled={isConfirmDisabled}
           >
@@ -188,10 +209,7 @@ const ConfirmBottomSheet = forwardRef<
               <ActivityIndicator color={Colors.textOpposite} size="small" />
             ) : (
               <Text
-                style={[
-                  styles.primaryText,
-                  { color: Colors.textOpposite },
-                ]}
+                style={[styles.primaryText, { color: Colors.textOpposite }]}
               >
                 {confirmText}
               </Text>

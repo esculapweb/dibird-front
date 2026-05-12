@@ -64,7 +64,6 @@ const stylesFn = (Colors: ThemeColors) =>
       left: 0,
       right: 0,
       zIndex: 10,
-      backgroundColor: Colors.backgroundMain,
       overflow: 'hidden',
     },
     navbar: {
