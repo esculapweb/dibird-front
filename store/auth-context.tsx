@@ -13,7 +13,7 @@ import { setOnTokenUpdate } from "../services/authService";
 import { Logout } from "../util/auth";
 import { setOnUnauthorized } from "../services/api";
 import i18n from "../services/i18n";
-import { canUseBiometrics } from "../services/bio";
+import { shouldUseBiometrics } from "../services/bio";
 
 interface AuthContextType {
   token: string | null;
@@ -50,7 +50,7 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const restoreToken = async () => {
       try {
-        if (await canUseBiometrics()) {
+        if (await shouldUseBiometrics()) {
           const res = await LocalAuthentication.authenticateAsync({
             promptMessage: i18n.t("unlock_message"),
             fallbackLabel: i18n.t("unlock_fallback"),

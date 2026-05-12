@@ -1,4 +1,4 @@
-import { useLayoutEffect, useEffect, useRef } from "react";
+import { useLayoutEffect, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   Platform,
   Share,
   Linking,
+  Switch,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -34,10 +35,49 @@ import {
 import { Config } from "../constants/config";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import { useExportProfile } from "../hooks/Profile/useExportProfile";
+import { useBiometricSetting } from "../hooks/useBiometricSetting";
+import { canUseBiometrics } from "../services/bio";
 
 // ------------------------------------------------------------------
 // Primitives
 // ------------------------------------------------------------------
+
+interface RowSwitchProps {
+  icon: IconType;
+  label: string;
+  value: boolean;
+  onValueChange: (v: boolean) => void;
+  disabled?: boolean;
+  colors: ThemeColors;
+  styles: ReturnType<typeof stylesFn>;
+}
+
+const RowSwitch = ({
+  icon,
+  label,
+  value,
+  onValueChange,
+  disabled = false,
+  colors,
+  styles,
+}: RowSwitchProps) => (
+  <View style={[styles.row, disabled && styles.rowDisabled]}>
+    <Ionicons name={icon} size={18} color={colors.main100} />
+    <Text
+      style={[styles.rowLabel, { color: colors.textMain }]}
+      numberOfLines={1}
+    >
+      {label}
+    </Text>
+    <Switch
+      value={value}
+      onValueChange={onValueChange}
+      disabled={disabled}
+      trackColor={{ true: colors.main100 }}
+      thumbColor={Platform.OS === "android" ? colors.primary100 : undefined}
+    />
+  </View>
+);
 
 interface RowProps {
   icon: IconType;
@@ -144,6 +184,17 @@ const SettingsScreen = () => {
   const deleteSheetRef = useRef<ConfirmBottomSheetRef>(null);
   const iconName: IconType =
     Platform.OS === "ios" ? "chevron-back" : "arrow-back";
+
+  const {
+    isEnabled: biometricEnabled,
+    isLoading: bioLoading,
+    toggle: toggleBiometric,
+  } = useBiometricSetting();
+  const [bioAvailable, setBioAvailable] = useState(false);
+
+  useEffect(() => {
+    canUseBiometrics().then(setBioAvailable);
+  }, []);
 
   const clearAll = async () => {
     await clearTokens();
@@ -252,6 +303,25 @@ const SettingsScreen = () => {
         />
       </Section>
 
+      {/* ── Security ─────────────────────────────────── */}
+      {bioAvailable && (
+        <Section
+          title={t("settings_section_security")}
+          styles={styles}
+          colors={Colors}
+        >
+          <RowSwitch
+            icon="finger-print-outline"
+            label={t("settings_biometric_lock")}
+            value={biometricEnabled}
+            onValueChange={toggleBiometric}
+            disabled={bioLoading}
+            colors={Colors}
+            styles={styles}
+          />
+        </Section>
+      )}
+
       {/* ── Data ─────────────────────────────────────────── */}
       <Section
         title={t("settings_section_data")}
@@ -262,11 +332,11 @@ const SettingsScreen = () => {
           icon="download-outline"
           label={
             isExporting
-              ? t("export_data_in_progress") 
+              ? t("export_data_in_progress")
               : exportState === "completed"
-                ? t("export_data_done") 
+                ? t("export_data_done")
                 : exportState === "failed"
-                  ? t("export_data_failed") 
+                  ? t("export_data_failed")
                   : t("export_data")
           }
           onPress={isExporting ? undefined : triggerExport}

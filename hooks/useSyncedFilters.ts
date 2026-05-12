@@ -141,6 +141,36 @@ export const useSyncedFilters = <RouteName extends ScreenWithFiltersOnly>({
     }
   };
 
+  const loadAndApplySort = async () => {
+    if (!allowSort) {
+      setSortReady(true);
+      return;
+    }
+
+    const storedSort = (await loadSort(screenName)) as string | null;
+    const resolved = normalizeValue(
+      storedSort,
+      sortOptions.map((i) => i.value),
+    );
+
+    defaultSortRef.current = resolved;
+
+    const shouldFallback =
+      isDistanceSort(resolved) &&
+      (permissionStatus === "denied" || locationCoords === null);
+
+    setSort(
+      shouldFallback
+        ? (sortOptions.find((o) => !isDistanceSort(o.value))?.value ?? resolved)
+        : resolved,
+    );
+    setSortReady(true);
+
+    if (isDistanceSort(resolved) && permissionStatus !== "denied") {
+      requestLocation();
+    }
+  };
+
   useEffect(() => {
     const initFilters = async () => {
       if (params?.filtersOverride && !initFiltersRef.current) {
@@ -148,12 +178,16 @@ export const useSyncedFilters = <RouteName extends ScreenWithFiltersOnly>({
         setFilters(overrideFilters as Filters);
         setFilterHints({ speciesName });
         setIgnoreContextSync(true);
-
         initFiltersRef.current = true;
-        if (params?.o) setSort(params.o);
+
+        if (params?.o) {
+          setSort(params.o);
+          setSortReady(true);
+        } else {
+          await loadAndApplySort();
+        }
 
         navigation.setParams({ filtersOverride: undefined });
-        setSortReady(true);
         setTimeout(() => {
           setFiltersLoaded(true);
         }, 0);
@@ -180,33 +214,7 @@ export const useSyncedFilters = <RouteName extends ScreenWithFiltersOnly>({
           species: species ?? null,
         });
 
-        if (allowSort) {
-          const storedSort = (await loadSort(screenName)) as string | null;
-          const resolved = normalizeValue(
-            storedSort,
-            sortOptions.map((i) => i.value),
-          );
-
-          defaultSortRef.current = resolved;
-
-          const shouldFallback =
-            isDistanceSort(resolved) &&
-            (permissionStatus === "denied" || locationCoords === null);
-
-          setSort(
-            shouldFallback
-              ? (sortOptions.find((o) => !isDistanceSort(o.value))?.value ??
-                  resolved)
-              : resolved,
-          );
-          setSortReady(true);
-
-          if (isDistanceSort(resolved) && permissionStatus !== "denied") {
-            requestLocation();
-          }
-        } else {
-          setSortReady(true);
-        }
+        await loadAndApplySort(); 
       }
 
       setFiltersLoaded(true);
