@@ -1,4 +1,5 @@
-import { ScrollView } from "react-native";
+import { useRef } from "react";
+import { Animated } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -23,6 +24,7 @@ const MainScreen = () => {
   const { language } = useLanguage();
   const insets = useSafeAreaInsets();
   const NAVBAR_HEIGHT = insets.top + 60;
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   const allowedFilters: AllowedFilterKey[] = ["territory", "date"];
   const navigation = useNavigation<AppStackNavigationProp>();
@@ -72,15 +74,23 @@ const MainScreen = () => {
         onPress={() => setFilterModalVisible(true)}
         filters={filters}
         country={country}
+        scrollY={scrollY}
       />
 
-      <ScrollView
+      <Animated.ScrollView
         showsVerticalScrollIndicator={false}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
+        scrollEventThrottle={16}
         contentContainerStyle={{
           paddingTop: NAVBAR_HEIGHT + 8,
           paddingBottom: insets.bottom,
         }}
       >
+
+
         <Stats
           data={dataStats}
           filters={filters}
@@ -103,7 +113,7 @@ const MainScreen = () => {
         <QuickActions filters={filters} />
 
         <Sections data={dataStats} />
-      </ScrollView>
+      </Animated.ScrollView>
       <FilterModal
         visible={filterModalVisible}
         onClose={() => setFilterModalVisible(false)}
