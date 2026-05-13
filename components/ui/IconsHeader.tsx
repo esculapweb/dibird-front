@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
 import IconButton from "./IconButton";
 import { useTheme } from "../../store/theme-context";
 import { IconButtonConfig } from "../../types";
@@ -44,38 +44,31 @@ const IconsHeader = ({
     ...(Array.isArray(headerRightEnd) ? headerRightEnd : []),
   ];
 
+  const visibleButtons = iconButtons.filter((btn) => btn.condition);
+
   return (
-    <>
-      {iconButtons
-        .filter((btn) => btn.condition)
-        .map((btn, index, arr) => (
-          <IconButton
-            key={index}
-            tintColor={btn?.tintColor ?? Colors.textMain}
-            onPress={btn.onPress}
-            icon={btn.icon}
-            size={btn.size ?? 24}
-            disabled={btn?.disabled}
-            loading={btn?.loading}
-            active={btn?.active}
-            style={[
-              styles.iconButton,
-              index < arr.length - 1 && { marginRight: 8 },
-            ]}
-          />
-        ))}
-    </>
+    <View style={styles.container}>
+      {visibleButtons.map((btn, index) => (
+        <IconButton
+          key={index}
+          tintColor={btn?.tintColor ?? Colors.textMain}
+          onPress={btn.onPress}
+          icon={btn.icon}
+          size={btn.size ?? 24}
+          disabled={btn?.disabled}
+          loading={btn?.loading}
+          active={btn?.active}
+        />
+      ))}
+    </View>
   );
 };
 
 export default memo(IconsHeader);
 
 const styles = StyleSheet.create({
-  headerButtons: {
+  container: {
     flexDirection: "row",
     alignItems: "center",
-  },
-  iconButton: {
-    marginRight: 0,
   },
 });

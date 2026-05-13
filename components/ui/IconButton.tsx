@@ -19,7 +19,7 @@ const IconButton = ({
 
   if (loading)
     return (
-      <View style={style}>
+      <View style={[styles.container, style]}>
         <ActivityIndicator size="small" color={Colors.textMain} />
       </View>
     );
@@ -27,12 +27,13 @@ const IconButton = ({
   return (
     <Pressable
       style={({ pressed }) => [
+        styles.container,
         pressed && !disabled && styles.pressed,
-        style,
         disabled && styles.disabled,
+        style,
       ]}
       onPress={disabled ? undefined : onPress}
-      hitSlop={8}
+      hitSlop={4}
     >
       <Ionicons name={icon} size={size} color={tintColor ?? Colors.textMain} />
 
@@ -45,6 +46,12 @@ export default IconButton;
 
 const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
+    container: {
+      width: 34,
+      height: 36,
+      alignItems: "center",
+      justifyContent: "center",
+    },
     active: {
       position: "absolute",
       top: 0,
