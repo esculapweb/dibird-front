@@ -24,6 +24,7 @@ const API_ERROR = {
 
 let isRefreshing = false;
 let refreshPromise: Promise<string> | null = null;
+let isLoggingOut = false;
 
 const normalizeApiError = (error: AxiosError): AxiosError & AppError => {
   if (error.code === "ECONNABORTED") {
@@ -190,6 +191,7 @@ export const saveTokens = async ({
   access?: string;
   refresh?: string;
 }) => {
+  isLoggingOut = false;
   if (access) {
     await SecureStore.setItemAsync("access", access);
     notifyTokenUpdate(access);
@@ -201,7 +203,8 @@ export const saveTokens = async ({
 };
 
 export const clearTokens = async () => {
-  cachedRefreshToken = null; // сбрасываем кэш
+  isLoggingOut = false;
+  cachedRefreshToken = null;
   await SecureStore.deleteItemAsync("access");
   await SecureStore.deleteItemAsync("refresh");
 };
@@ -242,6 +245,9 @@ api.interceptors.response.use(
       !originalRequest.url?.endsWith("/api-auth/token/refresh/") &&
       !originalRequest.url?.endsWith("/api-auth/logout/")
     ) {
+      if (isLoggingOut) {
+        return new Promise(() => {});
+      }
       originalRequest._retry = true;
 
       try {
@@ -260,10 +266,12 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (e) {
         const axiosError = e as AxiosError;
-        await clearTokens();
         const status = axiosError?.response?.status;
         if (status === 401 || status === 400) {
+          isLoggingOut = true;
+          await clearTokens();
           onUnauthorizedCallback?.();
+          return new Promise(() => {});
         }
         return Promise.reject(createTranslatedError(axiosError));
       }
