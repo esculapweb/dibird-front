@@ -1,14 +1,8 @@
-import {
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-  Animated,
-} from "react-native";
+import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { formatDateFilterMain } from "../../util/helpers";
@@ -24,35 +18,37 @@ const FloatingNavbar = ({
   onPress,
   filters,
   country,
-  scrollY,
 }: {
   onPress: () => void;
   filters: Filters;
   country?: TerritoryDropdownItem;
-  scrollY: Animated.Value;
 }) => {
   const navigation = useNavigation<AppDrawerNavigationProp>();
   const { Colors, isDark } = useTheme();
-  const styles = stylesFn(Colors);
-  const insets = useSafeAreaInsets();
 
-  const bgOpacity = scrollY.interpolate({
-    inputRange: [0, 50],
-    outputRange: [0, 1],
-    extrapolate: "clamp",
-  });
+  const insets = useSafeAreaInsets();
+  const NAVBAR_HEIGHT = insets.top + 60;
+  const styles = stylesFn(Colors, NAVBAR_HEIGHT);
 
   const countryFlag = country?.icon ?? "   ";
 
   return (
     <View style={styles.navbarAbsolute}>
-      <Animated.View style={[StyleSheet.absoluteFill, { opacity: bgOpacity }]}>
-        <BlurView
-          intensity={80}
-          tint={isDark ? "dark" : "light"}
-          style={StyleSheet.absoluteFill}
-        />
-      </Animated.View>
+      <LinearGradient
+        colors={
+          isDark
+            ? ["rgba(18,18,18,0.95)", "rgba(18,18,18,0.4)", "rgba(18,18,18,0)"]
+            : [
+                "rgba(247,246,242,0.95)",
+                "rgba(247,246,242,0.4)",
+                "rgba(247,246,242,0)",
+              ]
+        }
+        locations={[0, 0.4, 0.85]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
 
       <View style={[styles.navbar, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity
@@ -91,7 +87,7 @@ const FloatingNavbar = ({
 
 export default FloatingNavbar;
 
-const stylesFn = (Colors: ThemeColors) =>
+const stylesFn = (Colors: ThemeColors, NAVBAR_HEIGHT: number) =>
   StyleSheet.create({
     navbarAbsolute: {
       position: "absolute",
@@ -99,7 +95,7 @@ const stylesFn = (Colors: ThemeColors) =>
       left: 0,
       right: 0,
       zIndex: 10,
-      overflow: "hidden",
+      height: NAVBAR_HEIGHT + 20,
     },
     navbar: {
       flexDirection: "row",

@@ -43,7 +43,14 @@ const BackgroundScene2 = () => {
 
   return (
     <View
-      style={{ position: "absolute", top: 0, bottom: 0, left: 0, right: 0 }}
+      style={{
+        position: "absolute",
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: Colors.backgroundMain,
+      }}
       pointerEvents="none"
       onLayout={(e) => {
         const { width, height } = e.nativeEvent.layout;
@@ -101,9 +108,21 @@ const BackgroundScene2 = () => {
         ))}
 
         {/* Холмы — три слоя глубины */}
-        <Path d={hillsFar} fill={Colors.main100} opacity={isDark ? 0.035 : 0.05} />
-        <Path d={hillsMid} fill={Colors.main100} opacity={isDark ? 0.06 : 0.08} />
-        <Path d={hillsNear} fill={Colors.main100} opacity={isDark ? 0.09 : 0.11} />
+        <Path
+          d={hillsFar}
+          fill={Colors.main100}
+          opacity={isDark ? 0.035 : 0.05}
+        />
+        <Path
+          d={hillsMid}
+          fill={Colors.main100}
+          opacity={isDark ? 0.06 : 0.08}
+        />
+        <Path
+          d={hillsNear}
+          fill={Colors.main100}
+          opacity={isDark ? 0.09 : 0.11}
+        />
 
         {/* Птицы */}
         <Path
