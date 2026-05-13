@@ -3,14 +3,13 @@ import { StyleSheet, View, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
 import { useNavigation } from "@react-navigation/native";
-import { useHeaderHeight } from "@react-navigation/elements";
 
 import AuthForm from "./AuthForm";
 import Logo from "../ui/Logo";
 import { showError } from "../../services/api";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import FormWrapper from "../ui/FormWrapper";
-import { AppError, AuthDrawerNavigationProp, Credentials } from "../../types";
+import { AppError, AuthStackNavigationProp, Credentials } from "../../types";
 
 interface AuthContent {
   onAuthenticate: (data: Credentials) => Promise<void>;
@@ -27,11 +26,10 @@ const AuthContent = ({
   emailConfirmed,
   prefillEmail,
 }: AuthContent) => {
-  const navigation = useNavigation<AuthDrawerNavigationProp>();
+  const navigation = useNavigation<AuthStackNavigationProp>();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
-  const headerHeight = useHeaderHeight();
 
   const [credentialsInvalid, setCredentialsInvalid] = useState({
     email: false,
@@ -41,6 +39,7 @@ const AuthContent = ({
   });
 
   const switchAuthModeHandler = () => {
+    navigation.popToTop();
     if (isLogin) {
       navigation.navigate("Signup");
     } else {
@@ -118,7 +117,6 @@ const AuthContent = ({
 
   return (
     <FormWrapper
-      style={{ paddingTop: headerHeight }}
       header={
         <View style={styles.welcomeSection}>
           <Logo style={styles.logo} imageSize={70} withText={false} />

@@ -42,6 +42,7 @@
   "tap_map_to_change": "Tap on the map to change location",
   "uncheck_requires_delete": "",
   "user_statistics": "Participant statistics",
+  "verification_sent": "We have sent an e-mail to you for verification. Follow the link provided to finalize the signup process. Please check Spam folder and address correctness or contact us if you do not receive it within a few minutes.",
   "view_observations": "View observations",
   "warning": "",
   "your_tools": "Your tools"

@@ -1,9 +1,5 @@
-import { useState, useLayoutEffect } from "react";
-import { TouchableOpacity, Platform } from "react-native";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Ionicons } from "@expo/vector-icons";
-import { useHeaderHeight } from "@react-navigation/elements";
-import { useNavigation } from "@react-navigation/native";
 
 import ProfileForm from "../components/Profile/ProfileForm";
 import { useProfile } from "../store/profile-context";
@@ -12,38 +8,16 @@ import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import FormWrapper from "../components/ui/FormWrapper";
 import { useInvalidateProfile } from "../hooks/Profile/useUpdateProfile";
-import { useTheme } from "../store/theme-context";
-import { AppDrawerNavigationProp, AppError, ProfileFormData } from "../types";
+import { AppError, ProfileFormData } from "../types";
 
 const ProfileScreen = () => {
-  const navigation = useNavigation<AppDrawerNavigationProp>();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [formKey, setFormKey] = useState(0);
   const { profile, profileLoading, updateProfile, refreshProfile } =
     useProfile();
   const { t } = useTranslation();
-  const { Colors } = useTheme();
   const invalidateProfile = useInvalidateProfile();
-  const iconName = Platform.OS === "ios" ? "chevron-back" : "arrow-back";
-  const headerHeight = useHeaderHeight();
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerLeft: () => (
-        <TouchableOpacity
-          onPress={() => navigation.navigate("MainDrawer")}
-          style={{ padding: 8 }}
-          hitSlop={8}
-        >
-          <Ionicons name={iconName} size={24} color={Colors.textMain} />
-        </TouchableOpacity>
-      ),
-      headerLeftContainerStyle: {
-        paddingLeft: Platform.OS === "android" ? 8 : 0,
-      },
-    });
-  }, [navigation, Colors, iconName]);
 
   const extractApiError = (e: AppError): { title: string; message: string } => {
     const data = e?.response?.data;
@@ -95,7 +69,7 @@ const ProfileScreen = () => {
     <FormWrapper
       bottomButtonLabel={t("reset_form")}
       bottomButtonHandler={() => setFormKey((k) => k + 1)}
-      style={{ marginTop: 24, paddingTop: headerHeight }}
+      style={{ paddingTop: 24 }}
     >
       <ProfileForm
         key={formKey}

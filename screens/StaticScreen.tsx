@@ -12,7 +12,6 @@ import Layout from "../components/ui/Layout";
 import { fetchPage } from "../util/fetches";
 import { useLanguage } from "../store/language-context";
 import { useTheme, ThemeColors } from "../store/theme-context";
-import { RootStackProp } from "../types";
 
 const H_PAD = 16;
 
@@ -22,8 +21,8 @@ const StaticScreen = () => {
   const insets = useSafeAreaInsets();
   const styles = stylesFn(Colors, insets);
   const { language } = useLanguage();
-  const route = useRoute<RootStackProp<"Privacy" | "Terms">>();
-  const page = route?.name;
+  const route = useRoute();
+  const page = route.name as "Privacy" | "Terms";
 
   const slugs: Record<string, string> = {
     Privacy: "privacy",

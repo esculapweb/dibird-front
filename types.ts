@@ -90,7 +90,13 @@ export interface CredentialsValidation {
   confirmPassword: boolean;
 }
 
-export type ExportStatus = "idle" | "pending" | "processing" | "completed" | "failed" | "expired" 
+export type ExportStatus =
+  | "idle"
+  | "pending"
+  | "processing"
+  | "completed"
+  | "failed"
+  | "expired";
 
 export interface GdprExport {
   id: number;
@@ -166,7 +172,7 @@ export type AllowedFilterKey =
   | "place"
   | "species"
   | "favourite";
-  
+
 export interface Filters {
   date?: DateFilter | null;
   date_time_max?: string | null;
@@ -544,16 +550,23 @@ export type StaticScreensParamList = {
   Terms: undefined;
 };
 
-export type RootStackParamList = {
-  Root: undefined;
-} & StaticScreensParamList;
+// Auth стек (все экраны, включая те что раньше были в Drawer)
+export type AuthStackParamList = {
+  Welcome: undefined;
+  Login: { emailConfirmed?: boolean; prefillEmail?: string } | undefined;
+  Signup: undefined;
+  CheckEmail: { email?: string };
+  ConfirmEmail: { key: string };
+  Privacy: undefined;
+  Terms: undefined;
+};
 
-// Auth стек
+// Auth root = AuthStack + статичные экраны
 export type AuthRootParamList = {
   Root: undefined;
 } & StaticScreensParamList;
 
-// App стек  
+// App root = AppStack + статичные экраны
 export type AppRootParamList = {
   Root: undefined;
 } & StaticScreensParamList;
@@ -565,8 +578,15 @@ export interface ScreenWithFilters {
   backTitle?: string;
 }
 
+export type WelcomeScreenNavigationProp = CompositeNavigationProp<
+  DrawerNavigationProp<AuthDrawerParamList>,
+  NativeStackNavigationProp<AuthStackParamList>
+>;
+
 export type AppStackParamList = {
-  Main: ScreenWithFilters | undefined;
+  Main: undefined; // MainDrawer
+  Profile: undefined;
+  Settings: undefined;
   Stat: ScreenWithFilters | undefined;
   Checklist: ScreenWithFilters | undefined;
   Places: ScreenWithFilters | undefined;
@@ -598,6 +618,8 @@ export type AppStackParamList = {
     profile2: number;
   };
   UserStat: ScreenWithFilters & { profileId: number };
+  Privacy: undefined;
+  Terms: undefined;
 };
 
 export type ScreenWithFiltersOnly =
@@ -618,55 +640,46 @@ export type ScreenWithFiltersParamList = {
     : AppStackParamList[K];
 };
 
+// Drawer используется только как контейнер с меню, экран внутри один
 export type AppDrawerParamList = {
-  MainDrawer: undefined;
-  Profile: undefined;
-  Settings: undefined;
+  MainScreen: undefined;
 };
 
 export type AuthDrawerParamList = {
-  Welcome: undefined;
-  CheckEmail: { email?: string };
-  Login: { emailConfirmed?: boolean; prefillEmail?: string } | undefined;
-  Signup: undefined;
-  ConfirmEmail: { key: string };
+  WelcomeMain: undefined;
 };
 
 // --- Navigation Props ---
 
-export type RootStackNavigationProp =
-  NativeStackNavigationProp<RootStackParamList>;
-
 export type AppStackNavigationProp =
   NativeStackNavigationProp<AppStackParamList>;
 
-export type AuthDrawerNavigationProp = CompositeNavigationProp<
-  DrawerNavigationProp<AuthDrawerParamList>,
-  NativeStackNavigationProp<AuthRootParamList>
->;
+export type AuthStackNavigationProp =
+  NativeStackNavigationProp<AuthStackParamList>;
 
+// Drawer нужен только для openDrawer/closeDrawer на главном экране
 export type AppDrawerNavigationProp = CompositeNavigationProp<
   DrawerNavigationProp<AppDrawerParamList>,
-  NativeStackNavigationProp<AppRootParamList>
+  NativeStackNavigationProp<AppStackParamList>
 >;
 
-// -- Route Props
-
-export type RootStackProp<T extends keyof RootStackParamList> = RouteProp<
-  RootStackParamList,
-  T
+export type AnyDrawerNavigationProp = DrawerNavigationProp<
+  AppDrawerParamList | AuthDrawerParamList
 >;
 
+// --- Route Props ---
 export type AppStackRouteProp<T extends keyof AppStackParamList> = RouteProp<
   AppStackParamList,
   T
 >;
 
-export type AuthDrawerRouteProp<T extends keyof AuthDrawerParamList> =
-  RouteProp<AuthDrawerParamList, T>;
+export type AuthStackRouteProp<T extends keyof AuthStackParamList> = RouteProp<
+  AuthStackParamList,
+  T
+>;
 
 declare global {
   namespace ReactNavigation {
-    interface RootParamList extends RootStackParamList {}
+    interface RootParamList extends AppRootParamList {}
   }
 }

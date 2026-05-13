@@ -1,5 +1,5 @@
 import { getStateFromPath } from "@react-navigation/native";
-import { RootStackParamList } from "./types";
+import { AppRootParamList, AuthRootParamList } from "./types";
 import { LinkingOptions } from "@react-navigation/native";
 
 const parseString = (v: string | null): string | undefined => v || undefined;
@@ -29,7 +29,7 @@ const withBasicFilters = (path: string) => ({
 
 const linking = (
   isAuthenticated: boolean,
-): LinkingOptions<RootStackParamList> => ({
+): LinkingOptions<AppRootParamList | AuthRootParamList> => ({
   prefixes: ["dibird://", "https://dibird.com"],
 
   config: {
@@ -39,10 +39,11 @@ const linking = (
           ? {
               Main: {
                 screens: {
-                  MainDrawer: "my",
-                  Profile: "my/profile",
+                  MainScreen: "my",
                 },
               },
+              Profile: "my/profile",
+              Settings: "my/settings",
               Stat: withFilters("my/stat"),
               Checklist: withFilters("my/checklist"),
               Places: withBasicFilters("my/place"),
@@ -56,6 +57,7 @@ const linking = (
               UserStat: withFilters("users/stat/:profileId"),
             }
           : {
+              Welcome: { screens: { WelcomeMain: "welcome" } },
               ConfirmEmail: "accounts/confirm-email/:key",
               Login: "accounts/login",
               Signup: "accounts/signup",

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,6 @@ import {
   Linking,
   Switch,
 } from "react-native";
-import { useHeaderHeight } from "@react-navigation/elements";
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
@@ -26,7 +25,6 @@ import { useAuth } from "../store/auth-context";
 import {
   AppError,
   AppDrawerNavigationProp,
-  RootStackNavigationProp,
   IconType,
 } from "../types";
 import { Config } from "../constants/config";
@@ -158,14 +156,12 @@ const Section = ({ title, children, styles, colors }: SectionProps) => (
 // ------------------------------------------------------------------
 
 const SettingsScreen = () => {
-  const headerHeight = useHeaderHeight();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const { logout } = useAuth();
   const { profile } = useProfile();
   const navigation = useNavigation<AppDrawerNavigationProp>();
-  const rootNavigation = useNavigation<RootStackNavigationProp>();
   const { state: exportState, triggerExport, cleanup } = useExportProfile();
 
   const version = Constants.expoConfig?.version ?? "—";
@@ -177,8 +173,6 @@ const SettingsScreen = () => {
   const userEmail = profile?.user_data?.email ?? "";
 
   const deleteSheetRef = useRef<ConfirmBottomSheetRef>(null);
-  const iconName: IconType =
-    Platform.OS === "ios" ? "chevron-back" : "arrow-back";
 
   const {
     isEnabled: biometricEnabled,
@@ -222,27 +216,10 @@ const SettingsScreen = () => {
   const isExporting = exportState === "pending" || exportState === "processing";
   useEffect(() => () => cleanup(), []);
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerLeft: () => (
-        <TouchableOpacity
-          onPress={() => navigation.navigate("MainDrawer")}
-          style={{ padding: 8 }}
-          hitSlop={8}
-        >
-          <Ionicons name={iconName} size={24} color={Colors.textMain} />
-        </TouchableOpacity>
-      ),
-      headerLeftContainerStyle: {
-        paddingLeft: Platform.OS === "android" ? 8 : 0,
-      },
-    });
-  }, [navigation, Colors, iconName]);
-
   return (
     <Layout
       withScroll
-      contentContainerStyle={[styles.scroll, { paddingTop: headerHeight + 16 }]}
+      contentContainerStyle={styles.scroll}
       bottom={
         <FlatButtonBottom textColor={Colors.textSecondary} disabled>
           {t("app_version", { version: fullVersion })}
@@ -276,7 +253,7 @@ const SettingsScreen = () => {
         <Row
           icon="shield-checkmark-outline"
           label={t("privacy_policy")}
-          onPress={() => rootNavigation.navigate("Privacy")}
+          onPress={() => navigation.navigate("Privacy")}
           colors={Colors}
           styles={styles}
         />
@@ -284,7 +261,7 @@ const SettingsScreen = () => {
         <Row
           icon="document-text-outline"
           label={t("terms_of_service")}
-          onPress={() => rootNavigation.navigate("Terms")}
+          onPress={() => navigation.navigate("Terms")}
           colors={Colors}
           styles={styles}
         />

@@ -1,13 +1,12 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import {
-  createDrawerNavigator,
-  DrawerContentScrollView,
-  DrawerItemList,
-  DrawerItem,
-  DrawerContentComponentProps,
-} from "@react-navigation/drawer";
-import { useEffect } from "react";
 import { View, StyleSheet, Alert } from "react-native";
+import {
+  DrawerContentScrollView,
+  DrawerContentComponentProps,
+  DrawerItem,
+} from "@react-navigation/drawer";
+import { createDrawerNavigator } from "@react-navigation/drawer";
+import { useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
@@ -37,16 +36,20 @@ import LanguageSwitcher from "../components/Language/LanguageSwitcher";
 import ThemeSwitcher from "../components/Theme/ThemeSwitcher";
 import { useTheme, ThemeColors } from "../store/theme-context";
 import { useFilters } from "../store/filters-context";
-import StaticScreen from "../screens/StaticScreen";
+import type { AppDrawerParamList, AppStackParamList } from "../types";
 
-const Stack = createNativeStackNavigator();
-const Drawer = createDrawerNavigator();
+const Stack = createNativeStackNavigator<AppStackParamList>();
+const Drawer = createDrawerNavigator<AppDrawerParamList>();
 
+// ---------------------------------------------------------------------------
+// Custom drawer content — только ссылки, без Stack-экранов внутри Drawer
+// ---------------------------------------------------------------------------
 const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   const { logout } = useAuth();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
+  const navigation = props.navigation;
 
   const handleLogout = () => {
     Alert.alert(
@@ -75,10 +78,50 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
         <View style={styles.header}>
           <Avatar />
         </View>
-        <DrawerItemList {...props} />
+
+        {/* Главный экран */}
+        <DrawerItem
+          label={t("main")}
+          labelStyle={{ color: Colors.textMain }}
+          onPress={() => {
+            navigation.closeDrawer();
+            navigation.navigate("MainScreen");
+          }}
+          icon={({ color, size }) => (
+            <Ionicons name="home-outline" color={color} size={size} />
+          )}
+        />
+
+        {/* Профиль — переход через Stack */}
+        <DrawerItem
+          label={t("profile")}
+          labelStyle={{ color: Colors.textMain }}
+          onPress={() => {
+            navigation.closeDrawer();
+            navigation.navigate("Profile");
+          }}
+          icon={({ color, size }) => (
+            <Ionicons name="person-circle-outline" color={color} size={size} />
+          )}
+        />
+
+        {/* Настройки — переход через Stack */}
+        <DrawerItem
+          label={t("settings")}
+          labelStyle={{ color: Colors.textMain }}
+          onPress={() => {
+            navigation.closeDrawer();
+            navigation.navigate("Settings");
+          }}
+          icon={({ color, size }) => (
+            <Ionicons name="settings-outline" color={color} size={size} />
+          )}
+        />
+
         <View style={{ flex: 1 }} />
         <LanguageSwitcher />
         <ThemeSwitcher />
+
         <DrawerItem
           label={t("logout")}
           labelStyle={{ color: Colors.textMain }}
@@ -93,9 +136,10 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   );
 };
 
-// --- Drawer navigator ---
+// ---------------------------------------------------------------------------
+// MainDrawer — один экран, drawer используется только как контейнер меню
+// ---------------------------------------------------------------------------
 const MainDrawer = () => {
-  const { t } = useTranslation();
   const { error } = useProfile();
   const { Colors } = useTheme();
 
@@ -109,63 +153,17 @@ const MainDrawer = () => {
         drawerActiveTintColor: Colors.textOpposite,
         drawerActiveBackgroundColor: Colors.main100,
         headerShown: false,
-        headerBackButtonDisplayMode: "minimal",
       }}
     >
-      <Drawer.Screen
-        name="MainDrawer"
-        component={MainScreen}
-        options={{
-          title: t("main"),
-          drawerIcon: ({ color, size, focused }) => (
-            <Ionicons
-              name={focused ? "home" : "home-outline"}
-              color={color}
-              size={size}
-            />
-          ),
-        }}
-      />
-
-      <Drawer.Screen
-        name="Profile"
-        component={ProfileScreen}
-        options={{
-          title: t("profile"),
-          headerTransparent: true,
-          headerShadowVisible: false,
-          headerShown: true,
-          drawerIcon: ({ color, size, focused }) => (
-            <Ionicons
-              name={focused ? "person-circle" : "person-circle-outline"}
-              color={color}
-              size={size}
-            />
-          ),
-        }}
-      />
-
-      <Drawer.Screen
-        name="Settings"
-        component={SettingsScreen}
-        options={{
-          title: t("settings"),
-          headerTransparent: true,
-          headerShadowVisible: false,
-          headerShown: true,
-          drawerIcon: ({ color, size, focused }) => (
-            <Ionicons
-              name={focused ? "settings" : "settings-outline"}
-              color={color}
-              size={size}
-            />
-          ),
-        }}
-      />
+      {/* Единственный "экран" в Drawer — главный */}
+      <Drawer.Screen name="MainScreen" component={MainScreen} />
     </Drawer.Navigator>
   );
 };
 
+// ---------------------------------------------------------------------------
+// AppNavigator — все экраны в Stack, единообразный хедер
+// ---------------------------------------------------------------------------
 const AppNavigator = () => {
   const { t } = useTranslation();
   const { resetFilters } = useFilters();
@@ -188,91 +186,108 @@ const AppNavigator = () => {
         headerBackTitle: "",
       }}
     >
+      {/* Главный экран с Drawer */}
       <Stack.Screen
         name="Main"
         component={MainDrawer}
         options={{ headerShown: false }}
       />
 
-      <Stack.Screen name="Stat" component={StatScreen} />
+      {/* Все остальные — обычные Stack-экраны с единым хедером */}
+      <Stack.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ title: t("profile") }}
+      />
 
-      <Stack.Screen name="Checklist" component={StatScreen} />
+      <Stack.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{ title: t("settings") }}
+      />
 
-      <Stack.Screen name="Places" component={PlacesScreen} />
+      <Stack.Screen
+        name="Stat"
+        component={StatScreen}
+        options={{ title: t("stat") }}
+      />
+
+      <Stack.Screen
+        name="Checklist"
+        component={StatScreen}
+        options={{ title: t("checklist") }}
+      />
+
+      <Stack.Screen
+        name="Places"
+        component={PlacesScreen}
+        options={{ title: t("places") }}
+      />
 
       <Stack.Screen
         name="PlaceDetail"
         component={PlaceDetailScreen}
-        options={{
-          title: t("place"),
-        }}
+        options={{ title: t("place") }}
       />
 
       <Stack.Screen
         name="PlaceEditor"
         component={PlaceEditorScreen}
-        options={{
-          title: t("new_place"),
-        }}
+        options={{ title: t("new_place") }}
       />
 
-      <Stack.Screen name="Observations" component={ObservationsScreen} />
+      <Stack.Screen
+        name="Observations"
+        component={ObservationsScreen}
+        options={{ title: t("observations") }}
+      />
 
       <Stack.Screen
         name="ObservationDetail"
         component={ObservationDetailScreen}
-        options={{
-          title: t("observation"),
-        }}
+        options={{ title: t("observation") }}
       />
 
       <Stack.Screen
         name="ObservationEditor"
         component={ObservationEditorScreen}
-        options={{
-          title: t("new_observation"),
-        }}
+        options={{ title: t("new_observation") }}
       />
 
-      <Stack.Screen name="Diaries" component={DiariesScreen} />
+      <Stack.Screen
+        name="Diaries"
+        component={DiariesScreen}
+        options={{ title: t("diaries") }}
+      />
 
       <Stack.Screen
         name="DiaryDetail"
         component={DiaryDetailScreen}
-        options={{
-          title: t("diary"),
-        }}
+        options={{ title: t("diary") }}
       />
 
       <Stack.Screen
         name="DiaryEditor"
         component={DiaryEditorScreen}
-        options={{
-          title: t("new_diary"),
-        }}
+        options={{ title: t("new_diary") }}
       />
 
-      <Stack.Screen name="Rating" component={RatingScreen} />
+      <Stack.Screen
+        name="Rating"
+        component={RatingScreen}
+        options={{ title: t("rating") }}
+      />
 
       <Stack.Screen
         name="RatingsCompare"
         component={RatingsCompareScreen}
-        options={{
-          title: t("rating_compare"),
-        }}
+        options={{ title: t("rating_compare") }}
       />
 
-      <Stack.Screen name="UserStat" component={UserStatScreen} />
-
       <Stack.Screen
-        name="Privacy"
-        component={StaticScreen}
-        options={{ title: t("privacy_policy") }}
-      />
-      <Stack.Screen
-        name="Terms"
-        component={StaticScreen}
-        options={{ title: t("terms_of_service") }}
+        name="UserStat"
+        component={UserStatScreen}
+        options={{ title: t("user_stat") }}
       />
     </Stack.Navigator>
   );

@@ -1,27 +1,42 @@
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View, Linking } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useRoute } from "@react-navigation/native";
 
 import { useTheme, ThemeColors } from "../store/theme-context";
 import Layout from "../components/ui/Layout";
 import Logo from "../components/ui/Logo";
-import { AuthDrawerRouteProp } from "../types";
+import { AuthStackRouteProp } from "../types";
+import { Config } from "../constants/config";
 
 const CheckEmailScreen = () => {
   const { Colors } = useTheme();
   const { t } = useTranslation();
-  const route = useRoute<AuthDrawerRouteProp<"CheckEmail">>();
+  const route = useRoute<AuthStackRouteProp<"CheckEmail">>();
   const styles = stylesFn(Colors);
   const email = route.params?.email;
 
   if (!email) return null;
+
+  const handleFeedback = () => {
+    const emailUrl = `mailto:${encodeURIComponent(Config.email)}?subject=${encodeURIComponent("Support Request - [DiBird]")}`;
+    Linking.openURL(emailUrl);
+  };
 
   return (
     <Layout>
       <View style={styles.container}>
         <Logo />
         <Text style={styles.title}>{t("confirmation_sent_to", { email })}</Text>
-        <Text style={styles.subtitle}>{t("verification_sent")}</Text>
+        <Text style={styles.subtitle}>
+          {t("verification_sent_before")}
+          <Text
+            style={{ color: Colors.main100, textDecorationLine: "underline" }}
+            onPress={handleFeedback}
+          >
+            {t("verification_sent_link")}
+          </Text>
+          {t("verification_sent_after")}
+        </Text>
       </View>
     </Layout>
   );
@@ -35,7 +50,7 @@ const stylesFn = (Colors: ThemeColors) =>
       flex: 1,
       justifyContent: "center",
       alignItems: "center",
-      padding: 32,
+      paddingHorizontal: 32,
     },
     title: {
       marginTop: 24,

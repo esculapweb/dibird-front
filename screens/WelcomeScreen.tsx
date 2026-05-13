@@ -18,14 +18,16 @@ import Layout from "../components/ui/Layout";
 import Logo from "../components/ui/Logo";
 import { LoginWithGoogle, LoginWithApple } from "../util/auth";
 import { showError } from "../services/api";
-import { AppError, AuthDrawerNavigationProp } from "../types";
+import { AppError, WelcomeScreenNavigationProp } from "../types";
+import FloatingHeader from "../components/ui/FloatingHeader";
+
 
 const WelcomeScreen = () => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = stylesFn(Colors, insets);
-  const navigation = useNavigation<AuthDrawerNavigationProp>();
+  const navigation = useNavigation<WelcomeScreenNavigationProp>();
 
   const handleGoogle = async () => {
     try {
@@ -110,9 +112,7 @@ const WelcomeScreen = () => {
               styles.button,
               { backgroundColor: Colors.main100, borderColor: Colors.main100 },
             ]}
-            onPress={() =>
-              navigation.navigate("Login")
-            }
+            onPress={() => navigation.navigate("Login")}
           >
             <Ionicons
               name="mail-outline"
@@ -125,6 +125,8 @@ const WelcomeScreen = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <FloatingHeader />
     </Layout>
   );
 };
@@ -135,7 +137,6 @@ const stylesFn = (Colors: ThemeColors, insets: EdgeInsets) =>
       flexGrow: 1,
       justifyContent: "center",
       paddingHorizontal: 28,
-      paddingTop: insets.top,
       paddingBottom: insets.bottom,
     },
     header: {
@@ -203,6 +204,12 @@ const stylesFn = (Colors: ThemeColors, insets: EdgeInsets) =>
     },
     legalLink: {
       textDecorationLine: "underline",
+    },
+    menuButton: {
+      position: "absolute",
+      top: insets.top + 12,
+      right: 16,
+      zIndex: 10,
     },
   });
 

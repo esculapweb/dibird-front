@@ -10,17 +10,17 @@ import api from "../services/api";
 import Logo from "../components/ui/Logo";
 import {
   AppError,
-  AuthDrawerNavigationProp,
-  AuthDrawerRouteProp,
+  AuthStackNavigationProp,
+  AuthStackRouteProp,
 } from "../types";
 
 const ConfirmEmailScreen = () => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
-  const route = useRoute<AuthDrawerRouteProp<"ConfirmEmail">>();
+  const route = useRoute<AuthStackRouteProp<"ConfirmEmail">>();
   const { t } = useTranslation();
   const { key } = route.params;
-  const navigation = useNavigation<AuthDrawerNavigationProp>();
+  const navigation = useNavigation<AuthStackNavigationProp>();
 
   const isConfirmedRef = useRef(false);
   const [loading, setLoading] = useState(true);

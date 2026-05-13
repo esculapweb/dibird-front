@@ -8,7 +8,7 @@ import { getAnalytics, logEvent } from "@react-native-firebase/analytics";
 import { useTranslation } from "react-i18next";
 
 import { useAuth } from "../store/auth-context";
-import AuthDrawer from "./AuthStack";
+import AuthNavigator from "./AuthStack";
 import AppNavigator from "./AppStack";
 import { useTheme } from "../store/theme-context";
 import {
@@ -22,58 +22,75 @@ import type { AuthRootParamList, AppRootParamList } from "../types";
 const AuthStack = createNativeStackNavigator<AuthRootParamList>();
 const AppStack = createNativeStackNavigator<AppRootParamList>();
 
-const AuthNavigator = () => {
+// ---------------------------------------------------------------------------
+// Auth root — AuthNavigator + общие статичные экраны
+// ---------------------------------------------------------------------------
+const AuthRoot = () => {
   const { t } = useTranslation();
+
   return (
     <AuthStack.Navigator
       id={undefined}
       screenOptions={{
-        headerShown: false,
         headerBackButtonDisplayMode: "minimal",
         headerBackTitle: "",
       }}
     >
-      <AuthStack.Screen name="Root" component={AuthDrawer} />
+      <AuthStack.Screen
+        name="Root"
+        component={AuthNavigator}
+        options={{ headerShown: false }}
+      />
       <AuthStack.Screen
         name="Privacy"
         component={StaticScreen}
-        options={{ headerShown: true, title: t("privacy_policy") }}
+        options={{ title: t("privacy_policy") }}
       />
       <AuthStack.Screen
         name="Terms"
         component={StaticScreen}
-        options={{ headerShown: true, title: t("terms_of_service") }}
+        options={{ title: t("terms_of_service") }}
       />
     </AuthStack.Navigator>
   );
 };
 
-const AppNavigatorWithStatic = () => {
+// ---------------------------------------------------------------------------
+// App root — AppNavigator + общие статичные экраны
+// ---------------------------------------------------------------------------
+const AppRoot = () => {
   const { t } = useTranslation();
+
   return (
     <AppStack.Navigator
       id={undefined}
       screenOptions={{
-        headerShown: false,
         headerBackButtonDisplayMode: "minimal",
         headerBackTitle: "",
       }}
     >
-      <AppStack.Screen name="Root" component={AppNavigator} />
+      <AppStack.Screen
+        name="Root"
+        component={AppNavigator}
+        options={{ headerShown: false }}
+      />
       <AppStack.Screen
         name="Privacy"
         component={StaticScreen}
-        options={{ headerShown: true, title: t("privacy_policy") }}
+        options={{ title: t("privacy_policy") }}
       />
       <AppStack.Screen
         name="Terms"
         component={StaticScreen}
-        options={{ headerShown: true, title: t("terms_of_service") }}
+        options={{ title: t("terms_of_service") }}
       />
     </AppStack.Navigator>
   );
 };
 
+// ---------------------------------------------------------------------------
+// Navigation — точка входа
+// ---------------------------------------------------------------------------
 const Navigation = () => {
   const { theme } = useTheme();
   const { isAuthenticated } = useAuth();
@@ -102,7 +119,7 @@ const Navigation = () => {
         }
       }}
     >
-      {isAuthenticated ? <AppNavigatorWithStatic /> : <AuthNavigator />}
+      {isAuthenticated ? <AppRoot /> : <AuthRoot />}
     </NavigationContainer>
   );
 };
