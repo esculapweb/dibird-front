@@ -584,7 +584,7 @@ export type WelcomeScreenNavigationProp = CompositeNavigationProp<
 >;
 
 export type AppStackParamList = {
-  Main: undefined; // MainDrawer
+  Main: undefined; 
   Profile: undefined;
   Settings: undefined;
   Stat: ScreenWithFilters | undefined;

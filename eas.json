@@ -49,6 +49,9 @@
       "ios": {
         "resourceClass": "medium"
       },
+      "android": {
+        "buildType": "app-bundle"  
+      },
       "env": {
         "EXPO_PUBLIC_ENV": "production",
         "EXPO_PUBLIC_BASE_URL": "https://dibird.com",
@@ -63,7 +66,7 @@
     "production": {
       "ios": {
         "appleId": "dibird.com@gmail.com",
-        // "ascAppId": "1234567890" // из App Store Connect → App → General → Apple ID
+        "ascAppId": "6769583353" 
       },
       "android": {
         // "serviceAccountKeyPath": "./google-service-account.json",
