@@ -157,72 +157,74 @@ const ConfirmBottomSheet = forwardRef<
           height: 4,
         }}
       >
-        <BottomSheetView style={styles.container}>
-          <Text style={[styles.title, danger && { color: Colors.error600 }]}>
-            {title}
-          </Text>
-
-          {resolvedDescription ? (
-            <Text style={styles.description}>{resolvedDescription}</Text>
-          ) : null}
-
-          {resolvedRequired ? (
-            <View style={styles.inputBlock}>
-              {inputLabel ? (
-                <Text style={styles.inputLabel}>{inputLabel}</Text>
-              ) : null}
-              <BottomSheetTextInput
-                style={[
-                  styles.input,
-                  {
-                    borderColor:
-                      inputValue.length > 0
-                        ? isMatch
-                          ? Colors.green
-                          : Colors.error600
-                        : Colors.border,
-                    color: Colors.textMain,
-                    backgroundColor: Colors.backgroundMain,
-                  },
-                ]}
-                value={inputValue}
-                onChangeText={setInputValue}
-                placeholder={resolvedPlaceholder}
-                placeholderTextColor={Colors.textSecondary}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="email-address"
-              />
-            </View>
-          ) : null}
-
-          <Pressable
-            style={[
-              styles.primaryButton,
-              { backgroundColor: confirmBg },
-              isConfirmDisabled && { opacity: 0.6 },
-            ]}
-            onPress={handleConfirm}
-            disabled={isConfirmDisabled}
-          >
-            {isLoading ? (
-              <ActivityIndicator color={Colors.textOpposite} size="small" />
-            ) : (
-              <Text
-                style={[styles.primaryText, { color: Colors.textOpposite }]}
-              >
-                {confirmText}
-              </Text>
-            )}
-          </Pressable>
-
-          <Pressable style={styles.secondaryButton} onPress={dismiss}>
-            <Text
-              style={[styles.secondaryText, { color: Colors.textSecondary }]}
-            >
-              {cancelText}
+        <BottomSheetView style={styles.outer}>
+          <View style={styles.container}>
+            <Text style={[styles.title, danger && { color: Colors.error600 }]}>
+              {title}
             </Text>
-          </Pressable>
+
+            {resolvedDescription ? (
+              <Text style={styles.description}>{resolvedDescription}</Text>
+            ) : null}
+
+            {resolvedRequired ? (
+              <View style={styles.inputBlock}>
+                {inputLabel ? (
+                  <Text style={styles.inputLabel}>{inputLabel}</Text>
+                ) : null}
+                <BottomSheetTextInput
+                  style={[
+                    styles.input,
+                    {
+                      borderColor:
+                        inputValue.length > 0
+                          ? isMatch
+                            ? Colors.green
+                            : Colors.error600
+                          : Colors.border,
+                      color: Colors.textMain,
+                      backgroundColor: Colors.backgroundMain,
+                    },
+                  ]}
+                  value={inputValue}
+                  onChangeText={setInputValue}
+                  placeholder={resolvedPlaceholder}
+                  placeholderTextColor={Colors.textSecondary}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="email-address"
+                />
+              </View>
+            ) : null}
+
+            <Pressable
+              style={[
+                styles.primaryButton,
+                { backgroundColor: confirmBg },
+                isConfirmDisabled && { opacity: 0.6 },
+              ]}
+              onPress={handleConfirm}
+              disabled={isConfirmDisabled}
+            >
+              {isLoading ? (
+                <ActivityIndicator color={Colors.textOpposite} size="small" />
+              ) : (
+                <Text
+                  style={[styles.primaryText, { color: Colors.textOpposite }]}
+                >
+                  {confirmText}
+                </Text>
+              )}
+            </Pressable>
+
+            <Pressable style={styles.secondaryButton} onPress={dismiss}>
+              <Text
+                style={[styles.secondaryText, { color: Colors.textSecondary }]}
+              >
+                {cancelText}
+              </Text>
+            </Pressable>
+          </View>
         </BottomSheetView>
       </BottomSheetModal>
     );
@@ -235,12 +237,18 @@ export default ConfirmBottomSheet;
 
 const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
+    outer: {
+      flex: 1,
+      alignItems: "center",
+      backgroundColor: Colors.primary100,
+    },
     container: {
       paddingHorizontal: 20,
       paddingBottom: 24,
       paddingTop: 8,
       gap: 10,
-      backgroundColor: Colors.primary100,
+      width: "100%",
+      maxWidth: 680,
     },
     title: {
       fontSize: 17,

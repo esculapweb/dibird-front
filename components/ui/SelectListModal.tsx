@@ -120,7 +120,7 @@ const SelectListModal = ({
           <Text style={styles.emptyText}>{t("no_options_available")}</Text>
         </View>
       ) : (
-        <>
+        <View style={styles.content}>
           <SearchInput
             value={search}
             onChange={setSearch}
@@ -172,7 +172,7 @@ const SelectListModal = ({
               }
             />
           )}
-        </>
+        </View>
       )}
     </ModalWrapper>
   );
@@ -205,5 +205,11 @@ const stylesFn = (Colors: ThemeColors) =>
       shadowRadius: 4,
       shadowOffset: { width: 0, height: 2 },
       elevation: 2,
+    },
+    content: {
+      flex: 1,
+      width: '100%',
+      maxWidth: 680,
+      alignSelf: 'center',
     },
   });

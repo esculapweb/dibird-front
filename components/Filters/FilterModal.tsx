@@ -217,6 +217,7 @@ const FilterModal = ({
     >
       <View style={styles.container}>
         <ScrollView
+          style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
@@ -305,11 +306,16 @@ const FilterModal = ({
 export default FilterModal;
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scroll: {
+    alignSelf: "center",
+    width: "100%",
+    maxWidth: 680,
+  },
   scrollContent: {
     padding: 16,
     paddingBottom: 40,
-  },
-  container: {
-    flex: 1,
   },
 });

@@ -323,6 +323,7 @@ const DiaryDetailScreen = () => {
       handleSharePress={handleShare}
       listHeader={listHeader}
       bottomEl={bottomEl}
+      fabBottomOffset={90}
     />
   );
 };

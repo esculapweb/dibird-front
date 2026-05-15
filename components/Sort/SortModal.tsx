@@ -60,6 +60,7 @@ const SortModal = ({
     >
       <View style={styles.container}>
         <ScrollView
+          style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
@@ -81,11 +82,16 @@ const SortModal = ({
 export default SortModal;
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scroll: {
+    alignSelf: "center",
+    width: "100%",
+    maxWidth: 680,
+  },
   scrollContent: {
     padding: 18,
     paddingBottom: 40,
-  },
-  container: {
-    flex: 1,
   },
 });

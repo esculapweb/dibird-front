@@ -3,7 +3,6 @@ import {
   StyleSheet,
   Text,
   View,
-  useWindowDimensions,
   Pressable,
 } from "react-native";
 import { useTranslation } from "react-i18next";
@@ -14,6 +13,7 @@ import { useTheme, ThemeColors } from "../../store/theme-context";
 import { fetchMyActivity } from "../../util/fetches";
 import { SparklineSkeleton } from "./SparklineSkeleton";
 import { ActivityResponse, Filters } from "../../types";
+import { useContentWidth } from "../../hooks/useContentWidth";
 
 const H_PAD = 16;
 const SPARK_H = 52;
@@ -29,7 +29,7 @@ const Sparkline = ({
   const [mode, setMode] = useState("newSpecies");
 
   const { t } = useTranslation();
-  const { width } = useWindowDimensions();
+  const width = useContentWidth();
   const { Colors } = useTheme();
 
   const mainColor = Colors.main100;

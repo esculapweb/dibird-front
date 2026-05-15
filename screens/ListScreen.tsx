@@ -5,9 +5,15 @@ import {
   useLayoutEffect,
   ReactNode,
 } from "react";
-import { ListRenderItem, FlatListProps } from "react-native";
+import {
+  StyleSheet,
+  Pressable,
+  ListRenderItem,
+  FlatListProps,
+} from "react-native";
 import { useTranslation } from "react-i18next";
 import { useNavigation, RouteProp } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import FilterModal from "../components/Filters/FilterModal";
@@ -20,6 +26,7 @@ import HeaderTitleWithBadge from "../components/ui/HeaderTitleWithBadge";
 import SearchInput from "../components/ui/SearchInput";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import { useSyncedFilters } from "../hooks/useSyncedFilters";
+import { useTheme, ThemeColors } from "../store/theme-context";
 import Layout from "../components/ui/Layout";
 import {
   AppStackNavigationProp,
@@ -63,6 +70,7 @@ interface ListScreenProps<T, RouteName extends ScreenWithFiltersOnly> {
   showHeaderBadge?: boolean;
   topEl?: ReactNode;
   bottomEl?: ReactNode;
+  fabBottomOffset?: number;
 }
 
 const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
@@ -93,9 +101,12 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
   showHeaderBadge = true,
   topEl,
   bottomEl,
+  fabBottomOffset = 20,
 }: ListScreenProps<T, RouteName>) => {
   const screenName = route.name;
   const { t } = useTranslation();
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors, fabBottomOffset);
   const resolvedGetItemId = (item: T): string | number =>
     getItemId
       ? getItemId(item)
@@ -266,7 +277,23 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
   if (isLoading || !data) return <LoadingOverlay />;
 
   return (
-    <Layout bottom={bottomEl} top={topEl ?? searchEl}>
+    <Layout
+      bottom={
+        <>
+          {onAdd && (
+            <Pressable style={styles.fab} onPress={onAdd}>
+              <Ionicons
+                name={fabIcon ?? "add"}
+                size={28}
+                color={Colors.textOpposite}
+              />
+            </Pressable>
+          )}
+          {bottomEl}
+        </>
+      }
+      top={topEl ?? searchEl}
+    >
       {hasActiveFilters && (
         <FilterChips
           filters={filters}
@@ -280,14 +307,12 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
         data={items}
         onEndReached={handleLoadMore}
         isLoadingMore={isFetchingNextPage}
-        onAdd={onAdd}
         emptyType={emptyType}
         onClear={handleClearFiltersSearch}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         noItems={noItems}
         listHeader={listHeader}
-        fabIcon={fabIcon}
       />
       <SortModal
         screen={screenName}
@@ -313,3 +338,23 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
 };
 
 export default ListScreen;
+
+const stylesFn = (Colors: ThemeColors, fabBottomOffset: number) =>
+  StyleSheet.create({
+    fab: {
+      position: "absolute",
+      bottom: fabBottomOffset,
+      right: 20,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: Colors.main100,
+      shadowColor: Colors.shadow,
+      shadowOpacity: 0.3,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 3 },
+      elevation: 6,
+    },
+  });

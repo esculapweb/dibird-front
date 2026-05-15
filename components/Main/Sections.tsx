@@ -2,7 +2,6 @@ import {
   StyleSheet,
   Text,
   View,
-  useWindowDimensions,
   TouchableOpacity,
 } from "react-native";
 import { useTranslation } from "react-i18next";
@@ -15,6 +14,7 @@ import {
   DashboardStat,
   IconType,
 } from "../../types";
+import { useContentWidth } from "../../hooks/useContentWidth";
 
 const H_PAD = 16;
 const SEC_GAP = 8;
@@ -38,7 +38,7 @@ interface Section {
 const Sections = ({ data }: { data: DashboardStat }) => {
   const navigation = useNavigation<AppStackNavigationProp>();
   const { t } = useTranslation();
-  const { width } = useWindowDimensions();
+  const width = useContentWidth();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
 

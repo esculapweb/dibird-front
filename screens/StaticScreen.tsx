@@ -1,7 +1,6 @@
 import {
   StyleSheet,
   ActivityIndicator,
-  useWindowDimensions,
 } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import RenderHtml from "react-native-render-html";
@@ -12,12 +11,13 @@ import Layout from "../components/ui/Layout";
 import { fetchPage } from "../util/fetches";
 import { useLanguage } from "../store/language-context";
 import { useTheme, ThemeColors } from "../store/theme-context";
+import { useContentWidth } from "../hooks/useContentWidth";
 
 const H_PAD = 16;
 
 const StaticScreen = () => {
   const { Colors } = useTheme();
-  const { width } = useWindowDimensions();
+  const width = useContentWidth();
   const insets = useSafeAreaInsets();
   const styles = stylesFn(Colors, insets);
   const { language } = useLanguage();
