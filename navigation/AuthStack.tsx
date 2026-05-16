@@ -6,7 +6,7 @@ import {
   DrawerContentComponentProps,
   DrawerItem,
 } from "@react-navigation/drawer";
-import { View, Linking } from "react-native";
+import { View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import WelcomeScreen from "../screens/WelcomeScreen";
@@ -18,7 +18,7 @@ import LanguageSwitcher from "../components/Language/LanguageSwitcher";
 import { useTheme } from "../store/theme-context";
 import ThemeSwitcher from "../components/Theme/ThemeSwitcher";
 import type { AuthDrawerParamList, AuthStackParamList } from "../types";
-import { Config } from "../constants/config";
+import { openSupportEmail } from "../util/openSupportEmail";
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 const Drawer = createDrawerNavigator<AuthDrawerParamList>();
@@ -48,10 +48,7 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
         <DrawerItem
           label={t("settings_send_feedback")}
           labelStyle={{ color: Colors.textMain }}
-          onPress={() => {
-            const emailUrl = `mailto:${encodeURIComponent(Config.email)}?subject=${encodeURIComponent("Support Request - [DiBird]")}`;
-            Linking.openURL(emailUrl);
-          }}
+          onPress={openSupportEmail}
           icon={({ color, size }) => (
             <Ionicons name="chatbubble-outline" color={color} size={size} />
           )}

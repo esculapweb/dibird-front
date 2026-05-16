@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, Linking } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useRoute } from "@react-navigation/native";
 
@@ -6,7 +6,7 @@ import { useTheme, ThemeColors } from "../store/theme-context";
 import Layout from "../components/ui/Layout";
 import Logo from "../components/ui/Logo";
 import { AuthStackRouteProp } from "../types";
-import { Config } from "../constants/config";
+import { openSupportEmail } from "../util/openSupportEmail";
 
 const CheckEmailScreen = () => {
   const { Colors } = useTheme();
@@ -17,11 +17,6 @@ const CheckEmailScreen = () => {
 
   if (!email) return null;
 
-  const handleFeedback = () => {
-    const emailUrl = `mailto:${encodeURIComponent(Config.email)}?subject=${encodeURIComponent("Support Request - [DiBird]")}`;
-    Linking.openURL(emailUrl);
-  };
-
   return (
     <Layout>
       <View style={styles.container}>
@@ -31,7 +26,7 @@ const CheckEmailScreen = () => {
           {t("verification_sent_before")}
           <Text
             style={{ color: Colors.main100, textDecorationLine: "underline" }}
-            onPress={handleFeedback}
+            onPress={openSupportEmail}
           >
             {t("verification_sent_link")}
           </Text>

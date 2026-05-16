@@ -6,7 +6,6 @@ import {
   StyleSheet,
   Platform,
   Share,
-  Linking,
   Switch,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
@@ -32,6 +31,7 @@ import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import { useExportProfile } from "../hooks/Profile/useExportProfile";
 import { useBiometricSetting } from "../hooks/useBiometricSetting";
 import { canUseBiometrics } from "../services/bio";
+import { openSupportEmail } from "../util/openSupportEmail";
 
 // ------------------------------------------------------------------
 // Primitives
@@ -208,11 +208,6 @@ const SettingsScreen = () => {
     );
   };
 
-  const handleFeedback = () => {
-    const emailUrl = `mailto:${encodeURIComponent(Config.email)}?subject=${encodeURIComponent("Support Request - [DiBird]")}`;
-    Linking.openURL(emailUrl);
-  };
-
   const isExporting = exportState === "pending" || exportState === "processing";
   useEffect(() => () => cleanup(), []);
 
@@ -244,7 +239,7 @@ const SettingsScreen = () => {
         <Row
           icon="chatbubble-outline"
           label={t("settings_send_feedback")}
-          onPress={handleFeedback}
+          onPress={openSupportEmail}
           hideChevron
           colors={Colors}
           styles={styles}

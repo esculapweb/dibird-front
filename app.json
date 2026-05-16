@@ -33,7 +33,8 @@
       "infoPlist": {
         "NSFaceIDUsageDescription": "Used to sign in to DiBird using Face ID.",
         "NSLocationWhenInUseUsageDescription": "DiBird uses your location to sort bird watching spots by distance from you and save them on the map.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "LSApplicationQueriesSchemes": ["mailto"]
       }
     },
     "android": {
