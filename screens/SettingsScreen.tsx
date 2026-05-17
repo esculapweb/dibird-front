@@ -21,11 +21,7 @@ import ConfirmBottomSheet, {
 import { ThemeColors, useTheme } from "../store/theme-context";
 import { useProfile } from "../store/profile-context";
 import { useAuth } from "../store/auth-context";
-import {
-  AppError,
-  AppDrawerNavigationProp,
-  IconType,
-} from "../types";
+import { AppError, AppDrawerNavigationProp, IconType } from "../types";
 import { Config } from "../constants/config";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import { useExportProfile } from "../hooks/Profile/useExportProfile";
@@ -186,7 +182,9 @@ const SettingsScreen = () => {
   }, []);
 
   const handleDeleteConfirmed = async () => {
-    const res = await api.delete("/myapi/profile/delete-me/");
+    const res = await api.delete("/myapi/profile/delete-me/", {
+      data: { email: userEmail },
+    });
     if (res?.status === 204) {
       await logout();
     }
