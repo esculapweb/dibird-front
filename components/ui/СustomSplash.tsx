@@ -1,16 +1,19 @@
 import { useEffect, useRef } from "react";
-import { View, Image, Animated, StyleSheet } from "react-native";
+import { Appearance, View, Image, Animated, StyleSheet } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
-import { useTheme, ThemeColors } from "../../store/theme-context";
+import { ThemeColors } from "../../store/theme-context";
+import { LightColors } from "../../constants/colors/light";
+import { DarkColors } from "../../constants/colors/dark";
 
 SplashScreen.preventAutoHideAsync();
 
 const CustomSplash = ({ onFinish }: { onFinish: () => void }) => {
+  const colorScheme = Appearance.getColorScheme();
+  const Colors = colorScheme === "dark" ? DarkColors : LightColors;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const { t } = useTranslation();
-  const { Colors } = useTheme();
   const styles = stylesFn(Colors);
 
   useEffect(() => {
