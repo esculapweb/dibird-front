@@ -19,6 +19,7 @@ import {
   getAnalytics,
   setAnalyticsCollectionEnabled,
 } from "@react-native-firebase/analytics";
+import * as Updates from 'expo-updates';
 
 import AuthContextProvider, { useAuth } from "./store/auth-context";
 import { ProfileProvider } from "./store/profile-context";
@@ -98,6 +99,19 @@ export default Sentry.wrap(function App() {
   useEffect(() => {
     const init = async () => {
       await setAnalyticsCollectionEnabled(getAnalytics(), !__DEV__);
+      
+      if (!__DEV__) {
+        try {
+          const update = await Updates.checkForUpdateAsync();
+          if (update.isAvailable) {
+            await Updates.fetchUpdateAsync();
+            await Updates.reloadAsync();
+          }
+        } catch (e) {
+          console.error('[Updates]', e);
+        }
+      }
+
     };
     init();
   }, []);
