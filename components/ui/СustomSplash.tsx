@@ -1,5 +1,11 @@
 import { useEffect, useRef } from "react";
-import { Appearance, View, Image, Animated, StyleSheet } from "react-native";
+import {
+  useColorScheme,
+  View,
+  Image,
+  Animated,
+  StyleSheet,
+} from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -10,21 +16,18 @@ import { DarkColors } from "../../constants/colors/dark";
 SplashScreen.preventAutoHideAsync();
 
 const CustomSplash = ({ onFinish }: { onFinish: () => void }) => {
-  const colorScheme = Appearance.getColorScheme();
+  const colorScheme = useColorScheme();
   const Colors = colorScheme === "dark" ? DarkColors : LightColors;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
   const { t } = useTranslation();
   const styles = stylesFn(Colors);
 
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 500,
-      useNativeDriver: true,
-    }).start(async () => {
+    const timer = setTimeout(async () => {
       await SplashScreen.hideAsync();
-      setTimeout(() => onFinish?.(), 500);
-    });
+      onFinish?.();
+    }, 1000);
+    return () => clearTimeout(timer);
   }, []);
 
   return (
