@@ -20,7 +20,7 @@ import {
   getAnalytics,
   setAnalyticsCollectionEnabled,
 } from "@react-native-firebase/analytics";
-import * as Updates from 'expo-updates';
+import * as Updates from "expo-updates";
 
 import AuthContextProvider, { useAuth } from "./store/auth-context";
 import { ProfileProvider } from "./store/profile-context";
@@ -97,14 +97,14 @@ const Root = () => {
 };
 
 export default Sentry.wrap(function App() {
-  const colorScheme = useColorScheme(); 
+  const colorScheme = useColorScheme();
   const backgroundColor = colorScheme === "dark" ? "#1b1b1b" : "#ffffff";
 
   useEffect(() => {
     const init = async () => {
       await setAnalyticsCollectionEnabled(getAnalytics(), !__DEV__);
-      
-      if (!__DEV__) {
+
+      if (!__DEV__ && Updates.isEnabled) {
         try {
           const update = await Updates.checkForUpdateAsync();
           if (update.isAvailable) {
@@ -112,10 +112,9 @@ export default Sentry.wrap(function App() {
             await Updates.reloadAsync();
           }
         } catch (e) {
-          console.error('[Updates]', e);
+          console.error("[Updates]", e);
         }
       }
-
     };
     init();
   }, []);
