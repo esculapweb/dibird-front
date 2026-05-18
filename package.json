@@ -10,7 +10,10 @@
     "i18n:extract": "i18next",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "check": "tsc --noEmit && eslint ."
+    "check": "tsc --noEmit && eslint .",
+    "update:production": "NODE_ENV=production eas update --branch production --environment production",
+    "update:preview": "NODE_ENV=preview eas update --branch preview --environment preview",
+    "update:development": "eas update --branch development --environment development"
   },
   "dependencies": {
     "@expo/react-native-action-sheet": "^4.1.1",
