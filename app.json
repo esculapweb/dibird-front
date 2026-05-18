@@ -2,7 +2,7 @@
   "expo": {
     "name": "DiBird",
     "slug": "dibird",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "scheme": "dibird",
     "userInterfaceStyle": "automatic",
@@ -26,13 +26,12 @@
       "bundleIdentifier": "com.dibird.app",
       "supportsTablet": true,
       "requireFullScreen": true,
-      "associatedDomains": [
-        "applinks:dibird.com"
-      ],
+      "associatedDomains": ["applinks:dibird.com"],
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSFaceIDUsageDescription": "Used to sign in to DiBird using Face ID.",
         "NSLocationWhenInUseUsageDescription": "DiBird uses your location to sort bird watching spots by distance from you and save them on the map.",
+        "NSPhotoLibraryUsageDescription": "DiBird uses your photo library so you can select a profile picture. For example, you can choose an image from your gallery to set or update your avatar.",
         "ITSAppUsesNonExemptEncryption": false,
         "LSApplicationQueriesSchemes": ["mailto"]
       }
@@ -82,10 +81,7 @@
               "pathPrefix": "/users/"
             }
           ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
+          "category": ["BROWSABLE", "DEFAULT"]
         }
       ]
     },
