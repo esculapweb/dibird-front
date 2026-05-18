@@ -12,10 +12,14 @@
           "package_name": "com.dibird.app"
         }
       },
-      "oauth_client": [],
-      "api_key": [
+      "oauth_client": [
         {
-          "current_key": "AIzaSyDQSIK1dUiDzKORNa66GwdbawAQIvNBa_M"
+          "client_id": "450151091368-6rgl5vk94bctppdgu6bcqdn9u4l2blqb.apps.googleusercontent.com",
+          "client_type": 1
+        },
+        {
+          "client_id": "450151091368-2c3vvb49mkuhloifvgfkmbgqgdkhqki7.apps.googleusercontent.com",
+          "client_type": 3
         }
       ],
       "services": {
