@@ -1,9 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import {
   useColorScheme,
   View,
   Image,
-  Animated,
+  Text,
   StyleSheet,
 } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
@@ -15,18 +15,26 @@ import { DarkColors } from "../../constants/colors/dark";
 
 SplashScreen.preventAutoHideAsync();
 
-const CustomSplash = ({ onFinish }: { onFinish: () => void }) => {
+const CustomSplash = ({
+  onFinish,
+  waitFor,
+}: {
+  onFinish: () => void;
+  waitFor?: Promise<void>;
+}) => {
   const colorScheme = useColorScheme();
   const Colors = colorScheme === "dark" ? DarkColors : LightColors;
-  const fadeAnim = useRef(new Animated.Value(1)).current;
   const { t } = useTranslation();
   const styles = stylesFn(Colors);
 
   useEffect(() => {
-    const timer = setTimeout(async () => {
+    const run = async () => {
+      await waitFor;
       await SplashScreen.hideAsync();
       onFinish?.();
-    }, 1000);
+    };
+
+    const timer = setTimeout(run, 1000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -38,9 +46,7 @@ const CustomSplash = ({ onFinish }: { onFinish: () => void }) => {
         resizeMode="contain"
       />
       <SafeAreaView style={styles.bottomContainer}>
-        <Animated.Text style={[styles.bottomText, { opacity: fadeAnim }]}>
-          {t("app_name")}
-        </Animated.Text>
+        <Text style={styles.bottomText}>{t("app_name")}</Text>
       </SafeAreaView>
     </View>
   );

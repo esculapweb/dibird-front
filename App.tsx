@@ -1,4 +1,4 @@
-import { useState, useEffect, ReactNode } from "react";
+import { useState, ReactNode } from "react";
 import { useColorScheme } from "react-native";
 import "react-native-gesture-handler";
 import "react-native-reanimated";
@@ -44,6 +44,22 @@ Sentry.init({
 
 initGoogleSignIn();
 
+const appInitPromise: Promise<void> = (async () => {
+  await setAnalyticsCollectionEnabled(getAnalytics(), !__DEV__);
+
+  if (!__DEV__ && Updates.isEnabled) {
+    try {
+      const update = await Updates.checkForUpdateAsync();
+      if (update.isAvailable) {
+        await Updates.fetchUpdateAsync();
+        await Updates.reloadAsync();
+      }
+    } catch (e) {
+      console.error("[Updates]", e);
+    }
+  }
+})();
+
 const queryClient = new QueryClient({
   queryCache: new QueryCache(),
   mutationCache: new MutationCache(),
@@ -78,7 +94,12 @@ const Root = () => {
   const [splashFinished, setSplashFinished] = useState(false);
 
   if (isInitializing || !splashFinished) {
-    return <CustomSplash onFinish={() => setSplashFinished(true)} />;
+    return (
+      <CustomSplash
+        onFinish={() => setSplashFinished(true)}
+        waitFor={appInitPromise}
+      />
+    );
   }
 
   return (
@@ -99,25 +120,6 @@ const Root = () => {
 export default Sentry.wrap(function App() {
   const colorScheme = useColorScheme();
   const backgroundColor = colorScheme === "dark" ? "#1b1b1b" : "#ffffff";
-
-  useEffect(() => {
-    const init = async () => {
-      await setAnalyticsCollectionEnabled(getAnalytics(), !__DEV__);
-
-      if (!__DEV__ && Updates.isEnabled) {
-        try {
-          const update = await Updates.checkForUpdateAsync();
-          if (update.isAvailable) {
-            await Updates.fetchUpdateAsync();
-            await Updates.reloadAsync();
-          }
-        } catch (e) {
-          console.error("[Updates]", e);
-        }
-      }
-    };
-    init();
-  }, []);
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor }}>
