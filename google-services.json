@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "135122891711-fodbb1991s2o286qg6phgj1rhara0ds4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dibird.app",
+            "certificate_hash": "ab2107a85c0d098b4e91ec9e2a33fb32260f0e06"
+          }
+        },
+        {
           "client_id": "135122891711-1n5e7daoce1f5immq6n1pta52627d6ti.apps.googleusercontent.com",
           "client_type": 3
         }
