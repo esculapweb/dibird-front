@@ -27,7 +27,7 @@ export const Config = {
   isDev: __DEV__,
   isProd: env === "production",
   googleWebClientId:
-    "450151091368-2c3vvb49mkuhloifvgfkmbgqgdkhqki7.apps.googleusercontent.com",
+    "135122891711-1n5e7daoce1f5immq6n1pta52627d6ti.apps.googleusercontent.com",
   googleIosClientId:
     "450151091368-ha8kdd4hq7vil079e10p59pcr7ln0pgj.apps.googleusercontent.com",  
 };
