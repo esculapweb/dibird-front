@@ -4,6 +4,10 @@ import * as SecureStore from "expo-secure-store";
 
 const BIOMETRIC_KEY = "biometric_enabled";
 
+const STORE_OPTIONS: SecureStore.SecureStoreOptions = {
+  keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK,
+};
+
 export const canUseBiometrics = async () => {
   if (
     Platform.OS === "ios" &&
@@ -16,6 +20,6 @@ export const canUseBiometrics = async () => {
 export const shouldUseBiometrics = async () => {
   const hardwareOk = await canUseBiometrics();
   if (!hardwareOk) return false;
-  const stored = await SecureStore.getItemAsync(BIOMETRIC_KEY);
+  const stored = await SecureStore.getItemAsync(BIOMETRIC_KEY, STORE_OPTIONS);
   return stored === "true";
 };

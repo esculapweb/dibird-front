@@ -159,17 +159,25 @@ const api = axios.create({
   },
 });
 
-export const getAccessToken = () => {
-  return SecureStore.getItemAsync("access");
+export const getAccessToken = async () => {
+  try {
+    return await SecureStore.getItemAsync("access");
+  } catch {
+    return null;
+  }
 };
 
 let cachedRefreshToken: string | null = null;
 
 export const getRefreshToken = async () => {
   if (cachedRefreshToken) return cachedRefreshToken;
-  const token = await SecureStore.getItemAsync("refresh");
-  if (token) cachedRefreshToken = token;
-  return token;
+  try {
+    const token = await SecureStore.getItemAsync("refresh");
+    if (token) cachedRefreshToken = token;
+    return token;
+  } catch {
+    return null;
+  }
 };
 
 const refreshAccessToken = async () => {
@@ -192,13 +200,16 @@ export const saveTokens = async ({
   refresh?: string;
 }) => {
   isLoggingOut = false;
+  const options: SecureStore.SecureStoreOptions = {
+    keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK,
+  };
   if (access) {
-    await SecureStore.setItemAsync("access", access);
+    await SecureStore.setItemAsync("access", access, options);
     notifyTokenUpdate(access);
   }
   if (refresh) {
     cachedRefreshToken = refresh;
-    await SecureStore.setItemAsync("refresh", refresh);
+    await SecureStore.setItemAsync("refresh", refresh, options);
   }
 };
 
