@@ -102,6 +102,9 @@ export const LoginWithGoogle = async () => {
     await GoogleSignin.hasPlayServices();
 
     const userInfo = await GoogleSignin.signIn();
+    if (!userInfo?.data) return;
+    
+    await new Promise(resolve => setTimeout(resolve, 500));
     const tokens = await GoogleSignin.getTokens();
 
     const idToken = userInfo.data?.idToken;
@@ -139,6 +142,7 @@ export const LoginWithGoogle = async () => {
     return access;
   } catch (e) {
     const error = e as AppError;
+    // console.log(error.message)
     Sentry.captureException(error, {
       tags: {
         auth_provider: "google",

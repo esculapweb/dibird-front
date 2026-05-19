@@ -7,10 +7,11 @@ import {
   ReactNode,
 } from "react";
 import * as LocalAuthentication from "expo-local-authentication";
+import * as SecureStore from "expo-secure-store";
 
 import { setOnTokenUpdate } from "../services/authService";
 import { Logout } from "../util/auth";
-import { setOnUnauthorized, saveTokens, getAccessToken } from "../services/api";
+import { setOnUnauthorized } from "../services/api";
 import i18n from "../services/i18n";
 import { shouldUseBiometrics } from "../services/bio";
 
@@ -36,7 +37,7 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
 
   const authenticate = useCallback(async (access: string | null) => {
     setAuthToken(access);
-    if (access) await saveTokens({ access });
+    if (access) await SecureStore.setItemAsync("access", access);
   }, []);
 
   const logout = useCallback(async () => {
@@ -58,7 +59,7 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
             return;
           }
         }
-        const storedToken = await getAccessToken();
+        const storedToken = await SecureStore.getItemAsync("access");
         if (storedToken) setAuthToken(storedToken);
       } catch (e) {
         console.warn("SecureStore unavailable on restore:", e);

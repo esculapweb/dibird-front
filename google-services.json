@@ -29,6 +29,13 @@
             {
               "client_id": "135122891711-1n5e7daoce1f5immq6n1pta52627d6ti.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "135122891711-h2vjlr2ute6gtdfjk6ag8pb2bp2o1a71.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.dibird.app"
+              }
             }
           ]
         }

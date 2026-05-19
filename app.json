@@ -98,7 +98,7 @@
       [
         "@react-native-google-signin/google-signin",
         {
-          "iosUrlScheme": "com.googleusercontent.apps.450151091368-ha8kdd4hq7vil079e10p59pcr7ln0pgj"
+          "iosUrlScheme": "com.googleusercontent.apps.135122891711-h2vjlr2ute6gtdfjk6ag8pb2bp2o1a71"
         }
       ],
       "@react-native-community/datetimepicker",

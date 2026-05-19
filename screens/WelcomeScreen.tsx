@@ -21,15 +21,18 @@ import { showError } from "../services/api";
 import { AppError, WelcomeScreenNavigationProp } from "../types";
 import FloatingHeader from "../components/ui/FloatingHeader";
 
-
 const WelcomeScreen = () => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = stylesFn(Colors, insets);
   const navigation = useNavigation<WelcomeScreenNavigationProp>();
+  const [loadingGoogle, setLoadingGoogle] = useState(false);
 
   const handleGoogle = async () => {
+    if (loadingGoogle) return;
+    setLoadingGoogle(true);
+
     try {
       await LoginWithGoogle();
     } catch (e) {
@@ -37,6 +40,8 @@ const WelcomeScreen = () => {
       if (err.code !== "SIGN_IN_CANCELLED") {
         showError(err);
       }
+    } finally {
+      setLoadingGoogle(false);
     }
   };
 
@@ -96,7 +101,11 @@ const WelcomeScreen = () => {
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity style={styles.button} onPress={handleGoogle}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={handleGoogle}
+            disabled={loadingGoogle}
+          >
             <Ionicons name="logo-google" size={20} color={Colors.textMain} />
             <Text style={styles.buttonText}>{t("continue_with_google")}</Text>
           </TouchableOpacity>
