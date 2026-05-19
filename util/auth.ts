@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { getAnalytics, logEvent } from "@react-native-firebase/analytics";
+import * as Sentry from "@sentry/react-native";
 
 import api, { saveTokens, clearTokens, getRefreshToken } from "../services/api";
 import { Config } from "../constants/config";
@@ -91,24 +92,65 @@ export const initGoogleSignIn = () => {
 };
 
 export const LoginWithGoogle = async () => {
-  await GoogleSignin.hasPlayServices();
-  const userInfo = await GoogleSignin.signIn();
+  try {
+    Sentry.addBreadcrumb({
+      category: "auth",
+      message: "Google sign in started",
+      level: "info",
+    });
 
-  const tokens = await GoogleSignin.getTokens();
+    await GoogleSignin.hasPlayServices();
 
-  const idToken = userInfo.data?.idToken;
-  const accessToken = tokens.accessToken;
-  if (!idToken || !accessToken) throw new Error("Google: missing tokens");
+    const userInfo = await GoogleSignin.signIn();
+    const tokens = await GoogleSignin.getTokens();
 
-  const { access, refresh, is_new_user } = await post("/auth/google/?agree_terms=1", {
-    access_token: accessToken,
-    id_token: idToken,
-  });
+    const idToken = userInfo.data?.idToken;
+    const accessToken = tokens.accessToken;
 
-  await saveTokens({ access, refresh });
-  const eventName = is_new_user ? "sign_up" : "login";
-  logEvent(getAnalytics(), eventName as string, { method: "google" });
-  return access;
+    if (!idToken || !accessToken) {
+      throw new Error("Google: missing tokens");
+    }
+
+    await clearTokens();
+
+    Sentry.addBreadcrumb({
+      category: "auth",
+      message: "Sending Google tokens to backend",
+      level: "info",
+    });
+
+    const result = await post("/auth/google/?agree_terms=1", {
+      access_token: accessToken,
+      id_token: idToken,
+    });
+
+    const { access, refresh, is_new_user } = result;
+    await saveTokens({ access, refresh });
+    const eventName = is_new_user ? "sign_up" : "login";
+    
+    logEvent(getAnalytics(), eventName as string, { method: "google" });
+
+    Sentry.addBreadcrumb({
+      category: "auth",
+      message: `Google auth success: ${eventName}`,
+      level: "info",
+    });
+    
+    return access;
+  } catch (e) {
+    const error = e as AppError;
+    Sentry.captureException(error, {
+      tags: {
+        auth_provider: "google",
+      },
+      extra: {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      },
+    });
+    throw error;
+  }
 };
 
 export const LoginWithApple = async () => {
@@ -122,12 +164,15 @@ export const LoginWithApple = async () => {
   const { identityToken, fullName } = credential;
   if (!identityToken) throw new Error("Apple: no identity_token");
 
-  const { access, refresh, is_new_user } = await post("/auth/apple/?agree_terms=1", {
-    access_token: identityToken,
-    id_token: identityToken,
-    first_name: fullName?.givenName ?? "",
-    last_name: fullName?.familyName ?? "",
-  });
+  const { access, refresh, is_new_user } = await post(
+    "/auth/apple/?agree_terms=1",
+    {
+      access_token: identityToken,
+      id_token: identityToken,
+      first_name: fullName?.givenName ?? "",
+      last_name: fullName?.familyName ?? "",
+    },
+  );
 
   await saveTokens({ access, refresh });
   const eventName = is_new_user ? "sign_up" : "login";
