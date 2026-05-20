@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -27,24 +27,28 @@ const WelcomeScreen = () => {
   const insets = useSafeAreaInsets();
   const styles = stylesFn(Colors, insets);
   const navigation = useNavigation<WelcomeScreenNavigationProp>();
-  const [loadingGoogle, setLoadingGoogle] = useState(false);
+
+  const googleLoginInProgress = useRef(false);
 
   const handleGoogle = async () => {
-    if (loadingGoogle) return;
-    setLoadingGoogle(true);
+    if (googleLoginInProgress.current) {
+      return;
+    }
+
+    googleLoginInProgress.current = true;
 
     try {
       await LoginWithGoogle();
     } catch (e) {
       const err = e as AppError;
+
       if (err.code !== "SIGN_IN_CANCELLED") {
         showError(err);
       }
     } finally {
-      setLoadingGoogle(false);
+      googleLoginInProgress.current = false;
     }
   };
-
   const handleApple = async () => {
     try {
       await LoginWithApple();
@@ -104,7 +108,8 @@ const WelcomeScreen = () => {
           <TouchableOpacity
             style={styles.button}
             onPress={handleGoogle}
-            disabled={loadingGoogle}
+            disabled={googleLoginInProgress.current}
+            activeOpacity={0.7}
           >
             <Ionicons name="logo-google" size={20} color={Colors.textMain} />
             <Text style={styles.buttonText}>{t("continue_with_google")}</Text>

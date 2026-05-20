@@ -102,12 +102,15 @@ export const LoginWithGoogle = async () => {
     await GoogleSignin.hasPlayServices();
 
     const userInfo = await GoogleSignin.signIn();
-    if (!userInfo?.data) return;
-    
-    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // user cancelled
+    if (!userInfo?.data) {
+      return null;
+    }
+
     const tokens = await GoogleSignin.getTokens();
 
-    const idToken = userInfo.data?.idToken;
+    const idToken = userInfo.data.idToken;
     const accessToken = tokens.accessToken;
 
     if (!idToken || !accessToken) {
@@ -128,21 +131,25 @@ export const LoginWithGoogle = async () => {
     });
 
     const { access, refresh, is_new_user } = result;
+
     await saveTokens({ access, refresh });
+
     const eventName = is_new_user ? "sign_up" : "login";
-    
-    logEvent(getAnalytics(), eventName as string, { method: "google" });
+
+    logEvent(getAnalytics(), eventName as string, {
+      method: "google",
+    });
 
     Sentry.addBreadcrumb({
       category: "auth",
       message: `Google auth success: ${eventName}`,
       level: "info",
     });
-    
+
     return access;
   } catch (e) {
     const error = e as AppError;
-    // console.log(error.message)
+
     Sentry.captureException(error, {
       tags: {
         auth_provider: "google",
@@ -153,6 +160,7 @@ export const LoginWithGoogle = async () => {
         data: error.response?.data,
       },
     });
+
     throw error;
   }
 };
