@@ -99,11 +99,20 @@ export const LoginWithGoogle = async () => {
       level: "info",
     });
 
-    await GoogleSignin.hasPlayServices();
+    try {
+      await GoogleSignin.hasPlayServices({
+        showPlayServicesUpdateDialog: true,
+      });
+    } catch (e) {
+      Sentry.captureException(e, {
+        tags: { auth_provider: "google" },
+        extra: { step: "hasPlayServices" },
+      });
+      return null;
+    }
 
     const userInfo = await GoogleSignin.signIn();
 
-    // user cancelled
     if (!userInfo?.data) {
       return null;
     }
