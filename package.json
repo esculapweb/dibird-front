@@ -1,6 +1,6 @@
 {
-  "name": "rnc5",
-  "version": "1.0.1",
+  "name": "dibird",
+  "version": "26.05.0",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
