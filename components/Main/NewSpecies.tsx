@@ -48,7 +48,7 @@ const NewSpecies: FC<NewSpeciesProps> = ({ filters, filtersLoaded }) => {
     screenName: "Stat",
     fetchFunction: fetchStatSeen,
     filters,
-    sort: "-seen,-date_time",
+    sort: "-seen,-date_time,-created_at",
     tabsMode: "seen",
     enabled: filtersLoaded,
   });

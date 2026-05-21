@@ -93,6 +93,7 @@ const StatCard = memo(
                   styles.title,
                   isAllMode && !isSeen && styles.titleUnseen,
                 ]}
+                numberOfLines={1}
               >
                 {item.sp_name_lang}
               </Text>
@@ -107,7 +108,10 @@ const StatCard = memo(
             </View>
 
             <View style={styles.latinRow}>
-              <Text style={[styles.latin, !isSeen && styles.latinUnseen]}>
+              <Text
+                style={[styles.latin, !isSeen && styles.latinUnseen]}
+                numberOfLines={1}
+              >
                 {item.sp_latin}
               </Text>
               {isSeen && countriesText && (
