@@ -65,10 +65,13 @@ const SelectListModal = ({
         .map((o) => o.value)
     : [];
 
+  const normalizeYo = (str: string) => str.toLowerCase().replace(/ё/g, "е");
+
   const filteredOptions = useMemo(() => {
     if (!options || !search) return options ?? [];
-    return options?.filter((o) =>
-      o.label.toLowerCase().includes(search.toLowerCase()),
+    const normalizedSearch = normalizeYo(search);
+    return options.filter((o) =>
+      normalizeYo(o.label).includes(normalizedSearch),
     );
   }, [options, search]);
 
@@ -208,8 +211,8 @@ const stylesFn = (Colors: ThemeColors) =>
     },
     content: {
       flex: 1,
-      width: '100%',
+      width: "100%",
       maxWidth: 680,
-      alignSelf: 'center',
+      alignSelf: "center",
     },
   });

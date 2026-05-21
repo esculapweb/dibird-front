@@ -15,8 +15,8 @@
       },
       "env": {
         "EXPO_PUBLIC_ENV": "development",
-        "EXPO_PUBLIC_BASE_URL": "http://192.168.0.102:8000",
-        "EXPO_PUBLIC_MEDIA_URL": "http://192.168.0.102:8000",
+        "EXPO_PUBLIC_BASE_URL": "http://192.168.0.101:8000",
+        "EXPO_PUBLIC_MEDIA_URL": "http://192.168.0.101:8000",
         "SENTRY_ORG": "dibirdcom",
         "SENTRY_PROJECT": "react-native"
       },
