@@ -1,4 +1,6 @@
-import { useRef } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useState, useEffect, useRef } from "react";
+import { InitialState } from "@react-navigation/native";
 import {
   NavigationContainer,
   NavigationContainerRef,
@@ -19,15 +21,13 @@ import linking from "../linking";
 import StaticScreen from "../screens/StaticScreen";
 import type { AuthRootParamList, AppRootParamList } from "../types";
 
+const NAV_STATE_KEY = "NAV_STATE";
+
 const AuthStack = createNativeStackNavigator<AuthRootParamList>();
 const AppStack = createNativeStackNavigator<AppRootParamList>();
 
-// ---------------------------------------------------------------------------
-// Auth root — AuthNavigator + общие статичные экраны
-// ---------------------------------------------------------------------------
 const AuthRoot = () => {
   const { t } = useTranslation();
-
   return (
     <AuthStack.Navigator
       id={undefined}
@@ -55,12 +55,8 @@ const AuthRoot = () => {
   );
 };
 
-// ---------------------------------------------------------------------------
-// App root — AppNavigator + общие статичные экраны
-// ---------------------------------------------------------------------------
 const AppRoot = () => {
   const { t } = useTranslation();
-
   return (
     <AppStack.Navigator
       id={undefined}
@@ -88,26 +84,53 @@ const AppRoot = () => {
   );
 };
 
-// ---------------------------------------------------------------------------
-// Navigation — точка входа
-// ---------------------------------------------------------------------------
 const Navigation = () => {
   const { theme } = useTheme();
   const { isAuthenticated } = useAuth();
   const navigationRef =
     useRef<NavigationContainerRef<ReactNavigation.RootParamList>>(null);
   const routeNameRef = useRef<string | undefined>(undefined);
+  const prevAuthRef = useRef<boolean | null>(null);
+
+  const [initialState, setInitialState] = useState<
+    InitialState | null | undefined
+  >(undefined);
+
+  // Один раз при старте восстанавливаем сохранённый стейт
+  useEffect(() => {
+    AsyncStorage.getItem(NAV_STATE_KEY)
+      .then((saved) =>
+        setInitialState(saved ? (JSON.parse(saved) as InitialState) : null),
+      )
+      .catch(() => setInitialState(null));
+  }, []);
+
+  // При смене isAuthenticated — сбрасываем стейт и навигацию
+  useEffect(() => {
+    if (prevAuthRef.current === null) {
+      prevAuthRef.current = isAuthenticated;
+      return;
+    }
+    if (prevAuthRef.current !== isAuthenticated) {
+      prevAuthRef.current = isAuthenticated;
+      AsyncStorage.removeItem(NAV_STATE_KEY);
+      navigationRef.current?.reset({ index: 0, routes: [{ name: "Root" }] });
+    }
+  }, [isAuthenticated]);
+
+  if (initialState === undefined) return null;
 
   return (
     <NavigationContainer
-      key={isAuthenticated ? "app" : "auth"}
       ref={navigationRef}
+      initialState={initialState ?? undefined}
       linking={linking(isAuthenticated)}
       theme={theme === "dark" ? DarkNavigationTheme : LightNavigationTheme}
       onReady={() => {
         routeNameRef.current = navigationRef.current?.getCurrentRoute()?.name;
       }}
-      onStateChange={async () => {
+      onStateChange={async (state) => {
+        if (state) AsyncStorage.setItem(NAV_STATE_KEY, JSON.stringify(state));
         const previous = routeNameRef.current;
         const current = navigationRef.current?.getCurrentRoute()?.name;
         if (previous !== current) {

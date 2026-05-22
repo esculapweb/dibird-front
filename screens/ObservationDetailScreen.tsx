@@ -7,6 +7,8 @@ import {
   Pressable,
   Share,
   Platform,
+  Linking,
+  TouchableOpacity
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Image } from "expo-image";
@@ -24,7 +26,7 @@ import { useItem, useUpdateItem, useDeleteItem } from "../hooks/useItem";
 import { showError } from "../services/api";
 import { BirdSVG } from "../components/ui/Svgs";
 import { formatTimeString } from "../util/timeHelpers";
-import { isoToFlagEmoji, buildShareUrl } from "../util/helpers";
+import { isoToFlagEmoji, buildShareUrl, langBaseUrl } from "../util/helpers";
 import Section from "../components/ui/Section";
 import PrivacyToggle from "../components/ui/PrivacyToggle";
 import Map from "../components/Map/Map";
@@ -123,6 +125,12 @@ const ObservationDetailScreen = () => {
     await Share.share(Platform.OS === "ios" ? { url } : { message: url });
   }, [observation, observationId]);
 
+  const handleImagePress = () => {
+  if (observation?.species_data?.segment) {
+    Linking.openURL(`${langBaseUrl()}/species/${observation.species_data.segment}/`);
+  }
+};
+
   useLayoutEffect(() => {
     if (!observation) return;
     navigation.setOptions({
@@ -173,8 +181,9 @@ const ObservationDetailScreen = () => {
           observation.is_owner && <PrivacyToggle value={observation.private} />
         }
       >
-        <View style={styles.header}>
-          <View style={styles.imageWrapper}>
+        <TouchableOpacity style={styles.header} onPress={handleImagePress}
+  activeOpacity={0.8}>
+          <View style={styles.imageWrapper} >
             {observation?.species_data?.thumb ? (
               <Image
                 source={{
@@ -217,7 +226,7 @@ const ObservationDetailScreen = () => {
               )}
             </View>
           </View>
-        </View>
+        </TouchableOpacity>
 
         {!observation.is_owner && (
           <Pressable

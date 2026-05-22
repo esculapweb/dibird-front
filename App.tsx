@@ -88,11 +88,10 @@ const AuthConsumerWrapper = ({ children }: { children: ReactNode }) => {
 };
 
 const Root = () => {
-  const { isInitializing } = useAuth();
   const { theme } = useTheme();
   const [splashFinished, setSplashFinished] = useState(false);
 
-  if (isInitializing || !splashFinished) {
+  if (!splashFinished) {
     return (
       <CustomSplash
         onFinish={() => setSplashFinished(true)}
