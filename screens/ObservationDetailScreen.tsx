@@ -7,7 +7,6 @@ import {
   Pressable,
   Share,
   Platform,
-  TouchableOpacity,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Image } from "expo-image";
@@ -174,55 +173,69 @@ const ObservationDetailScreen = () => {
           observation.is_owner && <PrivacyToggle value={observation.private} />
         }
       >
-        <TouchableOpacity
+        <Pressable
           style={styles.header}
           onPress={() => speciesDetails(observation?.species_data?.segment)}
-          activeOpacity={0.8}
         >
-          <View style={styles.imageWrapper}>
-            {observation?.species_data?.thumb ? (
-              <Image
-                source={{
-                  uri: `${Config.mediaUrl}/${observation.species_data.thumb}`,
-                }}
-                style={styles.image}
-                contentFit="cover"
-                cachePolicy="disk"
-              />
-            ) : (
-              <View style={styles.imagePlaceholder}>
-                <BirdSVG size={40} color={Colors.textSecondary} />
-              </View>
-            )}
-          </View>
-
-          <View style={{ flex: 1 }}>
-            <View style={{ marginBottom: 6 }}>
-              <Text style={styles.title}>{name}</Text>
-              <Text style={styles.latin}>{latin}</Text>
-
-              {observation.time && (
-                <View style={styles.capsule}>
-                  <Ionicons
-                    name="time-outline"
-                    size={14}
-                    color={Colors.textSecondary}
+          {({ pressed }) => (
+            <>
+              <View style={styles.imageWrapper}>
+                {observation?.species_data?.thumb ? (
+                  <Image
+                    source={{
+                      uri: `${Config.mediaUrl}/${observation.species_data.thumb}`,
+                    }}
+                    style={styles.image}
+                    contentFit="cover"
+                    cachePolicy="disk"
                   />
-                  <Text style={styles.capsuleText}>
-                    {formatTimeString(observation.time)}
-                  </Text>
-                </View>
-              )}
+                ) : (
+                  <View style={styles.imagePlaceholder}>
+                    <BirdSVG size={40} color={Colors.textSecondary} />
+                  </View>
+                )}
+                {pressed && (
+                  <View style={styles.imageOverlay}>
+                    <Ionicons name="arrow-forward" size={14} color="#fff" />
+                  </View>
+                )}
+              </View>
 
-              {observation.quantity && (
-                <View style={styles.capsule}>
-                  <BirdSVG size={14} color={Colors.textMain} />
-                  <Text style={styles.capsuleText}>{observation.quantity}</Text>
+              <View style={{ flex: 1 }}>
+                <View style={{ marginBottom: 6 }}>
+                  <Text style={styles.title}>{name}</Text>
+                  <View style={styles.subRow}>
+                    <Text style={styles.latin}>{latin}</Text>
+                    <Text style={styles.aboutDot}>·</Text>
+                    <Text style={styles.aboutLink}>{t("about_species")}</Text>
+                  </View>
+
+                  {observation.time && (
+                    <View style={styles.capsule}>
+                      <Ionicons
+                        name="time-outline"
+                        size={14}
+                        color={Colors.textSecondary}
+                      />
+                      <Text style={styles.capsuleText}>
+                        {formatTimeString(observation.time)}
+                      </Text>
+                    </View>
+                  )}
+
+                  {observation.quantity && (
+                    <View style={styles.capsule}>
+                      <BirdSVG size={14} color={Colors.textMain} />
+                      <Text style={styles.capsuleText}>
+                        {observation.quantity}
+                      </Text>
+                    </View>
+                  )}
                 </View>
-              )}
-            </View>
-          </View>
-        </TouchableOpacity>
+              </View>
+            </>
+          )}
+        </Pressable>
 
         {!observation.is_owner && (
           <Pressable
@@ -434,6 +447,17 @@ const stylesFn = (Colors: ThemeColors) =>
       justifyContent: "center",
       alignItems: "center",
     },
+    imageOverlay: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      borderRadius: 12,
+      backgroundColor: "rgba(15, 110, 86, 0.55)",
+      justifyContent: "center",
+      alignItems: "center",
+    },
     title: {
       fontSize: 20,
       fontWeight: "700",
@@ -550,5 +574,22 @@ const stylesFn = (Colors: ThemeColors) =>
       fontSize: 14,
       fontWeight: "600",
       color: Colors.textMain,
+    },
+    subRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      marginTop: 1,
+      minWidth: 0,
+    },
+    aboutDot: {
+      fontSize: 12,
+      color: Colors.textSecondary,
+      flexShrink: 0,
+    },
+    aboutLink: {
+      fontSize: 12,
+      color: Colors.main100,
+      flexShrink: 0,
     },
   });
