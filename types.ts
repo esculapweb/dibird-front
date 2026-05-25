@@ -252,6 +252,7 @@ export interface SpeciesItem {
   sp_latin: string;
   sp_name_lang: string;
   sp_thumb: string | null;
+  segment: string;
   seen: boolean;
   min_date: string | null;
   max_date: string | null;
@@ -265,6 +266,7 @@ export interface SpeciesItem {
 export interface ChecklistItem {
   latin: string;
   name_lang: string;
+  segment: string;
   seen: boolean;
   species_id?: number;
   id?: number;

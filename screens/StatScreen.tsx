@@ -14,7 +14,7 @@ import ConfirmBottomSheet, {
   ConfirmBottomSheetRef,
 } from "../components/ui/ConfirmBottomSheet";
 import { useProfile } from "../store/profile-context";
-import { buildShareUrl } from "../util/helpers";
+import { buildShareUrl, speciesDetails } from "../util/helpers";
 import { parseDeepLinkParams } from "../util/parseDeepLinkParams";
 import {
   AppStackNavigationProp,
@@ -204,7 +204,8 @@ const StatScreen = () => {
             item={item as ChecklistItem}
             index={index}
             seenMode={seenMode}
-            onPress={() => handleStatCardPress(item)}
+            onToggle={() => handleStatCardPress(item)}
+            onPress={() => speciesDetails(item.segment)}
           />
         );
       }

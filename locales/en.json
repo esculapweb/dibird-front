@@ -1,4 +1,5 @@
 {
+  "about_species": "about",
   "activity_30d": "30 days",
   "activity_few_days": "{{from}} – {{to}}",
   "activity_long_range": "{{months}} m.",

@@ -17,10 +17,11 @@ interface ChecklistCardProps {
   index: number;
   seenMode: seenMode;
   onPress: () => void;
+  onToggle: () => void;
 }
 
 const ChecklistCard = memo(
-  ({ item, index, seenMode, onPress }: ChecklistCardProps) => {
+  ({ item, index, seenMode, onPress, onToggle }: ChecklistCardProps) => {
     const { t } = useTranslation();
     const { Colors } = useTheme();
     const styles = useStyles(Colors);
@@ -139,52 +140,66 @@ const ChecklistCard = memo(
     const isSeen = item.seen;
 
     return (
-      <Pressable
-        onPress={onPress}
-        style={({ pressed }) => [
-          styles.card,
-          !isSeen && styles.cardUnseen,
-          pressed && styles.pressedCard,
-        ]}
-      >
-        <View style={styles.row}>
-          <View style={styles.imageWrapper}>
-            {item.thumb ? (
-              <Image
-                source={{ uri: `${Config.mediaUrl}/${item.thumb}` }}
-                style={styles.image}
-                contentFit="cover"
-                cachePolicy="disk"
-              />
-            ) : (
-              <View style={styles.imagePlaceholder}>
-                <BirdSVG size={26} color={Colors.textSecondary} />
+      <View style={[styles.card, !isSeen && styles.cardUnseen]}>
+        <Pressable
+          onPress={onPress}
+          style={({ pressed }) => [styles.row, pressed && styles.pressedRow]}
+        >
+          {({ pressed }) => (
+            <>
+              <View style={styles.imageWrapper}>
+                {item.thumb ? (
+                  <Image
+                    source={{ uri: `${Config.mediaUrl}/${item.thumb}` }}
+                    style={styles.image}
+                    contentFit="cover"
+                    cachePolicy="disk"
+                  />
+                ) : (
+                  <View style={styles.imagePlaceholder}>
+                    <BirdSVG size={26} color={Colors.textSecondary} />
+                  </View>
+                )}
+                {pressed && (
+                  <View style={styles.imageOverlay}>
+                    <Ionicons name="arrow-forward" size={14} color="#fff" />
+                  </View>
+                )}
               </View>
-            )}
-          </View>
-          <View style={styles.content}>
-            <Text
-              style={[styles.title, isAllMode && !isSeen && styles.titleUnseen]}
-              numberOfLines={1}
-            >
-              {item.name_lang}
-            </Text>
-            <Text
-              style={[styles.latin, !isSeen && styles.latinUnseen]}
-              numberOfLines={1}
-            >
-              {item.latin}
-            </Text>
-          </View>
-          <View style={styles.addIcon}>
-            <Ionicons
-              name={isSeen ? "checkbox" : "square-outline"}
-              size={28}
-              color={isSeen ? Colors.main100 : Colors.textSecondary}
-            />
-          </View>
-        </View>
-      </Pressable>
+
+              <View style={styles.content}>
+                <Text
+                  style={[
+                    styles.title,
+                    isAllMode && !isSeen && styles.titleUnseen,
+                  ]}
+                  numberOfLines={1}
+                >
+                  {item.name_lang}
+                </Text>
+                <View style={styles.subRow}>
+                  <Text
+                    style={[styles.latin, !isSeen && styles.latinUnseen]}
+                    numberOfLines={1}
+                  >
+                    {item.latin}
+                  </Text>
+                  <Text style={styles.aboutDot}>·</Text>
+                  <Text style={styles.aboutLink}>{t("about_species")}</Text>
+                </View>
+              </View>
+            </>
+          )}
+        </Pressable>
+
+        <Pressable onPress={onToggle} style={styles.addIcon} hitSlop={8}>
+          <Ionicons
+            name={isSeen ? "checkbox" : "square-outline"}
+            size={28}
+            color={isSeen ? Colors.main100 : Colors.textSecondary}
+          />
+        </Pressable>
+      </View>
     );
   },
 );
@@ -194,6 +209,8 @@ export default ChecklistCard;
 const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     card: {
+      flexDirection: "row",
+      alignItems: "center",
       backgroundColor: Colors.primary100,
       borderRadius: 12,
       padding: 6,
@@ -205,20 +222,23 @@ const stylesFn = (Colors: ThemeColors) =>
       shadowOffset: { width: 0, height: 2 },
       elevation: 2,
     },
-    pressedCard: {
-      opacity: 0.85,
-    },
     cardUnseen: {
       backgroundColor: Colors.backgroundMain,
     },
     row: {
+      flex: 1,
       flexDirection: "row",
       alignItems: "center",
+      minWidth: 0,
+    },
+    pressedRow: {
+      opacity: 0.82,
     },
     imageWrapper: {
       width: 40,
       height: 40,
       marginRight: 8,
+      flexShrink: 0,
     },
     image: {
       width: 40,
@@ -231,6 +251,17 @@ const stylesFn = (Colors: ThemeColors) =>
       height: 40,
       borderRadius: 12,
       backgroundColor: Colors.imageBg,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    imageOverlay: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      borderRadius: 12,
+      backgroundColor: "rgba(15, 110, 86, 0.55)",
       justifyContent: "center",
       alignItems: "center",
     },
@@ -248,19 +279,38 @@ const stylesFn = (Colors: ThemeColors) =>
     titleUnseen: {
       color: Colors.textSecondary,
     },
+    subRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      marginTop: 1,
+      minWidth: 0,
+    },
     latin: {
       fontSize: 12,
       fontStyle: "italic",
       color: Colors.statIcon,
-      marginTop: 1,
+      flexShrink: 1,
+      minWidth: 0,
     },
     latinUnseen: {
       color: Colors.statIcon,
+    },
+    aboutDot: {
+      fontSize: 12,
+      color: Colors.textSecondary,
+      flexShrink: 0,
+    },
+    aboutLink: {
+      fontSize: 12,
+      color: Colors.main100,
+      flexShrink: 0,
     },
     addIcon: {
       justifyContent: "center",
       alignSelf: "stretch",
       paddingLeft: 8,
+      flexShrink: 0,
     },
 
     orderDivider: {

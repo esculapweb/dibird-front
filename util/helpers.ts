@@ -1,4 +1,5 @@
 import { Config } from "../constants/config";
+import { Linking } from "react-native";
 import i18n from "../services/i18n";
 import { buildDeepLinkParams } from "./buildDeepLinkParams";
 import { DateFilter, Filters } from "../types";
@@ -238,4 +239,9 @@ export const stableStringify = (
         return acc;
       }, {}),
   );
+};
+
+export const speciesDetails = (segment: string) => {
+  if (!segment) return;
+  Linking.openURL(`${langBaseUrl()}/species/${segment}/`);
 };
