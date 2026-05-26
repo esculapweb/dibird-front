@@ -1,5 +1,5 @@
 import { useLayoutEffect, useCallback, useMemo } from "react";
-import { View, Text, StyleSheet, Alert } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useNavigation, useRoute } from "@react-navigation/native";
 
@@ -17,6 +17,7 @@ import { useItem, useUpdateItem, useDeleteItem } from "../hooks/useItem";
 import { showError } from "../services/api";
 import { useFilters } from "../store/filters-context";
 import { AppStackNavigationProp, AppStackRouteProp } from "../types";
+import { BottomSheet } from "../services/bottomSheet";
 
 const H_PAD = 12;
 
@@ -79,25 +80,20 @@ const PlaceDetailScreen = () => {
 
   const handleDelete = useCallback(() => {
     if (!place) return;
-    Alert.alert(
-      t("delete_title"),
-      t("delete_place_message"),
-      [
-        { text: t("cancel"), style: "cancel" },
-        {
-          text: t("delete"),
-          style: "destructive",
-          onPress: () =>
-            deleteMutation.mutate(placeId, {
-              onSuccess: () => navigation.goBack(),
-              onError: (e) => {
-                showError(e);
-              },
-            }),
-        },
-      ],
-      { cancelable: true },
-    );
+    BottomSheet.show({
+      title: t("delete_title"),
+      description: t("delete_place_message"),
+      confirmText: t("delete"),
+      cancelText: t("cancel"),
+      danger: true,
+      onConfirm: () =>
+        deleteMutation.mutate(placeId, {
+          onSuccess: () => navigation.goBack(),
+          onError: (e) => {
+            showError(e);
+          },
+        }),
+    });
   }, [place, placeId, deleteMutation, navigation]);
 
   const filtersOverride = useMemo(() => {

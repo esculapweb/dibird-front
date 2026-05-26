@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  Alert,
   Pressable,
   Share,
   Platform,
@@ -29,6 +28,8 @@ import DiaryObservationCard from "../components/Diary/DiaryObservationCard";
 import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
 import Map from "../components/Map/Map";
+import { BottomSheet } from "../services/bottomSheet";
+
 import {
   AppStackNavigationProp,
   AppStackRouteProp,
@@ -234,23 +235,18 @@ const DiaryDetailScreen = () => {
   const handleDelete = useCallback(() => {
     if (!diary) return;
 
-    Alert.alert(
-      t("are_you_sure"),
-      t("delete_diary_message"),
-      [
-        { text: t("cancel"), style: "cancel" },
-        {
-          text: t("delete"),
-          style: "destructive",
-          onPress: () =>
-            deleteMutation.mutate(diaryId, {
-              onSuccess: () => navigation.goBack(),
-              onError: (e) => showError(e),
-            }),
-        },
-      ],
-      { cancelable: true },
-    );
+    BottomSheet.show({
+      title: t("delete_title"),
+      description: t("delete_diary_message"),
+      confirmText: t("delete"),
+      cancelText: t("cancel"),
+      danger: true,
+      onConfirm: () =>
+        deleteMutation.mutate(diaryId, {
+          onSuccess: () => navigation.goBack(),
+          onError: (e) => showError(e),
+        }),
+    });
   }, [diary, diaryId]);
 
   const handleOpenEdit = useCallback(
@@ -293,7 +289,6 @@ const DiaryDetailScreen = () => {
   }
 
   if (isLoading || !diary) return <LoadingOverlay />;
-
 
   const bottomEl = diary?.is_owner && (
     <FlatButtonBottom

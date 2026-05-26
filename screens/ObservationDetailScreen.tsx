@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  Alert,
   Pressable,
   Share,
   Platform,
@@ -33,6 +32,7 @@ import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
 import IconsHeader from "../components/ui/IconsHeader";
 import Layout from "../components/ui/Layout";
 import { AppStackNavigationProp, AppStackRouteProp } from "../types";
+import { BottomSheet } from "../services/bottomSheet";
 
 const ObservationDetailScreen = () => {
   const navigation = useNavigation<AppStackNavigationProp>();
@@ -65,23 +65,18 @@ const ObservationDetailScreen = () => {
   const handleDelete = useCallback(() => {
     if (!observation) return;
 
-    Alert.alert(
-      t("delete_title"),
-      t("delete_observation_message"),
-      [
-        { text: t("cancel"), style: "cancel" },
-        {
-          text: t("delete"),
-          style: "destructive",
-          onPress: () =>
-            deleteMutation.mutate(observationId, {
-              onSuccess: () => navigation.goBack(),
-              onError: (e) => showError(e),
-            }),
-        },
-      ],
-      { cancelable: true },
-    );
+    BottomSheet.show({
+      title: t("delete_title"),
+      description: t("delete_observation_message"),
+      confirmText: t("delete"),
+      cancelText: t("cancel"),
+      danger: true,
+      onConfirm: () =>
+        deleteMutation.mutate(observationId, {
+          onSuccess: () => navigation.goBack(),
+          onError: (e) => showError(e),
+        }),
+    });
   }, [observation, observationId]);
 
   const headerRightBeginning = useMemo(

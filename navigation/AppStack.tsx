@@ -1,5 +1,5 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { View, StyleSheet, Alert } from "react-native";
+import { View, StyleSheet } from "react-native";
 import {
   DrawerContentScrollView,
   DrawerContentComponentProps,
@@ -36,6 +36,7 @@ import LanguageSwitcher from "../components/Language/LanguageSwitcher";
 import ThemeSwitcher from "../components/Theme/ThemeSwitcher";
 import { useTheme, ThemeColors } from "../store/theme-context";
 import { useFilters } from "../store/filters-context";
+import { BottomSheet } from "../services/bottomSheet";
 import type { AppDrawerParamList, AppStackParamList } from "../types";
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
@@ -52,21 +53,16 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   const navigation = props.navigation;
 
   const handleLogout = () => {
-    Alert.alert(
-      t("logout_title"),
-      t("logout_message"),
-      [
-        { text: t("cancel"), style: "cancel" },
-        {
-          text: t("logout"),
-          style: "destructive",
-          onPress: async () => {
-            await logout();
-          },
-        },
-      ],
-      { cancelable: true },
-    );
+    BottomSheet.show({
+      title: t("logout_title"),
+      description: t("logout_message"),
+      confirmText: t("logout"),
+      cancelText: t("cancel"),
+      danger: true,
+      onConfirm: async () => {
+        await logout();
+      },
+    });
   };
 
   return (
