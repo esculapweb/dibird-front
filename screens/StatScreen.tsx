@@ -10,12 +10,10 @@ import StatCard from "../components/Stats/StatCard";
 import ChecklistCard from "../components/Stats/ChecklistCard";
 import Tabs from "../components/ui/Tabs";
 import { useFilters } from "../store/filters-context";
-import ConfirmBottomSheet, {
-  ConfirmBottomSheetRef,
-} from "../components/ui/ConfirmBottomSheet";
 import { useProfile } from "../store/profile-context";
 import { buildShareUrl, speciesDetails } from "../util/helpers";
 import { parseDeepLinkParams } from "../util/parseDeepLinkParams";
+import { BottomSheet } from "../services/bottomSheet";
 import {
   AppStackNavigationProp,
   AppStackRouteProp,
@@ -31,12 +29,8 @@ const StatScreen = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<AppStackNavigationProp>();
   const route = useRoute<AppStackRouteProp<"Stat" | "Checklist">>();
-  const confirmRef = useRef<ConfirmBottomSheetRef | null>(null);
 
   const openFilterModalRef = useRef<(() => void) | null>(null);
-  const openUncheckSheet = (item: SpeciesItem | ChecklistItem) => {
-    confirmRef.current?.present(item);
-  };
   const { territory, seenMode, setSeenMode } = useFilters();
   const [currentFilters, setCurrentFilters] = useState<Filters | null>({});
   const [currentSort, setCurrentSort] = useState<string | null>(null);
@@ -117,6 +111,15 @@ const StatScreen = () => {
     [navigation, currentFilters],
   );
 
+  const handleShowBottomSheet = (item: SpeciesItem) =>
+    BottomSheet.show({
+      title: t("uncheck_title"),
+      description: t("uncheck_descriptions"),
+      confirmText: t("view_species_observations"),
+      cancelText: t("cancel"),
+      onConfirm: () => handleShowObservations(item),
+    });
+
   const handleStatCardPress = useCallback(
     (item: SpeciesItem | ChecklistItem) => {
       if (!item.seen) {
@@ -129,7 +132,7 @@ const StatScreen = () => {
         return;
       }
       if (config.showUncheckWarning) {
-        openUncheckSheet(item);
+        handleShowBottomSheet(item as SpeciesItem);
         return;
       }
       handleShowObservations(item as SpeciesItem);
@@ -287,15 +290,6 @@ const StatScreen = () => {
             setTabsMode={(val) => setSeenMode(val as seenMode)}
           />
         }
-      />
-
-      <ConfirmBottomSheet
-        ref={confirmRef}
-        title={t("uncheck_title")}
-        description={t("uncheck_descriptions")}
-        confirmText={t("view_species_observations")}
-        cancelText={t("cancel")}
-        onConfirm={(item) => handleShowObservations(item as SpeciesItem)}
       />
     </>
   );

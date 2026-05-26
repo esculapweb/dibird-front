@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -15,9 +15,6 @@ import Constants from "expo-constants";
 
 import api, { showError } from "../services/api";
 import Layout from "../components/ui/Layout";
-import ConfirmBottomSheet, {
-  ConfirmBottomSheetRef,
-} from "../components/ui/ConfirmBottomSheet";
 import { ThemeColors, useTheme } from "../store/theme-context";
 import { useProfile } from "../store/profile-context";
 import { useAuth } from "../store/auth-context";
@@ -28,6 +25,7 @@ import { useExportProfile } from "../hooks/Profile/useExportProfile";
 import { useBiometricSetting } from "../hooks/useBiometricSetting";
 import { canUseBiometrics } from "../services/bio";
 import { openSupportEmail } from "../util/openSupportEmail";
+import { BottomSheet } from "../services/bottomSheet";
 
 // ------------------------------------------------------------------
 // Primitives
@@ -168,8 +166,6 @@ const SettingsScreen = () => {
 
   const userEmail = profile?.user_data?.email ?? "";
 
-  const deleteSheetRef = useRef<ConfirmBottomSheetRef>(null);
-
   const {
     isEnabled: biometricEnabled,
     isLoading: bioLoading,
@@ -205,6 +201,20 @@ const SettingsScreen = () => {
         : { message: t("tell_a_friend_message") },
     );
   };
+
+  const handleShowBottomSheet = () =>
+    BottomSheet.show({
+      title: t("delete_profile_title"),
+      description: t("delete_profile_warning"),
+      confirmText: t("delete_confirm_button"),
+      cancelText: t("cancel"),
+      danger: true,
+      requiredInput: userEmail,
+      inputPlaceholder: userEmail,
+      inputLabel: t("delete_profile_input_label"),
+      onConfirm: handleDeleteConfirmed,
+      onError: (e) => showError(e as AppError, extractDeleteError),
+    });
 
   const isExporting = exportState === "pending" || exportState === "processing";
   useEffect(() => () => cleanup(), []);
@@ -321,27 +331,13 @@ const SettingsScreen = () => {
         <Row
           icon="trash-outline"
           label={t("delete_profile")}
-          onPress={() => deleteSheetRef.current?.present(null)}
+          onPress={handleShowBottomSheet}
           danger
           hideChevron
           colors={Colors}
           styles={styles}
         />
       </Section>
-
-      <ConfirmBottomSheet
-        ref={deleteSheetRef}
-        danger
-        title={t("delete_profile_title")}
-        description={t("delete_profile_warning")}
-        confirmText={t("delete_confirm_button")}
-        cancelText={t("cancel")}
-        requiredInput={userEmail}
-        inputPlaceholder={userEmail}
-        inputLabel={t("delete_profile_input_label")}
-        onConfirm={handleDeleteConfirmed}
-        onError={(e) => showError(e as AppError, extractDeleteError)}
-      />
     </Layout>
   );
 };

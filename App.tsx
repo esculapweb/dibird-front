@@ -31,8 +31,9 @@ import { ThemeProvider, useTheme } from "./store/theme-context";
 import ThemedToast from "./components/ui/ThemedToast";
 import { initGoogleSignIn } from "./util/auth";
 import { AppError } from "./types";
+import GlobalBottomSheet from "./components/Providers/GlobalBottomSheet";
 
-import CustomSplash from "./components/ui/СustomSplash";
+import CustomSplash from "./components/ui/CustomSplash";
 
 Sentry.init({
   dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
@@ -111,6 +112,7 @@ const Root = () => {
         <Navigation />
       </ActionSheetProvider>
       <Toast config={ThemedToast} position="bottom" />
+      <GlobalBottomSheet />
     </>
   );
 };
