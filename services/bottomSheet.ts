@@ -17,7 +17,6 @@ export interface ConfirmSheetPayload {
 
 export interface ContentSheetPayload {
   title?: string;
-  snapPoints?: (string | number)[];
   renderContent: (dismiss: () => void) => React.ReactNode;
 }
 

@@ -87,9 +87,13 @@ export const formatDateFilterCheckboxHero = (
 export const normalizeValue = (
   value: string | null | undefined,
   allowed_values: string[],
-): string => {
-  if (!value) return allowed_values[0];
-  if (!allowed_values.includes(value)) return allowed_values[0];
+): string | null => {
+  if (!allowed_values.length) {
+    return null;
+  }
+  if (!value || !allowed_values.includes(value)) {
+    return allowed_values[0];
+  }
   return value;
 };
 

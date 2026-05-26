@@ -214,7 +214,7 @@ export const useSyncedFilters = <RouteName extends ScreenWithFiltersOnly>({
           species: species ?? null,
         });
 
-        await loadAndApplySort(); 
+        await loadAndApplySort();
       }
 
       setFiltersLoaded(true);

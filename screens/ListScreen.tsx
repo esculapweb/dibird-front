@@ -1,10 +1,4 @@
-import {
-  useState,
-  useEffect,
-  useCallback,
-  useLayoutEffect,
-  ReactNode,
-} from "react";
+import { useEffect, useCallback, useLayoutEffect, ReactNode } from "react";
 import {
   StyleSheet,
   Pressable,
@@ -17,7 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import FilterModal from "../components/Filters/FilterModal";
-import SortModal from "../components/Sort/SortModal";
+import SortSheetContent from "../components/Sort/SortSheetContent";
 import IconsHeader from "../components/ui/IconsHeader";
 import FilterChips from "../components/Filters/FilterChips";
 import { useList } from "../hooks/useList";
@@ -28,6 +22,7 @@ import ErrorOverlay from "../components/Error/ErrorOverlay";
 import { useSyncedFilters } from "../hooks/useSyncedFilters";
 import { useTheme, ThemeColors } from "../store/theme-context";
 import Layout from "../components/ui/Layout";
+import { BottomSheet } from "../services/bottomSheet";
 import {
   AppStackNavigationProp,
   ScreenWithFiltersParamList,
@@ -113,7 +108,6 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
       : (item as unknown as { id: string | number }).id;
   const keyExtractor = (item: T, _: number) =>
     `${screenName}-${resolvedGetItemId(item)}`;
-  const [sortModalVisible, setSortModalVisible] = useState(false);
   const navigation = useNavigation<AppStackNavigationProp>();
 
   const {
@@ -222,7 +216,25 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
         <IconsHeader
           key={`header-icons-${iconCount}`}
           hasActiveFilters={hasActiveFilters}
-          onSortPress={allowSort ? () => setSortModalVisible(true) : undefined}
+          onSortPress={
+            allowSort
+              ? () =>
+                  BottomSheet.showContent({
+                    title: t("sort_by"),
+                    renderContent: (dismiss: () => void) => (
+                      <SortSheetContent
+                        screen={screenName}
+                        options={sortOptions}
+                        sort={sort}
+                        setSort={setSort}
+                        locationAvailable={locationAvailable}
+                        onLocationUnavailable={onLocationUnavailable}
+                        dismiss={dismiss}
+                      />
+                    ),
+                  })
+              : undefined
+          }
           onFilterPress={() => setFilterModalVisible(true)}
           onSharePress={handleSharePress}
           headerRightBeginning={headerRightBeginning}
@@ -237,6 +249,8 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
     handleSharePress,
     headerRightBeginning,
     headerRightEnd,
+    sort,
+    locationAvailable,
   ]);
 
   useLayoutEffect(() => {
@@ -313,16 +327,6 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
         keyExtractor={keyExtractor}
         noItems={noItems}
         listHeader={listHeader}
-      />
-      <SortModal
-        screen={screenName}
-        options={sortOptions}
-        visible={sortModalVisible}
-        onClose={() => setSortModalVisible(false)}
-        sort={sort}
-        setSort={setSort}
-        locationAvailable={locationAvailable}
-        onLocationUnavailable={onLocationUnavailable}
       />
       <FilterModal
         visible={filterModalVisible}

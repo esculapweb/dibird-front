@@ -219,7 +219,7 @@ const fetchAbstract = async <T>(
 
 export const fetchStat = (
   filters: Filters,
-  order: string | null = "-date_time",
+  order: string | null = "name",
   search: string,
   page?: number,
 ) => {
@@ -271,7 +271,7 @@ export const fetchPlaces = (
 
 export const fetchObservations = (
   filters: Filters,
-  order: string | null = "-date_time",
+  order: string | null = "species_name",
   search?: string,
   page?: number,
 ) =>
@@ -285,7 +285,7 @@ export const fetchObservations = (
 
 export const fetchDiaries = (
   filters: Filters,
-  order: string | null = "-date_time",
+  order: string | null = "-date_time,-created_at",
   search?: string,
   page?: number,
 ) =>

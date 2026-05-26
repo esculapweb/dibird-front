@@ -120,23 +120,23 @@ export default Sentry.wrap(function App() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor }}>
-      <BottomSheetModalProvider>
-        <QueryClientProvider client={queryClient}>
-          <LanguageProvider>
-            <ThemeProvider>
-              <AuthContextProvider>
-                <AuthConsumerWrapper>
-                  <FiltersProvider>
-                    <LocationProvider>
+      <QueryClientProvider client={queryClient}>
+        <LanguageProvider>
+          <ThemeProvider>
+            <AuthContextProvider>
+              <AuthConsumerWrapper>
+                <FiltersProvider>
+                  <LocationProvider>
+                    <BottomSheetModalProvider>
                       <Root />
-                    </LocationProvider>
-                  </FiltersProvider>
-                </AuthConsumerWrapper>
-              </AuthContextProvider>
-            </ThemeProvider>
-          </LanguageProvider>
-        </QueryClientProvider>
-      </BottomSheetModalProvider>
+                    </BottomSheetModalProvider>
+                  </LocationProvider>
+                </FiltersProvider>
+              </AuthConsumerWrapper>
+            </AuthContextProvider>
+          </ThemeProvider>
+        </LanguageProvider>
+      </QueryClientProvider>
     </GestureHandlerRootView>
   );
 });
