@@ -12,6 +12,7 @@ import { Image } from "expo-image";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { Config } from "../../constants/config";
 import { BirdSVG } from "./Svgs";
+import { speciesDetails } from "../../util/helpers";
 
 import { QueryType, SpeciesDropdownItem } from "../../types";
 
@@ -46,6 +47,8 @@ const SpeciesDropdown = ({
     onPress();
   };
 
+  console.log(speciesData);
+
   const ImagePart = () => {
     if (query.isLoading)
       return (
@@ -63,18 +66,40 @@ const SpeciesDropdown = ({
 
     if (speciesData?.thumb && value)
       return (
-        <Image
-          source={{ uri: `${Config.mediaUrl}/${speciesData.thumb}` }}
-          style={styles.image}
-          contentFit="cover"
-          cachePolicy="disk"
-        />
+        <View style={styles.image}>
+          <Image
+            source={{ uri: `${Config.mediaUrl}/${speciesData.thumb}` }}
+            style={styles.image}
+            contentFit="cover"
+            cachePolicy="disk"
+          />
+          <Pressable
+            onPress={() => speciesDetails(speciesData.segment as string)}
+            style={styles.imageCornerBtn}
+          >
+            <Ionicons
+              name="information-circle-outline"
+              size={22}
+              color={Colors.markerBorder}
+            />
+          </Pressable>
+        </View>
       );
 
     if (speciesData && value)
       return (
         <View style={[styles.image, styles.imagePlaceholder]}>
           <BirdSVG size={44} color={Colors.textSecondary} />
+          <Pressable
+            onPress={() => speciesDetails(speciesData.segment as string)}
+            style={styles.imageCornerBtn}
+          >
+            <Ionicons
+              name="information-circle-outline"
+              size={22}
+              color={Colors.markerBorder}
+            />
+          </Pressable>
         </View>
       );
 
@@ -239,5 +264,14 @@ const stylesFn = (Colors: ThemeColors) =>
       fontSize: 12,
       color: Colors.error500,
       marginTop: 4,
+    },
+
+    imageCornerBtn: {
+      position: "absolute",
+      bottom: 2,
+      right: 2,
+      backgroundColor: Colors.mapOverlay,
+      borderRadius: 99,
+      padding: 1,
     },
   });

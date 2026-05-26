@@ -8,9 +8,10 @@ import { useTheme, ThemeColors } from "../../store/theme-context";
 import { useList } from "../../hooks/useList";
 import { Config } from "../../constants/config";
 import { BirdSVG } from "../ui/Svgs";
-import { formatDateShort } from "../../util/helpers";
+import { formatDateShort, speciesDetails } from "../../util/helpers";
 import { fetchStat } from "../../util/fetches";
-import { Filters, AppStackNavigationProp } from "../../types";
+import { BottomSheet } from "../../services/bottomSheet";
+import { Filters, AppStackNavigationProp, SpeciesItem } from "../../types";
 
 const H_PAD = 16;
 const IMAGE_SIZE = 48;
@@ -57,6 +58,37 @@ const NewSpecies: FC<NewSpeciesProps> = ({ filters, filtersLoaded }) => {
     filters?.date?.type === "year" || filters?.date?.type === "this_year";
 
   const data = newSpeciesData?.pages?.[0]?.results?.slice(0, 3) ?? [];
+
+  const handleShowBottomSheetMenu = (item: SpeciesItem) => {
+    BottomSheet.showMenu({
+      items: [
+        {
+          label: t("view_species_observations"),
+          icon: "binoculars" as const,
+          onPress: () => {
+            navigation.navigate("Observations", {
+              filtersOverride: {
+                territory: filters.territory ?? null,
+                place: filters.place ?? null,
+                species: item.species_id,
+                speciesName: item.sp_name_lang,
+                date: filters.date ?? null,
+              },
+            });
+            BottomSheet.hide();
+          },
+        },
+        {
+          label: t("species_details"),
+          icon: "information-circle-outline" as const,
+          onPress: () => {
+            speciesDetails(item.segment);
+            BottomSheet.hide();
+          },
+        },
+      ],
+    });
+  };
 
   if (isLoading) {
     return (
@@ -147,17 +179,7 @@ const NewSpecies: FC<NewSpeciesProps> = ({ filters, filtersLoaded }) => {
                 i < data.length - 1 ? styles.nsRowDivider : null,
               ]}
               activeOpacity={0.7}
-              onPress={() =>
-                navigation.navigate("Observations", {
-                  filtersOverride: {
-                    territory: filters.territory ?? null,
-                    place: filters.place ?? null,
-                    species: item.species_id,
-                    speciesName: item.sp_name_lang,
-                    date: filters.date ?? null,
-                  },
-                })
-              }
+              onPress={() => handleShowBottomSheetMenu(item)}
             >
               <View style={styles.imageWrapper}>
                 {item.sp_thumb ? (

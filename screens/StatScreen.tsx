@@ -225,6 +225,7 @@ const StatScreen = () => {
 
     BottomSheet.showMenu({
       items: [
+        seenItem,
         {
           label: t("species_details"),
           icon: "information-circle-outline" as const,
@@ -233,7 +234,6 @@ const StatScreen = () => {
             BottomSheet.hide();
           },
         },
-        seenItem,
       ],
     });
   };

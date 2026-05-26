@@ -233,6 +233,7 @@ export interface SpeciesDropdownItem extends DropdownItem {
   name?: string;
   thumb?: string;
   seen?: boolean;
+  segment?: string;
 }
 
 export interface PlaceDropdownItem extends DropdownItem {
@@ -468,6 +469,7 @@ export interface RatingCompareItem {
   name_latin: string;
   taxon_id: number;
   thumb: string | null;
+  segment: string;
 }
 
 export interface RatingCompareProfileCounts {

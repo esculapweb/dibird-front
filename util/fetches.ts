@@ -131,6 +131,7 @@ export const fetchSpecies = async (
     name_lang: item.sp_name_lang,
     thumb: item.sp_thumb ?? undefined,
     seen: item.seen,
+    segment: item.segment,
   }));
 };
 

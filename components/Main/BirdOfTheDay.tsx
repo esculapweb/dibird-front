@@ -13,6 +13,8 @@ import BirdOfTheDaySkeleton from "./BirdOfTheDaySceleton";
 import { useProfile } from "../../store/profile-context";
 import { useLanguage } from "../../store/language-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
+import { BottomSheet } from "../../services/bottomSheet";
+import { speciesDetails } from "../../util/helpers";
 import { AppStackNavigationProp, BirdOfTheDayType, Filters } from "../../types";
 
 const H_PAD = 16;
@@ -54,18 +56,39 @@ const BirdOfTheDay = ({ filters }: { filters: Filters }) => {
   ].includes(data.reason?.user_seen_state);
   const hintKey = getHintKey(data);
 
+  const handleShowBottomSheetMenu = () => {
+    BottomSheet.showMenu({
+      items: [
+        {
+          label: t("add_observation"),
+          icon: "add-circle-outline" as const,
+          onPress: () => {
+            navigation.navigate("ObservationEditor", {
+              defaultTerritory: filters?.territory ?? null,
+              defaultPlace: filters?.place ?? null,
+              defaultSpecies: data?.taxon_id,
+              returnMode: "back",
+            });
+            BottomSheet.hide();
+          },
+        },
+        {
+          label: t("species_details"),
+          icon: "information-circle-outline" as const,
+          onPress: () => {
+            speciesDetails(data.sp_segment);
+            BottomSheet.hide();
+          },
+        },
+      ],
+    });
+  };
+
   return (
     <TouchableOpacity
       style={styles.botdCard}
       activeOpacity={0.85}
-      onPress={() =>
-        navigation.navigate("ObservationEditor", {
-          defaultTerritory: filters?.territory ?? null,
-          defaultPlace: filters?.place ?? null,
-          defaultSpecies: data?.taxon_id,
-          returnMode: "back",
-        })
-      }
+      onPress={handleShowBottomSheetMenu}
     >
       <View style={styles.botdStrip}>
         <View style={styles.botdStripLeft}>

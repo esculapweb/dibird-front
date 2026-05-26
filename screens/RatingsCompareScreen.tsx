@@ -11,7 +11,7 @@ import Tabs from "../components/ui/Tabs";
 import CompareProfileHeader from "../components/Profile/CompareProfileHeader";
 import RatingCompareCard from "../components/Rating/RatingCompareCard";
 import { useProfile } from "../store/profile-context";
-import { buildShareUrl } from "../util/helpers";
+import { buildShareUrl, speciesDetails } from "../util/helpers";
 import {
   AppStackRouteProp,
   compareMode,
@@ -37,7 +37,7 @@ const RatingsCompareScreen = () => {
 
   const renderItem = useCallback(
     ({ item, index }: { item: RatingCompareItem; index: number }) => (
-      <RatingCompareCard item={item} index={index} onPress={() => {}} />
+      <RatingCompareCard item={item} index={index} onPress={() => speciesDetails(item.segment)} />
     ),
     [headerData?.profile_data],
   );
