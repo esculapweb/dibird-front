@@ -10,10 +10,9 @@ import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { useDrawerStatus } from "@react-navigation/drawer";
-
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { patchAvatar } from "../../util/requests";
+
 import { useProfile } from "../../store/profile-context";
 import api, { showError } from "../../services/api";
 import ProfileAvatar from "./ProfileAvatar";
@@ -26,7 +25,6 @@ import { AppError } from "../../types";
 const AVATAR_SIZE = 100;
 
 const Avatar = () => {
-  const drawerStatus = useDrawerStatus();
   const [avatar, setAvatar] = useState<string | null>();
   const [loading, setLoading] = useState(false);
   const invalidateProfile = useInvalidateProfile();
@@ -42,12 +40,6 @@ const Avatar = () => {
   const { fullName } = useProfileDisplay({ firstName, lastName, username });
 
   const handleMediaLibraryUnavailable = useMediaLibraryUnavailable();
-
-  useEffect(() => {
-    if (drawerStatus === "closed") {
-      BottomSheet.hide();
-    }
-  }, [drawerStatus]);
 
   useEffect(() => {
     setAvatar(profile?.avatar_thumbnail ?? null);

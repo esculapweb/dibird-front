@@ -17,6 +17,7 @@ import {
   BottomSheetModal,
   BottomSheetView,
   BottomSheetTextInput,
+  BottomSheetBackdrop,
 } from "@gorhom/bottom-sheet";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
@@ -125,6 +126,14 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
       keyboardBlurBehavior="restore"
       android_keyboardInputMode="adjustResize"
       onDismiss={handleDismiss}
+      backdropComponent={(props) => (
+        <BottomSheetBackdrop
+          {...props}
+          disappearsOnIndex={-1}
+          appearsOnIndex={0}
+          pressBehavior="close"
+        />
+      )}
       style={{
         shadowColor: Colors.shadow,
         shadowOffset: { width: 0, height: -3 },
