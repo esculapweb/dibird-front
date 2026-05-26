@@ -53,9 +53,10 @@ const Avatar = () => {
 
     BottomSheet.showMenu({
       items: [
-        { label: t("change_photo"), onPress: pickAvatar },
+        { label: t("change_photo"), icon: "pencil" as const, onPress: pickAvatar },
         {
           label: t("remove_photo"),
+          icon: "trash" as const,
           danger: true,
           onPress: () =>
             BottomSheet.show({

@@ -1,4 +1,4 @@
-import { useState, useLayoutEffect, useCallback, useMemo } from "react";
+import { useLayoutEffect, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -48,7 +48,6 @@ const ObservationDetailScreen = () => {
     refetch,
   } = useItem(observationId, type);
 
-  const [overlayVisible, setOverlayVisible] = useState(false);
   const updateMutation = useUpdateItem(observationId, type);
   const deleteMutation = useDeleteItem(type);
 
@@ -169,74 +168,69 @@ const ObservationDetailScreen = () => {
           observation.is_owner && <PrivacyToggle value={observation.private} />
         }
       >
-        <View style={styles.header}>
-          <Pressable
-            style={styles.imageWrapper}
-            onPress={() => speciesDetails(observation?.species_data?.segment)}
-            onPressIn={() => setOverlayVisible(true)}
-            onPressOut={() => setOverlayVisible(false)}
-          >
-            {observation?.species_data?.thumb ? (
-              <Image
-                source={{
-                  uri: `${Config.mediaUrl}/${observation.species_data.thumb}`,
-                }}
-                style={styles.image}
-                contentFit="cover"
-                cachePolicy="disk"
-              />
-            ) : (
-              <View style={styles.imagePlaceholder}>
-                <BirdSVG size={40} color={Colors.textSecondary} />
-              </View>
-            )}
-            {overlayVisible && (
-              <View style={styles.imageOverlay}>
-                <Ionicons name="arrow-forward" size={14} color="#fff" />
-              </View>
-            )}
-          </Pressable>
-
-          <View style={{ flex: 1 }}>
-            <View style={{ marginBottom: 6 }}>
-              <Text style={styles.title}>{name}</Text>
-              <View style={styles.subRow}>
-                <Text style={styles.latin}>{latin}</Text>
-                <Text style={styles.aboutDot}>·</Text>
-                <Pressable
-                  onPress={() =>
-                    speciesDetails(observation?.species_data?.segment)
-                  }
-                  onPressIn={() => setOverlayVisible(true)}
-                  onPressOut={() => setOverlayVisible(false)}
-                  hitSlop={8}
-                >
-                  <Text style={styles.aboutLink}>{t("about_species")}</Text>
-                </Pressable>
-              </View>
-
-              {observation.time && (
-                <View style={styles.capsule}>
-                  <Ionicons
-                    name="time-outline"
-                    size={14}
-                    color={Colors.textSecondary}
+        <Pressable
+          style={[styles.header, observation.is_owner && { marginBottom: 8 }]}
+          onPress={() => speciesDetails(observation?.species_data?.segment)}
+        >
+          {({ pressed }) => (
+            <>
+              <View style={styles.imageWrapper}>
+                {observation?.species_data?.thumb ? (
+                  <Image
+                    source={{
+                      uri: `${Config.mediaUrl}/${observation.species_data.thumb}`,
+                    }}
+                    style={styles.image}
+                    contentFit="cover"
+                    cachePolicy="disk"
                   />
-                  <Text style={styles.capsuleText}>
-                    {formatTimeString(observation.time)}
-                  </Text>
-                </View>
-              )}
+                ) : (
+                  <View style={styles.imagePlaceholder}>
+                    <BirdSVG size={40} color={Colors.textSecondary} />
+                  </View>
+                )}
+                {pressed && (
+                  <View style={styles.imageOverlay}>
+                    <Ionicons name="arrow-forward" size={14} color="#fff" />
+                  </View>
+                )}
+              </View>
 
-              {observation.quantity && (
-                <View style={styles.capsule}>
-                  <BirdSVG size={14} color={Colors.textMain} />
-                  <Text style={styles.capsuleText}>{observation.quantity}</Text>
+              <View style={{ flex: 1 }}>
+                <View style={{ marginBottom: 6 }}>
+                  <Text style={styles.title}>{name}</Text>
+                  <View style={styles.subRow}>
+                    <Text style={styles.latin}>{latin}</Text>
+                    <Text style={styles.aboutDot}>·</Text>
+                    <Text style={styles.aboutLink}>{t("about_species")}</Text>
+                  </View>
+
+                  {observation.time && (
+                    <View style={styles.capsule}>
+                      <Ionicons
+                        name="time-outline"
+                        size={14}
+                        color={Colors.textSecondary}
+                      />
+                      <Text style={styles.capsuleText}>
+                        {formatTimeString(observation.time)}
+                      </Text>
+                    </View>
+                  )}
+
+                  {observation.quantity && (
+                    <View style={styles.capsule}>
+                      <BirdSVG size={14} color={Colors.textMain} />
+                      <Text style={styles.capsuleText}>
+                        {observation.quantity}
+                      </Text>
+                    </View>
+                  )}
                 </View>
-              )}
-            </View>
-          </View>
-        </View>
+              </View>
+            </>
+          )}
+        </Pressable>
 
         {!observation.is_owner && (
           <Pressable

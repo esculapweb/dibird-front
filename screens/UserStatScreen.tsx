@@ -12,7 +12,7 @@ import { useFilters } from "../store/filters-context";
 import { useTheme, ThemeColors } from "../store/theme-context";
 import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
-import { buildShareUrl } from "../util/helpers";
+import { buildShareUrl, speciesDetails } from "../util/helpers";
 import {
   AppStackRouteProp,
   emptyPaginatedResponse,
@@ -84,7 +84,7 @@ const UserStatScreen = () => {
         item={item}
         index={index}
         seenMode={seenMode}
-        onPress={() => {}}
+        onPress={() => speciesDetails(item.segment)}
       />
     ),
     [seenMode],

@@ -90,6 +90,7 @@ const Map = ({
 
           {polygon ? (
             <ShapeSource
+              key={JSON.stringify(polygon)}
               id="privatePolygon"
               shape={{ type: "Feature", geometry: polygon, properties: {} }}
             >

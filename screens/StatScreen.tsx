@@ -199,6 +199,45 @@ const StatScreen = () => {
     [seenMode, viewMode, config],
   );
 
+  const handleBottomSheetMenu = (item: ChecklistItem | SpeciesItem) => {
+    const seenItem = item.seen
+      ? {
+          label: t("view_species_observations"),
+          icon: "binoculars" as const,
+          onPress: () => {
+            handleShowObservations(item as SpeciesItem);
+            BottomSheet.hide();
+          },
+        }
+      : {
+          label: t("add_observation"),
+          icon: "add-circle-outline" as const,
+          onPress: () => {
+            navigation.navigate("ObservationEditor", {
+              defaultTerritory: currentFilters?.territory ?? null,
+              defaultPlace: currentFilters?.place ?? null,
+              defaultSpecies: item.species_id,
+              returnMode: "back",
+            });
+            BottomSheet.hide();
+          },
+        };
+
+    BottomSheet.showMenu({
+      items: [
+        {
+          label: t("species_details"),
+          icon: "information-circle-outline" as const,
+          onPress: () => {
+            speciesDetails(item.segment);
+            BottomSheet.hide();
+          },
+        },
+        seenItem,
+      ],
+    });
+  };
+
   const renderItem = useCallback(
     ({ item, index }: { item: SpeciesItem | ChecklistItem; index: number }) => {
       if (viewMode === "checklist") {
@@ -208,7 +247,7 @@ const StatScreen = () => {
             index={index}
             seenMode={seenMode}
             onToggle={() => handleStatCardPress(item)}
-            onPress={() => speciesDetails(item.segment)}
+            onPress={() => handleBottomSheetMenu(item)}
           />
         );
       }
@@ -217,7 +256,8 @@ const StatScreen = () => {
           item={item as SpeciesItem}
           index={index}
           seenMode={seenMode}
-          onPress={() => handleStatCardPress(item)}
+          onToggle={() => handleStatCardPress(item)}
+          onPress={() => handleBottomSheetMenu(item)}
           personal
         />
       );

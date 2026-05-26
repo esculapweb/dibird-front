@@ -1,5 +1,6 @@
 import { createRef } from "react";
 import { BottomSheetRef } from "../components/ui/UniversalBottomSheet";
+import { IconType } from "../types";
 
 export interface ConfirmSheetPayload {
   title: string;
@@ -22,6 +23,7 @@ export interface ContentSheetPayload {
 
 export interface MenuItem {
   label: string;
+  icon?: IconType;
   onPress: () => void;
   danger?: boolean;
 }

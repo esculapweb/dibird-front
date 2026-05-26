@@ -1,4 +1,4 @@
-import { useState, useMemo, memo } from "react";
+import { useMemo, memo } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -25,8 +25,6 @@ const ChecklistCard = memo(
     const { t } = useTranslation();
     const { Colors } = useTheme();
     const styles = useStyles(Colors);
-
-    const [overlayVisible, setOverlayVisible] = useState(false);
 
     const isAllMode = seenMode === "all";
 
@@ -143,13 +141,8 @@ const ChecklistCard = memo(
 
     return (
       <View style={[styles.card, !isSeen && styles.cardUnseen]}>
-        <View style={styles.row}>
-          <Pressable
-            style={styles.imageWrapper}
-            onPress={onPress}
-            onPressIn={() => setOverlayVisible(true)}
-            onPressOut={() => setOverlayVisible(false)}
-          >
+        <Pressable style={styles.row} onPress={onPress}>
+          <View style={styles.imageWrapper}>
             {item.thumb ? (
               <Image
                 source={{ uri: `${Config.mediaUrl}/${item.thumb}` }}
@@ -162,12 +155,7 @@ const ChecklistCard = memo(
                 <BirdSVG size={26} color={Colors.textSecondary} />
               </View>
             )}
-            {overlayVisible && (
-              <View style={styles.imageOverlay}>
-                <Ionicons name="arrow-forward" size={14} color="#fff" />
-              </View>
-            )}
-          </Pressable>
+          </View>
 
           <View style={styles.content}>
             <Text
@@ -176,25 +164,14 @@ const ChecklistCard = memo(
             >
               {item.name_lang}
             </Text>
-            <View style={styles.subRow}>
-              <Text
-                style={[styles.latin, !isSeen && styles.latinUnseen]}
-                numberOfLines={1}
-              >
-                {item.latin}
-              </Text>
-              <Text style={styles.aboutDot}>·</Text>
-              <Pressable
-                onPress={onPress}
-                onPressIn={() => setOverlayVisible(true)}
-                onPressOut={() => setOverlayVisible(false)}
-                hitSlop={8}
-              >
-                <Text style={styles.aboutLink}>{t("about_species")}</Text>
-              </Pressable>
-            </View>
+            <Text
+              style={[styles.latin, !isSeen && styles.latinUnseen]}
+              numberOfLines={1}
+            >
+              {item.latin}
+            </Text>
           </View>
-        </View>
+        </Pressable>
         <Pressable onPress={onToggle} style={styles.addIcon} hitSlop={8}>
           <Ionicons
             name={isSeen ? "checkbox" : "square-outline"}
@@ -234,9 +211,6 @@ const stylesFn = (Colors: ThemeColors) =>
       alignItems: "center",
       minWidth: 0,
     },
-    pressedRow: {
-      opacity: 0.82,
-    },
     imageWrapper: {
       width: 40,
       height: 40,
@@ -257,17 +231,6 @@ const stylesFn = (Colors: ThemeColors) =>
       justifyContent: "center",
       alignItems: "center",
     },
-    imageOverlay: {
-      position: "absolute",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      borderRadius: 12,
-      backgroundColor: "rgba(15, 110, 86, 0.55)",
-      justifyContent: "center",
-      alignItems: "center",
-    },
     content: {
       flex: 1,
       justifyContent: "center",
@@ -282,13 +245,6 @@ const stylesFn = (Colors: ThemeColors) =>
     titleUnseen: {
       color: Colors.textSecondary,
     },
-    subRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 4,
-      marginTop: 1,
-      minWidth: 0,
-    },
     latin: {
       fontSize: 12,
       fontStyle: "italic",
@@ -298,16 +254,6 @@ const stylesFn = (Colors: ThemeColors) =>
     },
     latinUnseen: {
       color: Colors.statIcon,
-    },
-    aboutDot: {
-      fontSize: 12,
-      color: Colors.textSecondary,
-      flexShrink: 0,
-    },
-    aboutLink: {
-      fontSize: 12,
-      color: Colors.main100,
-      flexShrink: 0,
     },
     addIcon: {
       justifyContent: "center",

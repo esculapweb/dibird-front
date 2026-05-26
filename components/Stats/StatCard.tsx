@@ -19,11 +19,19 @@ interface StatCardProps {
   index: number;
   seenMode: seenMode;
   onPress: () => void;
+  onToggle?: () => void;
   personal?: boolean;
 }
 
 const StatCard = memo(
-  ({ item, index, seenMode, onPress, personal = false }: StatCardProps) => {
+  ({
+    item,
+    index,
+    seenMode,
+    onPress,
+    onToggle,
+    personal = false,
+  }: StatCardProps) => {
     const { t } = useTranslation();
     const { Colors } = useTheme();
     const styles = useStyles(Colors);
@@ -51,15 +59,8 @@ const StatCard = memo(
       : null;
 
     return (
-      <Pressable
-        onPress={onPress}
-        style={({ pressed }) => [
-          styles.card,
-          !isSeen && styles.cardUnseen,
-          pressed && styles.pressedCard,
-        ]}
-      >
-        <View style={styles.row}>
+      <View style={[styles.card, !isSeen && styles.cardUnseen]}>
+        <Pressable style={styles.row} onPress={onPress}>
           <View
             style={[
               styles.imageWrapper,
@@ -149,17 +150,17 @@ const StatCard = memo(
               </View>
             )}
           </View>
-          {!isSeen && personal && (
-            <View style={styles.addIcon}>
-              <Ionicons
-                name="add-circle-outline"
-                size={24}
-                color={Colors.textSecondary}
-              />
-            </View>
-          )}
-        </View>
-      </Pressable>
+        </Pressable>
+        {!isSeen && personal && (
+          <Pressable style={styles.addIcon} onPress={onToggle} hitSlop={8}>
+            <Ionicons
+              name="add-circle-outline"
+              size={24}
+              color={Colors.textSecondary}
+            />
+          </Pressable>
+        )}
+      </View>
     );
   },
 );
@@ -169,6 +170,8 @@ export default StatCard;
 const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     card: {
+      flexDirection: "row",
+      alignItems: "center",
       backgroundColor: Colors.primary100,
       borderRadius: 12,
       padding: 6,
@@ -182,28 +185,23 @@ const stylesFn = (Colors: ThemeColors) =>
     cardUnseen: {
       backgroundColor: Colors.backgroundMain,
     },
-
-    pressedCard: {
-      opacity: 0.85,
-    },
-
     row: {
+      flex: 1,
       flexDirection: "row",
+      alignItems: "center",
+      minWidth: 0,
     },
-
     imageWrapper: {
       width: 56,
       height: 56,
       marginRight: 12,
     },
-
     image: {
       width: 56,
       height: 56,
       borderRadius: 12,
       backgroundColor: Colors.imageBg,
     },
-
     imagePlaceholder: {
       width: 56,
       height: 56,
@@ -212,21 +210,19 @@ const stylesFn = (Colors: ThemeColors) =>
       justifyContent: "center",
       alignItems: "center",
     },
-
     imageWrapperSmall: {
       width: 40,
       height: 40,
       marginRight: 8,
     },
-
     imageSmall: {
       width: 40,
       height: 40,
     },
-
     content: {
       flex: 1,
       justifyContent: "flex-start",
+      minWidth: 0,
     },
     titleLeft: {
       flexDirection: "row",
@@ -323,6 +319,7 @@ const stylesFn = (Colors: ThemeColors) =>
       justifyContent: "center",
       alignSelf: "stretch",
       paddingLeft: 8,
+      flexShrink: 0,
     },
     unseenMeta: {
       flexDirection: "row",

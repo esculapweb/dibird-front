@@ -19,6 +19,7 @@ import {
   BottomSheetTextInput,
   BottomSheetBackdrop,
 } from "@gorhom/bottom-sheet";
+import { Ionicons } from "@expo/vector-icons";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import {
@@ -177,6 +178,20 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
                     item.onPress();
                   }}
                 >
+                  {item.icon && (
+                    <View
+                      style={[
+                        styles.iconBox,
+                        item.danger && { backgroundColor: Colors.error100, borderColor: Colors.error600 },
+                      ]}
+                    >
+                      <Ionicons
+                        name={item.icon}
+                        size={18}
+                        color={item.danger ? Colors.error600 : Colors.textMain}
+                      />
+                    </View>
+                  )}
                   <Text
                     style={[
                       styles.menuLabel,
@@ -309,9 +324,21 @@ const stylesFn = (Colors: ThemeColors) =>
       textAlign: "center",
       paddingVertical: 4,
     },
-    menuRow: {
-      paddingVertical: 14,
+    iconBox: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      backgroundColor: Colors.imageBg,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: Colors.textSecondary,
       alignItems: "center",
+      justifyContent: "center",
+    },
+    menuRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 14,
+      paddingVertical: 8,
     },
     menuLabel: {
       fontSize: 16,
