@@ -79,7 +79,7 @@ export const ProfileProvider = ({
     } catch (e) {
       const err = e as AppError;
       setError(err);
-      console.warn("Failed to refresh profile:", err.code, err.message);
+      if (__DEV__) console.warn("Failed to refresh profile:", err.code, err.message);
     } finally {
       setProfileLoading(false);
     }

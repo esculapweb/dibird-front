@@ -104,7 +104,7 @@ export function useDropdownQuery<T extends DropdownItem = DropdownItem>({
 
   useEffect(() => {
     if (query.error) {
-      console.warn("Query error:", type, query.error);
+      if (__DEV__) console.warn("Query error:", type, query.error);
       showErrorToast(query.error as AppError);
     }
   }, [query.error]);

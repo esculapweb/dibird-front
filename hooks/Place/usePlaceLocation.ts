@@ -91,7 +91,7 @@ export const usePlaceLocation = () => {
         const res = await cachedReverseGeocode(lat, lng);
         if (res) setDetails(res);
       } catch (e) {
-        console.warn("Reverse geocode failed", e);
+        if (__DEV__) console.warn("Reverse geocode failed", e);
       } finally {
         setIsLoading(false);
       }
@@ -136,7 +136,7 @@ export const usePlaceLocation = () => {
         handleLocationUnavailable();
       }
     } catch (e) {
-      console.warn("Failed to use location:", e);
+      if (__DEV__) console.warn("Failed to use location:", e);
     } finally {
       setIsLoading(false);
     }

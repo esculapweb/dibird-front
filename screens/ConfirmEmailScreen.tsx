@@ -51,7 +51,7 @@ const ConfirmEmailScreen = () => {
       }
     } catch (e) {
       const error = e as AppError;
-      console.warn(
+      if (__DEV__) console.warn(
         "ConfirmEmail API ERROR:",
         error.response?.data || error.message,
       );

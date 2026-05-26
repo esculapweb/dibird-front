@@ -101,7 +101,7 @@ const SelectListModal = ({
             });
             setHasScrolled(true);
           } catch (e) {
-            console.warn("scrollToIndex failed:", e);
+            if (__DEV__) console.warn("scrollToIndex failed:", e);
           }
         }, 50);
       }

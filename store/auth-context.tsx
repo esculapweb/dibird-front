@@ -62,7 +62,7 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
         const storedToken = await SecureStore.getItemAsync("access");
         if (storedToken) setAuthToken(storedToken);
       } catch (e) {
-        console.warn("SecureStore unavailable on restore:", e);
+        if (__DEV__) console.warn("SecureStore unavailable on restore:", e);
       } finally {
         setIsInitializing(false);
       }

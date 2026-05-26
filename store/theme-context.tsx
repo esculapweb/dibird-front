@@ -39,7 +39,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
           setManualTheme(savedTheme);
         }
       } catch (e) {
-        console.warn("Failed to load theme from storage", e);
+        if (__DEV__) console.warn("Failed to load theme from storage", e);
       } finally {
         setReady(true);
       }
@@ -52,7 +52,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     if (newTheme === null) {
       setManualTheme(null);
       AsyncStorage.removeItem(THEME_KEY).catch(() =>
-        console.warn("Failed to remove theme from storage"),
+        __DEV__ && console.warn("Failed to remove theme from storage"),
       );
       return;
     }
@@ -61,7 +61,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
 
     setManualTheme(newTheme);
     AsyncStorage.setItem(THEME_KEY, newTheme).catch(() =>
-      console.warn("Failed to save theme to storage"),
+      __DEV__ && console.warn("Failed to save theme to storage"),
     );
   };
 

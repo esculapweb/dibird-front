@@ -14,8 +14,10 @@ const post = async (url: string, data: unknown) => {
     return response?.data;
   } catch (e) {
     const err = e as AppError;
-    console.warn("AUTH API ERROR:", url);
-    console.warn(err.response?.data || err.message);
+    if (__DEV__) {
+      console.warn("AUTH API ERROR:", url);
+      console.warn(err.response?.data || err.message);
+    }
     throw err;
   }
 };
@@ -64,7 +66,7 @@ export const Logout = async (onLogoutCallback: () => void) => {
         await api.post("/api-auth/logout/", { refresh });
       } catch (e) {
         const err = e as AppError;
-        if (err.response?.status !== 401)
+        if (err.response?.status !== 401 && __DEV__)
           console.warn(
             "Logout request failed",
             err.response?.status,

@@ -114,7 +114,7 @@ const Avatar = () => {
       invalidateProfile();
     } catch (e) {
       const error = e as AppError;
-      console.warn("Image manipulation error:", error.code, error.message);
+      if (__DEV__) console.warn("Image manipulation error:", error.code, error.message);
       showError(error);
     } finally {
       setLoading(false);
@@ -133,7 +133,7 @@ const Avatar = () => {
       }
     } catch (e) {
       const error = e as AppError;
-      console.warn("Delete Avatar error:", error.code, error.message);
+      if (__DEV__) console.warn("Delete Avatar error:", error.code, error.message);
       showError(error);
     } finally {
       setLoading(false);

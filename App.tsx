@@ -54,7 +54,13 @@ const appInitPromise: Promise<void> = (async () => {
         await Updates.fetchUpdateAsync();
       }
     } catch (e) {
-      console.error("[Updates]", e);
+      if (e instanceof Error && e.message.includes("network")) {
+        return;
+      }
+      Sentry.captureException(e, {
+        tags: { context: "expo-updates" },
+        level: "warning",
+      });
     }
   }
 })();

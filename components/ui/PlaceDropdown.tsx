@@ -201,7 +201,7 @@ const PlaceDropdown = ({
         const data = await fetchMapPreview(value);
         setPreviewUri(`${Config.mediaUrl}/${data.preview}`);
       } catch (e) {
-        console.warn("map preview error:", e);
+        if (__DEV__) console.warn("map preview error:", e);
       } finally {
         setPreviewLoading(false);
       }

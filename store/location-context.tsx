@@ -50,7 +50,7 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
 
       return { coords, accuracy: accuracy ?? null };
     } catch (e) {
-      console.warn("Failed to get location:", e);
+      if (__DEV__) console.warn("Failed to get location:", e);
       return null;
     } finally {
       setIsRequesting(false);

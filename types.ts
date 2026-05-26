@@ -549,6 +549,22 @@ export interface BirdOfTheDayType {
 
 // --- Navigation ---
 
+export type MinimalRoute = {
+  name: string;
+  params?: object;
+};
+
+type NavRoute = {
+  name: string;
+  params?: object;
+  state?: NavState;
+};
+
+export type NavState = {
+  routes: NavRoute[];
+  index?: number;
+};
+
 export type StaticScreensParamList = {
   Privacy: undefined;
   Terms: undefined;

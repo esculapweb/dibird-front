@@ -138,7 +138,7 @@ const PlacePreviewRow = ({
         const data = await fetchMapPreview(placeData.id);
         setPreviewUri(`${Config.mediaUrl}/${data.preview}`);
       } catch (e) {
-        console.warn("map preview error:", e);
+        if (__DEV__) console.warn("map preview error:", e);
       } finally {
         setPreviewLoading(false);
       }

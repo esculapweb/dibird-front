@@ -26,7 +26,7 @@ export const openSupportEmail = async () => {
     }
   } catch(e) {
     const error =  e as AppError;
-    console.error('[openSupportEmail]', error);
+    if (__DEV__) console.error('[openSupportEmail]', error);
     handleError();
   }
 };

@@ -46,7 +46,7 @@ export const useApiError = () => {
       if (typeof Toast?.show === "function") {
         Toast.show({ type: "error", text1: title, text2: message });
       }
-      console.warn("API Error:", title, message, error);
+      if (__DEV__) console.warn("API Error:", title, message, error);
     },
     [getTranslatedError],
   );

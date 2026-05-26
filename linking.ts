@@ -27,10 +27,13 @@ const withBasicFilters = (path: string) => ({
   },
 });
 
+export const DEEP_LINK_PREFIXES = ["dibird://", "https://dibird.com"];
+
+
 const linking = (
   isAuthenticated: boolean,
 ): LinkingOptions<AppRootParamList | AuthRootParamList> => ({
-  prefixes: ["dibird://", "https://dibird.com"],
+  prefixes: DEEP_LINK_PREFIXES,
 
   config: {
     screens: {
@@ -106,19 +109,44 @@ const linking = (
 
     if (routeName === "PlaceDetail") {
       return {
-        routes: [{ name: "Main" }, { name: "Places" }, state.routes[0]],
+        routes: [
+          {
+            name: "Root",
+            state: {
+              routes: [{ name: "Main" }, { name: "Places" }, state.routes[0]],
+            },
+          },
+        ],
       };
     }
 
     if (routeName === "ObservationDetail") {
       return {
-        routes: [{ name: "Main" }, { name: "Observations" }, state.routes[0]],
+        routes: [
+          {
+            name: "Root",
+            state: {
+              routes: [
+                { name: "Main" },
+                { name: "Observations" },
+                state.routes[0],
+              ],
+            },
+          },
+        ],
       };
     }
 
     if (routeName === "DiaryDetail") {
       return {
-        routes: [{ name: "Main" }, { name: "Diaries" }, state.routes[0]],
+        routes: [
+          {
+            name: "Root",
+            state: {
+              routes: [{ name: "Main" }, { name: "Diaries" }, state.routes[0]],
+            },
+          },
+        ],
       };
     }
 

@@ -19,7 +19,12 @@ import {
 } from "../constants/NavigationTheme";
 import linking from "../linking";
 import StaticScreen from "../screens/StaticScreen";
-import type { AuthRootParamList, AppRootParamList } from "../types";
+import type {
+  AuthRootParamList,
+  AppRootParamList,
+  MinimalRoute,
+  NavState,
+} from "../types";
 
 const NAV_STATE_KEY = "NAV_STATE";
 
@@ -84,6 +89,44 @@ const AppRoot = () => {
   );
 };
 
+const extractRoutes = (state: NavState): MinimalRoute[] => {
+  const routes = state?.routes ?? [];
+  const index = state?.index ?? routes.length - 1;
+  const activeRoute = routes[index];
+
+  if (!activeRoute) return [];
+
+  if (activeRoute.state) {
+    return [{ name: activeRoute.name }, ...extractRoutes(activeRoute.state)];
+  }
+
+  return [{ name: activeRoute.name, params: activeRoute.params }];
+};
+
+const buildInitialState = (routes: MinimalRoute[]): InitialState => {
+  const screenRoutes =
+    routes[0]?.name === "Root" || routes[0]?.name === "Main"
+      ? routes.slice(1)
+      : routes;
+
+  const innerRoutes = screenRoutes.map((r) => ({
+    name: r.name,
+    params: r.params,
+  }));
+
+  return {
+    routes: [
+      {
+        name: "Root",
+        state: {
+          index: innerRoutes.length,
+          routes: [{ name: "Main" }, ...innerRoutes],
+        },
+      },
+    ],
+  };
+};
+
 const Navigation = () => {
   const { theme } = useTheme();
   const { isAuthenticated } = useAuth();
@@ -96,16 +139,38 @@ const Navigation = () => {
     InitialState | null | undefined
   >(undefined);
 
-  // Один раз при старте восстанавливаем сохранённый стейт
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
-    AsyncStorage.getItem(NAV_STATE_KEY)
-      .then((saved) =>
-        setInitialState(saved ? (JSON.parse(saved) as InitialState) : null),
-      )
-      .catch(() => setInitialState(null));
+    const restore = async () => {
+      try {
+        const saved = await AsyncStorage.getItem(NAV_STATE_KEY);
+
+        if (!saved) {
+          setInitialState(null);
+          return;
+        }
+
+        const parsed = JSON.parse(saved);
+
+        if (Array.isArray(parsed)) {
+          setInitialState(buildInitialState(parsed));
+          return;
+        }
+
+        await AsyncStorage.removeItem(NAV_STATE_KEY);
+        setInitialState(null);
+      } catch {
+        setInitialState(null);
+      }
+    };
+
+    restore();
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
   }, []);
 
-  // При смене isAuthenticated — сбрасываем стейт и навигацию
   useEffect(() => {
     if (prevAuthRef.current === null) {
       prevAuthRef.current = isAuthenticated;
@@ -130,9 +195,19 @@ const Navigation = () => {
         routeNameRef.current = navigationRef.current?.getCurrentRoute()?.name;
       }}
       onStateChange={async (state) => {
-        if (state) AsyncStorage.setItem(NAV_STATE_KEY, JSON.stringify(state));
-        const previous = routeNameRef.current;
+        if (state) {
+          const routes = extractRoutes(state as NavState);
+          if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+          saveTimeoutRef.current = setTimeout(() => {
+            AsyncStorage.setItem(NAV_STATE_KEY, JSON.stringify(routes)).catch(
+              (e) => __DEV__ && console.warn("[NAV] failed to save state", e),
+            );
+          }, 300);
+        }
+
         const current = navigationRef.current?.getCurrentRoute()?.name;
+        const previous = routeNameRef.current;
+
         if (previous !== current) {
           logEvent(getAnalytics(), "screen_view", {
             screen_name: current,

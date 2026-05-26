@@ -11,7 +11,7 @@ const saveItem = async (key: string, screen: string, value: unknown): Promise<vo
     allData[screen] = value;
     await AsyncStorage.setItem(key, JSON.stringify(allData));
   } catch (e) {
-    console.warn(`Failed to save ${key}`, e);
+    if (__DEV__) console.warn(`Failed to save ${key}`, e);
   }
 };
 
@@ -22,7 +22,7 @@ const loadItem = async (key: string, screen: string): Promise<unknown> => {
 
     return allData[screen] ?? null;
   } catch (e) {
-    console.warn(`Failed to load ${key}`, e);
+    if (__DEV__) console.warn(`Failed to load ${key}`, e);
     return null;
   }
 };
@@ -34,7 +34,7 @@ const clearItem = async (key: string, screen: string): Promise<void> => {
     delete allData[screen];
     await AsyncStorage.setItem(key, JSON.stringify(allData));
   } catch (e) {
-    console.warn(`Failed to clear ${key}`, e);
+    if (__DEV__) console.warn(`Failed to clear ${key}`, e);
   }
 };
 
