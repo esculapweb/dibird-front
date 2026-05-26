@@ -20,6 +20,7 @@ import {
 import linking from "../linking";
 import StaticScreen from "../screens/StaticScreen";
 import type { AuthRootParamList, AppRootParamList } from "../types";
+import { BottomSheet } from "../services/bottomSheet";
 
 const NAV_STATE_KEY = "NAV_STATE";
 
@@ -134,6 +135,7 @@ const Navigation = () => {
         const previous = routeNameRef.current;
         const current = navigationRef.current?.getCurrentRoute()?.name;
         if (previous !== current) {
+          BottomSheet.hide();
           logEvent(getAnalytics(), "screen_view", {
             screen_name: current,
             screen_class: current,

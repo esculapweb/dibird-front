@@ -42,7 +42,7 @@ const Stack = createNativeStackNavigator<AppStackParamList>();
 const Drawer = createDrawerNavigator<AppDrawerParamList>();
 
 // ---------------------------------------------------------------------------
-// Custom drawer content — только ссылки, без Stack-экранов внутри Drawer
+// Custom drawer content
 // ---------------------------------------------------------------------------
 const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   const { logout } = useAuth();
@@ -137,7 +137,7 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
 };
 
 // ---------------------------------------------------------------------------
-// MainDrawer — один экран, drawer используется только как контейнер меню
+// MainDrawer
 // ---------------------------------------------------------------------------
 const MainDrawer = () => {
   const { error } = useProfile();
@@ -155,14 +155,13 @@ const MainDrawer = () => {
         headerShown: false,
       }}
     >
-      {/* Единственный "экран" в Drawer — главный */}
       <Drawer.Screen name="MainScreen" component={MainScreen} />
     </Drawer.Navigator>
   );
 };
 
 // ---------------------------------------------------------------------------
-// AppNavigator — все экраны в Stack, единообразный хедер
+// AppNavigator
 // ---------------------------------------------------------------------------
 const AppNavigator = () => {
   const { t } = useTranslation();
@@ -186,14 +185,12 @@ const AppNavigator = () => {
         headerBackTitle: "",
       }}
     >
-      {/* Главный экран с Drawer */}
       <Stack.Screen
         name="Main"
         component={MainDrawer}
         options={{ headerShown: false }}
       />
 
-      {/* Все остальные — обычные Stack-экраны с единым хедером */}
       <Stack.Screen
         name="Profile"
         component={ProfileScreen}

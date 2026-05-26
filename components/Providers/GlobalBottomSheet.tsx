@@ -1,9 +1,8 @@
-import ConfirmBottomSheet from "../ui/ConfirmBottomSheet";
-
+import UniversalBottomSheet from "../ui/UniversalBottomSheet";
 import { bottomSheetRef } from "../../services/bottomSheet";
 
 const GlobalBottomSheet = () => {
-  return <ConfirmBottomSheet ref={bottomSheetRef} />;
+  return <UniversalBottomSheet ref={bottomSheetRef} />;
 };
 
 export default GlobalBottomSheet;

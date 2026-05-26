@@ -1,4 +1,4 @@
-import { useMemo, memo } from "react";
+import { useState, useMemo, memo } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -25,6 +25,8 @@ const ChecklistCard = memo(
     const { t } = useTranslation();
     const { Colors } = useTheme();
     const styles = useStyles(Colors);
+
+    const [overlayVisible, setOverlayVisible] = useState(false);
 
     const isAllMode = seenMode === "all";
 
@@ -141,57 +143,58 @@ const ChecklistCard = memo(
 
     return (
       <View style={[styles.card, !isSeen && styles.cardUnseen]}>
-        <Pressable
-          onPress={onPress}
-          style={({ pressed }) => [styles.row, pressed && styles.pressedRow]}
-        >
-          {({ pressed }) => (
-            <>
-              <View style={styles.imageWrapper}>
-                {item.thumb ? (
-                  <Image
-                    source={{ uri: `${Config.mediaUrl}/${item.thumb}` }}
-                    style={styles.image}
-                    contentFit="cover"
-                    cachePolicy="disk"
-                  />
-                ) : (
-                  <View style={styles.imagePlaceholder}>
-                    <BirdSVG size={26} color={Colors.textSecondary} />
-                  </View>
-                )}
-                {pressed && (
-                  <View style={styles.imageOverlay}>
-                    <Ionicons name="arrow-forward" size={14} color="#fff" />
-                  </View>
-                )}
+        <View style={styles.row}>
+          <Pressable
+            style={styles.imageWrapper}
+            onPress={onPress}
+            onPressIn={() => setOverlayVisible(true)}
+            onPressOut={() => setOverlayVisible(false)}
+          >
+            {item.thumb ? (
+              <Image
+                source={{ uri: `${Config.mediaUrl}/${item.thumb}` }}
+                style={styles.image}
+                contentFit="cover"
+                cachePolicy="disk"
+              />
+            ) : (
+              <View style={styles.imagePlaceholder}>
+                <BirdSVG size={26} color={Colors.textSecondary} />
               </View>
-
-              <View style={styles.content}>
-                <Text
-                  style={[
-                    styles.title,
-                    isAllMode && !isSeen && styles.titleUnseen,
-                  ]}
-                  numberOfLines={1}
-                >
-                  {item.name_lang}
-                </Text>
-                <View style={styles.subRow}>
-                  <Text
-                    style={[styles.latin, !isSeen && styles.latinUnseen]}
-                    numberOfLines={1}
-                  >
-                    {item.latin}
-                  </Text>
-                  <Text style={styles.aboutDot}>·</Text>
-                  <Text style={styles.aboutLink}>{t("about_species")}</Text>
-                </View>
+            )}
+            {overlayVisible && (
+              <View style={styles.imageOverlay}>
+                <Ionicons name="arrow-forward" size={14} color="#fff" />
               </View>
-            </>
-          )}
-        </Pressable>
+            )}
+          </Pressable>
 
+          <View style={styles.content}>
+            <Text
+              style={[styles.title, isAllMode && !isSeen && styles.titleUnseen]}
+              numberOfLines={1}
+            >
+              {item.name_lang}
+            </Text>
+            <View style={styles.subRow}>
+              <Text
+                style={[styles.latin, !isSeen && styles.latinUnseen]}
+                numberOfLines={1}
+              >
+                {item.latin}
+              </Text>
+              <Text style={styles.aboutDot}>·</Text>
+              <Pressable
+                onPress={onPress}
+                onPressIn={() => setOverlayVisible(true)}
+                onPressOut={() => setOverlayVisible(false)}
+                hitSlop={8}
+              >
+                <Text style={styles.aboutLink}>{t("about_species")}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
         <Pressable onPress={onToggle} style={styles.addIcon} hitSlop={8}>
           <Ionicons
             name={isSeen ? "checkbox" : "square-outline"}

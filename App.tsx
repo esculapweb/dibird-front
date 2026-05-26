@@ -6,7 +6,6 @@ import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Navigation from "./navigation/Navigation";
 import Toast from "react-native-toast-message";
-import { ActionSheetProvider } from "@expo/react-native-action-sheet";
 import "./services/i18n";
 import {
   QueryClient,
@@ -108,9 +107,7 @@ const Root = () => {
         translucent
         backgroundColor="transparent"
       />
-      <ActionSheetProvider>
-        <Navigation />
-      </ActionSheetProvider>
+      <Navigation />
       <Toast config={ThemedToast} position="bottom" />
       <GlobalBottomSheet />
     </>

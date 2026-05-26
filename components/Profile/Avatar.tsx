@@ -5,28 +5,28 @@ import {
   Text,
   Pressable,
   ActivityIndicator,
-  Alert
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { Ionicons } from "@expo/vector-icons";
-import { useActionSheet } from "@expo/react-native-action-sheet";
 import { useTranslation } from "react-i18next";
+import { useDrawerStatus } from "@react-navigation/drawer";
+
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { patchAvatar } from "../../util/requests";
-
 import { useProfile } from "../../store/profile-context";
 import api, { showError } from "../../services/api";
 import ProfileAvatar from "./ProfileAvatar";
 import { useProfileDisplay } from "../../hooks/Profile/useProfileDisplay";
 import { useInvalidateProfile } from "../../hooks/Profile/useUpdateProfile";
 import { useMediaLibraryUnavailable } from "../../hooks/useMediaLibraryUnavailable";
+import { BottomSheet } from "../../services/bottomSheet";
 import { AppError } from "../../types";
 
 const AVATAR_SIZE = 100;
 
 const Avatar = () => {
-  const { showActionSheetWithOptions } = useActionSheet();
+  const drawerStatus = useDrawerStatus();
   const [avatar, setAvatar] = useState<string | null>();
   const [loading, setLoading] = useState(false);
   const invalidateProfile = useInvalidateProfile();
@@ -44,6 +44,12 @@ const Avatar = () => {
   const handleMediaLibraryUnavailable = useMediaLibraryUnavailable();
 
   useEffect(() => {
+    if (drawerStatus === "closed") {
+      BottomSheet.hide();
+    }
+  }, [drawerStatus]);
+
+  useEffect(() => {
     setAvatar(profile?.avatar_thumbnail ?? null);
   }, [profile]);
 
@@ -53,40 +59,24 @@ const Avatar = () => {
       return;
     }
 
-    showActionSheetWithOptions(
-      {
-        options: [t("change_photo"), t("remove_photo"), t("cancel")],
-        destructiveButtonIndex: 1,
-        cancelButtonIndex: 2,
-      },
-      (index) => {
-        switch (index) {
-          case 0:
-            pickAvatar();
-            break;
-          case 1:
-                Alert.alert(
-                  t("remove_title"),
-                  t("delete_avatar_message"),
-                  [
-                    { text: t("cancel"), style: "cancel" },
-                    {
-                      text: t("remove"),
-                      style: "destructive",
-                      onPress: () =>
-                        removeAvatar()
-                    },
-                  ],
-                  { cancelable: true },
-                );
-            
-            break;
-          case 2:
-          default:
-            break;
-        }
-      },
-    );
+    BottomSheet.showMenu({
+      items: [
+        { label: t("change_photo"), onPress: pickAvatar },
+        {
+          label: t("remove_photo"),
+          danger: true,
+          onPress: () =>
+            BottomSheet.show({
+              title: t("remove_title"),
+              description: t("delete_avatar_message"),
+              confirmText: t("remove"),
+              cancelText: t("cancel"),
+              danger: true,
+              onConfirm: () => removeAvatar(),
+            }),
+        },
+      ],
+    });
   };
 
   const pickAvatar = async () => {
