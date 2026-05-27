@@ -1,16 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { View, ScrollView, StyleSheet } from "react-native";
+import { Text, View, StyleSheet, Pressable } from "react-native";
+import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 
-import ModalWrapper from "../ui/ModalWrapper";
 import DropdownInput from "../ui/DropdownInput";
+import { useTheme } from "../../store/theme-context";
 import {
   fetchMyCountries,
   fetchMyPlaces,
   fetchSpecies,
 } from "../../util/fetches";
 import DateRangeFilter from "../ui/DateRangeFilter";
-import FlatButtonBottom from "../ui/FlatButtonBottom";
 import { useLanguage } from "../../store/language-context";
 import RadioGroup from "../ui/RadioGroup";
 import SpeciesOptionRow from "../ui/SpeciesOptionRow";
@@ -19,28 +19,27 @@ import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 import { useFilters } from "../../store/filters-context";
 import { useLocationUnavailable } from "../../hooks/useLocationUnavailable";
 import { Filters, AllowedFilterKey, DateFilter } from "../../types";
+import { ThemeColors } from "../../store/theme-context";
 
-interface FilterModalProps {
-  visible: boolean;
-  onClose: () => void;
+interface FilterSheetContentProps {
   filters: Filters;
   allowed: AllowedFilterKey[];
   setFilters: (filters: Filters) => void;
-  clearFilters: () => void;
   extraTerritory?: number | null;
+  dismiss: () => void;
 }
 
-const FilterModal = ({
-  visible,
-  onClose,
+const FilterSheetContent = ({
   filters,
   allowed,
   setFilters,
-  clearFilters,
   extraTerritory,
-}: FilterModalProps) => {
+  dismiss,
+}: FilterSheetContentProps) => {
   const { language } = useLanguage();
   const { t } = useTranslation();
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
   const { setTerritory, date, setDate, setPlace, setSpecies } = useFilters();
   const {
     locationCoords,
@@ -48,15 +47,6 @@ const FilterModal = ({
     permissionStatus,
     requestLocation,
   } = useLocation();
-
-  useEffect(() => {
-    if (!visible) return;
-    if (!allowed.includes("place")) return;
-    if (permissionStatus === "denied") return;
-    if (locationAvailable) return;
-
-    requestLocation();
-  }, [visible]);
 
   const handleLocationUnavailable = useLocationUnavailable();
 
@@ -84,7 +74,9 @@ const FilterModal = ({
   const [speciesValue, setSpeciesValue] = useState<number | null>(
     filters?.species ?? null,
   );
-  const [dateFilter, setDateFilter] = useState<DateFilter>(dateFilterInitial);
+  const [dateFilter, setDateFilter] = useState<DateFilter>(
+    filters?.date ?? dateFilterInitial,
+  );
   const [favouriteValue, setFavouriteValue] = useState(
     filters?.favourite ?? null,
   );
@@ -145,22 +137,11 @@ const FilterModal = ({
 
   useEffect(() => {
     if (!querySpecies.data || !speciesValue) return;
-
     const speciesExists = querySpecies.data.some(
       (item) => item.value === speciesValue,
     );
     if (!speciesExists) setSpeciesValue(null);
   }, [querySpecies.data]);
-
-  useEffect(() => {
-    if (!visible) return;
-
-    setTerritoryValue(filters?.territory ?? null);
-    setPlaceValue(filters?.place ?? null);
-    setSpeciesValue(filters?.species ?? null);
-    setDateFilter(filters?.date ?? dateFilterInitial);
-    setFavouriteValue(filters?.favourite ?? null);
-  }, [visible, filters]);
 
   const isDateFilterActive = (d: DateFilter): boolean => {
     if (!d) return false;
@@ -187,9 +168,8 @@ const FilterModal = ({
 
   const applyHandler = async () => {
     const newFilters = getNewFilters();
-
     setFilters(newFilters);
-    onClose();
+    dismiss();
 
     if (allowed.includes("territory")) {
       const territoryChanged = newFilters.territory !== filters.territory;
@@ -209,113 +189,136 @@ const FilterModal = ({
   };
 
   return (
-    <ModalWrapper
-      visible={visible}
-      onClose={onClose}
-      onApply={applyHandler}
-      title={t("filters")}
-    >
-      <View style={styles.container}>
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          {allowed.includes("territory") && (
-            <DropdownInput
-              title={t("country")}
-              placeholder={t("all_countries")}
-              value={territoryValue}
-              setValue={(value) => setTerritoryValue(value)}
-              query={queryMyCountries}
-              type="CountriesDropdown"
-              sort={countriesSort}
-              onSortChange={onCountriesSortChange}
-              allowReset
-            />
-          )}
-          {allowed.includes("place") && (
-            <DropdownInput
-              title={t("location")}
-              placeholder={t("all_locations")}
-              value={placeValue}
-              setValue={(value) => setPlaceValue(value)}
-              query={queryPlaces}
-              type="PlacesDropdown"
-              sort={placesSort}
-              onSortChange={onPlacesSortChange}
-              allowReset
-              disabled={!effectiveTerritory}
-              disabledMessage={t("select_country_first")}
-              locationAvailable={locationAvailable}
-              onLocationUnavailable={handleLocationUnavailable}
-              useDefault
-            />
-          )}
-
-          {allowed.includes("species") && (
-            <DropdownInput
-              title={t("species")}
-              placeholder={t("all_species")}
-              value={speciesValue}
-              setValue={(value) => setSpeciesValue(value as number | null)}
-              query={querySpecies}
-              type="SpeciesDropdown"
-              sort={speciesSort}
-              onSortChange={onSpeciesSortChange}
-              allowReset
-              disabled={!effectiveTerritory}
-              disabledMessage={t("select_country_first")}
-              renderOption={({ item, selected, onSelect, onClose }) => (
-                <SpeciesOptionRow
-                  item={item}
-                  selected={selected}
-                  onSelect={onSelect}
-                  onClose={onClose}
-                />
-              )}
-              useDefault
-            />
-          )}
-
-          {allowed.includes("favourite") && (
-            <View style={{ marginTop: 12 }}>
-              <RadioGroup
-                label={`${t("favourites")}:`}
-                value={favouriteValue}
-                onChange={(value) => setFavouriteValue(value as boolean | null)}
-                direction="column"
-                options={favouriteOptions}
+    <>
+      <BottomSheetScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        {allowed.includes("territory") && (
+          <DropdownInput
+            title={t("country")}
+            placeholder={t("all_countries")}
+            value={territoryValue}
+            setValue={(value) => setTerritoryValue(value)}
+            query={queryMyCountries}
+            type="CountriesDropdown"
+            sort={countriesSort}
+            onSortChange={onCountriesSortChange}
+            allowReset
+          />
+        )}
+        {allowed.includes("place") && (
+          <DropdownInput
+            title={t("location")}
+            placeholder={t("all_locations")}
+            value={placeValue}
+            setValue={(value) => setPlaceValue(value)}
+            query={queryPlaces}
+            type="PlacesDropdown"
+            sort={placesSort}
+            onSortChange={onPlacesSortChange}
+            allowReset
+            disabled={!effectiveTerritory}
+            disabledMessage={t("select_country_first")}
+            locationAvailable={locationAvailable}
+            onLocationUnavailable={handleLocationUnavailable}
+            useDefault
+          />
+        )}
+        {allowed.includes("species") && (
+          <DropdownInput
+            title={t("species")}
+            placeholder={t("all_species")}
+            value={speciesValue}
+            setValue={(value) => setSpeciesValue(value as number | null)}
+            query={querySpecies}
+            type="SpeciesDropdown"
+            sort={speciesSort}
+            onSortChange={onSpeciesSortChange}
+            allowReset
+            disabled={!effectiveTerritory}
+            disabledMessage={t("select_country_first")}
+            renderOption={({ item, selected, onSelect, onClose }) => (
+              <SpeciesOptionRow
+                item={item}
+                selected={selected}
+                onSelect={onSelect}
+                onClose={onClose}
               />
-            </View>
-          )}
+            )}
+            useDefault
+          />
+        )}
+        {allowed.includes("favourite") && (
+          <View style={{ marginTop: 12 }}>
+            <RadioGroup
+              label={`${t("favourites")}:`}
+              value={favouriteValue}
+              onChange={(value) => setFavouriteValue(value as boolean | null)}
+              direction="column"
+              options={favouriteOptions}
+            />
+          </View>
+        )}
+        {allowed.includes("date") && (
+          <DateRangeFilter value={dateFilter} setDateFilter={setDateFilter} />
+        )}
+      </BottomSheetScrollView>
 
-          {allowed.includes("date") && (
-            <DateRangeFilter value={dateFilter} setDateFilter={setDateFilter} />
-          )}
-        </ScrollView>
-
-        <FlatButtonBottom onPress={clearFilters}>
-          {t("reset_filters")}
-        </FlatButtonBottom>
+      <View style={styles.footer}>
+        <Pressable style={styles.primaryButton} onPress={applyHandler}>
+          <Text style={styles.primaryText}>{t("apply")}</Text>
+        </Pressable>
       </View>
-    </ModalWrapper>
+    </>
   );
 };
 
-export default FilterModal;
+export default FilterSheetContent;
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scroll: {
-    alignSelf: "center",
-    width: "100%",
-    maxWidth: 680,
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-});
+const stylesFn = (Colors: ThemeColors) =>
+  StyleSheet.create({
+    scroll: {
+      alignSelf: "center",
+      width: "100%",
+      maxWidth: 680,
+      backgroundColor: Colors.primary100,
+    },
+    scrollContent: {
+      paddingHorizontal: 16,
+      paddingTop: 50,
+      paddingBottom: 90,
+    },
+    primaryButton: {
+      paddingVertical: 14,
+      borderRadius: 10,
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 48,
+      backgroundColor: Colors.main100,
+      marginTop: 8,
+    },
+    primaryText: {
+      fontWeight: "600",
+      fontSize: 15,
+      color: Colors.textOpposite,
+    },
+    secondaryButton: {
+      paddingVertical: 12,
+      alignItems: "center",
+    },
+    secondaryText: {
+      fontWeight: "500",
+      fontSize: 15,
+      color: Colors.textSecondary,
+    },
+    footer: {
+      paddingHorizontal: 16,
+      paddingBottom: 24,
+      paddingTop: 8,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: Colors.border,
+      backgroundColor: Colors.primary100,
+    },
+  });

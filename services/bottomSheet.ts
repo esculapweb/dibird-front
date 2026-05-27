@@ -19,6 +19,8 @@ export interface ConfirmSheetPayload {
 export interface ContentSheetPayload {
   title?: string;
   renderContent: (dismiss: () => void) => React.ReactNode;
+  onReset?: () => void;
+  resetLabel?: string;
 }
 
 export interface MenuItem {

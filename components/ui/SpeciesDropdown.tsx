@@ -47,8 +47,6 @@ const SpeciesDropdown = ({
     onPress();
   };
 
-  console.log(speciesData);
-
   const ImagePart = () => {
     if (query.isLoading)
       return (

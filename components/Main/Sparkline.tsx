@@ -282,7 +282,6 @@ const stylesFn = (Colors: ThemeColors, mainColor: string, mutedColor: string) =>
 // t("this_year_")
 // t("last_month")
 // t("this_quarter")
-// t("this_quarter")
 // t("last_quarter")
 // t("today_vs_yesterday")
 // t("last_day")

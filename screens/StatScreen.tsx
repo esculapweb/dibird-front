@@ -30,7 +30,7 @@ const StatScreen = () => {
   const navigation = useNavigation<AppStackNavigationProp>();
   const route = useRoute<AppStackRouteProp<"Stat" | "Checklist">>();
 
-  const openFilterModalRef = useRef<(() => void) | null>(null);
+  const openFilterRef = useRef<(() => void) | null>(null);
   const { territory, seenMode, setSeenMode } = useFilters();
   const [currentFilters, setCurrentFilters] = useState<Filters | null>({});
   const [currentSort, setCurrentSort] = useState<string | null>(null);
@@ -80,10 +80,6 @@ const StatScreen = () => {
       setSeenMode(initialSeenMode);
       navigation.setParams({ seenMode: undefined });
     }
-  }, []);
-
-  const handleOpenFilterModal = useCallback((fn: () => void) => {
-    openFilterModalRef.current = fn;
   }, []);
 
   const handleAdd = useCallback(() => {
@@ -142,7 +138,7 @@ const StatScreen = () => {
 
   const noItems = useMemo(() => {
     const noTerritory = !currentFilters?.territory;
-    const openFilter = () => openFilterModalRef.current?.();
+    const openFilter = () => openFilterRef.current?.();
 
     if (viewMode === "checklist" && noTerritory) {
       return {
@@ -322,7 +318,9 @@ const StatScreen = () => {
         onSortChange={async (val) => setCurrentSort(val)}
         allowSort={config.allowSort}
         handleSharePress={viewMode === "stats" ? handleShare : undefined}
-        onOpenFilterModal={handleOpenFilterModal}
+        onOpenFilterModal={(fn) => {
+          openFilterRef.current = fn;
+        }}
         bottomEl={
           <Tabs
             tabOptions={tabOptions}

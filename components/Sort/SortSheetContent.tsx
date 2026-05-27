@@ -1,7 +1,10 @@
-import { ScrollView, StyleSheet } from "react-native";
+import { StyleSheet } from "react-native";
+import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
+
 
 import { saveSort } from "../../util/storageHelper";
 import RadioGroup from "../ui/RadioGroup";
+import { ThemeColors, useTheme } from "../../store/theme-context";
 
 interface SortSheetContentProps {
   screen: string;
@@ -25,7 +28,8 @@ const SortSheetContent = ({
   onLocationUnavailable,
   dismiss,
 }: SortSheetContentProps) => {
-
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
   const disabledSortValues = !locationAvailable
     ? options
         .filter((o) => o.value === "distance" || o.value === "-distance")
@@ -39,7 +43,7 @@ const SortSheetContent = ({
   };
 
   return (
-    <ScrollView
+    <BottomSheetScrollView
       style={styles.scroll}
       contentContainerStyle={styles.scrollContent}
       keyboardShouldPersistTaps="handled"
@@ -52,20 +56,22 @@ const SortSheetContent = ({
         disabledValues={disabledSortValues}
         onDisabledPress={() => onLocationUnavailable?.()}
       />
-    </ScrollView>
+    </BottomSheetScrollView>
   );
 };
 
 export default SortSheetContent;
 
-const styles = StyleSheet.create({
-  scroll: {
-    alignSelf: "center",
-    width: "100%",
-    maxWidth: 680,
-  },
-  scrollContent: {
-    padding: 18,
-    paddingBottom: 40,
-  },
-});
+const stylesFn = (Colors: ThemeColors) =>
+  StyleSheet.create({
+    scroll: {
+      alignSelf: "center",
+      width: "100%",
+      maxWidth: 680,
+      backgroundColor: Colors.primary100,
+    },
+    scrollContent: {
+      paddingHorizontal: 16,
+      paddingVertical: 50,
+    },
+  });

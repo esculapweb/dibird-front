@@ -11,16 +11,23 @@ import ChecklistHero from "../components/Main/ChecklistHero";
 import NewSpecies from "../components/Main/NewSpecies";
 import QuickActions from "../components/Main/QuickActions";
 import Sections from "../components/Main/Sections";
-import FilterModal from "../components/Filters/FilterModal";
+import FilterSheetContent from "../components/Filters/FilterSheetContent";
 import { useSyncedFilters } from "../hooks/useSyncedFilters";
 import { useDropdownQuery } from "../hooks/useDropdownQuery";
 import { fetchMyCountries, fetchMyDashboardStat } from "../util/fetches";
 import Layout from "../components/ui/Layout";
 import { useLanguage } from "../store/language-context";
-import { AppStackNavigationProp, AppStackRouteProp, AllowedFilterKey } from "../types";
+import {
+  AppStackNavigationProp,
+  AppStackRouteProp,
+  AllowedFilterKey,
+} from "../types";
+import { BottomSheet } from "../services/bottomSheet";
+import { useTranslation } from "react-i18next";
 
 const MainScreen = () => {
   const { language } = useLanguage();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const NAVBAR_HEIGHT = insets.top + 60;
 
@@ -28,20 +35,14 @@ const MainScreen = () => {
   const navigation = useNavigation<AppStackNavigationProp>();
   const route = useRoute<AppStackRouteProp<"Main">>();
 
-  const {
-    filters,
-    filtersLoaded,
-    filterModalVisible,
-    setFilterModalVisible,
-    handleFiltersApplied,
-    handleClearFilters,
-  } = useSyncedFilters({
-    route: route,
-    navigation,
-    screenName: "Main",
-    allowSort: false,
-    allowedFilters,
-  });
+  const { filters, filtersLoaded, handleFiltersApplied, handleClearFilters } =
+    useSyncedFilters({
+      route: route,
+      navigation,
+      screenName: "Main",
+      allowSort: false,
+      allowedFilters,
+    });
 
   const { query: countriesQuery } = useDropdownQuery({
     type: "CountriesDropdown",
@@ -66,10 +67,25 @@ const MainScreen = () => {
     enabled: filtersLoaded,
   });
 
+  const openFilters = () => {
+    BottomSheet.showContent({
+      title: t("filters"),
+      onReset: handleClearFilters,
+      renderContent: (dismiss: () => void) => (
+        <FilterSheetContent
+          filters={filters}
+          allowed={allowedFilters}
+          setFilters={handleFiltersApplied}
+          dismiss={dismiss}
+        />
+      ),
+    });
+  };
+
   return (
     <Layout>
       <FloatingNavbar
-        onPress={() => setFilterModalVisible(true)}
+        onPress={openFilters}
         filters={filters}
         country={country}
       />
@@ -81,8 +97,6 @@ const MainScreen = () => {
           paddingBottom: insets.bottom,
         }}
       >
-
-
         <Stats
           data={dataStats}
           filters={filters}
@@ -106,14 +120,6 @@ const MainScreen = () => {
 
         <Sections data={dataStats} />
       </ScrollView>
-      <FilterModal
-        visible={filterModalVisible}
-        onClose={() => setFilterModalVisible(false)}
-        filters={filters}
-        allowed={allowedFilters}
-        setFilters={handleFiltersApplied}
-        clearFilters={handleClearFilters}
-      />
     </Layout>
   );
 };

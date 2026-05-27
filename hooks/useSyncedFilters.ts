@@ -47,7 +47,6 @@ export const useSyncedFilters = <RouteName extends ScreenWithFiltersOnly>({
   const [filters, setFilters] = useState<Filters>({});
   const [sort, setSort] = useState<string | null>(null);
   const [sortReady, setSortReady] = useState(false);
-  const [filterModalVisible, setFilterModalVisible] = useState(false);
 
   const [filtersLoaded, setFiltersLoaded] = useState(false);
   const [search, setSearch] = useState("");
@@ -89,7 +88,6 @@ export const useSyncedFilters = <RouteName extends ScreenWithFiltersOnly>({
     await setPlace(null);
     await setSpecies(null);
     setFilters({});
-    setFilterModalVisible(false);
   };
 
   const handleClearSearch = (): void => setSearch("");
@@ -291,8 +289,6 @@ export const useSyncedFilters = <RouteName extends ScreenWithFiltersOnly>({
   return {
     filters,
     filtersLoaded,
-    filterModalVisible,
-    setFilterModalVisible,
     hasActiveFilters,
     removeFilter,
     filterHints,

@@ -12,6 +12,7 @@ import {
   View,
   ActivityIndicator,
   Platform,
+  useWindowDimensions,
 } from "react-native";
 import {
   BottomSheetModal,
@@ -20,6 +21,7 @@ import {
   BottomSheetBackdrop,
 } from "@gorhom/bottom-sheet";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import {
@@ -35,6 +37,8 @@ export interface BottomSheetRef {
 }
 
 const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
+  const { t } = useTranslation();
+  const { height: screenHeight } = useWindowDimensions();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const bottomSheetRef = useRef<BottomSheetModal>(null);
@@ -122,8 +126,9 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
       ref={bottomSheetRef}
       stackBehavior="replace"
       enableDynamicSizing
+      maxDynamicContentSize={screenHeight * 0.9}
       enablePanDownToClose
-      keyboardBehavior="interactive"
+      keyboardBehavior="extend"
       keyboardBlurBehavior="restore"
       android_keyboardInputMode="adjustResize"
       onDismiss={handleDismiss}
@@ -162,135 +167,179 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
         height: 4,
       }}
     >
-      <BottomSheetView style={styles.outer}>
+      <>
         {/* ── Menu mode ────────────────────────────────────── */}
-        {menu && (
-          <View style={styles.container}>
-            {menu.title ? (
-              <Text style={styles.menuTitle}>{menu.title}</Text>
-            ) : null}
-            {menu.items.map((item, i) => (
-              <View key={i}>
-                {i > 0 && <View style={styles.divider} />}
-                <Pressable
-                  style={styles.menuRow}
-                  onPress={() => {
-                    item.onPress();
-                  }}
+        {(menu || confirm) && (
+          <BottomSheetView style={styles.outer}>
+            {menu && (
+              <View style={styles.container}>
+                {menu.title ? (
+                  <Text style={styles.menuTitle}>{menu.title}</Text>
+                ) : null}
+                {menu.items.map((item, i) => (
+                  <View key={i}>
+                    {i > 0 && <View style={styles.divider} />}
+                    <Pressable
+                      style={styles.menuRow}
+                      onPress={() => {
+                        item.onPress();
+                      }}
+                    >
+                      {item.icon && (
+                        <View
+                          style={[
+                            styles.iconBox,
+                            item.danger && {
+                              backgroundColor: Colors.error100,
+                              borderColor: Colors.error600,
+                            },
+                          ]}
+                        >
+                          <Ionicons
+                            name={item.icon}
+                            size={18}
+                            color={
+                              item.danger ? Colors.error600 : Colors.textMain
+                            }
+                          />
+                        </View>
+                      )}
+                      <Text
+                        style={[
+                          styles.menuLabel,
+                          item.danger && { color: Colors.error600 },
+                        ]}
+                      >
+                        {item.label}
+                      </Text>
+                    </Pressable>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* ── Confirm mode ─────────────────────────────────── */}
+            {confirm && (
+              <View style={styles.container}>
+                <Text
+                  style={[
+                    styles.title,
+                    confirm.danger && { color: Colors.error600 },
+                  ]}
                 >
-                  {item.icon && (
-                    <View
+                  {confirm.title}
+                </Text>
+
+                {resolvedDescription ? (
+                  <Text style={styles.description}>{resolvedDescription}</Text>
+                ) : null}
+
+                {resolvedRequired ? (
+                  <View style={styles.inputBlock}>
+                    {confirm.inputLabel ? (
+                      <Text style={styles.inputLabel}>
+                        {confirm.inputLabel}
+                      </Text>
+                    ) : null}
+                    <BottomSheetTextInput
                       style={[
-                        styles.iconBox,
-                        item.danger && { backgroundColor: Colors.error100, borderColor: Colors.error600 },
+                        styles.input,
+                        {
+                          borderColor:
+                            inputValue.length > 0
+                              ? isMatch
+                                ? Colors.green
+                                : Colors.error600
+                              : Colors.border,
+                          color: Colors.textMain,
+                          backgroundColor: Colors.backgroundMain,
+                        },
+                      ]}
+                      value={inputValue}
+                      onChangeText={setInputValue}
+                      placeholder={resolvedPlaceholder}
+                      placeholderTextColor={Colors.textSecondary}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                  </View>
+                ) : null}
+
+                <Pressable
+                  style={[
+                    styles.primaryButton,
+                    { backgroundColor: confirmBg },
+                    isConfirmDisabled && { opacity: 0.6 },
+                  ]}
+                  onPress={handleConfirm}
+                  disabled={isConfirmDisabled}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator
+                      color={Colors.textOpposite}
+                      size="small"
+                    />
+                  ) : (
+                    <Text
+                      style={[
+                        styles.primaryText,
+                        { color: Colors.textOpposite },
                       ]}
                     >
-                      <Ionicons
-                        name={item.icon}
-                        size={18}
-                        color={item.danger ? Colors.error600 : Colors.textMain}
-                      />
-                    </View>
+                      {confirm.confirmText}
+                    </Text>
                   )}
+                </Pressable>
+
+                <Pressable style={styles.secondaryButton} onPress={dismiss}>
                   <Text
                     style={[
-                      styles.menuLabel,
-                      item.danger && { color: Colors.error600 },
+                      styles.secondaryText,
+                      { color: Colors.textSecondary },
                     ]}
                   >
-                    {item.label}
+                    {confirm.cancelText}
                   </Text>
                 </Pressable>
               </View>
-            ))}
-          </View>
+            )}
+          </BottomSheetView>
         )}
 
         {/* ── Content mode ─────────────────────────────────── */}
         {content && (
-          <View style={styles.container}>
+          <>
             {content.title ? (
-              <Text style={styles.title}>{content.title}</Text>
+              <BottomSheetView style={styles.outer}>
+                <View style={[styles.container, { paddingBottom: 0 }]}>
+                  <View style={styles.titleRow}>
+                    <View style={styles.titleSide}>
+                      {content.onReset && (
+                        <Pressable
+                          onPress={() => {
+                            content.onReset?.();
+                            dismiss();
+                          }}
+                          hitSlop={8}
+                        >
+                          <Text style={styles.resetText}>
+                            {content.resetLabel ?? t("reset")}
+                          </Text>
+                        </Pressable>
+                      )}
+                    </View>
+
+                    <Text style={styles.title}>{content.title}</Text>
+
+                    <View style={styles.titleSide} />
+                  </View>
+                </View>
+              </BottomSheetView>
             ) : null}
             {content.renderContent(dismiss)}
-          </View>
+          </>
         )}
-
-        {/* ── Confirm mode ─────────────────────────────────── */}
-        {confirm && (
-          <View style={styles.container}>
-            <Text
-              style={[
-                styles.title,
-                confirm.danger && { color: Colors.error600 },
-              ]}
-            >
-              {confirm.title}
-            </Text>
-
-            {resolvedDescription ? (
-              <Text style={styles.description}>{resolvedDescription}</Text>
-            ) : null}
-
-            {resolvedRequired ? (
-              <View style={styles.inputBlock}>
-                {confirm.inputLabel ? (
-                  <Text style={styles.inputLabel}>{confirm.inputLabel}</Text>
-                ) : null}
-                <BottomSheetTextInput
-                  style={[
-                    styles.input,
-                    {
-                      borderColor:
-                        inputValue.length > 0
-                          ? isMatch
-                            ? Colors.green
-                            : Colors.error600
-                          : Colors.border,
-                      color: Colors.textMain,
-                      backgroundColor: Colors.backgroundMain,
-                    },
-                  ]}
-                  value={inputValue}
-                  onChangeText={setInputValue}
-                  placeholder={resolvedPlaceholder}
-                  placeholderTextColor={Colors.textSecondary}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-              </View>
-            ) : null}
-
-            <Pressable
-              style={[
-                styles.primaryButton,
-                { backgroundColor: confirmBg },
-                isConfirmDisabled && { opacity: 0.6 },
-              ]}
-              onPress={handleConfirm}
-              disabled={isConfirmDisabled}
-            >
-              {isLoading ? (
-                <ActivityIndicator color={Colors.textOpposite} size="small" />
-              ) : (
-                <Text
-                  style={[styles.primaryText, { color: Colors.textOpposite }]}
-                >
-                  {confirm.confirmText}
-                </Text>
-              )}
-            </Pressable>
-
-            <Pressable style={styles.secondaryButton} onPress={dismiss}>
-              <Text
-                style={[styles.secondaryText, { color: Colors.textSecondary }]}
-              >
-                {confirm.cancelText}
-              </Text>
-            </Pressable>
-          </View>
-        )}
-      </BottomSheetView>
+      </>
     </BottomSheetModal>
   );
 });
@@ -302,7 +351,9 @@ const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     outer: {
       alignItems: "center",
-      backgroundColor: Colors.primary100,
+      backgroundColor: Colors.overlayBg,
+      zIndex: 10,
+      elevation: 10,
     },
     container: {
       paddingHorizontal: 20,
@@ -379,5 +430,21 @@ const stylesFn = (Colors: ThemeColors) =>
       fontWeight: "500",
       color: Colors.textMain,
       marginBottom: 6,
+    },
+
+    titleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      width: "100%",
+      paddingBottom: 16,
+    },
+    titleSide: {
+      width: 80,
+    },
+    resetText: {
+      fontSize: 15,
+      fontWeight: "500",
+      color: Colors.textSecondary,
     },
   });

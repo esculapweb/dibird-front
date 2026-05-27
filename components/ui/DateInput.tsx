@@ -9,13 +9,18 @@ import {
   LayoutAnimation,
   UIManager,
 } from "react-native";
-import DateTimePicker, {DateTimePickerEvent} from "@react-native-community/datetimepicker";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { toDateOnly } from "../../util/helpers";
 import { StyleType } from "../../types";
+
+const nativeGesture = Gesture.Native().shouldCancelWhenOutside(false);
 
 if (
   Platform.OS === "android" &&
@@ -229,17 +234,18 @@ const DateInput = ({
               <Text style={styles.doneText}>{t("done")}</Text>
             </Pressable>
           </View>
-
-          <DateTimePicker
-            value={tempDate}
-            mode="date"
-            display="spinner"
-            maximumDate={today}
-            themeVariant={theme === "dark" ? "dark" : "light"}
-            onChange={handleIosChange}
-            style={styles.picker}
-            {...(minDateObj ? { minimumDate: minDateObj } : {})}
-          />
+          <GestureDetector gesture={nativeGesture}>
+            <DateTimePicker
+              value={tempDate}
+              mode="date"
+              display="spinner"
+              maximumDate={today}
+              themeVariant={theme === "dark" ? "dark" : "light"}
+              onChange={handleIosChange}
+              style={styles.picker}
+              {...(minDateObj ? { minimumDate: minDateObj } : {})}
+            />
+          </GestureDetector>
         </View>
       )}
     </View>

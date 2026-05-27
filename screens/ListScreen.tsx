@@ -10,7 +10,7 @@ import { useNavigation, RouteProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 
 import LoadingOverlay from "../components/ui/LoadingOverlay";
-import FilterModal from "../components/Filters/FilterModal";
+import FilterSheetContent from "../components/Filters/FilterSheetContent";
 import SortSheetContent from "../components/Sort/SortSheetContent";
 import IconsHeader from "../components/ui/IconsHeader";
 import FilterChips from "../components/Filters/FilterChips";
@@ -113,8 +113,6 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
   const {
     filters,
     filtersLoaded,
-    filterModalVisible,
-    setFilterModalVisible,
     hasActiveFilters,
     removeFilter,
     filterHints,
@@ -137,10 +135,6 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
     allowSort,
     allowedFilters,
   });
-
-  useEffect(() => {
-    onOpenFilterModal?.(() => setFilterModalVisible(true));
-  }, []);
 
   const fetchDataWrapper = useCallback(
     (filters: Filters, sort: string | null, search: string, page: number) => {
@@ -210,6 +204,30 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
     onSortChange?.(sort);
   }, [sort]);
 
+  useEffect(() => {
+    onOpenFilterModal?.(() =>
+      BottomSheet.showContent({
+        title: t("filters"),
+        onReset: handleClearFilters,
+        renderContent: (dismiss) => (
+          <FilterSheetContent
+            filters={filters}
+            allowed={allowedFilters}
+            setFilters={handleFiltersApplied}
+            extraTerritory={extraFilters?.territory}
+            dismiss={dismiss}
+          />
+        ),
+      }),
+    );
+  }, [
+    filters,
+    allowedFilters,
+    handleFiltersApplied,
+    handleClearFilters,
+    extraFilters,
+  ]);
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
@@ -235,7 +253,21 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
                   })
               : undefined
           }
-          onFilterPress={() => setFilterModalVisible(true)}
+          onFilterPress={() =>
+            BottomSheet.showContent({
+              title: t("filters"),
+              onReset: handleClearFilters,
+              renderContent: (dismiss: () => void) => (
+                <FilterSheetContent
+                  filters={filters}
+                  allowed={allowedFilters}
+                  setFilters={handleFiltersApplied}
+                  extraTerritory={extraFilters?.territory}
+                  dismiss={dismiss}
+                />
+              ),
+            })
+          }
           onSharePress={handleSharePress}
           headerRightBeginning={headerRightBeginning}
           headerRightEnd={headerRightEnd}
@@ -251,6 +283,7 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
     headerRightEnd,
     sort,
     locationAvailable,
+    handleClearFilters,
   ]);
 
   useLayoutEffect(() => {
@@ -327,15 +360,6 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
         keyExtractor={keyExtractor}
         noItems={noItems}
         listHeader={listHeader}
-      />
-      <FilterModal
-        visible={filterModalVisible}
-        onClose={() => setFilterModalVisible(false)}
-        filters={filters}
-        allowed={allowedFilters}
-        setFilters={handleFiltersApplied}
-        clearFilters={handleClearFilters}
-        extraTerritory={extraFilters?.territory}
       />
     </Layout>
   );
