@@ -53,7 +53,11 @@ const Avatar = () => {
 
     BottomSheet.showMenu({
       items: [
-        { label: t("change_photo"), icon: "pencil" as const, onPress: pickAvatar },
+        {
+          label: t("change_photo"),
+          icon: "pencil" as const,
+          onPress: pickAvatar,
+        },
         {
           label: t("remove_photo"),
           icon: "trash" as const,
@@ -114,7 +118,8 @@ const Avatar = () => {
       invalidateProfile();
     } catch (e) {
       const error = e as AppError;
-      if (__DEV__) console.warn("Image manipulation error:", error.code, error.message);
+      if (__DEV__)
+        console.warn("Image manipulation error:", error.code, error.message);
       showError(error);
     } finally {
       setLoading(false);
@@ -133,7 +138,8 @@ const Avatar = () => {
       }
     } catch (e) {
       const error = e as AppError;
-      if (__DEV__) console.warn("Delete Avatar error:", error.code, error.message);
+      if (__DEV__)
+        console.warn("Delete Avatar error:", error.code, error.message);
       showError(error);
     } finally {
       setLoading(false);
@@ -162,6 +168,9 @@ const Avatar = () => {
           </View>
         )}
       </Pressable>
+      {!avatar && !loading && (
+        <Text style={styles.hintText}>{t("tap_to_add_photo")}</Text>
+      )}
       <Text style={styles.smallText}>{fullName}</Text>
     </>
   );
@@ -220,5 +229,11 @@ const stylesFn = (Colors: ThemeColors) =>
       textAlign: "center",
       fontSize: 12,
       color: Colors.textMain,
+    },
+    hintText: {
+      marginTop: 4,
+      textAlign: "center",
+      fontSize: 11,
+      color: Colors.main100, 
     },
   });
