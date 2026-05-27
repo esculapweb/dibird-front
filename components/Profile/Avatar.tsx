@@ -169,7 +169,7 @@ const Avatar = () => {
         )}
       </Pressable>
       {!avatar && !loading && (
-        <Text style={styles.hintText}>{t("tap_to_add_photo")}</Text>
+        <Text style={styles.hintText}>↑ {t("tap_to_add_photo")}</Text>
       )}
       <Text style={styles.smallText}>{fullName}</Text>
     </>
