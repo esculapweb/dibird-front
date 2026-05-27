@@ -311,7 +311,16 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
           <>
             {content.title ? (
               <BottomSheetView style={styles.outer}>
-                <View style={[styles.container, { paddingBottom: 0 }]}>
+                <View
+                  style={[
+                    styles.titleContainer,
+                    {
+                      paddingBottom: 12,
+                      borderBottomWidth: StyleSheet.hairlineWidth,
+                      borderBottomColor: Colors.border,
+                    },
+                  ]}
+                >
                   <View style={styles.titleRow}>
                     <View style={styles.titleSide}>
                       {content.onReset && (
@@ -352,8 +361,6 @@ const stylesFn = (Colors: ThemeColors) =>
     outer: {
       alignItems: "center",
       backgroundColor: Colors.primary100,
-      zIndex: 10,
-      elevation: 10,
     },
     container: {
       paddingHorizontal: 20,
@@ -437,7 +444,6 @@ const stylesFn = (Colors: ThemeColors) =>
       alignItems: "center",
       justifyContent: "space-between",
       width: "100%",
-      paddingBottom: 16,
     },
     titleSide: {
       width: 80,
@@ -446,5 +452,19 @@ const stylesFn = (Colors: ThemeColors) =>
       fontSize: 15,
       fontWeight: "500",
       color: Colors.textSecondary,
+    },
+
+    titleContainer: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      backgroundColor: Colors.primary100,
+      paddingHorizontal: 20,
+      paddingBottom: 12,
+      paddingTop: 8,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      zIndex: 10,
+      elevation: 10,
     },
   });

@@ -287,7 +287,7 @@ const stylesFn = (Colors: ThemeColors) =>
     },
     scrollContent: {
       paddingHorizontal: 16,
-      paddingTop: 50,
+      paddingTop: 56,
       paddingBottom: 90,
     },
     primaryButton: {
