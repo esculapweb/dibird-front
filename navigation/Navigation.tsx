@@ -97,6 +97,16 @@ const extractRoutes = (state: NavState): MinimalRoute[] => {
   if (!activeRoute) return [];
 
   if (activeRoute.state) {
+    const nested = activeRoute.state;
+    const nestedRoutes = nested?.routes ?? [];
+    const isDrawer = nestedRoutes.every(
+      (r) => !r.state && r.name === "MainScreen",
+    );
+
+    if (isDrawer) {
+      return [{ name: activeRoute.name }];
+    }
+
     return [{ name: activeRoute.name }, ...extractRoutes(activeRoute.state)];
   }
 
@@ -114,13 +124,15 @@ const buildInitialState = (routes: MinimalRoute[]): InitialState => {
     params: r.params,
   }));
 
+  const allRoutes = [{ name: "Main" }, ...innerRoutes];
+
   return {
     routes: [
       {
         name: "Root",
         state: {
-          index: innerRoutes.length,
-          routes: [{ name: "Main" }, ...innerRoutes],
+          index: allRoutes.length - 1,
+          routes: allRoutes,
         },
       },
     ],

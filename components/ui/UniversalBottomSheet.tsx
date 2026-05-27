@@ -351,7 +351,7 @@ const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     outer: {
       alignItems: "center",
-      backgroundColor: Colors.overlayBg,
+      backgroundColor: Colors.primary100,
       zIndex: 10,
       elevation: 10,
     },
