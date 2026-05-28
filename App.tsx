@@ -20,6 +20,7 @@ import {
   setAnalyticsCollectionEnabled,
 } from "@react-native-firebase/analytics";
 import * as Updates from "expo-updates";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import AuthContextProvider, { useAuth } from "./store/auth-context";
 import { ProfileProvider } from "./store/profile-context";
@@ -126,23 +127,25 @@ export default Sentry.wrap(function App() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor }}>
-      <QueryClientProvider client={queryClient}>
-        <LanguageProvider>
-          <ThemeProvider>
-            <AuthContextProvider>
-              <AuthConsumerWrapper>
-                <FiltersProvider>
-                  <LocationProvider>
-                    <BottomSheetModalProvider>
-                      <Root />
-                    </BottomSheetModalProvider>
-                  </LocationProvider>
-                </FiltersProvider>
-              </AuthConsumerWrapper>
-            </AuthContextProvider>
-          </ThemeProvider>
-        </LanguageProvider>
-      </QueryClientProvider>
+      <SafeAreaProvider>
+        <QueryClientProvider client={queryClient}>
+          <LanguageProvider>
+            <ThemeProvider>
+              <AuthContextProvider>
+                <AuthConsumerWrapper>
+                  <FiltersProvider>
+                    <LocationProvider>
+                      <BottomSheetModalProvider>
+                        <Root />
+                      </BottomSheetModalProvider>
+                    </LocationProvider>
+                  </FiltersProvider>
+                </AuthConsumerWrapper>
+              </AuthContextProvider>
+            </ThemeProvider>
+          </LanguageProvider>
+        </QueryClientProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 });
