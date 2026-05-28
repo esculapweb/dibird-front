@@ -1,5 +1,12 @@
 import { ReactNode } from "react";
-import { Modal, View, Text, StyleSheet } from "react-native";
+import {
+  Modal,
+  View,
+  Text,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -37,7 +44,11 @@ const ModalWrapper = ({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={56}
+      >
         <SafeAreaView
           edges={["top"]}
           style={{ flex: 1, backgroundColor: Colors.backgroundMain }}
@@ -78,7 +89,7 @@ const ModalWrapper = ({
           </View>
           {children}
         </SafeAreaView>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };

@@ -155,6 +155,7 @@ const SelectListModal = ({
               ref={flatListRef}
               data={filteredOptions}
               keyExtractor={(item) => String(item.value)}
+              keyboardShouldPersistTaps="handled"
               getItemLayout={(_, index) => ({
                 length: ItemHeight,
                 offset: ItemHeight * index,
