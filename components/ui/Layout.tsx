@@ -1,7 +1,6 @@
 import { ReactNode } from "react";
-import { View, ScrollView, StyleSheet, Platform } from "react-native";
+import { View, ScrollView, StyleSheet } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import BackgroundScene2 from "./BackgroundScene2";
 import { StyleType } from "../../types";
@@ -29,7 +28,6 @@ const Layout = ({
   hideBackground = false,
 }: LayoutProps) => {
   const maxWidth = useContentWidth();
-  const insets = useSafeAreaInsets();
 
   return (
     <View style={styles.container}>
@@ -59,16 +57,7 @@ const Layout = ({
           {children}
         </View>
       )}
-      {bottom && (
-        <View
-          style={[
-            styles.bottom,
-            Platform.OS === "android" && { paddingBottom: insets.bottom },
-          ]}
-        >
-          {bottom}
-        </View>
-      )}
+      {bottom && <View style={styles.bottom}>{bottom}</View>}
     </View>
   );
 };

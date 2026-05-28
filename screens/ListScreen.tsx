@@ -8,6 +8,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { useNavigation, RouteProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import FilterSheetContent from "../components/Filters/FilterSheetContent";
@@ -96,12 +97,13 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
   showHeaderBadge = true,
   topEl,
   bottomEl,
-  fabBottomOffset = 20,
+  fabBottomOffset = 0,
 }: ListScreenProps<T, RouteName>) => {
   const screenName = route.name;
   const { t } = useTranslation();
   const { Colors } = useTheme();
-  const styles = stylesFn(Colors, fabBottomOffset);
+  const insets = useSafeAreaInsets();
+  const styles = stylesFn(Colors, fabBottomOffset + insets.bottom);
   const resolvedGetItemId = (item: T): string | number =>
     getItemId
       ? getItemId(item)

@@ -465,6 +465,5 @@ const stylesFn = (Colors: ThemeColors) =>
       paddingTop: 8,
       borderBottomWidth: StyleSheet.hairlineWidth,
       zIndex: 10,
-      elevation: 10,
     },
   });

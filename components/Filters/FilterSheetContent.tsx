@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Text, View, StyleSheet, Pressable } from "react-native";
 import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import {  EdgeInsets, useSafeAreaInsets } from "react-native-safe-area-context";
+
 
 import DropdownInput from "../ui/DropdownInput";
 import { useTheme } from "../../store/theme-context";
@@ -39,8 +41,8 @@ const FilterSheetContent = ({
   const { language } = useLanguage();
   const { t } = useTranslation();
   const { Colors } = useTheme();
-  const styles = stylesFn(Colors);
-  const { setTerritory, date, setDate, setPlace, setSpecies } = useFilters();
+  const insets = useSafeAreaInsets();
+  const styles = stylesFn(Colors, insets);  const { setTerritory, date, setDate, setPlace, setSpecies } = useFilters();
   const {
     locationCoords,
     locationAvailable,
@@ -277,7 +279,7 @@ const FilterSheetContent = ({
 
 export default FilterSheetContent;
 
-const stylesFn = (Colors: ThemeColors) =>
+const stylesFn = (Colors: ThemeColors, insets: EdgeInsets) =>
   StyleSheet.create({
     scroll: {
       alignSelf: "center",
@@ -290,20 +292,26 @@ const stylesFn = (Colors: ThemeColors) =>
       paddingTop: 56,
       paddingBottom: 90,
     },
+
+    footer: {
+      padding: 18,
+      paddingBottom: Math.max(16, insets.bottom),
+      borderTopWidth: 1,
+      borderTopColor: Colors.border,
+    },
+
     primaryButton: {
-      paddingVertical: 14,
-      borderRadius: 10,
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 48,
-      backgroundColor: Colors.main100,
-      marginTop: 8,
     },
     primaryText: {
       fontWeight: "600",
-      fontSize: 15,
-      color: Colors.textOpposite,
+      fontSize: 16,
+      textAlign: "center",
+      color: Colors.main100,
     },
+
+
     secondaryButton: {
       paddingVertical: 12,
       alignItems: "center",
@@ -313,12 +321,5 @@ const stylesFn = (Colors: ThemeColors) =>
       fontSize: 15,
       color: Colors.textSecondary,
     },
-    footer: {
-      paddingHorizontal: 16,
-      paddingBottom: 24,
-      paddingTop: 8,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: Colors.border,
-      backgroundColor: Colors.primary100,
-    },
+
   });
