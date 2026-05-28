@@ -4,6 +4,7 @@ import {
   Filters,
   DateFilter,
   PaginatedResponse,
+  StatPaginatedResponse,
   SpeciesItem,
   Coords,
   ChecklistItem,
@@ -225,7 +226,7 @@ export const fetchStat = (
   page?: number,
 ) => {
   filters = { ...filters };
-  return fetchAbstract<PaginatedResponse<SpeciesItem>>(
+  return fetchAbstract<StatPaginatedResponse<SpeciesItem>>(
     "/myapi/stat2/",
     filters,
     order,
@@ -241,7 +242,7 @@ export const fetchChecklist = (
   page?: number,
 ) => {
   filters = { ...filters };
-  return fetchAbstract<PaginatedResponse<ChecklistItem>>(
+  return fetchAbstract<  StatPaginatedResponse<ChecklistItem>>(
     "/myapi/checklist2/",
     filters,
     order,

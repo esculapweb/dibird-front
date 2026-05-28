@@ -36,6 +36,7 @@ import {
   EmptyStateProps,
   FetchFunction,
   Coords,
+  StatPaginatedResponse,
 } from "../types";
 
 interface ListScreenProps<T, RouteName extends ScreenWithFiltersOnly> {
@@ -64,9 +65,13 @@ interface ListScreenProps<T, RouteName extends ScreenWithFiltersOnly> {
   allowSort?: boolean;
   onOpenFilterModal?: (fn: () => void) => void;
   showHeaderBadge?: boolean;
+  customHeaderBadge?: (
+    res: StatPaginatedResponse<T>,
+  ) => string | number | undefined;
   topEl?: ReactNode;
   bottomEl?: ReactNode;
   fabBottomOffset?: number;
+  onFirstPageData?: (page: StatPaginatedResponse<T>) => void;
 }
 
 const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
@@ -95,9 +100,11 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
   allowSort = true,
   onOpenFilterModal,
   showHeaderBadge = true,
+  customHeaderBadge,
   topEl,
   bottomEl,
   fabBottomOffset = 0,
+  onFirstPageData,
 }: ListScreenProps<T, RouteName>) => {
   const screenName = route.name;
   const { t } = useTranslation();
@@ -166,6 +173,12 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
     enabled: sortReady && filtersLoaded,
   });
 
+  useEffect(() => {
+    if (data?.pages[0]) {
+      onFirstPageData?.(data.pages[0] as StatPaginatedResponse<T>);
+    }
+  }, [data?.pages[0], onFirstPageData]);
+
   const rawItems = data?.pages.flatMap((page) => page.results) ?? [];
   const objects = new Set();
   const items = rawItems.filter((item) => {
@@ -230,6 +243,13 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
     extraFilters,
   ]);
 
+  const badgeCount = () => {
+    if (!data?.pages[0]) return;
+    if (customHeaderBadge)
+      return customHeaderBadge(data.pages[0] as StatPaginatedResponse<T>);
+    if (showHeaderBadge) return data.pages[0]?.pagination?.count ?? 0;
+  };
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
@@ -293,11 +313,7 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
       headerTitle: () => (
         <HeaderTitleWithBadge
           title={title ?? t(route.name)}
-          badgeCount={
-            showHeaderBadge
-              ? (data?.pages[0]?.pagination?.count ?? 0)
-              : undefined
-          }
+          badgeCount={badgeCount()}
         />
       ),
     });

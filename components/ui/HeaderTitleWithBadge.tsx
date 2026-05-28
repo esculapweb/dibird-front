@@ -6,7 +6,7 @@ const HeaderTitleWithBadge = ({
   badgeCount,
 }: {
   title: string;
-  badgeCount?: number | null;
+  badgeCount?: number | string;
 }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -16,7 +16,7 @@ const HeaderTitleWithBadge = ({
       <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
         {title}
       </Text>
-      {badgeCount !== undefined && badgeCount !== null && (
+      {badgeCount !== undefined && (
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{badgeCount}</Text>
         </View>

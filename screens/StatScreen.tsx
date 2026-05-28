@@ -23,6 +23,7 @@ import {
   emptyPaginatedResponse,
   SpeciesItem,
   seenMode,
+  StatPaginatedResponse,
 } from "../types";
 
 const StatScreen = () => {
@@ -37,6 +38,21 @@ const StatScreen = () => {
   const { profile } = useProfile();
   const { seenMode: initialSeenMode } = useMemo(
     () => parseDeepLinkParams(route.params),
+    [],
+  );
+  const [speciesCounts, setSpeciesCounts] = useState<{
+    seen: number;
+    total: number;
+  } | null>(null);
+
+  const handleFirstPageData = useCallback(
+    (page: StatPaginatedResponse<SpeciesItem | ChecklistItem>) => {
+      const total =
+        typeof page.total_species === "number" ? page.total_species : 0;
+      const seen =
+        typeof page.seen_species === "number" ? page.seen_species : 0;
+      setSpeciesCounts({ seen, total });
+    },
     [],
   );
 
@@ -107,14 +123,17 @@ const StatScreen = () => {
     [navigation, currentFilters],
   );
 
-  const handleShowBottomSheet = (item: SpeciesItem) =>
-    BottomSheet.show({
-      title: t("uncheck_title"),
-      description: t("uncheck_descriptions"),
-      confirmText: t("view_species_observations"),
-      cancelText: t("cancel"),
-      onConfirm: () => handleShowObservations(item),
-    });
+  const handleShowBottomSheet = useCallback(
+    (item: SpeciesItem) =>
+      BottomSheet.show({
+        title: t("uncheck_title"),
+        description: t("uncheck_descriptions"),
+        confirmText: t("view_species_observations"),
+        cancelText: t("cancel"),
+        onConfirm: () => handleShowObservations(item),
+      }),
+    [t, handleShowObservations],
+  );
 
   const handleStatCardPress = useCallback(
     (item: SpeciesItem | ChecklistItem) => {
@@ -133,7 +152,13 @@ const StatScreen = () => {
       }
       handleShowObservations(item as SpeciesItem);
     },
-    [currentFilters, navigation, config],
+    [
+      currentFilters,
+      navigation,
+      config,
+      handleShowBottomSheet,
+      handleShowObservations,
+    ],
   );
 
   const noItems = useMemo(() => {
@@ -195,44 +220,47 @@ const StatScreen = () => {
     [seenMode, viewMode, config],
   );
 
-  const handleBottomSheetMenu = (item: ChecklistItem | SpeciesItem) => {
-    const seenItem = item.seen
-      ? {
-          label: t("view_species_observations"),
-          icon: "binoculars" as const,
-          onPress: () => {
-            handleShowObservations(item as SpeciesItem);
-            BottomSheet.hide();
-          },
-        }
-      : {
-          label: t("add_observation"),
-          icon: "add-circle-outline" as const,
-          onPress: () => {
-            navigation.navigate("ObservationEditor", {
-              defaultTerritory: currentFilters?.territory ?? null,
-              defaultPlace: currentFilters?.place ?? null,
-              defaultSpecies: item.species_id,
-              returnMode: "back",
-            });
-            BottomSheet.hide();
-          },
-        };
+  const handleBottomSheetMenu = useCallback(
+    (item: ChecklistItem | SpeciesItem) => {
+      const seenItem = item.seen
+        ? {
+            label: t("view_species_observations"),
+            icon: "binoculars" as const,
+            onPress: () => {
+              handleShowObservations(item as SpeciesItem);
+              BottomSheet.hide();
+            },
+          }
+        : {
+            label: t("add_observation"),
+            icon: "add-circle-outline" as const,
+            onPress: () => {
+              navigation.navigate("ObservationEditor", {
+                defaultTerritory: currentFilters?.territory ?? null,
+                defaultPlace: currentFilters?.place ?? null,
+                defaultSpecies: item.species_id,
+                returnMode: "back",
+              });
+              BottomSheet.hide();
+            },
+          };
 
-    BottomSheet.showMenu({
-      items: [
-        seenItem,
-        {
-          label: t("species_details"),
-          icon: "information-circle-outline" as const,
-          onPress: () => {
-            speciesDetails(item.segment);
-            BottomSheet.hide();
+      BottomSheet.showMenu({
+        items: [
+          seenItem,
+          {
+            label: t("species_details"),
+            icon: "information-circle-outline" as const,
+            onPress: () => {
+              speciesDetails(item.segment);
+              BottomSheet.hide();
+            },
           },
-        },
-      ],
-    });
-  };
+        ],
+      });
+    },
+    [t, currentFilters, navigation, handleShowObservations],
+  );
 
   const renderItem = useCallback(
     ({ item, index }: { item: SpeciesItem | ChecklistItem; index: number }) => {
@@ -241,7 +269,6 @@ const StatScreen = () => {
           <ChecklistCard
             item={item as ChecklistItem}
             index={index}
-            seenMode={seenMode}
             onToggle={() => handleStatCardPress(item)}
             onPress={() => handleBottomSheetMenu(item)}
           />
@@ -258,7 +285,7 @@ const StatScreen = () => {
         />
       );
     },
-    [seenMode, handleStatCardPress, viewMode],
+    [seenMode, handleStatCardPress, handleBottomSheetMenu, viewMode],
   );
 
   const handleShare = useCallback(async () => {
@@ -282,24 +309,46 @@ const StatScreen = () => {
     await Share.share(Platform.OS === "ios" ? { url } : { message: url });
   }, [profile, currentFilters, currentSort, t]);
 
+  const customHeaderBadge = useCallback(
+    (
+      res: StatPaginatedResponse<SpeciesItem | ChecklistItem>,
+    ): number | string | undefined => {
+      if (
+        typeof res?.seen_species !== "number" ||
+        typeof res?.total_species !== "number"
+      ) {
+        return undefined;
+      }
+      return `${res.seen_species} / ${res.total_species}`;
+    },
+    [],
+  );
+
+
   const tabOptions = [
     {
       value: "seen" as const,
       icon: "eye" as const,
       iconInactive: "eye-outline" as const,
       labelKey: t("seen"),
+      count: speciesCounts?.seen ?? undefined,
     },
     {
       value: "all" as const,
       icon: "apps" as const,
       iconInactive: "apps-outline" as const,
       labelKey: t("all"),
+      count: speciesCounts?.total ?? undefined,
     },
     {
       value: "unseen" as const,
       icon: "eye-off" as const,
       iconInactive: "eye-off-outline" as const,
       labelKey: t("not_seen"),
+      count:
+        speciesCounts !== null
+          ? speciesCounts.total - speciesCounts.seen
+          : undefined,
     },
   ];
 
@@ -321,6 +370,8 @@ const StatScreen = () => {
         onOpenFilterModal={(fn) => {
           openFilterRef.current = fn;
         }}
+        customHeaderBadge={customHeaderBadge}
+        onFirstPageData={handleFirstPageData}
         bottomEl={
           <Tabs
             tabOptions={tabOptions}

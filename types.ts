@@ -207,6 +207,11 @@ export interface PaginatedResponse<T> {
   results: T[];
 }
 
+export interface StatPaginatedResponse<T> extends PaginatedResponse<T> {
+  total_species: number,
+  seen_species: number,
+}
+
 export const emptyPaginatedResponse = <T>(): PaginatedResponse<T> => ({
   results: [],
   pagination: {

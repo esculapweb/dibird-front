@@ -31,6 +31,8 @@ interface FilterSheetContentProps {
   dismiss: () => void;
 }
 
+const BUTTON_HEIGHT = 48;
+
 const FilterSheetContent = ({
   filters,
   allowed,
@@ -285,33 +287,33 @@ const stylesFn = (Colors: ThemeColors, insets: EdgeInsets) =>
       alignSelf: "center",
       width: "100%",
       maxWidth: 680,
-      backgroundColor: Colors.primary100,
     },
     scrollContent: {
       paddingHorizontal: 16,
       paddingTop: 56,
-      paddingBottom: 90,
+      paddingBottom: 96,
     },
-
     footer: {
-      padding: 18,
+      padding: 12,
       paddingBottom: Math.max(16, insets.bottom),
-      borderTopWidth: 1,
+      borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: Colors.border,
+      alignItems: 'center',
     },
-
     primaryButton: {
       alignItems: "center",
       justifyContent: "center",
+      height: BUTTON_HEIGHT,
+      paddingHorizontal: 40,
+      backgroundColor: Colors.main100,
+      borderRadius: 8, 
     },
     primaryText: {
       fontWeight: "600",
       fontSize: 16,
       textAlign: "center",
-      color: Colors.main100,
+      color: Colors.textOpposite,
     },
-
-
     secondaryButton: {
       paddingVertical: 12,
       alignItems: "center",

@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { Config } from "../../constants/config";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { BirdSVG } from "../ui/Svgs";
-import { ChecklistItem, seenMode } from "../../types";
+import { ChecklistItem } from "../../types";
 
 const useStyles = (Colors: ThemeColors) =>
   useMemo(() => stylesFn(Colors), [Colors]);
@@ -15,18 +15,15 @@ const useStyles = (Colors: ThemeColors) =>
 interface ChecklistCardProps {
   item: ChecklistItem;
   index: number;
-  seenMode: seenMode;
   onPress: () => void;
   onToggle: () => void;
 }
 
 const ChecklistCard = memo(
-  ({ item, index, seenMode, onPress, onToggle }: ChecklistCardProps) => {
+  ({ item, index, onPress, onToggle }: ChecklistCardProps) => {
     const { t } = useTranslation();
     const { Colors } = useTheme();
     const styles = useStyles(Colors);
-
-    const isAllMode = seenMode === "all";
 
     if (item.type === "order") {
       const total = item.total ?? 0;
@@ -52,7 +49,7 @@ const ChecklistCard = memo(
                 </Text>
               </>
             ) : null}
-            {isAllMode && total > 0 ? (
+            {total > 0 ? (
               isComplete ? (
                 <View style={styles.doneBadge}>
                   <Ionicons name="checkmark" size={10} color={Colors.main100} />
@@ -65,7 +62,7 @@ const ChecklistCard = memo(
               )
             ) : null}
           </View>
-          {isAllMode && total > 0 && (
+          {total > 0 && (
             <View style={styles.progressTrack}>
               <View
                 style={[
@@ -76,7 +73,6 @@ const ChecklistCard = memo(
               />
             </View>
           )}
-          {!(isAllMode && total > 0) && <View style={styles.taxonLine} />}
         </View>
       );
     }
@@ -103,7 +99,7 @@ const ChecklistCard = memo(
                   </Text>
                 </>
               ) : null}
-              {isAllMode && total > 0 ? (
+              {total > 0 ? (
                 isComplete ? (
                   <View style={styles.doneBadge}>
                     <Ionicons
@@ -120,7 +116,7 @@ const ChecklistCard = memo(
                 )
               ) : null}
             </View>
-            {isAllMode && total > 0 && (
+            {total > 0 && (
               <View style={styles.progressTrackThin}>
                 <View
                   style={[
@@ -131,7 +127,6 @@ const ChecklistCard = memo(
                 />
               </View>
             )}
-            {!(isAllMode && total > 0) && <View style={styles.taxonLine} />}
           </View>
         </View>
       );
@@ -159,7 +154,7 @@ const ChecklistCard = memo(
 
           <View style={styles.content}>
             <Text
-              style={[styles.title, isAllMode && !isSeen && styles.titleUnseen]}
+              style={[styles.title, !isSeen && styles.titleUnseen]}
               numberOfLines={1}
             >
               {item.name_lang}
