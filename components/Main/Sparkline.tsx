@@ -1,10 +1,5 @@
 import { useState } from "react";
-import {
-  StyleSheet,
-  Text,
-  View,
-  Pressable,
-} from "react-native";
+import { StyleSheet, Text, View, Pressable } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
@@ -56,7 +51,7 @@ const Sparkline = ({
   });
 
   const data = activity?.data ?? [];
-  const meta = activity?.meta ?? {} as ActivityResponse['meta'];
+  const meta = activity?.meta ?? ({} as ActivityResponse["meta"]);
 
   const INNER_W = width - H_PAD * 2 - 32;
   const barW = Math.max(
@@ -98,9 +93,9 @@ const Sparkline = ({
         style={[styles.bar, { width: barW, height: h, backgroundColor: bg }]}
       />
     );
-
+  const allZero = data.every((v) => v === 0);
   if (isLoading) return <SparklineSkeleton />;
-  if (!data.length) return null;
+  if (!data.length || allZero) return null;
 
   return (
     <View style={styles.card}>
@@ -153,9 +148,11 @@ const Sparkline = ({
           )}
         </View>
 
-        <Text style={styles.sparkValue}>
-          {sparkDelta} {t(deltaLabelKey, { n: meta.recent_window })}
-        </Text>
+        {meta.delta !== 0 && (
+          <Text style={styles.sparkValue}>
+            {sparkDelta} {t(deltaLabelKey, { n: meta.recent_window })}
+          </Text>
+        )}
       </View>
 
       <View style={styles.barsContainer}>
