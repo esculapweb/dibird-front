@@ -18,7 +18,7 @@ interface UpdateCoordsOptions {
   latText?: string;
   lngText?: string;
   withGeocode?: boolean;
-  normalizeOnSave? : boolean;
+  normalizeOnSave?: boolean;
 }
 
 export const normalizeCoords = (
@@ -69,8 +69,7 @@ export const usePlaceLocation = () => {
   const [roundedCoords, setRoundedCoords] = useState<Coords>(
     Config.defaultCoords,
   );
-  // const [zoom, setZoom] = useState(12);
-  const zoom = 12;
+  const [zoom, setZoom] = useState(12);
   const [accuracy, setAccuracy] = useState(0);
   const [latText, setLatText] = useState("");
   const [lngText, setLngText] = useState("");
@@ -82,6 +81,15 @@ export const usePlaceLocation = () => {
   const geocodeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const rnd = (c: number): number => Math.round(c * 100) / 100;
+
+  const zoomFromAccuracy = (accuracy: number): number => {
+    if (accuracy <= 20) return 17;
+    if (accuracy <= 100) return 15;
+    if (accuracy <= 500) return 13;
+    if (accuracy <= 2000) return 12;
+    if (accuracy <= 5000) return 11;
+    return 10;
+  };
 
   const reverseGeocode = useCallback(async (lat: number, lng: number) => {
     if (geocodeTimeout.current) clearTimeout(geocodeTimeout.current);
@@ -130,7 +138,9 @@ export const usePlaceLocation = () => {
     try {
       const result = await requestLocation();
       if (result?.coords) {
-        setAccuracy(result.accuracy ?? 0);
+        const acc = result.accuracy ?? 0;
+        setAccuracy(acc);
+        setZoom(acc > 0 ? zoomFromAccuracy(acc) : 15);
         updateCoords(result.coords);
       } else if (permissionStatus === "denied") {
         handleLocationUnavailable();
