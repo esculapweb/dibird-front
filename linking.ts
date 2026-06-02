@@ -1,5 +1,5 @@
 import { getStateFromPath } from "@react-navigation/native";
-import { AppRootParamList, AuthRootParamList } from "./types";
+import { AppStackParamList, AuthStackParamList } from "./types";
 import { LinkingOptions } from "@react-navigation/native";
 
 const parseString = (v: string | null): string | undefined => v || undefined;
@@ -29,46 +29,43 @@ const withBasicFilters = (path: string) => ({
 
 export const DEEP_LINK_PREFIXES = ["dibird://", "https://dibird.com"];
 
-
 const linking = (
   isAuthenticated: boolean,
-): LinkingOptions<AppRootParamList | AuthRootParamList> => ({
+): LinkingOptions<AppStackParamList | AuthStackParamList> => ({
   prefixes: DEEP_LINK_PREFIXES,
 
   config: {
-    screens: {
-      Root: {
-        screens: isAuthenticated
-          ? {
-              Main: {
-                screens: {
-                  MainScreen: "my",
-                },
-              },
-              Profile: "my/profile",
-              Settings: "my/settings",
-              Stat: withFilters("my/stat"),
-              Checklist: withFilters("my/checklist"),
-              Places: withBasicFilters("my/place"),
-              PlaceDetail: "my/place/:placeId",
-              Observations: withFilters("my/observation"),
-              ObservationDetail: "my/observation/:observationId",
-              Diaries: withFilters("my/diary"),
-              DiaryDetail: "my/diary/:diaryId",
-              Rating: withFilters("users"),
-              RatingsCompare: withFilters("users/compare/:profile1/:profile2"),
-              UserStat: withFilters("users/stat/:profileId"),
-            }
-          : {
-              Welcome: { screens: { WelcomeMain: "welcome" } },
-              ConfirmEmail: "accounts/confirm-email/:key",
-              Login: "accounts/login",
-              Signup: "accounts/signup",
+    screens: isAuthenticated
+      ? {
+          Main: {
+            screens: {
+              MainScreen: "my",
             },
-      },
-      Privacy: "privacy",
-      Terms: "terms",
-    },
+          },
+          Profile: "my/profile",
+          Settings: "my/settings",
+          Stat: withFilters("my/stat"),
+          Checklist: withFilters("my/checklist"),
+          Places: withBasicFilters("my/place"),
+          PlaceDetail: "my/place/:placeId",
+          Observations: withFilters("my/observation"),
+          ObservationDetail: "my/observation/:observationId",
+          Diaries: withFilters("my/diary"),
+          DiaryDetail: "my/diary/:diaryId",
+          Rating: withFilters("users"),
+          RatingsCompare: withFilters("users/compare/:profile1/:profile2"),
+          UserStat: withFilters("users/stat/:profileId"),
+          Privacy: "privacy",
+          Terms: "terms",
+        }
+      : {
+          Welcome: { screens: { WelcomeMain: "welcome" } },
+          ConfirmEmail: "accounts/confirm-email/:key",
+          Login: "accounts/login",
+          Signup: "accounts/signup",
+          Privacy: "privacy",
+          Terms: "terms",
+        },
   },
 
   getStateFromPath(
@@ -109,44 +106,22 @@ const linking = (
 
     if (routeName === "PlaceDetail") {
       return {
-        routes: [
-          {
-            name: "Root",
-            state: {
-              routes: [{ name: "Main" }, { name: "Places" }, state.routes[0]],
-            },
-          },
-        ],
+        index: 2,
+        routes: [{ name: "Main" }, { name: "Places" }, state.routes[0]],
       };
     }
 
     if (routeName === "ObservationDetail") {
       return {
-        routes: [
-          {
-            name: "Root",
-            state: {
-              routes: [
-                { name: "Main" },
-                { name: "Observations" },
-                state.routes[0],
-              ],
-            },
-          },
-        ],
+        index: 2,
+        routes: [{ name: "Main" }, { name: "Observations" }, state.routes[0]],
       };
     }
 
     if (routeName === "DiaryDetail") {
       return {
-        routes: [
-          {
-            name: "Root",
-            state: {
-              routes: [{ name: "Main" }, { name: "Diaries" }, state.routes[0]],
-            },
-          },
-        ],
+        index: 2,
+        routes: [{ name: "Main" }, { name: "Diaries" }, state.routes[0]],
       };
     }
 

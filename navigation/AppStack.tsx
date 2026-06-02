@@ -38,6 +38,7 @@ import { useTheme, ThemeColors } from "../store/theme-context";
 import { useFilters } from "../store/filters-context";
 import { BottomSheet } from "../services/bottomSheet";
 import type { AppDrawerParamList, AppStackParamList } from "../types";
+import StaticScreen from "../screens/StaticScreen";
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 const Drawer = createDrawerNavigator<AppDrawerParamList>();
@@ -185,6 +186,17 @@ const AppNavigator = () => {
         name="Main"
         component={MainDrawer}
         options={{ headerShown: false }}
+      />
+
+      <Stack.Screen
+        name="Privacy"
+        component={StaticScreen}
+        options={{ title: t("privacy_policy") }}
+      />
+      <Stack.Screen
+        name="Terms"
+        component={StaticScreen}
+        options={{ title: t("terms_of_service") }}
       />
 
       <Stack.Screen

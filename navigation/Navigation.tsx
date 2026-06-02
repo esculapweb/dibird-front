@@ -5,9 +5,7 @@ import {
   NavigationContainer,
   NavigationContainerRef,
 } from "@react-navigation/native";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { getAnalytics, logEvent } from "@react-native-firebase/analytics";
-import { useTranslation } from "react-i18next";
 
 import { useAuth } from "../store/auth-context";
 import AuthNavigator from "./AuthStack";
@@ -18,78 +16,12 @@ import {
   DarkNavigationTheme,
 } from "../constants/NavigationTheme";
 import linking from "../linking";
-import StaticScreen from "../screens/StaticScreen";
-import type {
-  AuthRootParamList,
-  AppRootParamList,
-  MinimalRoute,
-  NavState,
-} from "../types";
+import type { MinimalRoute, NavState } from "../types";
 
 const NAV_STATE_KEY = "NAV_STATE";
 
-const AuthStack = createNativeStackNavigator<AuthRootParamList>();
-const AppStack = createNativeStackNavigator<AppRootParamList>();
-
-const AuthRoot = () => {
-  const { t } = useTranslation();
-  return (
-    <AuthStack.Navigator
-      id={undefined}
-      screenOptions={{
-        headerBackButtonDisplayMode: "minimal",
-        headerBackTitle: "",
-      }}
-    >
-      <AuthStack.Screen
-        name="Root"
-        component={AuthNavigator}
-        options={{ headerShown: false }}
-      />
-      <AuthStack.Screen
-        name="Privacy"
-        component={StaticScreen}
-        options={{ title: t("privacy_policy") }}
-      />
-      <AuthStack.Screen
-        name="Terms"
-        component={StaticScreen}
-        options={{ title: t("terms_of_service") }}
-      />
-    </AuthStack.Navigator>
-  );
-};
-
-const AppRoot = () => {
-  const { t } = useTranslation();
-  return (
-    <AppStack.Navigator
-      id={undefined}
-      screenOptions={{
-        headerBackButtonDisplayMode: "minimal",
-        headerBackTitle: "",
-      }}
-    >
-      <AppStack.Screen
-        name="Root"
-        component={AppNavigator}
-        options={{ headerShown: false }}
-      />
-      <AppStack.Screen
-        name="Privacy"
-        component={StaticScreen}
-        options={{ title: t("privacy_policy") }}
-      />
-      <AppStack.Screen
-        name="Terms"
-        component={StaticScreen}
-        options={{ title: t("terms_of_service") }}
-      />
-    </AppStack.Navigator>
-  );
-};
-
-const extractRoutes = (state: NavState): MinimalRoute[] => {
+const extractRoutes = (state: NavState, depth = 0): MinimalRoute[] => {
+  if (depth > 10) return [];
   const routes = state?.routes ?? [];
   const index = state?.index ?? routes.length - 1;
   const activeRoute = routes[index];
@@ -107,13 +39,16 @@ const extractRoutes = (state: NavState): MinimalRoute[] => {
       return [{ name: activeRoute.name }];
     }
 
-    return [{ name: activeRoute.name }, ...extractRoutes(activeRoute.state)];
+    return [
+      { name: activeRoute.name },
+      ...extractRoutes(activeRoute.state, depth + 1),
+    ];
   }
 
   return [{ name: activeRoute.name, params: activeRoute.params }];
 };
 
-const buildInitialState = (routes: MinimalRoute[]): InitialState => {
+const buildInitialState = (routes: MinimalRoute[]): InitialState | null => {
   const screenRoutes =
     routes[0]?.name === "Root" || routes[0]?.name === "Main"
       ? routes.slice(1)
@@ -127,15 +62,8 @@ const buildInitialState = (routes: MinimalRoute[]): InitialState => {
   const allRoutes = [{ name: "Main" }, ...innerRoutes];
 
   return {
-    routes: [
-      {
-        name: "Root",
-        state: {
-          index: allRoutes.length - 1,
-          routes: allRoutes,
-        },
-      },
-    ],
+    index: allRoutes.length - 1, 
+    routes: allRoutes,
   };
 };
 
@@ -166,7 +94,8 @@ const Navigation = () => {
         const parsed = JSON.parse(saved);
 
         if (Array.isArray(parsed)) {
-          setInitialState(buildInitialState(parsed));
+          const built = buildInitialState(parsed);
+          setInitialState(built ?? null);
           return;
         }
 
@@ -191,7 +120,6 @@ const Navigation = () => {
     if (prevAuthRef.current !== isAuthenticated) {
       prevAuthRef.current = isAuthenticated;
       AsyncStorage.removeItem(NAV_STATE_KEY);
-      navigationRef.current?.reset({ index: 0, routes: [{ name: "Root" }] });
     }
   }, [isAuthenticated]);
 
@@ -229,7 +157,7 @@ const Navigation = () => {
         }
       }}
     >
-      {isAuthenticated ? <AppRoot /> : <AuthRoot />}
+      {isAuthenticated ? <AppNavigator /> : <AuthNavigator />}
     </NavigationContainer>
   );
 };

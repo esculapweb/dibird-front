@@ -570,11 +570,6 @@ export type NavState = {
   index?: number;
 };
 
-export type StaticScreensParamList = {
-  Privacy: undefined;
-  Terms: undefined;
-};
-
 // Auth стек (все экраны, включая те что раньше были в Drawer)
 export type AuthStackParamList = {
   Welcome: undefined;
@@ -586,15 +581,6 @@ export type AuthStackParamList = {
   Terms: undefined;
 };
 
-// Auth root = AuthStack + статичные экраны
-export type AuthRootParamList = {
-  Root: undefined;
-} & StaticScreensParamList;
-
-// App root = AppStack + статичные экраны
-export type AppRootParamList = {
-  Root: undefined;
-} & StaticScreensParamList;
 
 export interface ScreenWithFilters {
   filtersOverride?: Filters;
@@ -705,6 +691,6 @@ export type AuthStackRouteProp<T extends keyof AuthStackParamList> = RouteProp<
 
 declare global {
   namespace ReactNavigation {
-    interface RootParamList extends AppRootParamList {}
+    interface RootParamList extends AppStackParamList {}
   }
 }

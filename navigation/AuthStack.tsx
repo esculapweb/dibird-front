@@ -19,6 +19,7 @@ import { useTheme } from "../store/theme-context";
 import ThemeSwitcher from "../components/Theme/ThemeSwitcher";
 import type { AuthDrawerParamList, AuthStackParamList } from "../types";
 import { openSupportEmail } from "../util/openSupportEmail";
+import StaticScreen from "../screens/StaticScreen";
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 const Drawer = createDrawerNavigator<AuthDrawerParamList>();
@@ -101,6 +102,17 @@ const AuthNavigator = () => {
         name="Welcome"
         component={WelcomeDrawer}
         options={{ headerShown: false }}
+      />
+
+      <Stack.Screen
+        name="Privacy"
+        component={StaticScreen}
+        options={{ title: t("privacy_policy") }}
+      />
+      <Stack.Screen
+        name="Terms"
+        component={StaticScreen}
+        options={{ title: t("terms_of_service") }}
       />
 
       <Stack.Screen
