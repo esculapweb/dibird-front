@@ -23,8 +23,15 @@
       "channel": "development"
     },
     "development-simulator": {
-      "extends": "development", 
-      "ios": { "simulator": true, "resourceClass": "medium" }
+      "extends": "development",
+      "ios": { "simulator": true, "resourceClass": "medium" },
+      "env": {
+        "EXPO_PUBLIC_ENV": "development",
+        "EXPO_PUBLIC_BASE_URL": "http://localhost:8000",
+        "EXPO_PUBLIC_MEDIA_URL": "http://localhost:8000",
+        "SENTRY_ORG": "dibirdcom",
+        "SENTRY_PROJECT": "react-native"
+      }
     },
     "preview": {
       "distribution": "internal",
@@ -50,7 +57,7 @@
         "resourceClass": "medium"
       },
       "android": {
-        "buildType": "app-bundle"  
+        "buildType": "app-bundle"
       },
       "env": {
         "EXPO_PUBLIC_ENV": "production",
@@ -66,7 +73,7 @@
     "production": {
       "ios": {
         "appleId": "dibird.com@gmail.com",
-        "ascAppId": "6769583353" 
+        "ascAppId": "6769583353"
       },
       "android": {
         // "serviceAccountKeyPath": "./google-service-account.json",
