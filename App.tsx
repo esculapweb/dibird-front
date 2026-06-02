@@ -1,4 +1,4 @@
-import { useState, ReactNode } from "react";
+import { useState, ReactNode, useEffect } from "react";
 import { useColorScheme } from "react-native";
 import "react-native-gesture-handler";
 import "react-native-reanimated";
@@ -45,6 +45,8 @@ Sentry.init({
 
 initGoogleSignIn();
 
+let updateDownloaded = false;
+
 const appInitPromise: Promise<void> = (async () => {
   await setAnalyticsCollectionEnabled(getAnalytics(), !__DEV__);
 
@@ -53,7 +55,7 @@ const appInitPromise: Promise<void> = (async () => {
       const update = await Updates.checkForUpdateAsync();
       if (update.isAvailable) {
         await Updates.fetchUpdateAsync();
-        await Updates.reloadAsync();
+        updateDownloaded = true;
       }
     } catch (e) {
       if (e instanceof Error && e.message.includes("network")) {
@@ -98,6 +100,24 @@ const AuthConsumerWrapper = ({ children }: { children: ReactNode }) => {
 const Root = () => {
   const { theme } = useTheme();
   const [splashFinished, setSplashFinished] = useState(false);
+
+  useEffect(() => {
+    if (!splashFinished) return;
+
+    const applyUpdate = async () => {
+      if (__DEV__ || !Updates.isEnabled || !updateDownloaded) return; // ← только если скачано
+      try {
+          await Updates.reloadAsync();
+      } catch (e) {
+        Sentry.captureException(e, {
+          tags: { context: "expo-updates-reload" },
+          level: "warning",
+        });
+      }
+    };
+
+    applyUpdate();
+  }, [splashFinished]);
 
   if (!splashFinished) {
     return (

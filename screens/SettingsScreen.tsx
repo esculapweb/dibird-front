@@ -310,7 +310,14 @@ const SettingsScreen = () => {
           colors={Colors}
           styles={styles}
         />
-        
+        <Divider styles={styles} />
+        <Row
+          icon="cloud-upload-outline"
+          label={t("import_data")}
+          disabled
+          colors={Colors}
+          styles={styles}
+        />
       </Section>
 
       {/* ── Danger zone ──────────────────────────────────── */}
