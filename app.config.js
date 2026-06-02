@@ -19,13 +19,14 @@ const variants = {
   },
 };
 
-const variant = variants[process.env.EXPO_PUBLIC_ENV] ?? variants.production;
+const env = process.env.EXPO_PUBLIC_ENV ?? "production";
+const variant = variants[env];
 
 export default {
   expo: {
     name: variant.name,
     slug: "dibird",
-    version: "26.05.0",
+    version: "26.06.0",
     orientation: "portrait",
     scheme: "dibird",
     userInterfaceStyle: "automatic",
@@ -51,6 +52,9 @@ export default {
       requireFullScreen: true,
       associatedDomains: ["applinks:dibird.com"],
       googleServicesFile: variant.googleServicesFile,
+      entitlements: {
+        "aps-environment": env === "development" ? "development" : "production",
+      },
       infoPlist: {
         NSFaceIDUsageDescription: "Used to sign in to DiBird using Face ID.",
         NSLocationWhenInUseUsageDescription:
@@ -59,6 +63,7 @@ export default {
           "DiBird uses your photo library so you can select a profile picture. For example, you can choose an image from your gallery to set or update your avatar.",
         ITSAppUsesNonExemptEncryption: false,
         LSApplicationQueriesSchemes: ["mailto"],
+        UIBackgroundModes: ["fetch", "remote-notification"],
       },
     },
     android: {
@@ -135,6 +140,13 @@ export default {
           url: "https://sentry.io/",
           project: "react-native",
           organization: "dibirdcom",
+        },
+      ],
+      [
+        "expo-notifications",
+        {
+          icon: "./assets/notification-icon.png",
+          color: "#ffffff",
         },
       ],
       "./plugins/withLocationStrings",
