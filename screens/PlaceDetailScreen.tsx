@@ -1,7 +1,8 @@
-import { useLayoutEffect, useCallback, useMemo } from "react";
+import { useLayoutEffect, useCallback, useMemo, useEffect } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { useTheme, ThemeColors } from "../store/theme-context";
 import { isoToFlagEmoji, formatDate, formatDateTime } from "../util/helpers";
@@ -12,12 +13,14 @@ import Map from "../components/Map/Map";
 import IconsHeader from "../components/ui/IconsHeader";
 import Layout from "../components/ui/Layout";
 import StatCard from "../components/ui/StatCard";
+import FilterChips from "../components/Filters/FilterChips";
 
 import { useItem, useUpdateItem, useDeleteItem } from "../hooks/useItem";
 import { showError } from "../services/api";
 import { useFilters } from "../store/filters-context";
 import { AppStackNavigationProp, AppStackRouteProp } from "../types";
 import { BottomSheet } from "../services/bottomSheet";
+import { buildDateParams } from "../util/helpers";
 
 const H_PAD = 12;
 
@@ -27,20 +30,28 @@ const PlaceDetailScreen = () => {
   const { placeId } = route.params;
   const type = "Place";
 
+  const updateMutation = useUpdateItem(placeId, type);
+  const deleteMutation = useDeleteItem(type);
+  const { Colors } = useTheme();
+  const { t } = useTranslation();
+  const styles = stylesFn(Colors);
+  const { date, setDate } = useFilters();
+
+  const queryClient = useQueryClient();
+
+  const dateParams = useMemo(() => buildDateParams(date ?? undefined), [date]);
+
   const {
     data: place,
     isLoading,
     isError,
     error,
     refetch,
-  } = useItem(placeId, type);
-
-  const updateMutation = useUpdateItem(placeId, type);
-  const deleteMutation = useDeleteItem(type);
-  const { Colors } = useTheme();
-  const { t } = useTranslation();
-  const styles = stylesFn(Colors);
-  const { date } = useFilters();
+  } = useItem(
+    placeId,
+    type,
+    Object.keys(dateParams).length ? dateParams : undefined,
+  );
 
   const handleFavourite = useCallback(() => {
     if (!place) return;
@@ -108,20 +119,14 @@ const PlaceDetailScreen = () => {
   const handleObservationsPress = useCallback(() => {
     if (place && filtersOverride)
       navigation.push("Observations", {
-        filtersOverride: {
-          ...filtersOverride,
-          date: null,
-        },
+        filtersOverride,
       });
   }, [place, filtersOverride, navigation]);
 
   const handleSpeciesPress = useCallback(() => {
     if (place && filtersOverride)
       navigation.push("Stat", {
-        filtersOverride: {
-          ...filtersOverride,
-          date: null,
-        },
+        filtersOverride,
         seenMode: "seen",
       });
   }, [place, filtersOverride, navigation]);
@@ -129,12 +134,13 @@ const PlaceDetailScreen = () => {
   const handleDiariesPress = useCallback(() => {
     if (place && filtersOverride)
       navigation.push("Diaries", {
-        filtersOverride: {
-          ...filtersOverride,
-          date: null,
-        },
+        filtersOverride,
       });
   }, [place, filtersOverride, navigation]);
+
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: [type, placeId], exact: false });
+  }, [date]);
 
   useLayoutEffect(() => {
     if (!place) return;
@@ -189,8 +195,14 @@ const PlaceDetailScreen = () => {
       </View>
 
       <Map currentCoords={[lng, lat]} mapHeight={410} showCoords={true} />
-
+      <FilterChips
+        filters={{ date: date ?? null }}
+        onRemove={() => setDate(null)}
+        allowed={["date"]}
+        hints={{}}
+      />
       <View style={styles.statsRow}>
+
         <StatCard
           value={place.species_count}
           label={t("species")}

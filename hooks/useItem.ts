@@ -26,13 +26,17 @@ const TYPE_PLURAL = {
   Diary: "Diaries",
 };
 
-export const useItem = (id: string | number | null | undefined, type: ItemType) => {
+export const useItem = (
+  id: string | number | null | undefined,
+  type: ItemType,
+  params?: Record<string, unknown>,
+) => {
   const { showErrorToast } = useApiError();
 
   const query = useQuery({
-    queryKey: [type, id],
+    queryKey: [type, id, params ?? null],
     queryFn: async () => {
-      const res = await api.get(`${URLS[type]}${id}/`);
+      const res = await api.get(`${URLS[type]}${id}/`, { params });
       return res.data;
     },
     enabled: !!id,
