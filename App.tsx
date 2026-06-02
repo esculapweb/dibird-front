@@ -53,6 +53,7 @@ const appInitPromise: Promise<void> = (async () => {
       const update = await Updates.checkForUpdateAsync();
       if (update.isAvailable) {
         await Updates.fetchUpdateAsync();
+        await Updates.reloadAsync();
       }
     } catch (e) {
       if (e instanceof Error && e.message.includes("network")) {

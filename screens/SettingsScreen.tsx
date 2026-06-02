@@ -11,7 +11,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
-import Constants from "expo-constants";
+import * as Application from "expo-application";
 
 import api, { showError } from "../services/api";
 import Layout from "../components/ui/Layout";
@@ -158,10 +158,8 @@ const SettingsScreen = () => {
   const navigation = useNavigation<AppDrawerNavigationProp>();
   const { state: exportState, triggerExport, cleanup } = useExportProfile();
 
-  const version = Constants.expoConfig?.version ?? "—";
-  const build =
-    Constants.expoConfig?.ios?.buildNumber ??
-    String(Constants.expoConfig?.android?.versionCode ?? "");
+  const version = Application.nativeApplicationVersion;
+  const build = Application.nativeBuildVersion;
   const fullVersion = build ? `${version} (${build})` : version;
 
   const userEmail = profile?.user_data?.email ?? "";

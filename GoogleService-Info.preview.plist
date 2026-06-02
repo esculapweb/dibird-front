@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>135122891711-fodbb1991s2o286qg6phgj1rhara0ds4.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyCA99U5R8Zqh6y5GUOMd1P2KfJ2ZZ5KIlE</string>
+	<key>GCM_SENDER_ID</key>
+	<string>135122891711</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.dibird.app.preview</string>
+	<key>PROJECT_ID</key>
+	<string>dibird-11780</string>
+	<key>STORAGE_BUCKET</key>
+	<string>dibird-11780.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:135122891711:ios:c8fa9a53c0b4c0d7bce70a</string>
+</dict>
+</plist>
