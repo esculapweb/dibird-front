@@ -26,7 +26,7 @@ export default {
   expo: {
     name: variant.name,
     slug: "dibird",
-    version: "26.06.0",
+    version: "26.06.1",
     orientation: "portrait",
     scheme: "dibird",
     userInterfaceStyle: "automatic",
