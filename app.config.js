@@ -147,6 +147,7 @@ export default {
         {
           icon: "./assets/notification-icon.png",
           color: "#ffffff",
+          "sounds": []
         },
       ],
       "./plugins/withLocationStrings",

@@ -1,4 +1,4 @@
-import { useState, ReactNode, useEffect } from "react";
+import { useState, ReactNode } from "react";
 import { useColorScheme } from "react-native";
 import "react-native-gesture-handler";
 import "react-native-reanimated";
@@ -35,30 +35,39 @@ import GlobalBottomSheet from "./components/Providers/GlobalBottomSheet";
 
 import CustomSplash from "./components/ui/CustomSplash";
 
+export const navigationIntegration = Sentry.reactNavigationIntegration({
+  enableTimeToInitialDisplay: true,
+});
+
 Sentry.init({
   dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
   environment: process.env.EXPO_PUBLIC_ENV,
   enabled: !__DEV__,
   sendDefaultPii: true,
   enableLogs: true,
+  integrations: [navigationIntegration],
 });
 
 initGoogleSignIn();
 
-let updateDownloaded = false;
-
 const appInitPromise: Promise<void> = (async () => {
-  await setAnalyticsCollectionEnabled(getAnalytics(), !__DEV__);
+  try {
+    await setAnalyticsCollectionEnabled(getAnalytics(), !__DEV__);
+  } catch (e) {
+    Sentry.captureException(e, {
+      tags: { context: "analytics-init" },
+      level: "warning",
+    });
+  }
 
   if (!__DEV__ && Updates.isEnabled) {
     try {
       const update = await Updates.checkForUpdateAsync();
       if (update.isAvailable) {
         await Updates.fetchUpdateAsync();
-        updateDownloaded = true;
       }
     } catch (e) {
-      if (e instanceof Error && e.message.includes("network")) {
+      if (e instanceof Error && e.message.toLowerCase().includes("network")) {
         return;
       }
       Sentry.captureException(e, {
@@ -100,24 +109,6 @@ const AuthConsumerWrapper = ({ children }: { children: ReactNode }) => {
 const Root = () => {
   const { theme } = useTheme();
   const [splashFinished, setSplashFinished] = useState(false);
-
-  useEffect(() => {
-    if (!splashFinished) return;
-
-    const applyUpdate = async () => {
-      if (__DEV__ || !Updates.isEnabled || !updateDownloaded) return; // ← только если скачано
-      try {
-          await Updates.reloadAsync();
-      } catch (e) {
-        Sentry.captureException(e, {
-          tags: { context: "expo-updates-reload" },
-          level: "warning",
-        });
-      }
-    };
-
-    applyUpdate();
-  }, [splashFinished]);
 
   if (!splashFinished) {
     return (

@@ -16,6 +16,7 @@ import {
   DarkNavigationTheme,
 } from "../constants/NavigationTheme";
 import linking from "../linking";
+import { navigationIntegration } from "../App";
 import type { MinimalRoute, NavState } from "../types";
 
 const NAV_STATE_KEY = "NAV_STATE";
@@ -62,7 +63,7 @@ const buildInitialState = (routes: MinimalRoute[]): InitialState | null => {
   const allRoutes = [{ name: "Main" }, ...innerRoutes];
 
   return {
-    index: allRoutes.length - 1, 
+    index: allRoutes.length - 1,
     routes: allRoutes,
   };
 };
@@ -132,7 +133,17 @@ const Navigation = () => {
       linking={linking(isAuthenticated)}
       theme={theme === "dark" ? DarkNavigationTheme : LightNavigationTheme}
       onReady={() => {
-        routeNameRef.current = navigationRef.current?.getCurrentRoute()?.name;
+        navigationIntegration.registerNavigationContainer(navigationRef);
+        const current = navigationRef.current?.getCurrentRoute()?.name;
+
+        routeNameRef.current = current;
+
+        if (current) {
+          logEvent(getAnalytics(), "screen_view", {
+            screen_name: current,
+            screen_class: current,
+          });
+        }
       }}
       onStateChange={async (state) => {
         if (state) {
@@ -148,7 +159,7 @@ const Navigation = () => {
         const current = navigationRef.current?.getCurrentRoute()?.name;
         const previous = routeNameRef.current;
 
-        if (previous !== current) {
+        if (current && previous !== current) {
           logEvent(getAnalytics(), "screen_view", {
             screen_name: current,
             screen_class: current,
