@@ -3,7 +3,6 @@ import { useState, useEffect, useRef } from "react";
 import { InitialState } from "@react-navigation/native";
 import {
   NavigationContainer,
-  NavigationContainerRef,
 } from "@react-navigation/native";
 import { getAnalytics, logEvent } from "@react-native-firebase/analytics";
 
@@ -16,7 +15,8 @@ import {
   DarkNavigationTheme,
 } from "../constants/NavigationTheme";
 import linking from "../linking";
-import { navigationIntegration } from "../App";
+import { navigationIntegration } from "../services/sentry";
+import { flushPendingNavigation, navigationRef } from '../services/navigationRef'
 import type { MinimalRoute, NavState } from "../types";
 
 const NAV_STATE_KEY = "NAV_STATE";
@@ -71,8 +71,6 @@ const buildInitialState = (routes: MinimalRoute[]): InitialState | null => {
 const Navigation = () => {
   const { theme } = useTheme();
   const { isAuthenticated } = useAuth();
-  const navigationRef =
-    useRef<NavigationContainerRef<ReactNavigation.RootParamList>>(null);
   const routeNameRef = useRef<string | undefined>(undefined);
   const prevAuthRef = useRef<boolean | null>(null);
 
@@ -133,6 +131,8 @@ const Navigation = () => {
       linking={linking(isAuthenticated)}
       theme={theme === "dark" ? DarkNavigationTheme : LightNavigationTheme}
       onReady={() => {
+        flushPendingNavigation()
+
         navigationIntegration.registerNavigationContainer(navigationRef);
         const current = navigationRef.current?.getCurrentRoute()?.name;
 

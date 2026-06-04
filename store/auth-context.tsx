@@ -8,12 +8,15 @@ import {
 } from "react";
 import * as LocalAuthentication from "expo-local-authentication";
 import * as SecureStore from "expo-secure-store";
+import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 
 import { setOnTokenUpdate } from "../services/authService";
 import { Logout } from "../util/auth";
 import { setOnUnauthorized } from "../services/api";
 import i18n from "../services/i18n";
 import { shouldUseBiometrics } from "../services/bio";
+import { unregisterPushToken } from "../util/fetches";
 
 interface AuthContextType {
   token: string | null;
@@ -41,6 +44,15 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const logout = useCallback(async () => {
+    try {
+      const token = await Notifications.getExpoPushTokenAsync({
+        projectId: Constants.expoConfig?.extra?.eas?.projectId,
+      });
+      await unregisterPushToken(token.data);
+    } catch (e) {
+      if (__DEV__) console.warn("unregister push token failed", e);
+    }
+
     await Logout(() => {
       setAuthToken(null);
       onLogoutCallback?.();
@@ -73,7 +85,7 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     setOnTokenUpdate(authenticate);
-  }, []);
+  }, [authenticate]);
 
   useEffect(() => {
     setOnUnauthorized(logout);

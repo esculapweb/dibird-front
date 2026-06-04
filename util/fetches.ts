@@ -1,3 +1,5 @@
+import { Platform } from "react-native";
+
 import api from "../services/api";
 import { isoToFlagEmoji, buildDateParams, cleanFilters } from "./helpers";
 import {
@@ -21,6 +23,7 @@ import {
   ActivityResponse,
   DiaryListItem,
   GdprExport,
+  AppNotification,
 } from "../types";
 
 export const exportProfileData = async (): Promise<void> => {
@@ -242,7 +245,7 @@ export const fetchChecklist = (
   page?: number,
 ) => {
   filters = { ...filters };
-  return fetchAbstract<  StatPaginatedResponse<ChecklistItem>>(
+  return fetchAbstract<StatPaginatedResponse<ChecklistItem>>(
     "/myapi/checklist2/",
     filters,
     order,
@@ -366,3 +369,32 @@ export const fetchRatingCompare = (
     page,
   );
 };
+
+export const fetchNotifications = async (page = 1) => {
+  const res = await api.get<PaginatedResponse<AppNotification>>(
+    "/myapi/notifications/",
+    { params: { page } },
+  );
+  return res.data;
+};
+
+export const fetchUnreadCount = async (): Promise<number> => {
+  const res = await api.get('/myapi/notifications/unread-count/')
+  return res.data.count
+}
+
+export const markNotificationsRead = async (ids?: number[]): Promise<void> => {
+  const body = ids ? { ids } : { all: true };
+  await api.post("/myapi/notifications/read/", body);
+};
+
+export const registerPushToken = async (token: string): Promise<void> => {
+  await api.post('/myapi/push-token/', {
+    token,
+    platform: Platform.OS, // 'ios' | 'android'
+  })
+}
+
+export const unregisterPushToken = async (token: string): Promise<void> => {
+  await api.delete(`/myapi/push-tokens/${encodeURIComponent(token)}/`)
+}

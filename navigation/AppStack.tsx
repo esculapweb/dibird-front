@@ -28,6 +28,9 @@ import RatingScreen from "../screens/RatingScreen";
 import RatingsCompareScreen from "../screens/RatingsCompareScreen";
 import UserStatScreen from "../screens/UserStatScreen";
 import SettingsScreen from "../screens/SettingsScreen";
+import NotificationsScreen from "../screens/NotificationsScreen";
+import SpeciesDetailScreen from "../screens/SpeciesDetailScreen";
+import AchievementsScreen from "../screens/AchievementsScreen";
 
 import { useAuth, setOnLogout } from "../store/auth-context";
 import { useProfile } from "../store/profile-context";
@@ -293,6 +296,23 @@ const AppNavigator = () => {
         name="UserStat"
         component={UserStatScreen}
         options={{ title: t("user_stat") }}
+      />
+
+      <Stack.Screen
+        name="Notifications"
+        component={NotificationsScreen}
+        options={{ title: t("notifications") }}
+      />
+
+      <Stack.Screen
+        name="SpeciesDetail"
+        component={SpeciesDetailScreen}
+        options={{ title: t("species") }}
+      />
+      <Stack.Screen
+        name="Achievements"
+        component={AchievementsScreen}
+        options={{ title: t("achievements") }}
       />
     </Stack.Navigator>
   );

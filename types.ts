@@ -208,8 +208,8 @@ export interface PaginatedResponse<T> {
 }
 
 export interface StatPaginatedResponse<T> extends PaginatedResponse<T> {
-  total_species: number,
-  seen_species: number,
+  total_species: number;
+  seen_species: number;
 }
 
 export const emptyPaginatedResponse = <T>(): PaginatedResponse<T> => ({
@@ -552,6 +552,29 @@ export interface BirdOfTheDayType {
   reason: ReasonBirdOfTheDay;
 }
 
+export type NotificationType =
+  | "notable_obs"
+  | "watchlist_activity"
+  | "system"
+  | "achievement";
+
+export interface AppNotification {
+  id: number;
+  type: NotificationType;
+  title: string;
+  body: string;
+  data: {
+    screen?: string;
+    obsId?: string;
+    speciesId?: number;
+    achievementId?: string;
+    checklistId?: string;
+    [key: string]: unknown;
+  };
+  isRead: boolean;
+  createdAt: string;
+}
+
 // --- Navigation ---
 
 export type MinimalRoute = {
@@ -581,7 +604,6 @@ export type AuthStackParamList = {
   Terms: undefined;
 };
 
-
 export interface ScreenWithFilters {
   filtersOverride?: Filters;
   o?: string;
@@ -595,7 +617,7 @@ export type WelcomeScreenNavigationProp = CompositeNavigationProp<
 >;
 
 export type AppStackParamList = {
-  Main: undefined; 
+  Main: undefined;
   Profile: undefined;
   Settings: undefined;
   Stat: ScreenWithFilters | undefined;
@@ -629,6 +651,10 @@ export type AppStackParamList = {
     profile2: number;
   };
   UserStat: ScreenWithFilters & { profileId: number };
+  Notifications: undefined;
+  AlertsFeed: { highlightObsId?: string } | undefined;
+  SpeciesDetail: { id: number };
+  Achievements: { highlightId?: string } | undefined;
   Privacy: undefined;
   Terms: undefined;
 };
@@ -688,6 +714,26 @@ export type AuthStackRouteProp<T extends keyof AuthStackParamList> = RouteProp<
   AuthStackParamList,
   T
 >;
+
+export type NotificationScreen = keyof Pick<
+  AppStackParamList,
+  "Notifications" | "AlertsFeed" | "SpeciesDetail" | "Achievements"
+>;
+
+export type NotificationPayload =
+  | { screen: "AlertsFeed"; obsId: string }
+  | { screen: "SpeciesDetail"; speciesId: number }
+  | { screen: "Achievements"; achievementId?: string }
+  | { screen: "Notifications" };
+
+export function isNotificationPayload(data: unknown): data is NotificationPayload {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "screen" in data &&
+    typeof (data as Record<string, unknown>).screen === "string"
+  );
+}
 
 declare global {
   namespace ReactNavigation {

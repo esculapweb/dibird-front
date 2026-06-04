@@ -1,10 +1,16 @@
 import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { formatDateFilterMain } from "../../util/helpers";
-import { Filters, TerritoryDropdownItem } from "../../types";
 import FloatingHeader from "../ui/FloatingHeader";
+import { useUnreadCount } from "../../hooks/useUnreadCount";
+import {
+  Filters,
+  TerritoryDropdownItem,
+  AppStackNavigationProp,
+} from "../../types";
 
 const FloatingNavbar = ({
   onPress,
@@ -16,8 +22,9 @@ const FloatingNavbar = ({
   country?: TerritoryDropdownItem;
 }) => {
   const { Colors } = useTheme();
-
   const styles = stylesFn(Colors);
+  const navigation = useNavigation<AppStackNavigationProp>();
+  const { data: unreadCount = 0 } = useUnreadCount();
 
   const countryFlag = country?.icon ?? "   ";
 
@@ -37,7 +44,24 @@ const FloatingNavbar = ({
         <Ionicons name="chevron-down" size={14} color={Colors.textSecondary} />
       </TouchableOpacity>
 
-      <View style={{ width: 22 }} />
+      <TouchableOpacity
+        style={styles.bell}
+        onPress={() => navigation.navigate("Notifications")}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <Ionicons
+          name="notifications-outline"
+          size={22}
+          color={Colors.textMain}
+        />
+        {unreadCount > 0 && (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </Text>
+          </View>
+        )}
+      </TouchableOpacity>
     </FloatingHeader>
   );
 };
@@ -66,4 +90,20 @@ const stylesFn = (Colors: ThemeColors) =>
       color: Colors.textMain,
       flexShrink: 1,
     },
+    bell: { position: "relative", width: 36, alignItems: "center" },
+    badge: {
+      position: "absolute",
+      top: -4,
+      right: -2,
+      minWidth: 16,
+      height: 16,
+      borderRadius: 8,
+      backgroundColor: Colors.error500,
+      justifyContent: "center",
+      alignItems: "center",
+      paddingHorizontal: 3,
+      borderWidth: 1.5,
+      borderColor: Colors.backgroundMain,
+    },
+    badgeText: { fontSize: 9, fontWeight: "700", color: "#fff" },
   });

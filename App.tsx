@@ -1,4 +1,4 @@
-import { useState, ReactNode } from "react";
+import { useState, ReactNode, useEffect } from "react";
 import { useColorScheme } from "react-native";
 import "react-native-gesture-handler";
 import "react-native-reanimated";
@@ -12,6 +12,7 @@ import {
   QueryClientProvider,
   QueryCache,
   MutationCache,
+  useQueryClient,
 } from "@tanstack/react-query";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import * as Sentry from "@sentry/react-native";
@@ -21,6 +22,8 @@ import {
 } from "@react-native-firebase/analytics";
 import * as Updates from "expo-updates";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 
 import AuthContextProvider, { useAuth } from "./store/auth-context";
 import { ProfileProvider } from "./store/profile-context";
@@ -30,23 +33,26 @@ import { LanguageProvider } from "./store/language-context";
 import { ThemeProvider, useTheme } from "./store/theme-context";
 import ThemedToast from "./components/ui/ThemedToast";
 import { initGoogleSignIn } from "./util/auth";
-import { AppError } from "./types";
+import { AppError, isNotificationPayload } from "./types";
 import GlobalBottomSheet from "./components/Providers/GlobalBottomSheet";
-
 import CustomSplash from "./components/ui/CustomSplash";
+import { registerPushToken } from "./util/fetches";
+import { UNREAD_COUNT_KEY } from "./hooks/useUnreadCount";
+import { navigateFromNotification } from "./services/navigationRef";
+import { initSentry } from "./services/sentry";
 
-export const navigationIntegration = Sentry.reactNavigationIntegration({
-  enableTimeToInitialDisplay: true,
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
 });
 
-Sentry.init({
-  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
-  environment: process.env.EXPO_PUBLIC_ENV,
-  enabled: !__DEV__,
-  sendDefaultPii: true,
-  enableLogs: true,
-  integrations: [navigationIntegration],
-});
+
+initSentry();
 
 initGoogleSignIn();
 
@@ -97,6 +103,63 @@ const queryClient = new QueryClient({
   },
 });
 
+const usePushNotifications = (isAuthenticated: boolean) => {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    async function register() {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== "granted") return;
+
+      const token = await Notifications.getExpoPushTokenAsync({
+        projectId: Constants.expoConfig?.extra?.eas?.projectId,
+      });
+      await registerPushToken(token.data);
+    }
+    register();
+
+    const receivedSub = Notifications.addNotificationReceivedListener(() => {
+      queryClient.invalidateQueries({ queryKey: UNREAD_COUNT_KEY });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    });
+
+    const responseSub = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const raw = response.notification.request.content.data;
+
+        if (!isNotificationPayload(raw)) return;
+
+        // TypeScript теперь знает точный тип на каждой ветке
+        switch (raw.screen) {
+          case "AlertsFeed":
+            navigateFromNotification("AlertsFeed", {
+              highlightObsId: raw.obsId,
+            });
+            break;
+          case "SpeciesDetail":
+            navigateFromNotification("SpeciesDetail", { id: raw.speciesId });
+            break;
+          case "Achievements":
+            navigateFromNotification("Achievements", {
+              highlightId: raw.achievementId,
+            });
+            break;
+          case "Notifications":
+            navigateFromNotification("Notifications", undefined);
+            break;
+        }
+      },
+    );
+
+    return () => {
+      receivedSub.remove();
+      responseSub.remove();
+    };
+  }, [isAuthenticated, queryClient]);
+}
+
 const AuthConsumerWrapper = ({ children }: { children: ReactNode }) => {
   const { isAuthenticated } = useAuth();
   return (
@@ -109,6 +172,9 @@ const AuthConsumerWrapper = ({ children }: { children: ReactNode }) => {
 const Root = () => {
   const { theme } = useTheme();
   const [splashFinished, setSplashFinished] = useState(false);
+  const { isAuthenticated } = useAuth();
+
+  usePushNotifications(isAuthenticated);
 
   if (!splashFinished) {
     return (
