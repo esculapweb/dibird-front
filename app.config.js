@@ -32,16 +32,6 @@ export default {
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
     icon: variant.icon,
-    splash: {
-      image: "./assets/splash.png",
-      resizeMode: "contain",
-      backgroundColor: "#ffffff",
-      dark: {
-        image: "./assets/splash-dark.png",
-        resizeMode: "contain",
-        backgroundColor: "#1b1b1b",
-      },
-    },
     updates: {
       fallbackToCacheTimeout: 0,
       url: "https://u.expo.dev/37f32021-5695-4c3a-a023-a5e8c07346ce",
@@ -121,6 +111,18 @@ export default {
       translucent: false,
     },
     plugins: [
+      [
+        "expo-splash-screen",
+        {
+          image: "./assets/splash.png",
+          resizeMode: "contain",
+          backgroundColor: "#ffffff",
+          dark: {
+            image: "./assets/splash-dark.png",
+            backgroundColor: "#1b1b1b",
+          },
+        },
+      ],
       "expo-location",
       "expo-secure-store",
       "expo-localization",
@@ -147,7 +149,7 @@ export default {
         {
           icon: "./assets/notification-icon.png",
           color: "#ffffff",
-          "sounds": []
+          sounds: [],
         },
       ],
       "./plugins/withLocationStrings",
