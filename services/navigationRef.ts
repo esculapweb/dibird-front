@@ -27,6 +27,8 @@ export function navigateFromNotification<K extends keyof AppStackParamList>(
 }
 
 export function flushPendingNavigation() {
-  pendingNavigation?.();
-  pendingNavigation = null;
+  if (pendingNavigation) {
+    pendingNavigation?.();
+    pendingNavigation = null;
+  }
 }

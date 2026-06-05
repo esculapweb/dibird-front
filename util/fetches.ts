@@ -396,5 +396,5 @@ export const registerPushToken = async (token: string): Promise<void> => {
 }
 
 export const unregisterPushToken = async (token: string): Promise<void> => {
-  await api.delete(`/myapi/push-tokens/${encodeURIComponent(token)}/`)
+  await api.delete(`/myapi/push-token/${encodeURIComponent(token)}/`)
 }
