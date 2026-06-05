@@ -118,7 +118,7 @@ export default {
           resizeMode: "contain",
           backgroundColor: "#ffffff",
           dark: {
-            image: "./assets/splash-dark.png",
+            image: "./assets/splash.png",
             backgroundColor: "#1b1b1b",
           },
         },
