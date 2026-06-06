@@ -17,9 +17,9 @@ import { ThemeColors, useTheme } from "../store/theme-context";
 import Layout from "../components/ui/Layout";
 import Logo from "../components/ui/Logo";
 import { LoginWithGoogle, LoginWithApple } from "../util/auth";
-import { showError } from "../services/api";
 import { AppError, WelcomeScreenNavigationProp } from "../types";
 import FloatingHeader from "../components/ui/FloatingHeader";
+import { useApiError } from "../hooks/useApiError";
 
 const WelcomeScreen = () => {
   const { t } = useTranslation();
@@ -27,6 +27,7 @@ const WelcomeScreen = () => {
   const insets = useSafeAreaInsets();
   const styles = stylesFn(Colors, insets);
   const navigation = useNavigation<WelcomeScreenNavigationProp>();
+  const { showErrorToast } = useApiError();
 
   const googleLoginInProgress = useRef(false);
 
@@ -41,9 +42,8 @@ const WelcomeScreen = () => {
       await LoginWithGoogle();
     } catch (e) {
       const err = e as AppError;
-
       if (err.code !== "SIGN_IN_CANCELLED") {
-        showError(err);
+        showErrorToast(err, "LoginWithGoogle");
       }
     } finally {
       googleLoginInProgress.current = false;
@@ -55,7 +55,7 @@ const WelcomeScreen = () => {
     } catch (e) {
       const err = e as AppError;
       if (err.code !== "ERR_REQUEST_CANCELED") {
-        showError(err);
+        showErrorToast(err, "LoginWithApple");
       }
     }
   };

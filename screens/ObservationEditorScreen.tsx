@@ -16,7 +16,6 @@ import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ObservationForm from "../components/Observation/ObservationForm";
 import { useCreateObservation } from "../hooks/Observation/useCreateObservation";
 import { useUpdateItem } from "../hooks/useItem";
-import { showError } from "../services/api";
 import { useProfile } from "../store/profile-context";
 import { setSession } from "../util/sessionStore";
 import { setTypedNavigationCallback } from "../util/navigationCallbacks";
@@ -25,10 +24,12 @@ import { fetchDiarySpeciesIds } from "../util/fetches";
 import IconsHeader from "../components/ui/IconsHeader";
 import Layout from "../components/ui/Layout";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
+import { useApiError } from "../hooks/useApiError";
 import {
   AppError,
   AppStackNavigationProp,
   AppStackRouteProp,
+  ErrorExtractor,
   ObservationFormData,
   PlaceData,
 } from "../types";
@@ -52,6 +53,7 @@ const ObservationEditorScreen = () => {
   const queryClient = useQueryClient();
   const navigation = useNavigation<AppStackNavigationProp>();
   const route = useRoute<AppStackRouteProp<"ObservationEditor">>();
+  const { showErrorToast } = useApiError();
 
   const {
     observation,
@@ -111,26 +113,37 @@ const ObservationEditorScreen = () => {
     "Observation",
   );
 
-  const extractApiError = (e: AppError) => ({
-    title: isEditMode ? t("update_failed") : t("create_failed"),
-    message:
-      Object.values(e?.response?.data).flat().join("\n") ||
-      (isEditMode
-        ? t("could_not_update_observation")
-        : t("could_not_create_observation")),
-  });
+  const extractApiError = useCallback<ErrorExtractor>(
+    (err) => ({
+      title: isEditMode ? t("update_failed") : t("create_failed"),
+      message:
+        Object.values(err?.response?.data).flat().join("\n") ||
+        (isEditMode
+          ? t("could_not_update_observation")
+          : t("could_not_create_observation")),
+    }),
+    [t],
+  );
 
   const handleMutateError = (e: AppError) => {
     const data = e?.response?.data;
     if (!data) {
-      showError(e, extractApiError);
+      showErrorToast(
+        e,
+        "ObservationEditorScreen:handleMutateError",
+        extractApiError,
+      );
       return;
     }
     const errorField = FORM_FIELDS.find((field) => data?.[field]);
     if (errorField) {
       setErrors((prev) => ({ ...prev, [errorField]: data[errorField] }));
     } else {
-      showError(e, extractApiError);
+      showErrorToast(
+        e,
+        "ObservationEditorScreen:handleMutateError",
+        extractApiError,
+      );
     }
   };
 

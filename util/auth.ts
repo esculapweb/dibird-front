@@ -7,6 +7,7 @@ import * as Sentry from "@sentry/react-native";
 import api, { saveTokens, clearTokens, getRefreshToken } from "../services/api";
 import { Config } from "../constants/config";
 import { AppError } from "../types";
+import { logoutRequest } from "./fetches";
 
 const post = async (url: string, data: unknown) => {
   try {
@@ -63,7 +64,7 @@ export const Logout = async (onLogoutCallback: () => void) => {
 
     if (refresh) {
       try {
-        await api.post("/api-auth/logout/", { refresh });
+        await logoutRequest(refresh);
       } catch (e) {
         const err = e as AppError;
         if (err.response?.status !== 401 && __DEV__)

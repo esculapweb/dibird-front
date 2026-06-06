@@ -11,9 +11,9 @@ import { AppState } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getAnalytics, setUserId } from "@react-native-firebase/analytics";
 
-import api from "../services/api";
 import { initGlobalFilters } from "../util/storageHelper";
 import { AppError, Profile } from "../types";
+import { fetchMyProfile, updateMyProfile } from "../util/fetches";
 
 interface ProfileContextType {
   profile: Profile | null;
@@ -65,7 +65,6 @@ export const ProfileProvider = ({
   const [profile, setProfile] = useState<Profile | null>(null);
   const [error, setError] = useState<AppError | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
-  const url = "/myapi/profile/me/";
 
   const lastRefreshRef = useRef<number>(0);
 
@@ -74,7 +73,7 @@ export const ProfileProvider = ({
     try {
       setProfileLoading(true);
       setError(null);
-      const { data } = await api.get(url);
+      const data = await fetchMyProfile();
       await saveProfile(data);
     } catch (e) {
       const err = e as AppError;
@@ -98,7 +97,7 @@ export const ProfileProvider = ({
   };
 
   const updateProfile = useCallback(async (updatedData: Partial<Profile>) => {
-    const { data } = await api.put(url, updatedData);
+    const data = await updateMyProfile(updatedData);
     return await saveProfile(data);
   }, []);
 

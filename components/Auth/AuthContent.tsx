@@ -6,10 +6,14 @@ import { useNavigation } from "@react-navigation/native";
 
 import AuthForm from "./AuthForm";
 import Logo from "../ui/Logo";
-import { showError } from "../../services/api";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import FormWrapper from "../ui/FormWrapper";
-import { AppError, AuthStackNavigationProp, Credentials } from "../../types";
+import { useApiError } from "../../hooks/useApiError";
+import {
+  AuthStackNavigationProp,
+  Credentials,
+  ErrorExtractor,
+} from "../../types";
 
 interface AuthContent {
   onAuthenticate: (data: Credentials) => Promise<void>;
@@ -30,6 +34,7 @@ const AuthContent = ({
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
+  const { showErrorToast } = useApiError();
 
   const [credentialsInvalid, setCredentialsInvalid] = useState({
     email: false,
@@ -39,19 +44,18 @@ const AuthContent = ({
   });
 
   const switchAuthModeHandler = () => {
-    navigation.popToTop();
     if (isLogin) {
-      navigation.navigate("Signup");
+      navigation.replace("Signup");
     } else {
-      navigation.navigate("Login", {
+      navigation.replace("Login", {
         emailConfirmed,
         prefillEmail,
       });
     }
   };
 
-  const extractApiError = useCallback(
-    (err: AppError) => {
+  const extractApiError: ErrorExtractor = useCallback(
+    (err) => {
       const data = err.response?.data;
       if (!data)
         return {
@@ -111,7 +115,7 @@ const AuthContent = ({
     try {
       await onAuthenticate(authData);
     } catch (e) {
-      showError(e as AppError, extractApiError);
+      showErrorToast(e, "AuthContentSubmit", extractApiError);
     }
   };
 

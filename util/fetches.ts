@@ -24,6 +24,13 @@ import {
   DiaryListItem,
   GdprExport,
   AppNotification,
+  CountryItem,
+  Profile,
+  ImageAsset,
+  AvatarResponse,
+  DiaryFormData,
+  PlaceFormData,
+  ObservationFormData,
 } from "../types";
 
 export const exportProfileData = async (): Promise<void> => {
@@ -47,13 +54,6 @@ export const fetchPage = async (slug: string) => {
   const res = await api.get(`/api/page2/${slug}/`);
   return res.data?.content;
 };
-
-interface CountryItem {
-  territory_id: number;
-  name: string;
-  code: string;
-  favourite: boolean;
-}
 
 export const fetchMyCountries = async (
   favOnly = false,
@@ -153,6 +153,56 @@ export const fetchMapPreview = async (placeId: string | number | null) => {
   const res = await api.get(`/myapi/place2/${placeId}/map_preview/`);
   return res.data;
 };
+
+export const fetchMyProfile = async () => {
+  const res = await api.get("/myapi/profile/me/");
+  return res.data;
+};
+
+export const updateMyProfile = async (updatedData: Partial<Profile>) => {
+  const res = await api.put("/myapi/profile/me/", updatedData);
+  return res.data;
+};
+
+export const deleteMyProfile = async (
+  userEmail: string,
+): Promise<number | undefined> => {
+  const res = await api.delete("/myapi/profile/delete-me/", {
+    data: { email: userEmail },
+  });
+  return res?.status;
+};
+
+export const logoutRequest = (refresh: string | null) =>
+  api.post("/api-auth/logout/", { refresh });
+
+export const patchAvatar = async (
+  image: ImageAsset,
+): Promise<AvatarResponse> => {
+  const formData = new FormData();
+
+  formData.append("avatar", {
+    uri: image.uri,
+    name: "avatar.jpg",
+    type: "image/jpeg",
+  } as unknown as Blob);
+
+  return (
+    await api.patch<AvatarResponse>("/myapi/profile/avatar/", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    })
+  ).data;
+};
+
+export const deleteMyAvatar = async (): Promise<number | undefined> => {
+  const res = await api.delete("/myapi/profile/avatar/");
+  return res?.status;
+};
+
+export const sendConfirmEmail = (key: string) =>
+  api.post("/myapi/confirm/email/", { key });
 
 export const fetchUserProfile = async (profileId: number) => {
   const res = await api.get(`/myapi/user-profile/${profileId}/`);
@@ -274,6 +324,9 @@ export const fetchPlaces = (
   );
 };
 
+export const createPlace = (formattedData: PlaceFormData) =>
+  api.post("/myapi/place2/", formattedData);
+
 export const fetchObservations = (
   filters: Filters,
   order: string | null = "species_name",
@@ -288,6 +341,9 @@ export const fetchObservations = (
     page,
   );
 
+export const createObservation = (formattedData: ObservationFormData) =>
+  api.post("/myapi/observation2/", formattedData);
+
 export const fetchDiaries = (
   filters: Filters,
   order: string | null = "-date_time,-created_at",
@@ -301,6 +357,9 @@ export const fetchDiaries = (
     search,
     page,
   );
+
+export const createDiary = (formattedData: DiaryFormData) =>
+  api.post("/myapi/diary2/", formattedData);
 
 export const fetchDiaryObservations = (
   filters: Filters,
@@ -379,9 +438,9 @@ export const fetchNotifications = async (page = 1) => {
 };
 
 export const fetchUnreadCount = async (): Promise<number> => {
-  const res = await api.get('/myapi/notifications/unread-count/')
-  return res.data.count
-}
+  const res = await api.get("/myapi/notifications/unread-count/");
+  return res.data.count;
+};
 
 export const markNotificationsRead = async (ids?: number[]): Promise<void> => {
   const body = ids ? { ids } : { all: true };
@@ -389,12 +448,12 @@ export const markNotificationsRead = async (ids?: number[]): Promise<void> => {
 };
 
 export const registerPushToken = async (token: string): Promise<void> => {
-  await api.post('/myapi/push-token/', {
+  await api.post("/myapi/push-token/", {
     token,
     platform: Platform.OS, // 'ios' | 'android'
-  })
-}
+  });
+};
 
 export const unregisterPushToken = async (token: string): Promise<void> => {
-  await api.delete(`/myapi/push-token/${encodeURIComponent(token)}/`)
-}
+  await api.delete(`/myapi/push-token/${encodeURIComponent(token)}/`);
+};

@@ -14,7 +14,6 @@ import LoadingOverlay from "../components/ui/LoadingOverlay";
 import DiaryForm from "../components/Diary/DiaryForm";
 import { useCreateDiary } from "../hooks/Diary/useCreateDiary";
 import { useUpdateItem } from "../hooks/useItem";
-import { showError } from "../services/api";
 import { useProfile } from "../store/profile-context";
 import { setSession } from "../util/sessionStore";
 import {
@@ -24,11 +23,13 @@ import {
 import { useEditorForm } from "../hooks/useEditorForm";
 import IconsHeader from "../components/ui/IconsHeader";
 import Layout from "../components/ui/Layout";
+import { useApiError } from "../hooks/useApiError";
 import {
   AppError,
   AppStackNavigationProp,
   AppStackRouteProp,
   DiaryFormData,
+  ErrorExtractor,
   PlaceData,
 } from "../types";
 
@@ -40,6 +41,7 @@ const DiaryEditorScreen = () => {
   const { profile } = useProfile();
   const navigation = useNavigation<AppStackNavigationProp>();
   const route = useRoute<AppStackRouteProp<"DiaryEditor">>();
+  const { showErrorToast } = useApiError();
 
   const { diary, defaultTerritory, defaultPlace } = route.params || {};
   const isEditMode = !!diary;
@@ -69,24 +71,29 @@ const DiaryEditorScreen = () => {
   const createDiaryMutation = useCreateDiary();
   const updateDiaryMutation = useUpdateItem(diaryWithParsedDate?.id, "Diary");
 
-  const extractApiError = (e: AppError) => ({
-    title: isEditMode ? t("update_failed") : t("create_failed"),
-    message:
-      Object.values(e?.response?.data).flat().join("\n") ||
-      (isEditMode ? t("could_not_update_diary") : t("could_not_create_diary")),
-  });
+  const extractApiError = useCallback<ErrorExtractor>(
+    (err) => ({
+      title: isEditMode ? t("update_failed") : t("create_failed"),
+      message:
+        Object.values(err?.response?.data).flat().join("\n") ||
+        (isEditMode
+          ? t("could_not_update_diary")
+          : t("could_not_create_diary")),
+    }),
+    [t],
+  );
 
   const handleMutateError = (e: AppError) => {
     const data = e?.response?.data;
     if (!data) {
-      showError(e, extractApiError);
+      showErrorToast(e, "DiaryEditorScreen:handleMutateError", extractApiError);
       return;
     }
     const errorField = FORM_FIELDS.find((field) => data?.[field]);
     if (errorField) {
       setErrors((prev) => ({ ...prev, [errorField]: data[errorField] }));
     } else {
-      showError(e, extractApiError);
+      showErrorToast(e, "DiaryEditorScreen:handleMutateError", extractApiError);
     }
   };
 

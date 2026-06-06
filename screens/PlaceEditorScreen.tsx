@@ -18,10 +18,10 @@ import {
   normalizeCoords,
 } from "../hooks/Place/usePlaceLocation";
 import Map from "../components/Map/Map";
-import { showError } from "../services/api";
 import { callNavigationCallback } from "../util/navigationCallbacks";
 import IconsHeader from "../components/ui/IconsHeader";
 import Layout from "../components/ui/Layout";
+import { useApiError } from "../hooks/useApiError";
 import {
   AppStackNavigationProp,
   AppStackRouteProp,
@@ -29,6 +29,7 @@ import {
   GeoDetails,
   MapPressEvent,
   PlaceFormData,
+  ErrorExtractor,
 } from "../types";
 
 type FormErrors = {
@@ -44,6 +45,7 @@ const PlaceEditorScreen = () => {
   const navigation = useNavigation<AppStackNavigationProp>();
   const route = useRoute<AppStackRouteProp<"PlaceEditor">>();
   const type = "Place";
+  const { showErrorToast } = useApiError();
 
   const FORM_FIELDS = ["name", "territory", "latitude", "longitude"];
 
@@ -154,24 +156,29 @@ const PlaceEditorScreen = () => {
     return Object.keys(newErrors).length === 0;
   }, [formData, latText, lngText, t]);
 
-  const extractApiError = (e: AppError) => ({
-    title: isEditMode ? t("update_failed") : t("create_failed"),
-    message:
-      Object.values(e?.response?.data).flat().join("\n") ||
-      (isEditMode ? t("could_not_update_place") : t("could_not_create_place")),
-  });
+  const extractApiError = useCallback<ErrorExtractor>(
+    (err) => ({
+      title: isEditMode ? t("update_failed") : t("create_failed"),
+      message:
+        Object.values(err?.response?.data).flat().join("\n") ||
+        (isEditMode
+          ? t("could_not_update_place")
+          : t("could_not_create_place")),
+    }),
+    [t],
+  );
 
   const handleMutateError = (e: AppError) => {
     const data = e?.response?.data;
     if (!data) {
-      showError(e, extractApiError);
+      showErrorToast(e, "PlaceEditorScreen:handleMutateError", extractApiError);
       return;
     }
     const errorField = FORM_FIELDS.find((field) => data?.[field]);
     if (errorField) {
       setErrors((prev) => ({ ...prev, [errorField]: data[errorField] }));
     } else {
-      showError(e, extractApiError);
+      showErrorToast(e, "PlaceEditorScreen:handleMutateError", extractApiError);
     }
   };
 

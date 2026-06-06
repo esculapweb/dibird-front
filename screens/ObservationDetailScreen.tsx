@@ -20,7 +20,6 @@ import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import { useItem, useUpdateItem, useDeleteItem } from "../hooks/useItem";
-import { showError } from "../services/api";
 import { BirdSVG } from "../components/ui/Svgs";
 import { formatTimeString } from "../util/timeHelpers";
 import { isoToFlagEmoji, buildShareUrl, speciesDetails } from "../util/helpers";
@@ -33,12 +32,14 @@ import IconsHeader from "../components/ui/IconsHeader";
 import Layout from "../components/ui/Layout";
 import { AppStackNavigationProp, AppStackRouteProp } from "../types";
 import { BottomSheet } from "../services/bottomSheet";
+import { useApiError } from "../hooks/useApiError";
 
 const ObservationDetailScreen = () => {
   const navigation = useNavigation<AppStackNavigationProp>();
   const route = useRoute<AppStackRouteProp<"ObservationDetail">>();
   const { observationId } = route.params;
   const type = "Observation";
+  const { showErrorToast } = useApiError();
 
   const {
     data: observation,
@@ -73,7 +74,7 @@ const ObservationDetailScreen = () => {
       onConfirm: () =>
         deleteMutation.mutate(observationId, {
           onSuccess: () => navigation.goBack(),
-          onError: (e) => showError(e),
+          onError: (e) => showErrorToast(e, `ObservationDetailScreen:deleteObservation:${observationId}`),
         }),
     });
   }, [observation, observationId]);

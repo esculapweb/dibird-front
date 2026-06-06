@@ -10,17 +10,16 @@ import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { useTheme, ThemeColors } from "../../store/theme-context";
-import { patchAvatar } from "../../util/requests";
 
+import { useTheme, ThemeColors } from "../../store/theme-context";
+import { patchAvatar, deleteMyAvatar } from "../../util/fetches";
 import { useProfile } from "../../store/profile-context";
-import api, { showError } from "../../services/api";
 import ProfileAvatar from "./ProfileAvatar";
 import { useProfileDisplay } from "../../hooks/Profile/useProfileDisplay";
 import { useInvalidateProfile } from "../../hooks/Profile/useUpdateProfile";
 import { useMediaLibraryUnavailable } from "../../hooks/useMediaLibraryUnavailable";
 import { BottomSheet } from "../../services/bottomSheet";
-import { AppError } from "../../types";
+import { useApiError } from "../../hooks/useApiError";
 
 const AVATAR_SIZE = 100;
 
@@ -33,6 +32,7 @@ const Avatar = () => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
+  const { showErrorToast } = useApiError();
 
   const firstName = profile?.user_data?.first_name;
   const lastName = profile?.user_data?.last_name;
@@ -117,10 +117,7 @@ const Avatar = () => {
       refreshProfile();
       invalidateProfile();
     } catch (e) {
-      const error = e as AppError;
-      if (__DEV__)
-        console.warn("Image manipulation error:", error.code, error.message);
-      showError(error);
+      showErrorToast(e, "AvatarUpload");
     } finally {
       setLoading(false);
     }
@@ -130,17 +127,14 @@ const Avatar = () => {
     if (loading) return;
     setLoading(true);
     try {
-      const res = await api.delete("/myapi/profile/avatar/");
-      if (res?.status === 204) {
+      const status = await deleteMyAvatar();
+      if (status === 204) {
         refreshProfile();
         setAvatar(null);
         invalidateProfile();
       }
     } catch (e) {
-      const error = e as AppError;
-      if (__DEV__)
-        console.warn("Delete Avatar error:", error.code, error.message);
-      showError(error);
+      showErrorToast(e, "AvatarDelete");
     } finally {
       setLoading(false);
     }
@@ -234,6 +228,6 @@ const stylesFn = (Colors: ThemeColors) =>
       marginTop: 4,
       textAlign: "center",
       fontSize: 11,
-      color: Colors.main100, 
+      color: Colors.main100,
     },
   });

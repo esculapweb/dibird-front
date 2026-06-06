@@ -31,7 +31,7 @@ export type PolygonGeometry = {
 };
 
 export interface AppError extends Error {
-  code?: string;
+  code: string;
   status?: number;
   title?: string;
   isTimeout?: boolean;
@@ -39,6 +39,17 @@ export interface AppError extends Error {
   isServerError?: boolean;
   originalError?: unknown;
   response?: AxiosResponse;
+}
+
+export type ErrorExtractor = (
+  error: AppError,
+) => { title: string; message: string };
+
+export interface UIError {
+  code: string;
+  status?: number;
+  title: string;
+  message: string;
 }
 
 export interface Errors {
@@ -49,6 +60,21 @@ export interface Errors {
   notes?: string;
   name?: string;
 }
+
+export type ApiErrorToast = {
+  title: string;
+  message: string;
+};
+
+export type ErrorCode =
+  | "TIMEOUT"
+  | "NETWORK"
+  | "SERVER"
+  | "UNAUTHORIZED"
+  | "VALIDATION"
+  | "UNKNOWN";
+
+
 
 interface EmptyStateAction {
   label: string;
@@ -135,6 +161,16 @@ export interface Profile {
   registration_ip: string;
   timezone: string;
   territory?: number | null;
+}
+
+export interface ImageAsset {
+  uri: string;
+  width?: number;
+  height?: number;
+}
+
+export interface AvatarResponse {
+  avatar_thumbnail: string;
 }
 
 export type seenMode = "seen" | "unseen" | "all";
@@ -333,6 +369,13 @@ export interface EditorFormData {
   name?: string | null;
   diary: number | null;
   species?: number | null;
+}
+
+export interface CountryItem {
+  territory_id: number;
+  name: string;
+  code: string;
+  favourite: boolean;
 }
 
 export interface PlaceFormData {
@@ -726,7 +769,9 @@ export type NotificationPayload =
   | { screen: "Achievements"; achievementId?: string }
   | { screen: "Notifications" };
 
-export function isNotificationPayload(data: unknown): data is NotificationPayload {
+export function isNotificationPayload(
+  data: unknown,
+): data is NotificationPayload {
   return (
     typeof data === "object" &&
     data !== null &&

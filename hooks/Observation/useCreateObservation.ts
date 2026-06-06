@@ -2,9 +2,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { AxiosResponse } from "axios";
 
 import { useMutationWithTranslation } from "../useMutationWithTranslation";
-import api from "../../services/api";
 import { INVALIDATION_MAP } from "../../util/invalidationMap";
 import { ObservationFormData, ObservationItem } from "../../types";
+import { createObservation } from "../../util/fetches";
 
 export const useCreateObservation = () => {
   const queryClient = useQueryClient();
@@ -32,7 +32,7 @@ export const useCreateObservation = () => {
             notes: data.notes ?? "",
           };
 
-      return api.post(`/myapi/observation2/`, formattedData);
+      return createObservation(formattedData);
     },
     onSuccess: (response: AxiosResponse<ObservationItem>) => {
       queryClient.setQueryData(["Observations"], (old: Record<string, unknown> | undefined) => {

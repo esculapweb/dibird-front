@@ -2,9 +2,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { AxiosResponse } from "axios";
 
 import { useMutationWithTranslation } from "../useMutationWithTranslation";
-import api from "../../services/api";
 import { INVALIDATION_MAP } from "../../util/invalidationMap";
 import { PlaceFormData, PlaceItem } from "../../types";
+import { createPlace } from "../../util/fetches";
 
 export const useCreatePlace = () => {
   const queryClient = useQueryClient();
@@ -26,7 +26,7 @@ export const useCreatePlace = () => {
           ],
         };
       }
-      return api.post(`/myapi/place2/`, formattedData);
+      return createPlace(formattedData);
     },
     onSuccess: (response: AxiosResponse<PlaceItem>) => {
       queryClient.setQueryData(

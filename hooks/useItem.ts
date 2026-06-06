@@ -5,7 +5,6 @@ import { useMutationWithTranslation } from "./useMutationWithTranslation";
 import { useApiError } from "./useApiError";
 import api from "../services/api";
 import { INVALIDATION_MAP } from "../util/invalidationMap";
-import { AppError } from "../types";
 
 type ItemType = "Place" | "Observation" | "Diary";
 
@@ -46,7 +45,7 @@ export const useItem = (
   });
 
   useEffect(() => {
-    if (query.error) showErrorToast(query.error as AppError);
+    if (query.error) showErrorToast(query.error, `useItem:${type}`);
   }, [query.error]);
   return query;
 };

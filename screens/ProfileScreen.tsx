@@ -1,14 +1,14 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import ProfileForm from "../components/Profile/ProfileForm";
 import { useProfile } from "../store/profile-context";
-import { showError } from "../services/api";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import FormWrapper from "../components/ui/FormWrapper";
 import { useInvalidateProfile } from "../hooks/Profile/useUpdateProfile";
-import { AppError, ProfileFormData } from "../types";
+import { AppError, ErrorExtractor, ProfileFormData } from "../types";
+import { useApiError } from "../hooks/useApiError";
 
 const ProfileScreen = () => {
   const [loading, setLoading] = useState(false);
@@ -18,10 +18,12 @@ const ProfileScreen = () => {
     useProfile();
   const { t } = useTranslation();
   const invalidateProfile = useInvalidateProfile();
+  const { showErrorToast } = useApiError();
 
-  const extractApiError = (e: AppError): { title: string; message: string } => {
-    const data = e?.response?.data;
-    const apiMessage = data
+const extractApiError = useCallback<ErrorExtractor>(
+  (err) => {
+    const data = err.response?.data;
+    const message = data
       ? data?.non_field_errors?.[0] ||
         data?.first_name?.[0] ||
         data?.last_name?.[0] ||
@@ -31,9 +33,11 @@ const ProfileScreen = () => {
 
     return {
       title: t("update_failed"),
-      message: apiMessage || t("could_not_update_profile"),
+      message: message || t("could_not_update_profile"),
     };
-  };
+  },
+  [t],
+);
 
   const submitHandler = async (updatedData: ProfileFormData) => {
     if (loading) return;
@@ -47,8 +51,7 @@ const ProfileScreen = () => {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 1500);
     } catch (e) {
-      const error = e as AppError;
-      showError(error, extractApiError);
+      showErrorToast(e as AppError, "updateProfile", extractApiError);
     } finally {
       setLoading(false);
     }

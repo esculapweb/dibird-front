@@ -6,13 +6,13 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { useTheme, ThemeColors } from "../store/theme-context";
 import Layout from "../components/ui/Layout";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
-import api from "../services/api";
 import Logo from "../components/ui/Logo";
 import {
   AppError,
   AuthStackNavigationProp,
   AuthStackRouteProp,
 } from "../types";
+import { sendConfirmEmail } from "../util/fetches";
 
 const ConfirmEmailScreen = () => {
   const { Colors } = useTheme();
@@ -35,7 +35,7 @@ const ConfirmEmailScreen = () => {
     setError(null);
 
     try {
-      const resp = await api.post("/myapi/confirm/email/", { key });
+      const resp = await sendConfirmEmail(key);
 
       if (resp.status === 200) {
         isConfirmedRef.current = true;

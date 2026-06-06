@@ -18,7 +18,6 @@ import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import { useItem, useUpdateItem, useDeleteItem } from "../hooks/useItem";
-import { showError } from "../services/api";
 import PlacePreviewRow from "../components/Place/PlacePreviewRow";
 import Section from "../components/ui/Section";
 import PrivacyToggle from "../components/ui/PrivacyToggle";
@@ -29,6 +28,7 @@ import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
 import Map from "../components/Map/Map";
 import { BottomSheet } from "../services/bottomSheet";
+import { useApiError } from "../hooks/useApiError";
 
 import {
   AppStackNavigationProp,
@@ -42,6 +42,7 @@ const DiaryDetailScreen = () => {
   const route = useRoute<AppStackRouteProp<"DiaryDetail">>();
   const { diaryId } = route.params;
   const type = "Diary";
+  const {showErrorToast} = useApiError();
 
   const [currentFilters, setCurrentFilters] = useState<Filters | null>(null);
   const [currentSort, setCurrentSort] = useState<string | null>(null);
@@ -244,7 +245,7 @@ const DiaryDetailScreen = () => {
       onConfirm: () =>
         deleteMutation.mutate(diaryId, {
           onSuccess: () => navigation.goBack(),
-          onError: (e) => showError(e),
+          onError: (e) => showErrorToast(e, `DiaryDetailScreen:deleteDiary:${diaryId}`),
         }),
     });
   }, [diary, diaryId]);

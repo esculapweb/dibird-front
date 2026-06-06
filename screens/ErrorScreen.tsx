@@ -1,12 +1,12 @@
 import { useProfile } from "../store/profile-context";
-import { mapErrorToToast } from "../services/api";
+import { toUIError } from "../services/errors";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import Layout from "../components/ui/Layout";
 
 const ErrorScreen = () => {
   const { error, refreshProfile } = useProfile();
   if (!error) return null;
-  const { title, message } = mapErrorToToast(error);
+  const { title, message } = toUIError(error);
 
   return (
     <Layout>

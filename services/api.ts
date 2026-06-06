@@ -1,12 +1,12 @@
 import axios, { AxiosError } from "axios";
 import * as SecureStore from "expo-secure-store";
-import i18n from "./i18n";
-import Toast from "react-native-toast-message";
 import * as Sentry from "@sentry/react-native";
+import i18n from "./i18n";
 
 import { Config } from "../constants/config";
 import { notifyTokenUpdate } from "./authService";
 import { AppError } from "../types";
+import { normalizeApiError, toUIError } from "./errors";
 
 let onUnauthorizedCallback: (() => void) | null = null;
 
@@ -14,142 +14,9 @@ export const setOnUnauthorized = (fn: (() => void) | null) => {
   onUnauthorizedCallback = fn;
 };
 
-const API_ERROR = {
-  TIMEOUT: "TIMEOUT",
-  NETWORK: "NETWORK_ERROR",
-  SERVER: "SERVER_ERROR",
-  UNAUTHORIZED: "UNAUTHORIZED",
-  UNKNOWN: "UNKNOWN",
-};
-
 let isRefreshing = false;
 let refreshPromise: Promise<string> | null = null;
 let isLoggingOut = false;
-
-const normalizeApiError = (error: AxiosError): AxiosError & AppError => {
-  if (error.code === "ECONNABORTED") {
-    return {
-      ...error,
-      code: API_ERROR.TIMEOUT,
-      isTimeout: true,
-    };
-  }
-
-  if (error.message === "Network Error" && !error.response) {
-    if (error.config && error.config.timeout) {
-      return {
-        ...error,
-        code: API_ERROR.TIMEOUT,
-        isTimeout: true,
-      };
-    }
-    return {
-      ...error,
-      code: API_ERROR.NETWORK,
-      isNetworkError: true,
-    };
-  }
-
-  if (!error.response) {
-    return {
-      ...error,
-      code: API_ERROR.NETWORK,
-      isNetworkError: true,
-    };
-  }
-
-  if (error.response.status >= 500) {
-    return {
-      ...error,
-      code: API_ERROR.SERVER,
-      status: error.response.status,
-      isServerError: true,
-    };
-  }
-
-  if (error.response.status === 401) {
-    return {
-      ...error,
-      code: API_ERROR.UNAUTHORIZED,
-    };
-  }
-
-  return {
-    ...error,
-    code: API_ERROR.UNKNOWN,
-    status: error.response?.status,
-  };
-};
-
-export const mapErrorToToast = (
-  e: AppError,
-  extractApiErrorFn:
-    | ((error: AppError) => { title: string; message: string })
-    | null = null,
-) => {
-  if (e.code === API_ERROR.TIMEOUT)
-    return {
-      title: i18n.t("connection_timeout"),
-      message: i18n.t("server_timeout"),
-    };
-
-  if (e.code === API_ERROR.NETWORK)
-    return {
-      title: i18n.t("no_connection"),
-      message: i18n.t("unable_connect_server"),
-    };
-
-  if (e.code === API_ERROR.SERVER)
-    return {
-      title: i18n.t("server_error"),
-      message: i18n.t("server_unavailable"),
-    };
-
-  if (e?.response?.data && typeof extractApiErrorFn === "function") {
-    const result = extractApiErrorFn(e);
-    if (result?.title && result?.message) return result;
-  }
-
-  return {
-    title: i18n.t("unexpected_error"),
-    message: i18n.t("something_went_wrong"),
-  };
-};
-
-export const showError = (
-  e: AppError,
-  extractApiErrorFn?:
-    | ((e: AppError) => { title: string; message: string })
-    | null,
-) => {
-  const { title, message } = mapErrorToToast(e, extractApiErrorFn);
-  Toast.show({
-    type: "error",
-    text1: title,
-    text2: message,
-  });
-};
-
-export const createTranslatedError = (error: AxiosError): AppError => {
-  const normalizedError = normalizeApiError(error);
-
-  const { title, message } = mapErrorToToast(normalizedError, null);
-
-  const translatedError = new Error(message) as AppError;
-
-  translatedError.title = title;
-  translatedError.message = message;
-  translatedError.code = normalizedError.code;
-  translatedError.status = normalizedError.status;
-  translatedError.originalError = error;
-  translatedError.response = error.response;
-
-  translatedError.isTimeout = normalizedError.isTimeout;
-  translatedError.isNetworkError = normalizedError.isNetworkError;
-  translatedError.isServerError = normalizedError.isServerError;
-
-  return translatedError;
-};
 
 const api = axios.create({
   baseURL: Config.baseUrl,
@@ -159,27 +26,16 @@ const api = axios.create({
   },
 });
 
-export const getAccessToken = () => SecureStore.getItemAsync("access");
+export const getAccessToken = (): Promise<string | null> =>
+  SecureStore.getItemAsync("access");
 
 let cachedRefreshToken: string | null = null;
 
-export const getRefreshToken = async () => {
+export const getRefreshToken = async (): Promise<string | null> => {
   if (cachedRefreshToken) return cachedRefreshToken;
   const token = await SecureStore.getItemAsync("refresh");
   if (token) cachedRefreshToken = token;
   return token;
-};
-
-const refreshAccessToken = async () => {
-  const refresh = await getRefreshToken();
-  if (!refresh) throw new Error("No refresh token");
-
-  const res = await axios.post(`${Config.baseUrl}/api-auth/token/refresh/`, {
-    refresh,
-  });
-
-  await saveTokens(res.data);
-  return res.data.access;
 };
 
 export const saveTokens = async ({
@@ -188,7 +44,7 @@ export const saveTokens = async ({
 }: {
   access?: string;
   refresh?: string;
-}) => {
+}): Promise<void> => {
   isLoggingOut = false;
   if (access) {
     await SecureStore.setItemAsync("access", access);
@@ -200,12 +56,86 @@ export const saveTokens = async ({
   }
 };
 
-export const clearTokens = async () => {
+export const clearTokens = async (): Promise<void> => {
   isLoggingOut = false;
   cachedRefreshToken = null;
   await SecureStore.deleteItemAsync("access");
   await SecureStore.deleteItemAsync("refresh");
 };
+
+const refreshAccessToken = async (): Promise<string> => {
+  const refresh = await getRefreshToken();
+  if (!refresh) throw new Error("No refresh token");
+
+  const { data } = await axios.post(
+    `${Config.baseUrl}/api-auth/token/refresh/`,
+    { refresh },
+  );
+
+  await saveTokens(data);
+  return data.access as string;
+};
+
+export const createTranslatedError = (error: AxiosError): AppError => {
+  const normalized = normalizeApiError(error);
+  const { title, message } = toUIError(normalized);
+
+  return Object.assign(new Error(message) as AppError, {
+    title,
+    message,
+    code: normalized.code,
+    status: normalized.status,
+    originalError: error,
+    response: error.response,
+    isTimeout: normalized.isTimeout,
+    isNetworkError: normalized.isNetworkError,
+    isServerError: normalized.isServerError,
+  });
+};
+
+const reportToSentry = (error: AxiosError): void => {
+  const status = error.response?.status ?? 0;
+  const url = error.config?.url ?? "unknown";
+  const method = (error.config?.method ?? "GET").toUpperCase();
+
+  if (status >= 500) {
+    Sentry.captureException(error, {
+      tags: { api_url: url, http_method: method, http_status: status },
+    });
+    return;
+  }
+
+  if (status === 0) {
+    const isTimeout = error.code === "ECONNABORTED";
+    Sentry.captureMessage(
+      `API ${method} ${url} → ${isTimeout ? "timeout" : "network error"}`,
+      {
+        level: "warning",
+        extra: { url, method, errorCode: error.code },
+      },
+    );
+    return;
+  }
+
+  const warnStatuses: Record<number, string> = {
+    403: "Forbidden — возможно проблема с правами",
+    404: "Not Found — возможно устаревший endpoint",
+    429: "Rate limit exceeded",
+  };
+
+  if (status in warnStatuses) {
+    Sentry.captureMessage(`API ${method} ${url} → ${status}`, {
+      level: "warning",
+      extra: {
+        status,
+        url,
+        method,
+        hint: warnStatuses[status],
+        responseData: error.response?.data,
+      },
+    });
+  }
+}
 
 api.interceptors.request.use(
   async (config) => {
@@ -214,92 +144,79 @@ api.interceptors.request.use(
     const lang = i18n.language || "en";
     const token = await getAccessToken();
 
-    if (lang !== "en" && !config.url.startsWith(`/${lang}/`))
+    if (lang !== "en" && !config.url.startsWith(`/${lang}/`)) {
       config.url = `/${lang}${config.url}`;
-    if (
-      !config.url.includes("/api-auth/login") &&
-      !config.url.includes("/api-auth/registration") &&
-      token
-    )
+    }
+
+    const isPublicEndpoint =
+      config.url.includes("/api-auth/login") ||
+      config.url.includes("/api-auth/registration");
+
+    if (!isPublicEndpoint && token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+
     return config;
   },
   (error) => Promise.reject(error),
 );
 
+type RetryableConfig = NonNullable<AxiosError["config"]> & { _retry?: boolean };
+
 api.interceptors.response.use(
   (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
+  async (error: AxiosError) => {
+    const originalRequest = error.config as RetryableConfig | undefined;
 
     if (!originalRequest) {
-      Sentry.captureException(error);
+      reportToSentry(error);
       return Promise.reject(createTranslatedError(error));
     }
 
-    if (
+    const is401 =
       error.response?.status === 401 &&
       !originalRequest._retry &&
       !originalRequest.url?.endsWith("/api-auth/token/refresh/") &&
-      !originalRequest.url?.endsWith("/api-auth/logout/")
-    ) {
+      !originalRequest.url?.endsWith("/api-auth/logout/");
+
+    if (is401) {
       if (isLoggingOut) {
         return new Promise(() => {});
       }
       originalRequest._retry = true;
 
       try {
-        const newAccess = await (() => {
-          if (!isRefreshing) {
-            isRefreshing = true;
-            refreshPromise = refreshAccessToken().finally(() => {
-              isRefreshing = false;
-              refreshPromise = null;
-            });
-          }
-          return refreshPromise!;
-        })();
+        if (!isRefreshing) {
+          isRefreshing = true;
+          refreshPromise = refreshAccessToken().finally(() => {
+            isRefreshing = false;
+            refreshPromise = null;
+          });
+        }
 
-        originalRequest.headers.Authorization = `Bearer ${newAccess}`;
+        const newAccess = await refreshPromise!;
+
+        originalRequest.headers!.Authorization = `Bearer ${newAccess}`;
         return api(originalRequest);
       } catch (e) {
-        const axiosError = e as AxiosError;
-        const status = axiosError?.response?.status;
+        const refreshError = e as AxiosError;
+        const status = refreshError?.response?.status;
+
         if (status === 401 || status === 400) {
           isLoggingOut = true;
           await clearTokens();
           onUnauthorizedCallback?.();
           return new Promise(() => {});
         }
-        return Promise.reject(createTranslatedError(axiosError));
+        reportToSentry(refreshError);
+        return Promise.reject(createTranslatedError(refreshError));
       }
     }
 
-    if (error.response?.status >= 500) {
-      Sentry.captureException(error);
-    }
+    reportToSentry(error);
 
     return Promise.reject(createTranslatedError(error));
   },
 );
-
-export const getErrorDetails = (error: AppError) => {
-  if (error?.title && error?.message) {
-    return {
-      title: error.title,
-      message: error.message,
-      code: error.code,
-      status: error.status,
-    };
-  }
-
-  const { title, message } = mapErrorToToast(error);
-  return {
-    title,
-    message,
-    code: error.code,
-    status: error.status,
-  };
-};
 
 export default api;

@@ -13,12 +13,11 @@ import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import * as Application from "expo-application";
 
-import api, { showError } from "../services/api";
 import Layout from "../components/ui/Layout";
 import { ThemeColors, useTheme } from "../store/theme-context";
 import { useProfile } from "../store/profile-context";
 import { useAuth } from "../store/auth-context";
-import { AppError, AppDrawerNavigationProp, IconType } from "../types";
+import { AppDrawerNavigationProp, IconType, ErrorExtractor } from "../types";
 import { Config } from "../constants/config";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import { useExportProfile } from "../hooks/Profile/useExportProfile";
@@ -26,6 +25,8 @@ import { useBiometricSetting } from "../hooks/useBiometricSetting";
 import { canUseBiometrics } from "../services/bio";
 import { openSupportEmail } from "../util/openSupportEmail";
 import { BottomSheet } from "../services/bottomSheet";
+import { deleteMyProfile } from "../util/fetches";
+import { useApiError } from "../hooks/useApiError";
 
 // ------------------------------------------------------------------
 // Primitives
@@ -153,6 +154,7 @@ const SettingsScreen = () => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
+  const { showErrorToast } = useApiError();
   const { logout } = useAuth();
   const { profile } = useProfile();
   const navigation = useNavigation<AppDrawerNavigationProp>();
@@ -176,17 +178,13 @@ const SettingsScreen = () => {
   }, []);
 
   const handleDeleteConfirmed = async () => {
-    const res = await api.delete("/myapi/profile/delete-me/", {
-      data: { email: userEmail },
-    });
-    if (res?.status === 204) {
-      await logout();
-    }
+    const status = await deleteMyProfile(userEmail);
+    if (status === 204) await logout();
   };
 
-  const extractDeleteError = (e: AppError) => ({
+  const extractDeleteError: ErrorExtractor = (err) => ({
     title: t("delete_failed"),
-    message: e?.response?.data?.detail ?? t("could_not_delete_profile"),
+    message: err?.response?.data?.detail ?? t("could_not_delete_profile"),
   });
 
   const handleTellAFriend = async () => {
@@ -211,7 +209,7 @@ const SettingsScreen = () => {
       inputPlaceholder: userEmail,
       inputLabel: t("delete_profile_input_label"),
       onConfirm: handleDeleteConfirmed,
-      onError: (e) => showError(e as AppError, extractDeleteError),
+      onError: (e) => showErrorToast(e, "deleteMyProfile", extractDeleteError),
     });
 
   const isExporting = exportState === "pending" || exportState === "processing";

@@ -2,10 +2,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { AxiosResponse } from "axios";
 
 import { useMutationWithTranslation } from "../useMutationWithTranslation";
-import api from "../../services/api";
 import { INVALIDATION_MAP } from "../../util/invalidationMap";
 
 import { DiaryFormData, DiaryItem } from "../../types";
+import { createDiary } from "../../util/fetches";
 
 export const useCreateDiary = () => {
   const queryClient = useQueryClient();
@@ -20,7 +20,7 @@ export const useCreateDiary = () => {
         name: data.name ?? "",
       };
 
-      return api.post(`/myapi/diary2/`, formattedData);
+      return createDiary(formattedData);
     },
     onSuccess: (response: AxiosResponse<DiaryItem>) => {
       queryClient.setQueryData(

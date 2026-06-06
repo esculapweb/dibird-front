@@ -84,9 +84,10 @@ const queryClient = new QueryClient({
   mutationCache: new MutationCache(),
   defaultOptions: {
     queries: {
-      retry: (failureCount: number, error: AppError) => {
-        if (error.code === "UNAUTHORIZED") return false;
-        if (error.isServerError) return false;
+      retry: (failureCount: number, error: Error) => {
+         const appError = error as AppError;
+        if (appError.code === "UNAUTHORIZED") return false;
+        if (appError.isServerError) return false;
         return failureCount < 1;
       },
       staleTime: 10_000,

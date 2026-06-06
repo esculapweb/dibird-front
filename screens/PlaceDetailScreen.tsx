@@ -16,11 +16,11 @@ import StatCard from "../components/ui/StatCard";
 import FilterChips from "../components/Filters/FilterChips";
 
 import { useItem, useUpdateItem, useDeleteItem } from "../hooks/useItem";
-import { showError } from "../services/api";
 import { useFilters } from "../store/filters-context";
 import { AppStackNavigationProp, AppStackRouteProp } from "../types";
 import { BottomSheet } from "../services/bottomSheet";
 import { buildDateParams } from "../util/helpers";
+import { useApiError } from "../hooks/useApiError";
 
 const H_PAD = 12;
 
@@ -35,6 +35,7 @@ const PlaceDetailScreen = () => {
   const { Colors } = useTheme();
   const { t } = useTranslation();
   const styles = stylesFn(Colors);
+  const { showErrorToast } = useApiError();
   const { date, setDate } = useFilters();
 
   const queryClient = useQueryClient();
@@ -58,7 +59,7 @@ const PlaceDetailScreen = () => {
     updateMutation.mutate(
       { favourite: !place.favourite },
       {
-        onError: (e) => showError(e),
+        onError: (e) => showErrorToast(e, `PlaceDetailScreen:toggleFavourite:${placeId}`),
       },
     );
   }, [place, updateMutation.mutate]);
@@ -101,7 +102,7 @@ const PlaceDetailScreen = () => {
         deleteMutation.mutate(placeId, {
           onSuccess: () => navigation.goBack(),
           onError: (e) => {
-            showError(e);
+            showErrorToast(e, `PlaceDetailScreen:deletePlace:${placeId}`);
           },
         }),
     });
