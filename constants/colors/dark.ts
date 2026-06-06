@@ -16,7 +16,7 @@ export const DarkColors = {
   main300: "#30291A",
   accent100: "#1FA14F",
   accent300: "#145A32",
-  // accent: "#60A5FA",
+  accentBlue: "#60A5FA",
   // accent: "#A78BFA",
   // accent: "#2DD4BF",
   green: "#1FA14F",

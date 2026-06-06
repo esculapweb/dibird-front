@@ -52,7 +52,7 @@ export default function NotificationsScreen() {
   const handlePress = useCallback(
     async (item: AppNotification) => {
       // Пометить одно прочитанным
-      if (!item.isRead) {
+      if (!item.is_read) {
         await markNotificationsRead([item.id]);
         queryClient.invalidateQueries({ queryKey: ["notifications"] });
         queryClient.invalidateQueries({ queryKey: UNREAD_COUNT_KEY });

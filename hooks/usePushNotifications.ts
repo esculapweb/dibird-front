@@ -25,9 +25,9 @@ export const handleNotificationNavigation = (raw: NotificationPayload) => {
         highlightId: raw.achievementId,
       });
       break;
-    case "Notifications":
-      navigateFromNotification("Notifications", undefined);
-      break;
+    // case 'Checklists':
+    //       navigation.navigate('Checklists')
+    //       break
   }
 };
 

@@ -2,16 +2,16 @@ import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { AppNotification, IconType, NotificationType } from "../../types";
-import { formatDateTime } from "../../util/helpers"; // твоя утилита или date-fns
+import { formatDateTime } from "../../util/helpers";
 
 const META: Record<
   NotificationType,
   { icon: IconType; color: (c: ThemeColors) => string }
 > = {
   notable_obs: { icon: "binoculars-outline", color: (c) => c.main100 },
-  watchlist_activity: { icon: "star-outline", color: (c) => c.accent100 },
+  watchlist_activity: { icon: "star-outline", color: (c) => c.accentBlue },
   system: { icon: "information-circle-outline", color: (c) => c.textSecondary },
-  achievement: { icon: "trophy-outline", color: (c) => c.yellow },
+  achievement: { icon: "trophy-outline", color: (c) => c.accent100 },
 };
 
 interface Props {
@@ -26,11 +26,10 @@ const NotificationCard = ({ item, onPress }: Props) => {
 
   return (
     <TouchableOpacity
-      style={[styles.card, !item.isRead && styles.unread]}
+      style={[styles.card, !item.is_read && styles.unread]}
       onPress={() => onPress(item)}
       activeOpacity={0.7}
     >
-      {/* Иконка типа */}
       <View
         style={[
           styles.iconWrap,
@@ -52,11 +51,10 @@ const NotificationCard = ({ item, onPress }: Props) => {
         <Text style={styles.body} numberOfLines={2}>
           {item.body}
         </Text>
-        <Text style={styles.time}>{formatDateTime(item.createdAt)}</Text>
+        <Text style={styles.time}>{formatDateTime(item.created_at)}</Text>
       </View>
 
-      {/* Точка непрочитанного */}
-      {!item.isRead && <View style={styles.dot} />}
+      {!item.is_read && <View style={styles.dot} />}
     </TouchableOpacity>
   );
 };

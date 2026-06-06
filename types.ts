@@ -614,8 +614,8 @@ export interface AppNotification {
     checklistId?: string;
     [key: string]: unknown;
   };
-  isRead: boolean;
-  createdAt: string;
+  is_read: boolean;
+  created_at: string;
 }
 
 // --- Navigation ---
