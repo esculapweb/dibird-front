@@ -12,8 +12,7 @@ import { useRoute, useNavigation } from "@react-navigation/native";
 import { useTheme } from "../store/theme-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import DiaryForm from "../components/Diary/DiaryForm";
-import { useCreateDiary } from "../hooks/Diary/useCreateDiary";
-import { useUpdateItem } from "../hooks/useItem";
+import { useCreateItem, useUpdateItem } from "../hooks/useItem";
 import { useProfile } from "../store/profile-context";
 import { setSession } from "../util/sessionStore";
 import {
@@ -29,6 +28,7 @@ import {
   AppStackNavigationProp,
   AppStackRouteProp,
   DiaryFormData,
+  DiaryItem,
   ErrorExtractor,
   PlaceData,
 } from "../types";
@@ -68,7 +68,7 @@ const DiaryEditorScreen = () => {
     requiredFields: ["territory", "date_time"],
   });
 
-  const createDiaryMutation = useCreateDiary();
+  const createDiaryMutation = useCreateItem<DiaryFormData, DiaryItem>("Diary");
   const updateDiaryMutation = useUpdateItem(diaryWithParsedDate?.id, "Diary");
 
   const extractApiError = useCallback<ErrorExtractor>(
@@ -101,10 +101,10 @@ const DiaryEditorScreen = () => {
     if (!validateForm()) return;
     const diaryData: DiaryFormData = {
       territory: territoryValue,
-      place: placeValue,
+      place: placeValue ?? null,
       date_time: formData.date_time!,
-      private: formData.private!,
-      name: formData.name,
+      private: formData.private ?? false,
+      name: formData.name ?? "",
     };
 
     if (isEditMode) {

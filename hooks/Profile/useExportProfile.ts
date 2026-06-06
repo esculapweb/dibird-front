@@ -1,10 +1,12 @@
 import { useState, useRef, useCallback } from "react";
-import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 
-import { pollExportStatus, exportProfileData } from "../../util/fetches";
+import {
+  pollExportStatus,
+  exportProfileData,
+  downloadExportFile,
+} from "../../util/fetches";
 import { ExportStatus, AppError } from "../../types";
-import { Config } from "../../constants/config";
 import { useAuth } from "../../store/auth-context";
 
 export const useExportProfile = () => {
@@ -28,12 +30,7 @@ export const useExportProfile = () => {
         if (data.status === "completed" && data.download_token) {
           stopPolling();
 
-          const url = `${Config.baseUrl}/myapi/gdpr/download/?token=${data.download_token}`;
-          const dest = FileSystem.documentDirectory + "dibird_export.zip";
-
-          const result = await FileSystem.downloadAsync(url, dest, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const result = await downloadExportFile(data, token);
 
           if (result?.uri) {
             await Sharing.shareAsync(result.uri);

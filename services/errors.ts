@@ -113,36 +113,27 @@ export const toUIError = (
   };
 };
 
-export const showError = (
-  error: AppError,
-  extractor?: ErrorExtractor,
-): void => {
+export const showError = (e: unknown, extractor?: ErrorExtractor): void => {
+  const error = e as AppError;
   const { title, message } = toUIError(error, extractor);
   Toast.show({ type: "error", text1: title, text2: message || undefined });
 };
 
-interface LogErrorOptions {
-  /** Show a toast to the user after logging. Default: false. */
-  showToClient?: boolean;
-  /** Context-specific title/message override passed to the toast. */
-  extractor?: ErrorExtractor;
-}
+export const logError = (e: unknown, tag = "useApiError"): void => {
+  if (!__DEV__) return;
 
-export const logError = (
-  tag: string,
-  error: AppError,
-  { showToClient = false, extractor }: LogErrorOptions = {},
-): void => {
-  if (__DEV__) {
-    console.warn(`[${tag}]`, {
-      code: error.code,
-      status: error.status,
-      data: error.response?.data,
-      message: error.message,
-    });
-  } 
+  const error = e as AppError;
 
-  if (showToClient) {
-    showError(error, extractor);
+  const data = {
+    code: error.code,
+    status: error.status,
+    data: error.response?.data,
+    message: error.message,
+  };
+
+  if (error.status && error.status >= 500) {
+    console.error(`[${tag}]`, data);
+  } else {
+    console.warn(`[${tag}]`, data);
   }
 };

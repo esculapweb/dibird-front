@@ -94,7 +94,7 @@ const linking = (
 
     if (!isAuthenticated && isProtected) {
       return {
-        routes: [{ name: "Login" }],
+        routes: [{ name: "Welcome" }],
       };
     }
 

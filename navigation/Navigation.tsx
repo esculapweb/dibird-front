@@ -1,9 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useState, useEffect, useRef } from "react";
 import { InitialState } from "@react-navigation/native";
-import {
-  NavigationContainer,
-} from "@react-navigation/native";
+import { NavigationContainer } from "@react-navigation/native";
 import { getAnalytics, logEvent } from "@react-native-firebase/analytics";
 
 import { useAuth } from "../store/auth-context";
@@ -16,7 +14,10 @@ import {
 } from "../constants/NavigationTheme";
 import linking from "../linking";
 import { navigationIntegration } from "../services/sentry";
-import { flushPendingNavigation, navigationRef } from '../services/navigationRef'
+import {
+  flushPendingNavigation,
+  navigationRef,
+} from "../services/navigationRef";
 import type { MinimalRoute, NavState } from "../types";
 
 const NAV_STATE_KEY = "NAV_STATE";
@@ -49,6 +50,8 @@ const extractRoutes = (state: NavState, depth = 0): MinimalRoute[] => {
   return [{ name: activeRoute.name, params: activeRoute.params }];
 };
 
+const AUTH_SCREENS = new Set(["Login", "Signup", "CheckEmail", "ConfirmEmail"]);
+
 const buildInitialState = (routes: MinimalRoute[]): InitialState | null => {
   const screenRoutes =
     routes[0]?.name === "Root" || routes[0]?.name === "Main"
@@ -60,7 +63,11 @@ const buildInitialState = (routes: MinimalRoute[]): InitialState | null => {
     params: r.params,
   }));
 
-  const allRoutes = [{ name: "Main" }, ...innerRoutes];
+  const root = innerRoutes.some((r) => AUTH_SCREENS.has(r.name))
+    ? "Welcome"
+    : "Main";
+
+  const allRoutes = [{ name: root }, ...innerRoutes];
 
   return {
     index: allRoutes.length - 1,
@@ -131,7 +138,7 @@ const Navigation = () => {
       linking={linking(isAuthenticated)}
       theme={theme === "dark" ? DarkNavigationTheme : LightNavigationTheme}
       onReady={() => {
-        flushPendingNavigation()
+        flushPendingNavigation();
 
         navigationIntegration.registerNavigationContainer(navigationRef);
         const current = navigationRef.current?.getCurrentRoute()?.name;

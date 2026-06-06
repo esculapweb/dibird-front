@@ -14,8 +14,7 @@ import { useRoute, useNavigation } from "@react-navigation/native";
 import { useTheme } from "../store/theme-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ObservationForm from "../components/Observation/ObservationForm";
-import { useCreateObservation } from "../hooks/Observation/useCreateObservation";
-import { useUpdateItem } from "../hooks/useItem";
+import { useCreateItem, useUpdateItem } from "../hooks/useItem";
 import { useProfile } from "../store/profile-context";
 import { setSession } from "../util/sessionStore";
 import { setTypedNavigationCallback } from "../util/navigationCallbacks";
@@ -31,6 +30,7 @@ import {
   AppStackRouteProp,
   ErrorExtractor,
   ObservationFormData,
+  ObservationItem,
   PlaceData,
 } from "../types";
 
@@ -107,7 +107,37 @@ const ObservationEditorScreen = () => {
     ),
   );
 
-  const createObservationMutation = useCreateObservation();
+  const buildObservationPayload = (
+    data: ObservationFormData,
+  ): ObservationFormData => {
+    const isDiary = !!data.diary;
+
+    if (isDiary) {
+      return {
+        species: data.species,
+        diary: data.diary,
+        time: data.time ?? null,
+        quantity: data.quantity ?? null,
+        notes: data.notes ?? "",
+      };
+    }
+
+    return {
+      species: data.species,
+      territory: data.territory,
+      place: data.place ?? null,
+      date_time: data.date_time,
+      time: data.time ?? null,
+      private: data.private ?? false,
+      quantity: data.quantity ?? null,
+      notes: data.notes ?? "",
+    };
+  };
+
+  const createObservationMutation = useCreateItem<
+    ObservationFormData,
+    ObservationItem
+  >("Observation");
   const updateObservationMutation = useUpdateItem(
     observationWithParsedDate?.id,
     "Observation",
@@ -150,24 +180,23 @@ const ObservationEditorScreen = () => {
   const handleSaveObservation = useCallback(() => {
     if (!validateForm()) return;
     if (speciesValue === null || !territoryValue || !formData.date_time) return;
-    const observationData: ObservationFormData = {
+
+    const payload = buildObservationPayload({
       ...formData,
-      date_time: formData.date_time!,
-      private: formData.private ?? false,
       species: speciesValue,
       territory: territoryValue,
       place: placeValue,
-    };
+    });
 
     if (isEditMode) {
-      updateObservationMutation.mutate(observationData, {
+      updateObservationMutation.mutate(payload, {
         onSuccess: () => navigation.goBack(),
         onError: handleMutateError,
       });
     } else {
-      createObservationMutation.mutate(observationData, {
+      createObservationMutation.mutate(payload, {
         onSuccess: (res) => {
-          setSession("lastDate", observationData.date_time);
+          setSession("lastDate", payload.date_time);
           if (returnMode === "back") {
             navigation.goBack();
           } else {
@@ -199,16 +228,14 @@ const ObservationEditorScreen = () => {
     if (!validateForm()) return;
     if (speciesValue === null || !territoryValue || !formData.date_time) return;
 
-    const observationData: ObservationFormData = {
+    const payload = buildObservationPayload({
       ...formData,
-      date_time: formData.date_time!,
-      private: formData.private ?? false,
       species: speciesValue,
       territory: territoryValue,
       place: placeValue,
-    };
+    });
 
-    createObservationMutation.mutate(observationData, {
+    createObservationMutation.mutate(payload, {
       onSuccess: () => {
         queryClient.invalidateQueries({
           queryKey: ["DiarySpecies", diaryId],

@@ -7,19 +7,15 @@ import * as Sentry from "@sentry/react-native";
 import api, { saveTokens, clearTokens, getRefreshToken } from "../services/api";
 import { Config } from "../constants/config";
 import { AppError } from "../types";
-import { logoutRequest } from "./fetches";
+import { logError } from "../services/errors";
 
 const post = async (url: string, data: unknown) => {
   try {
     const response = await api.post(url, data, { withCredentials: false });
     return response?.data;
   } catch (e) {
-    const err = e as AppError;
-    if (__DEV__) {
-      console.warn("AUTH API ERROR:", url);
-      console.warn(err.response?.data || err.message);
-    }
-    throw err;
+    logError(e, "AUTH API ERROR");
+    throw e;
   }
 };
 
@@ -64,15 +60,10 @@ export const Logout = async (onLogoutCallback: () => void) => {
 
     if (refresh) {
       try {
-        await logoutRequest(refresh);
+        await api.post("/api-auth/logout/", { refresh });
       } catch (e) {
         const err = e as AppError;
-        if (err.response?.status !== 401 && __DEV__)
-          console.warn(
-            "Logout request failed",
-            err.response?.status,
-            err.message,
-          );
+        if (err.response?.status !== 401) logError(err, "Logout request");
       }
     }
   } finally {

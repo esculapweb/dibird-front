@@ -10,8 +10,7 @@ import { useRoute, useNavigation } from "@react-navigation/native";
 
 import { useTheme } from "../store/theme-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
-import { useUpdateItem } from "../hooks/useItem";
-import { useCreatePlace } from "../hooks/Place/usePlaceMutation";
+import { useCreateItem, useUpdateItem } from "../hooks/useItem";
 import PlaceForm from "../components/Place/PlaceForm";
 import {
   usePlaceLocation,
@@ -29,6 +28,7 @@ import {
   GeoDetails,
   MapPressEvent,
   PlaceFormData,
+  PlaceItem,
   ErrorExtractor,
 } from "../types";
 
@@ -66,7 +66,7 @@ const PlaceEditorScreen = () => {
     locateMe,
   } = usePlaceLocation();
 
-  const createPlaceMutation = useCreatePlace();
+  const createPlaceMutation = useCreateItem<PlaceFormData, PlaceItem>("Place");
   const updatePlaceMutation = useUpdateItem(place?.id, type);
 
   const [formData, setFormData] = useState<PlaceFormData>({
@@ -75,6 +75,26 @@ const PlaceEditorScreen = () => {
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const initialCoords = place?.location?.coordinates ?? [0, 0];
+
+  const buildPlacePayload = (data: PlaceFormData): PlaceFormData => {
+    const payload: PlaceFormData = {
+      name: data.name.trim(),
+      favourite: data.favourite ?? false,
+      territory: data.territory,
+    };
+
+    if (data.location?.coordinates) {
+      payload.location = {
+        type: "Point",
+        coordinates: [
+          Number(data.location.coordinates[0]),
+          Number(data.location.coordinates[1]),
+        ],
+      };
+    }
+
+    return payload;
+  };
 
   const handleMapPress = useCallback(
     (e: MapPressEvent) => {
@@ -232,12 +252,12 @@ const PlaceEditorScreen = () => {
     setLatText(newLatText);
     setLngText(newLngText);
 
-    const placeData: PlaceFormData = {
-      name: formData.name.trim(),
+    const placeData = buildPlacePayload({
+      ...formData,
+      favourite: place?.favourite ?? false,
       location: { type: "Point", coordinates: [lng, lat] },
       territory: formData.territory,
-      favourite: place?.favourite ?? false,
-    };
+    });
 
     if (isEditMode) {
       updatePlaceMutation.mutate(placeData, {

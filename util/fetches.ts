@@ -1,7 +1,9 @@
 import { Platform } from "react-native";
+import * as FileSystem from "expo-file-system/legacy";
 
 import api from "../services/api";
 import { isoToFlagEmoji, buildDateParams, cleanFilters } from "./helpers";
+import { Config } from "../constants/config";
 import {
   Filters,
   DateFilter,
@@ -28,18 +30,26 @@ import {
   Profile,
   ImageAsset,
   AvatarResponse,
-  DiaryFormData,
-  PlaceFormData,
-  ObservationFormData,
 } from "../types";
 
 export const exportProfileData = async (): Promise<void> => {
   await api.post(`/myapi/gdpr/`);
 };
 
-export const pollExportStatus = async () => {
-  const res = await api.get<GdprExport>("/myapi/gdpr/status/");
+export const pollExportStatus = async (): Promise<GdprExport> => {
+  const res = await api.get("/myapi/gdpr/status/");
   return res.data;
+};
+
+export const downloadExportFile = async (
+  data: GdprExport,
+  token: string | null,
+) => {
+  const url = `${Config.baseUrl}/myapi/gdpr/download/?token=${data.download_token}`;
+  const dest = FileSystem.documentDirectory + "dibird_export.zip";
+  return FileSystem.downloadAsync(url, dest, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
 };
 
 export const fetchTimezones = async () => {
@@ -172,9 +182,6 @@ export const deleteMyProfile = async (
   });
   return res?.status;
 };
-
-export const logoutRequest = (refresh: string | null) =>
-  api.post("/api-auth/logout/", { refresh });
 
 export const patchAvatar = async (
   image: ImageAsset,
@@ -324,9 +331,6 @@ export const fetchPlaces = (
   );
 };
 
-export const createPlace = (formattedData: PlaceFormData) =>
-  api.post("/myapi/place2/", formattedData);
-
 export const fetchObservations = (
   filters: Filters,
   order: string | null = "species_name",
@@ -341,8 +345,6 @@ export const fetchObservations = (
     page,
   );
 
-export const createObservation = (formattedData: ObservationFormData) =>
-  api.post("/myapi/observation2/", formattedData);
 
 export const fetchDiaries = (
   filters: Filters,
@@ -357,9 +359,6 @@ export const fetchDiaries = (
     search,
     page,
   );
-
-export const createDiary = (formattedData: DiaryFormData) =>
-  api.post("/myapi/diary2/", formattedData);
 
 export const fetchDiaryObservations = (
   filters: Filters,

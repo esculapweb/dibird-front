@@ -17,7 +17,7 @@ import { ThemeColors, useTheme } from "../store/theme-context";
 import Layout from "../components/ui/Layout";
 import Logo from "../components/ui/Logo";
 import { LoginWithGoogle, LoginWithApple } from "../util/auth";
-import { AppError, WelcomeScreenNavigationProp } from "../types";
+import { AppError, WelcomeScreenNavigationProp, AuthStackNavigationProp } from "../types";
 import FloatingHeader from "../components/ui/FloatingHeader";
 import { useApiError } from "../hooks/useApiError";
 
@@ -27,6 +27,7 @@ const WelcomeScreen = () => {
   const insets = useSafeAreaInsets();
   const styles = stylesFn(Colors, insets);
   const navigation = useNavigation<WelcomeScreenNavigationProp>();
+  const stackNav = navigation.getParent<AuthStackNavigationProp>();
   const { showErrorToast } = useApiError();
 
   const googleLoginInProgress = useRef(false);
@@ -73,14 +74,14 @@ const WelcomeScreen = () => {
         {t("by_continuing")}{" "}
         <Text
           style={[styles.legalLink, { color: Colors.main100 }]}
-          onPress={() => navigation.navigate("Terms")}
+          onPress={() => stackNav?.navigate("Terms")}
         >
           {t("terms_of_service_")}
         </Text>{" "}
         {t("and")}{" "}
         <Text
           style={[styles.legalLink, { color: Colors.main100 }]}
-          onPress={() => navigation.navigate("Privacy")}
+          onPress={() => stackNav?.navigate("Privacy")}
         >
           {t("privacy_policy_")}
         </Text>
@@ -126,7 +127,7 @@ const WelcomeScreen = () => {
               styles.button,
               { backgroundColor: Colors.main100, borderColor: Colors.main100 },
             ]}
-            onPress={() => navigation.navigate("Login")}
+            onPress={() => stackNav?.navigate("Login")}
           >
             <Ionicons
               name="mail-outline"

@@ -148,9 +148,9 @@ api.interceptors.request.use(
       config.url = `/${lang}${config.url}`;
     }
 
-    const isPublicEndpoint =
-      config.url.includes("/api-auth/login") ||
-      config.url.includes("/api-auth/registration");
+    const isPublicEndpoint = Config.publicEndpoints.some((endpoint) =>
+      config.url?.includes(endpoint),
+    );
 
     if (!isPublicEndpoint && token) {
       config.headers.Authorization = `Bearer ${token}`;

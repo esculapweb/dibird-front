@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { AxiosResponse } from "axios";
 
 import { useMutationWithTranslation } from "./useMutationWithTranslation";
 import { useApiError } from "./useApiError";
@@ -19,10 +20,51 @@ const URLS = {
   Diary: "/myapi/diary2/",
 };
 
-const TYPE_PLURAL = {
+const TYPE_PLURAL: Record<ItemType, string> = {
   Place: "Places",
   Observation: "Observations",
   Diary: "Diaries",
+};
+
+const prependToPaginatedList =
+  <T>(item: T) =>
+  (old: Record<string, unknown> | undefined) => {
+    if (!old?.results) return old;
+
+    return {
+      ...old,
+      results: [item, ...(old.results as T[])],
+      count: typeof old.count === "number" ? old.count + 1 : old.count,
+    };
+  };
+
+export const useCreateItem = <TData, TResult = unknown>(
+  type: ItemType,
+) => {
+  const queryClient = useQueryClient();
+
+  return useMutationWithTranslation({
+    mutationFn: (data: TData) =>
+      api.post<TResult>(URLS[type], data),
+
+    onSuccess: (response: AxiosResponse<TResult>) => {
+      queryClient.setQueryData(
+        [TYPE_PLURAL[type]],
+        prependToPaginatedList(response.data),
+      );
+    },
+
+    onSettled: () => {
+      const extraKeys = INVALIDATION_MAP[type]?.add ?? [];
+
+      extraKeys.forEach((key) => {
+        queryClient.invalidateQueries({
+          queryKey: key,
+          exact: false,
+        });
+      });
+    },
+  });
 };
 
 export const useItem = (

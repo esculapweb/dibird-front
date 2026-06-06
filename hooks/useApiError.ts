@@ -1,8 +1,8 @@
 import { useCallback, useEffect } from "react";
 import Toast from "react-native-toast-message";
 
-import { logError } from "../services/errors";
-import { AppError, ErrorExtractor } from "../types";
+import { logError, showError } from "../services/errors";
+import { ErrorExtractor } from "../types";
 import { useProfile } from "../store/profile-context";
 
 export const useApiError = () => {
@@ -15,10 +15,10 @@ export const useApiError = () => {
   const showErrorToast = useCallback(
     (error: unknown, tag?: string, extractor?: ErrorExtractor): void => {
       if (!error || profileError || profileLoading) return;
-
-      logError(tag ?? "useApiError", error as AppError, { showToClient: true, extractor });
+      logError(error, tag);
+      showError(error, extractor);
     },
-    [profileError, profileLoading, logError],
+    [profileError, profileLoading, logError, showError],
   );
 
   return { showErrorToast };
