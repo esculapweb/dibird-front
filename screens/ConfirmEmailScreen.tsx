@@ -13,6 +13,7 @@ import {
   AuthStackRouteProp,
 } from "../types";
 import { sendConfirmEmail } from "../util/fetches";
+import { logError } from "../services/errors";
 
 const ConfirmEmailScreen = () => {
   const { Colors } = useTheme();
@@ -51,10 +52,8 @@ const ConfirmEmailScreen = () => {
       }
     } catch (e) {
       const error = e as AppError;
-      if (__DEV__) console.warn(
-        "ConfirmEmail API ERROR:",
-        error.response?.data || error.message,
-      );
+      logError(error, "ConfirmEmail API ERROR");
+
       setError({
         title: t("error"),
         message:

@@ -21,6 +21,7 @@ import {
   StyleType,
   TerritoryData,
 } from "../../types";
+import { logError } from "../../services/errors";
 
 const ImagePart = ({
   previewUri,
@@ -138,7 +139,7 @@ const PlacePreviewRow = ({
         const data = await fetchMapPreview(placeData.id);
         setPreviewUri(`${Config.mediaUrl}/${data.preview}`);
       } catch (e) {
-        if (__DEV__) console.warn("map preview error:", e);
+        logError(e, `PlacePreviewRow:mapPreview:${placeData.id}`);
       } finally {
         setPreviewLoading(false);
       }

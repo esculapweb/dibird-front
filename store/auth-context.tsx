@@ -17,6 +17,7 @@ import { setOnUnauthorized } from "../services/api";
 import i18n from "../services/i18n";
 import { shouldUseBiometrics } from "../services/bio";
 import { unregisterPushToken } from "../util/fetches";
+import { logError } from "../services/errors";
 
 interface AuthContextType {
   token: string | null;
@@ -50,7 +51,7 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
       });
       await unregisterPushToken(token.data);
     } catch (e) {
-      if (__DEV__) console.warn("unregister push token failed", e);
+      logError(e, "Unregister push token");
     }
 
     await Logout(() => {

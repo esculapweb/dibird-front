@@ -14,6 +14,7 @@ import { Image } from "expo-image";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { fetchMapPreview } from "../../util/fetches";
 import { Config } from "../../constants/config";
+import { logError } from "../../services/errors";
 import {
   AppStackNavigationProp,
   PlaceDropdownItem,
@@ -201,7 +202,7 @@ const PlaceDropdown = ({
         const data = await fetchMapPreview(value);
         setPreviewUri(`${Config.mediaUrl}/${data.preview}`);
       } catch (e) {
-        if (__DEV__) console.warn("map preview error:", e);
+        logError(e, `PlaceDropdown:mapPreview:${value}`);
       } finally {
         setPreviewLoading(false);
       }

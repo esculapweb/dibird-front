@@ -14,6 +14,7 @@ import { getAnalytics, setUserId } from "@react-native-firebase/analytics";
 import { initGlobalFilters } from "../util/storageHelper";
 import { AppError, Profile } from "../types";
 import { fetchMyProfile, updateMyProfile } from "../util/fetches";
+import { logError } from "../services/errors";
 
 interface ProfileContextType {
   profile: Profile | null;
@@ -78,7 +79,7 @@ export const ProfileProvider = ({
     } catch (e) {
       const err = e as AppError;
       setError(err);
-      if (__DEV__) console.warn("Failed to refresh profile:", err.code, err.message);
+      logError(err, "Failed to refresh profile");
     } finally {
       setProfileLoading(false);
     }

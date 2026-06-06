@@ -239,6 +239,8 @@ const stylesFn = (Colors: ThemeColors) =>
       fontWeight: "600",
       color: Colors.textMain,
       lineHeight: 20,
+      flexShrink: 1,
+      marginRight: 8,
     },
 
     latinRow: {

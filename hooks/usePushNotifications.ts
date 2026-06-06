@@ -9,7 +9,8 @@ import "../services/i18n";
 import { registerPushToken } from "../util/fetches";
 import { UNREAD_COUNT_KEY } from "../hooks/useUnreadCount";
 import { navigateFromNotification } from "../services/navigationRef";
-import { isNotificationPayload, AppError, NotificationPayload } from "../types";
+import { logError } from "../services/errors";
+import { isNotificationPayload, NotificationPayload } from "../types";
 
 export const handleNotificationNavigation = (raw: NotificationPayload) => {
   switch (raw.screen) {
@@ -46,12 +47,7 @@ export const usePushNotifications = (isAuthenticated: boolean) => {
       try {
         await registerPushToken(token.data);
       } catch (e) {
-        const error = e as AppError;
-        if (__DEV__)
-          console.warn(
-            "registerPushTokenError API ERROR:",
-            error.response?.data || error.message,
-          );
+        logError(e, "registerPushTokenError API ERROR");
       }
     }
     register();

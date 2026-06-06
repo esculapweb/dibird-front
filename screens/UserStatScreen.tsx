@@ -21,6 +21,7 @@ import {
   PaginatedResponse,
   seenMode,
   SpeciesItem,
+  StatPaginatedResponse,
 } from "../types";
 
 const UserStatScreen = () => {
@@ -33,6 +34,22 @@ const UserStatScreen = () => {
   const [currentFilters, setCurrentFilters] = useState<Filters | null>(null);
   const [currentSort, setCurrentSort] = useState<string | null>(null);
   const openFilterModalRef = useRef<(() => void) | null>(null);
+
+  const [speciesCounts, setSpeciesCounts] = useState<{
+    seen: number;
+    total: number;
+  } | null>(null);
+
+  const handleFirstPageData = useCallback(
+    (page: StatPaginatedResponse<SpeciesItem>) => {
+      const total =
+        typeof page.total_species === "number" ? page.total_species : 0;
+      const seen =
+        typeof page.seen_species === "number" ? page.seen_species : 0;
+      setSpeciesCounts({ seen, total });
+    },
+    [],
+  );
 
   const { data: userProfile } = useQuery({
     queryKey: ["userProfile", profileId],
@@ -78,6 +95,19 @@ const UserStatScreen = () => {
     await Share.share(Platform.OS === "ios" ? { url } : { message: url });
   }, [profileId, currentFilters, currentSort]);
 
+  const customHeaderBadge = useCallback(
+    (res: StatPaginatedResponse<SpeciesItem>): number | string | undefined => {
+      if (
+        typeof res?.seen_species !== "number" ||
+        typeof res?.total_species !== "number"
+      ) {
+        return undefined;
+      }
+      return `${res.seen_species} / ${res.total_species}`;
+    },
+    [],
+  );
+
   const renderItem = useCallback(
     ({ item, index }: { item: SpeciesItem; index: number }) => (
       <StatCard
@@ -96,18 +126,24 @@ const UserStatScreen = () => {
       icon: "eye" as const,
       iconInactive: "eye-outline" as const,
       labelKey: t("seen"),
+      count: speciesCounts?.seen ?? undefined,
     },
     {
       value: "all" as const,
       icon: "apps" as const,
       iconInactive: "apps-outline" as const,
       labelKey: t("all"),
+      count: speciesCounts?.total ?? undefined,
     },
     {
       value: "unseen" as const,
       icon: "eye-off" as const,
       iconInactive: "eye-off-outline" as const,
       labelKey: t("not_seen"),
+      count:
+        speciesCounts !== null
+          ? speciesCounts.total - speciesCounts.seen
+          : undefined,
     },
   ];
 
@@ -157,6 +193,8 @@ const UserStatScreen = () => {
       }}
       onSortChange={async (val) => setCurrentSort(val)}
       handleSharePress={handleShare}
+      customHeaderBadge={customHeaderBadge}
+      onFirstPageData={handleFirstPageData}
       topEl={topEl}
       bottomEl={
         <Tabs
