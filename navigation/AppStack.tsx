@@ -165,6 +165,7 @@ const MainDrawer = () => {
 // ---------------------------------------------------------------------------
 const AppNavigator = () => {
   const { t } = useTranslation();
+  const { Colors } = useTheme();
   const { resetFilters } = useFilters();
   const queryClient = useQueryClient();
 
@@ -183,6 +184,13 @@ const AppNavigator = () => {
       screenOptions={{
         headerBackButtonDisplayMode: "minimal",
         headerBackTitle: "",
+        headerStyle: {
+          backgroundColor: Colors.backgroundMain,
+        },
+        headerTintColor: Colors.textMain,
+        headerTitleStyle: {
+          color: Colors.textMain,
+        },
       }}
     >
       <Stack.Screen

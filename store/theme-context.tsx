@@ -6,7 +6,7 @@ import {
   useEffect,
   ReactNode,
 } from "react";
-import { useColorScheme } from "react-native";
+import { Appearance, useColorScheme } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LightColors } from "../constants/colors/light";
 import { DarkColors } from "../constants/colors/dark";
@@ -32,6 +32,14 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    if (manualTheme === "dark") {
+      Appearance.setColorScheme("dark");
+    } else {
+      Appearance.setColorScheme("light");
+    }
+  }, [manualTheme]);
+
+  useEffect(() => {
     (async () => {
       try {
         const savedTheme = await AsyncStorage.getItem(THEME_KEY);
@@ -51,8 +59,8 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const toggleTheme = (newTheme: "light" | "dark" | null) => {
     if (newTheme === null) {
       setManualTheme(null);
-      AsyncStorage.removeItem(THEME_KEY).catch(() =>
-        __DEV__ && console.warn("Failed to remove theme from storage"),
+      AsyncStorage.removeItem(THEME_KEY).catch(
+        () => __DEV__ && console.warn("Failed to remove theme from storage"),
       );
       return;
     }
@@ -60,8 +68,8 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     if (newTheme !== "light" && newTheme !== "dark") return;
 
     setManualTheme(newTheme);
-    AsyncStorage.setItem(THEME_KEY, newTheme).catch(() =>
-      __DEV__ && console.warn("Failed to save theme to storage"),
+    AsyncStorage.setItem(THEME_KEY, newTheme).catch(
+      () => __DEV__ && console.warn("Failed to save theme to storage"),
     );
   };
 

@@ -89,6 +89,7 @@ const WelcomeDrawer = () => {
 // ---------------------------------------------------------------------------
 const AuthNavigator = () => {
   const { t } = useTranslation();
+  const { Colors } = useTheme();
 
   return (
     <Stack.Navigator
@@ -96,6 +97,13 @@ const AuthNavigator = () => {
       screenOptions={{
         headerBackButtonDisplayMode: "minimal",
         headerBackTitle: "",
+        headerStyle: {
+          backgroundColor: Colors.backgroundMain,
+        },
+        headerTintColor: Colors.textMain,
+        headerTitleStyle: {
+          color: Colors.textMain,
+        },
       }}
     >
       <Stack.Screen

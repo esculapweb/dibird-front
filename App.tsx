@@ -1,5 +1,4 @@
 import { useState, ReactNode } from "react";
-import { useColorScheme } from "react-native";
 import "react-native-gesture-handler";
 import "react-native-reanimated";
 import { StatusBar } from "expo-status-bar";
@@ -85,7 +84,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: (failureCount: number, error: Error) => {
-         const appError = error as AppError;
+        const appError = error as AppError;
         if (appError.code === "UNAUTHORIZED") return false;
         if (appError.isServerError) return false;
         return failureCount < 1;
@@ -138,31 +137,38 @@ const Root = () => {
   );
 };
 
-export default Sentry.wrap(function App() {
-  const colorScheme = useColorScheme();
-  const backgroundColor = colorScheme === "dark" ? "#1b1b1b" : "#ffffff";
+const AppContent = () => {
+  const { Colors } = useTheme(); // Теперь мы можем достать тему приложения
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor }}>
-      <SafeAreaProvider>
-        <QueryClientProvider client={queryClient}>
-          <LanguageProvider>
-            <ThemeProvider>
-              <AuthContextProvider>
-                <AuthConsumerWrapper>
-                  <FiltersProvider>
-                    <LocationProvider>
-                      <BottomSheetModalProvider>
-                        <Root />
-                      </BottomSheetModalProvider>
-                    </LocationProvider>
-                  </FiltersProvider>
-                </AuthConsumerWrapper>
-              </AuthContextProvider>
-            </ThemeProvider>
-          </LanguageProvider>
-        </QueryClientProvider>
-      </SafeAreaProvider>
+    <GestureHandlerRootView
+      style={{ flex: 1, backgroundColor: Colors.backgroundMain }}
+    >
+      <AuthConsumerWrapper>
+        <FiltersProvider>
+          <LocationProvider>
+            <BottomSheetModalProvider>
+              <Root />
+            </BottomSheetModalProvider>
+          </LocationProvider>
+        </FiltersProvider>
+      </AuthConsumerWrapper>
     </GestureHandlerRootView>
+  );
+};
+
+export default Sentry.wrap(function App() {
+  return (
+    <SafeAreaProvider>
+      <QueryClientProvider client={queryClient}>
+        <LanguageProvider>
+          <ThemeProvider>
+            <AuthContextProvider>
+              <AppContent />
+            </AuthContextProvider>
+          </ThemeProvider>
+        </LanguageProvider>
+      </QueryClientProvider>
+    </SafeAreaProvider>
   );
 });
