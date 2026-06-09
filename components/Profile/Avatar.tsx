@@ -212,7 +212,7 @@ const stylesFn = (Colors: ThemeColors) =>
       right: 2,
     },
     overlay: {
-      ...StyleSheet.absoluteFillObject,
+      ...StyleSheet.absoluteFill,
       backgroundColor: Colors.overlay,
       borderRadius: AVATAR_SIZE / 2,
       justifyContent: "center",

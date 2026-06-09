@@ -127,8 +127,6 @@ const Root = () => {
     <>
       <StatusBar
         style={theme === "dark" ? "light" : "dark"}
-        translucent
-        backgroundColor="transparent"
       />
       <Navigation />
       <Toast config={ThemedToast} position="bottom" />
