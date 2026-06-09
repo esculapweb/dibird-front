@@ -177,7 +177,7 @@ export const useUpdateItem = (
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: [type, id], exact: true });
+      queryClient.invalidateQueries({ queryKey: [type, id], exact: false });
       const extraKeys = INVALIDATION_MAP[type]?.update ?? [];
       extraKeys.forEach((key) => {
         queryClient.invalidateQueries({ queryKey: key, exact: false });
