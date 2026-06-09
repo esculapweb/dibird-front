@@ -38,7 +38,13 @@ export const usePushNotifications = (isAuthenticated: boolean) => {
     if (!isAuthenticated) return;
 
     async function register() {
-      const { status } = await Notifications.requestPermissionsAsync();
+      const { status } = (await Notifications.requestPermissionsAsync()) as Notifications.NotificationPermissionsStatus & {
+        status: "granted" | "denied" | "undetermined";
+        granted: boolean;
+        canAskAgain: boolean;
+        expires: "never" | number;
+      };
+
       if (status !== "granted") return;
 
       const token = await Notifications.getExpoPushTokenAsync({

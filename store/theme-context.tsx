@@ -27,24 +27,18 @@ const ThemeContext = createContext<ThemeContextType | null>(null);
 const THEME_KEY = "theme";
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
+  const initialSystemTheme = Appearance.getColorScheme();
   const systemScheme = useColorScheme();
   const [manualTheme, setManualTheme] = useState<Theme | null>(null);
   const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    if (manualTheme === "dark") {
-      Appearance.setColorScheme("dark");
-    } else {
-      Appearance.setColorScheme("light");
-    }
-  }, [manualTheme]);
 
   useEffect(() => {
     (async () => {
       try {
         const savedTheme = await AsyncStorage.getItem(THEME_KEY);
         if (savedTheme === "light" || savedTheme === "dark") {
-          setManualTheme(savedTheme);
+          setManualTheme(savedTheme as Theme);
+          Appearance.setColorScheme(savedTheme as Theme);
         }
       } catch (e) {
         if (__DEV__) console.warn("Failed to load theme from storage", e);
@@ -54,20 +48,24 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     })();
   }, []);
 
-  const theme = manualTheme ?? systemScheme ?? "light";
+  const currentSystemTheme = systemScheme || initialSystemTheme || "light";
 
-  const toggleTheme = (newTheme: "light" | "dark" | null) => {
+  const theme: Theme =
+    manualTheme ?? (currentSystemTheme === "dark" ? "dark" : "light");
+
+  const toggleTheme = (newTheme: Theme | null) => {
     if (newTheme === null) {
       setManualTheme(null);
+      // @ts-expect-error: Нативный модуль поддерживает null
+      Appearance.setColorScheme(null);
       AsyncStorage.removeItem(THEME_KEY).catch(
         () => __DEV__ && console.warn("Failed to remove theme from storage"),
       );
       return;
     }
 
-    if (newTheme !== "light" && newTheme !== "dark") return;
-
     setManualTheme(newTheme);
+    Appearance.setColorScheme(newTheme);
     AsyncStorage.setItem(THEME_KEY, newTheme).catch(
       () => __DEV__ && console.warn("Failed to save theme to storage"),
     );
@@ -81,7 +79,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
       isDark: theme === "dark",
       toggleTheme,
     }),
-    [theme, manualTheme, systemScheme],
+    [theme, manualTheme],
   );
 
   if (!ready) return null;
