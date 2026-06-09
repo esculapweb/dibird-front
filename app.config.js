@@ -30,7 +30,6 @@ export default {
     orientation: "portrait",
     scheme: "dibird",
     userInterfaceStyle: "automatic",
-    newArchEnabled: true,
     icon: variant.icon,
     updates: {
       fallbackToCacheTimeout: 0,
@@ -58,7 +57,6 @@ export default {
     },
     android: {
       package: "com.dibird.app",
-      edgeToEdgeEnabled: true,
       googleServicesFile: "./google-services.json",
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
@@ -104,11 +102,6 @@ export default {
           category: ["BROWSABLE", "DEFAULT"],
         },
       ],
-    },
-    androidStatusBar: {
-      backgroundColor: "#ffffff",
-      barStyle: "dark-content",
-      translucent: false,
     },
     plugins: [
       [
@@ -156,6 +149,9 @@ export default {
       "./plugins/withModularHeaders",
       "@react-native-firebase/app",
       "expo-font",
+      "expo-image",
+      "expo-sharing",
+      "expo-sqlite",
     ],
     extra: {
       eas: {
