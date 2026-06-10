@@ -3,6 +3,7 @@ import { Linking } from "react-native";
 import i18n from "../services/i18n";
 import { buildDeepLinkParams } from "./buildDeepLinkParams";
 import { DateFilter, Filters } from "../types";
+import * as Application from "expo-application";
 
 export const isoToFlagEmoji = (isoCode: string | null): string => {
   if (!isoCode) return "";
@@ -248,4 +249,10 @@ export const stableStringify = (
 export const speciesDetails = (segment: string) => {
   if (!segment) return;
   Linking.openURL(`${langBaseUrl()}/species/${segment}/`);
+};
+
+export const getFullVersion = () => {
+  const version = Application.nativeApplicationVersion ?? "—";
+  const build = Application.nativeBuildVersion;
+  return build ? `${version} (${build})` : version;
 };

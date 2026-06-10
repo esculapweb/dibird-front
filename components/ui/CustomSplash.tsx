@@ -1,17 +1,12 @@
 import { useEffect } from "react";
-import {
-  useColorScheme,
-  View,
-  Image,
-  Text,
-  StyleSheet,
-} from "react-native";
+import { useColorScheme, View, Image, Text, StyleSheet } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as SplashScreen from "expo-splash-screen";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useTranslation } from "react-i18next";
+
 import { ThemeColors } from "../../store/theme-context";
 import { LightColors } from "../../constants/colors/light";
 import { DarkColors } from "../../constants/colors/dark";
+import { getFullVersion } from "../../util/helpers";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -24,7 +19,7 @@ const CustomSplash = ({
 }) => {
   const colorScheme = useColorScheme();
   const Colors = colorScheme === "dark" ? DarkColors : LightColors;
-  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const styles = stylesFn(Colors);
 
   useEffect(() => {
@@ -45,9 +40,9 @@ const CustomSplash = ({
         style={styles.logo}
         resizeMode="contain"
       />
-      <SafeAreaView style={styles.bottomContainer}>
-        <Text style={styles.bottomText}>{t("app_name")}</Text>
-      </SafeAreaView>
+      <Text style={[styles.bottomText, { bottom: insets.bottom + 24 }]}>
+        v{getFullVersion()}
+      </Text>
     </View>
   );
 };
@@ -63,19 +58,18 @@ const stylesFn = (Colors: ThemeColors) =>
       alignItems: "center",
     },
     logo: {
-      maxWidth: "40%",
+      width: 200,
+      height: 200,
       aspectRatio: 1,
     },
-    bottomContainer: {
+    bottomText: {
       position: "absolute",
-      bottom: 40,
       left: 0,
       right: 0,
-      alignItems: "center",
-    },
-    bottomText: {
       fontSize: 16,
       color: Colors.textSecondary,
       textAlign: "center",
+      opacity: 0.5,
+      letterSpacing: 0.3,
     },
   });

@@ -11,7 +11,6 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
-import * as Application from "expo-application";
 
 import Layout from "../components/ui/Layout";
 import { ThemeColors, useTheme } from "../store/theme-context";
@@ -27,6 +26,7 @@ import { openSupportEmail } from "../util/openSupportEmail";
 import { BottomSheet } from "../services/bottomSheet";
 import { deleteMyProfile } from "../util/fetches";
 import { useApiError } from "../hooks/useApiError";
+import { getFullVersion } from "../util/helpers";
 
 // ------------------------------------------------------------------
 // Primitives
@@ -160,10 +160,6 @@ const SettingsScreen = () => {
   const navigation = useNavigation<AppDrawerNavigationProp>();
   const { state: exportState, triggerExport, cleanup } = useExportProfile();
 
-  const version = Application.nativeApplicationVersion;
-  const build = Application.nativeBuildVersion;
-  const fullVersion = build ? `${version} (${build})` : version;
-
   const userEmail = profile?.user_data?.email ?? "";
 
   const {
@@ -221,7 +217,7 @@ const SettingsScreen = () => {
       contentContainerStyle={styles.scroll}
       bottom={
         <FlatButtonBottom textColor={Colors.textSecondary} disabled>
-          {t("app_version", { version: fullVersion })}
+          {t("app_version", { version: getFullVersion() })}
         </FlatButtonBottom>
       }
     >
