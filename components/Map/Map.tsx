@@ -26,7 +26,7 @@ import { useTheme, ThemeColors } from "../../store/theme-context";
 import { Coords, PolygonGeometry, MapPressEvent } from "../../types";
 
 interface MapProps {
-  currentCoords: Coords;
+  currentCoords: Coords | null;
   mapHeight?: number;
   showCoords?: boolean;
   currentZoom?: number;
@@ -54,7 +54,8 @@ const Map = ({
   const styles = stylesFn(Colors, mapHeight);
   const { t } = useTranslation();
 
-  const [lng, lat] = currentCoords ?? [];
+  const lng = currentCoords?.[0];
+  const lat = currentCoords?.[1];
 
   const metersToPixels = (meters: number, latitude: number, zoom: number) => {
     const earthCircumference = 40075016.686;
@@ -71,13 +72,15 @@ const Map = ({
           style={{ flex: 1 }}
           onPress={onPress}
         >
-          <Camera
-            centerCoordinate={[lng, lat]}
-            zoomLevel={Math.min(currentZoom, 19)}
-            minZoomLevel={1}
-            maxZoomLevel={19}
-            animationDuration={500}
-          />
+          {currentCoords && (
+            <Camera
+              centerCoordinate={[lng!, lat!]}
+              zoomLevel={Math.min(currentZoom, 19)}
+              minZoomLevel={1}
+              maxZoomLevel={19}
+              animationDuration={500}
+            />
+          )}
           <RasterSource
             id="osmTiles"
             tileUrlTemplates={[Config.mapTileUrl]}
@@ -87,8 +90,7 @@ const Map = ({
           >
             <RasterLayer id="osmLayer" sourceID="osmTiles" />
           </RasterSource>
-
-          {polygon ? (
+          {polygon && (
             <ShapeSource
               key={JSON.stringify(polygon)}
               id="privatePolygon"
@@ -103,12 +105,13 @@ const Map = ({
                 style={{ lineColor: Colors.squareStroke, lineWidth: 2 }}
               />
             </ShapeSource>
-          ) : (
+          )}
+          {!polygon && currentCoords && (
             <ShapeSource
               id="selectedPoint"
               shape={{
                 type: "Feature",
-                geometry: { type: "Point", coordinates: [lng, lat] },
+                geometry: { type: "Point", coordinates: [lng!, lat!] },
                 properties: {},
               }}
             >
@@ -117,7 +120,7 @@ const Map = ({
                   id="accuracyCircleLayer"
                   sourceID="selectedPoint"
                   style={{
-                    circleRadius: metersToPixels(accuracy, lat, currentZoom),
+                    circleRadius: metersToPixels(accuracy, lat!, currentZoom),
                     circleColor: Colors.accuracyFill,
                     circleStrokeColor: Colors.accuracyStroke,
                     circleStrokeWidth: 1,
@@ -151,11 +154,11 @@ const Map = ({
           </TouchableOpacity>
         )}
 
-        {showCoords && (
+        {showCoords && currentCoords && (
           <TouchableOpacity
             style={styles.coordsOverlay}
             onPress={() => {
-              const coordsText = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+              const coordsText = `${lat!.toFixed(4)}, ${lng!.toFixed(4)}`;
               Clipboard.setString(coordsText);
               Toast.show({
                 type: "success",
@@ -165,7 +168,7 @@ const Map = ({
             }}
           >
             <Text style={styles.coordsOverlayText}>
-              {lat.toFixed(4)}, {lng.toFixed(4)}
+              {lat!.toFixed(4)}, {lng!.toFixed(4)}
             </Text>
             <Ionicons
               name="copy-outline"

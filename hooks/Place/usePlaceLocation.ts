@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 
 import { cachedReverseGeocode } from "../../services/geocoding";
-import { Config } from "../../constants/config";
 import { useLocationUnavailable } from "../useLocationUnavailable";
 import { useLocation } from "../../store/location-context";
 import { Coords, GeoDetails } from "../../types";
@@ -65,10 +64,8 @@ export const normalizeCoords = (
 };
 
 export const usePlaceLocation = () => {
-  const [coords, setCoords] = useState<Coords>(Config.defaultCoords);
-  const [roundedCoords, setRoundedCoords] = useState<Coords>(
-    Config.defaultCoords,
-  );
+  const [coords, setCoords] = useState<Coords | null>(null);
+  const [roundedCoords, setRoundedCoords] = useState<Coords | null>(null);
   const [zoom, setZoom] = useState(12);
   const [accuracy, setAccuracy] = useState(0);
   const [latText, setLatText] = useState("");

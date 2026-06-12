@@ -74,7 +74,7 @@ const PlaceEditorScreen = () => {
     territory: place?.territory ? Number(place.territory) : 0,
   });
   const [errors, setErrors] = useState<FormErrors>({});
-  const initialCoords = place?.location?.coordinates ?? [0, 0];
+  const initialCoords = place?.location?.coordinates;
 
   const buildPlacePayload = (data: PlaceFormData): PlaceFormData => {
     const payload: PlaceFormData = {
@@ -128,6 +128,7 @@ const PlaceEditorScreen = () => {
     if (!isEditMode) {
       locateMe();
     } else {
+      if (!initialCoords) return;
       const normalized = normalizeCoords(initialCoords[0], initialCoords[1]);
       if (normalized) {
         const { lngText, latText, lng, lat } = normalized;

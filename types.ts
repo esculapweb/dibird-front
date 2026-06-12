@@ -663,6 +663,8 @@ export type AppStackParamList = {
   Main: undefined;
   Profile: undefined;
   Settings: undefined;
+  AlertSettings: undefined;
+  WatchlistEditor: undefined;
   Stat: ScreenWithFilters | undefined;
   Checklist: ScreenWithFilters | undefined;
   Places: ScreenWithFilters | undefined;

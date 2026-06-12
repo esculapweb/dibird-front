@@ -281,6 +281,16 @@ const SettingsScreen = () => {
         </Section>
       )}
 
+    <Section title={t("settings_section_alerts")} styles={styles} colors={Colors}>
+      <Row
+        icon="notifications-outline"
+        label={t("alert_settings")}
+        onPress={() => navigation.navigate("AlertSettings")}
+        colors={Colors}
+        styles={styles}
+      />
+    </Section>
+
       {/* ── Data ─────────────────────────────────────────── */}
       <Section
         title={t("settings_section_data")}

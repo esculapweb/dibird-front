@@ -22,7 +22,7 @@ interface PlaceFormProps {
   ) => void;
   formData: PlaceFormData;
   setFormData: Dispatch<SetStateAction<PlaceFormData>>;
-  coords: Coords;
+  coords: Coords | null;
   latText: string;
   lngText: string;
   setLatText: (value: string) => void;
