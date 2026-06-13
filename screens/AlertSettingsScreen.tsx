@@ -15,21 +15,15 @@ import { Ionicons } from "@expo/vector-icons";
 import Layout from "../components/ui/Layout";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
-import RadioGroup from "../components/ui/RadioGroup";
 import { TimeWindowRow } from "../components/ui/TimeWindowRow";
 import { ThemeColors, useTheme } from "../store/theme-context";
 import { usePlaceLocation } from "../hooks/Place/usePlaceLocation";
 import { useAlertSettings } from "../hooks/useAlertSettings";
 import { AppStackNavigationProp } from "../types";
-import type { AlertSettingsPatch, ActiveHourWindow } from "../services/alertSettings";
-
-// ─── Константы ───────────────────────────────────────────────────────────────
-
-const RARITY_OPTIONS = [
-  { value: "notable",  labelKey: "rarity_notable" },
-  { value: "rare",     labelKey: "rarity_rare" },
-  { value: "uncommon", labelKey: "rarity_uncommon" },
-] as const;
+import type {
+  AlertSettingsPatch,
+  ActiveHourWindow,
+} from "../services/alertSettings";
 
 /**
  * Snap value to nearest multiple of step.
@@ -70,7 +64,15 @@ interface RowSwitchProps {
   styles: ReturnType<typeof stylesFn>;
 }
 
-const RowSwitch = ({ icon, label, subtitle, value, onValueChange, colors, styles }: RowSwitchProps) => (
+const RowSwitch = ({
+  icon,
+  label,
+  subtitle,
+  value,
+  onValueChange,
+  colors,
+  styles,
+}: RowSwitchProps) => (
   <View style={styles.row}>
     <Ionicons name={icon} size={18} color={colors.main100} />
     <View style={styles.rowText}>
@@ -95,15 +97,12 @@ export default function AlertSettingsScreen() {
   const navigation = useNavigation<AppStackNavigationProp>();
 
   // settings hook — expose error + refetch same pattern as useList in ListScreen
-  const { settings, loading, saving, error, refresh, save } = useAlertSettings();
+  const { settings, loading, saving, error, refresh, save } =
+    useAlertSettings();
   const { locateMe, isLoading: locating, coords } = usePlaceLocation();
 
   const [localRadius, setLocalRadius] = useState(250);
   const [localWindows, setLocalWindows] = useState<ActiveHourWindow[]>([]);
-  // country_code: ISO-2 (PL, BY, DE…). CountriesDropdown items must expose `.code`.
-  // If your fetchMyCountries returns { value: number, label: string, code: string },
-  // map value → code when saving. Adjust the mapping below to match your data shape.
-
 
   useEffect(() => {
     if (!settings) return;
@@ -114,16 +113,20 @@ export default function AlertSettingsScreen() {
   // Save coords from device location
   useEffect(() => {
     if (!coords) return;
-    save({ lat: coords[1], lon: coords[0] } satisfies AlertSettingsPatch);
+    save({
+      lat: Math.round(coords[1] * 100) / 100,
+      lon: Math.round(coords[0] * 100) / 100,
+    } satisfies AlertSettingsPatch);
   }, [coords]);
-
 
   if (error) {
     return (
       <ErrorOverlay
         title={t("alert_settings_unavailable")}
         message={error}
-        onPress={async () => { await refresh(); }}
+        onPress={async () => {
+          await refresh();
+        }}
         logo
       />
     );
@@ -133,19 +136,17 @@ export default function AlertSettingsScreen() {
   // ─── Derived ─────────────────────────────────────────────────────────────
   const coordLabel =
     settings.location_lat != null && settings.location_lon != null
-      ? `${settings.location_lat.toFixed(3)}, ${settings.location_lon.toFixed(3)}`
+      ? `${settings.location_lat.toFixed(2)}, ${settings.location_lon.toFixed(2)}`
       : t("alert_location_not_set");
-
-  const rarityOptions = RARITY_OPTIONS.map((opt) => ({
-    label: t(opt.labelKey),
-    value: opt.value as string,
-  }));
 
   // ─── Handlers ────────────────────────────────────────────────────────────
   const updateWindow = (idx: number, field: 0 | 1, hour: number) => {
     const next = localWindows.map((w, i) =>
       i === idx
-        ? ([field === 0 ? hour : w[0], field === 1 ? hour : w[1]] as ActiveHourWindow)
+        ? ([
+            field === 0 ? hour : w[0],
+            field === 1 ? hour : w[1],
+          ] as ActiveHourWindow)
         : w,
     );
     setLocalWindows(next);
@@ -166,7 +167,6 @@ export default function AlertSettingsScreen() {
 
   return (
     <Layout withScroll contentContainerStyle={styles.scroll}>
-
       {/* ── Master switch ──────────────────────────────────────────────── */}
       <Section title={t("alert_section_general")} styles={styles}>
         <RowSwitch
@@ -187,7 +187,11 @@ export default function AlertSettingsScreen() {
             <Text style={styles.rowLabel}>{coordLabel}</Text>
             <Text style={styles.rowDesc}>{t("alert_location_subtitle")}</Text>
           </View>
-          <TouchableOpacity onPress={locateMe} disabled={locating} style={styles.btn}>
+          <TouchableOpacity
+            onPress={locateMe}
+            disabled={locating}
+            style={styles.btn}
+          >
             {locating ? (
               <ActivityIndicator size="small" color={Colors.primary100} />
             ) : (
@@ -199,7 +203,11 @@ export default function AlertSettingsScreen() {
         <Divider styles={styles} />
 
         <View style={styles.row}>
-          <Ionicons name="radio-button-on-outline" size={18} color={Colors.main100} />
+          <Ionicons
+            name="radio-button-on-outline"
+            size={18}
+            color={Colors.main100}
+          />
           <View style={styles.rowText}>
             <Text style={styles.rowLabel}>
               {t("alert_radius_label", { km: localRadius })}
@@ -230,18 +238,6 @@ export default function AlertSettingsScreen() {
         </View>
       </Section>
 
-      {/* ── Rarity — RadioGroup (same component as FilterSheetContent) ─── */}
-      <Section title={t("alert_section_rarity")} styles={styles}>
-        <View style={styles.radioGroupWrap}>
-          <RadioGroup
-            value={settings.rarity_threshold}
-            onChange={(v) => save({ rarity_threshold: v as AlertSettingsPatch["rarity_threshold"] })}
-            options={rarityOptions}
-            direction="column"
-          />
-        </View>
-      </Section>
-
       {/* ── Filters ────────────────────────────────────────────────────── */}
       <Section title={t("alert_section_filters")} styles={styles}>
         <RowSwitch
@@ -250,16 +246,6 @@ export default function AlertSettingsScreen() {
           subtitle={t("alert_watchlist_only_desc")}
           value={settings.watchlist_only}
           onValueChange={(v) => save({ watchlist_only: v })}
-          colors={Colors}
-          styles={styles}
-        />
-        <Divider styles={styles} />
-        <RowSwitch
-          icon="eye-outline"
-          label={t("alert_include_local")}
-          subtitle={t("alert_include_local_desc")}
-          value={settings.include_local_observations}
-          onValueChange={(v) => save({ include_local_observations: v })}
           colors={Colors}
           styles={styles}
         />
@@ -275,7 +261,11 @@ export default function AlertSettingsScreen() {
             <Text style={styles.rowLabel}>{t("alert_watchlist")}</Text>
             <Text style={styles.rowDesc}>{t("alert_watchlist_nav_desc")}</Text>
           </View>
-          <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
+          <Ionicons
+            name="chevron-forward"
+            size={16}
+            color={Colors.textSecondary}
+          />
         </TouchableOpacity>
       </Section>
 
@@ -283,7 +273,11 @@ export default function AlertSettingsScreen() {
       <Section title={t("alert_section_schedule")} styles={styles}>
         {localWindows.length === 0 ? (
           <View style={styles.row}>
-            <Ionicons name="time-outline" size={18} color={Colors.textSecondary} />
+            <Ionicons
+              name="time-outline"
+              size={18}
+              color={Colors.textSecondary}
+            />
             <Text style={styles.rowDescFlex}>{t("alert_schedule_empty")}</Text>
           </View>
         ) : (
@@ -304,8 +298,16 @@ export default function AlertSettingsScreen() {
 
         {localWindows.length > 0 && <Divider styles={styles} />}
 
-        <TouchableOpacity style={styles.row} onPress={addWindow} activeOpacity={0.6}>
-          <Ionicons name="add-circle-outline" size={18} color={Colors.main100} />
+        <TouchableOpacity
+          style={styles.row}
+          onPress={addWindow}
+          activeOpacity={0.6}
+        >
+          <Ionicons
+            name="add-circle-outline"
+            size={18}
+            color={Colors.main100}
+          />
           <Text style={styles.rowLabelAccent}>{t("alert_add_window")}</Text>
         </TouchableOpacity>
       </Section>
@@ -322,13 +324,21 @@ export default function AlertSettingsScreen() {
           </View>
           <View style={styles.stepper}>
             <TouchableOpacity
-              onPress={() => save({ max_alerts_per_day: snapDec(settings.max_alerts_per_day) })}
+              onPress={() =>
+                save({
+                  max_alerts_per_day: snapDec(settings.max_alerts_per_day),
+                })
+              }
             >
               <Text style={styles.stepBtn}>−</Text>
             </TouchableOpacity>
             <Text style={styles.stepVal}>{settings.max_alerts_per_day}</Text>
             <TouchableOpacity
-              onPress={() => save({ max_alerts_per_day: snapInc(settings.max_alerts_per_day) })}
+              onPress={() =>
+                save({
+                  max_alerts_per_day: snapInc(settings.max_alerts_per_day),
+                })
+              }
             >
               <Text style={styles.stepBtn}>+</Text>
             </TouchableOpacity>
@@ -357,7 +367,11 @@ const stylesFn = (Colors: ThemeColors) =>
       marginLeft: 2,
       color: Colors.textSecondary,
     },
-    sectionCard: { borderRadius: 14, overflow: "hidden", backgroundColor: Colors.primary100 },
+    sectionCard: {
+      borderRadius: 14,
+      overflow: "hidden",
+      backgroundColor: Colors.primary100,
+    },
 
     row: {
       flexDirection: "row",
@@ -369,8 +383,19 @@ const stylesFn = (Colors: ThemeColors) =>
     rowText: { flex: 1 },
     rowLabel: { fontSize: 15, color: Colors.textMain },
     rowLabelAccent: { fontSize: 15, color: Colors.main100 },
-    rowDesc: { fontSize: 12, marginTop: 2, lineHeight: 16, color: Colors.textSecondary },
-    rowDescFlex: { fontSize: 12, marginTop: 2, lineHeight: 16, color: Colors.textSecondary, flex: 1 },
+    rowDesc: {
+      fontSize: 12,
+      marginTop: 2,
+      lineHeight: 16,
+      color: Colors.textSecondary,
+    },
+    rowDescFlex: {
+      fontSize: 12,
+      marginTop: 2,
+      lineHeight: 16,
+      color: Colors.textSecondary,
+      flex: 1,
+    },
 
     divider: {
       height: StyleSheet.hairlineWidth,
@@ -397,7 +422,19 @@ const stylesFn = (Colors: ThemeColors) =>
 
     stepper: { flexDirection: "row", alignItems: "center", gap: 12 },
     stepBtn: { fontSize: 22, paddingHorizontal: 4, color: Colors.main100 },
-    stepVal: { fontSize: 16, fontWeight: "600", minWidth: 28, textAlign: "center", color: Colors.textMain },
+    stepVal: {
+      fontSize: 16,
+      fontWeight: "600",
+      minWidth: 28,
+      textAlign: "center",
+      color: Colors.textMain,
+    },
 
-    saving: { textAlign: "center", marginTop: 16, marginBottom: 8, fontSize: 13, color: Colors.textSecondary },
+    saving: {
+      textAlign: "center",
+      marginTop: 16,
+      marginBottom: 8,
+      fontSize: 13,
+      color: Colors.textSecondary,
+    },
   });

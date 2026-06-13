@@ -1,4 +1,4 @@
-import { useState, ReactNode } from "react";
+import { useState, useEffect, ReactNode } from "react";
 import "react-native-gesture-handler";
 import "react-native-reanimated";
 import { StatusBar } from "expo-status-bar";
@@ -35,6 +35,11 @@ import GlobalBottomSheet from "./components/Providers/GlobalBottomSheet";
 import CustomSplash from "./components/ui/CustomSplash";
 import { initSentry } from "./services/sentry";
 import { usePushNotifications } from "./hooks/usePushNotifications";
+import { usePlaceLocation } from "./hooks/Place/usePlaceLocation";
+import { useAlertSettings } from "./hooks/useAlertSettings";
+import type {
+  AlertSettingsPatch
+} from "./services/alertSettings";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -111,8 +116,23 @@ const Root = () => {
   const { theme } = useTheme();
   const [splashFinished, setSplashFinished] = useState(false);
   const { isAuthenticated } = useAuth();
+  const { locateMe, coords } = usePlaceLocation();
+  const { save } = useAlertSettings();
 
   usePushNotifications(isAuthenticated);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    locateMe();
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!coords || !isAuthenticated) return;
+    save({
+      lat: Math.round(coords[1] * 100) / 100,
+      lon: Math.round(coords[0] * 100) / 100,
+    } satisfies AlertSettingsPatch);
+  }, [coords]);
 
   if (!splashFinished) {
     return (
@@ -125,9 +145,7 @@ const Root = () => {
 
   return (
     <>
-      <StatusBar
-        style={theme === "dark" ? "light" : "dark"}
-      />
+      <StatusBar style={theme === "dark" ? "light" : "dark"} />
       <Navigation />
       <Toast config={ThemedToast} position="bottom" />
       <GlobalBottomSheet />
