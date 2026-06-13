@@ -59,8 +59,8 @@ export function TimeWindowRow({
         <View style={styles.pickers}>
           {(
             [
-              { labelKey: "alert_window_from", val: start, cb: onChangeStart },
-              { labelKey: "alert_window_to", val: end, cb: onChangeEnd },
+              { labelKey: t("from"), val: start, cb: onChangeStart },
+              { labelKey: t("to"), val: end, cb: onChangeEnd },
             ] as const
           ).map(({ labelKey, val, cb }) => (
             <View key={labelKey} style={styles.pickerCol}>
