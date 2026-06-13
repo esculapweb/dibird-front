@@ -47,7 +47,7 @@ export default {
       infoPlist: {
         NSFaceIDUsageDescription: "Used to sign in to DiBird using Face ID.",
         NSLocationWhenInUseUsageDescription:
-          "DiBird uses your location to sort bird watching spots by distance from you and save them on the map.",
+          "DiBird uses your location to send you push alerts when rare birds are spotted nearby (your approximate coordinates are stored on our servers), to sort birdwatching spots by distance, and to display them on the map.",
         NSPhotoLibraryUsageDescription:
           "DiBird uses your photo library so you can select a profile picture. For example, you can choose an image from your gallery to set or update your avatar.",
         ITSAppUsesNonExemptEncryption: false,
@@ -113,7 +113,7 @@ export default {
             image: "./assets/splash-icon.png",
             backgroundColor: "#1b1b1b",
           },
-          "imageWidth": 200
+          imageWidth: 200,
         },
       ],
       "expo-location",
