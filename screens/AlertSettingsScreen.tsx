@@ -9,7 +9,6 @@ import {
   Platform,
 } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 
 import Layout from "../components/ui/Layout";
@@ -19,11 +18,15 @@ import { TimeWindowRow } from "../components/ui/TimeWindowRow";
 import { ThemeColors, useTheme } from "../store/theme-context";
 import { usePlaceLocation } from "../hooks/Place/usePlaceLocation";
 import { useAlertSettings } from "../hooks/useAlertSettings";
-import { AppStackNavigationProp } from "../types";
 import type {
   AlertSettingsPatch,
   ActiveHourWindow,
 } from "../services/alertSettings";
+
+const SEEN_MODE_OPTIONS = [
+  { value: "year", labelKey: "alert_seen_mode_year" },
+  { value: "alltime", labelKey: "alert_seen_mode_alltime" },
+] as const;
 
 /**
  * Snap value to nearest multiple of step.
@@ -94,7 +97,6 @@ export default function AlertSettingsScreen() {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
-  const navigation = useNavigation<AppStackNavigationProp>();
 
   // settings hook — expose error + refetch same pattern as useList in ListScreen
   const { settings, loading, saving, error, refresh, save } =
@@ -138,6 +140,11 @@ export default function AlertSettingsScreen() {
     settings.location_lat != null && settings.location_lon != null
       ? `${settings.location_lat.toFixed(2)}, ${settings.location_lon.toFixed(2)}`
       : t("alert_location_not_set");
+
+  const seenModeOptions = SEEN_MODE_OPTIONS.map((opt) => ({
+    label: t(opt.labelKey),
+    value: opt.value as string,
+  }));
 
   // ─── Handlers ────────────────────────────────────────────────────────────
   const updateWindow = (idx: number, field: 0 | 1, hour: number) => {
@@ -203,11 +210,7 @@ export default function AlertSettingsScreen() {
         <Divider styles={styles} />
 
         <View style={styles.row}>
-          <Ionicons
-            name="radio-button-on-outline"
-            size={18}
-            color={Colors.main100}
-          />
+          <Ionicons name="resize-outline" size={18} color={Colors.main100} />
           <View style={styles.rowText}>
             <Text style={styles.rowLabel}>
               {t("alert_radius_label", { km: localRadius })}
@@ -240,33 +243,106 @@ export default function AlertSettingsScreen() {
 
       {/* ── Filters ────────────────────────────────────────────────────── */}
       <Section title={t("alert_section_filters")} styles={styles}>
-        <RowSwitch
-          icon="bookmark-outline"
-          label={t("alert_watchlist_only")}
-          subtitle={t("alert_watchlist_only_desc")}
-          value={settings.watchlist_only}
-          onValueChange={(v) => save({ watchlist_only: v })}
-          colors={Colors}
-          styles={styles}
-        />
-        <Divider styles={styles} />
-        {/* ── Watchlist editor navigation ──────────────────────────────── */}
+        {/* Опция 1: все виды */}
         <TouchableOpacity
           style={styles.row}
-          onPress={() => navigation.navigate("WatchlistEditor")}
+          onPress={() => save({ watchlist_only: false })}
           activeOpacity={0.7}
         >
-          <Ionicons name="list-outline" size={18} color={Colors.main100} />
-          <View style={styles.rowText}>
-            <Text style={styles.rowLabel}>{t("alert_watchlist")}</Text>
-            <Text style={styles.rowDesc}>{t("alert_watchlist_nav_desc")}</Text>
-          </View>
           <Ionicons
-            name="chevron-forward"
-            size={16}
-            color={Colors.textSecondary}
+            name={
+              !settings.watchlist_only ? "radio-button-on" : "radio-button-off"
+            }
+            size={18}
+            color={
+              !settings.watchlist_only ? Colors.main100 : Colors.textSecondary
+            }
           />
+          <View style={styles.rowText}>
+            <Text
+              style={[
+                styles.rowLabel,
+                !settings.watchlist_only && styles.rowLabelActive,
+              ]}
+            >
+              {t("alert_filter_all")}
+            </Text>
+            <Text style={styles.rowDesc}>{t("alert_filter_all_desc")}</Text>
+          </View>
         </TouchableOpacity>
+
+        <Divider styles={styles} />
+
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => save({ watchlist_only: true })}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={
+              settings.watchlist_only ? "radio-button-on" : "radio-button-off"
+            }
+            size={18}
+            color={
+              settings.watchlist_only ? Colors.main100 : Colors.textSecondary
+            }
+          />
+          <View style={styles.rowText}>
+            <Text
+              style={[
+                styles.rowLabel,
+                settings.watchlist_only && styles.rowLabelActive,
+              ]}
+            >
+              {t("alert_watchlist_only")}
+            </Text>
+            <Text style={styles.rowDesc}>{t("alert_watchlist_only_desc")}</Text>
+          </View>
+        </TouchableOpacity>
+
+        {settings.watchlist_only && (
+          <>
+            <Divider styles={styles} />
+            <View style={styles.subRowWrapper}>
+              {seenModeOptions.map((opt) => (
+                <View key={opt.value}>
+                  <TouchableOpacity
+                    style={[styles.row, styles.subRow]}
+                    onPress={() =>
+                      save({
+                        seen_mode: opt.value as AlertSettingsPatch["seen_mode"],
+                      })
+                    }
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={
+                        settings.seen_mode === opt.value
+                          ? "radio-button-on"
+                          : "radio-button-off"
+                      }
+                      size={18}
+                      color={
+                        settings.seen_mode === opt.value
+                          ? Colors.main100
+                          : Colors.textSecondary
+                      }
+                    />
+                    <Text
+                      style={[
+                        styles.rowLabel,
+                        settings.seen_mode === opt.value &&
+                          styles.rowLabelActive,
+                      ]}
+                    >
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
       </Section>
 
       {/* ── Schedule ───────────────────────────────────────────────────── */}
@@ -437,4 +513,29 @@ const stylesFn = (Colors: ThemeColors) =>
       fontSize: 13,
       color: Colors.textSecondary,
     },
+
+    rowLabelActive: {
+      color: Colors.main100,
+      fontWeight: "600",
+    },
+    subOption: {
+      paddingLeft: 44, // выравнивание под текст (18px иконка + 12px gap + 14px padding)
+      paddingRight: 14,
+      paddingVertical: 8,
+    },
+    subRowWrapper: {
+      paddingLeft: 28,
+      paddingVertical: 8,
+      flexDirection: "row",
+      justifyContent: "flex-start",
+      alignItems: "center",
+      gap: 10,
+    },
+    subRow: {
+      gap: 8,
+    },
+ 
   });
+
+//  t("alert_seen_mode_year")
+// t("alert_seen_mode_alltime")

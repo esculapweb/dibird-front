@@ -32,7 +32,6 @@ import AlertSettingsScreen from "../screens/AlertSettingsScreen";
 import NotificationsScreen from "../screens/NotificationsScreen";
 import SpeciesDetailScreen from "../screens/SpeciesDetailScreen";
 import AchievementsScreen from "../screens/AchievementsScreen";
-import WatchlistEditorScreen from "../screens/WatchlistEditorScreen";
 
 import { useAuth, setOnLogout } from "../store/auth-context";
 import { useProfile } from "../store/profile-context";
@@ -227,12 +226,6 @@ const AppNavigator = () => {
       <Stack.Screen
         name="AlertSettings"
         component={AlertSettingsScreen}
-        options={{ title: t("alert_settings") }}
-      />
-
-      <Stack.Screen
-        name="WatchlistEditor"
-        component={WatchlistEditorScreen}
         options={{ title: t("alert_settings") }}
       />
 

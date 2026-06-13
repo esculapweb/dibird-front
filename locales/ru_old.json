@@ -1,5 +1,8 @@
 {
   "account_created": "Аккаунт создан",
+  "alert_seen_mode": "Уведомлять о",
+  "alert_watchlist": "Хочу увидеть",
+  "alert_watchlist_nav_desc": "Виды, о появлении которых вы хотите узнавать",
   "app_name": "DiBird",
   "are_you_sure": "Вы уверены?",
   "authentication_failed": "Ошибка аутентификации",

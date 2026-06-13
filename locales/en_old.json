@@ -1,5 +1,8 @@
 {
   "account_created": "Account created",
+  "alert_seen_mode": "",
+  "alert_watchlist": "Manage watchlist",
+  "alert_watchlist_nav_desc": "Species you're hoping to spot",
   "app_name": "DiBird",
   "are_you_sure": "Are you sure?",
   "authentication_failed": "Authentication failed",

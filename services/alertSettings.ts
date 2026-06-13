@@ -16,6 +16,7 @@ export interface AlertSettings {
 
   radius_km: number;
   rarity_threshold: "notable" | "rare" | "uncommon";
+  seen_mode: "year" | "alltime";
   watchlist_only: boolean;
   include_local_observations: boolean;
   active_hours_utc: ActiveHourWindow[];

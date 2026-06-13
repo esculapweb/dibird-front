@@ -211,6 +211,15 @@ const SettingsScreen = () => {
   const isExporting = exportState === "pending" || exportState === "processing";
   useEffect(() => () => cleanup(), []);
 
+  const handleExportPress = () =>
+    BottomSheet.show({
+      title: t("export_data"),
+      description: t("export_data_confirm_description"),
+      confirmText: t("export_data_confirm_button"),
+      cancelText: t("cancel"),
+      onConfirm: triggerExport,
+    });
+
   return (
     <Layout
       withScroll
@@ -281,15 +290,19 @@ const SettingsScreen = () => {
         </Section>
       )}
 
-    <Section title={t("settings_section_alerts")} styles={styles} colors={Colors}>
-      <Row
-        icon="notifications-outline"
-        label={t("alert_settings")}
-        onPress={() => navigation.navigate("AlertSettings")}
-        colors={Colors}
+      <Section
+        title={t("settings_section_alerts")}
         styles={styles}
-      />
-    </Section>
+        colors={Colors}
+      >
+        <Row
+          icon="notifications-outline"
+          label={t("alert_settings")}
+          onPress={() => navigation.navigate("AlertSettings")}
+          colors={Colors}
+          styles={styles}
+        />
+      </Section>
 
       {/* ── Data ─────────────────────────────────────────── */}
       <Section
@@ -308,7 +321,7 @@ const SettingsScreen = () => {
                   ? t("export_data_failed")
                   : t("export_data")
           }
-          onPress={isExporting ? undefined : triggerExport}
+          onPress={isExporting ? undefined : handleExportPress}
           disabled={isExporting}
           hideChevron
           colors={Colors}
