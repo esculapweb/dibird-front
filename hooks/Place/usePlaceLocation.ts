@@ -1,4 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
+
 
 import { reverseGeocoding } from "../../util/fetches";
 import { useLocationUnavailable } from "../useLocationUnavailable";
@@ -73,7 +75,8 @@ export const usePlaceLocation = () => {
   const [details, setDetails] = useState<ReverseGeocode | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { locationCoords, permissionStatus, requestLocation } = useLocation();
-  const handleLocationUnavailable = useLocationUnavailable();
+  const { t } = useTranslation();
+  const handleLocationUnavailable = useLocationUnavailable(t('location_unavailable_map_hint'));
 
   const geocodeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 

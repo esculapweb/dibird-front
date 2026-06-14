@@ -17,6 +17,8 @@ import ErrorOverlay from "../components/Error/ErrorOverlay";
 import { TimeWindowRow } from "../components/ui/TimeWindowRow";
 import { ThemeColors, useTheme } from "../store/theme-context";
 import { useLocation } from "../store/location-context";
+import { isoToFlagEmoji } from "../util/helpers";
+import { useLocationUnavailable } from "../hooks/useLocationUnavailable";
 
 import { useAlertSettings } from "../hooks/useAlertSettings";
 import type {
@@ -31,7 +33,7 @@ const SEEN_MODE_OPTIONS = [
 
 const snapDec = (val: number, step = 5, min = 5) =>
   Math.max(min, (Math.ceil(val / step) - 1) * step);
-const snapInc = (val: number, step = 5, max = 100) =>
+const snapInc = (val: number, step = 5, max = 500) =>
   Math.min(max, (Math.floor(val / step) + 1) * step);
 
 const Divider = ({ styles }: { styles: ReturnType<typeof stylesFn> }) => (
@@ -91,13 +93,14 @@ export default function AlertSettingsScreen() {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
+  const handleLocationUnavailable = useLocationUnavailable(
+    t('location_unavailable_alert_hint'),
+  );
 
   // settings hook — expose error + refetch same pattern as useList in ListScreen
   const { settings, loading, saving, error, refresh, save } =
     useAlertSettings();
-  const { locationCoords, requestLocation, isRequesting } = useLocation();
-
-
+  const { requestLocation, isRequesting, permissionStatus } = useLocation();
 
   const [localRadius, setLocalRadius] = useState(250);
   const [localWindows, setLocalWindows] = useState<ActiveHourWindow[]>([]);
@@ -108,13 +111,25 @@ export default function AlertSettingsScreen() {
     setLocalWindows(settings.active_hours_utc);
   }, [settings?.radius_km, settings?.active_hours_utc]);
 
-  useEffect(() => {
-    if (!locationCoords) return;
-    save({
-      lat: Math.round(locationCoords[1] * 100) / 100,
-      lon: Math.round(locationCoords[0] * 100) / 100,
-    } satisfies AlertSettingsPatch);
-  }, [locationCoords]);
+  const handleRequestLocation = async () => {
+    if (permissionStatus === "denied") {
+      handleLocationUnavailable();
+      return;
+    }
+    try {
+      const result = await requestLocation();
+      if (result) {
+        await save({
+          lat: Math.round(result.coords[1] * 100) / 100,
+          lon: Math.round(result.coords[0] * 100) / 100,
+        });
+      } else if (permissionStatus === "denied") {
+        handleLocationUnavailable();
+      }
+    } catch (e) {
+      if (__DEV__) console.warn("Failed to use location:", e);
+    }
+  };
 
   if (error) {
     return (
@@ -135,6 +150,9 @@ export default function AlertSettingsScreen() {
     settings.location_lat != null && settings.location_lon != null
       ? `${settings.location_lat.toFixed(2)}, ${settings.location_lon.toFixed(2)}`
       : t("alert_location_not_set");
+
+  const countryFlag = `${isoToFlagEmoji(settings.territory_data?.code)}`;
+  const countryName = settings.territory_data?.name;
 
   const seenModeOptions = SEEN_MODE_OPTIONS.map((opt) => ({
     label: t(opt.labelKey),
@@ -185,21 +203,31 @@ export default function AlertSettingsScreen() {
       <Section title={t("alert_section_location")} styles={styles}>
         <View style={styles.row}>
           <Ionicons name="location-outline" size={18} color={Colors.main100} />
-          <View style={styles.rowText}>
-            <Text style={styles.rowLabel}>{coordLabel}</Text>
-            <Text style={styles.rowDesc}>{t("alert_location_subtitle")}</Text>
+
+          <View style={styles.rowContent}>
+            <View style={styles.topRow}>
+              <View style={styles.rowText}>
+              <Text style={styles.rowLabel}>
+                {countryFlag} {coordLabel}
+              </Text>
+              <Text style={styles.rowDesc}>{countryName}</Text>
+              </View>
+
+              <TouchableOpacity
+                onPress={handleRequestLocation}
+                disabled={isRequesting}
+                style={styles.btn}
+              >
+                {isRequesting ? (
+                  <ActivityIndicator size="small" color={Colors.primary100} />
+                ) : (
+                  <Text style={styles.btnText}>{t("alert_locate_me")}</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={styles.rowDesc}>{settings.location_lat != null ? t("alert_location_subtitle") : t("alert_location_no_coords")}</Text>
           </View>
-          <TouchableOpacity
-            onPress={requestLocation}
-            disabled={isRequesting}
-            style={styles.btn}
-          >
-            {isRequesting ? (
-              <ActivityIndicator size="small" color={Colors.primary100} />
-            ) : (
-              <Text style={styles.btnText}>{t("alert_locate_me")}</Text>
-            )}
-          </TouchableOpacity>
         </View>
 
         <Divider styles={styles} />
@@ -529,7 +557,17 @@ const stylesFn = (Colors: ThemeColors) =>
     subRow: {
       gap: 8,
     },
- 
+
+    rowContent: {
+      flex: 1,
+    },
+
+    topRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 4,
+    },
   });
 
 //  t("alert_seen_mode_year")

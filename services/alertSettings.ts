@@ -1,4 +1,5 @@
 // src/api/alertSettings.ts
+import { TerritoryData } from "../types";
 import api from "./api";
 
 // ─── Типы ────────────────────────────────────────────────────────────────────
@@ -13,7 +14,7 @@ export interface AlertSettings {
   // Локация — read-only плоские поля (бэк отдаёт их через SerializerMethodField)
   location_lat: number | null;
   location_lon: number | null;
-
+  territory_data: TerritoryData;
   radius_km: number;
   rarity_threshold: "notable" | "rare" | "uncommon";
   seen_mode: "year" | "alltime";
