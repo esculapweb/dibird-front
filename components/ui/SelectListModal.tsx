@@ -141,7 +141,10 @@ const SelectListModal = ({
                 direction="column"
                 options={sortOptions}
                 disabledValues={disabledSortValues}
-                onDisabledPress={() => onLocationUnavailable?.()}
+                onDisabledPress={() => {
+                  onLocationUnavailable?.();
+                  onClose();
+                }}
               />
             </View>
           )}
