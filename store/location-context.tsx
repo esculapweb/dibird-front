@@ -16,6 +16,7 @@ interface LocationContextType {
     coords: Coords;
     accuracy: number | null;
   } | null>;
+  isRequesting: boolean;
 }
 
 const LocationContext = createContext<LocationContextType | null>(null);
@@ -64,6 +65,7 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
         locationAvailable: !!locationCoords,
         permissionStatus,
         requestLocation,
+        isRequesting
       }}
     >
       {children}

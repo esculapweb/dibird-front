@@ -30,6 +30,7 @@ import {
   Profile,
   ImageAsset,
   AvatarResponse,
+  ReverseGeocode,
 } from "../types";
 
 export const exportProfileData = async (): Promise<void> => {
@@ -345,7 +346,6 @@ export const fetchObservations = (
     page,
   );
 
-
 export const fetchDiaries = (
   filters: Filters,
   order: string | null = "-date_time,-created_at",
@@ -455,4 +455,18 @@ export const registerPushToken = async (token: string): Promise<void> => {
 
 export const unregisterPushToken = async (token: string): Promise<void> => {
   await api.delete(`/myapi/push-token/${encodeURIComponent(token)}/`);
+};
+
+export const reverseGeocoding = async (
+  latitude: number,
+  longitude: number,
+): Promise<ReverseGeocode> => {
+  const res = await api.get("/myapi/geocoding/reverse/", {
+    params: {
+      latitude,
+      longitude,
+    },
+  });
+
+  return res.data;
 };

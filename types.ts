@@ -392,13 +392,13 @@ export interface PlaceData {
   location: LocationType | null;
 }
 
-export interface GeoDetails {
-  country: string | undefined;
-  countryCode: string | undefined;
-  city: string | undefined;
-  address: string | undefined;
-  raw: Record<string, unknown> | undefined;
-}
+export interface ReverseGeocode {
+  country: string;
+  country_code: string;
+  city: string;
+  address: string;
+  raw: Record<string, unknown>
+};
 
 export type MapPressEvent = Feature<Geometry, GeoJsonProperties>;
 

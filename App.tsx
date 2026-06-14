@@ -35,11 +35,9 @@ import GlobalBottomSheet from "./components/Providers/GlobalBottomSheet";
 import CustomSplash from "./components/ui/CustomSplash";
 import { initSentry } from "./services/sentry";
 import { usePushNotifications } from "./hooks/usePushNotifications";
-import { usePlaceLocation } from "./hooks/Place/usePlaceLocation";
+import { useLocation } from "./store/location-context";
 import { useAlertSettings } from "./hooks/useAlertSettings";
-import type {
-  AlertSettingsPatch
-} from "./services/alertSettings";
+import type { AlertSettingsPatch } from "./services/alertSettings";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -116,23 +114,23 @@ const Root = () => {
   const { theme } = useTheme();
   const [splashFinished, setSplashFinished] = useState(false);
   const { isAuthenticated } = useAuth();
-  const { locateMe, coords } = usePlaceLocation();
+  const { locationCoords, requestLocation } = useLocation();
   const { save } = useAlertSettings();
 
   usePushNotifications(isAuthenticated);
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    locateMe();
+    requestLocation();
   }, [isAuthenticated]);
 
   useEffect(() => {
-    if (!coords || !isAuthenticated) return;
+    if (!locationCoords || !isAuthenticated) return;
     save({
-      lat: Math.round(coords[1] * 100) / 100,
-      lon: Math.round(coords[0] * 100) / 100,
+      lat: Math.round(locationCoords[1] * 100) / 100,
+      lon: Math.round(locationCoords[0] * 100) / 100,
     } satisfies AlertSettingsPatch);
-  }, [coords]);
+  }, [locationCoords]);
 
   if (!splashFinished) {
     return (

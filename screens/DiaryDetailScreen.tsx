@@ -175,7 +175,7 @@ const DiaryDetailScreen = () => {
                   : diary.place_data.location.coordinates
               }
               currentZoom={9}
-              mapHeight={180}
+              mapHeight={250}
               showCoords={diary.place_data.location.type === "Point"}
               polygon={
                 diary.place_data.location.type === "Polygon"

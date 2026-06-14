@@ -113,7 +113,7 @@ export default {
             image: "./assets/splash-icon.png",
             backgroundColor: "#1b1b1b",
           },
-          imageWidth: 200,
+          imageWidth: 150,
         },
       ],
       "expo-location",

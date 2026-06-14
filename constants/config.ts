@@ -21,10 +21,7 @@ export const Config = {
   baseUrl,
   mediaUrl: `${mediaBaseUrl}/media`,
   mapTileUrl: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-  geoCodingBaseUrl: "https://nominatim.openstreetmap.org",
   email: "admin@dibird.com",
-  isDev: __DEV__,
-  isProd: env === "production",
   googleWebClientId:
     "135122891711-1n5e7daoce1f5immq6n1pta52627d6ti.apps.googleusercontent.com",
   googleIosClientId:

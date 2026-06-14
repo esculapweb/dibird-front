@@ -16,7 +16,8 @@ import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import { TimeWindowRow } from "../components/ui/TimeWindowRow";
 import { ThemeColors, useTheme } from "../store/theme-context";
-import { usePlaceLocation } from "../hooks/Place/usePlaceLocation";
+import { useLocation } from "../store/location-context";
+
 import { useAlertSettings } from "../hooks/useAlertSettings";
 import type {
   AlertSettingsPatch,
@@ -28,17 +29,10 @@ const SEEN_MODE_OPTIONS = [
   { value: "alltime", labelKey: "alert_seen_mode_alltime" },
 ] as const;
 
-/**
- * Snap value to nearest multiple of step.
- * decrement: finds the next multiple of 5 below current value
- * increment: finds the next multiple of 5 above current value
- */
 const snapDec = (val: number, step = 5, min = 5) =>
   Math.max(min, (Math.ceil(val / step) - 1) * step);
 const snapInc = (val: number, step = 5, max = 100) =>
   Math.min(max, (Math.floor(val / step) + 1) * step);
-
-// ─── Primitives ───────────────────────────────────────────────────────────────
 
 const Divider = ({ styles }: { styles: ReturnType<typeof stylesFn> }) => (
   <View style={styles.divider} />
@@ -101,7 +95,9 @@ export default function AlertSettingsScreen() {
   // settings hook — expose error + refetch same pattern as useList in ListScreen
   const { settings, loading, saving, error, refresh, save } =
     useAlertSettings();
-  const { locateMe, isLoading: locating, coords } = usePlaceLocation();
+  const { locationCoords, requestLocation, isRequesting } = useLocation();
+
+
 
   const [localRadius, setLocalRadius] = useState(250);
   const [localWindows, setLocalWindows] = useState<ActiveHourWindow[]>([]);
@@ -112,14 +108,13 @@ export default function AlertSettingsScreen() {
     setLocalWindows(settings.active_hours_utc);
   }, [settings?.radius_km, settings?.active_hours_utc]);
 
-  // Save coords from device location
   useEffect(() => {
-    if (!coords) return;
+    if (!locationCoords) return;
     save({
-      lat: Math.round(coords[1] * 100) / 100,
-      lon: Math.round(coords[0] * 100) / 100,
+      lat: Math.round(locationCoords[1] * 100) / 100,
+      lon: Math.round(locationCoords[0] * 100) / 100,
     } satisfies AlertSettingsPatch);
-  }, [coords]);
+  }, [locationCoords]);
 
   if (error) {
     return (
@@ -195,11 +190,11 @@ export default function AlertSettingsScreen() {
             <Text style={styles.rowDesc}>{t("alert_location_subtitle")}</Text>
           </View>
           <TouchableOpacity
-            onPress={locateMe}
-            disabled={locating}
+            onPress={requestLocation}
+            disabled={isRequesting}
             style={styles.btn}
           >
-            {locating ? (
+            {isRequesting ? (
               <ActivityIndicator size="small" color={Colors.primary100} />
             ) : (
               <Text style={styles.btnText}>{t("alert_locate_me")}</Text>

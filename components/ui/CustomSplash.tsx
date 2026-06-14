@@ -58,8 +58,8 @@ const stylesFn = (Colors: ThemeColors) =>
       alignItems: "center",
     },
     logo: {
-      width: 200,
-      height: 200,
+      width: 150,
+      height: 150,
       aspectRatio: 1,
     },
     bottomText: {

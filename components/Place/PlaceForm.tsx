@@ -6,7 +6,7 @@ import DropdownInput from "../ui/DropdownInput";
 import { fetchMyCountries } from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
-import { Coords, GeoDetails, PlaceFormData } from "../../types";
+import { Coords, PlaceFormData, ReverseGeocode } from "../../types";
 
 interface Errors {
   name?: string;
@@ -29,7 +29,7 @@ interface PlaceFormProps {
   setLngText: (value: string) => void;
   errors: Errors;
   setErrors: Dispatch<SetStateAction<Errors>>;
-  locationDetails?: GeoDetails | null;
+  locationDetails?: ReverseGeocode | null;
 }
 
 const PlaceForm = ({
@@ -64,7 +64,7 @@ const PlaceForm = ({
   const territories = queryMyCountries.data ?? [];
 
   useEffect(() => {
-    const countryCode = locationDetails?.countryCode;
+    const countryCode = locationDetails?.country_code;
     if (!territories.length || !countryCode) return;
 
     const countryValue = territories.find(
@@ -76,7 +76,7 @@ const PlaceForm = ({
       setFormData((prev) => ({ ...prev, territory: Number(countryValue) }));
       setErrors((prev) => ({ ...prev, territory: undefined }));
     }
-  }, [territories, locationDetails?.countryCode, coords]);
+  }, [territories, locationDetails?.country_code, coords]);
 
   const onChangeName = (text: string) => {
     setFormData((prev) => ({ ...prev, name: text }));

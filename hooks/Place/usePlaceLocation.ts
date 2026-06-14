@@ -1,9 +1,9 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 
-import { cachedReverseGeocode } from "../../services/geocoding";
+import { reverseGeocoding } from "../../util/fetches";
 import { useLocationUnavailable } from "../useLocationUnavailable";
 import { useLocation } from "../../store/location-context";
-import { Coords, GeoDetails } from "../../types";
+import { Coords, ReverseGeocode } from "../../types";
 
 interface NormalizedCoords {
   lng: number;
@@ -70,9 +70,9 @@ export const usePlaceLocation = () => {
   const [accuracy, setAccuracy] = useState(0);
   const [latText, setLatText] = useState("");
   const [lngText, setLngText] = useState("");
-  const [details, setDetails] = useState<GeoDetails | null>(null);
+  const [details, setDetails] = useState<ReverseGeocode | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const { permissionStatus, requestLocation } = useLocation();
+  const { locationCoords, permissionStatus, requestLocation } = useLocation();
   const handleLocationUnavailable = useLocationUnavailable();
 
   const geocodeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -93,7 +93,7 @@ export const usePlaceLocation = () => {
     geocodeTimeout.current = setTimeout(async () => {
       try {
         setIsLoading(true);
-        const res = await cachedReverseGeocode(lat, lng);
+        const res = await reverseGeocoding(lat, lng);
         if (res) setDetails(res);
       } catch (e) {
         if (__DEV__) console.warn("Reverse geocode failed", e);
@@ -125,6 +125,13 @@ export const usePlaceLocation = () => {
     [reverseGeocode],
   );
 
+  // Когда контекст обновляет locationCoords — синхронизируем локальный стейт
+  useEffect(() => {
+    if (locationCoords) {
+      updateCoords(locationCoords);
+    }
+  }, [locationCoords]);
+
   const locateMe = useCallback(async () => {
     if (permissionStatus === "denied") {
       handleLocationUnavailable();
@@ -134,11 +141,11 @@ export const usePlaceLocation = () => {
     setIsLoading(true);
     try {
       const result = await requestLocation();
-      if (result?.coords) {
+      if (result) {
         const acc = result.accuracy ?? 0;
         setAccuracy(acc);
         setZoom(acc > 0 ? zoomFromAccuracy(acc) : 15);
-        updateCoords(result.coords);
+        // coords придут через useEffect выше из locationCoords
       } else if (permissionStatus === "denied") {
         handleLocationUnavailable();
       }
@@ -147,12 +154,7 @@ export const usePlaceLocation = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [
-    permissionStatus,
-    requestLocation,
-    updateCoords,
-    handleLocationUnavailable,
-  ]);
+  }, [permissionStatus, requestLocation, handleLocationUnavailable]);
 
   return {
     coords,

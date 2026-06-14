@@ -25,11 +25,11 @@ import {
   AppStackNavigationProp,
   AppStackRouteProp,
   AppError,
-  GeoDetails,
   MapPressEvent,
   PlaceFormData,
   PlaceItem,
   ErrorExtractor,
+  ReverseGeocode
 } from "../types";
 
 type FormErrors = {
@@ -141,7 +141,7 @@ const PlaceEditorScreen = () => {
 
   useEffect(() => {
     if (!details || isEditMode) return;
-    const getSuggestedName = (d: GeoDetails) => {
+    const getSuggestedName = (d: ReverseGeocode) => {
       if (d?.city && d?.raw?.county) return `${d.city}, ${d?.raw?.county}`;
       if (d?.city) return d.city;
       if (d?.address) return d.address;
