@@ -36,6 +36,7 @@ import CustomSplash from "./components/ui/CustomSplash";
 import { initSentry } from "./services/sentry";
 import { usePushNotifications } from "./hooks/usePushNotifications";
 import { useLocation } from "./store/location-context";
+import { useLanguage } from "./store/language-context";
 import { useAlertSettings } from "./hooks/useAlertSettings";
 import type { AlertSettingsPatch } from "./services/alertSettings";
 
@@ -115,6 +116,7 @@ const Root = () => {
   const [splashFinished, setSplashFinished] = useState(false);
   const { isAuthenticated } = useAuth();
   const { locationCoords, requestLocation } = useLocation();
+  const { language } = useLanguage();
   const { save } = useAlertSettings();
 
   usePushNotifications(isAuthenticated);
@@ -125,12 +127,13 @@ const Root = () => {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    if (!locationCoords || !isAuthenticated) return;
+    if (!locationCoords || !language || !isAuthenticated) return;
     save({
       lat: Math.round(locationCoords[1] * 100) / 100,
       lon: Math.round(locationCoords[0] * 100) / 100,
+      language,
     } satisfies AlertSettingsPatch);
-  }, [locationCoords]);
+  }, [locationCoords, language]);
 
   if (!splashFinished) {
     return (
@@ -152,7 +155,7 @@ const Root = () => {
 };
 
 const AppContent = () => {
-  const { Colors } = useTheme(); // Теперь мы можем достать тему приложения
+  const { Colors } = useTheme();
 
   return (
     <GestureHandlerRootView

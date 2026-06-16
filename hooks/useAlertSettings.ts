@@ -24,11 +24,11 @@ interface UseAlertSettingsReturn {
 }
 
 export function useAlertSettings(): UseAlertSettingsReturn {
-    const { t } = useTranslation();
+  const { t } = useTranslation();
   const [settings, setSettings] = useState<AlertSettings | null>(null);
-  const [loading, setLoading]   = useState(true);
-  const [saving,  setSaving]    = useState(false);
-  const [error,   setError]     = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // ─── Загрузка ────────────────────────────────────────────────────────────
 
@@ -45,45 +45,62 @@ export function useAlertSettings(): UseAlertSettingsReturn {
     }
   }, []);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   // ─── Сохранение (PATCH) ───────────────────────────────────────────────────
 
-  const save = useCallback(async (patch: AlertSettingsPatch): Promise<boolean> => {
-    setSaving(true);
-    setError(null);
-    try {
-      const { data } = await updateAlertSettings(patch);
-      setSettings(data);
-      return true;
-    } catch {
-      setError(t("could_not_save_settings"));
-      return false;
-    } finally {
-      setSaving(false);
-    }
-  }, []);
+  const save = useCallback(
+    async (patch: AlertSettingsPatch): Promise<boolean> => {
+      setSaving(true);
+      setError(null);
+      try {
+        const { data } = await updateAlertSettings(patch);
+        setSettings(data);
+        return true;
+      } catch {
+        setError(t("could_not_save_settings"));
+        return false;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [],
+  );
 
   // ─── Полная замена (PUT) ──────────────────────────────────────────────────
 
-  const replace = useCallback(async (payload: AlertSettingsPatch): Promise<boolean> => {
-    setSaving(true);
-    setError(null);
-    try {
-      const { data } = await replaceAlertSettings(payload);
-      setSettings(data);
-      return true;
-    } catch {
-      setError(t("could_not_save_settings"));
-      return false;
-    } finally {
-      setSaving(false);
-    }
-  }, []);
+  const replace = useCallback(
+    async (payload: AlertSettingsPatch): Promise<boolean> => {
+      setSaving(true);
+      setError(null);
+      try {
+        const { data } = await replaceAlertSettings(payload);
+        setSettings(data);
+        return true;
+      } catch {
+        setError(t("could_not_save_settings"));
+        return false;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [],
+  );
 
   // ─── Утилиты ──────────────────────────────────────────────────────────────
 
   const clearError = useCallback(() => setError(null), []);
 
-  return { settings, loading, saving, error, save, replace, refresh, clearError };
+  return {
+    settings,
+    loading,
+    saving,
+    error,
+    save,
+    replace,
+    refresh,
+    clearError,
+  };
 }

@@ -17,6 +17,7 @@ export interface AlertSettings {
   territory_data: TerritoryData;
   radius_km: number;
   rarity_threshold: "notable" | "rare" | "uncommon";
+  language: string;
   seen_mode: "year" | "alltime";
   watchlist_only: boolean;
   include_local_observations: boolean;
