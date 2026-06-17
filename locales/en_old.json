@@ -1,8 +1,11 @@
 {
   "account_created": "Account created",
+  "alert_locate_me1": "Use My",
+  "alert_locate_me2": "Location",
   "alert_seen_mode": "",
   "alert_watchlist": "Manage watchlist",
   "alert_watchlist_nav_desc": "Species you're hoping to spot",
+  "alert_window_label": "Active hours",
   "app_name": "DiBird",
   "are_you_sure": "Are you sure?",
   "authentication_failed": "Authentication failed",

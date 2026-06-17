@@ -1,8 +1,11 @@
 {
   "account_created": "Аккаунт создан",
+  "alert_locate_me1": "Моё",
+  "alert_locate_me2": "местоположение",
   "alert_seen_mode": "Уведомлять о",
   "alert_watchlist": "Хочу увидеть",
   "alert_watchlist_nav_desc": "Виды, о появлении которых вы хотите узнавать",
+  "alert_window_label": "{{index}}. {{start}} - {{end}}",
   "app_name": "DiBird",
   "are_you_sure": "Вы уверены?",
   "authentication_failed": "Ошибка аутентификации",

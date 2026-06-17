@@ -37,11 +37,7 @@ export function TimeWindowRow({
       >
         <Ionicons name="time-outline" size={16} color={colors.main100} />
         <Text style={styles.label}>
-          {t("alert_window_label", {
-            index: index + 1,
-            start: String(start).padStart(2, "0") + ":00",
-            end: String(end).padStart(2, "00") + ":00",
-          })}
+          {`${index + 1}. ${String(start).padStart(2, "0") + ":00"} - ${String(end).padStart(2, "00") + ":00"}`}
         </Text>
         <View style={styles.actions}>
           <Ionicons

@@ -45,7 +45,7 @@ const NotificationCard = ({ item, onPress }: Props) => {
 
       {/* Текст */}
       <View style={styles.content}>
-        <Text style={styles.title} numberOfLines={1}>
+        <Text style={styles.title} numberOfLines={2}>
           {item.title}
         </Text>
         <Text style={styles.body} numberOfLines={2}>

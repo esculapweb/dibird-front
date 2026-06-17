@@ -31,7 +31,7 @@ const SEEN_MODE_OPTIONS = [
   { value: "alltime", labelKey: "alert_seen_mode_alltime" },
 ] as const;
 
-const snapDec = (val: number, step = 5, min = 5) =>
+const snapDec = (val: number, step = 5, min = 1) =>
   Math.max(min, (Math.ceil(val / step) - 1) * step);
 const snapInc = (val: number, step = 5, max = 500) =>
   Math.min(max, (Math.floor(val / step) + 1) * step);
