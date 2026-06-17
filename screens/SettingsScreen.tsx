@@ -230,6 +230,73 @@ const SettingsScreen = () => {
         </FlatButtonBottom>
       }
     >
+      {/* ── Alerts ─────────────────────────────────────────── */}
+      <Section
+        title={t("settings_section_alerts")}
+        styles={styles}
+        colors={Colors}
+      >
+        <Row
+          icon="notifications-outline"
+          label={t("alert_settings")}
+          onPress={() => navigation.navigate("AlertSettings")}
+          colors={Colors}
+          styles={styles}
+        />
+      </Section>
+
+      {/* ── Security ─────────────────────────────────── */}
+      {bioAvailable && (
+        <Section
+          title={t("settings_section_security")}
+          styles={styles}
+          colors={Colors}
+        >
+          <RowSwitch
+            icon="finger-print-outline"
+            label={t("settings_biometric_lock")}
+            value={biometricEnabled}
+            onValueChange={toggleBiometric}
+            disabled={bioLoading}
+            colors={Colors}
+            styles={styles}
+          />
+        </Section>
+      )}
+
+      {/* ── Data ─────────────────────────────────────────── */}
+      <Section
+        title={t("settings_section_data")}
+        styles={styles}
+        colors={Colors}
+      >
+        <Row
+          icon="download-outline"
+          label={
+            isExporting
+              ? t("export_data_in_progress")
+              : exportState === "completed"
+                ? t("export_data_done")
+                : exportState === "failed"
+                  ? t("export_data_failed")
+                  : t("export_data")
+          }
+          onPress={isExporting ? undefined : handleExportPress}
+          disabled={isExporting}
+          hideChevron
+          colors={Colors}
+          styles={styles}
+        />
+        <Divider styles={styles} />
+        <Row
+          icon="cloud-upload-outline"
+          label={t("import_data")}
+          disabled
+          colors={Colors}
+          styles={styles}
+        />
+      </Section>
+
       {/* ── About ────────────────────────────────────────── */}
       <Section
         title={t("settings_section_about")}
@@ -266,72 +333,6 @@ const SettingsScreen = () => {
           icon="document-text-outline"
           label={t("terms_of_service")}
           onPress={() => navigation.navigate("Terms")}
-          colors={Colors}
-          styles={styles}
-        />
-      </Section>
-
-      {/* ── Security ─────────────────────────────────── */}
-      {bioAvailable && (
-        <Section
-          title={t("settings_section_security")}
-          styles={styles}
-          colors={Colors}
-        >
-          <RowSwitch
-            icon="finger-print-outline"
-            label={t("settings_biometric_lock")}
-            value={biometricEnabled}
-            onValueChange={toggleBiometric}
-            disabled={bioLoading}
-            colors={Colors}
-            styles={styles}
-          />
-        </Section>
-      )}
-
-      <Section
-        title={t("settings_section_alerts")}
-        styles={styles}
-        colors={Colors}
-      >
-        <Row
-          icon="notifications-outline"
-          label={t("alert_settings")}
-          onPress={() => navigation.navigate("AlertSettings")}
-          colors={Colors}
-          styles={styles}
-        />
-      </Section>
-
-      {/* ── Data ─────────────────────────────────────────── */}
-      <Section
-        title={t("settings_section_data")}
-        styles={styles}
-        colors={Colors}
-      >
-        <Row
-          icon="download-outline"
-          label={
-            isExporting
-              ? t("export_data_in_progress")
-              : exportState === "completed"
-                ? t("export_data_done")
-                : exportState === "failed"
-                  ? t("export_data_failed")
-                  : t("export_data")
-          }
-          onPress={isExporting ? undefined : handleExportPress}
-          disabled={isExporting}
-          hideChevron
-          colors={Colors}
-          styles={styles}
-        />
-        <Divider styles={styles} />
-        <Row
-          icon="cloud-upload-outline"
-          label={t("import_data")}
-          disabled
           colors={Colors}
           styles={styles}
         />
