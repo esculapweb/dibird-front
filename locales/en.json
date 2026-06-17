@@ -24,7 +24,7 @@
   "alert_location_no_coords": "Location not set",
   "alert_location_not_set": "Location not set",
   "alert_location_subtitle": "Receive alerts for sightings near this location",
-  "alert_max_per_day_desc": "You won't receive more than this number of alerts in a single day",
+  "alert_max_per_day_desc": "You won't receive more than this number of alerts within 24 hours",
   "alert_max_per_day_label": "Max alerts per 24 hours: {{n}}",
   "alert_radius_hint": "Only observations within this radius will trigger alerts",
   "alert_radius_label": "Radius: {{km}} km",
