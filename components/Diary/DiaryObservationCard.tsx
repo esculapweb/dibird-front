@@ -74,7 +74,7 @@ const DiaryObservationCard = memo(
                     <Text style={styles.badgeText}>{item.quantity}</Text>
                   </View>
                 )}
-                {item.time_only && (
+                {item.time && (
                   <View style={styles.time}>
                     <Ionicons
                       name="time-outline"
@@ -82,7 +82,7 @@ const DiaryObservationCard = memo(
                       color={Colors.textSecondary}
                     />
                     <Text style={styles.metaText}>
-                      {formatTimeString(item.time_only)}
+                      {formatTimeString(item.time)}
                     </Text>
                   </View>
                 )}

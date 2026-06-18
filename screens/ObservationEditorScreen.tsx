@@ -39,7 +39,7 @@ const FORM_FIELDS = [
   "territory",
   "place",
   "date_time",
-  "time_only",
+  "time",
   "private",
   "quantity",
   "notes",
@@ -116,7 +116,7 @@ const ObservationEditorScreen = () => {
       return {
         species: data.species,
         diary: data.diary,
-        time_only: data.time_only ?? null,
+        time: data.time ?? null,
         quantity: data.quantity ?? null,
         notes: data.notes ?? "",
       };
@@ -127,7 +127,7 @@ const ObservationEditorScreen = () => {
       territory: data.territory,
       place: data.place ?? null,
       date_time: data.date_time,
-      time_only: data.time_only ?? null,
+      time: data.time ?? null,
       private: data.private ?? false,
       quantity: data.quantity ?? null,
       notes: data.notes ?? "",
@@ -247,7 +247,7 @@ const ObservationEditorScreen = () => {
         setFormData((prev) => ({
           ...prev,
           species: null,
-          time_only: null,
+          time: null,
           quantity: null,
           notes: null,
         }));

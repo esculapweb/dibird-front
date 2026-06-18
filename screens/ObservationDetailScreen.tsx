@@ -206,7 +206,7 @@ const ObservationDetailScreen = () => {
                     <Text style={styles.aboutLink}>{t("about_species")}</Text>
                   </View>
 
-                  {observation.time_only && (
+                  {observation.time && (
                     <View style={styles.capsule}>
                       <Ionicons
                         name="time-outline"
@@ -214,7 +214,7 @@ const ObservationDetailScreen = () => {
                         color={Colors.textSecondary}
                       />
                       <Text style={styles.capsuleText}>
-                        {formatTimeString(observation.time_only)}
+                        {formatTimeString(observation.time)}
                       </Text>
                     </View>
                   )}
