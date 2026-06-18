@@ -339,13 +339,13 @@ const ObservationForm = ({
         hint={t("optional")}
         collapsible={true}
         collapsed={
-          !formData.time && formData.quantity == null && !formData.notes
+          !formData.time_only && formData.quantity == null && !formData.notes
         }
       >
         <TimeInput
-          value={formData.time ?? ""}
+          value={formData.time_only ?? ""}
           onChange={(newTime) =>
-            setFormData((prev) => ({ ...prev, time: newTime }))
+            setFormData((prev) => ({ ...prev, time_only: newTime }))
           }
         />
         <Input

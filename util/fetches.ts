@@ -348,7 +348,7 @@ export const fetchObservations = (
 
 export const fetchDiaries = (
   filters: Filters,
-  order: string | null = "-date_time,-created_at",
+  order: string | null = "-date_time",
   search?: string,
   page?: number,
 ) =>

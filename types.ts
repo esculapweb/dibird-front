@@ -342,7 +342,7 @@ export interface ObservationFormData {
   date_time?: string | null;
   private?: boolean;
   place?: number | null;
-  time?: string | null;
+  time_only?: string | null;
   quantity?: number | null;
   notes?: string | null;
   diary?: number | null;
@@ -362,7 +362,7 @@ export interface EditorFormData {
   territory: number | null;
   place: number | null;
   date_time: string | null | undefined;
-  time: string | null;
+  time_only: string | null;
   private: boolean | undefined;
   quantity: number | null;
   notes: string | null;
@@ -414,7 +414,7 @@ interface ObservationBaseItem {
   id: number;
   notes: string | null;
   quantity: number | null;
-  time: string | null;
+  time_only: string | null;
 }
 
 export interface ObservationItem extends ObservationBaseItem {
