@@ -154,13 +154,16 @@ const DiaryDetailScreen = () => {
               }}
             >
               <View style={{ flex: 1 }}>
-                <Text style={styles.placeName} numberOfLines={2}>
-                  {diary?.place_data?.name || t("location_not_specified")}
-                </Text>
                 <Text style={styles.placeTerritory} numberOfLines={1}>
                   {isoToFlagEmoji(diary?.territory_data?.code)}{" "}
                   {diary?.territory_data?.name}
                 </Text>
+                <Text style={styles.placeName} numberOfLines={2}>
+                  {diary.is_owner
+                  ? (diary?.place_data?.name || t("location_not_specified"))
+                  : diary.location_private ? t("approximate_area") : t("observation_location")}
+                </Text>
+                
               </View>
             </View>
           </View>
@@ -176,13 +179,12 @@ const DiaryDetailScreen = () => {
               }
               currentZoom={9}
               mapHeight={250}
-              showCoords={diary.place_data.location.type === "Point"}
+              showCoords={true}
               polygon={
                 diary.place_data.location.type === "Polygon"
                   ? diary.place_data.location
                   : null
               }
-              approximateArea={!diary.is_owner}
             />
           </View>
         )}
@@ -425,7 +427,7 @@ const stylesFn = (Colors: ThemeColors) =>
     placeTerritory: {
       fontSize: 12,
       color: Colors.textSecondary,
-      marginTop: 2,
+      marginBottom: 2,
     },
     diaryBlock: {
       flexDirection: "row",

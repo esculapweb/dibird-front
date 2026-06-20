@@ -35,7 +35,6 @@ interface MapProps {
   onUseMyLocation?: () => void;
   isLocating?: boolean;
   polygon?: PolygonGeometry;
-  approximateArea?: boolean;
 }
 
 const Map = ({
@@ -48,7 +47,6 @@ const Map = ({
   isLocating,
   showCoords,
   polygon,
-  approximateArea,
 }: MapProps) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors, mapHeight);
@@ -177,20 +175,6 @@ const Map = ({
               style={{ marginLeft: 6 }}
             />
           </TouchableOpacity>
-        )}
-
-        {approximateArea && (
-          <View style={styles.coordsOverlay}>
-            <Ionicons
-              name="eye-off-outline"
-              size={13}
-              color={Colors.textSecondary}
-              style={{ marginRight: 6 }}
-            />
-            <Text style={styles.coordsOverlayText}>
-              {t("approximate_area")}
-            </Text>
-          </View>
         )}
       </View>
     </View>

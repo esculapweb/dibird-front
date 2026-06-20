@@ -74,7 +74,11 @@ const ObservationDetailScreen = () => {
       onConfirm: () =>
         deleteMutation.mutate(observationId, {
           onSuccess: () => navigation.goBack(),
-          onError: (e) => showErrorToast(e, `ObservationDetailScreen:deleteObservation:${observationId}`),
+          onError: (e) =>
+            showErrorToast(
+              e,
+              `ObservationDetailScreen:deleteObservation:${observationId}`,
+            ),
         }),
     });
   }, [observation, observationId]);
@@ -297,12 +301,15 @@ const ObservationDetailScreen = () => {
             }}
           >
             <View style={{ flex: 1 }}>
-              <Text style={styles.placeName} numberOfLines={2}>
-                {observation?.place_data?.name || t("location_not_specified")}
-              </Text>
               <Text style={styles.placeTerritory} numberOfLines={1}>
                 {isoToFlagEmoji(observation?.territory_data?.code)}{" "}
                 {observation?.territory_data?.name}
+              </Text>
+
+              <Text style={styles.placeName} numberOfLines={2}>
+                {observation.is_owner
+                  ? (observation?.place_data?.name || t("location_not_specified"))
+                  : observation.location_private ? t("approximate_area") : t("observation_location")}
               </Text>
             </View>
             {observation?.place_data?.id && observation.is_owner && (
@@ -327,13 +334,12 @@ const ObservationDetailScreen = () => {
                 observation.place_data.location.type === "Polygon" ? 10 : 13
               }
               mapHeight={250}
-              showCoords={observation.place_data.location.type === "Point"}
+              showCoords={true}
               polygon={
                 observation.place_data.location.type === "Polygon"
                   ? observation.place_data.location
                   : null
               }
-              approximateArea={!observation.is_owner}
             />
           </View>
         )}
@@ -545,7 +551,7 @@ const stylesFn = (Colors: ThemeColors) =>
     placeTerritory: {
       fontSize: 12,
       color: Colors.textSecondary,
-      marginTop: 2,
+      marginBottom: 2,
     },
     mapWrapper: {
       marginHorizontal: -16,
