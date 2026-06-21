@@ -137,7 +137,7 @@ const DiaryForm = ({
         <PrivacyToggle
           value={formData.private ?? false}
           onChange={(val) => setFormData((prev) => ({ ...prev, private: val }))}
-          gender="male"
+          descriptionType="male"
         />
       </Section>
 
@@ -160,6 +160,11 @@ const DiaryForm = ({
           setPlaceData={setPlaceData}
           locationAvailable={locationAvailable}
           onLocationUnavailable={handleLocationUnavailable}
+          showLocationPrivacy={!formData.private && !!placeValue}
+          privateLocation={formData.location_private}
+          setPrivateLocation={(val: boolean) =>
+            setFormData((prev) => ({ ...prev, location_private: val }))
+          }
         />
       </Section>
     </>

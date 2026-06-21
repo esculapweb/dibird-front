@@ -1,6 +1,5 @@
 import { StyleSheet, View, Text, Pressable, Switch } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useTranslation } from "react-i18next";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { privacyLabels } from "../../util/privacyLabels";
@@ -10,7 +9,7 @@ interface PrivacyToggleProps {
   value: boolean;
   onChange?: (value: boolean) => void;
   style?: StyleType;
-  gender?: string;
+  descriptionType?: string;
   disabled?: boolean;
 }
 
@@ -18,14 +17,13 @@ const PrivacyToggle = ({
   value,
   onChange,
   style,
-  gender,
+  descriptionType,
   disabled,
 }: PrivacyToggleProps) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
-  const { t } = useTranslation();
 
-  const labels = privacyLabels(gender);
+  const labels = privacyLabels(descriptionType);
 
   return (
     <Pressable
@@ -36,17 +34,17 @@ const PrivacyToggle = ({
       <View style={[styles.left, onChange && { flex: 1 }]}>
         <View style={[styles.iconWrap, value && styles.iconWrapActive]}>
           <Ionicons
-            name={value ? "lock-closed" : "globe-outline"}
+            name={value ? labels.private[2] : labels.public[2]}
             size={18}
             color={value ? Colors.textOpposite : Colors.textSecondary}
           />
         </View>
         <View>
           <Text style={styles.label}>
-            {value ? labels.private : labels.public}
+            {value ? labels.private[0] : labels.public[0]}
           </Text>
           <Text style={styles.desc}>
-            {value ? t("visible_only_to_you") : t("visible_to_everyone")}
+            {value ? labels.private[1] : labels.public[1]}
           </Text>
         </View>
       </View>

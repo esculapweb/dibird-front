@@ -61,9 +61,15 @@ const ObservationCard = memo(
               </View>
 
               <View style={styles.rightTop}>
-                {item.private && (
+                {(item.private || item.place) && (
                   <Ionicons
-                    name="lock-closed-outline"
+                    name={
+                      item.private
+                        ? "lock-closed-outline"
+                        : item.location_private
+                          ? "eye-off-outline"
+                          : "location-outline"
+                    }
                     size={14}
                     color={Colors.textSecondary}
                     style={{ marginRight: 4 }}

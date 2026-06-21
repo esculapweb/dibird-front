@@ -10,9 +10,10 @@ import { Config } from "../../constants/config";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { AppStackNavigationProp, DiaryListItem } from "../../types";
 
-const useStyles = (Colors: ThemeColors) => useMemo(() => stylesFn(Colors), [Colors]);
+const useStyles = (Colors: ThemeColors) =>
+  useMemo(() => stylesFn(Colors), [Colors]);
 
-const DiaryCard = ({ item, index }: {item: DiaryListItem; index: number}) => {
+const DiaryCard = ({ item, index }: { item: DiaryListItem; index: number }) => {
   const { Colors } = useTheme();
   const styles = useStyles(Colors);
   const navigation = useNavigation<AppStackNavigationProp>();
@@ -27,7 +28,6 @@ const DiaryCard = ({ item, index }: {item: DiaryListItem; index: number}) => {
     navigation.navigate("DiaryDetail", { diaryId: item.id });
   };
 
-
   return (
     <Pressable
       style={({ pressed }) => [styles.card, pressed && styles.pressedCard]}
@@ -40,9 +40,15 @@ const DiaryCard = ({ item, index }: {item: DiaryListItem; index: number}) => {
             <Text style={styles.date}>{dateText}</Text>
           </View>
           <View style={styles.rightTop}>
-            {item.private && (
+            {(item.private || item.place) && (
               <Ionicons
-                name="lock-closed-outline"
+                name={
+                  item.private
+                    ? "lock-closed-outline"
+                    : item.location_private
+                      ? "eye-off-outline"
+                      : "location-outline"
+                }
                 size={13}
                 color={Colors.textSecondary}
               />
@@ -57,7 +63,9 @@ const DiaryCard = ({ item, index }: {item: DiaryListItem; index: number}) => {
               obs.species_data.thumb ? (
                 <Image
                   key={i}
-                  source={{ uri: `${Config.mediaUrl}/${obs.species_data.thumb}` }}
+                  source={{
+                    uri: `${Config.mediaUrl}/${obs.species_data.thumb}`,
+                  }}
                   style={styles.speciesThumb}
                   contentFit="cover"
                 />

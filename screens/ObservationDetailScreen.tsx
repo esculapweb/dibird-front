@@ -346,6 +346,14 @@ const ObservationDetailScreen = () => {
                   : null
               }
             />
+            {observation.is_owner && !observation.private && (
+              <View style={styles.locationPrivacy}>
+                <PrivacyToggle
+                  descriptionType="location"
+                  value={observation.location_private}
+                />
+              </View>
+            )}
           </View>
         )}
       </Section>
@@ -598,5 +606,9 @@ const stylesFn = (Colors: ThemeColors) =>
       fontSize: 12,
       color: Colors.main100,
       flexShrink: 0,
+    },
+    locationPrivacy: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
     },
   });

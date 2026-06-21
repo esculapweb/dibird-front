@@ -105,6 +105,7 @@ const DiaryEditorScreen = () => {
       date_time: formData.date_time!,
       private: formData.private ?? false,
       name: formData.name ?? "",
+      location_private: formData.location_private ?? true,
     };
 
     if (isEditMode) {

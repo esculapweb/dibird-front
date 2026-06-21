@@ -119,6 +119,7 @@ const ObservationEditorScreen = () => {
         time: data.time ?? null,
         quantity: data.quantity ?? null,
         notes: data.notes ?? "",
+        location_private: data.location_private ?? true,
       };
     }
 
@@ -131,6 +132,7 @@ const ObservationEditorScreen = () => {
       private: data.private ?? false,
       quantity: data.quantity ?? null,
       notes: data.notes ?? "",
+      location_private: data.location_private ?? true, 
     };
   };
 

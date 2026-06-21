@@ -7,6 +7,7 @@ import { UseQueryResult } from "@tanstack/react-query";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import DropdownInput from "../ui/DropdownInput";
 import { PlaceDropdownItem, AppError } from "../../types";
+import PrivacyToggle  from "../ui/PrivacyToggle";
 
 interface PlaceBlockProps<T extends { place?: number | null }> {
   territoryValue: number | null;
@@ -22,6 +23,9 @@ interface PlaceBlockProps<T extends { place?: number | null }> {
   setPlaceData: Dispatch<SetStateAction<PlaceDropdownItem | null>>;
   locationAvailable?: boolean;
   onLocationUnavailable?: () => void;
+  showLocationPrivacy: boolean;
+  privateLocation: boolean;
+  setPrivateLocation: (val: boolean) => void;
 }
 
 const PlaceBlock = <T extends { place?: number | null }>({
@@ -38,6 +42,9 @@ const PlaceBlock = <T extends { place?: number | null }>({
   setPlaceData,
   locationAvailable,
   onLocationUnavailable,
+  showLocationPrivacy,
+  privateLocation,
+  setPrivateLocation,
 }: PlaceBlockProps<T>) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -69,6 +76,14 @@ const PlaceBlock = <T extends { place?: number | null }>({
         locationAvailable={locationAvailable}
         onLocationUnavailable={onLocationUnavailable}
       />
+      {showLocationPrivacy &&
+      <View style={styles.privacyWrapper}>
+        <PrivacyToggle
+          descriptionType="location"
+          value={privateLocation}
+          onChange={setPrivateLocation}
+        />
+      </View>}
 
       <View style={styles.dividerRow}>
         <View style={styles.dividerLine} />
@@ -174,4 +189,7 @@ const stylesFn = (Colors: ThemeColors) =>
       flex: 1,
       lineHeight: 16,
     },
+    privacyWrapper: {
+      paddingTop: 16,
+    }
   });

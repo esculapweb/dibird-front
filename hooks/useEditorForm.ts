@@ -34,6 +34,7 @@ type ParsedEditorItem = {
   place?: number | null;
   place_data?: PlaceData | null;
   private?: boolean;
+  location_private: boolean;
   name?: string | null;
   notes?: string | null;
   time?: string | null;
@@ -84,6 +85,7 @@ export const useEditorForm = ({
       date_time: initialDate,
       time: itemWithParsedDate?.time ?? null,
       private: itemWithParsedDate?.private ?? profile?.private_diary,
+      location_private: itemWithParsedDate?.location_private ?? true,
       quantity: itemWithParsedDate?.quantity ?? null,
       notes: itemWithParsedDate?.notes ?? null,
       name: itemWithParsedDate?.name ?? null,

@@ -158,7 +158,7 @@ const ProfileForm = ({
       <PrivacyToggle
         value={privateProfile}
         onChange={setPrivateProfile}
-        gender="male"
+        descriptionType="male"
         style={{ marginBottom: 12 }}
       />
       <View style={styles.hairline} />
@@ -168,7 +168,7 @@ const ProfileForm = ({
       <PrivacyToggle
         value={privateDiaries}
         onChange={setPrivateDiaries}
-        gender="multiple"
+        descriptionType="multiple"
       />
 
       <View style={styles.buttonContainer}>

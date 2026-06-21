@@ -330,6 +330,11 @@ const ObservationForm = ({
             setPlaceData={setPlaceData}
             locationAvailable={locationAvailable}
             onLocationUnavailable={handleLocationUnavailable}
+            showLocationPrivacy={!formData.private && !!placeValue}
+            privateLocation={formData.location_private}
+            setPrivateLocation={(val: boolean) =>
+              setFormData((prev) => ({ ...prev, location_private: val }))
+            }
           />
         </Section>
       )}

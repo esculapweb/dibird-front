@@ -332,7 +332,7 @@ export interface DiaryFormData {
   date_time?: string | null;
   private?: boolean;
   place?: number | null;
-  location_private?: boolean;
+  location_private: boolean;
   notes?: string | null;
   name?: string | null;
 }
@@ -343,7 +343,7 @@ export interface ObservationFormData {
   date_time?: string | null;
   private?: boolean;
   place?: number | null;
-  location_private?: boolean;
+  location_private: boolean;
   time?: string | null;
   quantity?: number | null;
   notes?: string | null;
@@ -366,6 +366,7 @@ export interface EditorFormData {
   date_time: string | null | undefined;
   time: string | null;
   private: boolean | undefined;
+  location_private: boolean;
   quantity: number | null;
   notes: string | null;
   name?: string | null;

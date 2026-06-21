@@ -74,7 +74,7 @@ const DiaryDetailScreen = () => {
         title={formatDateLong(diary.date_time)}
         hintBlock={
           diary.is_owner && (
-            <PrivacyToggle value={diary.private} gender="male" />
+            <PrivacyToggle value={diary.private} descriptionType="male" />
           )
         }
         collapsible={true}
@@ -133,10 +133,20 @@ const DiaryDetailScreen = () => {
         )}
 
         {diary.is_owner && (
-          <PlacePreviewRow
-            placeData={diary?.place_data}
-            territoryData={diary.territory_data}
-          />
+          <>
+            <PlacePreviewRow
+              placeData={diary?.place_data}
+              territoryData={diary.territory_data}
+            />
+            {diary.place && !diary.private && (
+              <View style={styles.locationPrivacy}>
+                <PrivacyToggle
+                  descriptionType="location"
+                  value={diary.location_private}
+                />
+              </View>
+            )}
+          </>
         )}
 
         {!diary.is_owner && (
@@ -500,5 +510,8 @@ const stylesFn = (Colors: ThemeColors) =>
       borderBottomLeftRadius: 14,
       borderBottomRightRadius: 14,
       overflow: "hidden",
+    },
+    locationPrivacy: {
+      marginTop: 12,
     },
   });
