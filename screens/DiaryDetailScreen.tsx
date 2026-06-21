@@ -42,7 +42,7 @@ const DiaryDetailScreen = () => {
   const route = useRoute<AppStackRouteProp<"DiaryDetail">>();
   const { diaryId } = route.params;
   const type = "Diary";
-  const {showErrorToast} = useApiError();
+  const { showErrorToast } = useApiError();
 
   const [currentFilters, setCurrentFilters] = useState<Filters | null>(null);
   const [currentSort, setCurrentSort] = useState<string | null>(null);
@@ -158,12 +158,16 @@ const DiaryDetailScreen = () => {
                   {isoToFlagEmoji(diary?.territory_data?.code)}{" "}
                   {diary?.territory_data?.name}
                 </Text>
-                <Text style={styles.placeName} numberOfLines={2}>
-                  {diary.is_owner
-                  ? (diary?.place_data?.name || t("location_not_specified"))
-                  : diary.location_private ? t("approximate_area") : t("observation_location")}
-                </Text>
-                
+                {diary.is_owner ||
+                  (diary.location_private && (
+                    <Text style={styles.placeName} numberOfLines={2}>
+                      {diary?.place_data?.name
+                        ? diary.is_owner
+                          ? diary.place_data.name
+                          : t("approximate_area")
+                        : t("location_not_specified")}
+                    </Text>
+                  ))}
               </View>
             </View>
           </View>
@@ -247,7 +251,8 @@ const DiaryDetailScreen = () => {
       onConfirm: () =>
         deleteMutation.mutate(diaryId, {
           onSuccess: () => navigation.goBack(),
-          onError: (e) => showErrorToast(e, `DiaryDetailScreen:deleteDiary:${diaryId}`),
+          onError: (e) =>
+            showErrorToast(e, `DiaryDetailScreen:deleteDiary:${diaryId}`),
         }),
     });
   }, [diary, diaryId]);

@@ -332,6 +332,7 @@ export interface DiaryFormData {
   date_time?: string | null;
   private?: boolean;
   place?: number | null;
+  location_private?: boolean;
   notes?: string | null;
   name?: string | null;
 }
@@ -342,6 +343,7 @@ export interface ObservationFormData {
   date_time?: string | null;
   private?: boolean;
   place?: number | null;
+  location_private?: boolean;
   time?: string | null;
   quantity?: number | null;
   notes?: string | null;
@@ -429,6 +431,9 @@ export interface ObservationItem extends ObservationBaseItem {
   species_data: SpeciesData;
   territory_data: TerritoryData;
   updated_at: string;
+  external_source: "ebird" | null;
+  external_username: string | null;
+  location_private: boolean;
 }
 
 export interface DiaryObservationItem extends ObservationBaseItem {
@@ -443,6 +448,7 @@ interface DiaryBase {
   place: number | null;
   place_data: PlaceData | null;
   private: boolean;
+  location_private: boolean;
   profile: number;
   territory: number;
   territory_data: TerritoryData;

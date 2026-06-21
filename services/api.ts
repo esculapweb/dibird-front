@@ -17,6 +17,7 @@ export const setOnUnauthorized = (fn: (() => void) | null) => {
 let isRefreshing = false;
 let refreshPromise: Promise<string> | null = null;
 let isLoggingOut = false;
+let cachedAccessToken: string | null = null;
 
 const api = axios.create({
   baseURL: Config.baseUrl,
@@ -26,8 +27,12 @@ const api = axios.create({
   },
 });
 
-export const getAccessToken = (): Promise<string | null> =>
-  SecureStore.getItemAsync("access");
+export const getAccessToken = async (): Promise<string | null> => {
+  if (cachedAccessToken) return cachedAccessToken;
+  const token = await SecureStore.getItemAsync("access");
+  if (token) cachedAccessToken = token;
+  return token;
+};
 
 let cachedRefreshToken: string | null = null;
 
@@ -47,6 +52,7 @@ export const saveTokens = async ({
 }): Promise<void> => {
   isLoggingOut = false;
   if (access) {
+    cachedAccessToken = access;
     await SecureStore.setItemAsync("access", access);
     notifyTokenUpdate(access);
   }
@@ -58,6 +64,7 @@ export const saveTokens = async ({
 
 export const clearTokens = async (): Promise<void> => {
   isLoggingOut = false;
+  cachedAccessToken = null;
   cachedRefreshToken = null;
   await SecureStore.deleteItemAsync("access");
   await SecureStore.deleteItemAsync("refresh");
@@ -135,7 +142,12 @@ const reportToSentry = (error: AxiosError): void => {
       },
     });
   }
-}
+};
+
+type RetryableConfig = NonNullable<AxiosError["config"]> & {
+  _retry?: boolean;
+  _tokenUsed?: string;
+};
 
 api.interceptors.request.use(
   async (config) => {
@@ -154,14 +166,13 @@ api.interceptors.request.use(
 
     if (!isPublicEndpoint && token) {
       config.headers.Authorization = `Bearer ${token}`;
+      (config as RetryableConfig)._tokenUsed = token; // <-- новое поле
     }
 
     return config;
   },
   (error) => Promise.reject(error),
 );
-
-type RetryableConfig = NonNullable<AxiosError["config"]> & { _retry?: boolean };
 
 api.interceptors.response.use(
   (response) => response,
@@ -184,6 +195,14 @@ api.interceptors.response.use(
         return new Promise(() => {});
       }
       originalRequest._retry = true;
+
+      // Если токен уже обновился без нас (другой запрос успел отрефрешить) —
+      // просто ретраим с актуальным токеном, НЕ трогая refresh.
+      const latestAccess = await getAccessToken();
+      if (latestAccess && latestAccess !== originalRequest._tokenUsed) {
+        originalRequest.headers!.Authorization = `Bearer ${latestAccess}`;
+        return api(originalRequest);
+      }
 
       try {
         if (!isRefreshing) {
