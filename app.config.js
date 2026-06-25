@@ -26,6 +26,7 @@ export default {
   expo: {
     name: variant.name,
     slug: "dibird",
+    owner: "esculapweb",
     version: "26.06.1",
     orientation: "portrait",
     scheme: "dibird",

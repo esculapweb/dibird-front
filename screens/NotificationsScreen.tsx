@@ -46,7 +46,7 @@ export default function NotificationsScreen() {
         </TouchableOpacity>
       ),
     });
-  }, [navigation, handleMarkAllRead]);
+  }, [navigation, handleMarkAllRead, Colors]);
 
   // Навигация при тапе на уведомление
   const handlePress = useCallback(
@@ -60,22 +60,23 @@ export default function NotificationsScreen() {
 
       // Навигация по data.screen
       const { screen, obsId, speciesId, achievementId } = item.data;
-        switch (screen) {
-          case 'AlertsFeed':
-            navigation.navigate('AlertsFeed', { highlightObsId: obsId })
-            break
-          case 'SpeciesDetail':
-            if (speciesId) navigation.navigate('SpeciesDetail', { id: speciesId })
-            break
-          case 'Achievements':
-            navigation.navigate('Achievements', { highlightId: achievementId })
-            break
+      switch (screen) {
+        case "Community":
+          navigation.navigate("Community", { highlightObsId: obsId });
+          break;
+        case "SpeciesDetail":
+          if (speciesId)
+            navigation.navigate("SpeciesDetail", { id: speciesId });
+          break;
+        case "Achievements":
+          navigation.navigate("Achievements", { highlightId: achievementId });
+          break;
         //   case 'Checklists':
         //     navigation.navigate('Checklists')
         //     break
-          default:
-            break
-        }
+        default:
+          break;
+      }
     },
     [navigation, queryClient],
   );

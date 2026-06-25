@@ -41,9 +41,10 @@ export interface AppError extends Error {
   response?: AxiosResponse;
 }
 
-export type ErrorExtractor = (
-  error: AppError,
-) => { title: string; message: string };
+export type ErrorExtractor = (error: AppError) => {
+  title: string;
+  message: string;
+};
 
 export interface UIError {
   code: string;
@@ -73,8 +74,6 @@ export type ErrorCode =
   | "UNAUTHORIZED"
   | "VALIDATION"
   | "UNKNOWN";
-
-
 
 interface EmptyStateAction {
   label: string;
@@ -400,8 +399,8 @@ export interface ReverseGeocode {
   country_code: string;
   city: string;
   address: string;
-  raw: Record<string, unknown>
-};
+  raw: Record<string, unknown>;
+}
 
 export type MapPressEvent = Feature<Geometry, GeoJsonProperties>;
 
@@ -435,6 +434,7 @@ export interface ObservationItem extends ObservationBaseItem {
   external_source: "ebird" | null;
   external_username: string | null;
   location_private: boolean;
+  distance?: number | null;
 }
 
 export interface DiaryObservationItem extends ObservationBaseItem {
@@ -659,6 +659,7 @@ export interface ScreenWithFilters {
   o?: string;
   seenMode?: seenMode;
   backTitle?: string;
+  highlightObsId?: string
 }
 
 export type WelcomeScreenNavigationProp = CompositeNavigationProp<
@@ -671,7 +672,6 @@ export type AppStackParamList = {
   Profile: undefined;
   Settings: undefined;
   AlertSettings: undefined;
-  WatchlistEditor: undefined;
   Stat: ScreenWithFilters | undefined;
   Checklist: ScreenWithFilters | undefined;
   Places: ScreenWithFilters | undefined;
@@ -704,7 +704,8 @@ export type AppStackParamList = {
   };
   UserStat: ScreenWithFilters & { profileId: number };
   Notifications: undefined;
-  AlertsFeed: { highlightObsId?: string } | undefined;
+  Community: ScreenWithFilters | undefined;
+  CommunityDetail: { observationId: number };
   SpeciesDetail: { id: number };
   Achievements: { highlightId?: string } | undefined;
   Privacy: undefined;
@@ -721,7 +722,8 @@ export type ScreenWithFiltersOnly =
   | "DiaryDetail"
   | "Rating"
   | "RatingsCompare"
-  | "UserStat";
+  | "UserStat"
+  | "Community";
 
 export type ScreenWithFiltersParamList = {
   [K in ScreenWithFiltersOnly]: AppStackParamList[K] extends undefined
@@ -769,7 +771,7 @@ export type AuthStackRouteProp<T extends keyof AuthStackParamList> = RouteProp<
 
 export type NotificationScreen = keyof Pick<
   AppStackParamList,
-  "Notifications" | "AlertsFeed" | "SpeciesDetail" | "Achievements"
+  "Notifications" | "Community" | "SpeciesDetail" | "Achievements"
 >;
 
 export type NotificationPayload =

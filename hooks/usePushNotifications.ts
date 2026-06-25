@@ -4,6 +4,7 @@ import "react-native-reanimated";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
+import * as Device from 'expo-device';
 
 import "../services/i18n";
 import { registerPushToken } from "../util/fetches";
@@ -15,7 +16,7 @@ import { isNotificationPayload, NotificationPayload } from "../types";
 export const handleNotificationNavigation = (raw: NotificationPayload) => {
   switch (raw.screen) {
     case "AlertsFeed":
-      navigateFromNotification("AlertsFeed", { highlightObsId: raw.obsId });
+      navigateFromNotification("Community", { highlightObsId: raw.obsId });
       break;
     case "SpeciesDetail":
       navigateFromNotification("SpeciesDetail", { id: raw.speciesId });
@@ -35,9 +36,16 @@ export const usePushNotifications = (isAuthenticated: boolean) => {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+   
+
     if (!isAuthenticated) return;
 
     async function register() {
+       if (!Device.isDevice) {
+        console.warn('Push notifications not working on emulators');
+        return null;
+      }
+
       const { status } = (await Notifications.requestPermissionsAsync()) as Notifications.NotificationPermissionsStatus & {
         status: "granted" | "denied" | "undetermined";
         granted: boolean;

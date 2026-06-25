@@ -65,13 +65,17 @@ const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     card: {
       flexDirection: "row",
-      alignItems: "flex-start",
+      alignItems: "center",
       gap: 12,
-      paddingVertical: 12,
-      paddingHorizontal: 16,
+      padding: 6,
       backgroundColor: Colors.primary100,
       borderRadius: 12,
-      marginBottom: 8,
+      marginBottom: 4,
+      shadowColor: Colors.shadow,
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 2,
     },
     unread: {
       backgroundColor: Colors.main300,
@@ -95,5 +99,6 @@ const stylesFn = (Colors: ThemeColors) =>
       backgroundColor: Colors.main100,
       marginTop: 6,
       flexShrink: 0,
+      alignSelf:'flex-start'
     },
   });

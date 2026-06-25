@@ -32,6 +32,8 @@ import AlertSettingsScreen from "../screens/AlertSettingsScreen";
 import NotificationsScreen from "../screens/NotificationsScreen";
 import SpeciesDetailScreen from "../screens/SpeciesDetailScreen";
 import AchievementsScreen from "../screens/AchievementsScreen";
+import CommunityScreen from "../screens/CommunityScreen";
+import CommunityDetailScreen from "../screens/CommunityDetailScreen";
 
 import { useAuth, setOnLogout } from "../store/auth-context";
 import { useProfile } from "../store/profile-context";
@@ -103,6 +105,19 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
           }}
           icon={({ color, size }) => (
             <Ionicons name="person-circle-outline" color={color} size={size} />
+          )}
+        />
+
+        {/* Cообщество — переход через Stack */}
+        <DrawerItem
+          label={t("community")}
+          labelStyle={{ color: Colors.textMain }}
+          onPress={() => {
+            navigation.closeDrawer();
+            navigation.navigate("Community");
+          }}
+          icon={({ color, size }) => (
+            <Ionicons name="people-circle-outline" color={color} size={size} />
           )}
         />
 
@@ -317,6 +332,18 @@ const AppNavigator = () => {
         name="Notifications"
         component={NotificationsScreen}
         options={{ title: t("notifications") }}
+      />
+
+      <Stack.Screen
+        name="Community"
+        component={CommunityScreen}
+        options={{ title: t("community") }}
+      />
+
+      <Stack.Screen
+        name="CommunityDetail"
+        component={CommunityDetailScreen}
+        options={{ title: t("observation") }}
       />
 
       <Stack.Screen

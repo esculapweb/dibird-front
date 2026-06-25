@@ -428,6 +428,25 @@ export const fetchRatingCompare = (
   );
 };
 
+export const fetchCommunityObservations = (
+  filters: Filters,
+  order: string | null = "species_name",
+  search?: string,
+  page?: number,
+  coords?: Coords | null,
+) => {
+  const extraParams = coords ? { lng: coords[0], lat: coords[1] } : {};
+
+  return fetchAbstract<PaginatedResponse<ObservationItem>>(
+    "/myapi/community2/",
+    filters,
+    order,
+    search,
+    page,
+    extraParams,
+  );
+};
+
 export const fetchNotifications = async (page = 1) => {
   const res = await api.get<PaginatedResponse<AppNotification>>(
     "/myapi/notifications/",

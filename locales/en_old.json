@@ -12,6 +12,7 @@
   "check_entered_data": "Check entered data",
   "check_internet": "Check your internet connection or try again later",
   "choose_location_": "Choose location...",
+  "Community": "",
   "coordinates": "Coordinates",
   "coordinates_hint": "You can change coordinates by tapping on the map or editing the fields below. Coordinates must be in decimal degrees format.",
   "could_not_create_user": "Could not create user",
