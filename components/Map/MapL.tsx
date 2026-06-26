@@ -13,7 +13,7 @@ import {
   RasterSource,
   GeoJSONSource,
   Layer,
-  PressEvent
+  PressEvent,
 } from "@maplibre/maplibre-react-native";
 import Toast from "react-native-toast-message";
 import Clipboard from "@react-native-clipboard/clipboard";
@@ -22,7 +22,6 @@ import { useTranslation } from "react-i18next";
 import { Config } from "../../constants/config";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { Coords, PolygonGeometry } from "../../types";
-
 
 const EMPTY_MAP_STYLE = JSON.stringify({
   version: 8,
@@ -35,7 +34,7 @@ interface MapProps {
   mapHeight?: number;
   showCoords?: boolean;
   currentZoom?: number;
-  onPress?: (e: PressEvent) => void; 
+  onPress?: (e: PressEvent) => void;
   accuracy?: number;
   onUseMyLocation?: () => void;
   isLocating?: boolean;
@@ -64,8 +63,8 @@ const MapL = ({
   const sourceKey = polygon
     ? "polygon"
     : hasAccuracy
-    ? "point-accuracy"
-    : "point";
+      ? "point-accuracy"
+      : "point";
 
   return (
     <View style={styles.mapSection}>
@@ -111,12 +110,12 @@ const MapL = ({
               <Layer
                 id="polygonFill"
                 type="fill"
-                style={{ fillColor: Colors.squareFill }}
+                paint={{ "fill-color": Colors.squareFill }}
               />
               <Layer
                 id="polygonStroke"
                 type="line"
-                style={{ lineColor: Colors.squareStroke, lineWidth: 2 }}
+                paint={{ "line-color": Colors.squareStroke, "line-width": 2 }}
               />
             </GeoJSONSource>
           )}
@@ -135,8 +134,8 @@ const MapL = ({
                 <Layer
                   id="accuracyCircle"
                   type="circle"
-                  style={{
-                    circleRadius: [
+                  paint={{
+                    "circle-radius": [
                       "interpolate",
                       ["linear"],
                       ["zoom"],
@@ -147,20 +146,20 @@ const MapL = ({
                       20,
                       accuracy!,
                     ],
-                    circleColor: Colors.accuracyFill,
-                    circleStrokeColor: Colors.accuracyStroke,
-                    circleStrokeWidth: 1,
+                    "circle-color": Colors.accuracyFill,
+                    "circle-stroke-color": Colors.accuracyStroke,
+                    "circle-stroke-width": 1,
                   }}
                 />
               )}
               <Layer
                 id="pointIcon"
                 type="symbol"
-                style={{
-                  iconImage: "marker",
-                  iconSize: 1,
-                  iconAnchor: "bottom",
-                  iconAllowOverlap: true,
+                layout={{
+                  "icon-image": "marker",
+                  "icon-size": 1,
+                  "icon-anchor": "bottom",
+                  "icon-allow-overlap": true,
                 }}
               />
             </GeoJSONSource>
