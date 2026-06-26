@@ -9,7 +9,6 @@ import { isoToFlagEmoji, formatDate, formatDateTime } from "../util/helpers";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
-import Map from "../components/Map/Map";
 import IconsHeader from "../components/ui/IconsHeader";
 import Layout from "../components/ui/Layout";
 import StatCard from "../components/ui/StatCard";
@@ -21,6 +20,7 @@ import { AppStackNavigationProp, AppStackRouteProp } from "../types";
 import { BottomSheet } from "../services/bottomSheet";
 import { buildDateParams } from "../util/helpers";
 import { useApiError } from "../hooks/useApiError";
+import MapL from "../components/Map/MapL";
 
 const H_PAD = 12;
 
@@ -195,7 +195,7 @@ const PlaceDetailScreen = () => {
         </View>
       </View>
 
-      <Map currentCoords={[lng, lat]} mapHeight={410} showCoords={true} />
+      <MapL currentCoords={[lng, lat]} mapHeight={410} showCoords={true} />
       <FilterChips
         filters={{ date: date ?? null }}
         onRemove={() => setDate(null)}

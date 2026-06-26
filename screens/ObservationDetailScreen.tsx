@@ -25,7 +25,6 @@ import { formatTimeString } from "../util/timeHelpers";
 import { isoToFlagEmoji, buildShareUrl, speciesDetails } from "../util/helpers";
 import Section from "../components/ui/Section";
 import PrivacyToggle from "../components/ui/PrivacyToggle";
-import Map from "../components/Map/Map";
 import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
 import IconsHeader from "../components/ui/IconsHeader";
@@ -33,6 +32,7 @@ import Layout from "../components/ui/Layout";
 import { AppStackNavigationProp, AppStackRouteProp } from "../types";
 import { BottomSheet } from "../services/bottomSheet";
 import { useApiError } from "../hooks/useApiError";
+import MapL from "../components/Map/MapL";
 
 const ObservationDetailScreen = () => {
   const navigation = useNavigation<AppStackNavigationProp>();
@@ -329,7 +329,7 @@ const ObservationDetailScreen = () => {
 
         {observation?.place_data?.location?.coordinates && (
           <View style={styles.mapWrapper}>
-            <Map
+            <MapL
               currentCoords={
                 observation.place_data.location.type === "Polygon"
                   ? observation.place_data.location.center

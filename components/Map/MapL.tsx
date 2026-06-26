@@ -7,15 +7,13 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
-  MapView,
+  Map,
   Camera,
+  Images,
   RasterSource,
-  RasterLayer,
-  ShapeSource,
-  SymbolLayer,
-  CircleLayer,
-  FillLayer,
-  LineLayer,
+  GeoJSONSource,
+  Layer,
+  PressEvent
 } from "@maplibre/maplibre-react-native";
 import Toast from "react-native-toast-message";
 import Clipboard from "@react-native-clipboard/clipboard";
@@ -23,21 +21,28 @@ import { useTranslation } from "react-i18next";
 
 import { Config } from "../../constants/config";
 import { useTheme, ThemeColors } from "../../store/theme-context";
-import { Coords, PolygonGeometry, MapPressEvent } from "../../types";
+import { Coords, PolygonGeometry } from "../../types";
+
+
+const EMPTY_MAP_STYLE = JSON.stringify({
+  version: 8,
+  sources: {},
+  layers: [],
+});
 
 interface MapProps {
   currentCoords: Coords | null;
   mapHeight?: number;
   showCoords?: boolean;
   currentZoom?: number;
-  onPress?: (e: MapPressEvent) => void;
+  onPress?: (e: PressEvent) => void; 
   accuracy?: number;
   onUseMyLocation?: () => void;
   isLocating?: boolean;
   polygon?: PolygonGeometry;
 }
 
-const Map = ({
+const MapL = ({
   currentCoords,
   currentZoom = 12,
   onPress = () => {},
@@ -55,89 +60,112 @@ const Map = ({
   const lng = currentCoords?.[0];
   const lat = currentCoords?.[1];
 
-  const metersToPixels = (meters: number, latitude: number, zoom: number) => {
-    const earthCircumference = 40075016.686;
-    const latRad = (latitude * Math.PI) / 180;
-    const mapWidth = 512 * Math.pow(2, zoom);
-    return (meters / (earthCircumference * Math.cos(latRad))) * mapWidth;
-  };
+  const hasAccuracy = Boolean(accuracy && accuracy > 0);
+  const sourceKey = polygon
+    ? "polygon"
+    : hasAccuracy
+    ? "point-accuracy"
+    : "point";
 
   return (
     <View style={styles.mapSection}>
       <View style={styles.container} pointerEvents="box-none">
-        <MapView
+        <Map
+          mapStyle={EMPTY_MAP_STYLE}
           attributionPosition={{ bottom: 16, left: 16 }}
           style={{ flex: 1 }}
-          onPress={onPress}
+          onPress={(e) => onPress(e.nativeEvent)}
         >
+          <Images
+            images={{
+              marker: require("../../assets/marker1.png"),
+            }}
+          />
+
           {currentCoords && (
             <Camera
-              centerCoordinate={[lng!, lat!]}
-              zoomLevel={Math.min(currentZoom, 19)}
-              minZoomLevel={1}
-              maxZoomLevel={19}
-              animationDuration={500}
+              center={[lng!, lat!]}
+              zoom={Math.min(currentZoom, 19)}
+              minZoom={1}
+              maxZoom={19}
+              duration={500}
             />
           )}
+
           <RasterSource
             id="osmTiles"
-            tileUrlTemplates={[Config.mapTileUrl]}
+            tiles={[Config.mapTileUrl]}
             tileSize={256}
-            minZoomLevel={0}
-            maxZoomLevel={19}
+            minzoom={0}
+            maxzoom={19}
           >
-            <RasterLayer id="osmLayer" sourceID="osmTiles" />
+            <Layer type="raster" id="osmLayer" />
           </RasterSource>
+
           {polygon && (
-            <ShapeSource
-              key={JSON.stringify(polygon)}
-              id="privatePolygon"
-              shape={{ type: "Feature", geometry: polygon, properties: {} }}
+            <GeoJSONSource
+              key={sourceKey}
+              id="polygonSource"
+              data={{ type: "Feature", geometry: polygon, properties: {} }}
             >
-              <FillLayer
-                id="privatePolygonFill"
+              <Layer
+                id="polygonFill"
+                type="fill"
                 style={{ fillColor: Colors.squareFill }}
               />
-              <LineLayer
-                id="privatePolygonStroke"
+              <Layer
+                id="polygonStroke"
+                type="line"
                 style={{ lineColor: Colors.squareStroke, lineWidth: 2 }}
               />
-            </ShapeSource>
+            </GeoJSONSource>
           )}
+
           {!polygon && currentCoords && (
-            <ShapeSource
-              id="selectedPoint"
-              shape={{
+            <GeoJSONSource
+              key={sourceKey}
+              id="pointSource"
+              data={{
                 type: "Feature",
                 geometry: { type: "Point", coordinates: [lng!, lat!] },
                 properties: {},
               }}
             >
-              {accuracy && accuracy > 0 && (
-                <CircleLayer
-                  id="accuracyCircleLayer"
-                  sourceID="selectedPoint"
+              {hasAccuracy && (
+                <Layer
+                  id="accuracyCircle"
+                  type="circle"
                   style={{
-                    circleRadius: metersToPixels(accuracy, lat!, currentZoom),
+                    circleRadius: [
+                      "interpolate",
+                      ["linear"],
+                      ["zoom"],
+                      8,
+                      accuracy! / 3,
+                      15,
+                      accuracy! / 1.5,
+                      20,
+                      accuracy!,
+                    ],
                     circleColor: Colors.accuracyFill,
                     circleStrokeColor: Colors.accuracyStroke,
                     circleStrokeWidth: 1,
                   }}
                 />
               )}
-              <SymbolLayer
-                id="selectedPointIcon"
-                sourceID="selectedPoint"
+              <Layer
+                id="pointIcon"
+                type="symbol"
                 style={{
-                  iconImage: require("../../assets/marker1.png"),
+                  iconImage: "marker",
                   iconSize: 1,
                   iconAnchor: "bottom",
                   iconAllowOverlap: true,
                 }}
               />
-            </ShapeSource>
+            </GeoJSONSource>
           )}
-        </MapView>
+        </Map>
 
         {onUseMyLocation && (
           <TouchableOpacity
@@ -181,7 +209,7 @@ const Map = ({
   );
 };
 
-export default Map;
+export default MapL;
 
 const stylesFn = (Colors: ThemeColors, mapHeight?: number) =>
   StyleSheet.create({

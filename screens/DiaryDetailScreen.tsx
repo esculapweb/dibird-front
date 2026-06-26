@@ -26,7 +26,6 @@ import { fetchDiaryObservations } from "../util/fetches";
 import DiaryObservationCard from "../components/Diary/DiaryObservationCard";
 import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
-import Map from "../components/Map/Map";
 import { BottomSheet } from "../services/bottomSheet";
 import { useApiError } from "../hooks/useApiError";
 
@@ -36,6 +35,7 @@ import {
   DiaryObservationItem,
   Filters,
 } from "../types";
+import MapL from "../components/Map/MapL";
 
 const DiaryDetailScreen = () => {
   const navigation = useNavigation<AppStackNavigationProp>();
@@ -185,7 +185,7 @@ const DiaryDetailScreen = () => {
 
         {!diary.is_owner && diary?.place_data?.location?.coordinates && (
           <View style={styles.mapWrapper}>
-            <Map
+            <MapL
               currentCoords={
                 diary.place_data.location.type === "Polygon"
                   ? diary.place_data.location.center

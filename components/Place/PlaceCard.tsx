@@ -2,10 +2,9 @@ import { useMemo, memo } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import { useTranslation } from "react-i18next";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
-import { isoToFlagEmoji } from "../../util/helpers";
+import { isoToFlagEmoji, normalizeDistance } from "../../util/helpers";
 import { BirdSVG } from "../ui/Svgs";
 import StatItem from "../ui/StatItem";
 import { AppStackNavigationProp, PlaceItem } from "../../types";
@@ -15,7 +14,6 @@ const useStyles = (Colors: ThemeColors) => useMemo(() => stylesFn(Colors), [Colo
 const PlaceCard = memo(({ item, index }: {item: PlaceItem, index: number}) => {
   const { Colors } = useTheme();
   const styles = useStyles(Colors);
-  const { t } = useTranslation();
   const navigation = useNavigation<AppStackNavigationProp>();
 
   const territoryText = item.territory_data
@@ -52,9 +50,7 @@ const PlaceCard = memo(({ item, index }: {item: PlaceItem, index: number}) => {
           <View style={styles.coordRow}>
             {item.distance != null && (
               <Text style={styles.distance}>
-                {item.distance >= 1000
-                  ? `~${(item.distance / 1000).toFixed(1)} ${t("km")}`
-                  : `~${item.distance} ${t("m")}`}
+                {normalizeDistance(item.distance)}
               </Text>
             )}
 

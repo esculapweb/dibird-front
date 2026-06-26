@@ -8,6 +8,7 @@ import Stats from "../components/Main/Stats";
 import Sparkline from "../components/Main/Sparkline";
 import BirdOfTheDay from "../components/Main/BirdOfTheDay";
 import ChecklistHero from "../components/Main/ChecklistHero";
+import RareNearby from "../components/Main/RareNearby";
 import NewSpecies from "../components/Main/NewSpecies";
 import QuickActions from "../components/Main/QuickActions";
 import Sections from "../components/Main/Sections";
@@ -111,6 +112,8 @@ const MainScreen = () => {
           filters={filters}
           isLoading={isLoadingDataStat}
         />
+
+        <RareNearby filters={filters} />
 
         <BirdOfTheDay filters={filters} />
 

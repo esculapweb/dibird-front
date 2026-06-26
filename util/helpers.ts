@@ -256,3 +256,8 @@ export const getFullVersion = () => {
   const build = Application.nativeBuildVersion;
   return build ? `${version} (${build})` : version;
 };
+
+export const normalizeDistance = (distance: number): string =>
+  distance >= 1000
+    ? `~${(distance / 1000).toFixed(1)} ${i18n.t("km")}`
+    : `~${distance} ${i18n.t("m")}`;

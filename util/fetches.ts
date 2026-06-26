@@ -259,6 +259,7 @@ const fetchAbstract = async <T>(
   search = "",
   page = 1,
   extraParams: Record<string, unknown> = {},
+  perPage?: number,
 ): Promise<T> => {
   const { date, ...restFilters } = filters;
 
@@ -270,7 +271,7 @@ const fetchAbstract = async <T>(
   const params: Record<string, unknown> = {
     ...cleanFilters(apiFilters),
     ...extraParams,
-    per_page: 100,
+    per_page: perPage ?? 100,
     o: order,
   };
   if (search) params.name = search;
@@ -434,8 +435,9 @@ export const fetchCommunityObservations = (
   search?: string,
   page?: number,
   coords?: Coords | null,
+  per_page?: number,
 ) => {
-  const extraParams = coords ? { lng: coords[0], lat: coords[1] } : {};
+  let extraParams = coords ? { lng: coords[0], lat: coords[1] } : {};
 
   return fetchAbstract<PaginatedResponse<ObservationItem>>(
     "/myapi/community2/",
@@ -444,8 +446,10 @@ export const fetchCommunityObservations = (
     search,
     page,
     extraParams,
+    per_page
   );
 };
+
 
 export const fetchNotifications = async (page = 1) => {
   const res = await api.get<PaginatedResponse<AppNotification>>(

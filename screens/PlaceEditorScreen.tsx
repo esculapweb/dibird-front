@@ -7,6 +7,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { useRoute, useNavigation } from "@react-navigation/native";
+import type { PressEvent } from "@maplibre/maplibre-react-native";
 
 import { useTheme } from "../store/theme-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
@@ -16,7 +17,6 @@ import {
   usePlaceLocation,
   normalizeCoords,
 } from "../hooks/Place/usePlaceLocation";
-import Map from "../components/Map/Map";
 import { callNavigationCallback } from "../util/navigationCallbacks";
 import IconsHeader from "../components/ui/IconsHeader";
 import Layout from "../components/ui/Layout";
@@ -25,12 +25,12 @@ import {
   AppStackNavigationProp,
   AppStackRouteProp,
   AppError,
-  MapPressEvent,
   PlaceFormData,
   PlaceItem,
   ErrorExtractor,
   ReverseGeocode
 } from "../types";
+import MapL from "../components/Map/MapL";
 
 type FormErrors = {
   name?: string;
@@ -97,12 +97,14 @@ const PlaceEditorScreen = () => {
   };
 
   const handleMapPress = useCallback(
-    (e: MapPressEvent) => {
+    (e: PressEvent) => {
       if (isLocating) return;
-      if (e.geometry.type !== "Point") return;
-      const [lng, lat] = e.geometry.coordinates;
+      if (!e?.lngLat) return;
+
+      const [lng, lat] = e.lngLat;
       const normalized = normalizeCoords(lng, lat);
       if (!normalized) return;
+      
       const {
         lngText: newLngText,
         latText: newLatText,
@@ -329,7 +331,7 @@ const PlaceEditorScreen = () => {
 
   return (
     <Layout withKeyboard={true}>
-      <Map
+      <MapL
         onPress={handleMapPress}
         currentCoords={coords}
         currentZoom={zoom}

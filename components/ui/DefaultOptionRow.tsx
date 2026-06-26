@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useTranslation } from "react-i18next";
 
+import { normalizeDistance } from "../../util/helpers";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { DropdownItem } from "../../types";
 
@@ -21,7 +21,6 @@ const DefaultOptionRow = ({
   itemHeight,
 }: DefaultOptionRowProps) => {
   const { Colors } = useTheme();
-  const { t } = useTranslation();
   const styles = stylesFn(Colors, itemHeight);
   const isActive = item.value == selected;
 
@@ -69,9 +68,7 @@ const DefaultOptionRow = ({
 
         {item.distance != null && !isNaN(item.distance) && (
           <Text style={styles.distance}>
-            {item.distance >= 1000
-              ? `~${(item.distance / 1000).toFixed(1)} ${t("km")}`
-              : `~${item.distance} ${t("m")}`}
+            {normalizeDistance(item.distance)}
           </Text>
         )}
       </View>

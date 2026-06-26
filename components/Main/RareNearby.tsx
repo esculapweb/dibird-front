@@ -8,65 +8,55 @@ import { useTheme, ThemeColors } from "../../store/theme-context";
 import { useList } from "../../hooks/useList";
 import { Config } from "../../constants/config";
 import { BirdSVG } from "../ui/Svgs";
-import { formatDateShort } from "../../util/helpers";
-import { fetchStat } from "../../util/fetches";
-import { Filters, AppStackNavigationProp, SpeciesItem } from "../../types";
+import { formatDateShort, normalizeDistance } from "../../util/helpers";
+import { fetchCommunityObservations } from "../../util/fetches";
+import { Filters, AppStackNavigationProp, ObservationItem } from "../../types";
+import { useLocation } from "../../store/location-context";
+import { useAlertSettings } from "../../hooks/useAlertSettings";
 
 const H_PAD = 16;
 const IMAGE_SIZE = 48;
 
 interface NewSpeciesProps {
   filters: Filters;
-  filtersLoaded: boolean;
 }
 
-const NewSpecies: FC<NewSpeciesProps> = ({ filters, filtersLoaded }) => {
+const RareNearby: FC<NewSpeciesProps> = ({ filters }) => {
   const navigation = useNavigation<AppStackNavigationProp>();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
+  const { locationCoords } = useLocation();
+  const { settings } = useAlertSettings();
 
-  const fetchStatSeen = useCallback(
-    (
-      filters: Filters,
-      sort: string | null,
-      search: string | null,
-      page: number,
-    ) => {
-      const { place: _place, species: _species, ...seenFilters } = filters;
-      return fetchStat(
-        { ...seenFilters, seen: true },
-        sort ?? undefined,
-        search ?? "",
+  const fetchDataWrapper = useCallback(
+    (filters: Filters, sort: string | null, search: string, page: number) => {
+      return fetchCommunityObservations(
+        filters,
+        sort,
+        search,
         page,
+        locationCoords,
+        // 3,
       );
     },
-    [],
+    [fetchCommunityObservations, locationCoords],
   );
 
-  const { data: newSpeciesData, isLoading } = useList({
-    screenName: "Stat",
-    fetchFunction: fetchStatSeen,
-    filters,
-    sort: "-seen,-date_time",
-    tabsMode: "seen",
-    enabled: filtersLoaded,
+  const { data: communityData, isLoading } = useList({
+    screenName: "Community",
+    fetchFunction: fetchDataWrapper,
+    filters: {},
+    sort: "-date_time",
+    locationCoords,
+    enabled: !!settings,
   });
 
-  const isYearFilter =
-    filters?.date?.type === "year" || filters?.date?.type === "this_year";
+  const data = communityData?.pages?.[0]?.results?.slice(0, 3) ?? [];
 
-  const data = newSpeciesData?.pages?.[0]?.results?.slice(0, 3) ?? [];
-
-  const handleNavigate = (item: SpeciesItem) => {
-    navigation.navigate("Observations", {
-      filtersOverride: {
-        territory: filters.territory ?? null,
-        place: null,
-        species: item.species_id,
-        speciesName: item.sp_name_lang,
-        date: filters.date ?? null,
-      },
+  const handleNavigate = (item: ObservationItem) => {
+    navigation.navigate("CommunityDetail", {
+      observationId: item.id,
     });
   };
 
@@ -74,7 +64,7 @@ const NewSpecies: FC<NewSpeciesProps> = ({ filters, filtersLoaded }) => {
     return (
       <>
         <View style={styles.sectionHeader}>
-          <Text style={styles.groupLabel}>{t("new_species")}</Text>
+          <Text style={styles.groupLabel}>{t("rare_nearby")}</Text>
         </View>
         <View style={styles.nsList}>
           {[0, 1, 2].map((i) => (
@@ -129,17 +119,16 @@ const NewSpecies: FC<NewSpeciesProps> = ({ filters, filtersLoaded }) => {
   return (
     <>
       <View style={styles.sectionHeader}>
-        <Text style={styles.groupLabel}>{t("new_species")}</Text>
+        <Text style={styles.groupLabel}>{t("rare_nearby")}</Text>
         <TouchableOpacity
           onPress={() =>
-            navigation.navigate("Stat", {
+            navigation.navigate("Community", {
               filtersOverride: {
                 ...filters,
-                place: null,
+                territory: settings?.territory_data.id,
                 species: null,
+                place: null,
               },
-              seenMode: "seen",
-              o: "-seen,-date_time",
             })
           }
           hitSlop={8}
@@ -150,12 +139,12 @@ const NewSpecies: FC<NewSpeciesProps> = ({ filters, filtersLoaded }) => {
 
       <View style={styles.nsList}>
         {data.map((item, i) => {
-          const dateShort = formatDateShort(item.min_date);
+          const dateShort = formatDateShort(item.date_time);
           if (!dateShort) return null;
-          const { d, y } = dateShort;
+          const { d } = dateShort;
           return (
             <TouchableOpacity
-              key={item.species_id}
+              key={item.id}
               style={[
                 styles.nsRow,
                 i < data.length - 1 ? styles.nsRowDivider : null,
@@ -164,9 +153,11 @@ const NewSpecies: FC<NewSpeciesProps> = ({ filters, filtersLoaded }) => {
               onPress={() => handleNavigate(item)}
             >
               <View style={styles.imageWrapper}>
-                {item.sp_thumb ? (
+                {item.species_data.thumb ? (
                   <Image
-                    source={{ uri: `${Config.mediaUrl}/${item.sp_thumb}` }}
+                    source={{
+                      uri: `${Config.mediaUrl}/${item.species_data.thumb}`,
+                    }}
                     style={styles.image}
                     contentFit="cover"
                     cachePolicy="disk"
@@ -179,16 +170,20 @@ const NewSpecies: FC<NewSpeciesProps> = ({ filters, filtersLoaded }) => {
               </View>
               <View style={styles.nsNames}>
                 <Text style={styles.nsCommon} numberOfLines={2}>
-                  {item.sp_name_lang}
+                  {item.species_data.name_lang}
                 </Text>
                 <Text style={styles.nsLatin} numberOfLines={1}>
-                  {item.sp_latin}
+                  {item.species_data.name}
                 </Text>
               </View>
-              <Text style={styles.nsDate}>
-                {d}
-                {!isYearFilter && <Text>{`\n${y}`}</Text>}
-              </Text>
+              
+              {item?.distance && 
+                <View style={styles.rightRow}>
+                    <Text style={styles.nsDate}>{d}</Text>
+                    <Text style={styles.distance}>
+                    {normalizeDistance(item.distance)}
+                    </Text>
+                </View>}
             </TouchableOpacity>
           );
         })}
@@ -197,7 +192,7 @@ const NewSpecies: FC<NewSpeciesProps> = ({ filters, filtersLoaded }) => {
   );
 };
 
-export default NewSpecies;
+export default RareNearby;
 
 const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
@@ -274,5 +269,15 @@ const stylesFn = (Colors: ThemeColors) =>
       color: Colors.textSecondary,
       flexShrink: 0,
       textAlign: "right",
+    },
+    distance: {
+      fontSize: 12,
+      color: Colors.main100,
+    },
+    rightRow: {
+      alignItems: "flex-end",
+      justifyContent: "center",
+      flex: 1,
+      gap: 4,
     },
   });
