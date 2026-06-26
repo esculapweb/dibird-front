@@ -94,7 +94,7 @@ export default function AlertSettingsScreen() {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const handleLocationUnavailable = useLocationUnavailable(
-    t('location_unavailable_alert_hint'),
+    t("location_unavailable_alert_hint"),
   );
 
   // settings hook — expose error + refetch same pattern as useList in ListScreen
@@ -119,10 +119,13 @@ export default function AlertSettingsScreen() {
     try {
       const result = await requestLocation();
       if (result) {
-        await save({
-          lat: Math.round(result.coords[1] * 100) / 100,
-          lon: Math.round(result.coords[0] * 100) / 100,
-        });
+        await save(
+          {
+            lat: Math.round(result.coords[1] * 100) / 100,
+            lon: Math.round(result.coords[0] * 100) / 100,
+          },
+          true,
+        );
       } else if (permissionStatus === "denied") {
         handleLocationUnavailable();
       }
@@ -207,10 +210,10 @@ export default function AlertSettingsScreen() {
           <View style={styles.rowContent}>
             <View style={styles.topRow}>
               <View style={styles.rowText}>
-              <Text style={styles.rowLabel}>
-                {countryFlag} {coordLabel}
-              </Text>
-              <Text style={styles.rowDesc}>{countryName}</Text>
+                <Text style={styles.rowLabel}>
+                  {countryFlag} {coordLabel}
+                </Text>
+                <Text style={styles.rowDesc}>{countryName}</Text>
               </View>
 
               <TouchableOpacity
@@ -225,8 +228,12 @@ export default function AlertSettingsScreen() {
                 )}
               </TouchableOpacity>
             </View>
-            
-            <Text style={styles.rowDesc}>{settings.location_lat != null ? t("alert_location_subtitle") : t("alert_location_no_coords")}</Text>
+
+            <Text style={styles.rowDesc}>
+              {settings.location_lat != null
+                ? t("alert_location_subtitle")
+                : t("alert_location_no_coords")}
+            </Text>
           </View>
         </View>
 

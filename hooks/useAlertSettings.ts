@@ -16,7 +16,7 @@ interface UseAlertSettingsReturn {
   saving: boolean;
   error: string | null;
   /** PATCH — частичное обновление (рекомендуется для экрана настроек) */
-  save: (patch: AlertSettingsPatch) => Promise<boolean>;
+  save: (patch: AlertSettingsPatch, sync?: boolean) => Promise<boolean>;
   /** PUT — полная замена объекта */
   replace: (data: AlertSettingsPatch) => Promise<boolean>;
   refresh: () => Promise<void>;
@@ -52,11 +52,12 @@ export function useAlertSettings(): UseAlertSettingsReturn {
   // ─── Сохранение (PATCH) ───────────────────────────────────────────────────
 
   const save = useCallback(
-    async (patch: AlertSettingsPatch): Promise<boolean> => {
+    async (patch: AlertSettingsPatch, sync = false): Promise<boolean> => {
       setSaving(true);
       setError(null);
       try {
-        const { data } = await updateAlertSettings(patch);
+        const { data } = await updateAlertSettings(patch, sync);
+
         setSettings(data);
         return true;
       } catch {

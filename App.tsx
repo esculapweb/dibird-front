@@ -1,4 +1,4 @@
-import { useState, useEffect, ReactNode } from "react";
+import { useState, useEffect, ReactNode, useRef } from "react";
 import "react-native-gesture-handler";
 import "react-native-reanimated";
 import { StatusBar } from "expo-status-bar";
@@ -118,22 +118,29 @@ const Root = () => {
   const { locationCoords, requestLocation } = useLocation();
   const { language } = useLanguage();
   const { save } = useAlertSettings();
+  const didAutoSave = useRef(false);
+
 
   usePushNotifications(isAuthenticated);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      didAutoSave.current = false;
+      return;
+    }
     requestLocation();
   }, [isAuthenticated]);
 
   useEffect(() => {
     if (!locationCoords || !language || !isAuthenticated) return;
+    if (didAutoSave.current) return;
+    didAutoSave.current = true;
     save({
       lat: Math.round(locationCoords[1] * 100) / 100,
       lon: Math.round(locationCoords[0] * 100) / 100,
       language,
     } satisfies AlertSettingsPatch);
-  }, [locationCoords, language]);
+  }, [locationCoords, language, isAuthenticated]);
 
   if (!splashFinished) {
     return (

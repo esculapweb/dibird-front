@@ -44,8 +44,7 @@ export type AlertSettingsPatch = Partial<
 const BASE = "/myapi/alert-settings/me/";
 
 /** Получить настройки текущего пользователя (GET /myapi/alert-settings/me/) */
-export const getAlertSettings = () =>
-  api.get<AlertSettings>(BASE);
+export const getAlertSettings = () => api.get<AlertSettings>(BASE);
 
 /**
  * Полное обновление (PUT /myapi/alert-settings/me/).
@@ -58,5 +57,5 @@ export const replaceAlertSettings = (data: AlertSettingsPatch) =>
  * Частичное обновление (PATCH /myapi/alert-settings/me/).
  * Предпочтительный метод: отправляем только изменившиеся поля.
  */
-export const updateAlertSettings = (data: AlertSettingsPatch) =>
-  api.patch<AlertSettings>(BASE, data);
+export const updateAlertSettings = (data: AlertSettingsPatch, sync = false) =>
+  api.patch<AlertSettings>(`${BASE}${sync ? "?sync=1" : ""}`, data);
