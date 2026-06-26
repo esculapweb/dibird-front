@@ -65,6 +65,9 @@ const MapL = ({
     : hasAccuracy
       ? "point-accuracy"
       : "point";
+  const accuracyRadiusPx = hasAccuracy
+    ? (accuracy! * Math.cos((lat! * Math.PI) / 180)) / 156543.03392
+    : 0;
 
   return (
     <View style={styles.mapSection}>
@@ -137,14 +140,12 @@ const MapL = ({
                   paint={{
                     "circle-radius": [
                       "interpolate",
-                      ["linear"],
+                      ["exponential", 2],
                       ["zoom"],
-                      8,
-                      accuracy! / 3,
-                      15,
-                      accuracy! / 1.5,
-                      20,
-                      accuracy!,
+                      0,
+                      accuracyRadiusPx,
+                      22,
+                      accuracyRadiusPx * Math.pow(2, 22),
                     ],
                     "circle-color": Colors.accuracyFill,
                     "circle-stroke-color": Colors.accuracyStroke,

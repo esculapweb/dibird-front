@@ -615,10 +615,11 @@ export interface AppNotification {
   body: string;
   data: {
     screen?: string;
-    obsId?: string;
+    obsId?: number;
     speciesId?: number;
     achievementId?: string;
     checklistId?: string;
+    highlightObsIds?: number[];
     [key: string]: unknown;
   };
   is_read: boolean;
@@ -659,7 +660,7 @@ export interface ScreenWithFilters {
   o?: string;
   seenMode?: seenMode;
   backTitle?: string;
-  highlightObsId?: string
+  highlightObsIds?: number[];
 }
 
 export type WelcomeScreenNavigationProp = CompositeNavigationProp<
@@ -775,7 +776,7 @@ export type NotificationScreen = keyof Pick<
 >;
 
 export type NotificationPayload =
-  | { screen: "AlertsFeed"; obsId: string }
+  | { screen: "Community"; highlightObsIds: number[] }
   | { screen: "SpeciesDetail"; speciesId: number }
   | { screen: "Achievements"; achievementId?: string }
   | { screen: "Notifications" };

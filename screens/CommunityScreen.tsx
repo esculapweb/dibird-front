@@ -12,6 +12,7 @@ const CommunityScreen = () => {
   const { t } = useTranslation();
   const route = useRoute<AppStackRouteProp<"Community">>();
   const { locationCoords, locationAvailable } = useLocation();
+  const highlightObsIds = route.params?.highlightObsIds;
 
   const handleLocationUnavailable = useLocationUnavailable();
 
@@ -27,7 +28,7 @@ const CommunityScreen = () => {
   }: {
     item: ObservationItem;
     index: number;
-  }) => <CommunityCard item={item} index={index} />;
+  }) => <CommunityCard item={item} index={index} highlightObsIds={highlightObsIds} />;
 
   return (
     <ListScreen

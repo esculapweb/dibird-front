@@ -59,10 +59,13 @@ export default function NotificationsScreen() {
       }
 
       // Навигация по data.screen
-      const { screen, obsId, speciesId, achievementId } = item.data;
+      const { screen, obsId, speciesId, achievementId, highlightObsIds } = item.data;
       switch (screen) {
         case "Community":
-          navigation.navigate("Community", { highlightObsId: obsId });
+          navigation.navigate("Community", { highlightObsIds: highlightObsIds});
+          break;
+        case "Community":
+          navigation.navigate("CommunityDetail", { observationId: obsId as number });
           break;
         case "SpeciesDetail":
           if (speciesId)

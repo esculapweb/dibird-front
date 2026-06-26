@@ -15,8 +15,8 @@ import { isNotificationPayload, NotificationPayload } from "../types";
 
 export const handleNotificationNavigation = (raw: NotificationPayload) => {
   switch (raw.screen) {
-    case "AlertsFeed":
-      navigateFromNotification("Community", { highlightObsId: raw.obsId });
+    case "Community":
+      navigateFromNotification("Community", { highlightObsIds: raw.highlightObsIds });
       break;
     case "SpeciesDetail":
       navigateFromNotification("SpeciesDetail", { id: raw.speciesId });
@@ -35,14 +35,11 @@ export const handleNotificationNavigation = (raw: NotificationPayload) => {
 export const usePushNotifications = (isAuthenticated: boolean) => {
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-   
-
+  useEffect(() => {   
     if (!isAuthenticated) return;
 
     async function register() {
        if (!Device.isDevice) {
-        console.warn('Push notifications not working on emulators');
         return null;
       }
 

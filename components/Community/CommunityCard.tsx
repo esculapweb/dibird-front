@@ -20,7 +20,7 @@ const useStyles = (Colors: ThemeColors) =>
   useMemo(() => stylesFn(Colors), [Colors]);
 
 const CommunityCard = memo(
-  ({ item, index }: { item: ObservationItem; index: number }) => {
+  ({ item, index, highlightObsIds }: { item: ObservationItem; index: number; highlightObsIds?: number[] }) => {
     const { Colors } = useTheme();
     const styles = useStyles(Colors);
     const navigation = useNavigation<AppStackNavigationProp>();
@@ -36,7 +36,7 @@ const CommunityCard = memo(
 
     return (
       <Pressable
-        style={({ pressed }) => [styles.card, pressed && styles.pressedCard]}
+        style={({ pressed }) => [styles.card, pressed && styles.pressedCard, highlightObsIds?.includes(item.id) && styles.hightlighted]}
         onPress={handlePress}
       >
         <View style={styles.row}>
@@ -305,4 +305,7 @@ const stylesFn = (Colors: ThemeColors) =>
       color: Colors.main100,
       marginRight: 8,
     },
+    hightlighted: {
+      backgroundColor: Colors.main300,
+    }
   });
