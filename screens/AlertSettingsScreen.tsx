@@ -19,7 +19,7 @@ import { ThemeColors, useTheme } from "../store/theme-context";
 import { useLocation } from "../store/location-context";
 import { isoToFlagEmoji } from "../util/helpers";
 import { useLocationUnavailable } from "../hooks/useLocationUnavailable";
-
+import RadiusRow from "../components/ui/RadiusRow";
 import { useAlertSettings } from "../hooks/useAlertSettings";
 import type {
   AlertSettingsPatch,
@@ -240,33 +240,14 @@ export default function AlertSettingsScreen() {
         <Divider styles={styles} />
 
         <View style={styles.row}>
-          <Ionicons name="resize-outline" size={18} color={Colors.main100} />
+          <Ionicons name="radio-outline" size={18} color={Colors.main100} />
+  
           <View style={styles.rowText}>
-            <Text style={styles.rowLabel}>
-              {t("alert_radius_label", { km: localRadius })}
-            </Text>
-            <Text style={styles.rowDesc}>{t("alert_radius_hint")}</Text>
-          </View>
-          <View style={styles.stepper}>
-            <TouchableOpacity
-              onPress={() => {
-                const next = snapDec(localRadius);
-                setLocalRadius(next);
-                save({ radius_km: next });
-              }}
-            >
-              <Text style={styles.stepBtn}>−</Text>
-            </TouchableOpacity>
-            <Text style={styles.stepVal}>{localRadius}</Text>
-            <TouchableOpacity
-              onPress={() => {
-                const next = snapInc(localRadius);
-                setLocalRadius(next);
-                save({ radius_km: next });
-              }}
-            >
-              <Text style={styles.stepBtn}>+</Text>
-            </TouchableOpacity>
+            <RadiusRow
+              value={localRadius}
+              onChange={setLocalRadius}
+              onSave={(v: number) => save({ radius_km: v })}
+            />
           </View>
         </View>
       </Section>

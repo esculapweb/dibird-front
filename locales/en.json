@@ -27,7 +27,7 @@
   "alert_max_per_day_desc": "You won't receive more than this number of alerts within 24 hours",
   "alert_max_per_day_label": "Max alerts per 24 hours: {{n}}",
   "alert_radius_hint": "Only observations within this radius will trigger alerts",
-  "alert_radius_label": "Radius: {{km}} km",
+  "alert_radius_label": "Radius",
   "alert_schedule_empty": "No active time windows — alerts are sent at any time",
   "alert_section_filters": "Filters",
   "alert_section_general": "General",

@@ -226,6 +226,7 @@ export interface Filters {
   territory?: number | null;
   user_id?: number | null;
   year?: number | null;
+  radius?: number | null;
 }
 
 export type AllFiltersKey = keyof Filters;

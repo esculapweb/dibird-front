@@ -27,7 +27,7 @@
   "alert_max_per_day_desc": "В течение 24 часов вы получите не больше этого количества уведомлений",
   "alert_max_per_day_label": "Не более {{n}} уведомлений за 24 часа",
   "alert_radius_hint": "Уведомления только для наблюдений в этом радиусе",
-  "alert_radius_label": "Радиус: {{km}} км",
+  "alert_radius_label": "Радиус",
   "alert_schedule_empty": "Часы активности не заданы — уведомления приходят круглосуточно",
   "alert_section_filters": "Фильтры",
   "alert_section_general": "Основное",
