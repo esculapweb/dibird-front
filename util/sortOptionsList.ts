@@ -15,12 +15,12 @@ export const sortOptionsList = (screen: string | undefined) => {
 
     case "Observations":
       return [
+        { label: i18n.t("date_sort_desc"), value: "-date_time" },
+        { label: i18n.t("date_sort"), value: "date_time" },
         { label: i18n.t("alphabetic"), value: "species_name" },
         { label: i18n.t("alphabetic_desc"), value: "-species_name" },
         { label: i18n.t("taxonomic"), value: "ioc_id" },
         { label: i18n.t("taxonomic_desc"), value: "-ioc_id" },
-        { label: i18n.t("date_sort_desc"), value: "-date_time" },
-        { label: i18n.t("date_sort"), value: "date_time" },
       ];
     case "DiaryDetail":
       return [

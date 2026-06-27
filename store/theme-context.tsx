@@ -39,6 +39,8 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
         if (savedTheme === "light" || savedTheme === "dark") {
           setManualTheme(savedTheme as Theme);
           Appearance.setColorScheme(savedTheme as Theme);
+        } else {
+          Appearance.setColorScheme("unspecified");
         }
       } catch (e) {
         if (__DEV__) console.warn("Failed to load theme from storage", e);
@@ -56,8 +58,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const toggleTheme = (newTheme: Theme | null) => {
     if (newTheme === null) {
       setManualTheme(null);
-      // @ts-expect-error: Нативный модуль поддерживает null
-      Appearance.setColorScheme(null);
+      Appearance.setColorScheme("unspecified");
       AsyncStorage.removeItem(THEME_KEY).catch(
         () => __DEV__ && console.warn("Failed to remove theme from storage"),
       );

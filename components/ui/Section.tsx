@@ -5,19 +5,10 @@ import {
   Text,
   TouchableOpacity,
   LayoutAnimation,
-  Platform,
-  UIManager,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { StyleType } from "../../types";
-
-if (
-  Platform.OS === "android" &&
-  UIManager.setLayoutAnimationEnabledExperimental
-) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 interface SectionProps {
   title: string;

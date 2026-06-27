@@ -58,9 +58,10 @@ const CommunityDetailScreen = () => {
   });
 
   const handleAddObservation = () => {
+
     navigation.navigate("ObservationEditor", {
       defaultTerritory: observation.territory ?? null,
-      defaultSpecies: observation?.species,
+      defaultSpecies: observation?.species_data.id,
       returnMode: "back",
     });
   };

@@ -98,7 +98,7 @@ export default function AlertSettingsScreen() {
   );
 
   // settings hook — expose error + refetch same pattern as useList in ListScreen
-  const { settings, loading, saving, error, refresh, save } =
+  const { settings, loading, error, refresh, save } =
     useAlertSettings();
   const { requestLocation, isRequesting, permissionStatus } = useLocation();
 
@@ -247,6 +247,7 @@ export default function AlertSettingsScreen() {
               value={localRadius}
               onChange={setLocalRadius}
               onSave={(v: number) => save({ radius_km: v })}
+              hint={t("alert_radius_hint")}
             />
           </View>
         </View>
@@ -433,7 +434,7 @@ export default function AlertSettingsScreen() {
         </View>
       </Section>
 
-      {saving && <Text style={styles.saving}>{t("saving")}</Text>}
+      <View style={styles.bottom}></View>
     </Layout>
   );
 }
@@ -517,20 +518,12 @@ const stylesFn = (Colors: ThemeColors) =>
       color: Colors.textMain,
     },
 
-    saving: {
-      textAlign: "center",
-      marginTop: 16,
-      marginBottom: 8,
-      fontSize: 13,
-      color: Colors.textSecondary,
-    },
-
     rowLabelActive: {
       color: Colors.main100,
       fontWeight: "600",
     },
     subOption: {
-      paddingLeft: 44, // выравнивание под текст (18px иконка + 12px gap + 14px padding)
+      paddingLeft: 44, 
       paddingRight: 14,
       paddingVertical: 8,
     },
@@ -556,6 +549,10 @@ const stylesFn = (Colors: ThemeColors) =>
       alignItems: "center",
       marginBottom: 4,
     },
+
+    bottom: {
+      paddingVertical: 16
+    }
   });
 
 //  t("alert_seen_mode_year")

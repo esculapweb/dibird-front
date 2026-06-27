@@ -23,11 +23,13 @@ const RadiusRow = ({
   value,
   onChange,
   onSave,
+  hint,
   maxValue=500,
 }: {
   value: number;
   onChange: (v: number) => void;
   onSave: (v: number) => Promise<boolean>;
+  hint?: string;
   maxValue?:number;
 }) => {
   const { Colors } = useTheme();
@@ -44,7 +46,7 @@ const RadiusRow = ({
           </Text>
         </View>
       </View>
-      <Text style={s.rowDesc}>{t("alert_radius_hint")}</Text>
+      {hint && <Text style={s.rowDesc}>{hint}</Text>}
 
       <Slider
         style={{ width: "100%", height: 24 }}
@@ -56,7 +58,7 @@ const RadiusRow = ({
         onSlidingComplete={onSave}
         minimumTrackTintColor={Colors.main100}
         maximumTrackTintColor={Colors.border}
-        thumbTintColor={Colors.markerBorder}
+        thumbTintColor={Colors.main100}
       />
 
       <View style={s.presets}>
@@ -128,6 +130,7 @@ const stylesRadiusFn = (Colors: ThemeColors) =>
     presets: {
       flexDirection: "row",
       alignItems: "center",
+      justifyContent: "center",
       gap: 6,
       flexWrap: "wrap",
       marginTop: 4,

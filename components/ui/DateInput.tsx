@@ -7,7 +7,6 @@ import {
   Platform,
   Animated,
   LayoutAnimation,
-  UIManager,
 } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import DateTimePicker, {
@@ -21,13 +20,6 @@ import { toDateOnly } from "../../util/helpers";
 import { StyleType } from "../../types";
 
 const nativeGesture = Gesture.Native().shouldCancelWhenOutside(false);
-
-if (
-  Platform.OS === "android" &&
-  UIManager.setLayoutAnimationEnabledExperimental
-) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 const formatDate = (dateStr: string | Date | null, locale = "ru"): string => {
   if (!dateStr) return "";
