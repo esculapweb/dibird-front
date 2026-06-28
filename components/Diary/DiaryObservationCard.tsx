@@ -26,7 +26,6 @@ const DiaryObservationCard = memo(
     const { Colors } = useTheme();
     const styles = useStyles(Colors);
     const navigation = useNavigation<AppStackNavigationProp>();
-    console.log(item);
 
     const handlePress = () => {
       if (owner) {
