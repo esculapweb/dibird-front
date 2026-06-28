@@ -104,4 +104,9 @@ export const INVALIDATION_MAP = {
   Profile: {
     update: [["Rating"], ["userProfile"], ["RatingCompareHeader"]],
   },
+  Community: {
+    add: [],
+    update: [],
+    delete: [],
+  }
 };

@@ -50,6 +50,7 @@ const linking = (
           PlaceDetail: "my/place/:placeId",
           Observations: withFilters("my/observation"),
           ObservationDetail: "my/observation/:observationId",
+          CommunityDetail: "my/community/:observationId",
           Diaries: withFilters("my/diary"),
           DiaryDetail: "my/diary/:diaryId",
           Rating: withFilters("users"),
@@ -115,6 +116,13 @@ const linking = (
       return {
         index: 2,
         routes: [{ name: "Main" }, { name: "Observations" }, state.routes[0]],
+      };
+    }
+
+    if (routeName === "CommunityDetail") {
+      return {
+        index: 2,
+        routes: [{ name: "Main" }, { name: "Community" }, state.routes[0]],
       };
     }
 

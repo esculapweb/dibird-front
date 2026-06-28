@@ -11,7 +11,6 @@ import {
 import { useTranslation } from "react-i18next";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
-import Toast from "react-native-toast-message";
 import { useNavigation, useRoute } from "@react-navigation/native";
 
 import { useTheme, ThemeColors } from "../store/theme-context";
@@ -25,7 +24,6 @@ import { BirdSVG } from "../components/ui/Svgs";
 import { formatTimeString } from "../util/timeHelpers";
 import { isoToFlagEmoji, buildShareUrl, speciesDetails } from "../util/helpers";
 import Section from "../components/ui/Section";
-import PrivacyToggle from "../components/ui/PrivacyToggle";
 import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
 import IconsHeader from "../components/ui/IconsHeader";
@@ -37,7 +35,9 @@ const CommunityDetailScreen = () => {
   const navigation = useNavigation<AppStackNavigationProp>();
   const route = useRoute<AppStackRouteProp<"ObservationDetail">>();
   const { observationId } = route.params;
-  const type = "Observation";
+  const type = "Community";
+
+  // todo? if observation.is_owner navigate to observationDetail - no observation object
 
   const {
     data: observation,
@@ -58,7 +58,6 @@ const CommunityDetailScreen = () => {
   });
 
   const handleAddObservation = () => {
-
     navigation.navigate("ObservationEditor", {
       defaultTerritory: observation.territory ?? null,
       defaultSpecies: observation?.species_data.id,
@@ -68,16 +67,7 @@ const CommunityDetailScreen = () => {
   const mapHeight = Dimensions.get("window").height - 460;
 
   const handleShare = useCallback(async () => {
-    if (observation?.private) {
-      Toast.show({
-        type: "info",
-        text1: t("observation_private"),
-        text2: t("observation_private_share_hint"),
-      });
-      return;
-    }
-
-    const url = buildShareUrl(`my/observation/${observationId}/`);
+    const url = buildShareUrl(`my/community/${observationId}/`);
 
     await Share.share(Platform.OS === "ios" ? { url } : { message: url });
   }, [observation, observationId]);
@@ -120,14 +110,9 @@ const CommunityDetailScreen = () => {
 
   return (
     <Layout style={{ padding: 12 }} bottom={bottomEl} withScroll={true}>
-      <Section
-        title={formatDateLong(observation.date_time)}
-        hintBlock={
-          observation.is_owner && <PrivacyToggle value={observation.private} />
-        }
-      >
+      <Section title={formatDateLong(observation.date_time)}>
         <Pressable
-          style={[styles.header, observation.is_owner && { marginBottom: 8 }]}
+          style={styles.header}
           onPress={() => speciesDetails(observation?.species_data?.segment)}
         >
           {({ pressed }) => (
@@ -190,66 +175,54 @@ const CommunityDetailScreen = () => {
           )}
         </Pressable>
 
-        {!observation.is_owner && (
-          <Pressable
-            style={[styles.placeRow, { marginTop: 8 }]}
-            onPress={() => {
-              if (observation?.owner?.private) return;
-              navigation.navigate("UserStat", {
-                profileId: observation?.owner?.id,
-              });
+        <Pressable
+          style={[styles.placeRow, { marginTop: 8 }]}
+          onPress={() => {
+            if (observation?.owner?.private) return;
+            navigation.navigate("UserStat", {
+              profileId: observation?.owner?.id,
+            });
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
             }}
           >
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <View style={{ flex: 1 }}>
-                <Text style={styles.authorLabel}>
-                  {t("observation_author")}
-                </Text>
-                <View style={styles.authorRow}>
-                  <ProfileAvatar
-                    avatar={observation?.owner?.avatar}
-                    firstName={observation?.owner?.first_name}
-                    lastName={observation?.owner?.last_name}
-                    username={observation?.owner?.username}
-                    size={22}
-                  />
-                  <Text style={styles.sourceName}>{fullName}</Text>
-                  <Text style={styles.sourceName}>·</Text>
-                  <Text style={styles.authorName}>
-                    {observation?.external_username}
-                  </Text>
-                </View>
-              </View>
-              {!observation?.owner?.private && (
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
-                  color={Colors.textSecondary}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.authorLabel}>{t("observation_author")}</Text>
+              <View style={styles.authorRow}>
+                <ProfileAvatar
+                  avatar={observation?.owner?.avatar}
+                  firstName={observation?.owner?.first_name}
+                  lastName={observation?.owner?.last_name}
+                  username={observation?.owner?.username}
+                  size={22}
                 />
-              )}
+                <Text style={styles.sourceName}>{fullName}</Text>
+                {observation?.external_username && (
+                  <>
+                    <Text style={styles.sourceName}>·</Text>
+                    <Text style={styles.authorName}>
+                      {observation?.external_username}
+                    </Text>
+                  </>
+                )}
+              </View>
             </View>
-          </Pressable>
-        )}
+            {!observation?.owner?.private && (
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={Colors.textSecondary}
+              />
+            )}
+          </View>
+        </Pressable>
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.placeRow,
-            pressed && observation.is_owner && { opacity: 0.6 },
-          ]}
-          onPress={() =>
-            observation?.place_data?.id &&
-            observation.is_owner &&
-            navigation.navigate("PlaceDetail", {
-              placeId: observation.place_data.id,
-            })
-          }
-        >
+        <View style={styles.placeRow}>
           <View
             style={{
               flexDirection: "row",
@@ -262,27 +235,9 @@ const CommunityDetailScreen = () => {
                 {isoToFlagEmoji(observation?.territory_data?.code)}{" "}
                 {observation?.territory_data?.name}
               </Text>
-
-              {observation.is_owner ||
-                (observation.location_private && (
-                  <Text style={styles.placeName} numberOfLines={2}>
-                    {observation?.place_data?.name
-                      ? observation.is_owner
-                        ? observation.place_data.name
-                        : t("approximate_area")
-                      : t("location_not_specified")}
-                  </Text>
-                ))}
             </View>
-            {observation?.place_data?.id && observation.is_owner && (
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={Colors.textSecondary}
-              />
-            )}
           </View>
-        </Pressable>
+        </View>
 
         {observation?.place_data?.location?.coordinates && (
           <View style={styles.mapWrapper}>

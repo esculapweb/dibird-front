@@ -41,6 +41,8 @@ const ObservationDetailScreen = () => {
   const type = "Observation";
   const { showErrorToast } = useApiError();
 
+  // todo? if not is owner navigate to communityDetail - no observation object
+
   const {
     data: observation,
     isLoading,
@@ -118,7 +120,7 @@ const ObservationDetailScreen = () => {
       return;
     }
 
-    const url = buildShareUrl(`my/observation/${observationId}/`);
+    const url = buildShareUrl(`my/community/${observationId}/`);
 
     await Share.share(Platform.OS === "ios" ? { url } : { message: url });
   }, [observation, observationId]);

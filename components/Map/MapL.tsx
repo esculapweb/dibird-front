@@ -4,6 +4,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
+  Linking,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -74,7 +75,8 @@ const MapL = ({
       <View style={styles.container} pointerEvents="box-none">
         <Map
           mapStyle={EMPTY_MAP_STYLE}
-          attributionPosition={{ bottom: 16, left: 16 }}
+          logo={false}
+          attribution={false}
           style={{ flex: 1 }}
           onPress={(e) => onPress(e.nativeEvent)}
         >
@@ -198,12 +200,23 @@ const MapL = ({
             </Text>
             <Ionicons
               name="copy-outline"
-              size={16}
+              size={12}
               color={Colors.textSecondary}
               style={{ marginLeft: 6 }}
             />
           </TouchableOpacity>
         )}
+
+        <TouchableOpacity
+          style={styles.attribution}
+          onPress={() =>
+            Linking.openURL("https://www.openstreetmap.org/copyright")
+          }
+        >
+          <Text style={styles.attributionText}>
+            © OpenStreetMap contributors
+          </Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -239,16 +252,29 @@ const stylesFn = (Colors: ThemeColors, mapHeight?: number) =>
       alignItems: "center",
       justifyContent: "center",
       position: "absolute",
-      bottom: 16,
-      right: 16,
-      paddingVertical: 6,
-      paddingHorizontal: 12,
+      bottom: 12,
+      right: 12,
+      paddingVertical: 3,
+      paddingHorizontal: 6,
       backgroundColor: Colors.overlayBg,
       borderRadius: 12,
     },
     coordsOverlayText: {
-      fontSize: 12,
+      fontSize: 10,
       color: Colors.textSecondary,
       fontWeight: "500",
+    },
+    attribution: {
+      position: "absolute",
+      left: 12,
+      bottom: 12,
+      paddingHorizontal: 6,
+      paddingVertical: 3,
+      borderRadius: 12,
+      backgroundColor: Colors.overlayBg,
+    },
+    attributionText: {
+      fontSize: 10,
+      color: Colors.textSecondary,
     },
   });

@@ -7,7 +7,7 @@ import { useApiError } from "./useApiError";
 import api from "../services/api";
 import { INVALIDATION_MAP } from "../util/invalidationMap";
 
-type ItemType = "Place" | "Observation" | "Diary";
+type ItemType = "Place" | "Observation" | "Community" | "Diary";
 
 interface UpdateContext {
   prevItem: unknown;
@@ -17,12 +17,14 @@ interface UpdateContext {
 const URLS = {
   Place: "/myapi/place2/",
   Observation: "/myapi/observation2/",
+  Community: "/myapi/community2/",
   Diary: "/myapi/diary2/",
 };
 
 const TYPE_PLURAL: Record<ItemType, string> = {
   Place: "Places",
   Observation: "Observations",
+  Community: "Observations",
   Diary: "Diaries",
 };
 
@@ -38,14 +40,11 @@ const prependToPaginatedList =
     };
   };
 
-export const useCreateItem = <TData, TResult = unknown>(
-  type: ItemType,
-) => {
+export const useCreateItem = <TData, TResult = unknown>(type: ItemType) => {
   const queryClient = useQueryClient();
 
   return useMutationWithTranslation({
-    mutationFn: (data: TData) =>
-      api.post<TResult>(URLS[type], data),
+    mutationFn: (data: TData) => api.post<TResult>(URLS[type], data),
 
     onSuccess: (response: AxiosResponse<TResult>) => {
       queryClient.setQueryData(
