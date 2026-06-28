@@ -14,13 +14,26 @@ const useStyles = (Colors: ThemeColors) =>
   useMemo(() => stylesFn(Colors), [Colors]);
 
 const DiaryObservationCard = memo(
-  ({ item, index }: { item: DiaryObservationItem; index: number }) => {
+  ({
+    item,
+    index,
+    owner,
+  }: {
+    item: DiaryObservationItem;
+    index: number;
+    owner: boolean;
+  }) => {
     const { Colors } = useTheme();
     const styles = useStyles(Colors);
     const navigation = useNavigation<AppStackNavigationProp>();
+    console.log(item);
 
     const handlePress = () => {
-      navigation.navigate("ObservationDetail", { observationId: item.id });
+      if (owner) {
+        navigation.navigate("ObservationDetail", { observationId: item.id });
+      } else {
+        navigation.navigate("CommunityDetail", { observationId: item.id });
+      }
     };
 
     return (

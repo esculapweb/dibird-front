@@ -247,7 +247,7 @@ const DiaryDetailScreen = () => {
   }: {
     item: DiaryObservationItem;
     index: number;
-  }) => <DiaryObservationCard item={item} index={index} />;
+  }) => <DiaryObservationCard item={item} index={index} owner={diary.is_owner} />;
 
   const handleDelete = useCallback(() => {
     if (!diary) return;
