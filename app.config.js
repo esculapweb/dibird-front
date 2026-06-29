@@ -27,7 +27,7 @@ export default {
     name: variant.name,
     slug: "dibird",
     owner: "esculapweb",
-    version: "26.06.1",
+    version: "26.06.2",
     orientation: "portrait",
     scheme: "dibird",
     userInterfaceStyle: "automatic",
