@@ -49,7 +49,7 @@
       },
       "android": {
         // "serviceAccountKeyPath": "./google-service-account.json",
-        "track": "closed" // internal → alpha → beta → production
+        "track": "production" 
       }
     }
   }
