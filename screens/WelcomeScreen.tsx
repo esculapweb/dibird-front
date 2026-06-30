@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -17,7 +17,11 @@ import { ThemeColors, useTheme } from "../store/theme-context";
 import Layout from "../components/ui/Layout";
 import Logo from "../components/ui/Logo";
 import { LoginWithGoogle, LoginWithApple } from "../util/auth";
-import { AppError, WelcomeScreenNavigationProp, AuthStackNavigationProp } from "../types";
+import {
+  AppError,
+  WelcomeScreenNavigationProp,
+  AuthStackNavigationProp,
+} from "../types";
 import FloatingHeader from "../components/ui/FloatingHeader";
 import { useApiError } from "../hooks/useApiError";
 
@@ -30,24 +34,27 @@ const WelcomeScreen = () => {
   const stackNav = navigation.getParent<AuthStackNavigationProp>();
   const { showErrorToast } = useApiError();
 
-  const googleLoginInProgress = useRef(false);
+  const [googleLoginInProgress, setGoogleLoginInProgress] = useState(false);
 
   const handleGoogle = async () => {
-    if (googleLoginInProgress.current) {
-      return;
-    }
-
-    googleLoginInProgress.current = true;
+    if (googleLoginInProgress) return;
+    setGoogleLoginInProgress(true);
 
     try {
-      await LoginWithGoogle();
+      const result = await LoginWithGoogle();
+      if (result === null) {
+        showErrorToast(
+          { message: "Google Play Services unavailable" } as AppError,
+          "LoginWithGoogle",
+        );
+      }
     } catch (e) {
       const err = e as AppError;
       if (err.code !== "SIGN_IN_CANCELLED") {
         showErrorToast(err, "LoginWithGoogle");
       }
     } finally {
-      googleLoginInProgress.current = false;
+      setGoogleLoginInProgress(false);
     }
   };
   const handleApple = async () => {
@@ -109,7 +116,7 @@ const WelcomeScreen = () => {
           <TouchableOpacity
             style={styles.button}
             onPress={handleGoogle}
-            disabled={googleLoginInProgress.current}
+            disabled={googleLoginInProgress}
             activeOpacity={0.7}
           >
             <Ionicons name="logo-google" size={20} color={Colors.textMain} />
