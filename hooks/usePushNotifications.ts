@@ -4,7 +4,7 @@ import "react-native-reanimated";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
-import * as Device from 'expo-device';
+import * as Device from "expo-device";
 
 import "../services/i18n";
 import { registerPushToken } from "../util/fetches";
@@ -16,7 +16,9 @@ import { isNotificationPayload, NotificationPayload } from "../types";
 export const handleNotificationNavigation = (raw: NotificationPayload) => {
   switch (raw.screen) {
     case "Community":
-      navigateFromNotification("Community", { highlightObsIds: raw.highlightObsIds });
+      navigateFromNotification("Community", {
+        highlightObsIds: raw.highlightObsIds,
+      });
       break;
     case "SpeciesDetail":
       navigateFromNotification("SpeciesDetail", { id: raw.speciesId });
@@ -26,29 +28,30 @@ export const handleNotificationNavigation = (raw: NotificationPayload) => {
         highlightId: raw.achievementId,
       });
       break;
-    // case 'Checklists':
-    //       navigation.navigate('Checklists')
-    //       break
+    case "Checklist":
+      navigation.navigate("Checklist");
+      break;
   }
 };
 
 export const usePushNotifications = (isAuthenticated: boolean) => {
   const queryClient = useQueryClient();
 
-  useEffect(() => {   
+  useEffect(() => {
     if (!isAuthenticated) return;
 
     async function register() {
-       if (!Device.isDevice) {
+      if (!Device.isDevice) {
         return null;
       }
 
-      const { status } = (await Notifications.requestPermissionsAsync()) as Notifications.NotificationPermissionsStatus & {
-        status: "granted" | "denied" | "undetermined";
-        granted: boolean;
-        canAskAgain: boolean;
-        expires: "never" | number;
-      };
+      const { status } =
+        (await Notifications.requestPermissionsAsync()) as Notifications.NotificationPermissionsStatus & {
+          status: "granted" | "denied" | "undetermined";
+          granted: boolean;
+          canAskAgain: boolean;
+          expires: "never" | number;
+        };
 
       if (status !== "granted") return;
 

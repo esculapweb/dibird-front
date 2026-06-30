@@ -1,6 +1,6 @@
 {
   "name": "dibird",
-  "version": "26.06.2",
+  "version": "26.06.3",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",

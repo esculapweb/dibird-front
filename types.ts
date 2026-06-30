@@ -607,6 +607,7 @@ export type NotificationType =
   | "notable_obs"
   | "watchlist_activity"
   | "system"
+  | "checklist"
   | "achievement";
 
 export interface AppNotification {
@@ -780,7 +781,8 @@ export type NotificationPayload =
   | { screen: "Community"; highlightObsIds: number[] }
   | { screen: "SpeciesDetail"; speciesId: number }
   | { screen: "Achievements"; achievementId?: string }
-  | { screen: "Notifications" };
+  | { screen: "Notifications" }
+  | { screen: "Checklist" };
 
 export function isNotificationPayload(
   data: unknown,

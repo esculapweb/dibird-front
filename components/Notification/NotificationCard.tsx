@@ -11,6 +11,7 @@ const META: Record<
   notable_obs: { icon: "binoculars-outline", color: (c) => c.main100 },
   watchlist_activity: { icon: "star-outline", color: (c) => c.accentBlue },
   system: { icon: "information-circle-outline", color: (c) => c.textSecondary },
+  checklist: { icon: "information-circle-outline", color: (c) => c.textSecondary },
   achievement: { icon: "trophy-outline", color: (c) => c.accent100 },
 };
 

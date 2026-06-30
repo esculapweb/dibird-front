@@ -59,13 +59,18 @@ export default function NotificationsScreen() {
       }
 
       // Навигация по data.screen
-      const { screen, obsId, speciesId, achievementId, highlightObsIds } = item.data;
+      const { screen, obsId, speciesId, achievementId, highlightObsIds } =
+        item.data;
       switch (screen) {
         case "Community":
-          navigation.navigate("Community", { highlightObsIds: highlightObsIds});
+          navigation.navigate("Community", {
+            highlightObsIds: highlightObsIds,
+          });
           break;
         case "Community":
-          navigation.navigate("CommunityDetail", { observationId: obsId as number });
+          navigation.navigate("CommunityDetail", {
+            observationId: obsId as number,
+          });
           break;
         case "SpeciesDetail":
           if (speciesId)
@@ -74,9 +79,9 @@ export default function NotificationsScreen() {
         case "Achievements":
           navigation.navigate("Achievements", { highlightId: achievementId });
           break;
-        //   case 'Checklists':
-        //     navigation.navigate('Checklists')
-        //     break
+        case "Checklist":
+          navigation.navigate("Checklist");
+          break;
         default:
           break;
       }

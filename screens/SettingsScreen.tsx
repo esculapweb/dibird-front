@@ -7,6 +7,7 @@ import {
   Platform,
   Share,
   Switch,
+  Alert,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
@@ -16,7 +17,12 @@ import Layout from "../components/ui/Layout";
 import { ThemeColors, useTheme } from "../store/theme-context";
 import { useProfile } from "../store/profile-context";
 import { useAuth } from "../store/auth-context";
-import { AppDrawerNavigationProp, IconType, ErrorExtractor } from "../types";
+import {
+  AppDrawerNavigationProp,
+  IconType,
+  ErrorExtractor,
+  AppError,
+} from "../types";
 import { Config } from "../constants/config";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import { useExportProfile } from "../hooks/Profile/useExportProfile";
@@ -27,6 +33,8 @@ import { BottomSheet } from "../services/bottomSheet";
 import { deleteMyProfile } from "../util/fetches";
 import { useApiError } from "../hooks/useApiError";
 import { getFullVersion } from "../util/helpers";
+import api from "../services/api";
+import { logError } from "../services/errors";
 
 // ------------------------------------------------------------------
 // Primitives
@@ -150,6 +158,8 @@ const Section = ({ title, children, styles, colors }: SectionProps) => (
 // Screen
 // ------------------------------------------------------------------
 
+const APP_REVIEW_PROFILE_ID = 9386;
+
 const SettingsScreen = () => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -176,6 +186,17 @@ const SettingsScreen = () => {
   const handleDeleteConfirmed = async () => {
     const status = await deleteMyProfile(userEmail);
     if (status === 204) await logout();
+  };
+
+  const handleTestPush = async () => {
+    try {
+      await api.post("/myapi/notifications/test-push/");
+      Alert.alert("OK", "Push sent");
+    } catch (e) {
+      const error = e as AppError;
+      logError(error, "ConfirmEmail API ERROR");
+      Alert.alert("Error", "Could not send push");
+    }
   };
 
   const extractDeleteError: ErrorExtractor = (err) => ({
@@ -243,6 +264,15 @@ const SettingsScreen = () => {
           colors={Colors}
           styles={styles}
         />
+        {(profile?.user === APP_REVIEW_PROFILE_ID || profile?.user === 1) && (
+          <Row
+            icon="notifications-outline"
+            label="Send test push"
+            onPress={handleTestPush}
+            colors={Colors}
+            styles={styles}
+          />
+        )}
       </Section>
 
       {/* ── Security ─────────────────────────────────── */}

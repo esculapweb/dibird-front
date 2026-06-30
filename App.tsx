@@ -42,7 +42,6 @@ import type { AlertSettingsPatch } from "./services/alertSettings";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
     shouldShowBanner: true,
