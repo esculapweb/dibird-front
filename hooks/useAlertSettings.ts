@@ -1,6 +1,7 @@
 // src/hooks/useAlertSettings.ts
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "../store/auth-context";
 
 import {
   getAlertSettings,
@@ -29,6 +30,7 @@ export function useAlertSettings(): UseAlertSettingsReturn {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated } = useAuth();
 
   // ─── Загрузка ────────────────────────────────────────────────────────────
 
@@ -46,8 +48,9 @@ export function useAlertSettings(): UseAlertSettingsReturn {
   }, []);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
     refresh();
-  }, [refresh]);
+  }, [refresh, isAuthenticated]);
 
   // ─── Сохранение (PATCH) ───────────────────────────────────────────────────
 
