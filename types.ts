@@ -396,6 +396,7 @@ export interface PlaceData {
 }
 
 export interface ReverseGeocode {
+  name: string;
   country: string;
   country_code: string;
   city: string;

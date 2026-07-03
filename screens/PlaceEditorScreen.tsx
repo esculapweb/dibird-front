@@ -28,7 +28,6 @@ import {
   PlaceFormData,
   PlaceItem,
   ErrorExtractor,
-  ReverseGeocode
 } from "../types";
 import MapL from "../components/Map/MapL";
 
@@ -143,13 +142,7 @@ const PlaceEditorScreen = () => {
 
   useEffect(() => {
     if (!details || isEditMode) return;
-    const getSuggestedName = (d: ReverseGeocode) => {
-      if (d?.city && d?.raw?.county) return `${d.city}, ${d?.raw?.county}`;
-      if (d?.city) return d.city;
-      if (d?.address) return d.address;
-      return "";
-    };
-    const suggestedName = getSuggestedName(details);
+    const suggestedName = details?.name ?? "";
     if (!suggestedName) return;
     setFormData((prev) => ({ ...prev, name: suggestedName }));
     setErrors((prev) => ({ ...prev, name: undefined }));
