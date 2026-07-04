@@ -137,6 +137,7 @@ const Root = () => {
     save({
       lat: Math.round(locationCoords[1] * 100) / 100,
       lon: Math.round(locationCoords[0] * 100) / 100,
+      language,
     } satisfies AlertSettingsPatch);
   }, [locationCoords, language, isAuthenticated]);
 
