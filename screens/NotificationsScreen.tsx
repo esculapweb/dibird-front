@@ -67,7 +67,7 @@ export default function NotificationsScreen() {
             highlightObsIds: highlightObsIds,
           });
           break;
-        case "Community":
+        case "CommunityDetail":
           navigation.navigate("CommunityDetail", {
             observationId: obsId as number,
           });
