@@ -193,8 +193,8 @@ api.interceptors.response.use(
     if (is401) {
       if (isLoggingOut) {
         return Promise.reject(
-        Object.assign(new Error("Logged out"), { code: "LOGGED_OUT" })
-      );
+          Object.assign(new Error("Logged out"), { code: "LOGGED_OUT" }),
+        );
       }
       originalRequest._retry = true;
 
@@ -224,10 +224,16 @@ api.interceptors.response.use(
         const status = refreshError?.response?.status;
 
         if (status === 401 || status === 400) {
-          if (!isLoggingOut) { 
+          if (!isLoggingOut) {
             isLoggingOut = true;
             await clearTokens();
-            onUnauthorizedCallback?.();
+            try {
+              await onUnauthorizedCallback?.();
+            } catch (e) {
+              Sentry.captureException(e, {
+                tags: { context: "onUnauthorizedCallback" },
+              });
+            }
           }
           return new Promise(() => {});
         }

@@ -54,10 +54,16 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
       logError(e, "Unregister push token");
     }
 
-    await Logout(() => {
+    try {
+      await Logout(() => {
+        setAuthToken(null);
+        onLogoutCallback?.();
+      });
+    } catch (e) {
+      logError(e, "Logout error");
       setAuthToken(null);
       onLogoutCallback?.();
-    });
+    }
   }, []);
 
   useEffect(() => {

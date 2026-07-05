@@ -69,9 +69,25 @@ export const Logout = async (onLogoutCallback: () => void) => {
   } finally {
     try {
       await GoogleSignin.signOut();
-    } catch {}
-    await clearTokens();
-    await AsyncStorage.multiRemove(["profile", "filters", "sorting", "global"]);
+    } catch (e) {
+      logError(e, "GoogleSignin.signOut");
+    }
+    try {
+      await clearTokens();
+    } catch (e) {
+      logError(e, "clearTokens");
+    }
+    try {
+      await AsyncStorage.multiRemove([
+        "profile",
+        "filters",
+        "sorting",
+        "global",
+      ]);
+    } catch (e) {
+      logError(e, "AsyncStorage.multiRemove");
+    }
+
     if (typeof onLogoutCallback === "function") onLogoutCallback();
   }
 };
