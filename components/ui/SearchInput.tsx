@@ -6,10 +6,10 @@ import { useTheme, ThemeColors } from "../../store/theme-context";
 import { StyleType } from "../../types";
 
 interface SearchInputProps {
-  value: string;
-  onChange: (value: string) => void;
+  value?: string;
+  onChange?: (value: string) => void;
   placeholder: string;
-  onClear: () => void;
+  onClear?: () => void;
   style?: StyleType;
 }
 
@@ -64,19 +64,14 @@ const stylesFn = (Colors: ThemeColors) =>
     container: {
       flexDirection: "row",
       alignItems: "center",
-      height: 44,
-      paddingHorizontal: 12,
-      marginHorizontal: 12,
-      marginTop: 8,
-      borderRadius: 12,
+      height: 40,
+      paddingHorizontal: 8,
+      marginBottom: 16,
+      borderRadius: 4,
+      borderColor: Colors.border,
+      borderWidth: 1,
       backgroundColor: Colors.primary100,
-      shadowColor: Colors.shadow,
-      shadowOpacity: 0.08,
-      shadowRadius: 4,
-      shadowOffset: { width: 0, height: 2 },
-      elevation: 2,
     },
-
     input: {
       flex: 1,
       marginHorizontal: 4,

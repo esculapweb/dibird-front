@@ -18,7 +18,6 @@ import FilterChips from "../components/Filters/FilterChips";
 import { useList } from "../hooks/useList";
 import ItemsList from "../components/ui/ItemsList";
 import HeaderTitleWithBadge from "../components/ui/HeaderTitleWithBadge";
-import SearchInput from "../components/ui/SearchInput";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import { useSyncedFilters } from "../hooks/useSyncedFilters";
 import { useTheme, ThemeColors } from "../store/theme-context";
@@ -101,7 +100,6 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
   onOpenFilterModal,
   showHeaderBadge = true,
   customHeaderBadge,
-  topEl,
   bottomEl,
   fabBottomOffset = 0,
   onFirstPageData,
@@ -136,7 +134,6 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
     handleFiltersApplied,
     handleClearFilters,
     handleClearFiltersSearch,
-    handleClearSearch,
   } = useSyncedFilters({
     route,
     navigation,
@@ -231,6 +228,9 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
             setFilters={handleFiltersApplied}
             extraTerritory={extraFilters?.territory}
             dismiss={dismiss}
+            showSearch={showSearch}
+            initialSearch={search}
+            onSearchChange={setSearch}
           />
         ),
       }),
@@ -284,6 +284,9 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
                   filters={filters}
                   allowed={allowedFilters}
                   setFilters={handleFiltersApplied}
+                  showSearch={showSearch}
+                  initialSearch={search}
+                  onSearchChange={setSearch}
                   extraTerritory={extraFilters?.territory}
                   dismiss={dismiss}
                 />
@@ -319,15 +322,6 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
     });
   }, [navigation, data]);
 
-  const searchEl = showSearch && (
-    <SearchInput
-      value={search}
-      onChange={setSearch}
-      onClear={handleClearSearch}
-      placeholder={t("search_by_name")}
-    />
-  );
-
   if (isError)
     return (
       <ErrorOverlay
@@ -357,7 +351,6 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
           {bottomEl}
         </>
       }
-      top={topEl ?? searchEl}
     >
       {hasActiveFilters && (
         <FilterChips

@@ -2,8 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Text, View, StyleSheet, Pressable } from "react-native";
 import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
-import {  EdgeInsets, useSafeAreaInsets } from "react-native-safe-area-context";
-
+import { EdgeInsets, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import DropdownInput from "../ui/DropdownInput";
 import { useTheme } from "../../store/theme-context";
@@ -20,6 +19,7 @@ import { useLocation } from "../../store/location-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 import { useFilters } from "../../store/filters-context";
 import { useLocationUnavailable } from "../../hooks/useLocationUnavailable";
+import SearchInput from "../../components/ui/SearchInput";
 import { Filters, AllowedFilterKey, DateFilter } from "../../types";
 import { ThemeColors } from "../../store/theme-context";
 
@@ -29,6 +29,9 @@ interface FilterSheetContentProps {
   setFilters: (filters: Filters) => void;
   extraTerritory?: number | null;
   dismiss: () => void;
+  showSearch?: boolean;
+  initialSearch?: string;
+  onSearchChange?: (value: string) => void;
 }
 
 const BUTTON_HEIGHT = 48;
@@ -39,18 +42,33 @@ const FilterSheetContent = ({
   setFilters,
   extraTerritory,
   dismiss,
+  showSearch,
+  initialSearch = "",
+  onSearchChange,
 }: FilterSheetContentProps) => {
   const { language } = useLanguage();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const styles = stylesFn(Colors, insets);  const { setTerritory, date, setDate, setPlace, setSpecies } = useFilters();
+  const styles = stylesFn(Colors, insets);
+  const { setTerritory, date, setDate, setPlace, setSpecies } = useFilters();
   const {
     locationCoords,
     locationAvailable,
     permissionStatus,
     requestLocation,
   } = useLocation();
+  const [localSearch, setLocalSearch] = useState(initialSearch);
+
+  const handleSearchChange = (val: string) => {
+    setLocalSearch(val);
+    onSearchChange?.(val);
+  };
+
+  const handleClearSearch = () => {
+    setLocalSearch("");
+    onSearchChange?.("");
+  };  
 
   const handleLocationUnavailable = useLocationUnavailable();
 
@@ -199,6 +217,14 @@ const FilterSheetContent = ({
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
+        {showSearch && (
+          <SearchInput
+            value={localSearch}
+            onChange={handleSearchChange}
+            onClear={handleClearSearch}
+            placeholder={t("search_by_name")}
+          />
+        )}
         {allowed.includes("territory") && (
           <DropdownInput
             title={t("country")}
@@ -298,7 +324,7 @@ const stylesFn = (Colors: ThemeColors, insets: EdgeInsets) =>
       paddingBottom: Math.max(16, insets.bottom),
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: Colors.border,
-      alignItems: 'center',
+      alignItems: "center",
     },
     primaryButton: {
       alignItems: "center",
@@ -306,7 +332,7 @@ const stylesFn = (Colors: ThemeColors, insets: EdgeInsets) =>
       height: BUTTON_HEIGHT,
       paddingHorizontal: 40,
       backgroundColor: Colors.main100,
-      borderRadius: 8, 
+      borderRadius: 8,
     },
     primaryText: {
       fontWeight: "600",
@@ -323,5 +349,4 @@ const stylesFn = (Colors: ThemeColors, insets: EdgeInsets) =>
       fontSize: 15,
       color: Colors.textSecondary,
     },
-
   });

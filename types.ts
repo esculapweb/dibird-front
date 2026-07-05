@@ -401,7 +401,6 @@ export interface ReverseGeocode {
   country_code: string;
   city: string;
   address: string;
-  raw: Record<string, unknown>;
 }
 
 export type MapPressEvent = Feature<Geometry, GeoJsonProperties>;
