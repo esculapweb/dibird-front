@@ -5,6 +5,12 @@ import api from "../services/api";
 import { isoToFlagEmoji, buildDateParams, cleanFilters } from "./helpers";
 import { Config } from "../constants/config";
 import {
+  cacheCountries,
+  cacheTimezones,
+  getCachedCountries,
+  getCachedTimezones,
+} from "../hooks/repositories/referenceRepository";
+import {
   Filters,
   DateFilter,
   PaginatedResponse,
@@ -54,11 +60,19 @@ export const downloadExportFile = async (
 };
 
 export const fetchTimezones = async () => {
-  const res = await api.get<[string, string][]>("/api/timezones2/");
-  return res.data.map(([value, label]) => ({
-    value,
-    label,
-  }));
+  try {
+    const res = await api.get<[string, string][]>("/api/timezones2/");
+    const items = res.data.map(([value, label]) => ({
+      value,
+      label,
+    }));
+    cacheTimezones(items);
+    return items;
+  } catch (e) {
+    const cached = getCachedTimezones();
+    if (cached.length > 0) return cached;
+    throw e;
+  }
 };
 
 export const fetchPage = async (slug: string) => {
@@ -70,18 +84,27 @@ export const fetchMyCountries = async (
   favOnly = false,
   order: string,
 ): Promise<TerritoryDropdownItem[]> => {
-  const params: { o: string; fav_only?: boolean } = {
-    o: order,
-  };
-  if (favOnly) params.fav_only = true;
-  const res = await api.get<CountryItem[]>("/myapi/territory2/", { params });
-  return res.data.map((item) => ({
-    value: item.territory_id,
-    label: item.name,
-    code: item.code,
-    icon: isoToFlagEmoji(item.code),
-    iconLabelRight: item.favourite ? ("flag" as const) : undefined,
-  }));
+  try {
+    const params: { o: string; fav_only?: boolean } = {
+      o: order,
+    };
+    if (favOnly) params.fav_only = true;
+    const res = await api.get<CountryItem[]>("/myapi/territory2/", { params });
+    if (!favOnly) cacheCountries(res.data);
+    return res.data.map((item) => ({
+      value: item.territory_id,
+      label: item.name,
+      code: item.code,
+      icon: isoToFlagEmoji(item.code),
+      iconLabelRight: item.favourite ? ("flag" as const) : undefined,
+    }));
+  } catch (e) {
+    if (!favOnly) {
+      const cached = getCachedCountries(order);
+      if (cached.length > 0) return cached;
+    }
+    throw e;
+  }
 };
 
 export const fetchMyPlaces = async (

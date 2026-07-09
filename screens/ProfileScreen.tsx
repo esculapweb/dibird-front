@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import ProfileForm from "../components/Profile/ProfileForm";
+import FailedEditBanner from "../components/Profile/FailedEditBanner";
 import { useProfile } from "../store/profile-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
@@ -14,8 +15,15 @@ const ProfileScreen = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [formKey, setFormKey] = useState(0);
-  const { profile, profileLoading, updateProfile, refreshProfile } =
-    useProfile();
+  const {
+    profile,
+    profileLoading,
+    updateProfile,
+    refreshProfile,
+    failedEdit,
+    retryFailedEdit,
+    discardFailedEdit,
+  } = useProfile();
   const { t } = useTranslation();
   const invalidateProfile = useInvalidateProfile();
   const { showErrorToast } = useApiError();
@@ -74,6 +82,13 @@ const extractApiError = useCallback<ErrorExtractor>(
       bottomButtonHandler={() => setFormKey((k) => k + 1)}
       style={{ paddingTop: 24 }}
     >
+      {failedEdit && (
+        <FailedEditBanner
+          failedEdit={failedEdit}
+          onRetry={retryFailedEdit}
+          onDiscard={discardFailedEdit}
+        />
+      )}
       <ProfileForm
         key={formKey}
         submitHandler={submitHandler}

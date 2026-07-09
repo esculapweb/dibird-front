@@ -8,13 +8,23 @@ import {
   ReactNode,
 } from "react";
 import { AppState } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useLiveQuery } from "drizzle-orm/expo-sqlite";
+import { and, asc, eq } from "drizzle-orm";
 import { getAnalytics, setUserId } from "@react-native-firebase/analytics";
 
+import { db } from "../services/db/client";
+import { mutationQueueTable, profileTable } from "../services/db/schema";
+import * as profileRepository from "../hooks/repositories/profileRepository";
+import * as profileSync from "../services/sync/profileSync";
+import { subscribeToReconnect } from "../services/sync/networkStatus";
 import { initGlobalFilters } from "../util/storageHelper";
-import { AppError, Profile } from "../types";
-import { fetchMyProfile, updateMyProfile } from "../util/fetches";
+import { AppError, Profile, ProfileFormData } from "../types";
 import { logError } from "../services/errors";
+
+export interface FailedProfileEdit {
+  message: string | null;
+  createdAt: number;
+}
 
 interface ProfileContextType {
   profile: Profile | null;
@@ -23,6 +33,9 @@ interface ProfileContextType {
   refreshProfile: () => Promise<void>;
   isTokenReady: boolean;
   error: AppError | null;
+  failedEdit: FailedProfileEdit | null;
+  retryFailedEdit: () => Promise<void>;
+  discardFailedEdit: () => void;
 }
 
 type ProfileCallback = (territory: number | null) => void;
@@ -38,86 +51,103 @@ export const registerOnProfileSaved = (callback: ProfileCallback) => {
   };
 };
 
-const EMPTY_PROFILE = {
-  user_data: {
-    username: "",
-    first_name: "",
-    last_name: "",
-    email: "",
-    is_active: true,
-  },
-  avatar: "",
-  avatar_thumbnail: "",
-  private: false,
-  private_diary: false,
-  user: null,
-  registration_ip: "",
-  timezone: "",
-};
-
 const ProfileContext = createContext<ProfileContextType | null>(null);
 export const ProfileProvider = ({
   children,
   isAuthenticated,
+  isInitializing,
 }: {
   children: ReactNode;
   isAuthenticated: boolean;
+  isInitializing: boolean;
 }) => {
-  const [profile, setProfile] = useState<Profile | null>(null);
   const [error, setError] = useState<AppError | null>(null);
-  const [profileLoading, setProfileLoading] = useState(true);
+  const [initialLoadAttempted, setInitialLoadAttempted] = useState(false);
+
+  const { data: rows, updatedAt } = useLiveQuery(
+    db.select().from(profileTable).limit(1),
+  );
+  const profileRow = rows[0] ?? null;
+  const profile = profileRow ? profileRepository.rowToProfile(profileRow) : null;
+  const profileLoading = isAuthenticated && !profile && !initialLoadAttempted;
+
+  const { data: failedMutations } = useLiveQuery(
+    db
+      .select()
+      .from(mutationQueueTable)
+      .where(
+        and(
+          eq(mutationQueueTable.entity, "profile"),
+          eq(mutationQueueTable.status, "error"),
+        ),
+      )
+      .orderBy(asc(mutationQueueTable.createdAt)),
+  );
+  const failedMutation = failedMutations[0] ?? null;
+  const failedEdit: FailedProfileEdit | null = failedMutation
+    ? { message: failedMutation.lastError, createdAt: failedMutation.createdAt }
+    : null;
 
   const lastRefreshRef = useRef<number>(0);
 
   const refreshProfile = useCallback(async () => {
     lastRefreshRef.current = Date.now();
     try {
-      setProfileLoading(true);
       setError(null);
-      const data = await fetchMyProfile();
-      await saveProfile(data);
+      await profileSync.runProfileSync();
     } catch (e) {
       const err = e as AppError;
       setError(err);
       logError(err, "Failed to refresh profile");
     } finally {
-      setProfileLoading(false);
+      setInitialLoadAttempted(true);
     }
   }, []);
-
-  const saveProfile = async (data: Partial<Profile>) => {
-    const safeProfile = { ...EMPTY_PROFILE, ...data };
-    setProfile(safeProfile);
-    await AsyncStorage.setItem("profile", JSON.stringify(safeProfile));
-    await initGlobalFilters(safeProfile.territory ?? null);
-    onProfileSavedCallbacks.forEach((cb) => cb(safeProfile.territory ?? null));
-
-    if (safeProfile.user) {
-      await setUserId(getAnalytics(), safeProfile.user.toString());
-    }
-  };
 
   const updateProfile = useCallback(async (updatedData: Partial<Profile>) => {
-    const data = await updateMyProfile(updatedData);
-    return await saveProfile(data);
+    profileRepository.applyLocalPatch(
+      updatedData as unknown as Partial<ProfileFormData>,
+    );
+    await profileSync.runProfileSync();
   }, []);
 
+  const retryFailedEdit = useCallback(async () => {
+    if (!failedMutation) return;
+    profileRepository.retryMutation(failedMutation.id);
+    await profileSync.runProfileSync();
+  }, [failedMutation]);
+
+  const discardFailedEdit = useCallback(() => {
+    if (!failedMutation) return;
+    profileRepository.discardMutation(failedMutation.id);
+  }, [failedMutation]);
+
   useEffect(() => {
-    const updateAnalytics = async () => {
-      if (isAuthenticated) {
-        AsyncStorage.removeItem("profile").then(() => {
-          refreshProfile();
-        });
-      } else {
-        setProfile(null);
-        setError(null);
-        setProfileLoading(false);
-        AsyncStorage.removeItem("profile");
-        await setUserId(getAnalytics(), null);
+    if (isInitializing) return;
+
+    if (!isAuthenticated) {
+      profileRepository.clearProfile();
+      setError(null);
+      setInitialLoadAttempted(false);
+      setUserId(getAnalytics(), null);
+      return;
+    }
+    setInitialLoadAttempted(false);
+    refreshProfile();
+  }, [isAuthenticated, isInitializing]);
+
+  useEffect(() => {
+    if (!profile) return;
+
+    (async () => {
+      await initGlobalFilters(profile.territory ?? null);
+      onProfileSavedCallbacks.forEach((cb) => cb(profile.territory ?? null));
+
+      if (profile.user) {
+        await setUserId(getAnalytics(), profile.user.toString());
       }
-    };
-    updateAnalytics();
-  }, [isAuthenticated]);
+    })();
+  }, [updatedAt]);
 
   const isAuthenticatedRef = useRef(isAuthenticated);
   useEffect(() => {
@@ -125,6 +155,12 @@ export const ProfileProvider = ({
   }, [isAuthenticated]);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const unsubscribeReconnect = subscribeToReconnect(() => {
+      profileSync.runProfileSync();
+    });
+
     let timeout: ReturnType<typeof setTimeout> | null = null;
     let prevState = AppState.currentState;
 
@@ -138,17 +174,18 @@ export const ProfileProvider = ({
         timeout = setTimeout(() => {
           const secsSinceRefresh = (Date.now() - lastRefreshRef.current) / 1000;
           if (secsSinceRefresh > 10) {
-            refreshProfile();
+            profileSync.runProfileSync();
           }
         }, 500);
       }
     });
 
     return () => {
+      unsubscribeReconnect();
       sub.remove();
       if (timeout) clearTimeout(timeout);
     };
-  }, [refreshProfile]);
+  }, [isAuthenticated]);
 
   return (
     <ProfileContext.Provider
@@ -159,6 +196,9 @@ export const ProfileProvider = ({
         refreshProfile,
         isTokenReady: isAuthenticated,
         error,
+        failedEdit,
+        retryFailedEdit,
+        discardFailedEdit,
       }}
     >
       {children}

@@ -30,6 +30,7 @@ import { LanguageProvider } from "./store/language-context";
 import { ThemeProvider, useTheme } from "./store/theme-context";
 import ThemedToast from "./components/ui/ThemedToast";
 import { initGoogleSignIn } from "./util/auth";
+import { runMigrations } from "./services/db/client";
 import { AppError } from "./types";
 import GlobalBottomSheet from "./components/Providers/GlobalBottomSheet";
 import CustomSplash from "./components/ui/CustomSplash";
@@ -54,6 +55,15 @@ initSentry();
 initGoogleSignIn();
 
 const appInitPromise: Promise<void> = (async () => {
+  try {
+    await runMigrations();
+  } catch (e) {
+    Sentry.captureException(e, {
+      tags: { context: "db-migrations" },
+    });
+    throw e;
+  }
+
   try {
     await setAnalyticsCollectionEnabled(getAnalytics(), !__DEV__);
   } catch (e) {
@@ -102,9 +112,12 @@ const queryClient = new QueryClient({
 });
 
 const AuthConsumerWrapper = ({ children }: { children: ReactNode }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isInitializing } = useAuth();
   return (
-    <ProfileProvider isAuthenticated={isAuthenticated}>
+    <ProfileProvider
+      isAuthenticated={isAuthenticated}
+      isInitializing={isInitializing}
+    >
       {children}
     </ProfileProvider>
   );
