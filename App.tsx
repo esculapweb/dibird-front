@@ -6,12 +6,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Navigation from "./navigation/Navigation";
 import Toast from "react-native-toast-message";
 import "./services/i18n";
-import {
-  QueryClient,
-  QueryClientProvider,
-  QueryCache,
-  MutationCache,
-} from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import * as Sentry from "@sentry/react-native";
 import {
@@ -31,7 +26,6 @@ import { ThemeProvider, useTheme } from "./store/theme-context";
 import ThemedToast from "./components/ui/ThemedToast";
 import { initGoogleSignIn } from "./util/auth";
 import { runMigrations } from "./services/db/client";
-import { AppError } from "./types";
 import GlobalBottomSheet from "./components/Providers/GlobalBottomSheet";
 import CustomSplash from "./components/ui/CustomSplash";
 import { initSentry } from "./services/sentry";
@@ -40,6 +34,8 @@ import { useLocation } from "./store/location-context";
 import { useLanguage } from "./store/language-context";
 import { useAlertSettings } from "./hooks/useAlertSettings";
 import type { AlertSettingsPatch } from "./services/alertSettings";
+import { queryClient } from "./services/queryClient";
+import { useObservationSync } from "./hooks/Observation/useObservationSync";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -91,26 +87,6 @@ const appInitPromise: Promise<void> = (async () => {
   }
 })();
 
-const queryClient = new QueryClient({
-  queryCache: new QueryCache(),
-  mutationCache: new MutationCache(),
-  defaultOptions: {
-    queries: {
-      retry: (failureCount: number, error: Error) => {
-        const appError = error as AppError;
-        if (appError.code === "UNAUTHORIZED") return false;
-        if (appError.isServerError) return false;
-        return failureCount < 1;
-      },
-      staleTime: 10_000,
-      gcTime: 5 * 60_000,
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: true,
-    },
-    mutations: {},
-  },
-});
-
 const AuthConsumerWrapper = ({ children }: { children: ReactNode }) => {
   const { isAuthenticated, isInitializing } = useAuth();
   return (
@@ -134,6 +110,7 @@ const Root = () => {
 
 
   usePushNotifications(isAuthenticated);
+  useObservationSync(isAuthenticated);
 
   useEffect(() => {
     if (!isAuthenticated) {

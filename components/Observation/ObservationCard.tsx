@@ -61,6 +61,22 @@ const ObservationCard = memo(
               </View>
 
               <View style={styles.rightTop}>
+                {item._pendingSync && (
+                  <Ionicons
+                    name={
+                      item._pendingSync === "error"
+                        ? "warning-outline"
+                        : "cloud-upload-outline"
+                    }
+                    size={14}
+                    color={
+                      item._pendingSync === "error"
+                        ? Colors.error600
+                        : Colors.textSecondary
+                    }
+                    style={{ marginRight: 4 }}
+                  />
+                )}
                 {(item.private || item.place) && (
                   <Ionicons
                     name={

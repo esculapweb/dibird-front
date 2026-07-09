@@ -50,3 +50,15 @@ export const listCacheTable = sqliteTable("list_cache", {
   response: text("response", { mode: "json" }).notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
+
+export const observationTable = sqliteTable("observation", {
+  // negative id = local temp id for an unsynced create, positive = real server id
+  id: integer("id").primaryKey(),
+  data: text("data", { mode: "json" }).notNull(),
+  op: text("op", { enum: ["create", "update", "delete"] }),
+  status: text("status", { enum: ["synced", "pending", "error"] })
+    .notNull()
+    .default("synced"),
+  lastError: text("last_error"),
+  updatedAt: integer("updated_at").notNull(),
+});

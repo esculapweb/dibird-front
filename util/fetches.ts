@@ -21,6 +21,7 @@ import {
   getCachedListResponse,
   getCachedListResponseByPrefix,
 } from "../hooks/repositories/listCacheRepository";
+import * as observationRepository from "../hooks/repositories/observationRepository";
 import {
   Filters,
   DateFilter,
@@ -550,19 +551,28 @@ export const fetchPlaces = (
   );
 };
 
-export const fetchObservations = (
+export const fetchObservations = async (
   filters: Filters,
   order: string | null = "species_name",
   search?: string,
   page?: number,
-) =>
-  fetchAbstract<PaginatedResponse<ObservationItem>>(
+): Promise<PaginatedResponse<ObservationItem>> => {
+  // No fallback to a synthetic empty response here: if there's truly nothing
+  // cached for this exact query, we have no way to tell "you have zero
+  // observations" apart from "this view was never cached" — showing an empty
+  // list plus just the pending item would look like the rest of the data
+  // disappeared. Let the normal offline error surface instead; the pending
+  // item is still safe locally and reachable from its own detail screen.
+  const data = await fetchAbstract<PaginatedResponse<ObservationItem>>(
     "/myapi/observation2/",
     filters,
     order,
     search,
     page,
   );
+
+  return observationRepository.applyOverlay(data, page ?? 1);
+};
 
 export const fetchDiaries = (
   filters: Filters,

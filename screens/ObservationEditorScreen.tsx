@@ -14,7 +14,10 @@ import { useRoute, useNavigation } from "@react-navigation/native";
 import { useTheme } from "../store/theme-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ObservationForm from "../components/Observation/ObservationForm";
-import { useCreateItem, useUpdateItem } from "../hooks/useItem";
+import {
+  useCreateObservation,
+  useUpdateObservation,
+} from "../hooks/Observation/useOfflineObservation";
 import { useProfile } from "../store/profile-context";
 import { setSession } from "../util/sessionStore";
 import { setTypedNavigationCallback } from "../util/navigationCallbacks";
@@ -30,7 +33,6 @@ import {
   AppStackRouteProp,
   ErrorExtractor,
   ObservationFormData,
-  ObservationItem,
   PlaceData,
 } from "../types";
 
@@ -136,13 +138,9 @@ const ObservationEditorScreen = () => {
     };
   };
 
-  const createObservationMutation = useCreateItem<
-    ObservationFormData,
-    ObservationItem
-  >("Observation");
-  const updateObservationMutation = useUpdateItem(
+  const createObservationMutation = useCreateObservation();
+  const updateObservationMutation = useUpdateObservation(
     observationWithParsedDate?.id,
-    "Observation",
   );
 
   const extractApiError = useCallback<ErrorExtractor>(
@@ -191,32 +189,40 @@ const ObservationEditorScreen = () => {
     });
 
     if (isEditMode) {
-      updateObservationMutation.mutate(payload, {
-        onSuccess: () => navigation.goBack(),
-        onError: handleMutateError,
-      });
-    } else {
-      createObservationMutation.mutate(payload, {
-        onSuccess: (res) => {
-          setSession("lastDate", payload.date_time);
-          if (returnMode === "back") {
-            navigation.goBack();
-          } else {
-            requestAnimationFrame(() =>
-              navigation.replace("ObservationDetail", {
-                observationId: res.data.id,
-              }),
-            );
-          }
+      updateObservationMutation.mutate(
+        { payload, speciesData, placeData },
+        {
+          onSuccess: () => navigation.goBack(),
+          onError: handleMutateError,
         },
-        onError: handleMutateError,
-      });
+      );
+    } else {
+      createObservationMutation.mutate(
+        { payload, speciesData, placeData },
+        {
+          onSuccess: (item) => {
+            setSession("lastDate", payload.date_time);
+            if (returnMode === "back") {
+              navigation.goBack();
+            } else {
+              requestAnimationFrame(() =>
+                navigation.replace("ObservationDetail", {
+                  observationId: item.id,
+                }),
+              );
+            }
+          },
+          onError: handleMutateError,
+        },
+      );
     }
   }, [
     formData,
     speciesValue,
     territoryValue,
     placeValue,
+    speciesData,
+    placeData,
     isEditMode,
     returnMode,
     updateObservationMutation,
@@ -237,31 +243,36 @@ const ObservationEditorScreen = () => {
       place: placeValue,
     });
 
-    createObservationMutation.mutate(payload, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: ["DiarySpecies", diaryId],
-        });
-        setJustSaved(true);
-        setTimeout(() => setJustSaved(false), 1500);
-        setSpeciesValue(null);
-        setSpeciesData(null);
-        setFormData((prev) => ({
-          ...prev,
-          species: null,
-          time: null,
-          quantity: null,
-          notes: null,
-        }));
-        setErrors({});
+    createObservationMutation.mutate(
+      { payload, speciesData, placeData },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({
+            queryKey: ["DiarySpecies", diaryId],
+          });
+          setJustSaved(true);
+          setTimeout(() => setJustSaved(false), 1500);
+          setSpeciesValue(null);
+          setSpeciesData(null);
+          setFormData((prev) => ({
+            ...prev,
+            species: null,
+            time: null,
+            quantity: null,
+            notes: null,
+          }));
+          setErrors({});
+        },
+        onError: handleMutateError,
       },
-      onError: handleMutateError,
-    });
+    );
   }, [
     formData,
     speciesValue,
     territoryValue,
     placeValue,
+    speciesData,
+    placeData,
     queryClient,
     diaryId,
     validateForm,

@@ -440,6 +440,10 @@ export interface ObservationItem extends ObservationBaseItem {
   external_username: string | null;
   location_private: boolean;
   distance?: number | null;
+  // Client-only: set when this item has an unsynced local create/update/delete
+  // queued (see hooks/repositories/observationRepository.ts). Never sent to the server.
+  _pendingSync?: "pending" | "error";
+  _syncError?: string | null;
 }
 
 export interface DiaryObservationItem extends ObservationBaseItem {

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useCallback, useMemo } from "react";
+import { useLayoutEffect, useCallback, useMemo, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import { useTranslation } from "react-i18next";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 
 import { useTheme, ThemeColors } from "../store/theme-context";
 import { formatDate, formatDateTime, formatDateLong } from "../util/helpers";
@@ -19,7 +19,14 @@ import { Config } from "../constants/config";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
-import { useItem, useUpdateItem, useDeleteItem } from "../hooks/useItem";
+import {
+  useObservationItem,
+  useUpdateObservation,
+  useDeleteObservation,
+} from "../hooks/Observation/useOfflineObservation";
+import * as observationRepository from "../hooks/repositories/observationRepository";
+import { runObservationSync } from "../services/sync/observationSync";
+import FailedEditBanner from "../components/Profile/FailedEditBanner";
 import { BirdSVG } from "../components/ui/Svgs";
 import { formatTimeString } from "../util/timeHelpers";
 import { isoToFlagEmoji, buildShareUrl, speciesDetails } from "../util/helpers";
@@ -38,8 +45,16 @@ const ObservationDetailScreen = () => {
   const navigation = useNavigation<AppStackNavigationProp>();
   const route = useRoute<AppStackRouteProp<"ObservationDetail">>();
   const { observationId } = route.params;
-  const type = "Observation";
   const { showErrorToast } = useApiError();
+
+  // Same defensive retry as ObservationsScreen: NetInfo's reconnect event can
+  // be missed/racy, so opportunistically retry the queue whenever this
+  // screen is focused rather than relying solely on that background listener.
+  useFocusEffect(
+    useCallback(() => {
+      runObservationSync();
+    }, []),
+  );
 
   // todo? if not is owner navigate to communityDetail - no observation object
 
@@ -49,10 +64,36 @@ const ObservationDetailScreen = () => {
     isError,
     error,
     refetch,
-  } = useItem(observationId, type);
+  } = useObservationItem(observationId);
 
-  const updateMutation = useUpdateItem(observationId, type);
-  const deleteMutation = useDeleteItem(type);
+  const updateMutation = useUpdateObservation(observationId);
+  const deleteMutation = useDeleteObservation();
+
+  // An offline create resolves to a real server id in the background; once that
+  // happens, "graduate" this screen from the temp id to the real one so any
+  // further edit/delete/share call targets the right id.
+  useEffect(() => {
+    if (observation && observation.id !== observationId) {
+      navigation.setParams({ observationId: observation.id });
+    }
+  }, [observation, observationId, navigation]);
+
+  const failedMutation = observation?._syncError
+    ? observationRepository.getFailedMutationFor(observationId)
+    : null;
+
+  const handleRetrySync = useCallback(async () => {
+    if (!failedMutation) return;
+    observationRepository.retryMutation(failedMutation.id, observationId);
+    await runObservationSync();
+    await refetch();
+  }, [failedMutation, observationId, refetch]);
+
+  const handleDiscardSync = useCallback(() => {
+    if (!failedMutation) return;
+    observationRepository.discardMutation(failedMutation.id, observationId);
+    refetch();
+  }, [failedMutation, observationId, refetch]);
 
   const { Colors } = useTheme();
   const { t } = useTranslation();
@@ -169,6 +210,13 @@ const ObservationDetailScreen = () => {
 
   return (
     <Layout style={{ padding: 12 }} bottom={bottomEl} withScroll={true}>
+      {observation._syncError && failedMutation && (
+        <FailedEditBanner
+          failedEdit={{ message: observation._syncError, createdAt: Date.now() }}
+          onRetry={handleRetrySync}
+          onDiscard={handleDiscardSync}
+        />
+      )}
       <Section
         title={formatDateLong(observation.date_time)}
         hintBlock={
