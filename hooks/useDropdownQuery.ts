@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import { useQuery, UseQueryResult } from "@tanstack/react-query";
 
 import { useSavedSort } from "./useSavedSort";
-import { useApiError } from "./useApiError";
 import { sortOptionsList } from "../util/sortOptionsList";
 import { DropdownItem, AppError } from "../types";
 
@@ -46,7 +45,6 @@ export function useDropdownQuery<T extends DropdownItem = DropdownItem>({
   requestLocation,
 }: UseDropdownQueryProps<T>) {
   const { sort, loaded, onChange } = useSavedSort(type);
-  const { showErrorToast } = useApiError();
   const pendingSortRef = useRef<string | null>(null);
 
   const isDistanceSort = (val: string) =>
@@ -101,12 +99,6 @@ export function useDropdownQuery<T extends DropdownItem = DropdownItem>({
       ? (data) => new Map(data.map((i) => [i.value, i?.name_lang ?? i.label]))
       : undefined,
   });
-
-  useEffect(() => {
-    if (query.error) {
-      showErrorToast(query.error, `useDropdownQuery:${type}`);
-    }
-  }, [query.error]);
 
   return { query, sort: effectiveSort, onSortChange: handleSortChange };
 }
