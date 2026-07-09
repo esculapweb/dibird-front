@@ -2,7 +2,13 @@ import { Platform } from "react-native";
 import * as FileSystem from "expo-file-system/legacy";
 
 import api from "../services/api";
-import { isoToFlagEmoji, buildDateParams, cleanFilters } from "./helpers";
+import {
+  isoToFlagEmoji,
+  buildDateParams,
+  cleanFilters,
+  stableStringify,
+} from "./helpers";
+import i18n from "../services/i18n";
 import { Config } from "../constants/config";
 import {
   cacheCountries,
@@ -10,6 +16,11 @@ import {
   getCachedCountries,
   getCachedTimezones,
 } from "../hooks/repositories/referenceRepository";
+import {
+  cacheListResponse,
+  getCachedListResponse,
+  getCachedListResponseByPrefix,
+} from "../hooks/repositories/listCacheRepository";
 import {
   Filters,
   DateFilter,
@@ -114,36 +125,46 @@ export const fetchMyPlaces = async (
 ): Promise<PlaceDropdownItem[]> => {
   if (!territory) return [];
 
-  const isDistanceSort = order === "distance" || order === "-distance";
+  const cacheKey = `places|${territory}|${order}`;
 
-  const params: {
-    territory: number | null;
-    o: string;
-    lng?: number;
-    lat?: number;
-  } = {
-    territory,
-    o: order,
-  };
+  try {
+    const isDistanceSort = order === "distance" || order === "-distance";
 
-  if (isDistanceSort && coords) {
-    const [lng, lat] = coords;
-    params.lng = lng;
-    params.lat = lat;
+    const params: {
+      territory: number | null;
+      o: string;
+      lng?: number;
+      lat?: number;
+    } = {
+      territory,
+      o: order,
+    };
+
+    if (isDistanceSort && coords) {
+      const [lng, lat] = coords;
+      params.lng = lng;
+      params.lat = lat;
+    }
+
+    const res = await api.get<PlaceItemBase[]>("/myapi/place-dropdown2/", {
+      params,
+    });
+
+    const items = res.data.map((item) => ({
+      value: item.id,
+      label: item.name,
+      iconLabel: item.favourite ? ("star" as const) : undefined,
+      location: item.location,
+      distance: item.distance ?? undefined,
+      preview: item.preview ?? undefined,
+    }));
+    cacheListResponse(cacheKey, items);
+    return items;
+  } catch (e) {
+    const cached = getCachedListResponse<PlaceDropdownItem[]>(cacheKey);
+    if (cached) return cached;
+    throw e;
   }
-
-  const res = await api.get<PlaceItemBase[]>("/myapi/place-dropdown2/", {
-    params,
-  });
-
-  return res.data.map((item) => ({
-    value: item.id,
-    label: item.name,
-    iconLabel: item.favourite ? ("star" as const) : undefined,
-    location: item.location,
-    distance: item.distance ?? undefined,
-    preview: item.preview ?? undefined,
-  }));
 };
 
 export const fetchSpecies = async (
@@ -152,25 +173,37 @@ export const fetchSpecies = async (
   dateFilter?: DateFilter,
 ): Promise<SpeciesDropdownItem[]> => {
   if (!territory) return [];
-  const params = {
-    territory,
-    per_page: 2500,
-    o: order,
-    ...buildDateParams(dateFilter),
-  };
-  const res = await api.get<PaginatedResponse<SpeciesItem>>("/myapi/stat2/", {
-    params,
-  });
 
-  return res.data?.results.map((item) => ({
-    value: item.species_id,
-    label: item.sp_name,
-    name: item.sp_latin,
-    name_lang: item.sp_name_lang,
-    thumb: item.sp_thumb ?? undefined,
-    seen: item.seen,
-    segment: item.segment,
-  }));
+  const cacheKey = `species|${territory}|${order}|${stableStringify(dateFilter ?? {})}`;
+
+  try {
+    const params = {
+      territory,
+      per_page: 2500,
+      o: order,
+      ...buildDateParams(dateFilter),
+    };
+    const res = await api.get<PaginatedResponse<SpeciesItem>>(
+      "/myapi/stat2/",
+      { params },
+    );
+
+    const items = res.data?.results.map((item) => ({
+      value: item.species_id,
+      label: item.sp_name,
+      name: item.sp_latin,
+      name_lang: item.sp_name_lang,
+      thumb: item.sp_thumb ?? undefined,
+      seen: item.seen,
+      segment: item.segment,
+    }));
+    cacheListResponse(cacheKey, items);
+    return items;
+  } catch (e) {
+    const cached = getCachedListResponse<SpeciesDropdownItem[]>(cacheKey);
+    if (cached) return cached;
+    throw e;
+  }
 };
 
 export const fetchDiarySpeciesIds = async (diaryId: number) => {
@@ -275,6 +308,37 @@ export const fetchBirdOfDay = async (territory: number | null) => {
   return res.data;
 };
 
+const buildListCacheKeyPrefix = (
+  fetchUrl: string,
+  filters: Filters,
+  search: string,
+  page: number,
+  extraParams: Record<string, unknown>,
+) =>
+  `${fetchUrl}|${i18n.language}|${stableStringify({ ...filters, ...extraParams })}|${search}|${page}|`;
+
+const buildListCacheKey = (
+  fetchUrl: string,
+  filters: Filters,
+  order: string | null,
+  search: string,
+  page: number,
+  extraParams: Record<string, unknown>,
+) =>
+  `${buildListCacheKeyPrefix(fetchUrl, filters, search, page, extraParams)}order:${order ?? ""}`;
+
+interface FetchAbstractOptions<T> {
+  // Applied only to data served from the offline cache (fresh network
+  // responses are already sorted server-side) — lets a screen recover the
+  // sort the user actually asked for when the cache only has a differently
+  // ordered entry for the same filters/search/page.
+  resort?: (data: T, order: string | null) => T;
+  // Called only if neither the exact nor the order-relaxed cache lookup
+  // found anything, so a screen can derive a response from a related cache
+  // entry (e.g. slicing an "all" list down to a seen/unseen subset).
+  deriveFallback?: () => T | null;
+}
+
 const fetchAbstract = async <T>(
   fetchUrl: string,
   filters: Filters = {},
@@ -283,25 +347,117 @@ const fetchAbstract = async <T>(
   page = 1,
   extraParams: Record<string, unknown> = {},
   perPage?: number,
+  options?: FetchAbstractOptions<T>,
 ): Promise<T> => {
-  const { date, ...restFilters } = filters;
+  const cacheKey = buildListCacheKey(
+    fetchUrl,
+    filters,
+    order,
+    search,
+    page,
+    extraParams,
+  );
 
-  const apiFilters = {
-    ...restFilters,
-    ...buildDateParams(date),
-  };
+  try {
+    const { date, ...restFilters } = filters;
 
-  const params: Record<string, unknown> = {
-    ...cleanFilters(apiFilters),
-    ...extraParams,
-    per_page: perPage ?? 100,
-    o: order,
-  };
-  if (search) params.name = search;
-  if (page > 1) params.page = page;
+    const apiFilters = {
+      ...restFilters,
+      ...buildDateParams(date),
+    };
 
-  const res = await api.get<T>(fetchUrl, { params });
-  return res.data;
+    const params: Record<string, unknown> = {
+      ...cleanFilters(apiFilters),
+      ...extraParams,
+      per_page: perPage ?? 100,
+      o: order,
+    };
+    if (search) params.name = search;
+    if (page > 1) params.page = page;
+
+    const res = await api.get<T>(fetchUrl, { params });
+    cacheListResponse(cacheKey, res.data);
+    return res.data;
+  } catch (e) {
+    const exactMatch = getCachedListResponse<T>(cacheKey);
+    if (exactMatch) return exactMatch;
+
+    // Same screen/filters/search/page, but cached under a different sort —
+    // still useful offline even if the order doesn't match what was requested.
+    const relaxedMatch = getCachedListResponseByPrefix<T>(
+      buildListCacheKeyPrefix(fetchUrl, filters, search, page, extraParams),
+    );
+    if (relaxedMatch) {
+      return options?.resort ? options.resort(relaxedMatch, order) : relaxedMatch;
+    }
+
+    const derived = options?.deriveFallback?.() ?? null;
+    if (derived) {
+      return options?.resort ? options.resort(derived, order) : derived;
+    }
+
+    throw e;
+  }
+};
+
+// Client-side re-sort used only as an offline fallback (see FetchAbstractOptions.resort
+// above). Mirrors the `o=` ordering strings from sortOptionsList("Stat") — comma-separated
+// fields, each optionally prefixed with "-" for descending, same as the backend accepts.
+const speciesSortValue = (
+  item: SpeciesItem,
+  field: string,
+): string | number | null => {
+  switch (field) {
+    case "name":
+      return item.sp_name_lang ?? "";
+    case "ioc_id":
+      return item.ioc_id ?? null;
+    case "seen":
+      return item.seen ? 1 : 0;
+    case "date_time":
+      return item.max_date ?? item.min_date ?? null;
+    default:
+      return null;
+  }
+};
+
+const compareSortValues = (a: string | number | null, b: string | number | null) => {
+  if (a == null && b == null) return 0;
+  if (a == null) return 1;
+  if (b == null) return -1;
+  if (typeof a === "string" && typeof b === "string") return a.localeCompare(b);
+  return (a as number) - (b as number);
+};
+
+export const sortSpeciesItems = <T extends SpeciesItem>(
+  items: T[],
+  order: string | null,
+): T[] => {
+  if (!order) return items;
+
+  const tokens = order.split(",").map((token) => ({
+    field: token.replace(/^-/, ""),
+    desc: token.startsWith("-"),
+  }));
+
+  // "ioc_id" isn't in the API response (only used server-side for ordering),
+  // so we can't reproduce taxonomic order offline until the backend adds it —
+  // leave the cached order untouched rather than guess.
+  const canSort = tokens.every(
+    (t) => t.field !== "ioc_id" || items.every((i) => typeof i.ioc_id === "number"),
+  );
+  if (!canSort) return items;
+
+  return [...items].sort((a, b) => {
+    for (const { field, desc } of tokens) {
+      const cmp = compareSortValues(
+        speciesSortValue(a, field),
+        speciesSortValue(b, field),
+      );
+      if (cmp !== 0) return desc ? -cmp : cmp;
+    }
+    return 0;
+  });
 };
 
 export const fetchStat = (
@@ -311,12 +467,50 @@ export const fetchStat = (
   page?: number,
 ) => {
   filters = { ...filters };
+  const targetSeen = filters.seen ?? null;
+
   return fetchAbstract<StatPaginatedResponse<SpeciesItem>>(
     "/myapi/stat2/",
     filters,
     order,
     search,
     page,
+    {},
+    undefined,
+    {
+      resort: (data, ord) => ({
+        ...data,
+        results: sortSpeciesItems(data.results, ord),
+      }),
+      // Offline and this exact seen/unseen tab was never cached: derive it
+      // from the "all" tab's cache instead of showing an error, since every
+      // item already carries the `seen` flag needed to split it back out.
+      deriveFallback:
+        targetSeen === null
+          ? undefined
+          : () => {
+              const allPrefix = buildListCacheKeyPrefix(
+                "/myapi/stat2/",
+                { ...filters, seen: null },
+                search ?? "",
+                page ?? 1,
+                {},
+              );
+              const allData = getCachedListResponseByPrefix<
+                StatPaginatedResponse<SpeciesItem>
+              >(allPrefix);
+              if (!allData) return null;
+
+              const results = allData.results.filter(
+                (item) => item.seen === targetSeen,
+              );
+              return {
+                ...allData,
+                results,
+                pagination: { ...allData.pagination, count: results.length },
+              };
+            },
+    },
   );
 };
 

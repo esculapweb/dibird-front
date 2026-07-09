@@ -303,6 +303,10 @@ export interface SpeciesItem {
   min_created_at: string | null;
   min_territory: string | null;
   max_territory: string | null;
+  // Not sorted client-side without this: taxonomic order (ioc_id/-ioc_id) has
+  // no other reproducible field, so offline re-sort silently no-ops until the
+  // backend adds it to /myapi/stat2/ results.
+  ioc_id?: number;
 }
 
 export interface ChecklistItem {

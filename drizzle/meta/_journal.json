@@ -15,6 +15,13 @@
       "when": 1783592466970,
       "tag": "0001_pretty_miek",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1783597904831,
+      "tag": "0002_mature_grandmaster",
+      "breakpoints": true
     }
   ]
 }

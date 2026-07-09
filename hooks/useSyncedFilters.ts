@@ -40,6 +40,7 @@ export const useSyncedFilters = <RouteName extends ScreenWithFiltersOnly>({
     setPlace,
     species,
     setSpecies,
+    filtersReady,
   } = useFilters();
 
   const params = route.params as ScreenWithFilters | undefined;
@@ -61,6 +62,7 @@ export const useSyncedFilters = <RouteName extends ScreenWithFiltersOnly>({
   const [ignoreContextSync, setIgnoreContextSync] = useState(false);
   const initFiltersRef = useRef(false);
   const overrideAppliedRef = useRef(false);
+  const lastDeepLinkKeyRef = useRef<string | null>(null);
   const { locationCoords, permissionStatus, requestLocation } = useLocation();
   const userChangedSortRef = useRef(false);
   const defaultSortRef = useRef<string | null>(null);
@@ -192,6 +194,8 @@ export const useSyncedFilters = <RouteName extends ScreenWithFiltersOnly>({
         return;
       }
 
+      if (initFiltersRef.current) return;
+
       const {
         filters: deepFilters,
         sort: deepSort,
@@ -199,26 +203,37 @@ export const useSyncedFilters = <RouteName extends ScreenWithFiltersOnly>({
       } = parseDeepLinkParams(params);
 
       if (hasParams) {
+        // Re-navigating to an already mounted screen (e.g. deep link with a
+        // new ?o=...) updates route.params without remounting, so we must
+        // re-apply whenever the resolved filters/sort actually change.
+        const deepLinkKey = JSON.stringify({ deepFilters, deepSort });
+        if (lastDeepLinkKeyRef.current === deepLinkKey) return;
+        lastDeepLinkKeyRef.current = deepLinkKey;
+
         overrideAppliedRef.current = true;
         setFilters({ ...deepFilters } as Filters);
         setIgnoreContextSync(true);
         if (deepSort) setSort(deepSort);
         setSortReady(true);
-      } else {
-        setFilters({
-          territory: territory ?? null,
-          place: place ?? null,
-          date: date ?? null,
-          species: species ?? null,
-        });
-
-        await loadAndApplySort();
+        setFiltersLoaded(true);
+        return;
       }
 
+      if (overrideAppliedRef.current) return;
+      if (!filtersReady) return;
+
+      setFilters({
+        territory: territory ?? null,
+        place: place ?? null,
+        date: date ?? null,
+        species: species ?? null,
+      });
+
+      await loadAndApplySort();
       setFiltersLoaded(true);
     };
     initFilters();
-  }, []);
+  }, [filtersReady, params]);
 
   useFocusEffect(
     useCallback(() => {

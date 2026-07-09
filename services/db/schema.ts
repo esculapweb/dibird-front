@@ -44,3 +44,9 @@ export const timezoneTable = sqliteTable("timezone", {
   label: text("label").notNull(),
   sortOrder: integer("sort_order").notNull(),
 });
+
+export const listCacheTable = sqliteTable("list_cache", {
+  key: text("key").primaryKey(),
+  response: text("response", { mode: "json" }).notNull(),
+  updatedAt: integer("updated_at").notNull(),
+});

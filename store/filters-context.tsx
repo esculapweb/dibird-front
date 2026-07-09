@@ -35,6 +35,7 @@ interface FiltersContextType {
   setSeenMode: (val: seenMode) => void;
   resetFilters: () => Promise<void>;
   reload: () => Promise<void>;
+  filtersReady: boolean;
 }
 
 const FiltersContext = createContext<FiltersContextType | null>(null);
@@ -45,20 +46,21 @@ export const FiltersProvider = ({ children }: { children: ReactNode }) => {
   const [place, setPlaceState] = useState<number | null>(null);
   const [species, setSpeciesState] = useState<number | null>(null);
   const [seenMode, setSeenMode] = useState<seenMode>("all");
+  const [filtersReady, setFiltersReady] = useState(false);
 
   useEffect(() => {
-    loadGlobalTerritory().then((val) => {
-      setTerritoryState((val as number | null) ?? null);
-      setSeenMode(val ? "all" : "seen");
-    });
-    loadGlobalDateFilter().then((val) => {
-      setDateState((val) ?? null);
-    });
-    loadGlobalPlace().then((val) => {
-      setPlaceState((val as number | null) ?? null);
-    });
-    loadGlobalSpecies().then((val) => {
-      setSpeciesState((val as number | null) ?? null);
+    Promise.all([
+      loadGlobalTerritory(),
+      loadGlobalDateFilter(),
+      loadGlobalPlace(),
+      loadGlobalSpecies(),
+    ]).then(([territoryVal, dateVal, placeVal, speciesVal]) => {
+      setTerritoryState((territoryVal as number | null) ?? null);
+      setSeenMode(territoryVal ? "all" : "seen");
+      setDateState((dateVal as DateFilter | null) ?? null);
+      setPlaceState((placeVal as number | null) ?? null);
+      setSpeciesState((speciesVal as number | null) ?? null);
+      setFiltersReady(true);
     });
   }, []);
 
@@ -126,6 +128,7 @@ export const FiltersProvider = ({ children }: { children: ReactNode }) => {
         setSeenMode,
         resetFilters,
         reload,
+        filtersReady,
       }}
     >
       {children}
