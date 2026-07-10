@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -23,12 +24,18 @@ import { useTranslation } from "react-i18next";
 import { Config } from "../../constants/config";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { Coords, PolygonGeometry } from "../../types";
+import {
+  isConnected,
+  subscribeToConnectionChange,
+} from "../../services/sync/networkStatus";
 
 const EMPTY_MAP_STYLE = JSON.stringify({
   version: 8,
   sources: {},
   layers: [],
 });
+
+const MAP_LOAD_TIMEOUT_MS = 8000;
 
 interface MapProps {
   currentCoords: Coords | null;
@@ -60,6 +67,61 @@ const MapL = ({
   const lng = currentCoords?.[0];
   const lat = currentCoords?.[1];
 
+  const [offline, setOffline] = useState(!isConnected());
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => subscribeToConnectionChange((connected) => setOffline(!connected)),
+    [],
+  );
+
+  useEffect(() => {
+    if (offline || lng == null || lat == null) return;
+
+    setMapLoaded(false);
+    setLoadFailed(false);
+
+    timeoutRef.current = setTimeout(() => {
+      setLoadFailed(true);
+    }, MAP_LOAD_TIMEOUT_MS);
+
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [offline, lng, lat, retryKey]);
+
+  const handleMapLoaded = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setMapLoaded(true);
+    setLoadFailed(false);
+  };
+
+  const handleMapLoadError = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setLoadFailed(true);
+  };
+
+  const handleRetry = () => {
+    setLoadFailed(false);
+    setMapLoaded(false);
+    setRetryKey((key) => key + 1);
+  };
+
+  const showFallback = offline || loadFailed;
+
+  const handleCopyCoords = () => {
+    const coordsText = `${lat!.toFixed(4)}, ${lng!.toFixed(4)}`;
+    Clipboard.setString(coordsText);
+    Toast.show({
+      type: "success",
+      text1: t("coordinates_copied"),
+      text2: coordsText,
+    });
+  };
+
   const hasAccuracy = Boolean(accuracy && accuracy > 0);
   const sourceKey = polygon
     ? "polygon"
@@ -73,103 +135,154 @@ const MapL = ({
   return (
     <View style={styles.mapSection}>
       <View style={styles.container} pointerEvents="box-none">
-        <Map
-          mapStyle={EMPTY_MAP_STYLE}
-          logo={false}
-          attribution={false}
-          style={{ flex: 1 }}
-          onPress={(e) => onPress(e.nativeEvent)}
-        >
-          <Images
-            images={{
-              marker: require("../../assets/marker1.png"),
-            }}
-          />
-
-          {currentCoords && (
-            <Camera
-              center={[lng!, lat!]}
-              zoom={Math.min(currentZoom, 19)}
-              minZoom={1}
-              maxZoom={19}
-              duration={500}
+        {showFallback ? (
+          <View style={styles.fallback}>
+            <Ionicons
+              name={offline ? "cloud-offline-outline" : "alert-circle-outline"}
+              size={26}
+              color={Colors.textSecondary}
             />
-          )}
-
-          <RasterSource
-            id="osmTiles"
-            tiles={[Config.mapTileUrl]}
-            tileSize={256}
-            minzoom={0}
-            maxzoom={19}
-          >
-            <Layer type="raster" id="osmLayer" />
-          </RasterSource>
-
-          {polygon && (
-            <GeoJSONSource
-              key={sourceKey}
-              id="polygonSource"
-              data={{ type: "Feature", geometry: polygon, properties: {} }}
-            >
-              <Layer
-                id="polygonFill"
-                type="fill"
-                paint={{ "fill-color": Colors.squareFill }}
-              />
-              <Layer
-                id="polygonStroke"
-                type="line"
-                paint={{ "line-color": Colors.squareStroke, "line-width": 2 }}
-              />
-            </GeoJSONSource>
-          )}
-
-          {!polygon && currentCoords && (
-            <GeoJSONSource
-              key={sourceKey}
-              id="pointSource"
-              data={{
-                type: "Feature",
-                geometry: { type: "Point", coordinates: [lng!, lat!] },
-                properties: {},
-              }}
-            >
-              {hasAccuracy && (
-                <Layer
-                  id="accuracyCircle"
-                  type="circle"
-                  paint={{
-                    "circle-radius": [
-                      "interpolate",
-                      ["exponential", 2],
-                      ["zoom"],
-                      0,
-                      accuracyRadiusPx,
-                      22,
-                      accuracyRadiusPx * Math.pow(2, 22),
-                    ],
-                    "circle-color": Colors.accuracyFill,
-                    "circle-stroke-color": Colors.accuracyStroke,
-                    "circle-stroke-width": 1,
-                  }}
+            <Text style={styles.fallbackText}>
+              {offline ? t("no_connection") : t("connection_timeout")}
+            </Text>
+            {currentCoords && (
+              <TouchableOpacity
+                style={styles.fallbackCoords}
+                onPress={handleCopyCoords}
+              >
+                <Text style={styles.fallbackCoordsText}>
+                  {lat!.toFixed(4)}, {lng!.toFixed(4)}
+                </Text>
+                <Ionicons
+                  name="copy-outline"
+                  size={12}
+                  color={Colors.textSecondary}
+                  style={{ marginLeft: 6 }}
                 />
-              )}
-              <Layer
-                id="pointIcon"
-                type="symbol"
-                layout={{
-                  "icon-image": "marker",
-                  "icon-size": 1,
-                  "icon-anchor": "bottom",
-                  "icon-allow-overlap": true,
+              </TouchableOpacity>
+            )}
+            {!offline && (
+              <TouchableOpacity
+                style={styles.retryButton}
+                onPress={handleRetry}
+              >
+                <Text style={styles.retryButtonText}>{t("try_again")}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ) : (
+          <>
+            <Map
+              key={retryKey}
+              mapStyle={EMPTY_MAP_STYLE}
+              logo={false}
+              attribution={false}
+              style={{ flex: 1 }}
+              onPress={(e) => onPress(e.nativeEvent)}
+              onDidFinishLoadingMap={handleMapLoaded}
+              onDidFailLoadingMap={handleMapLoadError}
+            >
+              <Images
+                images={{
+                  marker: require("../../assets/marker1.png"),
                 }}
               />
-            </GeoJSONSource>
-          )}
-        </Map>
 
-        {onUseMyLocation && (
+              {currentCoords && (
+                <Camera
+                  center={[lng!, lat!]}
+                  zoom={Math.min(currentZoom, 19)}
+                  minZoom={1}
+                  maxZoom={19}
+                  duration={500}
+                />
+              )}
+
+              <RasterSource
+                id="osmTiles"
+                tiles={[Config.mapTileUrl]}
+                tileSize={256}
+                minzoom={0}
+                maxzoom={19}
+              >
+                <Layer type="raster" id="osmLayer" />
+              </RasterSource>
+
+              {polygon && (
+                <GeoJSONSource
+                  key={sourceKey}
+                  id="polygonSource"
+                  data={{ type: "Feature", geometry: polygon, properties: {} }}
+                >
+                  <Layer
+                    id="polygonFill"
+                    type="fill"
+                    paint={{ "fill-color": Colors.squareFill }}
+                  />
+                  <Layer
+                    id="polygonStroke"
+                    type="line"
+                    paint={{
+                      "line-color": Colors.squareStroke,
+                      "line-width": 2,
+                    }}
+                  />
+                </GeoJSONSource>
+              )}
+
+              {!polygon && currentCoords && (
+                <GeoJSONSource
+                  key={sourceKey}
+                  id="pointSource"
+                  data={{
+                    type: "Feature",
+                    geometry: { type: "Point", coordinates: [lng!, lat!] },
+                    properties: {},
+                  }}
+                >
+                  {hasAccuracy && (
+                    <Layer
+                      id="accuracyCircle"
+                      type="circle"
+                      paint={{
+                        "circle-radius": [
+                          "interpolate",
+                          ["exponential", 2],
+                          ["zoom"],
+                          0,
+                          accuracyRadiusPx,
+                          22,
+                          accuracyRadiusPx * Math.pow(2, 22),
+                        ],
+                        "circle-color": Colors.accuracyFill,
+                        "circle-stroke-color": Colors.accuracyStroke,
+                        "circle-stroke-width": 1,
+                      }}
+                    />
+                  )}
+                  <Layer
+                    id="pointIcon"
+                    type="symbol"
+                    layout={{
+                      "icon-image": "marker",
+                      "icon-size": 1,
+                      "icon-anchor": "bottom",
+                      "icon-allow-overlap": true,
+                    }}
+                  />
+                </GeoJSONSource>
+              )}
+            </Map>
+
+            {!mapLoaded && (
+              <View style={styles.loadingOverlay} pointerEvents="none">
+                <ActivityIndicator size="small" color={Colors.textSecondary} />
+              </View>
+            )}
+          </>
+        )}
+
+        {!showFallback && onUseMyLocation && (
           <TouchableOpacity
             style={styles.myLocationButton}
             onPress={onUseMyLocation}
@@ -182,18 +295,10 @@ const MapL = ({
           </TouchableOpacity>
         )}
 
-        {showCoords && currentCoords && (
+        {!showFallback && showCoords && currentCoords && (
           <TouchableOpacity
             style={styles.coordsOverlay}
-            onPress={() => {
-              const coordsText = `${lat!.toFixed(4)}, ${lng!.toFixed(4)}`;
-              Clipboard.setString(coordsText);
-              Toast.show({
-                type: "success",
-                text1: t("coordinates_copied"),
-                text2: coordsText,
-              });
-            }}
+            onPress={handleCopyCoords}
           >
             <Text style={styles.coordsOverlayText}>
               {lat!.toFixed(4)}, {lng!.toFixed(4)}
@@ -207,16 +312,18 @@ const MapL = ({
           </TouchableOpacity>
         )}
 
-        <TouchableOpacity
-          style={styles.attribution}
-          onPress={() =>
-            Linking.openURL("https://www.openstreetmap.org/copyright")
-          }
-        >
-          <Text style={styles.attributionText}>
-            © OpenStreetMap contributors
-          </Text>
-        </TouchableOpacity>
+        {!showFallback && (
+          <TouchableOpacity
+            style={styles.attribution}
+            onPress={() =>
+              Linking.openURL("https://www.openstreetmap.org/copyright")
+            }
+          >
+            <Text style={styles.attributionText}>
+              © OpenStreetMap contributors
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -276,5 +383,50 @@ const stylesFn = (Colors: ThemeColors, mapHeight?: number) =>
     attributionText: {
       fontSize: 10,
       color: Colors.textSecondary,
+    },
+    fallback: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: Colors.imageBg,
+      padding: 16,
+    },
+    fallbackText: {
+      marginTop: 8,
+      fontSize: 13,
+      color: Colors.textSecondary,
+      textAlign: "center",
+    },
+    fallbackCoords: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: 8,
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+    },
+    fallbackCoordsText: {
+      fontSize: 11,
+      color: Colors.textSecondary,
+      opacity: 0.8,
+    },
+    retryButton: {
+      marginTop: 12,
+      paddingVertical: 6,
+      paddingHorizontal: 14,
+    },
+    retryButtonText: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: Colors.main100,
+    },
+    loadingOverlay: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: Colors.imageBg,
     },
   });

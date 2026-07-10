@@ -22,3 +22,7 @@ export const subscribeToReconnect = (callback: () => void) => {
     wasConnected = nowConnected;
   });
 };
+
+export const subscribeToConnectionChange = (
+  callback: (connected: boolean) => void,
+) => NetInfo.addEventListener((state) => callback(isStateConnected(state)));

@@ -44,7 +44,7 @@ import MapL from "../components/Map/MapL";
 const ObservationDetailScreen = () => {
   const navigation = useNavigation<AppStackNavigationProp>();
   const route = useRoute<AppStackRouteProp<"ObservationDetail">>();
-  const { observationId } = route.params;
+  const { observationId, initialObservation } = route.params;
   const { showErrorToast } = useApiError();
 
   // Same defensive retry as ObservationsScreen: NetInfo's reconnect event can
@@ -64,7 +64,7 @@ const ObservationDetailScreen = () => {
     isError,
     error,
     refetch,
-  } = useObservationItem(observationId);
+  } = useObservationItem(observationId, initialObservation);
 
   const updateMutation = useUpdateObservation(observationId);
   const deleteMutation = useDeleteObservation();
@@ -178,7 +178,12 @@ const ObservationDetailScreen = () => {
     });
   }, [navigation, headerRightBeginning, handleShare, observation]);
 
-  if (isError) {
+  // TanStack Query flips status/isError to true on *any* failed fetch,
+  // including a background refetch that happens to fail while we're still
+  // sitting on perfectly good data (from initialData or an earlier fetch) —
+  // it doesn't clear `data` on error. Only show the full-screen error when
+  // there's truly nothing to render; otherwise keep showing what we have.
+  if (isError && !observation) {
     return (
       <ErrorOverlay
         title={t("observations_unavailable")}

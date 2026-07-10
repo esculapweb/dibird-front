@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import api from "../../services/api";
@@ -34,8 +34,32 @@ const invalidateObservationCaches = (queryClient: ReturnType<typeof useQueryClie
   );
 };
 
-export const useObservationItem = (id: number | null | undefined) => {
+export const useObservationItem = (
+  id: number | null | undefined,
+  // Item already known from wherever navigation originated (a list card, a
+  // just-completed create/update mutation, ...). Seeds the query cache so the
+  // screen renders immediately instead of spinning, and — the part that
+  // actually matters offline — gives the query cache "existing" data to fall
+  // back to if the detail fetch below fails, the same way an already-cached
+  // query would. Without this, the very first fetch of a given observation id
+  // has nothing to fall back to and the offline error surfaces even though
+  // the item is right there on the list screen the user tapped it from.
+  initialItem?: ObservationItem | null,
+) => {
   const { showErrorToast } = useApiError();
+  const { profile } = useProfile();
+
+  // The list endpoint's `is_owner` has been observed to disagree with the
+  // detail endpoint's for the same observation. Online this is invisible —
+  // the real detail fetch below lands almost immediately and overwrites it —
+  // but offline we can be stuck showing this seed indefinitely, so don't
+  // trust the list's is_owner verbatim: recompute it from owner id vs the
+  // (offline-cached) current profile, which both endpoints should agree on.
+  const seededInitialItem = useMemo(() => {
+    if (!initialItem || initialItem.id !== id) return undefined;
+    if (!profile?.user || !initialItem.owner) return initialItem;
+    return { ...initialItem, is_owner: initialItem.owner.id === profile.user };
+  }, [initialItem, id, profile?.user]);
 
   const query = useQuery({
     queryKey: ["Observation", id],
@@ -64,11 +88,21 @@ export const useObservationItem = (id: number | null | undefined) => {
     staleTime: 1000 * 60 * 60 * 24,
     gcTime: 1000 * 60 * 60 * 24,
     refetchOnWindowFocus: false,
+    ...(seededInitialItem
+      ? { initialData: seededInitialItem, initialDataUpdatedAt: 0 }
+      : {}),
   });
 
   useEffect(() => {
-    if (query.error) showErrorToast(query.error, "useObservationItem");
-  }, [query.error]);
+    // TanStack sets isError on *any* failed fetch, background ones included,
+    // and does not clear `data` when that happens — so isError alone doesn't
+    // mean "nothing to show". Only toast when there's truly no data (from
+    // cache or the initialData seeded above); the screen's own ErrorOverlay
+    // gate uses the same `isError && !data` condition.
+    if (query.isError && !query.data) {
+      showErrorToast(query.error, "useObservationItem");
+    }
+  }, [query.isError, query.error, query.data]);
 
   return query;
 };

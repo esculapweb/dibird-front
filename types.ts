@@ -689,7 +689,10 @@ export type AppStackParamList = {
   PlaceDetail: { placeId: number };
   PlaceEditor: { place?: PlaceItem; returnToScreen?: string } | undefined;
   Observations: ScreenWithFilters | undefined;
-  ObservationDetail: { observationId: number };
+  ObservationDetail: {
+    observationId: number;
+    initialObservation?: ObservationItem;
+  };
   ObservationEditor: {
     observation?: ObservationItem;
     observationId?: number;

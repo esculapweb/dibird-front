@@ -26,7 +26,10 @@ const ObservationCard = memo(
       : null;
 
     const handlePress = () => {
-      navigation.navigate("ObservationDetail", { observationId: item.id });
+      navigation.navigate("ObservationDetail", {
+        observationId: item.id,
+        initialObservation: item,
+      });
     };
 
     return (

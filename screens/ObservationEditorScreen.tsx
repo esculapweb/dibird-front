@@ -213,6 +213,7 @@ const ObservationEditorScreen = () => {
               requestAnimationFrame(() =>
                 navigation.replace("ObservationDetail", {
                   observationId: item.id,
+                  initialObservation: item,
                 }),
               );
             }
