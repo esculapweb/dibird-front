@@ -85,18 +85,45 @@ export const useCreateObservation = () => {
 
   return useMutationWithTranslation<ObservationItem, AppError, MutateVars>({
     mutationFn: async ({ payload, speciesData, placeData }) => {
+      // Identifies this logical create attempt across every retry of it (the
+      // live attempt below and any later queued retry both send the same
+      // value as client_request_id) so a backend that recognizes a repeat can
+      // return the already-created row instead of making another one — see
+      // requeuePendingMutation's call site in observationSync.ts for the retry
+      // side. Without matching backend support this field is currently inert.
+      const clientRequestId = observationRepository.makeClientRequestId();
+
       if (isConnected()) {
         try {
-          const res = await api.post(OBSERVATION_URL, payload);
+          const res = await api.post(OBSERVATION_URL, {
+            ...payload,
+            client_request_id: clientRequestId,
+          });
           observationRepository.upsertFromServer(res.data);
           return res.data;
         } catch (e) {
           const err = e as AppError;
+          // On React Native, normalizeApiError (services/errors.ts) classifies
+          // almost every no-response failure as isTimeout rather than
+          // isNetworkError — RN's networking layer reports connection-refused
+          // the same generic "Network Error" way it reports a real timeout, and
+          // a timeout value is always configured, so the isNetworkError branch
+          // there is effectively unreachable in practice. Requiring it here
+          // meant a genuinely-down backend (e.g. a paused local dev container,
+          // which freezes the process and can't have committed anything) also
+          // got treated as ambiguous and rethrown instead of queued — which
+          // then crashed downstream (see ObservationEditorScreen's
+          // extractApiError, fixed separately for a response-less error).
           if (!err.isNetworkError && !err.isTimeout) throw err;
         }
       }
 
-      const item = observationRepository.createLocal(payload, { speciesData, placeData }, profile);
+      const item = observationRepository.createLocal(
+        payload,
+        { speciesData, placeData },
+        profile,
+        clientRequestId,
+      );
       runObservationSync(); // in case connectivity just flickered back
       return item;
     },

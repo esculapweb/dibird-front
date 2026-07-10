@@ -5,14 +5,13 @@ import { useNavigation } from "@react-navigation/native";
 import { Image } from "expo-image";
 import { useQuery } from "@tanstack/react-query";
 
-import { fetchBirdOfDay, fetchSpecies } from "../../util/fetches";
+import { fetchBirdOfDay } from "../../util/fetches";
 import { BirdSVG } from "../ui/Svgs";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { Config } from "../../constants/config";
 import BirdOfTheDaySkeleton from "./BirdOfTheDaySceleton";
 import { useProfile } from "../../store/profile-context";
 import { useLanguage } from "../../store/language-context";
-import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 import { BottomSheet } from "../../services/bottomSheet";
 import { speciesDetails } from "../../util/helpers";
 import { AppStackNavigationProp, BirdOfTheDayType, Filters } from "../../types";
@@ -37,13 +36,6 @@ const BirdOfTheDay = ({ filters }: { filters: Filters }) => {
     queryKey: ["BirdOfDay", territory, language],
     queryFn: () => fetchBirdOfDay(territory),
     enabled: !!filters && !!territory,
-  });
-
-  useDropdownQuery({
-    type: "SpeciesDropdown",
-    queryFn: () => fetchSpecies(territory, "-seen,name"),
-    params: [territory, language],
-    enabled: !!territory,
   });
 
   if (isLoading) return <BirdOfTheDaySkeleton />;

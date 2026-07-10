@@ -1,4 +1,4 @@
-import { and, asc, eq, isNotNull, sql } from "drizzle-orm";
+import { and, asc, eq, isNotNull } from "drizzle-orm";
 
 import { db } from "../../services/db/client";
 import { mutationQueueTable, observationTable } from "../../services/db/schema";
@@ -16,7 +16,7 @@ type ObservationRow = typeof observationTable.$inferSelect;
 export type MutationRow = typeof mutationQueueTable.$inferSelect;
 
 export type ObservationMutationPayload =
-  | { op: "create"; localId: number; data: ObservationFormData }
+  | { op: "create"; localId: number; data: ObservationFormData; clientRequestId: string }
   | { op: "update"; localId: number; data: ObservationFormData }
   | { op: "delete"; localId: number };
 
@@ -27,6 +27,15 @@ export interface SynthesizeExtras {
 
 let tempIdCounter = 0;
 const nextTempId = () => -(Date.now() * 1000 + (tempIdCounter++ % 1000));
+
+// Identifies one logical create attempt across every retry of it (the initial
+// live POST and every subsequent queued retry after a response-less failure
+// send the same value as `client_request_id`). This alone can't stop a
+// duplicate — the server has to recognize a repeated id and return the
+// existing row instead of creating another one — but the client can't do
+// anything about that half without a matching backend change (see callers).
+export const makeClientRequestId = (): string =>
+  `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 
 const rowToItem = (row: ObservationRow): ObservationItem => {
   const item = row.data as ObservationItem;
@@ -143,6 +152,7 @@ export const createLocal = (
   payload: ObservationFormData,
   extras: SynthesizeExtras,
   profile: Profile | null | undefined,
+  clientRequestId: string,
 ): ObservationItem => {
   const id = nextTempId();
   const item = synthesize(id, null, payload, extras, profile);
@@ -155,7 +165,12 @@ export const createLocal = (
     tx.insert(mutationQueueTable)
       .values({
         entity: "observation",
-        payload: { op: "create", localId: id, data: payload } satisfies ObservationMutationPayload,
+        payload: {
+          op: "create",
+          localId: id,
+          data: payload,
+          clientRequestId,
+        } satisfies ObservationMutationPayload,
         createdAt: Date.now(),
       })
       .run();
@@ -208,8 +223,18 @@ export const updateLocal = (
         );
 
       if (pendingCreate) {
+        const clientRequestId = (pendingCreate.payload as ObservationMutationPayload & {
+          op: "create";
+        }).clientRequestId;
         tx.update(mutationQueueTable)
-          .set({ payload: { op: "create", localId: id, data: payload } satisfies ObservationMutationPayload })
+          .set({
+            payload: {
+              op: "create",
+              localId: id,
+              data: payload,
+              clientRequestId,
+            } satisfies ObservationMutationPayload,
+          })
           .where(eq(mutationQueueTable.id, pendingCreate.id))
           .run();
       }
@@ -325,18 +350,77 @@ export const removeLocal = (id: number) => {
   db.delete(observationTable).where(eq(observationTable.id, id)).run();
 };
 
-export const getPendingMutations = (): MutationRow[] =>
-  db
-    .select()
-    .from(mutationQueueTable)
-    .where(
-      and(
-        eq(mutationQueueTable.entity, "observation"),
-        eq(mutationQueueTable.status, "pending"),
-      ),
-    )
-    .orderBy(asc(mutationQueueTable.createdAt))
-    .all();
+// Atomically dequeues the single oldest pending mutation (select+delete in one
+// transaction) instead of just reading it. A plain read-then-later-delete left
+// a window where two overlapping sync passes (the reconnect listener, the
+// focus-effect retries, app-foreground — several independent triggers can
+// legitimately fire close together) could both read the same still-pending
+// "create" and each POST it, creating duplicates on the server. Claiming one
+// row at a time, atomically, means a second pass simply finds nothing left to
+// claim for that mutation, no matter how the two calls interleave — this is
+// the actual data-layer guarantee; the in-flight lock in observationSync.ts is
+// just a (redundant but cheap) fast path on top of it.
+export const claimNextMutation = (): MutationRow | null =>
+  db.transaction((tx) => {
+    const [row] = tx
+      .select()
+      .from(mutationQueueTable)
+      .where(
+        and(
+          eq(mutationQueueTable.entity, "observation"),
+          eq(mutationQueueTable.status, "pending"),
+        ),
+      )
+      .orderBy(asc(mutationQueueTable.createdAt))
+      .limit(1)
+      .all();
+
+    if (!row) return null;
+
+    tx.delete(mutationQueueTable).where(eq(mutationQueueTable.id, row.id)).run();
+    return row;
+  });
+
+// Puts a claimed mutation back after a network/timeout failure so it's retried
+// later, preserving its original ordering and attempt count.
+export const requeuePendingMutation = (
+  payload: ObservationMutationPayload,
+  createdAt: number,
+  attempts: number,
+) => {
+  db.insert(mutationQueueTable)
+    .values({ entity: "observation", payload, createdAt, attempts, status: "pending" })
+    .run();
+};
+
+// Re-inserts a claimed mutation as failed after a real (non-network) error —
+// the original row is already gone (claimed), so this recreates it in the
+// "error" state rather than updating it in place.
+export const requeueFailedMutation = (
+  payload: ObservationMutationPayload,
+  createdAt: number,
+  attempts: number,
+  localId: number,
+  message: string,
+) => {
+  db.transaction((tx) => {
+    tx.insert(mutationQueueTable)
+      .values({
+        entity: "observation",
+        payload,
+        createdAt,
+        attempts: attempts + 1,
+        status: "error",
+        lastError: message,
+      })
+      .run();
+
+    tx.update(observationTable)
+      .set({ status: "error", lastError: message })
+      .where(eq(observationTable.id, localId))
+      .run();
+  });
+};
 
 export const getFailedMutations = (): MutationRow[] =>
   db
@@ -355,28 +439,6 @@ export const getFailedMutationFor = (localId: number): MutationRow | null =>
   getFailedMutations().find(
     (m) => (m.payload as ObservationMutationPayload).localId === localId,
   ) ?? null;
-
-export const resolveMutation = (mutationId: number) => {
-  db.delete(mutationQueueTable).where(eq(mutationQueueTable.id, mutationId)).run();
-};
-
-export const failMutation = (mutationId: number, localId: number, message: string) => {
-  db.transaction((tx) => {
-    tx.update(mutationQueueTable)
-      .set({
-        status: "error",
-        lastError: message,
-        attempts: sql`${mutationQueueTable.attempts} + 1`,
-      })
-      .where(eq(mutationQueueTable.id, mutationId))
-      .run();
-
-    tx.update(observationTable)
-      .set({ status: "error", lastError: message })
-      .where(eq(observationTable.id, localId))
-      .run();
-  });
-};
 
 export const retryMutation = (mutationId: number, localId: number) => {
   db.transaction((tx) => {

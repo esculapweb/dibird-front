@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { AppState } from "react-native";
 
-import { runObservationSync } from "../../services/sync/observationSync";
+import { runObservationSync, stopObservationSyncRetries } from "../../services/sync/observationSync";
 import { subscribeToReconnect } from "../../services/sync/networkStatus";
 
 // Drains the observation mutation queue regardless of which screen is mounted
@@ -12,7 +12,10 @@ export const useObservationSync = (isAuthenticated: boolean) => {
   const lastRunRef = useRef<number>(0);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      stopObservationSyncRetries();
+      return;
+    }
 
     const trigger = () => {
       lastRunRef.current = Date.now();
@@ -43,6 +46,7 @@ export const useObservationSync = (isAuthenticated: boolean) => {
       unsubscribeReconnect();
       sub.remove();
       if (timeout) clearTimeout(timeout);
+      stopObservationSyncRetries();
     };
   }, [isAuthenticated]);
 };

@@ -42,6 +42,9 @@ import LanguageSwitcher from "../components/Language/LanguageSwitcher";
 import ThemeSwitcher from "../components/Theme/ThemeSwitcher";
 import { useTheme, ThemeColors } from "../store/theme-context";
 import { useFilters } from "../store/filters-context";
+import { useLanguage } from "../store/language-context";
+import { useDropdownQuery } from "../hooks/useDropdownQuery";
+import { fetchSpecies } from "../util/fetches";
 import { BottomSheet } from "../services/bottomSheet";
 import type { AppDrawerParamList, AppStackParamList } from "../types";
 import StaticScreen from "../screens/StaticScreen";
@@ -182,7 +185,8 @@ const MainDrawer = () => {
 const AppNavigator = () => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
-  const { resetFilters } = useFilters();
+  const { resetFilters, territory, date } = useFilters();
+  const { language } = useLanguage();
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -193,6 +197,19 @@ const AppNavigator = () => {
 
     return () => setOnLogout(null);
   }, [resetFilters, queryClient]);
+
+  // Warms the species dropdown cache here (root of the authenticated stack)
+  // rather than from any single screen, so it's available on
+  // ObservationEditorScreen regardless of which screen the session actually
+  // started on (deep link straight to Observations never mounts Main/
+  // BirdOfTheDay). Key shape must match ObservationForm/FilterSheetContent's
+  // useDropdownQuery call exactly for the cache entry to be shared.
+  useDropdownQuery({
+    type: "SpeciesDropdown",
+    queryFn: (sort) => fetchSpecies(territory, sort, date),
+    params: [territory, language, date],
+    enabled: !!territory,
+  });
 
   return (
     <Stack.Navigator
