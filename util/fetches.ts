@@ -22,6 +22,7 @@ import {
   getCachedListResponseByPrefix,
 } from "../hooks/repositories/listCacheRepository";
 import * as observationRepository from "../hooks/repositories/observationRepository";
+import * as diaryRepository from "../hooks/repositories/diaryRepository";
 import {
   Filters,
   DateFilter,
@@ -49,6 +50,7 @@ import {
   ImageAsset,
   AvatarResponse,
   ReverseGeocode,
+  emptyPaginatedResponse,
 } from "../types";
 
 export const exportProfileData = async (): Promise<void> => {
@@ -574,33 +576,78 @@ export const fetchObservations = async (
   return observationRepository.applyOverlay(data, page ?? 1);
 };
 
-export const fetchDiaries = (
+export const fetchDiaries = async (
   filters: Filters,
   order: string | null = "-date_time",
   search?: string,
   page?: number,
-) =>
-  fetchAbstract<PaginatedResponse<DiaryListItem>>(
+) => {
+  const data = await fetchAbstract<PaginatedResponse<DiaryListItem>>(
     "/myapi/diary2/",
     filters,
     order,
     search,
     page,
+    {},
+    undefined,
+    {
+      // Offline with nothing cached yet for this exact query (e.g. the very
+      // first load of the Diaries screen while offline): if there's a locally
+      // pending diary create/update/delete, applyOverlay below still has
+      // something to show, so hand it an empty base instead of letting the
+      // error hide that pending diary. If there's no pending change either,
+      // fall through to the normal offline error (nothing we could show).
+      deriveFallback: () => {
+        const overlay = diaryRepository.getOverlay();
+        const hasOverlay =
+          overlay.pendingCreates.length > 0 ||
+          overlay.patchesById.size > 0 ||
+          overlay.deletedIds.size > 0;
+        return hasOverlay ? emptyPaginatedResponse<DiaryListItem>() : null;
+      },
+    },
   );
 
-export const fetchDiaryObservations = (
+  return diaryRepository.applyOverlay(data, page ?? 1);
+};
+
+export const fetchDiaryObservations = async (
   filters: Filters,
   order: string | null = "-created_at",
   search?: string,
   page?: number,
 ) => {
-  return fetchAbstract<PaginatedResponse<DiaryObservationItem>>(
+  const data = await fetchAbstract<PaginatedResponse<DiaryObservationItem>>(
     "/myapi/diary-observation2/",
     filters,
     order,
     search,
     page,
+    {},
+    undefined,
+    {
+      // Offline with nothing cached for this exact query: only safe to show
+      // "no observations" instead of erroring when we actually know that's
+      // true. A diary with a temp (negative) id only exists locally and was
+      // never synced, so it provably has zero observations server-side.  A
+      // real diary id's local row (see diaryRepository.cacheKnownSnapshot,
+      // written the moment this diary's detail screen opens from a list card)
+      // carries the last-known observation_count from the list — trust that
+      // when it's exactly zero. Anything else (no local row, or a nonzero
+      // count we can't produce the actual items for) keeps the normal offline
+      // error rather than risk showing an empty list that contradicts a diary
+      // card the user just saw with thumbnails on it.
+      deriveFallback: () => {
+        if (filters.diary == null) return null;
+        const local = diaryRepository.getDiary(filters.diary);
+        return local?.observation_count === 0
+          ? emptyPaginatedResponse<DiaryObservationItem>()
+          : null;
+      },
+    },
   );
+
+  return observationRepository.applyDiaryOverlay(data, filters.diary, page ?? 1);
 };
 
 export const fetchRating = (

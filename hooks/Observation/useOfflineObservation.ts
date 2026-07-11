@@ -8,6 +8,7 @@ import { useProfile } from "../../store/profile-context";
 import { isConnected } from "../../services/sync/networkStatus";
 import { runObservationSync } from "../../services/sync/observationSync";
 import * as observationRepository from "../repositories/observationRepository";
+import * as diaryRepository from "../repositories/diaryRepository";
 import { INVALIDATION_MAP } from "../../util/invalidationMap";
 import {
   AppError,
@@ -21,8 +22,9 @@ const OBSERVATION_URL = "/myapi/observation2/";
 
 // Observation-specific replacements for hooks/useItem.ts's generic useItem /
 // useCreateItem / useUpdateItem / useDeleteItem — used only by
-// ObservationDetailScreen and ObservationEditorScreen so Place/Community/Diary
-// keep using the generic (online-only) hooks unchanged.
+// ObservationDetailScreen and ObservationEditorScreen. Diary has its own
+// equivalent (hooks/Diary/useOfflineDiary.ts); Place/Community still use the
+// generic (online-only) hooks unchanged.
 
 const invalidateObservationCaches = (queryClient: ReturnType<typeof useQueryClient>) => {
   // ["Observation"] (no id) is included here with exact:false, which prefix-matches
@@ -32,6 +34,36 @@ const invalidateObservationCaches = (queryClient: ReturnType<typeof useQueryClie
   INVALIDATION_MAP.Observation.update.forEach((key) =>
     queryClient.invalidateQueries({ queryKey: key, exact: false, refetchType: "all" }),
   );
+};
+
+// An observation created/edited inside a diary that itself hasn't synced yet
+// (temp negative id) must never send that temp id to the server — it means
+// nothing outside this device. Resolves it through diaryRepository (same
+// alias-row mechanism observations use for their own temp ids): already a
+// real id or null → unchanged; parent diary discarded before it ever synced →
+// cleared to null; parent diary just not synced *yet* → left as the same
+// negative id (still meaningless to the server) but flagged via
+// `diaryStillPending` so the caller skips the online attempt entirely instead
+// of POSTing/PATCHing a payload with a temp id in it.
+const resolveObservationDiary = (payload: ObservationFormData) => {
+  if (payload.diary == null) return { payload, diaryStillPending: false, diaryTerritory: null };
+  const resolved = diaryRepository.resolveDiaryId(payload.diary);
+  const diaryStillPending = resolved != null && resolved < 0;
+  // A diary-scoped form never carries its own territory (see
+  // ObservationEditorScreen's buildObservationPayload) — the offline synthesis
+  // in observationRepository needs it explicitly (as SynthesizeExtras.diaryTerritory)
+  // or it defaults to a blank territory, which then wins over any better
+  // fallback everywhere this observation is later read back. `resolved` (not
+  // the original temp id) works here whether the diary has synced yet or not:
+  // getDiary resolves both the temp id and, once replaceLocalWithServer has
+  // run, the real id.
+  const diaryTerritory =
+    resolved != null ? (diaryRepository.getDiary(resolved)?.territory ?? null) : null;
+  return {
+    payload: { ...payload, diary: resolved === undefined ? null : resolved },
+    diaryStillPending,
+    diaryTerritory,
+  };
 };
 
 export const useObservationItem = (
@@ -126,11 +158,13 @@ export const useCreateObservation = () => {
       // requeuePendingMutation's call site in observationSync.ts for the retry
       // side. Without matching backend support this field is currently inert.
       const clientRequestId = observationRepository.makeClientRequestId();
+      const { payload: resolvedPayload, diaryStillPending, diaryTerritory } =
+        resolveObservationDiary(payload);
 
-      if (isConnected()) {
+      if (isConnected() && !diaryStillPending) {
         try {
           const res = await api.post(OBSERVATION_URL, {
-            ...payload,
+            ...resolvedPayload,
             client_request_id: clientRequestId,
           });
           observationRepository.upsertFromServer(res.data);
@@ -153,8 +187,8 @@ export const useCreateObservation = () => {
       }
 
       const item = observationRepository.createLocal(
-        payload,
-        { speciesData, placeData },
+        resolvedPayload,
+        { speciesData, placeData, diaryTerritory },
         profile,
         clientRequestId,
       );
@@ -172,10 +206,12 @@ export const useUpdateObservation = (id: number | null | undefined) => {
   return useMutationWithTranslation<ObservationItem, AppError, MutateVars>({
     mutationFn: async ({ payload, speciesData, placeData }) => {
       if (id == null) throw new Error("Missing observation id");
+      const { payload: resolvedPayload, diaryStillPending, diaryTerritory } =
+        resolveObservationDiary(payload);
 
-      if (id > 0 && isConnected()) {
+      if (id > 0 && isConnected() && !diaryStillPending) {
         try {
-          const res = await api.patch(`${OBSERVATION_URL}${id}/`, payload);
+          const res = await api.patch(`${OBSERVATION_URL}${id}/`, resolvedPayload);
           observationRepository.upsertFromServer(res.data);
           return res.data;
         } catch (e) {
@@ -188,9 +224,9 @@ export const useUpdateObservation = (id: number | null | undefined) => {
         queryClient.getQueryData<ObservationItem>(["Observation", id]) ?? null;
       const item = observationRepository.updateLocal(
         id,
-        payload,
+        resolvedPayload,
         currentItem,
-        { speciesData, placeData },
+        { speciesData, placeData, diaryTerritory },
         profile,
       );
       if (id > 0) runObservationSync();

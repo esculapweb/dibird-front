@@ -434,6 +434,7 @@ export interface ObservationItem extends ObservationBaseItem {
   private: boolean;
   species: number;
   species_data: SpeciesData;
+  territory?: number | null;
   territory_data: TerritoryData;
   updated_at: string;
   external_source: "ebird" | null;
@@ -462,6 +463,10 @@ interface DiaryBase {
   profile: number;
   territory: number;
   territory_data: TerritoryData;
+  // Client-only: set when this item has an unsynced local create/update/delete
+  // queued (see hooks/repositories/diaryRepository.ts). Never sent to the server.
+  _pendingSync?: "pending" | "error";
+  _syncError?: string | null;
 }
 
 export interface DiaryItem extends DiaryBase {
@@ -704,7 +709,7 @@ export type AppStackParamList = {
     returnMode?: string;
   };
   Diaries: ScreenWithFilters | undefined;
-  DiaryDetail: ScreenWithFilters & { diaryId: number };
+  DiaryDetail: ScreenWithFilters & { diaryId: number; initialDiary?: DiaryListItem };
   DiaryEditor: {
     diary?: DiaryItem;
     defaultTerritory?: number | null;

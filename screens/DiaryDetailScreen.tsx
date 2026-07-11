@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,14 +10,20 @@ import {
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 
 import { useTheme, ThemeColors } from "../store/theme-context";
 import { formatDateLong, buildShareUrl, isoToFlagEmoji } from "../util/helpers";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
-import { useItem, useUpdateItem, useDeleteItem } from "../hooks/useItem";
+import {
+  useDiaryItem,
+  useUpdateDiary,
+  useDeleteDiary,
+} from "../hooks/Diary/useOfflineDiary";
+import * as diaryRepository from "../hooks/repositories/diaryRepository";
+import { runDiarySync } from "../services/sync/diarySync";
 import PlacePreviewRow from "../components/Place/PlacePreviewRow";
 import Section from "../components/ui/Section";
 import PrivacyToggle from "../components/ui/PrivacyToggle";
@@ -28,6 +34,7 @@ import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
 import { BottomSheet } from "../services/bottomSheet";
 import { useApiError } from "../hooks/useApiError";
+import FailedEditBanner from "../components/Profile/FailedEditBanner";
 
 import {
   AppStackNavigationProp,
@@ -40,9 +47,17 @@ import MapL from "../components/Map/MapL";
 const DiaryDetailScreen = () => {
   const navigation = useNavigation<AppStackNavigationProp>();
   const route = useRoute<AppStackRouteProp<"DiaryDetail">>();
-  const { diaryId } = route.params;
-  const type = "Diary";
+  const { diaryId, initialDiary } = route.params;
   const { showErrorToast } = useApiError();
+
+  // Same defensive retry as ObservationDetailScreen: NetInfo's reconnect event
+  // can be missed/racy, so opportunistically retry the queue whenever this
+  // screen is focused rather than relying solely on the background listener.
+  useFocusEffect(
+    useCallback(() => {
+      runDiarySync();
+    }, []),
+  );
 
   const [currentFilters, setCurrentFilters] = useState<Filters | null>(null);
   const [currentSort, setCurrentSort] = useState<string | null>(null);
@@ -53,10 +68,36 @@ const DiaryDetailScreen = () => {
     isError,
     error,
     refetch,
-  } = useItem(diaryId, type);
+  } = useDiaryItem(diaryId, initialDiary);
 
-  const updateMutation = useUpdateItem(diaryId, type);
-  const deleteMutation = useDeleteItem(type);
+  const updateMutation = useUpdateDiary(diaryId);
+  const deleteMutation = useDeleteDiary();
+
+  // An offline create resolves to a real server id in the background; once
+  // that happens, "graduate" this screen from the temp id to the real one so
+  // any further edit/delete/share call targets the right id.
+  useEffect(() => {
+    if (diary && diary.id !== diaryId) {
+      navigation.setParams({ diaryId: diary.id });
+    }
+  }, [diary, diaryId, navigation]);
+
+  const failedMutation = diary?._syncError
+    ? diaryRepository.getFailedMutationFor(diaryId)
+    : null;
+
+  const handleRetrySync = useCallback(async () => {
+    if (!failedMutation) return;
+    diaryRepository.retryMutation(failedMutation.id, diaryId);
+    await runDiarySync();
+    await refetch();
+  }, [failedMutation, diaryId, refetch]);
+
+  const handleDiscardSync = useCallback(() => {
+    if (!failedMutation) return;
+    diaryRepository.discardMutation(failedMutation.id, diaryId);
+    refetch();
+  }, [failedMutation, diaryId, refetch]);
 
   const { Colors } = useTheme();
   const { t } = useTranslation();
@@ -70,16 +111,24 @@ const DiaryDetailScreen = () => {
 
   const listHeader = useCallback(
     () => (
-      <Section
-        title={formatDateLong(diary.date_time)}
-        hintBlock={
-          diary.is_owner && (
-            <PrivacyToggle value={diary.private} descriptionType="male" />
-          )
-        }
-        collapsible={true}
-      >
-        {diary?.name && (
+      <>
+        {diary._syncError && failedMutation && (
+          <FailedEditBanner
+            failedEdit={{ message: diary._syncError, createdAt: Date.now() }}
+            onRetry={handleRetrySync}
+            onDiscard={handleDiscardSync}
+          />
+        )}
+        <Section
+          title={formatDateLong(diary.date_time)}
+          hintBlock={
+            diary.is_owner && (
+              <PrivacyToggle value={diary.private} descriptionType="male" />
+            )
+          }
+          collapsible={true}
+        >
+          {diary?.name && (
           <View style={styles.notesBlock}>
             <Ionicons
               name="document-text-outline"
@@ -202,9 +251,10 @@ const DiaryDetailScreen = () => {
             />
           </View>
         )}
-      </Section>
+        </Section>
+      </>
     ),
-    [diary],
+    [diary, failedMutation, handleRetrySync, handleDiscardSync],
   );
 
   const handleAdd = useCallback(async () => {
@@ -293,7 +343,12 @@ const DiaryDetailScreen = () => {
     [diary, handleOpenEdit, updateMutation.isPending],
   );
 
-  if (isError) {
+  // TanStack sets isError on *any* failed fetch, background ones included,
+  // and does not clear `data` when that happens — so isError alone doesn't
+  // mean "nothing to show" (see useDiaryItem's initialData seeding, same
+  // reasoning as ObservationDetailScreen's identical guard). Only show the
+  // full-screen error when there's truly nothing to render.
+  if (isError && !diary) {
     return (
       <ErrorOverlay
         title={t("diaries_unavailable")}

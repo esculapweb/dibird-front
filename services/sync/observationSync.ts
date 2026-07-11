@@ -3,7 +3,9 @@ import { queryClient } from "../queryClient";
 import { AppError } from "../../types";
 import * as observationRepository from "../../hooks/repositories/observationRepository";
 import { ObservationMutationPayload } from "../../hooks/repositories/observationRepository";
+import * as diaryRepository from "../../hooks/repositories/diaryRepository";
 import { isConnected } from "./networkStatus";
+import { INVALIDATION_MAP } from "../../util/invalidationMap";
 
 const OBSERVATION_URL = "/myapi/observation2/";
 
@@ -13,11 +15,15 @@ const invalidateObservationQueries = (id?: number | null) => {
   // useList's infinite query has refetchOnMount disabled — so a query that's
   // merely marked stale while unmounted would otherwise keep showing whatever
   // (possibly wrong/incomplete) data it last had the next time it's opened.
-  queryClient.invalidateQueries({
-    queryKey: ["Observations"],
-    exact: false,
-    refetchType: "all",
-  });
+  //
+  // Uses the same key list as the live (online) create/update path
+  // (useOfflineObservation.ts's invalidateObservationCaches) — this used to
+  // hardcode just ["Observations"], which meant a diary's card/detail screen
+  // never refetched once one of its observations finished syncing in the
+  // background, leaving it stuck without that observation's thumbnail.
+  INVALIDATION_MAP.Observation.update.forEach((key) =>
+    queryClient.invalidateQueries({ queryKey: key, exact: false, refetchType: "all" }),
+  );
   if (id != null) {
     queryClient.invalidateQueries({
       queryKey: ["Observation", id],
@@ -106,6 +112,54 @@ const runObservationSyncInternal = async () => {
     }
 
     const payload = mutation.payload as ObservationMutationPayload;
+
+    // An observation queued while its parent diary hadn't synced yet still
+    // carries that diary's temp negative id in payload.data.diary (frozen at
+    // enqueue time) — resolve it fresh right before sending, since the diary
+    // may well have synced by now. See diaryRepository.resolveDiaryId.
+    if (payload.op === "create" || payload.op === "update") {
+      const diaryId = payload.data.diary;
+      if (diaryId != null && diaryId < 0) {
+        const resolved = diaryRepository.resolveDiaryId(diaryId);
+        if (resolved == null) {
+          // Parent diary was discarded before it ever synced — this
+          // reference can never resolve. Surface it like any other real
+          // failure (via FailedEditBanner's retry/discard) instead of
+          // retrying forever.
+          retryDelayMs = RETRY_BASE_MS;
+          observationRepository.requeueFailedMutation(
+            payload,
+            mutation.createdAt,
+            mutation.attempts,
+            payload.localId,
+            "Parent diary was removed before it ever synced",
+          );
+          invalidateObservationQueries(payload.localId);
+          continue;
+        }
+        if (resolved < 0) {
+          // Parent diary hasn't synced yet. This is not rare: diarySync and
+          // this sync are two independent queues that both fire on the same
+          // reconnect event, so it's routine for several observations queued
+          // against a diary created in the same offline session to reach this
+          // branch before the diary's own create mutation has resolved.
+          // Requeuing and `continue`-ing would just reclaim this exact
+          // mutation again on the very next iteration — same createdAt, no
+          // other observation mutation ordered ahead of it, no await in
+          // between — spinning the JS thread in a synchronous infinite loop
+          // that also starves diarySync's in-flight request of the CPU time
+          // it needs to ever resolve, hanging the whole app. Back off like a
+          // network failure instead: stop this pass and retry later, by
+          // which point the diary should have resolved (diarySync also wakes
+          // this sync directly right after a successful create — see
+          // diarySync.ts).
+          observationRepository.requeuePendingMutation(payload, mutation.createdAt, mutation.attempts);
+          scheduleRetry();
+          return;
+        }
+        payload.data = { ...payload.data, diary: resolved };
+      }
+    }
 
     try {
       if (payload.op === "create") {

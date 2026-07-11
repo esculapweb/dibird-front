@@ -62,3 +62,15 @@ export const observationTable = sqliteTable("observation", {
   lastError: text("last_error"),
   updatedAt: integer("updated_at").notNull(),
 });
+
+export const diaryTable = sqliteTable("diary", {
+  // negative id = local temp id for an unsynced create, positive = real server id
+  id: integer("id").primaryKey(),
+  data: text("data", { mode: "json" }).notNull(),
+  op: text("op", { enum: ["create", "update", "delete"] }),
+  status: text("status", { enum: ["synced", "pending", "error"] })
+    .notNull()
+    .default("synced"),
+  lastError: text("last_error"),
+  updatedAt: integer("updated_at").notNull(),
+});

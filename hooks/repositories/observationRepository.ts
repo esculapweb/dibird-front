@@ -2,8 +2,9 @@ import { and, asc, eq, isNotNull } from "drizzle-orm";
 
 import { db } from "../../services/db/client";
 import { mutationQueueTable, observationTable } from "../../services/db/schema";
-import { getCachedCountries } from "./referenceRepository";
+import { territoryDataFor, ownerFromProfile } from "./shared";
 import {
+  DiaryObservationItem,
   ObservationFormData,
   ObservationItem,
   PaginatedResponse,
@@ -23,6 +24,16 @@ export type ObservationMutationPayload =
 export interface SynthesizeExtras {
   speciesData?: SpeciesDropdownItem | null;
   placeData?: PlaceDropdownItem | null;
+  // A diary-scoped observation's form never carries its own territory (it's
+  // implicit from the diary server-side — see ObservationEditorScreen's
+  // buildObservationPayload), so payload.territory is always undefined for
+  // one. Without this, synthesize() below would fall all the way through to
+  // `null`/id 0, which then wins over any better fallback wherever this
+  // observation is later read back (e.g. useEditorForm's territoryValue
+  // init), disabling anything gated on having a territory — the species
+  // picker included. The caller (useOfflineObservation.ts) resolves this
+  // from the parent diary via diaryRepository before calling create/updateLocal.
+  diaryTerritory?: number | null;
 }
 
 let tempIdCounter = 0;
@@ -73,22 +84,6 @@ export const upsertFromServer = (item: ObservationItem) => {
     .run();
 };
 
-const territoryDataFor = (territory: number | null | undefined) => {
-  if (!territory) return { code: "", id: 0, name: "", segment: "" };
-  const found = getCachedCountries("name").find((c) => c.value === territory);
-  return { code: found?.code ?? "", id: territory, name: found?.label ?? "", segment: "" };
-};
-
-const ownerFromProfile = (profile: Profile | null | undefined) => ({
-  avatar: profile?.avatar ?? "",
-  first_name: profile?.user_data?.first_name ?? "",
-  last_name: profile?.user_data?.last_name ?? "",
-  username: profile?.user_data?.username ?? "",
-  private: profile?.private ?? false,
-  id: profile?.user ?? 0,
-  timezone_id: profile?.timezone ?? "",
-});
-
 // Builds a full, displayable ObservationItem from a form submission for offline
 // use. `payload` always carries the complete current form state (both create and
 // update submit the whole form, not a sparse diff — see ObservationEditorScreen),
@@ -118,6 +113,11 @@ const synthesize = (
     is_owner: true,
     owner: base?.owner ?? ownerFromProfile(profile),
     place: payload.place ?? null,
+    // If we have no fresh dropdown data for the new place, only reuse `base`'s
+    // snapshot when it actually still describes payload.place — otherwise
+    // (place id changed but we weren't handed the new place's data) showing
+    // base's stale name/photo would misattribute a *different* place's data to
+    // this place id, which is worse than showing nothing.
     place_data:
       payload.place == null
         ? null
@@ -128,19 +128,32 @@ const synthesize = (
               preview: extras.placeData.preview ?? null,
               location: extras.placeData.location ?? null,
             }
-          : (base?.place_data ?? null),
+          : base?.place_data?.id === payload.place
+            ? base.place_data
+            : null,
     private: payload.private ?? base?.private ?? false,
+    territory:
+      payload.territory ??
+      extras.diaryTerritory ??
+      base?.territory ??
+      base?.territory_data?.id ??
+      null,
     species,
+    // Same reasoning as place_data above: base's species_data is only a valid
+    // fallback when it still matches the resolved species id.
     species_data: extras.speciesData
       ? {
           id: extras.speciesData.value as number,
           name: extras.speciesData.name ?? "",
-          name_lang: extras.speciesData.label,
+          name_lang: extras.speciesData.name_lang ?? extras.speciesData.label,
           segment: extras.speciesData.segment ?? "",
           thumb: extras.speciesData.thumb ?? null,
         }
-      : (base?.species_data ?? { id: species, name: "", name_lang: "", segment: "", thumb: null }),
-    territory_data: base?.territory_data ?? territoryDataFor(payload.territory),
+      : base?.species_data?.id === species
+        ? base.species_data
+        : { id: species, name: "", name_lang: "", segment: "", thumb: null },
+    territory_data:
+      base?.territory_data ?? territoryDataFor(payload.territory ?? extras.diaryTerritory),
     location_private: payload.location_private ?? base?.location_private ?? true,
     external_source: null,
     external_username: null,
@@ -516,6 +529,61 @@ export const applyOverlay = (
   if (page === 1) {
     const existingIds = new Set(results.map((item) => item.id));
     const toPrepend = pendingCreates.filter((item) => !existingIds.has(item.id));
+    results = [...toPrepend, ...results];
+    count += toPrepend.length;
+  }
+
+  return { ...response, results, pagination: { ...response.pagination, count } };
+};
+
+const toDiaryObservationItem = (item: ObservationItem): DiaryObservationItem => ({
+  id: item.id,
+  created_at: item.created_at,
+  notes: item.notes,
+  quantity: item.quantity,
+  time: item.time,
+  species_data: item.species_data,
+});
+
+// Diary-scoped counterpart of applyOverlay above: DiaryDetailScreen's
+// observation list is filtered server-side to a single diary (filters.diary),
+// so the overlay merged into it must be filtered the same way — otherwise a
+// pending observation belonging to a *different* diary would leak in, and
+// deletedIds (which spans every diary) would over-subtract this diary's count.
+export const applyDiaryOverlay = (
+  response: PaginatedResponse<DiaryObservationItem>,
+  diaryId: number | null | undefined,
+  page: number,
+): PaginatedResponse<DiaryObservationItem> => {
+  if (diaryId == null) return response;
+
+  const { pendingCreates, patchesById, deletedIds } = getOverlay();
+  const relevantCreates = pendingCreates.filter((item) => item.diary === diaryId);
+  const relevantPatches = new Map(
+    [...patchesById].filter(([, item]) => item.diary === diaryId),
+  );
+
+  if (relevantCreates.length === 0 && relevantPatches.size === 0 && deletedIds.size === 0) {
+    return response;
+  }
+
+  const deletedInPage = response.results.filter((item) => deletedIds.has(item.id));
+
+  let results = response.results
+    .filter((item) => !deletedIds.has(item.id))
+    .map((item) =>
+      relevantPatches.has(item.id)
+        ? toDiaryObservationItem(relevantPatches.get(item.id)!)
+        : item,
+    );
+
+  let count = Math.max(0, response.pagination.count - deletedInPage.length);
+
+  if (page === 1) {
+    const existingIds = new Set(results.map((item) => item.id));
+    const toPrepend = relevantCreates
+      .filter((item) => !existingIds.has(item.id))
+      .map(toDiaryObservationItem);
     results = [...toPrepend, ...results];
     count += toPrepend.length;
   }

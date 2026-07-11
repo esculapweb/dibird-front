@@ -12,6 +12,7 @@ import {
   PlaceDropdownItem,
   SpeciesData,
   PlaceData,
+  TerritoryData,
   Errors,
   EditorFormData,
 } from "../types";
@@ -30,7 +31,8 @@ interface UseEditorFormParams {
 type ParsedEditorItem = {
   date_time?: string | null;
   id?: number;
-  territory?: number;
+  territory?: number | null;
+  territory_data?: TerritoryData | null;
   place?: number | null;
   place_data?: PlaceData | null;
   private?: boolean;
@@ -65,13 +67,26 @@ export const useEditorForm = ({
     : undefined;
 
   const [territoryValue, setTerritoryValue] = useState<number | null>(
-    () => itemWithParsedDate?.territory ?? defaultTerritory ?? null,
+    () =>
+      itemWithParsedDate?.territory ??
+      itemWithParsedDate?.territory_data?.id ??
+      defaultTerritory ??
+      null,
   );
   const [speciesValue, setSpeciesValue] = useState(() =>
-    hasSpecies ? (itemWithParsedDate?.species ?? defaultSpecies ?? null) : null,
+    hasSpecies
+      ? (itemWithParsedDate?.species ??
+        itemWithParsedDate?.species_data?.id ??
+        defaultSpecies ??
+        null)
+      : null,
   );
   const [placeValue, setPlaceValue] = useState(
-    () => itemWithParsedDate?.place ?? defaultPlace ?? null,
+    () =>
+      itemWithParsedDate?.place ??
+      itemWithParsedDate?.place_data?.id ??
+      defaultPlace ??
+      null,
   );
 
   const [formData, setFormData] = useState(() => {
@@ -99,11 +114,30 @@ export const useEditorForm = ({
   const [errors, setErrors] = useState<Errors>({});
 
   const [speciesData, setSpeciesData] = useState<SpeciesDropdownItem | null>(
-    (itemWithParsedDate?.species_data as unknown as SpeciesDropdownItem) ?? null,
+    () => {
+      const sd = itemWithParsedDate?.species_data;
+      if (!sd) return null;
+      return {
+        value: sd.id,
+        label: sd.name_lang,
+        name: sd.name,
+        name_lang: sd.name_lang,
+        segment: sd.segment,
+        thumb: sd.thumb ?? undefined,
+      };
+    },
   );
-  const [placeData, setPlaceData] = useState<PlaceDropdownItem | null>(
-    (itemWithParsedDate?.place_data as unknown as PlaceDropdownItem) ?? null,
-  );
+  const [placeData, setPlaceData] = useState<PlaceDropdownItem | null>(() => {
+    const pd = itemWithParsedDate?.place_data;
+    if (!pd) return null;
+    return {
+      value: pd.id,
+      label: pd.name,
+      name: pd.name,
+      preview: pd.preview ?? undefined,
+      location: pd.location ?? undefined,
+    };
+  });
 
   useEffect(() => {
     if (!speciesValue || speciesData) return;

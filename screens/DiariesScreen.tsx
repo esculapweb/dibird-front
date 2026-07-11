@@ -1,11 +1,12 @@
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 
 import ListScreen from "./ListScreen";
 import { fetchDiaries } from "../util/fetches";
 import DiaryCard from "../components/Diary/DiaryCard";
 import { useFilters } from "../store/filters-context";
+import { runDiarySync } from "../services/sync/diarySync";
 import {
   AppStackNavigationProp,
   AppStackRouteProp,
@@ -19,6 +20,15 @@ const DiariesScreen = () => {
   const [currentFilters, setCurrentFilters] = useState<Filters | null>(null);
   const navigation = useNavigation<AppStackNavigationProp>();
   const route = useRoute<AppStackRouteProp<"Diaries">>();
+
+  // Same defensive retry as ObservationsScreen: NetInfo's reconnect event can
+  // be missed/racy, so opportunistically retry the queue whenever this screen
+  // is focused rather than relying solely on the background listener.
+  useFocusEffect(
+    useCallback(() => {
+      runDiarySync();
+    }, []),
+  );
 
   const handleAdd = useCallback(async () => {
     const defaultTerritory = currentFilters?.territory ?? territory ?? null;

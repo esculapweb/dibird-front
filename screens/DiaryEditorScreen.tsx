@@ -12,7 +12,7 @@ import { useRoute, useNavigation } from "@react-navigation/native";
 import { useTheme } from "../store/theme-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import DiaryForm from "../components/Diary/DiaryForm";
-import { useCreateItem, useUpdateItem } from "../hooks/useItem";
+import { useCreateDiary, useUpdateDiary } from "../hooks/Diary/useOfflineDiary";
 import { useProfile } from "../store/profile-context";
 import { setSession } from "../util/sessionStore";
 import {
@@ -28,7 +28,6 @@ import {
   AppStackNavigationProp,
   AppStackRouteProp,
   DiaryFormData,
-  DiaryItem,
   ErrorExtractor,
   PlaceData,
 } from "../types";
@@ -68,14 +67,21 @@ const DiaryEditorScreen = () => {
     requiredFields: ["territory", "date_time"],
   });
 
-  const createDiaryMutation = useCreateItem<DiaryFormData, DiaryItem>("Diary");
-  const updateDiaryMutation = useUpdateItem(diaryWithParsedDate?.id, "Diary");
+  const createDiaryMutation = useCreateDiary();
+  const updateDiaryMutation = useUpdateDiary(diaryWithParsedDate?.id);
 
   const extractApiError = useCallback<ErrorExtractor>(
     (err) => ({
       title: isEditMode ? t("update_failed") : t("create_failed"),
       message:
-        Object.values(err?.response?.data).flat().join("\n") ||
+        // err.response is undefined for any response-less failure (offline,
+        // timeout, unreachable backend) — Object.values(undefined) throws, so
+        // this only ever ran the happy path where the server actually replied
+        // (see the matching fix in ObservationEditorScreen for the original
+        // report of this crash).
+        (err?.response?.data
+          ? Object.values(err.response.data).flat().join("\n")
+          : "") ||
         (isEditMode
           ? t("could_not_update_diary")
           : t("could_not_create_diary")),
@@ -109,22 +115,28 @@ const DiaryEditorScreen = () => {
     };
 
     if (isEditMode) {
-      updateDiaryMutation.mutate(diaryData, {
-        onSuccess: () => navigation.goBack(),
-        onError: handleMutateError,
-      });
-    } else {
-      createDiaryMutation.mutate(diaryData, {
-        onSuccess: (res) => {
-          setSession("lastDate", diaryData.date_time);
-          requestAnimationFrame(() =>
-            navigation.replace("DiaryDetail", { diaryId: res.data.id }),
-          );
+      updateDiaryMutation.mutate(
+        { payload: diaryData, placeData },
+        {
+          onSuccess: () => navigation.goBack(),
+          onError: handleMutateError,
         },
-        onError: handleMutateError,
-      });
+      );
+    } else {
+      createDiaryMutation.mutate(
+        { payload: diaryData, placeData },
+        {
+          onSuccess: (item) => {
+            setSession("lastDate", diaryData.date_time);
+            requestAnimationFrame(() =>
+              navigation.replace("DiaryDetail", { diaryId: item.id }),
+            );
+          },
+          onError: handleMutateError,
+        },
+      );
     }
-  }, [formData, territoryValue, placeValue, isEditMode]);
+  }, [formData, territoryValue, placeValue, placeData, isEditMode]);
 
   const handleAddNewPlace = useCallback(() => {
     setNavigationCallback("onPlaceCreated", null);
