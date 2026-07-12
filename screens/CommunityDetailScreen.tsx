@@ -79,7 +79,10 @@ const CommunityDetailScreen = () => {
     });
   }, [navigation, handleShare, observation]);
 
-  if (isError) {
+  // TanStack sets isError on *any* failed fetch, background ones included,
+  // and does not clear `data` when that happens — so isError alone doesn't
+  // mean "nothing to show" (e.g. offline with a cached copy already loaded).
+  if (isError && !observation) {
     return (
       <ErrorOverlay
         title={t("observations_unavailable")}

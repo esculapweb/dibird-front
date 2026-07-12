@@ -742,7 +742,12 @@ export const fetchCommunityObservations = (
   coords?: Coords | null,
   per_page?: number,
 ) => {
-  let extraParams = coords ? { lng: coords[0], lat: coords[1] } : {};
+  // Coords go in requestOnlyParams, not the cache key (see fetchPlaces'
+  // identical comment on requestOnlyParams above): otherwise a list cached
+  // while online under one GPS fix cache-misses entirely once offline with a
+  // slightly different (or no) fix, even though nothing else about the query
+  // changed — exactly what happened reopening the app in airplane mode.
+  const requestOnlyParams = coords ? { lng: coords[0], lat: coords[1] } : {};
 
   return fetchAbstract<PaginatedResponse<ObservationItem>>(
     "/myapi/community2/",
@@ -750,8 +755,10 @@ export const fetchCommunityObservations = (
     order,
     search,
     page,
-    extraParams,
-    per_page
+    {},
+    per_page,
+    undefined,
+    requestOnlyParams,
   );
 };
 

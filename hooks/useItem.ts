@@ -6,6 +6,11 @@ import { useMutationWithTranslation } from "./useMutationWithTranslation";
 import { useApiError } from "./useApiError";
 import api from "../services/api";
 import { INVALIDATION_MAP } from "../util/invalidationMap";
+import { stableStringify } from "../util/helpers";
+import {
+  cacheListResponse,
+  getCachedListResponse,
+} from "./repositories/listCacheRepository";
 
 type ItemType = "Place" | "Observation" | "Community" | "Diary";
 
@@ -73,11 +78,24 @@ export const useItem = (
 ) => {
   const { showErrorToast } = useApiError();
 
+  // No per-entity local mirror table for these types (unlike Observation/
+  // Diary/Place, which have their own offline-first hooks) — just a
+  // read-through cache in the shared listCacheTable, same fallback shape as
+  // fetchAbstract in util/fetches.ts uses for list responses.
+  const cacheKey = `item|${type}|${id}|${stableStringify(params ?? {})}`;
+
   const query = useQuery({
     queryKey: [type, id, params ?? null],
     queryFn: async () => {
-      const res = await api.get(`${URLS[type]}${id}/`, { params });
-      return res.data;
+      try {
+        const res = await api.get(`${URLS[type]}${id}/`, { params });
+        cacheListResponse(cacheKey, res.data);
+        return res.data;
+      } catch (e) {
+        const cached = getCachedListResponse(cacheKey);
+        if (cached) return cached;
+        throw e;
+      }
     },
     enabled: !!id,
     staleTime: 1000 * 60 * 60 * 24,
