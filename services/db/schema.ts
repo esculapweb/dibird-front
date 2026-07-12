@@ -97,6 +97,12 @@ export const staticPageCacheTable = cacheTable("static_page_cache");
 export const notificationUnreadCountCacheTable = cacheTable(
   "notification_unread_count_cache",
 );
+// Main screen reads (see fetchMyDashboardStat/fetchMyActivity/fetchBirdOfDay
+// in util/fetches.ts) — pure reads, no local mutation, same read-through
+// cache-fallback shape as fetchMyCountries/fetchSpecies.
+export const dashboardStatCacheTable = cacheTable("dashboard_stat_cache");
+export const activityCacheTable = cacheTable("activity_cache");
+export const birdOfDayCacheTable = cacheTable("bird_of_day_cache");
 
 // Durable local record of "read" state applied on top of whatever's in
 // notifications_list_cache (see notificationRepository.applyOverlay) — needed

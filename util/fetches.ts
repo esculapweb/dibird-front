@@ -44,6 +44,9 @@ import {
   notificationsListCacheTable,
   notificationUnreadCountCacheTable,
   staticPageCacheTable,
+  dashboardStatCacheTable,
+  activityCacheTable,
+  birdOfDayCacheTable,
 } from "../services/db/schema";
 
 // Shared cap for every dedicated offline-cache table (see the cacheTable
@@ -332,38 +335,72 @@ export const fetchUserProfile = async (profileId: number) => {
 };
 
 export const fetchMyActivity = async (filters: Filters) => {
-  const params = {
-    territory: filters?.territory,
-    ...buildDateParams(filters?.date),
-    ...(filters?.new && { new: true }),
-  };
+  const cacheKey = `activity|${filters?.territory}|${stableStringify(filters?.date ?? {})}|${!!filters?.new}`;
 
-  const res = await api.get<ActivityResponse>("/myapi/observation2/activity/", {
-    params,
-  });
+  try {
+    const params = {
+      territory: filters?.territory,
+      ...buildDateParams(filters?.date),
+      ...(filters?.new && { new: true }),
+    };
 
-  return res.data;
+    const res = await api.get<ActivityResponse>(
+      "/myapi/observation2/activity/",
+      { params },
+    );
+    cacheListResponse(activityCacheTable, cacheKey, res.data, MAX_ENTRIES);
+    return res.data;
+  } catch (e) {
+    const cached = getCachedListResponse<ActivityResponse>(
+      activityCacheTable,
+      cacheKey,
+    );
+    if (cached) return cached;
+    throw e;
+  }
 };
 
 export const fetchMyDashboardStat = async (filters: Filters) => {
-  const params = {
-    territory: filters?.territory,
-    ...buildDateParams(filters?.date),
-  };
+  const cacheKey = `dashboard-stat|${filters?.territory}|${stableStringify(filters?.date ?? {})}`;
 
-  const res = await api.get("/myapi/dashboard-stats2/", { params });
-  return res.data;
+  try {
+    const params = {
+      territory: filters?.territory,
+      ...buildDateParams(filters?.date),
+    };
+
+    const res = await api.get("/myapi/dashboard-stats2/", { params });
+    cacheListResponse(dashboardStatCacheTable, cacheKey, res.data, MAX_ENTRIES);
+    return res.data;
+  } catch (e) {
+    const cached = getCachedListResponse(dashboardStatCacheTable, cacheKey);
+    if (cached) return cached;
+    throw e;
+  }
 };
 
 export const fetchBirdOfDay = async (territory: number | null) => {
-  const params = {
-    territory: territory,
-  };
+  const cacheKey = `bird-of-day|${territory}|${i18n.language}`;
 
-  const res = await api.get<BirdOfTheDayType>("/myapi/bird-of-day2/today/", {
-    params,
-  });
-  return res.data;
+  try {
+    const params = {
+      territory: territory,
+    };
+
+    const res = await api.get<BirdOfTheDayType>(
+      "/myapi/bird-of-day2/today/",
+      { params },
+    );
+    cacheListResponse(birdOfDayCacheTable, cacheKey, res.data, MAX_ENTRIES);
+    return res.data;
+  } catch (e) {
+    const cached = getCachedListResponse<BirdOfTheDayType>(
+      birdOfDayCacheTable,
+      cacheKey,
+    );
+    if (cached) return cached;
+    throw e;
+  }
 };
 
 const buildListCacheKeyPrefix = (
