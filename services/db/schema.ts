@@ -18,6 +18,13 @@ export const profileTable = sqliteTable("profile", {
     .notNull()
     .default("synced"),
   updatedAt: integer("updated_at").notNull(),
+  // Local file:// URI for an avatar change made while offline (upload) or
+  // a pending removal (delete) — see profileRepository.queuePendingAvatar /
+  // services/sync/avatarSync.ts. Null once synced. Stored on profileTable
+  // rather than a separate mutation payload so the UI can render the pending
+  // photo immediately (optimistic) even after an app restart.
+  pendingAvatarUri: text("pending_avatar_uri"),
+  pendingAvatarOp: text("pending_avatar_op", { enum: ["upload", "delete"] }),
 });
 
 export const mutationQueueTable = sqliteTable("mutation_queue", {
@@ -103,6 +110,14 @@ export const notificationUnreadCountCacheTable = cacheTable(
 export const dashboardStatCacheTable = cacheTable("dashboard_stat_cache");
 export const activityCacheTable = cacheTable("activity_cache");
 export const birdOfDayCacheTable = cacheTable("bird_of_day_cache");
+// Secondary reads (see fetchUserProfile/fetchMapPreview/fetchDiarySpeciesIds
+// in util/fetches.ts) — same read-through cache-fallback shape, added so a
+// cold start offline doesn't lose data that was visible moments before the
+// app was killed (React Query's own cache is in-memory only, see
+// services/queryClient.ts).
+export const userProfileCacheTable = cacheTable("user_profile_cache");
+export const mapPreviewCacheTable = cacheTable("map_preview_cache");
+export const diarySpeciesIdsCacheTable = cacheTable("diary_species_ids_cache");
 
 // Durable local record of "read" state applied on top of whatever's in
 // notifications_list_cache (see notificationRepository.applyOverlay) — needed

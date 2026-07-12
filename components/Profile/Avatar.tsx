@@ -8,11 +8,11 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
+import * as FileSystem from "expo-file-system/legacy";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
-import { patchAvatar, deleteMyAvatar } from "../../util/fetches";
 import { useProfile } from "../../store/profile-context";
 import ProfileAvatar from "./ProfileAvatar";
 import { useProfileDisplay } from "../../hooks/Profile/useProfileDisplay";
@@ -20,6 +20,8 @@ import { useInvalidateProfile } from "../../hooks/Profile/useUpdateProfile";
 import { useMediaLibraryUnavailable } from "../../hooks/useMediaLibraryUnavailable";
 import { BottomSheet } from "../../services/bottomSheet";
 import { useApiError } from "../../hooks/useApiError";
+import * as profileRepository from "../../hooks/repositories/profileRepository";
+import * as avatarSync from "../../services/sync/avatarSync";
 
 const AVATAR_SIZE = 100;
 
@@ -28,7 +30,7 @@ const Avatar = () => {
   const [loading, setLoading] = useState(false);
   const invalidateProfile = useInvalidateProfile();
 
-  const { refreshProfile, profile } = useProfile();
+  const { profile } = useProfile();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -42,7 +44,13 @@ const Avatar = () => {
   const handleMediaLibraryUnavailable = useMediaLibraryUnavailable();
 
   useEffect(() => {
-    setAvatar(profile?.avatar_thumbnail ?? null);
+    if (profile?.pendingAvatarOp === "upload") {
+      setAvatar(profile.pendingAvatarUri ?? null);
+    } else if (profile?.pendingAvatarOp === "delete") {
+      setAvatar(null);
+    } else {
+      setAvatar(profile?.avatar_thumbnail ?? null);
+    }
   }, [profile]);
 
   const onPress = () => {
@@ -112,9 +120,15 @@ const Avatar = () => {
         { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG },
       );
 
-      const { avatar_thumbnail } = await patchAvatar(manipulated);
-      setAvatar(avatar_thumbnail);
-      refreshProfile();
+      // Persist outside the cache dir so the pending upload survives an app
+      // restart while offline (ImageManipulator's output otherwise lives in a
+      // temp location the OS can purge).
+      const persistedUri = `${FileSystem.documentDirectory}pending-avatar-${Date.now()}.jpg`;
+      await FileSystem.copyAsync({ from: manipulated.uri, to: persistedUri });
+
+      profileRepository.queuePendingAvatar("upload", persistedUri);
+      setAvatar(persistedUri);
+      await avatarSync.runAvatarSync();
       invalidateProfile();
     } catch (e) {
       showErrorToast(e, "AvatarUpload");
@@ -127,12 +141,10 @@ const Avatar = () => {
     if (loading) return;
     setLoading(true);
     try {
-      const status = await deleteMyAvatar();
-      if (status === 204) {
-        refreshProfile();
-        setAvatar(null);
-        invalidateProfile();
-      }
+      profileRepository.queuePendingAvatar("delete", null);
+      setAvatar(null);
+      await avatarSync.runAvatarSync();
+      invalidateProfile();
     } catch (e) {
       showErrorToast(e, "AvatarDelete");
     } finally {

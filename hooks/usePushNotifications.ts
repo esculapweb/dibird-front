@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import "react-native-gesture-handler";
 import "react-native-reanimated";
 import { useQueryClient } from "@tanstack/react-query";
@@ -11,7 +11,8 @@ import { registerPushToken } from "../util/fetches";
 import { UNREAD_COUNT_KEY } from "../hooks/useUnreadCount";
 import { navigateFromNotification } from "../services/navigationRef";
 import { logError } from "../services/errors";
-import { isNotificationPayload, NotificationPayload } from "../types";
+import { subscribeToReconnect } from "../services/sync/networkStatus";
+import { isNotificationPayload, NotificationPayload, AppError } from "../types";
 
 export const handleNotificationNavigation = (raw: NotificationPayload) => {
   switch (raw.screen) {
@@ -29,13 +30,14 @@ export const handleNotificationNavigation = (raw: NotificationPayload) => {
       });
       break;
     case "Checklist":
-      navigation.navigate("Checklist");
+      navigateFromNotification("Checklist", undefined);
       break;
   }
 };
 
 export const usePushNotifications = (isAuthenticated: boolean) => {
   const queryClient = useQueryClient();
+  const unsubscribeReconnectRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -58,10 +60,28 @@ export const usePushNotifications = (isAuthenticated: boolean) => {
       const token = await Notifications.getExpoPushTokenAsync({
         projectId: Constants.expoConfig?.extra?.eas?.projectId,
       });
-      try {
-        await registerPushToken(token.data);
-      } catch (e) {
-        logError(e, "registerPushTokenError API ERROR");
+
+      const attemptRegister = async (): Promise<boolean> => {
+        try {
+          await registerPushToken(token.data);
+          return true;
+        } catch (e) {
+          const error = e as AppError;
+          logError(error, "registerPushTokenError API ERROR");
+          return !(error.isNetworkError || error.isTimeout);
+        }
+      };
+
+      // If registration failed purely due to connectivity (e.g. permission
+      // was just granted with no signal), retry once the device reconnects
+      // instead of leaving the token unregistered until the next cold start.
+      if (!(await attemptRegister())) {
+        unsubscribeReconnectRef.current = subscribeToReconnect(async () => {
+          if (await attemptRegister()) {
+            unsubscribeReconnectRef.current?.();
+            unsubscribeReconnectRef.current = null;
+          }
+        });
       }
     }
     register();
@@ -82,6 +102,8 @@ export const usePushNotifications = (isAuthenticated: boolean) => {
     return () => {
       receivedSub.remove();
       responseSub.remove();
+      unsubscribeReconnectRef.current?.();
+      unsubscribeReconnectRef.current = null;
     };
   }, [isAuthenticated, queryClient]);
 };

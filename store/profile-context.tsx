@@ -9,13 +9,14 @@ import {
 } from "react";
 import { AppState } from "react-native";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { getAnalytics, setUserId } from "@react-native-firebase/analytics";
 
 import { db } from "../services/db/client";
 import { mutationQueueTable, profileTable } from "../services/db/schema";
 import * as profileRepository from "../hooks/repositories/profileRepository";
 import * as profileSync from "../services/sync/profileSync";
+import * as avatarSync from "../services/sync/avatarSync";
 import { subscribeToReconnect } from "../services/sync/networkStatus";
 import { initGlobalFilters } from "../util/storageHelper";
 import { AppError, Profile, ProfileFormData } from "../types";
@@ -77,7 +78,7 @@ export const ProfileProvider = ({
       .from(mutationQueueTable)
       .where(
         and(
-          eq(mutationQueueTable.entity, "profile"),
+          inArray(mutationQueueTable.entity, ["profile", "avatar"]),
           eq(mutationQueueTable.status, "error"),
         ),
       )
@@ -95,6 +96,7 @@ export const ProfileProvider = ({
     try {
       setError(null);
       await profileSync.runProfileSync();
+      await avatarSync.runAvatarSync();
     } catch (e) {
       const err = e as AppError;
       setError(err);
@@ -115,6 +117,7 @@ export const ProfileProvider = ({
     if (!failedMutation) return;
     profileRepository.retryMutation(failedMutation.id);
     await profileSync.runProfileSync();
+    await avatarSync.runAvatarSync();
   }, [failedMutation]);
 
   const discardFailedEdit = useCallback(() => {
@@ -159,6 +162,7 @@ export const ProfileProvider = ({
 
     const unsubscribeReconnect = subscribeToReconnect(() => {
       profileSync.runProfileSync();
+      avatarSync.runAvatarSync();
     });
 
     let timeout: ReturnType<typeof setTimeout> | null = null;
@@ -175,6 +179,7 @@ export const ProfileProvider = ({
           const secsSinceRefresh = (Date.now() - lastRefreshRef.current) / 1000;
           if (secsSinceRefresh > 10) {
             profileSync.runProfileSync();
+            avatarSync.runAvatarSync();
           }
         }, 500);
       }

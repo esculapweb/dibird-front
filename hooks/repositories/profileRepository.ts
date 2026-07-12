@@ -1,4 +1,4 @@
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "../../services/db/client";
 import { mutationQueueTable, profileTable } from "../../services/db/schema";
@@ -7,6 +7,13 @@ import { Profile, ProfileFormData } from "../../types";
 type ProfileInsert = typeof profileTable.$inferInsert;
 type ProfileRow = typeof profileTable.$inferSelect;
 export type MutationRow = typeof mutationQueueTable.$inferSelect;
+
+// Both the "profile" (field edits, see applyLocalPatch) and "avatar" (see
+// queuePendingAvatar) mutation-queue entities act on the same singleton
+// profileTable row, so any "any pending/failed mutation left?" check needs to
+// consider both — see discardMutation/clearProfile below.
+const AVATAR_ENTITY = "avatar" as const;
+const PROFILE_ENTITIES = ["profile", AVATAR_ENTITY] as const;
 
 export const rowToProfile = (row: ProfileRow): Profile => ({
   user: row.user,
@@ -24,6 +31,8 @@ export const rowToProfile = (row: ProfileRow): Profile => ({
   registration_ip: row.registrationIp ?? "",
   timezone: row.timezone ?? "",
   territory: row.territory ?? null,
+  pendingAvatarUri: row.pendingAvatarUri ?? null,
+  pendingAvatarOp: row.pendingAvatarOp ?? null,
 });
 
 const toRow = (data: Profile, status: ProfileInsert["status"]): ProfileInsert => ({
@@ -72,6 +81,72 @@ export const applyLocalPatch = (patch: Partial<ProfileFormData>) => {
         entity: "profile",
         payload: patch,
         createdAt: Date.now(),
+      })
+      .run();
+  });
+};
+
+export const queuePendingAvatar = (
+  op: "upload" | "delete",
+  uri: string | null,
+) => {
+  db.transaction((tx) => {
+    tx.update(profileTable)
+      .set({
+        pendingAvatarUri: uri,
+        pendingAvatarOp: op,
+        status: "pending",
+        updatedAt: Date.now(),
+      })
+      .run();
+
+    tx.insert(mutationQueueTable)
+      .values({
+        entity: AVATAR_ENTITY,
+        payload: { op, uri },
+        createdAt: Date.now(),
+      })
+      .run();
+  });
+};
+
+export const getPendingAvatarMutation = (): MutationRow | null => {
+  const rows = db
+    .select()
+    .from(mutationQueueTable)
+    .where(
+      and(
+        eq(mutationQueueTable.entity, AVATAR_ENTITY),
+        eq(mutationQueueTable.status, "pending"),
+      ),
+    )
+    .orderBy(asc(mutationQueueTable.createdAt))
+    .limit(1)
+    .all();
+  return rows[0] ?? null;
+};
+
+export const resolvePendingAvatar = (
+  id: number,
+  data: { avatar: string; avatarThumbnail: string },
+) => {
+  db.transaction((tx) => {
+    tx.delete(mutationQueueTable).where(eq(mutationQueueTable.id, id)).run();
+
+    const remaining = tx
+      .select()
+      .from(mutationQueueTable)
+      .where(inArray(mutationQueueTable.entity, [...PROFILE_ENTITIES]))
+      .all();
+
+    tx.update(profileTable)
+      .set({
+        avatar: data.avatar,
+        avatarThumbnail: data.avatarThumbnail,
+        pendingAvatarUri: null,
+        pendingAvatarOp: null,
+        status: remaining.length > 0 ? "pending" : "synced",
+        updatedAt: Date.now(),
       })
       .run();
   });
@@ -138,16 +213,27 @@ export const retryMutation = (id: number) => {
 
 export const discardMutation = (id: number) => {
   db.transaction((tx) => {
+    const [mutation] = tx
+      .select()
+      .from(mutationQueueTable)
+      .where(eq(mutationQueueTable.id, id))
+      .all();
+
     tx.delete(mutationQueueTable).where(eq(mutationQueueTable.id, id)).run();
 
     const remaining = tx
       .select()
       .from(mutationQueueTable)
-      .where(eq(mutationQueueTable.entity, "profile"))
+      .where(inArray(mutationQueueTable.entity, [...PROFILE_ENTITIES]))
       .all();
 
     tx.update(profileTable)
-      .set({ status: remaining.length > 0 ? "pending" : "synced" })
+      .set({
+        status: remaining.length > 0 ? "pending" : "synced",
+        ...(mutation?.entity === AVATAR_ENTITY
+          ? { pendingAvatarUri: null, pendingAvatarOp: null }
+          : {}),
+      })
       .run();
   });
 };
@@ -155,6 +241,8 @@ export const discardMutation = (id: number) => {
 export const clearProfile = () => {
   db.transaction((tx) => {
     tx.delete(profileTable).run();
-    tx.delete(mutationQueueTable).where(eq(mutationQueueTable.entity, "profile")).run();
+    tx.delete(mutationQueueTable)
+      .where(inArray(mutationQueueTable.entity, [...PROFILE_ENTITIES]))
+      .run();
   });
 };

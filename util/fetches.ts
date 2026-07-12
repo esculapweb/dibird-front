@@ -47,6 +47,9 @@ import {
   dashboardStatCacheTable,
   activityCacheTable,
   birdOfDayCacheTable,
+  userProfileCacheTable,
+  mapPreviewCacheTable,
+  diarySpeciesIdsCacheTable,
 } from "../services/db/schema";
 
 // Shared cap for every dedicated offline-cache table (see the cacheTable
@@ -268,18 +271,36 @@ export const fetchSpecies = async (
 };
 
 export const fetchDiarySpeciesIds = async (diaryId: number) => {
-  const params = {
-    diary: diaryId,
-  };
-  const res = await api.get("/myapi/diary-observation2/species-ids/", {
-    params,
-  });
-  return res.data;
+  const cacheKey = `diary-species-ids|${diaryId}`;
+
+  try {
+    const params = {
+      diary: diaryId,
+    };
+    const res = await api.get("/myapi/diary-observation2/species-ids/", {
+      params,
+    });
+    cacheListResponse(diarySpeciesIdsCacheTable, cacheKey, res.data, MAX_ENTRIES);
+    return res.data;
+  } catch (e) {
+    const cached = getCachedListResponse(diarySpeciesIdsCacheTable, cacheKey);
+    if (cached) return cached;
+    throw e;
+  }
 };
 
 export const fetchMapPreview = async (placeId: string | number | null) => {
-  const res = await api.get(`/myapi/place2/${placeId}/map_preview/`);
-  return res.data;
+  const cacheKey = `map-preview|${placeId}`;
+
+  try {
+    const res = await api.get(`/myapi/place2/${placeId}/map_preview/`);
+    cacheListResponse(mapPreviewCacheTable, cacheKey, res.data, MAX_ENTRIES);
+    return res.data;
+  } catch (e) {
+    const cached = getCachedListResponse(mapPreviewCacheTable, cacheKey);
+    if (cached) return cached;
+    throw e;
+  }
 };
 
 export const fetchMyProfile = async () => {
@@ -330,8 +351,17 @@ export const sendConfirmEmail = (key: string) =>
   api.post("/myapi/confirm/email/", { key });
 
 export const fetchUserProfile = async (profileId: number) => {
-  const res = await api.get(`/myapi/user-profile/${profileId}/`);
-  return res.data;
+  const cacheKey = `user-profile|${profileId}`;
+
+  try {
+    const res = await api.get(`/myapi/user-profile/${profileId}/`);
+    cacheListResponse(userProfileCacheTable, cacheKey, res.data, MAX_ENTRIES);
+    return res.data;
+  } catch (e) {
+    const cached = getCachedListResponse(userProfileCacheTable, cacheKey);
+    if (cached) return cached;
+    throw e;
+  }
 };
 
 export const fetchMyActivity = async (filters: Filters) => {

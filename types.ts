@@ -160,6 +160,10 @@ export interface Profile {
   registration_ip: string;
   timezone: string;
   territory?: number | null;
+  // Local file:// URI for an avatar upload/removal made while offline, not
+  // yet synced to the server — see profileRepository.queuePendingAvatar.
+  pendingAvatarUri?: string | null;
+  pendingAvatarOp?: "upload" | "delete" | null;
 }
 
 export interface ImageAsset {
