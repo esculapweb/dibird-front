@@ -23,6 +23,7 @@ import {
 } from "../hooks/repositories/listCacheRepository";
 import * as observationRepository from "../hooks/repositories/observationRepository";
 import * as diaryRepository from "../hooks/repositories/diaryRepository";
+import * as placeRepository from "../hooks/repositories/placeRepository";
 import {
   Filters,
   DateFilter,
@@ -162,10 +163,17 @@ export const fetchMyPlaces = async (
       preview: item.preview ?? undefined,
     }));
     cacheListResponse(cacheKey, items);
-    return items;
+    return placeRepository.applyDropdownOverlay(items, territory);
   } catch (e) {
     const cached = getCachedListResponse<PlaceDropdownItem[]>(cacheKey);
-    if (cached) return cached;
+    if (cached) return placeRepository.applyDropdownOverlay(cached, territory);
+
+    // Nothing cached either: still worth showing a place created offline in
+    // this territory (better than an error screen hiding it), but if there's
+    // truly nothing — no cache, no pending place — keep surfacing the error
+    // like before rather than silently showing an empty picker.
+    const overlayOnly = placeRepository.applyDropdownOverlay([], territory);
+    if (overlayOnly.length > 0) return overlayOnly;
     throw e;
   }
 };
@@ -351,6 +359,18 @@ const fetchAbstract = async <T>(
   extraParams: Record<string, unknown> = {},
   perPage?: number,
   options?: FetchAbstractOptions<T>,
+  // Sent to the API alongside extraParams, but deliberately left out of the
+  // cache key: unlike extraParams (which changes what's actually being
+  // asked for, e.g. a seen/unseen tab), this is for values that refine a
+  // response the cache can still reuse as-is (currently just Places'
+  // lng/lat for distance sort). Keeping them out of the key means an
+  // offline read isn't required to have had the exact same coordinates as
+  // whichever online fetch originally populated the cache — e.g. opening
+  // the app offline before a GPS fix ever resolves this session would
+  // otherwise cache-miss even though a perfectly good list from an earlier
+  // session (fetched with different, or no, coordinates) is sitting right
+  // there.
+  requestOnlyParams: Record<string, unknown> = {},
 ): Promise<T> => {
   const cacheKey = buildListCacheKey(
     fetchUrl,
@@ -372,6 +392,7 @@ const fetchAbstract = async <T>(
     const params: Record<string, unknown> = {
       ...cleanFilters(apiFilters),
       ...extraParams,
+      ...requestOnlyParams,
       per_page: perPage ?? 100,
       o: order,
     };
@@ -533,7 +554,7 @@ export const fetchChecklist = (
   );
 };
 
-export const fetchPlaces = (
+export const fetchPlaces = async (
   filters: Filters,
   order: string | null = "distance",
   search?: string,
@@ -541,16 +562,26 @@ export const fetchPlaces = (
   coords?: Coords | null,
 ) => {
   const isDistanceSort = order === "distance" || order === "-distance";
-  const extraParams =
+  // Coordinates go in requestOnlyParams, not the cache key: whether they're
+  // present/what they are shouldn't determine whether a cached list counts
+  // as a hit — see fetchAbstract's comment on requestOnlyParams. Distance
+  // *values* in an offline-served list may be stale/off, same tradeoff the
+  // app already accepts elsewhere (e.g. fetchStat re-sorting cached data).
+  const requestOnlyParams =
     isDistanceSort && coords ? { lng: coords[0], lat: coords[1] } : {};
-  return fetchAbstract<PaginatedResponse<PlaceItem>>(
+  const data = await fetchAbstract<PaginatedResponse<PlaceItem>>(
     "/myapi/place2/",
     filters,
     order,
     search,
     page,
-    extraParams,
+    {},
+    undefined,
+    undefined,
+    requestOnlyParams,
   );
+
+  return placeRepository.applyOverlay(data, page ?? 1);
 };
 
 export const fetchObservations = async (

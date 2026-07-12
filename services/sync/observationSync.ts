@@ -4,6 +4,7 @@ import { AppError } from "../../types";
 import * as observationRepository from "../../hooks/repositories/observationRepository";
 import { ObservationMutationPayload } from "../../hooks/repositories/observationRepository";
 import * as diaryRepository from "../../hooks/repositories/diaryRepository";
+import * as placeRepository from "../../hooks/repositories/placeRepository";
 import { isConnected } from "./networkStatus";
 import { INVALIDATION_MAP } from "../../util/invalidationMap";
 
@@ -100,16 +101,27 @@ export const runObservationSync = (): Promise<void> => {
 const runObservationSyncInternal = async () => {
   if (!isConnected()) return;
 
+  // Mutations whose parent diary/place hasn't synced *yet this pass* are
+  // held here instead of being put straight back on the queue: claimNextMutation
+  // always claims the oldest pending row first, so immediately re-queuing a
+  // not-yet-ready mutation would just make the very next iteration reclaim
+  // that exact same row again (a synchronous spin) — but stopping the whole
+  // pass instead (the previous approach) meant one observation still waiting
+  // on its place/diary blocked every *other*, unrelated observation queued
+  // behind it from ever being attempted, sometimes indefinitely (e.g. their
+  // sync badges never clearing even though nothing was actually wrong with
+  // them). Holding deferred rows in memory and re-inserting them only once
+  // the claimable queue is otherwise empty lets every independently-ready
+  // mutation in the batch proceed on this same pass.
+  const deferred: { payload: ObservationMutationPayload; createdAt: number; attempts: number }[] = [];
+
   // Claims (atomically removes) one mutation at a time rather than reading
   // the whole pending list upfront — any mutation not yet claimed stays
   // untouched in the queue, so a failure partway through only needs to put
   // *that* mutation back, not everything after it.
   for (;;) {
     const mutation = observationRepository.claimNextMutation();
-    if (!mutation) {
-      retryDelayMs = RETRY_BASE_MS;
-      return;
-    }
+    if (!mutation) break;
 
     const payload = mutation.payload as ObservationMutationPayload;
 
@@ -142,22 +154,39 @@ const runObservationSyncInternal = async () => {
           // this sync are two independent queues that both fire on the same
           // reconnect event, so it's routine for several observations queued
           // against a diary created in the same offline session to reach this
-          // branch before the diary's own create mutation has resolved.
-          // Requeuing and `continue`-ing would just reclaim this exact
-          // mutation again on the very next iteration — same createdAt, no
-          // other observation mutation ordered ahead of it, no await in
-          // between — spinning the JS thread in a synchronous infinite loop
-          // that also starves diarySync's in-flight request of the CPU time
-          // it needs to ever resolve, hanging the whole app. Back off like a
-          // network failure instead: stop this pass and retry later, by
-          // which point the diary should have resolved (diarySync also wakes
-          // this sync directly right after a successful create — see
-          // diarySync.ts).
-          observationRepository.requeuePendingMutation(payload, mutation.createdAt, mutation.attempts);
-          scheduleRetry();
-          return;
+          // branch before the diary's own create mutation has resolved. Defer
+          // just this one and keep going — see the `deferred` comment above.
+          deferred.push({ payload, createdAt: mutation.createdAt, attempts: mutation.attempts });
+          continue;
         }
         payload.data = { ...payload.data, diary: resolved };
+      }
+    }
+
+    // Same reasoning as the diary resolution above, for an observation
+    // queued against a place created offline in the same session. See
+    // placeRepository.resolvePlaceId.
+    if (payload.op === "create" || payload.op === "update") {
+      const placeId = payload.data.place;
+      if (placeId != null && placeId < 0) {
+        const resolved = placeRepository.resolvePlaceId(placeId);
+        if (resolved == null) {
+          retryDelayMs = RETRY_BASE_MS;
+          observationRepository.requeueFailedMutation(
+            payload,
+            mutation.createdAt,
+            mutation.attempts,
+            payload.localId,
+            "Parent place was removed before it ever synced",
+          );
+          invalidateObservationQueries(payload.localId);
+          continue;
+        }
+        if (resolved < 0) {
+          deferred.push({ payload, createdAt: mutation.createdAt, attempts: mutation.attempts });
+          continue;
+        }
+        payload.data = { ...payload.data, place: resolved };
       }
     }
 
@@ -190,7 +219,17 @@ const runObservationSyncInternal = async () => {
     } catch (e) {
       const error = e as AppError;
       if (error.isNetworkError || error.isTimeout) {
+        // Likely means connectivity just dropped again — every other
+        // request in this pass would fail the same way, so stopping here
+        // (unlike the not-yet-ready-dependency case above) is the efficient
+        // choice, not a head-of-line problem. Still must put back anything
+        // already deferred earlier in this same pass, or it'd be lost —
+        // claimNextMutation already deleted those rows and they only exist
+        // in the in-memory `deferred` array at this point.
         observationRepository.requeuePendingMutation(payload, mutation.createdAt, mutation.attempts);
+        deferred.forEach((d) =>
+          observationRepository.requeuePendingMutation(d.payload, d.createdAt, d.attempts),
+        );
         scheduleRetry();
         return;
       }
@@ -207,5 +246,18 @@ const runObservationSyncInternal = async () => {
       );
       invalidateObservationQueries(payload.localId);
     }
+  }
+
+  if (deferred.length > 0) {
+    // Everything actually claimable this pass got attempted; only
+    // not-yet-ready dependencies are left. Put them back for the next pass —
+    // either woken directly by the dependency's own sync success (see
+    // diarySync.ts/placeSync.ts) or this backoff timer as a safety net.
+    deferred.forEach((d) =>
+      observationRepository.requeuePendingMutation(d.payload, d.createdAt, d.attempts),
+    );
+    scheduleRetry();
+  } else {
+    retryDelayMs = RETRY_BASE_MS;
   }
 };

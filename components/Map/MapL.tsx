@@ -78,8 +78,18 @@ const MapL = ({
     [],
   );
 
+  // Deliberately NOT keyed on lng/lat: those change on every marker
+  // drag/tap/"use my location" while the underlying native <Map> stays
+  // mounted (it only remounts on retryKey or an offline->online transition,
+  // see the `showFallback ? ... : <Map key={retryKey}>` render below) — so
+  // onDidFinishLoadingMap never fires again after the first load. Re-arming
+  // this timeout on every coordinate change was resetting mapLoaded to false
+  // (flashing the loading spinner) and then, 8s later with no matching
+  // "finished loading" callback ever coming, flipping to the "connection
+  // timeout" fallback even while fully online — reproducible just by tapping
+  // the map to move the pin in PlaceEditor.
   useEffect(() => {
-    if (offline || lng == null || lat == null) return;
+    if (offline) return;
 
     setMapLoaded(false);
     setLoadFailed(false);
@@ -91,7 +101,7 @@ const MapL = ({
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [offline, lng, lat, retryKey]);
+  }, [offline, retryKey]);
 
   const handleMapLoaded = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -143,8 +153,11 @@ const MapL = ({
               color={Colors.textSecondary}
             />
             <Text style={styles.fallbackText}>
-              {offline ? t("no_connection") : t("connection_timeout")}
+              {offline ? t("map_unavailable_offline") : t("connection_timeout")}
             </Text>
+            {offline && (
+              <Text style={styles.fallbackHint}>{t("map_offline_hint")}</Text>
+            )}
             {currentCoords && (
               <TouchableOpacity
                 style={styles.fallbackCoords}
@@ -282,7 +295,10 @@ const MapL = ({
           </>
         )}
 
-        {!showFallback && onUseMyLocation && (
+        {/* Not gated on showFallback: device GPS doesn't need connectivity or
+            reachable map tiles, so "use my location" stays usable even when
+            the map itself can't render. */}
+        {onUseMyLocation && (
           <TouchableOpacity
             style={styles.myLocationButton}
             onPress={onUseMyLocation}
@@ -293,6 +309,23 @@ const MapL = ({
               <Ionicons name="navigate" size={22} color={Colors.textMain} />
             )}
           </TouchableOpacity>
+        )}
+
+        {/* Same reasoning: the accuracy readout is derived from GPS, not the
+            map/network, so it stays visible in the fallback state too —
+            that's exactly when the accuracy circle drawn on the map itself
+            (which needs the map to render) is unavailable. */}
+        {onUseMyLocation && hasAccuracy && (
+          <View style={styles.accuracyOverlay}>
+            <Ionicons
+              name={accuracy! > 100 ? "warning-outline" : "locate-outline"}
+              size={12}
+              color={accuracy! > 100 ? Colors.error600 : Colors.textSecondary}
+            />
+            <Text style={styles.accuracyOverlayText}>
+              {t("gps_accuracy_label", { value: Math.round(accuracy!) })}
+            </Text>
+          </View>
         )}
 
         {!showFallback && showCoords && currentCoords && (
@@ -396,6 +429,30 @@ const stylesFn = (Colors: ThemeColors, mapHeight?: number) =>
       fontSize: 13,
       color: Colors.textSecondary,
       textAlign: "center",
+    },
+    fallbackHint: {
+      marginTop: 4,
+      fontSize: 11,
+      color: Colors.textSecondary,
+      opacity: 0.8,
+      textAlign: "center",
+    },
+    accuracyOverlay: {
+      flexDirection: "row",
+      alignItems: "center",
+      position: "absolute",
+      top: 12,
+      right: 12,
+      paddingVertical: 3,
+      paddingHorizontal: 6,
+      backgroundColor: Colors.overlayBg,
+      borderRadius: 12,
+      gap: 4,
+    },
+    accuracyOverlayText: {
+      fontSize: 10,
+      color: Colors.textSecondary,
+      fontWeight: "500",
     },
     fallbackCoords: {
       flexDirection: "row",

@@ -37,6 +37,7 @@ import type { AlertSettingsPatch } from "./services/alertSettings";
 import { queryClient } from "./services/queryClient";
 import { useObservationSync } from "./hooks/Observation/useObservationSync";
 import { useDiarySync } from "./hooks/Diary/useDiarySync";
+import { usePlaceSync } from "./hooks/Place/usePlaceSync";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -113,6 +114,7 @@ const Root = () => {
   usePushNotifications(isAuthenticated);
   useObservationSync(isAuthenticated);
   useDiarySync(isAuthenticated);
+  usePlaceSync(isAuthenticated);
 
   useEffect(() => {
     if (!isAuthenticated) {

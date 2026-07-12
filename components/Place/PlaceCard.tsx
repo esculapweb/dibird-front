@@ -43,7 +43,25 @@ const PlaceCard = memo(({ item, index }: {item: PlaceItem, index: number}) => {
             </Text>
           </View>
 
-          {territoryText && <Text style={styles.flag}>{territoryText}</Text>}
+          <View style={styles.titleRight}>
+            {item._pendingSync && (
+              <Ionicons
+                name={
+                  item._pendingSync === "error"
+                    ? "warning-outline"
+                    : "cloud-upload-outline"
+                }
+                size={14}
+                color={
+                  item._pendingSync === "error"
+                    ? Colors.error600
+                    : Colors.textSecondary
+                }
+                style={{ marginRight: 4 }}
+              />
+            )}
+            {territoryText && <Text style={styles.flag}>{territoryText}</Text>}
+          </View>
         </View>
 
         <View style={styles.bottomRow}>
@@ -125,6 +143,10 @@ const stylesFn = (Colors: ThemeColors) =>
     },
     flag: {
       marginLeft: 6,
+    },
+    titleRight: {
+      flexDirection: "row",
+      alignItems: "center",
     },
 
     bottomRow: {

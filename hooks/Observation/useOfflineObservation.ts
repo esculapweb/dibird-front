@@ -46,23 +46,41 @@ const invalidateObservationCaches = (queryClient: ReturnType<typeof useQueryClie
 // `diaryStillPending` so the caller skips the online attempt entirely instead
 // of POSTing/PATCHing a payload with a temp id in it.
 const resolveObservationDiary = (payload: ObservationFormData) => {
-  if (payload.diary == null) return { payload, diaryStillPending: false, diaryTerritory: null };
+  if (payload.diary == null)
+    return {
+      payload,
+      diaryStillPending: false,
+      diaryTerritory: null,
+      diaryPlace: null,
+      diaryPlaceData: null,
+      diaryDateTime: null,
+      diaryPrivate: null,
+    };
   const resolved = diaryRepository.resolveDiaryId(payload.diary);
   const diaryStillPending = resolved != null && resolved < 0;
-  // A diary-scoped form never carries its own territory (see
-  // ObservationEditorScreen's buildObservationPayload) — the offline synthesis
-  // in observationRepository needs it explicitly (as SynthesizeExtras.diaryTerritory)
-  // or it defaults to a blank territory, which then wins over any better
-  // fallback everywhere this observation is later read back. `resolved` (not
-  // the original temp id) works here whether the diary has synced yet or not:
-  // getDiary resolves both the temp id and, once replaceLocalWithServer has
-  // run, the real id.
-  const diaryTerritory =
-    resolved != null ? (diaryRepository.getDiary(resolved)?.territory ?? null) : null;
+  // A diary-scoped form never carries its own territory, place, date_time or
+  // private (see ObservationEditorScreen's buildObservationPayload) — the
+  // offline synthesis in observationRepository needs them explicitly (as
+  // SynthesizeExtras.diaryTerritory/diaryPlace/diaryPlaceData/diaryDateTime/
+  // diaryPrivate) or they default to blank/now/false, which then wins over
+  // any better fallback everywhere this observation is later read back.
+  // `resolved` (not the original temp id) works here whether the diary has
+  // synced yet or not: getDiary resolves both the temp id and, once
+  // replaceLocalWithServer has run, the real id.
+  const diary = resolved != null ? diaryRepository.getDiary(resolved) : null;
+  const diaryTerritory = diary?.territory ?? null;
+  const diaryPlace = diary?.place ?? null;
+  const diaryPlaceData = diary?.place_data ?? null;
+  const diaryDateTime = diary?.date_time ?? null;
+  const diaryPrivate = diary?.private ?? null;
   return {
     payload: { ...payload, diary: resolved === undefined ? null : resolved },
     diaryStillPending,
     diaryTerritory,
+    diaryPlace,
+    diaryPlaceData,
+    diaryDateTime,
+    diaryPrivate,
   };
 };
 
@@ -158,8 +176,15 @@ export const useCreateObservation = () => {
       // requeuePendingMutation's call site in observationSync.ts for the retry
       // side. Without matching backend support this field is currently inert.
       const clientRequestId = observationRepository.makeClientRequestId();
-      const { payload: resolvedPayload, diaryStillPending, diaryTerritory } =
-        resolveObservationDiary(payload);
+      const {
+        payload: resolvedPayload,
+        diaryStillPending,
+        diaryTerritory,
+        diaryPlace,
+        diaryPlaceData,
+        diaryDateTime,
+        diaryPrivate,
+      } = resolveObservationDiary(payload);
 
       if (isConnected() && !diaryStillPending) {
         try {
@@ -188,7 +213,7 @@ export const useCreateObservation = () => {
 
       const item = observationRepository.createLocal(
         resolvedPayload,
-        { speciesData, placeData, diaryTerritory },
+        { speciesData, placeData, diaryTerritory, diaryPlace, diaryPlaceData, diaryDateTime, diaryPrivate },
         profile,
         clientRequestId,
       );
@@ -206,8 +231,15 @@ export const useUpdateObservation = (id: number | null | undefined) => {
   return useMutationWithTranslation<ObservationItem, AppError, MutateVars>({
     mutationFn: async ({ payload, speciesData, placeData }) => {
       if (id == null) throw new Error("Missing observation id");
-      const { payload: resolvedPayload, diaryStillPending, diaryTerritory } =
-        resolveObservationDiary(payload);
+      const {
+        payload: resolvedPayload,
+        diaryStillPending,
+        diaryTerritory,
+        diaryPlace,
+        diaryPlaceData,
+        diaryDateTime,
+        diaryPrivate,
+      } = resolveObservationDiary(payload);
 
       if (id > 0 && isConnected() && !diaryStillPending) {
         try {
@@ -226,7 +258,7 @@ export const useUpdateObservation = (id: number | null | undefined) => {
         id,
         resolvedPayload,
         currentItem,
-        { speciesData, placeData, diaryTerritory },
+        { speciesData, placeData, diaryTerritory, diaryPlace, diaryPlaceData, diaryDateTime, diaryPrivate },
         profile,
       );
       if (id > 0) runObservationSync();

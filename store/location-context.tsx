@@ -12,7 +12,7 @@ interface LocationContextType {
   locationCoords: Coords | null;
   locationAvailable: boolean;
   permissionStatus: string | null;
-  requestLocation: () => Promise<{
+  requestLocation: (accuracy?: Location.Accuracy) => Promise<{
     coords: Coords;
     accuracy: number | null;
   } | null>;
@@ -26,7 +26,7 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
   const [permissionStatus, setPermissionStatus] = useState<string | null>(null);
   const [isRequesting, setIsRequesting] = useState(false);
 
-  const requestLocation = useCallback(async () => {
+  const requestLocation = useCallback(async (desiredAccuracy: Location.Accuracy = Location.Accuracy.Balanced) => {
     if (isRequesting) return null;
     setIsRequesting(true);
 
@@ -42,7 +42,7 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
       }
 
       const loc = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
+        accuracy: desiredAccuracy,
       });
 
       const { latitude, longitude, accuracy } = loc.coords;

@@ -5,13 +5,14 @@ import {
   useLayoutEffect,
   useMemo,
 } from "react";
+import { StyleSheet, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import type { PressEvent } from "@maplibre/maplibre-react-native";
 
-import { useTheme } from "../store/theme-context";
+import { useTheme, ThemeColors } from "../store/theme-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
-import { useCreateItem, useUpdateItem } from "../hooks/useItem";
+import { useCreatePlace, useUpdatePlace } from "../hooks/Place/useOfflinePlace";
 import PlaceForm from "../components/Place/PlaceForm";
 import {
   usePlaceLocation,
@@ -26,7 +27,6 @@ import {
   AppStackRouteProp,
   AppError,
   PlaceFormData,
-  PlaceItem,
   ErrorExtractor,
 } from "../types";
 import MapL from "../components/Map/MapL";
@@ -38,12 +38,17 @@ type FormErrors = {
   longitude?: string;
 };
 
+// Above this, a GPS fix is unreliable enough that the dropped pin may be
+// meaningfully off — nudge the user to double-check it (map tap / manual
+// lat-lng entry both already work as the correction path).
+const LOW_ACCURACY_THRESHOLD_M = 100;
+
 const PlaceEditorScreen = () => {
   const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
   const { t } = useTranslation();
   const navigation = useNavigation<AppStackNavigationProp>();
   const route = useRoute<AppStackRouteProp<"PlaceEditor">>();
-  const type = "Place";
   const { showErrorToast } = useApiError();
 
   const FORM_FIELDS = ["name", "territory", "latitude", "longitude"];
@@ -65,8 +70,8 @@ const PlaceEditorScreen = () => {
     locateMe,
   } = usePlaceLocation();
 
-  const createPlaceMutation = useCreateItem<PlaceFormData, PlaceItem>("Place");
-  const updatePlaceMutation = useUpdateItem(place?.id, type);
+  const createPlaceMutation = useCreatePlace();
+  const updatePlaceMutation = useUpdatePlace(place?.id);
 
   const [formData, setFormData] = useState<PlaceFormData>({
     name: place?.name ?? "",
@@ -262,18 +267,18 @@ const PlaceEditorScreen = () => {
       });
     } else {
       createPlaceMutation.mutate(placeData, {
-        onSuccess: (res) => {
+        onSuccess: (item) => {
           if (returnToScreen) {
             callNavigationCallback(
               "onPlaceCreated",
-              res.data.id,
+              item.id,
               placeData.territory,
-              res.data,
+              item,
             );
             navigation.goBack();
           } else {
             requestAnimationFrame(() =>
-              navigation.replace("PlaceDetail", { placeId: res.data.id }),
+              navigation.replace("PlaceDetail", { placeId: item.id }),
             );
           }
         },
@@ -332,6 +337,11 @@ const PlaceEditorScreen = () => {
         onUseMyLocation={locateMe}
         isLocating={isLocating}
       />
+      {!isLocating && accuracy > LOW_ACCURACY_THRESHOLD_M && (
+        <Text style={styles.lowAccuracyHint}>
+          {t("gps_low_accuracy_hint")}
+        </Text>
+      )}
       <PlaceForm
         onCoordsChange={handleCoordsChange}
         formData={formData}
@@ -350,3 +360,14 @@ const PlaceEditorScreen = () => {
 };
 
 export default PlaceEditorScreen;
+
+const stylesFn = (Colors: ThemeColors) =>
+  StyleSheet.create({
+    lowAccuracyHint: {
+      fontSize: 12,
+      color: Colors.error600,
+      textAlign: "center",
+      marginTop: 6,
+      marginHorizontal: 16,
+    },
+  });

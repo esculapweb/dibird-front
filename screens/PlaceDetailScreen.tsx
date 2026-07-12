@@ -1,7 +1,7 @@
 import { useLayoutEffect, useCallback, useMemo, useEffect } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { useTheme, ThemeColors } from "../store/theme-context";
@@ -13,8 +13,15 @@ import IconsHeader from "../components/ui/IconsHeader";
 import Layout from "../components/ui/Layout";
 import StatCard from "../components/ui/StatCard";
 import FilterChips from "../components/Filters/FilterChips";
+import FailedEditBanner from "../components/Profile/FailedEditBanner";
 
-import { useItem, useUpdateItem, useDeleteItem } from "../hooks/useItem";
+import {
+  usePlaceItem,
+  useUpdatePlace,
+  useDeletePlace,
+} from "../hooks/Place/useOfflinePlace";
+import * as placeRepository from "../hooks/repositories/placeRepository";
+import { runPlaceSync } from "../services/sync/placeSync";
 import { useFilters } from "../store/filters-context";
 import { AppStackNavigationProp, AppStackRouteProp } from "../types";
 import { BottomSheet } from "../services/bottomSheet";
@@ -30,8 +37,18 @@ const PlaceDetailScreen = () => {
   const { placeId } = route.params;
   const type = "Place";
 
-  const updateMutation = useUpdateItem(placeId, type);
-  const deleteMutation = useDeleteItem(type);
+  // Same defensive retry as PlacesScreen/DiaryDetailScreen: NetInfo's
+  // reconnect event can be missed/racy, so opportunistically retry the queue
+  // whenever this screen is focused rather than relying solely on that
+  // background listener.
+  useFocusEffect(
+    useCallback(() => {
+      runPlaceSync();
+    }, []),
+  );
+
+  const updateMutation = useUpdatePlace(placeId);
+  const deleteMutation = useDeletePlace();
   const { Colors } = useTheme();
   const { t } = useTranslation();
   const styles = stylesFn(Colors);
@@ -48,11 +65,36 @@ const PlaceDetailScreen = () => {
     isError,
     error,
     refetch,
-  } = useItem(
+  } = usePlaceItem(
     placeId,
-    type,
     Object.keys(dateParams).length ? dateParams : undefined,
   );
+
+  // An offline create resolves to a real server id in the background; once
+  // that happens, "graduate" this screen from the temp id to the real one so
+  // any further edit/delete call targets the right id.
+  useEffect(() => {
+    if (place && place.id !== placeId) {
+      navigation.setParams({ placeId: place.id });
+    }
+  }, [place, placeId, navigation]);
+
+  const failedMutation = place?._syncError
+    ? placeRepository.getFailedMutationFor(placeId)
+    : null;
+
+  const handleRetrySync = useCallback(async () => {
+    if (!failedMutation) return;
+    placeRepository.retryMutation(failedMutation.id, placeId);
+    await runPlaceSync();
+    await refetch();
+  }, [failedMutation, placeId, refetch]);
+
+  const handleDiscardSync = useCallback(() => {
+    if (!failedMutation) return;
+    placeRepository.discardMutation(failedMutation.id, placeId);
+    refetch();
+  }, [failedMutation, placeId, refetch]);
 
   const handleFavourite = useCallback(() => {
     if (!place) return;
@@ -153,7 +195,7 @@ const PlaceDetailScreen = () => {
     });
   }, [navigation, headerRightBeginning, place]);
 
-  if (isError) {
+  if (isError && !place) {
     return (
       <ErrorOverlay
         title={t("places_unavailable")}
@@ -185,6 +227,15 @@ const PlaceDetailScreen = () => {
 
   return (
     <Layout withScroll={true} style={{ paddingBottom: 40 }} bottom={bottomEl}>
+      {place._syncError && failedMutation && (
+        <View style={{ paddingHorizontal: H_PAD, paddingTop: H_PAD }}>
+          <FailedEditBanner
+            failedEdit={{ message: place._syncError, createdAt: Date.now() }}
+            onRetry={handleRetrySync}
+            onDiscard={handleDiscardSync}
+          />
+        </View>
+      )}
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>{place.name}</Text>

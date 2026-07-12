@@ -3,6 +3,7 @@ export const INVALIDATION_MAP = {
     add: [["Places"], ["PlacesDropdown"]],
     update: [
       ["Places"],
+      ["Place"],
       ["PlacesDropdown"],
       ["Observations"],
       ["Observation"],
@@ -12,6 +13,7 @@ export const INVALIDATION_MAP = {
     ],
     delete: [
       ["Places"],
+      ["Place"],
       ["PlacesDropdown"],
       ["Observations"],
       ["Observation"],

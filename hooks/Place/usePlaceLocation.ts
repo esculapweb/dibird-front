@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-
+import * as Location from "expo-location";
 
 import { reverseGeocoding } from "../../util/fetches";
 import { useLocationUnavailable } from "../useLocationUnavailable";
@@ -143,7 +143,11 @@ export const usePlaceLocation = () => {
 
     setIsLoading(true);
     try {
-      const result = await requestLocation();
+      // Place pinning is a one-off, precision-sensitive action (unlike the
+      // app's other lightweight requestLocation() callers — distance sort,
+      // the background alert-settings grab — where Balanced is plenty and
+      // the extra fix time isn't worth it), so ask for a tighter GPS fix here.
+      const result = await requestLocation(Location.Accuracy.High);
       if (result) {
         const acc = result.accuracy ?? 0;
         setAccuracy(acc);

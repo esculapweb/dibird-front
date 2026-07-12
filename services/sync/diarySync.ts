@@ -3,6 +3,7 @@ import { queryClient } from "../queryClient";
 import { AppError } from "../../types";
 import * as diaryRepository from "../../hooks/repositories/diaryRepository";
 import { DiaryMutationPayload } from "../../hooks/repositories/diaryRepository";
+import * as placeRepository from "../../hooks/repositories/placeRepository";
 import { isConnected } from "./networkStatus";
 import { runObservationSync } from "./observationSync";
 
@@ -68,14 +69,45 @@ export const runDiarySync = (): Promise<void> => {
 const runDiarySyncInternal = async () => {
   if (!isConnected()) return;
 
+  // See observationSync.ts's equivalent `deferred` array for the full
+  // reasoning: holding a not-yet-ready mutation here instead of stopping the
+  // whole pass lets other, independent diary mutations in the same batch
+  // still go through this pass instead of being blocked behind it.
+  const deferred: { payload: DiaryMutationPayload; createdAt: number; attempts: number }[] = [];
+
   for (;;) {
     const mutation = diaryRepository.claimNextMutation();
-    if (!mutation) {
-      retryDelayMs = RETRY_BASE_MS;
-      return;
-    }
+    if (!mutation) break;
 
     const payload = mutation.payload as DiaryMutationPayload;
+
+    // A diary queued against a place created offline in the same session
+    // still carries that place's temp negative id in payload.data.place —
+    // resolve it fresh right before sending. See placeRepository.resolvePlaceId
+    // and observationSync.ts's equivalent block.
+    if (payload.op === "create" || payload.op === "update") {
+      const placeId = payload.data.place;
+      if (placeId != null && placeId < 0) {
+        const resolved = placeRepository.resolvePlaceId(placeId);
+        if (resolved == null) {
+          retryDelayMs = RETRY_BASE_MS;
+          diaryRepository.requeueFailedMutation(
+            payload,
+            mutation.createdAt,
+            mutation.attempts,
+            payload.localId,
+            "Parent place was removed before it ever synced",
+          );
+          invalidateDiaryQueries(payload.localId);
+          continue;
+        }
+        if (resolved < 0) {
+          deferred.push({ payload, createdAt: mutation.createdAt, attempts: mutation.attempts });
+          continue;
+        }
+        payload.data = { ...payload.data, place: resolved };
+      }
+    }
 
     try {
       if (payload.op === "create") {
@@ -105,6 +137,9 @@ const runDiarySyncInternal = async () => {
       const error = e as AppError;
       if (error.isNetworkError || error.isTimeout) {
         diaryRepository.requeuePendingMutation(payload, mutation.createdAt, mutation.attempts);
+        deferred.forEach((d) =>
+          diaryRepository.requeuePendingMutation(d.payload, d.createdAt, d.attempts),
+        );
         scheduleRetry();
         return;
       }
@@ -118,5 +153,14 @@ const runDiarySyncInternal = async () => {
       );
       invalidateDiaryQueries(payload.localId);
     }
+  }
+
+  if (deferred.length > 0) {
+    deferred.forEach((d) =>
+      diaryRepository.requeuePendingMutation(d.payload, d.createdAt, d.attempts),
+    );
+    scheduleRetry();
+  } else {
+    retryDelayMs = RETRY_BASE_MS;
   }
 };

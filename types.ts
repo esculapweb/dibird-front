@@ -496,6 +496,10 @@ export interface PlaceItemBase {
   location: LocationType;
   distance?: number | null;
   preview?: string | null;
+  // Client-only: set when this item has an unsynced local create/update/delete
+  // queued (see hooks/repositories/placeRepository.ts). Never sent to the server.
+  _pendingSync?: "pending" | "error";
+  _syncError?: string | null;
 }
 
 export interface PlaceItem extends PlaceItemBase {

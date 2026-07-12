@@ -8,6 +8,7 @@ import {
   ObservationFormData,
   ObservationItem,
   PaginatedResponse,
+  PlaceData,
   PlaceDropdownItem,
   Profile,
   SpeciesDropdownItem,
@@ -34,6 +35,15 @@ export interface SynthesizeExtras {
   // picker included. The caller (useOfflineObservation.ts) resolves this
   // from the parent diary via diaryRepository before calling create/updateLocal.
   diaryTerritory?: number | null;
+  // Same reasoning as diaryTerritory, for place: a diary-scoped observation's
+  // form never carries its own `place` either (buildObservationPayload omits
+  // it entirely when `diary` is set — the server derives it from the diary).
+  // Without these, an observation added to a diary would locally show "no
+  // place" until it actually syncs and the server's response overwrites it.
+  diaryPlace?: number | null;
+  diaryPlaceData?: PlaceData | null;
+  diaryDateTime?: string | null;
+  diaryPrivate?: boolean | null;
 }
 
 let tempIdCounter = 0;
@@ -100,6 +110,10 @@ const synthesize = (
 ): ObservationItem => {
   const now = new Date().toISOString();
   const species = payload.species ?? base?.species ?? 0;
+  // A diary-scoped observation never carries its own `place` in payload (see
+  // SynthesizeExtras.diaryPlace) — fall back to the parent diary's place in
+  // that case, same as territory does just below.
+  const place = payload.place ?? extras.diaryPlace ?? null;
 
   return {
     id,
@@ -108,18 +122,24 @@ const synthesize = (
     notes: payload.notes ?? null,
     quantity: payload.quantity ?? null,
     time: payload.time ?? null,
-    date_time: payload.date_time ?? base?.date_time ?? now,
+    // A diary-scoped observation never carries its own date_time either
+    // (buildObservationPayload omits it when `diary` is set) — without this
+    // fallback it defaulted to "now", showing the moment it was created
+    // rather than the diary's actual date.
+    date_time: payload.date_time ?? extras.diaryDateTime ?? base?.date_time ?? now,
     diary: payload.diary ?? base?.diary ?? null,
     is_owner: true,
     owner: base?.owner ?? ownerFromProfile(profile),
-    place: payload.place ?? null,
+    place,
     // If we have no fresh dropdown data for the new place, only reuse `base`'s
-    // snapshot when it actually still describes payload.place — otherwise
-    // (place id changed but we weren't handed the new place's data) showing
-    // base's stale name/photo would misattribute a *different* place's data to
-    // this place id, which is worse than showing nothing.
+    // snapshot when it actually still describes `place` — otherwise (place id
+    // changed but we weren't handed the new place's data) showing base's
+    // stale name/photo would misattribute a *different* place's data to this
+    // place id, which is worse than showing nothing. extras.diaryPlaceData is
+    // the diary's own place snapshot, used when `place` came from the diary
+    // fallback above rather than the payload directly.
     place_data:
-      payload.place == null
+      place == null
         ? null
         : extras.placeData
           ? {
@@ -128,10 +148,15 @@ const synthesize = (
               preview: extras.placeData.preview ?? null,
               location: extras.placeData.location ?? null,
             }
-          : base?.place_data?.id === payload.place
-            ? base.place_data
-            : null,
-    private: payload.private ?? base?.private ?? false,
+          : payload.place == null && extras.diaryPlaceData?.id === place
+            ? extras.diaryPlaceData
+            : base?.place_data?.id === place
+              ? base.place_data
+              : null,
+    // Same fallback for `private`: also omitted from a diary-scoped payload,
+    // so a diary observation should inherit the diary's own privacy setting
+    // rather than default to public.
+    private: payload.private ?? extras.diaryPrivate ?? base?.private ?? false,
     territory:
       payload.territory ??
       extras.diaryTerritory ??
