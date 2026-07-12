@@ -57,6 +57,20 @@
       "when": 1783886879142,
       "tag": "0007_add_per_entity_cache_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1783888615265,
+      "tag": "0008_add_notification_offline_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1783889032381,
+      "tag": "0009_whole_speedball",
+      "breakpoints": true
     }
   ]
 }

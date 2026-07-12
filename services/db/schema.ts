@@ -86,6 +86,35 @@ export const communityObservationsCacheTable = cacheTable(
   "community_observations_cache",
 );
 export const communityItemCacheTable = cacheTable("community_item_cache");
+export const notificationsListCacheTable = cacheTable("notifications_list_cache");
+// Privacy/Terms content (see fetchPage in util/fetches.ts) — static,
+// server-authoritative, read-only, same read-through shape as
+// communityItemCacheTable in useItem.ts.
+export const staticPageCacheTable = cacheTable("static_page_cache");
+// Single-row cache (see fetchUnreadCount in util/fetches.ts) rather than a
+// per-query key, but reuses the same {key, response, updatedAt} shape so it
+// can go through the same cacheListResponse/getCachedListResponse helpers.
+export const notificationUnreadCountCacheTable = cacheTable(
+  "notification_unread_count_cache",
+);
+
+// Durable local record of "read" state applied on top of whatever's in
+// notifications_list_cache (see notificationRepository.applyOverlay) — needed
+// because, unlike diary/observation/place, notifications have no per-item
+// local mirror row to patch a cached list against, and a cached page's
+// is_read flag would otherwise stay stale forever once marked read locally
+// until that exact page is re-fetched from the server.
+// id: a real notification id for an explicitly marked-read item, or the
+// sentinel -1 for "mark all read" — its readAt is then a "read before this
+// timestamp" cutoff compared against each item's created_at, so notifications
+// that arrive after a mark-all correctly stay unread.
+export const notificationReadOverlayTable = sqliteTable(
+  "notification_read_overlay",
+  {
+    id: integer("id").primaryKey(),
+    readAt: integer("read_at").notNull(),
+  },
+);
 
 export const observationTable = sqliteTable("observation", {
   // negative id = local temp id for an unsynced create, positive = real server id

@@ -6,8 +6,10 @@ import { useQuery } from "@tanstack/react-query";
 import RenderHtml from "react-native-render-html";
 import { EdgeInsets, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRoute } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 
 import Layout from "../components/ui/Layout";
+import ErrorOverlay from "../components/Error/ErrorOverlay";
 import { fetchPage } from "../util/fetches";
 import { useLanguage } from "../store/language-context";
 import { useTheme, ThemeColors } from "../store/theme-context";
@@ -22,6 +24,7 @@ const StaticScreen = () => {
   const styles = stylesFn(Colors, insets);
   const { language } = useLanguage();
   const route = useRoute();
+  const { t } = useTranslation();
   const page = route.name as "Privacy" | "Terms";
 
   const slugs: Record<string, string> = {
@@ -29,11 +32,26 @@ const StaticScreen = () => {
     Terms: "terms",
   };
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["Page", page, language],
     queryFn: () => fetchPage(slugs?.[page]),
     enabled: !!page,
   });
+
+  // isError can be set by a failed background refetch even when cached data
+  // is still showing (see fetchPage's cache fallback) — only show the
+  // full-screen error when there's truly nothing to render.
+  if (isError && !data)
+    return (
+      <ErrorOverlay
+        title={t("page_unavailable")}
+        message={error.message}
+        onPress={async () => {
+          await refetch();
+        }}
+        logo
+      />
+    );
 
   if (isLoading)
     return <ActivityIndicator size="large" style={styles.loader} />;

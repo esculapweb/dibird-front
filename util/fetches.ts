@@ -25,6 +25,9 @@ import {
 import * as observationRepository from "../hooks/repositories/observationRepository";
 import * as diaryRepository from "../hooks/repositories/diaryRepository";
 import * as placeRepository from "../hooks/repositories/placeRepository";
+import * as notificationRepository from "../hooks/repositories/notificationRepository";
+import { isConnected } from "../services/sync/networkStatus";
+import { runNotificationSync } from "../services/sync/notificationSync";
 import {
   speciesDropdownCacheTable,
   placesDropdownCacheTable,
@@ -38,6 +41,9 @@ import {
   ratingCompareCacheTable,
   ratingCompareHeaderCacheTable,
   communityObservationsCacheTable,
+  notificationsListCacheTable,
+  notificationUnreadCountCacheTable,
+  staticPageCacheTable,
 } from "../services/db/schema";
 
 // Shared cap for every dedicated offline-cache table (see the cacheTable
@@ -76,6 +82,7 @@ import {
   AvatarResponse,
   ReverseGeocode,
   emptyPaginatedResponse,
+  AppError,
 } from "../types";
 
 export const exportProfileData = async (): Promise<void> => {
@@ -115,8 +122,18 @@ export const fetchTimezones = async () => {
 };
 
 export const fetchPage = async (slug: string) => {
-  const res = await api.get(`/api/page2/${slug}/`);
-  return res.data?.content;
+  const cacheKey = `page|${slug}|${i18n.language}`;
+
+  try {
+    const res = await api.get(`/api/page2/${slug}/`);
+    const content = res.data?.content;
+    cacheListResponse(staticPageCacheTable, cacheKey, content, MAX_ENTRIES);
+    return content;
+  } catch (e) {
+    const cached = getCachedListResponse<string>(staticPageCacheTable, cacheKey);
+    if (cached) return cached;
+    throw e;
+  }
 };
 
 export const fetchMyCountries = async (
@@ -828,21 +845,57 @@ export const fetchCommunityObservations = (
 
 
 export const fetchNotifications = async (page = 1) => {
-  const res = await api.get<PaginatedResponse<AppNotification>>(
+  const data = await fetchAbstract<PaginatedResponse<AppNotification>>(
     "/myapi/notifications/",
-    { params: { page } },
+    {},
+    "-created_at",
+    "",
+    page,
+    {},
+    undefined,
+    { table: notificationsListCacheTable, maxEntries: MAX_ENTRIES },
   );
-  return res.data;
+  return notificationRepository.applyOverlay(data);
 };
 
+const UNREAD_COUNT_CACHE_KEY = "unread_count";
+
 export const fetchUnreadCount = async (): Promise<number> => {
-  const res = await api.get("/myapi/notifications/unread-count/");
-  return res.data.count;
+  try {
+    const res = await api.get("/myapi/notifications/unread-count/");
+    const count = res.data.count as number;
+    cacheListResponse(
+      notificationUnreadCountCacheTable,
+      UNREAD_COUNT_CACHE_KEY,
+      { count },
+      1,
+    );
+    return notificationRepository.applyPendingUnreadAdjustment(count);
+  } catch (e) {
+    const cached = getCachedListResponse<{ count: number }>(
+      notificationUnreadCountCacheTable,
+      UNREAD_COUNT_CACHE_KEY,
+    );
+    if (cached) return notificationRepository.applyPendingUnreadAdjustment(cached.count);
+    throw e;
+  }
 };
 
 export const markNotificationsRead = async (ids?: number[]): Promise<void> => {
-  const body = ids ? { ids } : { all: true };
-  await api.post("/myapi/notifications/read/", body);
+  if (isConnected()) {
+    try {
+      const body = ids ? { ids } : { all: true };
+      await api.post("/myapi/notifications/read/", body);
+      return;
+    } catch (e) {
+      const error = e as AppError;
+      if (!error.isNetworkError && !error.isTimeout) throw error;
+    }
+  }
+
+  if (ids) notificationRepository.markIdsReadLocal(ids);
+  else notificationRepository.markAllReadLocal();
+  runNotificationSync();
 };
 
 export const registerPushToken = async (token: string): Promise<void> => {

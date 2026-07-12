@@ -260,6 +260,7 @@
   "optional": "optional",
   "or": "or",
   "order": "Order",
+  "page_unavailable": "Page unavailable",
   "password": "Password",
   "period": "Period",
   "permission_denied": "Permission denied",

@@ -9,6 +9,8 @@ import m0004 from './0004_parallel_beast.sql';
 import m0005 from './0005_ambiguous_supernaut.sql';
 import m0006 from './0006_drop_shared_list_cache.sql';
 import m0007 from './0007_add_per_entity_cache_tables.sql';
+import m0008 from './0008_add_notification_offline_tables.sql';
+import m0009 from './0009_whole_speedball.sql';
 
   export default {
     journal,
@@ -20,7 +22,9 @@ m0003,
 m0004,
 m0005,
 m0006,
-m0007
+m0007,
+m0008,
+m0009
     }
   }
   
