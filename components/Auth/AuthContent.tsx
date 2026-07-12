@@ -10,6 +10,7 @@ import { useTheme, ThemeColors } from "../../store/theme-context";
 import FormWrapper from "../ui/FormWrapper";
 import { useApiError } from "../../hooks/useApiError";
 import {
+  AppError,
   AuthStackNavigationProp,
   Credentials,
   ErrorExtractor,
@@ -115,7 +116,13 @@ const AuthContent = ({
     try {
       await onAuthenticate(authData);
     } catch (e) {
-      showErrorToast(e, "AuthContentSubmit", extractApiError);
+      const err = e as AppError;
+      const isConnectivityError = err.isNetworkError || err.isTimeout;
+      showErrorToast(
+        e,
+        "AuthContentSubmit",
+        isConnectivityError ? undefined : extractApiError,
+      );
     }
   };
 

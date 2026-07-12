@@ -47,13 +47,6 @@ const BASE = "/myapi/alert-settings/me/";
 export const getAlertSettings = () => api.get<AlertSettings>(BASE);
 
 /**
- * Полное обновление (PUT /myapi/alert-settings/me/).
- * Используется, когда нужно передать все поля целиком.
- */
-export const replaceAlertSettings = (data: AlertSettingsPatch) =>
-  api.put<AlertSettings>(BASE, data);
-
-/**
  * Частичное обновление (PATCH /myapi/alert-settings/me/).
  * Предпочтительный метод: отправляем только изменившиеся поля.
  */

@@ -12,7 +12,7 @@ import { formatDateShort, normalizeDistance } from "../../util/helpers";
 import { fetchCommunityObservations } from "../../util/fetches";
 import { Filters, AppStackNavigationProp, ObservationItem } from "../../types";
 import { useLocation } from "../../store/location-context";
-import { useAlertSettings } from "../../hooks/useAlertSettings";
+import { useAlertSettings } from "../../store/alert-settings-context";
 
 const H_PAD = 16;
 const IMAGE_SIZE = 48;

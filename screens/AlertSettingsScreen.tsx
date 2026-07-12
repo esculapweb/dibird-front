@@ -20,7 +20,7 @@ import { useLocation } from "../store/location-context";
 import { isoToFlagEmoji } from "../util/helpers";
 import { useLocationUnavailable } from "../hooks/useLocationUnavailable";
 import RadiusRow from "../components/ui/RadiusRow";
-import { useAlertSettings } from "../hooks/useAlertSettings";
+import { useAlertSettings } from "../store/alert-settings-context";
 import type {
   AlertSettingsPatch,
   ActiveHourWindow,
@@ -134,7 +134,11 @@ export default function AlertSettingsScreen() {
     }
   };
 
-  if (error) {
+  // Only block the whole screen when there's truly nothing to show yet —
+  // once settings are cached locally, a failed refresh/save is surfaced as a
+  // toast instead (see useAlertSettings' save()), so offline edits keep
+  // working against the cached data.
+  if (error && !settings) {
     return (
       <ErrorOverlay
         title={t("alert_settings_unavailable")}

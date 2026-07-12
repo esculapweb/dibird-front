@@ -19,6 +19,7 @@ import * as Notifications from "expo-notifications";
 
 import AuthContextProvider, { useAuth } from "./store/auth-context";
 import { ProfileProvider } from "./store/profile-context";
+import { AlertSettingsProvider } from "./store/alert-settings-context";
 import { FiltersProvider } from "./store/filters-context";
 import { LocationProvider } from "./store/location-context";
 import { LanguageProvider } from "./store/language-context";
@@ -32,7 +33,7 @@ import { initSentry } from "./services/sentry";
 import { usePushNotifications } from "./hooks/usePushNotifications";
 import { useLocation } from "./store/location-context";
 import { useLanguage } from "./store/language-context";
-import { useAlertSettings } from "./hooks/useAlertSettings";
+import { useAlertSettings } from "./store/alert-settings-context";
 import type { AlertSettingsPatch } from "./services/alertSettings";
 import { queryClient } from "./services/queryClient";
 import { useObservationSync } from "./hooks/Observation/useObservationSync";
@@ -97,7 +98,12 @@ const AuthConsumerWrapper = ({ children }: { children: ReactNode }) => {
       isAuthenticated={isAuthenticated}
       isInitializing={isInitializing}
     >
-      {children}
+      <AlertSettingsProvider
+        isAuthenticated={isAuthenticated}
+        isInitializing={isInitializing}
+      >
+        {children}
+      </AlertSettingsProvider>
     </ProfileProvider>
   );
 };

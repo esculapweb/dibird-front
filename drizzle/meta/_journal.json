@@ -71,6 +71,13 @@
       "when": 1783889032381,
       "tag": "0009_whole_speedball",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1783890224415,
+      "tag": "0010_numerous_hex",
+      "breakpoints": true
     }
   ]
 }

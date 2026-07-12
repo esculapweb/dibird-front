@@ -151,3 +151,18 @@ export const placeTable = sqliteTable("place", {
   lastError: text("last_error"),
   updatedAt: integer("updated_at").notNull(),
 });
+
+// Single-row local mirror of the server's alert-settings object (GET/PATCH
+// /myapi/alert-settings/me/) — a settings object, not a list of entities, so
+// unlike observation/diary/place there's no op/create/delete, just one row
+// patched in place. Mirrors profileTable's role, but stored as a JSON blob
+// since nothing filters on individual alert-settings columns locally.
+export const alertSettingsTable = sqliteTable("alert_settings", {
+  id: integer("id").primaryKey(), // singleton row, always 1
+  data: text("data", { mode: "json" }).notNull(),
+  status: text("status", { enum: ["synced", "pending", "error"] })
+    .notNull()
+    .default("synced"),
+  lastError: text("last_error"),
+  updatedAt: integer("updated_at").notNull(),
+});
