@@ -26,6 +26,15 @@ const invalidatePlaceCaches = (queryClient: ReturnType<typeof useQueryClient>) =
 export const usePlaceItem = (
   id: number | null | undefined,
   params?: Record<string, unknown>,
+  // Item already known from wherever navigation originated (a list card, a
+  // just-completed create mutation, ...). Seeds the query cache so the
+  // screen renders immediately instead of spinning, and — the part that
+  // actually matters offline — gives the query cache "existing" data to fall
+  // back to if the detail fetch below fails. Without this, the very first
+  // fetch of a given place id has nothing to fall back to and the offline
+  // error surfaces even though the item is right there on the list screen
+  // the user tapped it from. Mirrors useObservationItem/useDiaryItem.
+  initialItem?: PlaceItem | null,
 ) => {
   const { showErrorToast } = useApiError();
 
@@ -35,20 +44,24 @@ export const usePlaceItem = (
       if (id! < 0) {
         const local = placeRepository.getPlace(id!);
         if (!local) throw new Error("Place not found locally");
-        return local;
+        return placeRepository.withPendingObservationCount(local);
       }
 
       try {
         const res = await api.get(`${PLACE_URL}${id}/`, { params });
         placeRepository.upsertFromServer(res.data);
-        return res.data;
+        // Even on a successful live fetch, an observation just created
+        // against this place may not have synced yet (its own sync is a
+        // separate queue) — fold it in so the count doesn't lag behind what
+        // the user just did. See placeRepository.withPendingObservationCount.
+        return placeRepository.withPendingObservationCount(res.data);
       } catch (e) {
         // Offline (or any request failure) fallback: the local snapshot may
         // not reflect the currently active date filter (counts are
         // date-scoped server-side) — showing the last-known unfiltered
         // counts is still strictly better than an error screen.
         const local = placeRepository.getPlace(id!);
-        if (local) return local;
+        if (local) return placeRepository.withPendingObservationCount(local);
         throw e;
       }
     },
@@ -56,6 +69,9 @@ export const usePlaceItem = (
     staleTime: 1000 * 60 * 60 * 24,
     gcTime: 1000 * 60 * 60 * 24,
     refetchOnWindowFocus: false,
+    ...(initialItem && initialItem.id === id
+      ? { initialData: initialItem, initialDataUpdatedAt: 0 }
+      : {}),
   });
 
   useEffect(() => {

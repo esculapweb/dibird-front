@@ -278,7 +278,10 @@ const PlaceEditorScreen = () => {
             navigation.goBack();
           } else {
             requestAnimationFrame(() =>
-              navigation.replace("PlaceDetail", { placeId: item.id }),
+              navigation.replace("PlaceDetail", {
+                placeId: item.id,
+                initialPlace: item,
+              }),
             );
           }
         },

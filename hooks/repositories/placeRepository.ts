@@ -3,6 +3,7 @@ import { and, asc, eq, isNotNull } from "drizzle-orm";
 import { db } from "../../services/db/client";
 import { placeTable, mutationQueueTable } from "../../services/db/schema";
 import { territoryDataFor } from "./shared";
+import * as observationRepository from "./observationRepository";
 import { PaginatedResponse, PlaceDropdownItem, PlaceFormData, PlaceItem } from "../../types";
 
 type PlaceRow = typeof placeTable.$inferSelect;
@@ -403,6 +404,49 @@ export const getOverlay = (): Overlay => {
   return { pendingCreates, patchesById, deletedIds };
 };
 
+// A place's own observation_count/diary_count/species_count are only ever
+// refreshed when the *place itself* syncs (create/update) — an observation
+// finishing its own sync never touches the place row. So a place that just
+// gained an offline observation (or was itself created offline alongside
+// one) shows stale counts until that unrelated sync happens to occur. Folds
+// any currently pending (not yet synced) observation creates for this place
+// into display-only count adjustments — mirrors diaryRepository.ts's
+// withPendingObservations for the same reason. Deliberately not persisted:
+// call this only where a PlaceItem is being handed to the UI, never before
+// writing to placeTable, or the adjustment could get baked into a later
+// local update's base snapshot and double-count once the observation
+// actually syncs.
+export const withPendingObservationCount = (item: PlaceItem): PlaceItem => {
+  const pendingForPlace = observationRepository
+    .getOverlay()
+    .pendingCreates.filter((o) => o.place === item.id);
+  if (pendingForPlace.length === 0) return item;
+
+  // Mirrors the backend's own definition for this endpoint exactly
+  // (UserDataExportService.get_places: diary_count=Count("observation__diary_id")
+  // — deliberately *not* distinct) — it's really "observations at this place
+  // that belong to a diary", not a distinct-diary count, so counting pending
+  // diary-scoped observations the same way keeps this consistent with what
+  // the number becomes once synced.
+  const pendingDiaryObservations = pendingForPlace.filter((o) => o.diary != null).length;
+
+  // species_count can only be approximated offline: the server's number is
+  // *distinct* species ever recorded at this place, but locally we only have
+  // the aggregate count, not the actual set of previously-seen species ids —
+  // so a pending observation of a species already seen here before this
+  // offline session would get over-counted as "new". Still strictly better
+  // than leaving it stale for the common case (a genuinely new record), and
+  // self-corrects the moment this place is next fetched from the server.
+  const distinctPendingSpecies = new Set(pendingForPlace.map((o) => o.species)).size;
+
+  return {
+    ...item,
+    observation_count: item.observation_count + pendingForPlace.length,
+    diary_count: item.diary_count + pendingDiaryObservations,
+    species_count: item.species_count + distinctPendingSpecies,
+  };
+};
+
 export const applyOverlay = (
   response: PaginatedResponse<PlaceItem>,
   page: number,
@@ -411,13 +455,16 @@ export const applyOverlay = (
 
   let results = response.results
     .filter((item) => !deletedIds.has(item.id))
-    .map((item) => patchesById.get(item.id) ?? item);
+    .map((item) => patchesById.get(item.id) ?? item)
+    .map(withPendingObservationCount);
 
   let count = Math.max(0, response.pagination.count - deletedIds.size);
 
   if (page === 1) {
     const existingIds = new Set(results.map((item) => item.id));
-    const toPrepend = pendingCreates.filter((item) => !existingIds.has(item.id));
+    const toPrepend = pendingCreates
+      .filter((item) => !existingIds.has(item.id))
+      .map(withPendingObservationCount);
     results = [...toPrepend, ...results];
     count += toPrepend.length;
   }

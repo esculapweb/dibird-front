@@ -155,7 +155,7 @@ const MapL = ({
             <Text style={styles.fallbackText}>
               {offline ? t("map_unavailable_offline") : t("connection_timeout")}
             </Text>
-            {offline && (
+            {offline && onUseMyLocation && (
               <Text style={styles.fallbackHint}>{t("map_offline_hint")}</Text>
             )}
             {currentCoords && (
@@ -304,10 +304,13 @@ const MapL = ({
             onPress={onUseMyLocation}
           >
             {isLocating ? (
-              <ActivityIndicator size="small" color={Colors.textMain} />
+              <ActivityIndicator size="small" color={Colors.textSecondary} />
             ) : (
-              <Ionicons name="navigate" size={22} color={Colors.textMain} />
+              <Ionicons name="navigate" size={12} color={Colors.textSecondary} />
             )}
+            <Text style={styles.myLocationButtonText}>
+              {t("gps_locate_me_button")}
+            </Text>
           </TouchableOpacity>
         )}
 
@@ -372,20 +375,21 @@ const stylesFn = (Colors: ThemeColors, mapHeight?: number) =>
         : { flex: 1, position: "relative" },
     container: { flex: 1, position: "relative" },
     myLocationButton: {
+      flexDirection: "row",
       alignItems: "center",
-      justifyContent: "center",
       position: "absolute",
-      bottom: 16,
-      right: 16,
-      width: 42,
-      height: 42,
-      borderRadius: 21,
-      backgroundColor: Colors.primary100,
-      shadowColor: Colors.shadow,
-      shadowOpacity: 0.3,
-      shadowRadius: 6,
-      shadowOffset: { width: 0, height: 3 },
-      elevation: 6,
+      bottom: 12,
+      right: 12,
+      paddingVertical: 3,
+      paddingHorizontal: 6,
+      backgroundColor: Colors.overlayBg,
+      borderRadius: 12,
+      gap: 4,
+    },
+    myLocationButtonText: {
+      fontSize: 10,
+      color: Colors.textSecondary,
+      fontWeight: "500",
     },
     coordsOverlay: {
       flexDirection: "row",

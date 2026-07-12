@@ -34,7 +34,7 @@ const H_PAD = 12;
 const PlaceDetailScreen = () => {
   const navigation = useNavigation<AppStackNavigationProp>();
   const route = useRoute<AppStackRouteProp<"PlaceDetail">>();
-  const { placeId } = route.params;
+  const { placeId, initialPlace } = route.params;
   const type = "Place";
 
   // Same defensive retry as PlacesScreen/DiaryDetailScreen: NetInfo's
@@ -68,6 +68,7 @@ const PlaceDetailScreen = () => {
   } = usePlaceItem(
     placeId,
     Object.keys(dateParams).length ? dateParams : undefined,
+    initialPlace,
   );
 
   // An offline create resolves to a real server id in the background; once

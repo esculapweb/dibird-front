@@ -23,7 +23,7 @@ const PlaceCard = memo(({ item, index }: {item: PlaceItem, index: number}) => {
   const [lng, lat] = item.location.coordinates;
 
   const handlePlacePress = () => {
-    navigation.navigate("PlaceDetail", { placeId: item.id });
+    navigation.navigate("PlaceDetail", { placeId: item.id, initialPlace: item });
   };
 
   return (

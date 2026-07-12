@@ -695,7 +695,7 @@ export type AppStackParamList = {
   Stat: ScreenWithFilters | undefined;
   Checklist: ScreenWithFilters | undefined;
   Places: ScreenWithFilters | undefined;
-  PlaceDetail: { placeId: number };
+  PlaceDetail: { placeId: number; initialPlace?: PlaceItem };
   PlaceEditor: { place?: PlaceItem; returnToScreen?: string } | undefined;
   Observations: ScreenWithFilters | undefined;
   ObservationDetail: {
