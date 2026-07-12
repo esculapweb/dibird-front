@@ -1,4 +1,4 @@
-import { sqliteTable, integer, text } from "drizzle-orm/sqlite-core";
+import { sqliteTable, integer, text, index } from "drizzle-orm/sqlite-core";
 
 export const profileTable = sqliteTable("profile", {
   user: integer("user").primaryKey(),
@@ -45,11 +45,47 @@ export const timezoneTable = sqliteTable("timezone", {
   sortOrder: integer("sort_order").notNull(),
 });
 
-export const listCacheTable = sqliteTable("list_cache", {
-  key: text("key").primaryKey(),
-  response: text("response", { mode: "json" }).notNull(),
-  updatedAt: integer("updated_at").notNull(),
-});
+// Shared shape for every offline read-cache table (see
+// hooks/repositories/listCacheRepository.ts) — one dedicated table per data
+// kind rather than a single shared pool, so heavy browsing in one area (e.g.
+// Stat/Rating lists, which have a huge filter/sort/search/page combination
+// space) can't evict another area's cache (e.g. species/places dropdowns,
+// which offline observation/diary editing depends on).
+// Exported (not just used locally) so listCacheRepository.ts can type its
+// generic functions against ReturnType<typeof cacheTable> — every table built
+// by this factory ends up with the exact same TS shape (the `name` argument
+// is typed as plain `string`, not a literal, so drizzle infers a single
+// shared type across all 13 calls instead of 13 nominally distinct ones).
+export const cacheTable = (name: string) =>
+  sqliteTable(
+    name,
+    {
+      key: text("key").primaryKey(),
+      response: text("response", { mode: "json" }).notNull(),
+      updatedAt: integer("updated_at").notNull(),
+    },
+    (table) => [index(`${name}_updated_at_idx`).on(table.updatedAt)],
+  );
+
+export const speciesDropdownCacheTable = cacheTable("species_dropdown_cache");
+export const placesDropdownCacheTable = cacheTable("places_dropdown_cache");
+export const statCacheTable = cacheTable("stat_cache");
+export const checklistCacheTable = cacheTable("checklist_cache");
+export const placesListCacheTable = cacheTable("places_list_cache");
+export const observationsListCacheTable = cacheTable("observations_list_cache");
+export const diariesListCacheTable = cacheTable("diaries_list_cache");
+export const diaryObservationsListCacheTable = cacheTable(
+  "diary_observations_list_cache",
+);
+export const ratingCacheTable = cacheTable("rating_cache");
+export const ratingCompareCacheTable = cacheTable("rating_compare_cache");
+export const ratingCompareHeaderCacheTable = cacheTable(
+  "rating_compare_header_cache",
+);
+export const communityObservationsCacheTable = cacheTable(
+  "community_observations_cache",
+);
+export const communityItemCacheTable = cacheTable("community_item_cache");
 
 export const observationTable = sqliteTable("observation", {
   // negative id = local temp id for an unsynced create, positive = real server id

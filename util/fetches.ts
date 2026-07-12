@@ -20,10 +20,34 @@ import {
   cacheListResponse,
   getCachedListResponse,
   getCachedListResponseByPrefix,
+  CacheTable,
 } from "../hooks/repositories/listCacheRepository";
 import * as observationRepository from "../hooks/repositories/observationRepository";
 import * as diaryRepository from "../hooks/repositories/diaryRepository";
 import * as placeRepository from "../hooks/repositories/placeRepository";
+import {
+  speciesDropdownCacheTable,
+  placesDropdownCacheTable,
+  statCacheTable,
+  checklistCacheTable,
+  placesListCacheTable,
+  observationsListCacheTable,
+  diariesListCacheTable,
+  diaryObservationsListCacheTable,
+  ratingCacheTable,
+  ratingCompareCacheTable,
+  ratingCompareHeaderCacheTable,
+  communityObservationsCacheTable,
+} from "../services/db/schema";
+
+// Shared cap for every dedicated offline-cache table (see the cacheTable
+// factory in services/db/schema.ts and hooks/repositories/listCacheRepository.ts
+// for why one table per data kind, and why a single flat cap is fine — the
+// eviction cost barely depends on it, and this bounds the number of distinct
+// cached *queries*, not the size of any one of them (e.g. one row per
+// territory/sort/date-filter combo for species, however many species that
+// territory has).
+const MAX_ENTRIES = 3000;
 import {
   Filters,
   DateFilter,
@@ -162,10 +186,13 @@ export const fetchMyPlaces = async (
       distance: item.distance ?? undefined,
       preview: item.preview ?? undefined,
     }));
-    cacheListResponse(cacheKey, items);
+    cacheListResponse(placesDropdownCacheTable, cacheKey, items, MAX_ENTRIES);
     return placeRepository.applyDropdownOverlay(items, territory);
   } catch (e) {
-    const cached = getCachedListResponse<PlaceDropdownItem[]>(cacheKey);
+    const cached = getCachedListResponse<PlaceDropdownItem[]>(
+      placesDropdownCacheTable,
+      cacheKey,
+    );
     if (cached) return placeRepository.applyDropdownOverlay(cached, territory);
 
     // Nothing cached either: still worth showing a place created offline in
@@ -208,10 +235,13 @@ export const fetchSpecies = async (
       seen: item.seen,
       segment: item.segment,
     }));
-    cacheListResponse(cacheKey, items);
+    cacheListResponse(speciesDropdownCacheTable, cacheKey, items, MAX_ENTRIES);
     return items;
   } catch (e) {
-    const cached = getCachedListResponse<SpeciesDropdownItem[]>(cacheKey);
+    const cached = getCachedListResponse<SpeciesDropdownItem[]>(
+      speciesDropdownCacheTable,
+      cacheKey,
+    );
     if (cached) return cached;
     throw e;
   }
@@ -339,6 +369,12 @@ const buildListCacheKey = (
   `${buildListCacheKeyPrefix(fetchUrl, filters, search, page, extraParams)}order:${order ?? ""}`;
 
 interface FetchAbstractOptions<T> {
+  // Which dedicated cache table (see the cacheTable factory in
+  // services/db/schema.ts) this fetch's responses are stored in, and how many
+  // distinct queries it's allowed to keep — required so every caller makes an
+  // explicit choice instead of silently sharing one generic pool.
+  table: CacheTable;
+  maxEntries: number;
   // Applied only to data served from the offline cache (fresh network
   // responses are already sorted server-side) — lets a screen recover the
   // sort the user actually asked for when the cache only has a differently
@@ -357,8 +393,8 @@ const fetchAbstract = async <T>(
   search = "",
   page = 1,
   extraParams: Record<string, unknown> = {},
-  perPage?: number,
-  options?: FetchAbstractOptions<T>,
+  perPage: number | undefined,
+  options: FetchAbstractOptions<T>,
   // Sent to the API alongside extraParams, but deliberately left out of the
   // cache key: unlike extraParams (which changes what's actually being
   // asked for, e.g. a seen/unseen tab), this is for values that refine a
@@ -400,24 +436,25 @@ const fetchAbstract = async <T>(
     if (page > 1) params.page = page;
 
     const res = await api.get<T>(fetchUrl, { params });
-    cacheListResponse(cacheKey, res.data);
+    cacheListResponse(options.table, cacheKey, res.data, options.maxEntries);
     return res.data;
   } catch (e) {
-    const exactMatch = getCachedListResponse<T>(cacheKey);
+    const exactMatch = getCachedListResponse<T>(options.table, cacheKey);
     if (exactMatch) return exactMatch;
 
     // Same screen/filters/search/page, but cached under a different sort —
     // still useful offline even if the order doesn't match what was requested.
     const relaxedMatch = getCachedListResponseByPrefix<T>(
+      options.table,
       buildListCacheKeyPrefix(fetchUrl, filters, search, page, extraParams),
     );
     if (relaxedMatch) {
-      return options?.resort ? options.resort(relaxedMatch, order) : relaxedMatch;
+      return options.resort ? options.resort(relaxedMatch, order) : relaxedMatch;
     }
 
-    const derived = options?.deriveFallback?.() ?? null;
+    const derived = options.deriveFallback?.() ?? null;
     if (derived) {
-      return options?.resort ? options.resort(derived, order) : derived;
+      return options.resort ? options.resort(derived, order) : derived;
     }
 
     throw e;
@@ -502,6 +539,8 @@ export const fetchStat = (
     {},
     undefined,
     {
+      table: statCacheTable,
+      maxEntries: MAX_ENTRIES,
       resort: (data, ord) => ({
         ...data,
         results: sortSpeciesItems(data.results, ord),
@@ -522,7 +561,7 @@ export const fetchStat = (
               );
               const allData = getCachedListResponseByPrefix<
                 StatPaginatedResponse<SpeciesItem>
-              >(allPrefix);
+              >(statCacheTable, allPrefix);
               if (!allData) return null;
 
               const results = allData.results.filter(
@@ -551,6 +590,9 @@ export const fetchChecklist = (
     order,
     search,
     page,
+    {},
+    undefined,
+    { table: checklistCacheTable, maxEntries: MAX_ENTRIES },
   );
 };
 
@@ -577,7 +619,7 @@ export const fetchPlaces = async (
     page,
     {},
     undefined,
-    undefined,
+    { table: placesListCacheTable, maxEntries: MAX_ENTRIES },
     requestOnlyParams,
   );
 
@@ -602,6 +644,9 @@ export const fetchObservations = async (
     order,
     search,
     page,
+    {},
+    undefined,
+    { table: observationsListCacheTable, maxEntries: MAX_ENTRIES },
   );
 
   return observationRepository.applyOverlay(data, page ?? 1);
@@ -622,6 +667,8 @@ export const fetchDiaries = async (
     {},
     undefined,
     {
+      table: diariesListCacheTable,
+      maxEntries: MAX_ENTRIES,
       // Offline with nothing cached yet for this exact query (e.g. the very
       // first load of the Diaries screen while offline): if there's a locally
       // pending diary create/update/delete, applyOverlay below still has
@@ -657,6 +704,8 @@ export const fetchDiaryObservations = async (
     {},
     undefined,
     {
+      table: diaryObservationsListCacheTable,
+      maxEntries: MAX_ENTRIES,
       // Offline with nothing cached for this exact query: only safe to show
       // "no observations" instead of erroring when we actually know that's
       // true. A diary with a temp (negative) id only exists locally and was
@@ -694,6 +743,9 @@ export const fetchRating = (
     order,
     search,
     page,
+    {},
+    undefined,
+    { table: ratingCacheTable, maxEntries: MAX_ENTRIES },
   );
 };
 
@@ -702,20 +754,29 @@ export const fetchRatingCompareHeader = async (
   profile2: number,
   filters: Filters | null,
 ) => {
-  const { date, ...restFilters } = filters ?? {};
+  const cacheKey = `ratingCompareHeader|${profile1}|${profile2}|${stableStringify((filters ?? {}) as Record<string, unknown>)}`;
 
-  const apiFilters = {
-    ...restFilters,
-    ...buildDateParams(date),
-  };
+  try {
+    const { date, ...restFilters } = filters ?? {};
 
-  const params = {
-    profile1,
-    profile2,
-    ...apiFilters,
-  };
-  const res = await api.get(`/myapi/rating-compare2-header/`, { params });
-  return res.data;
+    const apiFilters = {
+      ...restFilters,
+      ...buildDateParams(date),
+    };
+
+    const params = {
+      profile1,
+      profile2,
+      ...apiFilters,
+    };
+    const res = await api.get(`/myapi/rating-compare2-header/`, { params });
+    cacheListResponse(ratingCompareHeaderCacheTable, cacheKey, res.data, MAX_ENTRIES);
+    return res.data;
+  } catch (e) {
+    const cached = getCachedListResponse(ratingCompareHeaderCacheTable, cacheKey);
+    if (cached) return cached;
+    throw e;
+  }
 };
 
 export const fetchRatingCompare = (
@@ -731,6 +792,9 @@ export const fetchRatingCompare = (
     order,
     search,
     page,
+    {},
+    undefined,
+    { table: ratingCompareCacheTable, maxEntries: MAX_ENTRIES },
   );
 };
 
@@ -757,7 +821,7 @@ export const fetchCommunityObservations = (
     page,
     {},
     per_page,
-    undefined,
+    { table: communityObservationsCacheTable, maxEntries: MAX_ENTRIES },
     requestOnlyParams,
   );
 };

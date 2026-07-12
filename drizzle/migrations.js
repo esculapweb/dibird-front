@@ -7,6 +7,8 @@ import m0002 from './0002_mature_grandmaster.sql';
 import m0003 from './0003_minor_infant_terrible.sql';
 import m0004 from './0004_parallel_beast.sql';
 import m0005 from './0005_ambiguous_supernaut.sql';
+import m0006 from './0006_drop_shared_list_cache.sql';
+import m0007 from './0007_add_per_entity_cache_tables.sql';
 
   export default {
     journal,
@@ -16,7 +18,9 @@ m0001,
 m0002,
 m0003,
 m0004,
-m0005
+m0005,
+m0006,
+m0007
     }
   }
   

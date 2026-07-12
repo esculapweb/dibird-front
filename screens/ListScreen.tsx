@@ -100,6 +100,7 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
   onOpenFilterModal,
   showHeaderBadge = true,
   customHeaderBadge,
+  topEl,
   bottomEl,
   fabBottomOffset = 0,
   onFirstPageData,
@@ -352,6 +353,7 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
         </>
       }
     >
+      {topEl}
       {hasActiveFilters && (
         <FilterChips
           filters={filters}

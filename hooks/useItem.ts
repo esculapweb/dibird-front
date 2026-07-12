@@ -11,6 +11,9 @@ import {
   cacheListResponse,
   getCachedListResponse,
 } from "./repositories/listCacheRepository";
+import { communityItemCacheTable } from "../services/db/schema";
+
+const MAX_ENTRIES = 3000;
 
 type ItemType = "Place" | "Observation" | "Community" | "Diary";
 
@@ -80,8 +83,10 @@ export const useItem = (
 
   // No per-entity local mirror table for these types (unlike Observation/
   // Diary/Place, which have their own offline-first hooks) — just a
-  // read-through cache in the shared listCacheTable, same fallback shape as
-  // fetchAbstract in util/fetches.ts uses for list responses.
+  // read-through cache in a dedicated table, same fallback shape as
+  // fetchAbstract in util/fetches.ts uses for list responses. Only "Community"
+  // actually reaches this path today (Place/Observation/Diary moved to their
+  // own repos), hence a single dedicated table rather than one per type.
   const cacheKey = `item|${type}|${id}|${stableStringify(params ?? {})}`;
 
   const query = useQuery({
@@ -89,10 +94,10 @@ export const useItem = (
     queryFn: async () => {
       try {
         const res = await api.get(`${URLS[type]}${id}/`, { params });
-        cacheListResponse(cacheKey, res.data);
+        cacheListResponse(communityItemCacheTable, cacheKey, res.data, MAX_ENTRIES);
         return res.data;
       } catch (e) {
-        const cached = getCachedListResponse(cacheKey);
+        const cached = getCachedListResponse(communityItemCacheTable, cacheKey);
         if (cached) return cached;
         throw e;
       }
