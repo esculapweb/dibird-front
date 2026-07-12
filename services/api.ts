@@ -166,7 +166,7 @@ api.interceptors.request.use(
 
     if (!isPublicEndpoint && token) {
       config.headers.Authorization = `Bearer ${token}`;
-      (config as RetryableConfig)._tokenUsed = token; // <-- новое поле
+      (config as RetryableConfig)._tokenUsed = token;
     }
 
     return config;

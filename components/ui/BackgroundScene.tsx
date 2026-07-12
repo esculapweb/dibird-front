@@ -20,12 +20,10 @@ const ring = (cx: number, cy: number, rOuter: number, rInner: number): string =>
     return `${o} ${i}`;
   };
 
-  const gap = W * 0.06;  // расстояние между кольцами как на превью
-  const thickness = W * 0.14;  // толщина каждого кольца
+  const gap = W * 0.06;
+  const thickness = W * 0.14;
 
-  // Верхний правый — меньший радиус
   const trBase = W * 0.72;
-  // Нижний левый — чуть больше
   const blBase = W * 0.85;
 
   return (
@@ -37,12 +35,10 @@ const ring = (cx: number, cy: number, rOuter: number, rInner: number): string =>
         style={{ position: "absolute", top: 0, left: 0, width: W, height: H }}
         viewBox={`0 0 ${W} ${H}`}
       >
-        {/* Верхний правый — центр (W, 0) */}
         <Path d={ring(W, 0, trBase,                          trBase - thickness)}            fill={color} fillRule="evenodd" opacity={o1}/>
         <Path d={ring(W, 0, trBase - thickness - gap,        trBase - thickness * 2 - gap)}  fill={color} fillRule="evenodd" opacity={o2}/>
         <Path d={ring(W, 0, trBase - thickness * 2 - gap * 2, trBase - thickness * 3 - gap * 2)} fill={color} fillRule="evenodd" opacity={o3}/>
 
-        {/* Нижний левый — центр (0, H) */}
         <Path d={ring(0, H, blBase,                          blBase - thickness)}            fill={color} fillRule="evenodd" opacity={o1}/>
         <Path d={ring(0, H, blBase - thickness - gap,        blBase - thickness * 2 - gap)}  fill={color} fillRule="evenodd" opacity={o2}/>
         <Path d={ring(0, H, blBase - thickness * 2 - gap * 2, blBase - thickness * 3 - gap * 2)} fill={color} fillRule="evenodd" opacity={o3}/>

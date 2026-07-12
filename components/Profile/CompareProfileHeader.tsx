@@ -1,4 +1,3 @@
-// CompareProfileHeader.js
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
@@ -117,7 +116,6 @@ const stylesFn = (Colors: ThemeColors) =>
       paddingBottom: 8,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: Colors.border,
-      // backgroundColor: Colors.primary100,
     },
     profileCol: {
       alignItems: "center",

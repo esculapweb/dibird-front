@@ -24,9 +24,6 @@ import StaticScreen from "../screens/StaticScreen";
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 const Drawer = createDrawerNavigator<AuthDrawerParamList>();
 
-// ---------------------------------------------------------------------------
-// Custom drawer content — только Welcome в меню, остальные недоступны
-// ---------------------------------------------------------------------------
 const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -63,9 +60,6 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   );
 };
 
-// ---------------------------------------------------------------------------
-// WelcomeDrawer — только Welcome, drawer только для смены языка/темы
-// ---------------------------------------------------------------------------
 const WelcomeDrawer = () => {
   const { Colors } = useTheme();
 
@@ -84,9 +78,6 @@ const WelcomeDrawer = () => {
   );
 };
 
-// ---------------------------------------------------------------------------
-// AuthDrawer — все экраны в Stack с единым хедером
-// ---------------------------------------------------------------------------
 const AuthNavigator = () => {
   const { t } = useTranslation();
   const { Colors } = useTheme();

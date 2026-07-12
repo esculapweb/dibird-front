@@ -7,7 +7,7 @@ export function useUnreadCount() {
   return useQuery({
     queryKey: UNREAD_COUNT_KEY,
     queryFn: fetchUnreadCount,
-    staleTime: 60_000,       // рефетч не чаще раза в минуту
-    refetchInterval: 2 * 60_000, // фоновый polling раз в 2 мин
+    staleTime: 60_000,
+    refetchInterval: 2 * 60_000,
   })
 }

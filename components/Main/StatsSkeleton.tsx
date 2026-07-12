@@ -18,7 +18,6 @@ const StatsSkeleton = () => {
 
 export default StatsSkeleton;
 
-// Одна карточка-заглушка
 const StatCardSkeleton = () => {
   const { Colors } = useTheme();
   const styles = cardStylesFn(Colors);

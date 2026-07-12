@@ -13,7 +13,6 @@ const BackgroundScene2 = () => {
   const W = size.width;
   const H = size.height;
 
-  // Три слоя холмов — дальний, средний, ближний
   const hillsFar = `
     M0,${H}
     L0,${H * 0.82}

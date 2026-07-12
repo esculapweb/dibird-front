@@ -649,8 +649,6 @@ export interface AppNotification {
   created_at: string;
 }
 
-// --- Navigation ---
-
 export type MinimalRoute = {
   name: string;
   params?: object;
@@ -767,8 +765,6 @@ export type AuthDrawerParamList = {
   WelcomeMain: undefined;
 };
 
-// --- Navigation Props ---
-
 export type AppStackNavigationProp =
   NativeStackNavigationProp<AppStackParamList>;
 
@@ -785,7 +781,6 @@ export type AnyDrawerNavigationProp = DrawerNavigationProp<
   AppDrawerParamList | AuthDrawerParamList
 >;
 
-// --- Route Props ---
 export type AppStackRouteProp<T extends keyof AppStackParamList> = RouteProp<
   AppStackParamList,
   T

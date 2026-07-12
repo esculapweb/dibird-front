@@ -87,8 +87,6 @@ const RowSwitch = ({
   </View>
 );
 
-// ─── Main screen ──────────────────────────────────────────────────────────────
-
 export default function AlertSettingsScreen() {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -152,7 +150,6 @@ export default function AlertSettingsScreen() {
   }
   if (loading || !settings) return <LoadingOverlay />;
 
-  // ─── Derived ─────────────────────────────────────────────────────────────
   const coordLabel =
     settings.location_lat != null && settings.location_lon != null
       ? `${settings.location_lat.toFixed(2)}, ${settings.location_lon.toFixed(2)}`
@@ -166,7 +163,6 @@ export default function AlertSettingsScreen() {
     value: opt.value as string,
   }));
 
-  // ─── Handlers ────────────────────────────────────────────────────────────
   const updateWindow = (idx: number, field: 0 | 1, hour: number) => {
     const next = localWindows.map((w, i) =>
       i === idx
@@ -194,7 +190,6 @@ export default function AlertSettingsScreen() {
 
   return (
     <Layout withScroll contentContainerStyle={styles.scroll}>
-      {/* ── Master switch ──────────────────────────────────────────────── */}
       <Section title={t("alert_section_general")} styles={styles}>
         <RowSwitch
           icon="notifications-outline"
@@ -206,7 +201,6 @@ export default function AlertSettingsScreen() {
         />
       </Section>
 
-      {/* ── Location + Radius ──────────────────────────────────────────── */}
       <Section title={t("alert_section_location")} styles={styles}>
         <View style={styles.row}>
           <Ionicons name="location-outline" size={18} color={Colors.main100} />
@@ -257,9 +251,7 @@ export default function AlertSettingsScreen() {
         </View>
       </Section>
 
-      {/* ── Filters ────────────────────────────────────────────────────── */}
       <Section title={t("alert_section_filters")} styles={styles}>
-        {/* Опция 1: все виды */}
         <TouchableOpacity
           style={styles.row}
           onPress={() => save({ watchlist_only: false })}
@@ -361,7 +353,6 @@ export default function AlertSettingsScreen() {
         )}
       </Section>
 
-      {/* ── Schedule ───────────────────────────────────────────────────── */}
       <Section title={t("alert_section_schedule")} styles={styles}>
         {localWindows.length === 0 ? (
           <View style={styles.row}>
@@ -404,7 +395,6 @@ export default function AlertSettingsScreen() {
         </TouchableOpacity>
       </Section>
 
-      {/* ── Limits ─────────────────────────────────────────────────────── */}
       <Section title={t("alert_section_limits")} styles={styles}>
         <View style={styles.row}>
           <Ionicons name="shield-outline" size={18} color={Colors.main100} />
@@ -442,8 +432,6 @@ export default function AlertSettingsScreen() {
     </Layout>
   );
 }
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({

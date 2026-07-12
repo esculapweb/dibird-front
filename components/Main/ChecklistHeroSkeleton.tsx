@@ -56,7 +56,6 @@ const stylesFn = (Colors: ThemeColors) =>
       gap: 8,
     },
 
-    // Большое число (seen)
     clNumSkeleton: {
       width: 92,
       height: 42,
@@ -65,7 +64,6 @@ const stylesFn = (Colors: ThemeColors) =>
       opacity: 0.2,
     },
 
-    // "of XXXX"
     clOfSkeleton: {
       width: 78,
       height: 18,
@@ -75,7 +73,6 @@ const stylesFn = (Colors: ThemeColors) =>
       opacity: 0.2,
     },
 
-    // Прогресс бар
     clBarBg: {
       marginTop: 16,
       height: 5,

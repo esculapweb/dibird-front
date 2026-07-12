@@ -52,9 +52,6 @@ import StaticScreen from "../screens/StaticScreen";
 const Stack = createNativeStackNavigator<AppStackParamList>();
 const Drawer = createDrawerNavigator<AppDrawerParamList>();
 
-// ---------------------------------------------------------------------------
-// Custom drawer content
-// ---------------------------------------------------------------------------
 const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   const { logout } = useAuth();
   const { t } = useTranslation();
@@ -85,7 +82,6 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
           <Avatar />
         </View>
 
-        {/* Главный экран */}
         <DrawerItem
           label={t("main")}
           labelStyle={{ color: Colors.textMain }}
@@ -155,9 +151,6 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   );
 };
 
-// ---------------------------------------------------------------------------
-// MainDrawer
-// ---------------------------------------------------------------------------
 const MainDrawer = () => {
   const { error } = useProfile();
   const { Colors } = useTheme();
@@ -179,9 +172,6 @@ const MainDrawer = () => {
   );
 };
 
-// ---------------------------------------------------------------------------
-// AppNavigator
-// ---------------------------------------------------------------------------
 const AppNavigator = () => {
   const { t } = useTranslation();
   const { Colors } = useTheme();

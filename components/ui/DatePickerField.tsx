@@ -26,8 +26,6 @@ const formatDate = (dateStr: string | null): string => {
   return new Date(dateStr + "T00:00:00").toLocaleDateString(i18n.language);
 };
 
-// value: string "YYYY-MM-DD" | null
-// setDate: (string "YYYY-MM-DD" | null) => void
 const DatePickerField = ({
   label,
   date,

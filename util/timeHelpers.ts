@@ -1,4 +1,3 @@
-// "10:30:00" или "10:30" → "10:30"
 export const formatTimeString = (value: string | undefined): string => {
   if (!value) return "";
   const parts = value.split(":");

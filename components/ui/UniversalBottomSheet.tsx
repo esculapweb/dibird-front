@@ -168,7 +168,6 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
       }}
     >
       <>
-        {/* ── Menu mode ────────────────────────────────────── */}
         {(menu || confirm) && (
           <BottomSheetView style={styles.outer}>
             {menu && (
@@ -218,7 +217,6 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
               </View>
             )}
 
-            {/* ── Confirm mode ─────────────────────────────────── */}
             {confirm && (
               <View style={styles.container}>
                 <Text
@@ -306,7 +304,6 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
           </BottomSheetView>
         )}
 
-        {/* ── Content mode ─────────────────────────────────── */}
         {content && (
           <>
             {content.title ? (

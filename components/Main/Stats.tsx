@@ -34,7 +34,6 @@ const Stats = ({
               ...filters,
             },
             seenMode: "seen",
-            // o: "-seen,-date_time",
           })
         }
       />

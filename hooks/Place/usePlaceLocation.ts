@@ -128,7 +128,6 @@ export const usePlaceLocation = () => {
     [reverseGeocode],
   );
 
-  // Когда контекст обновляет locationCoords — синхронизируем локальный стейт
   useEffect(() => {
     if (locationCoords) {
       updateCoords(locationCoords);
@@ -152,7 +151,6 @@ export const usePlaceLocation = () => {
         const acc = result.accuracy ?? 0;
         setAccuracy(acc);
         setZoom(acc > 0 ? zoomFromAccuracy(acc) : 15);
-        // coords придут через useEffect выше из locationCoords
       } else if (permissionStatus === "denied") {
         handleLocationUnavailable();
       }

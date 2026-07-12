@@ -55,7 +55,6 @@ const Sections = ({ data }: { data: DashboardStat }) => {
 
   return (
     <>
-      {/* <Text style={styles.groupLabel}>{t("sections")}</Text> */}
       <View style={styles.secGrid}>
         {Array.from({ length: Math.ceil(SECTIONS.length / SEC_COLS) }).map(
           (_, rowIndex) => {

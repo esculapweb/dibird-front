@@ -36,10 +36,6 @@ import { getFullVersion } from "../util/helpers";
 import api from "../services/api";
 import { logError } from "../services/errors";
 
-// ------------------------------------------------------------------
-// Primitives
-// ------------------------------------------------------------------
-
 interface RowSwitchProps {
   icon: IconType;
   label: string;
@@ -154,10 +150,6 @@ const Section = ({ title, children, styles, colors }: SectionProps) => (
   </View>
 );
 
-// ------------------------------------------------------------------
-// Screen
-// ------------------------------------------------------------------
-
 const APP_REVIEW_PROFILE_ID = 9386;
 
 const SettingsScreen = () => {
@@ -251,7 +243,6 @@ const SettingsScreen = () => {
         </FlatButtonBottom>
       }
     >
-      {/* ── Alerts ─────────────────────────────────────────── */}
       <Section
         title={t("settings_section_alerts")}
         styles={styles}
@@ -275,7 +266,6 @@ const SettingsScreen = () => {
         )}
       </Section>
 
-      {/* ── Security ─────────────────────────────────── */}
       {bioAvailable && (
         <Section
           title={t("settings_section_security")}
@@ -294,7 +284,6 @@ const SettingsScreen = () => {
         </Section>
       )}
 
-      {/* ── Data ─────────────────────────────────────────── */}
       <Section
         title={t("settings_section_data")}
         styles={styles}
@@ -327,7 +316,6 @@ const SettingsScreen = () => {
         />
       </Section>
 
-      {/* ── About ────────────────────────────────────────── */}
       <Section
         title={t("settings_section_about")}
         styles={styles}
@@ -368,7 +356,6 @@ const SettingsScreen = () => {
         />
       </Section>
 
-      {/* ── Danger zone ──────────────────────────────────── */}
       <Section
         title={t("settings_section_danger")}
         styles={styles}

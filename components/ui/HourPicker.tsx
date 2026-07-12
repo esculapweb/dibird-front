@@ -53,7 +53,6 @@ export function HourPicker({ value, onChange, colors }: HourPickerProps) {
           );
         })}
       </ScrollView>
-      {/* Right-edge fade to signal scrollability */}
       <View style={styles.fadeRight} pointerEvents="none" />
     </View>
   );

@@ -1,13 +1,9 @@
-// src/api/alertSettings.ts
 import { TerritoryData } from "../types";
 import api from "./api";
-
-// ─── Типы ────────────────────────────────────────────────────────────────────
 
 /** Формат активных окон: пары [start_hour, end_hour], часы UTC 0-23 */
 export type ActiveHourWindow = [number, number];
 
-/** Данные, которые приходят с сервера (GET-ответ) */
 export interface AlertSettings {
   id: number;
 
@@ -38,8 +34,6 @@ export type AlertSettingsPatch = Partial<
     lon: number | null;
   }
 >;
-
-// ─── API-функции ──────────────────────────────────────────────────────────────
 
 const BASE = "/myapi/alert-settings/me/";
 

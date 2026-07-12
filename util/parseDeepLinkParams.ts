@@ -75,7 +75,7 @@ const parseWebDate = (str: string | null): string | null => {
   }
   // YYYY-MM-DD
   if (decoded.includes("-")) {
-    return decoded.slice(0, 10); // обрезаем лишнее
+    return decoded.slice(0, 10);
   }
   return null;
 };

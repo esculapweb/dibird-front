@@ -20,7 +20,6 @@ const BackgroundScene3 = () => {
 
   const waterY = H * 0.62;
 
-  // Reed helper
   const reeds = [
     { x: W * 0.04, stemH: H * 0.34, headY: H * 0.52, hW: 3.5, hH: 10, op: 0.85 },
     { x: W * 0.09, stemH: H * 0.30, headY: H * 0.49, hW: 3, hH: 9, op: 0.75 },

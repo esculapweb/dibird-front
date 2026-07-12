@@ -73,11 +73,9 @@ const TimeInput = ({
     if (Platform.OS === "android") {
       setAndroidPickerOpen(true);
     } else {
-      // Синхронизируем tempDate с текущим value при открытии
       const initial = value ? timeStringToDate(value) : new Date();
       setTempDate(initial);
 
-      // Если значения не было — сразу применяем текущее время
       if (!value) onChange(dateToTimeString(initial));
 
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);

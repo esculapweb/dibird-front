@@ -22,7 +22,7 @@ export function navigateFromNotification<K extends keyof AppStackParamList>(
   if (navigationRef.current?.isReady()) {
     go();
   } else {
-    pendingNavigation = go; // выполнить когда станет готов
+    pendingNavigation = go;
   }
 }
 

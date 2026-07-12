@@ -30,7 +30,6 @@ export default function NotificationsScreen() {
       initialPageParam: 1,
     });
 
-  // Пометить все прочитанными и обновить счётчик
   const handleMarkAllRead = useCallback(async () => {
     await markNotificationsRead();
     queryClient.invalidateQueries({ queryKey: ["notifications"] });
@@ -48,17 +47,14 @@ export default function NotificationsScreen() {
     });
   }, [navigation, handleMarkAllRead, Colors]);
 
-  // Навигация при тапе на уведомление
   const handlePress = useCallback(
     async (item: AppNotification) => {
-      // Пометить одно прочитанным
       if (!item.is_read) {
         await markNotificationsRead([item.id]);
         queryClient.invalidateQueries({ queryKey: ["notifications"] });
         queryClient.invalidateQueries({ queryKey: UNREAD_COUNT_KEY });
       }
 
-      // Навигация по data.screen
       const { screen, obsId, speciesId, achievementId, highlightObsIds } =
         item.data;
       switch (screen) {

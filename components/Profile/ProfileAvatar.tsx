@@ -31,9 +31,10 @@ const ProfileAvatar = ({
   return avatar ? (
     <Image
       source={{
-        uri: avatar.startsWith("http")
-          ? avatar
-          : `${Config.mediaUrl}/${avatar}`,
+        // Pending offline uploads pass a local `file://` URI (see
+        // FileSystem.documentDirectory in Avatar.tsx) which must be used
+        // as-is; only a bare relative path from the server needs prefixing.
+        uri: avatar.includes("://") ? avatar : `${Config.mediaUrl}/${avatar}`,
       }}
       style={[styles.avatar, style]}
       contentFit="cover"

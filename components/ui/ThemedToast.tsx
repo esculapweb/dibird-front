@@ -14,7 +14,6 @@ const createToast = (colorKey: toastType) => (props: BaseToastProps) => {
         borderWidth: 1,
         borderColor: Colors.toastBorder,
         borderRadius: 12,
-        // padding: 10,
       }}
       contentContainerStyle={{ paddingHorizontal: 12 }}
       text1Style={{ color: Colors.textMain, fontSize: 15, fontWeight: "600" }}
