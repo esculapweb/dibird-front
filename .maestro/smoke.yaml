@@ -1,0 +1,9 @@
+# TODO: placeholder flow only — not wired into CI yet.
+# Requires a built dev-client/preview binary installed on a running
+# simulator/emulator (see `npm run e2e`). Replace with real assertions
+# once E2E scenarios are prioritized.
+appId: com.dibird.app
+---
+- launchApp
+- assertVisible:
+    text: ".*"

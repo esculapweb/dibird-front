@@ -1,5 +1,5 @@
 {
-  "compilerOptions": {"strict": true},
+  "compilerOptions": {"strict": true, "types": ["jest"]},
   "extends": "expo/tsconfig.base",
   "exclude": ["node_modules"]
 }
