@@ -58,6 +58,7 @@ const IconsHeader = ({
           disabled={btn?.disabled}
           loading={btn?.loading}
           active={btn?.active}
+          testID={btn?.testID}
         />
       ))}
     </View>

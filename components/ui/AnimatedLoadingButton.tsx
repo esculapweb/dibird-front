@@ -18,6 +18,7 @@ interface AnimatedLoadingButtonProps {
   loading: boolean;
   success?: boolean;
   children: ReactNode;
+  testID?: string;
 }
 
 const AnimatedLoadingButton = ({
@@ -25,6 +26,7 @@ const AnimatedLoadingButton = ({
   loading,
   success,
   children,
+  testID,
 }: AnimatedLoadingButtonProps) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -62,6 +64,7 @@ const AnimatedLoadingButton = ({
     <Pressable
       onPress={onPress}
       disabled={loading}
+      testID={testID}
       style={({ pressed }) => [
         styles.button,
         pressed && !loading ? styles.pressed : null,

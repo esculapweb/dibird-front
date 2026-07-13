@@ -36,6 +36,7 @@ interface DropdownInputProps<T extends string | number | null = string | number 
     selected: string | number | null;
     onSelect: (value: string | number | null) => void;
     onClose: () => void;
+    index: number;
   }) => ReactElement | null;
   speciesData?: SpeciesDropdownItem;
   placeData?: PlaceDropdownItem | null;
@@ -163,6 +164,7 @@ const DropdownInput = <T extends string | number | null>({
 
           <Pressable
             onPress={openModal}
+            testID={type ? `dropdown-trigger-${type}` : undefined}
             style={[
               styles.select,
               error && { borderColor: Colors.error500 },

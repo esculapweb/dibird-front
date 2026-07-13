@@ -1,0 +1,114 @@
+# Core user flow: create an Observation while online.
+#
+# Login here is a fast reuse-the-session preamble, not a full login test
+# (that's login.yaml's job, including its deliberate wrong-password check —
+# reusing it via runFlow would double this flow's time just to get past the
+# auth gate). No clearKeychain / clearState: expo-secure-store keeps the
+# access token in the Keychain across app relaunches, and auth-context.tsx's
+# restoreToken effect reads it back on boot — so if an earlier run (in this
+# suite or a previous one) already logged in on this simulator, launchApp
+# alone lands straight on MainScreen with no typing at all. The
+# runFlow/when.visible block below only runs the real email+password steps
+# as a fallback, for a first-ever run or after an explicit logout. This
+# preamble is meant to be copy-pasted into other test flows verbatim (see
+# login.yaml for the shared selector notes — kept in sync manually since
+# Maestro's directory-based test runner (`maestro test .maestro`, see
+# run.sh) scans every yaml file under the given path and requires each one
+# to have its own appId/config header, so a shared no-header "partial" file
+# placed anywhere under .maestro/ either errors out on its own or, if given
+# a header to fix that, ends up running as its own redundant top-level flow
+# either way).
+#
+# Goes straight from MainScreen's "+ Observation" quick action rather than
+# Observations list -> add button: that's the shortest real path a user
+# takes, and it also happens to be the one path where the territory field
+# arrives pre-filled (see below), so there's no list screen or empty-state
+# branching to handle here at all.
+#
+# Country is deliberately NOT selected in this flow: after login,
+# profile-context's initGlobalFilters sets the global territory filter to
+# the profile's own country, and ObservationEditorScreen seeds the form from
+# that same filter as `defaultTerritory` — so the country arrives
+# pre-selected before the form even mounts. If that invariant ever breaks,
+# the species dropdown (gated on territory being set) simply won't open and
+# this flow fails loudly at that step instead of silently mis-testing.
+#
+# Picks the first available species rather than a specific one, since exact
+# dropdown contents are backend/seed-data dependent — this flow verifies the
+# save round-trip, not a particular species.
+#
+# appId matches the dev-client build (com.dibird.app.dev) — see login.yaml.
+#
+# Run with:
+#   maestro test --env TEST_EMAIL=... --env TEST_PASSWORD=... .maestro/create-observation.yaml
+appId: com.dibird.app.dev
+---
+- launchApp
+
+- tapOn:
+    below: "DEVELOPMENT SERVERS"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    text: "Close"
+    optional: true
+- waitForAnimationToEnd
+
+# Fallback only: runs the full email+password entry when no valid session
+# was restored (Welcome screen still showing). Skipped entirely on the
+# common case where a prior run already left a valid token in the Keychain.
+- runFlow:
+    when:
+      visible: ".*Continue with email.*"
+    commands:
+      - tapOn: ".*Continue with email.*"
+      - tapOn:
+          id: "email-input"
+      - setClipboard: "${TEST_EMAIL}"
+      - pasteText
+      - tapOn:
+          id: "password-input"
+      - tapOn:
+          id: "password-input-toggle-visibility"
+      - tapOn:
+          id: "password-input"
+      - setClipboard: "${TEST_PASSWORD}"
+      - pasteText
+      - hideKeyboard
+      - tapOn:
+          id: "login-submit-button"
+      - waitForAnimationToEnd
+      - tapOn:
+          text: "Not Now"
+          optional: true
+- assertVisible: ".*Observations.*"
+
+- tapOn:
+    id: "quick-action-observation"
+
+- tapOn:
+    id: "species-dropdown-trigger"
+# Species list is already scoped to the pre-filled territory (a much smaller,
+# targeted fetch than the full ~250-country list), so a short wait is enough
+# here — no need for the country dropdown's longer cold-cache allowance.
+- extendedWaitUntil:
+    visible:
+      id: "option-row-0"
+    timeout: 8000
+- tapOn:
+    id: "option-row-0"
+- tapOn:
+    id: "observation-save-button"
+
+# A successful save navigates to the new observation's own detail screen
+# (ObservationEditorScreen's onSuccess replaces the route rather than just
+# going back, since this flow doesn't pass returnMode: "back"). Assert on
+# that screen's delete button specifically: it only renders when
+# observation.is_owner is true on a real, persisted item, so its presence is
+# direct confirmation the observation was actually created server-side — not
+# just that the editor closed.
+- assertVisible: ".*Delete observation.*"

@@ -525,6 +525,7 @@ export interface IconButtonProps {
   size?: number;
   disabled?: boolean;
   loading?: boolean;
+  testID?: string;
 }
 
 export interface RatingItem {

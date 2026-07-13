@@ -26,6 +26,7 @@ interface SelectListModalProps {
     selected: string | number | null;
     onSelect: (value: string | number | null) => void;
     onClose: () => void;
+    index: number;
   }) => ReactElement | null;
   type?: string;
   sort?: string | null;
@@ -164,9 +165,9 @@ const SelectListModal = ({
                 offset: ItemHeight * index,
                 index,
               })}
-              renderItem={({ item }) =>
+              renderItem={({ item, index }) =>
                 renderOption ? (
-                  renderOption({ item, selected, onSelect, onClose })
+                  renderOption({ item, selected, onSelect, onClose, index })
                 ) : (
                   <DefaultOptionRow
                     item={item}
@@ -174,6 +175,7 @@ const SelectListModal = ({
                     onSelect={onSelect}
                     onClose={onClose}
                     itemHeight={ItemHeight}
+                    index={index}
                   />
                 )
               }

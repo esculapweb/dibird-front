@@ -47,6 +47,7 @@ const QuickActions = ({ filters }: {filters: Filters}) => {
               defaultTerritory: filters.territory ?? null,
             })
           }
+          testID="quick-action-observation"
         >
           <Ionicons name="binoculars" size={22} color={Colors.textMain} />
           <Text style={[styles.qbtnText, { color: Colors.textMain }]}>

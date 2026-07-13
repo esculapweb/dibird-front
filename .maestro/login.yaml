@@ -1,0 +1,144 @@
+# Email/password login — the gateway flow for every other authenticated
+# screen. Requires a built dev-client/preview binary installed on a running
+# simulator/emulator (see `npm run e2e`) and a real test account.
+#
+# Deliberately tests the wrong-password path first (Phase 1), then the real
+# credentials (Phase 2) — a single "did the welcome screen disappear" check
+# is trivially true either way, since that happens the moment "Continue
+# with email" is tapped, before any credentials are even submitted.
+#
+# appId matches the dev-client build (com.dibird.app.dev). Other build
+# variants: com.dibird.app.preview (preview), com.dibird.app (production) —
+# swap this line if targeting a different installed build.
+#
+# Run with:
+#   maestro test --env TEST_EMAIL=... --env TEST_PASSWORD=... .maestro/login.yaml
+appId: com.dibird.app.dev
+---
+# NOTE on text selectors below: RN buttons that pair an icon with a label
+# (e.g. the mail icon next to "Continue with email") get their accessible
+# text auto-joined by iOS as ", Continue with email" (leading comma+space,
+# from the icon's empty label). Maestro's plain-text selector requires a
+# FULL match against that string, not a substring search, so those selectors
+# must be wrapped in `.*...*.`  Plain single-Text buttons ("Log In", "Close",
+# the tooltip's "Continue") don't have this problem and match literally.
+# clearKeychain in addition to launchApp's clearState: true — the session
+# token is stored via expo-secure-store (iOS Keychain), which clearState
+# does NOT wipe (it only resets the app's sandboxed container/UserDefaults).
+# Without this, a token saved by an earlier successful login persists across
+# runs and the app launches straight into MainScreen, skipping Welcome
+# entirely and making the rest of this flow meaningless.
+- clearKeychain
+- launchApp:
+    clearState: true
+
+# Expo dev-client shows its own "pick a dev server" launcher screen on every
+# cold start (with cleared state) before it loads the app's JS bundle — tap
+# the (only) server row to connect. `optional: true` skips the step outright
+# if the text isn't there *right now* rather than retrying like assertVisible
+# does (e.g. preview/production builds, where this screen doesn't exist at
+# all) — so waitForAnimationToEnd is inserted before each optional dev-client
+# step to give its fade-in animation a chance to finish first; without it,
+# these checks intermittently ran before the element had rendered at all.
+- tapOn:
+    below: "DEVELOPMENT SERVERS"
+    optional: true
+- waitForAnimationToEnd
+
+# Expo dev-client also shows a one-time "this is the developer menu" tooltip
+# over the app on first cold start. Its "Continue" button is part of an
+# onboarding tour and — by design — opens the actual dev menu rather than
+# just dismissing the tooltip, so we close that menu right after. Both steps
+# only apply to dev-client builds.
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    text: "Close"
+    optional: true
+- waitForAnimationToEnd
+
+# Phase 1: deliberately wrong password first — proves the login attempt is
+# actually submitted and rejected, rather than just checking the welcome
+# screen went away (which happens the moment "Continue with email" is
+# tapped, regardless of whether the login itself ever succeeds).
+- assertVisible: ".*Continue with email.*"
+- tapOn: ".*Continue with email.*"
+- tapOn:
+    id: "email-input"
+# setClipboard + pasteText (not inputText) deliberately: inputText simulates
+# real keystrokes on the on-screen keyboard, so if the simulator's active
+# keyboard layout is non-Latin (e.g. Russian) at the time the test runs, the
+# typed characters come out wrong. pasteText pastes the clipboard's current
+# contents into the focused field instead, which is keyboard-layout
+# independent — but it doesn't take the text itself as an argument, so it
+# must be paired with setClipboard right before it.
+- setClipboard: "${TEST_EMAIL}"
+- pasteText
+- tapOn:
+    id: "password-input"
+# iOS silently blocks paste into a secureTextEntry field — pasteText
+# completes without error but the field stays empty. Tap the field's own
+# eye-icon toggle to turn secureTextEntry off first, then paste works
+# normally; visibility being off afterwards doesn't matter for a test run.
+- tapOn:
+    id: "password-input-toggle-visibility"
+- tapOn:
+    id: "password-input"
+- setClipboard: "obviously-wrong-password-123"
+- pasteText
+- hideKeyboard
+# id (not text) selector deliberately: a text selector like ".*Log In.*" is
+# ambiguous on this screen — the header subtitle "Log in to continue" and
+# the actual submit button can both match depending on case-sensitivity, and
+# the wrong one (the inert header) was silently getting tapped instead.
+- tapOn:
+    id: "login-submit-button"
+- assertVisible: ".*Login failed.*"
+
+# Phase 2: get back to a genuinely empty form instead of erasing the wrong
+# password in place. eraseText only removes characters backwards from
+# wherever the cursor happens to land after re-focusing the field, which
+# isn't reliably the end of the existing text — it was observed leaving
+# stray leftover characters mixed in with the freshly-pasted real password.
+# Navigating back to Welcome and re-entering Login remounts the form with
+# empty fields instead. Leaving the password screen also triggers iOS's own
+# "Save Password?" iCloud Keychain prompt, unrelated to our app, which is
+# dismissed the same optional way as the dev-client screens above.
+- tapOn:
+    id: "BackButton"
+- waitForAnimationToEnd
+- tapOn:
+    text: "Not Now"
+    optional: true
+- assertVisible: ".*Continue with email.*"
+- tapOn: ".*Continue with email.*"
+- tapOn:
+    id: "email-input"
+- setClipboard: "${TEST_EMAIL}"
+- pasteText
+- tapOn:
+    id: "password-input"
+- tapOn:
+    id: "password-input-toggle-visibility"
+- tapOn:
+    id: "password-input"
+- setClipboard: "${TEST_PASSWORD}"
+- pasteText
+- hideKeyboard
+- tapOn:
+    id: "login-submit-button"
+# A successful login (real password entered) also triggers iOS's "Save
+# Password?" Keychain prompt, same as after the BackButton step above.
+- waitForAnimationToEnd
+- tapOn:
+    text: "Not Now"
+    optional: true
+# Confirms actual success — landing on the authenticated MainScreen (its
+# "Observations" stat card) — not just the absence of the welcome screen.
+# Regex-wrapped: the stat card's value ("0") and label ("Observations") are
+# sibling Text nodes inside one TouchableOpacity, which iOS joins into a
+# single accessible label (e.g. "0, Observations") — same full-match vs.
+# substring behavior noted for the icon-paired buttons above.
+- assertVisible: ".*Observations.*"

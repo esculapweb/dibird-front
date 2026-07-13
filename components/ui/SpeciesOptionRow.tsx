@@ -15,6 +15,7 @@ interface SpeciesOptionRow {
   onClose: ()=>void,
   itemHeight?: number;
   disabled?: boolean;
+  index?: number;
 }
 
 const SpeciesOptionRow = ({
@@ -24,6 +25,7 @@ const SpeciesOptionRow = ({
   onClose,
   itemHeight = 52,
   disabled = false,
+  index,
 }: SpeciesOptionRow) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors, itemHeight);
@@ -36,6 +38,7 @@ const SpeciesOptionRow = ({
         onSelect(item.value);
         onClose();
       }}
+      testID={index != null ? `option-row-${index}` : undefined}
       style={({ pressed }) => [
         styles.item,
         isActive && styles.itemActive,

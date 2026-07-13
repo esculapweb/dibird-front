@@ -13,6 +13,7 @@ const IconButton = ({
   size = 22,
   disabled,
   loading,
+  testID,
 }: IconButtonProps) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -34,6 +35,7 @@ const IconButton = ({
       ]}
       onPress={disabled ? undefined : onPress}
       hitSlop={4}
+      testID={testID}
     >
       <Ionicons name={icon} size={size} color={tintColor ?? Colors.textMain} />
 

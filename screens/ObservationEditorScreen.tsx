@@ -333,6 +333,7 @@ const ObservationEditorScreen = () => {
         disabled: isEditMode
           ? updateObservationMutation.isPending
           : createObservationMutation.isPending,
+        testID: "observation-save-button",
       },
     ],
     [

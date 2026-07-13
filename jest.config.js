@@ -1,3 +1,7 @@
+// Set before workers are forked so it's inherited at process start — setting it in a
+// setupFile runs too late, since Node/ICU caches the local timezone on first Date/Intl use.
+process.env.TZ = "UTC";
+
 module.exports = {
   preset: "jest-expo",
   setupFiles: [

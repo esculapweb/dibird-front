@@ -86,6 +86,7 @@ const AuthForm = ({
         isInvalid={emailIsInvalid}
         textContentType="username"
         autoComplete="username"
+        testID="email-input"
       />
       {isLogin && (
         <Input
@@ -96,6 +97,7 @@ const AuthForm = ({
           isInvalid={passwordIsInvalid}
           textContentType="password"
           autoComplete="current-password"
+          testID="password-input"
         />
       )}
       {!isLogin && (
@@ -125,7 +127,11 @@ const AuthForm = ({
         </>
       )}
       <View style={styles.buttonContainer}>
-        <AnimatedLoadingButton onPress={submitHandler} loading={loading}>
+        <AnimatedLoadingButton
+          onPress={submitHandler}
+          loading={loading}
+          testID={isLogin ? "login-submit-button" : "signup-submit-button"}
+        >
           {isLogin ? t("log_in") : t("sign_up")}
         </AnimatedLoadingButton>
       </View>

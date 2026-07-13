@@ -46,7 +46,7 @@ const RareNearby: FC<NewSpeciesProps> = ({ filters }) => {
   const { data: communityData, isLoading } = useList({
     screenName: "RareNearby",
     fetchFunction: fetchDataWrapper,
-    filters: {territory: settings?.territory_data.id, radius: settings?.radius_km},
+    filters: {territory: settings?.territory_data?.id, radius: settings?.radius_km},
     sort: "-date_time",
     locationCoords,
     enabled: !!settings,

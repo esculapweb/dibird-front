@@ -162,6 +162,7 @@ const SpeciesDropdown = ({
     <Pressable
       onPress={handlePress}
       disabled={disabled}
+      testID="species-dropdown-trigger"
       style={({ pressed }) => [
         styles.card,
         error && styles.cardError,

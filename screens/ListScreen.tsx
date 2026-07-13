@@ -341,7 +341,11 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
       bottom={
         <>
           {onAdd && (
-            <Pressable style={styles.fab} onPress={onAdd}>
+            <Pressable
+              style={styles.fab}
+              onPress={onAdd}
+              testID="list-add-button"
+            >
               <Ionicons
                 name={fabIcon ?? "add"}
                 size={28}

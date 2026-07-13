@@ -14,7 +14,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "e2e": "maestro test .maestro",
+    "e2e": "bash .maestro/run.sh",
     "update:production": "NODE_ENV=production eas update --branch production --environment production",
     "update:preview": "NODE_ENV=preview eas update --branch preview --environment preview",
     "update:development": "eas update --branch development --environment development"

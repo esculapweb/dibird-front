@@ -28,6 +28,7 @@ interface InputProps {
   placeholder?: string;
   textContentType?: TextInputProps["textContentType"];
   autoComplete?: TextInputProps["autoComplete"];
+  testID?: string;
 }
 
 const Input = ({
@@ -44,6 +45,7 @@ const Input = ({
   placeholder,
   textContentType,
   autoComplete,
+  testID,
 }: InputProps) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -62,6 +64,7 @@ const Input = ({
       )}
       <View style={[styles.inputWrapper, isInvalid && styles.inputInvalid]}>
         <TextInput
+          testID={testID}
           style={[styles.input, isInvalid && styles.inputInvalid]}
           autoCapitalize="none"
           autoCorrect={false}
@@ -76,7 +79,11 @@ const Input = ({
           autoComplete={autoComplete}
         />
         {secure && (
-          <TouchableOpacity onPress={toggleSecure} style={styles.iconSecure}>
+          <TouchableOpacity
+            onPress={toggleSecure}
+            style={styles.iconSecure}
+            testID={testID ? `${testID}-toggle-visibility` : undefined}
+          >
             <Ionicons
               name={isSecure ? "eye-off-outline" : "eye-outline"}
               size={24}

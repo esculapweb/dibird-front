@@ -272,13 +272,14 @@ const ObservationForm = ({
           query={querySpecies}
           disabled={!territoryValue}
           error={errors.species}
-          renderOption={({ item, selected, onSelect, onClose }) => (
+          renderOption={({ item, selected, onSelect, onClose, index }) => (
             <SpeciesOptionRow
               item={item}
               selected={selected}
               onSelect={onSelect}
               onClose={onClose}
               disabled={existingSpecies?.has(item.value)}
+              index={index}
             />
           )}
           speciesData={speciesData ?? undefined}

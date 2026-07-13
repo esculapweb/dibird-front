@@ -11,6 +11,7 @@ interface DefaultOptionRowProps {
   onSelect: (value: string | number | null) => void;
   onClose: () => void;
   itemHeight: number;
+  index?: number;
 }
 
 const DefaultOptionRow = ({
@@ -19,6 +20,7 @@ const DefaultOptionRow = ({
   onSelect,
   onClose,
   itemHeight,
+  index,
 }: DefaultOptionRowProps) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors, itemHeight);
@@ -30,6 +32,7 @@ const DefaultOptionRow = ({
         onSelect(item.value);
         onClose();
       }}
+      testID={index != null ? `option-row-${index}` : undefined}
       style={({ pressed }) => [
         styles.item,
         isActive && styles.itemActive,
