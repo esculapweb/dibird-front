@@ -5,16 +5,20 @@ const StatCard = ({
   value,
   label,
   onPress,
+  testID,
 }: {
   value: string | number;
   label: string;
   onPress: () => void;
+  testID?: string;
 }) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   return (
     <TouchableOpacity onPress={onPress} style={styles.statCard}>
-      <Text style={styles.statNum}>{value}</Text>
+      <Text style={styles.statNum} testID={testID}>
+        {value}
+      </Text>
       <Text style={styles.statLabel}>{label}</Text>
     </TouchableOpacity>
   );

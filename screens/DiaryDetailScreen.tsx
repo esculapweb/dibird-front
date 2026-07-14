@@ -338,6 +338,7 @@ const DiaryDetailScreen = () => {
         onPress: handleOpenEdit,
         icon: "create-outline" as const,
         disabled: !diary || updateMutation.isPending,
+        testID: "diary-edit-button",
       },
     ],
     [diary, handleOpenEdit, updateMutation.isPending],
@@ -369,6 +370,7 @@ const DiaryDetailScreen = () => {
       onPress={handleDelete}
       icon="trash-outline"
       loading={deleteMutation.isPending}
+      testID="diary-delete-button"
     >
       {t("delete_diary")}
     </FlatButtonBottom>

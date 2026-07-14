@@ -25,6 +25,8 @@ module.exports = {
     "util/**/*.{ts,tsx}",
     "hooks/**/*.{ts,tsx}",
     "components/**/*.{ts,tsx}",
+    "services/sync/**/*.{ts,tsx}",
+    "store/**/*.{ts,tsx}",
     "!**/*.d.ts",
   ],
 };

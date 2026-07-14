@@ -271,6 +271,7 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
                   ]}
                   onPress={handleConfirm}
                   disabled={isConfirmDisabled}
+                  testID="bottom-sheet-confirm-button"
                 >
                   {isLoading ? (
                     <ActivityIndicator
@@ -289,7 +290,11 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
                   )}
                 </Pressable>
 
-                <Pressable style={styles.secondaryButton} onPress={dismiss}>
+                <Pressable
+                  style={styles.secondaryButton}
+                  onPress={dismiss}
+                  testID="bottom-sheet-cancel-button"
+                >
                   <Text
                     style={[
                       styles.secondaryText,

@@ -46,6 +46,11 @@ const PlaceCard = memo(({ item, index }: {item: PlaceItem, index: number}) => {
           <View style={styles.titleRight}>
             {item._pendingSync && (
               <Ionicons
+                testID={
+                  item._pendingSync === "error"
+                    ? "place-sync-error-icon"
+                    : "place-sync-pending-icon"
+                }
                 name={
                   item._pendingSync === "error"
                     ? "warning-outline"

@@ -74,6 +74,7 @@ const Sections = ({ data }: { data: DashboardStat }) => {
                     ]}
                     activeOpacity={0.8}
                     onPress={() => navigation.navigate(sec.key)}
+                    testID={`section-${sec.key}`}
                   >
                     {sec.showBadge && data.diaries > 0 && (
                       <View

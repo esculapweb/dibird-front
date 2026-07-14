@@ -26,6 +26,7 @@ const QuickActions = ({ filters }: {filters: Filters}) => {
               returnMode: "back",
             })
           }
+          testID="quick-action-diary"
         >
           <Ionicons name="book" size={22} color={Colors.textOpposite} />
           <Text style={[styles.qbtnText, { color: Colors.textOpposite }]}>

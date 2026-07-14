@@ -20,6 +20,7 @@ interface FlatButtonBottomProps {
   loading?: boolean;
   savedLabel?: string;
   disabled?: boolean;
+  testID?: string;
 }
 
 const FlatButtonBottom = ({
@@ -30,6 +31,7 @@ const FlatButtonBottom = ({
   loading,
   savedLabel,
   disabled = false,
+  testID,
 }: FlatButtonBottomProps) => {
   const { Colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -51,6 +53,7 @@ const FlatButtonBottom = ({
     <Pressable
       onPress={onPress}
       disabled={disabled}
+      testID={testID}
       style={({ pressed }) => [
         styles.flatButtonContainer,
         pressed && styles.pressed,

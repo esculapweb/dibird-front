@@ -183,6 +183,7 @@ const DiaryEditorScreen = () => {
         disabled: isEditMode
           ? updateDiaryMutation.isPending
           : createDiaryMutation.isPending,
+        testID: "diary-save-button",
       },
     ],
     [

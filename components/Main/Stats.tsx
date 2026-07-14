@@ -41,11 +41,13 @@ const Stats = ({
         value={data.observations}
         label={t("observations")}
         onPress={() => navigation.navigate("Observations")}
+        testID="observations-stat-value"
       />
       <StatCard
         value={data.diaries}
         label={t("diaries")}
         onPress={() => navigation.navigate("Diaries")}
+        testID="diaries-stat-value"
       />
       <StatCard
         value={`#${data.rank}`}

@@ -1,0 +1,280 @@
+# Device-level offline test: full create -> update -> delete lifecycle for
+# a Diary, each step done while the OS is actually in airplane mode, with a
+# reconnect in between each to verify the sync completes. See
+# offline-create-observation.yaml for the full rationale (Android-only, real
+# OS-level toggleAirplaneMode, no dev-only network override, session-reuse
+# strategy, count-based delete verification, and every shared bootstrap
+# quirk this flow mirrors one-for-one), following how services/sync/diarySync.ts
+# is itself described as a mirror of observationSync.ts.
+#
+# Unlike Observation, DiaryEditorScreen only requires territory/date_time
+# (useEditorForm's requiredFields), both already pre-filled — territory from
+# QuickActions' defaultTerritory (the profile's own territory, set by
+# initGlobalFilters on login) and date_time defaulting to "now" — so the
+# form is saveable immediately with no extra taps.
+#
+# appId is the single Android package used for every build variant
+# (com.dibird.app in app.config.js).
+#
+# Run with:
+#   npm run e2e:android -- .maestro/offline-create-diary.yaml
+appId: com.dibird.app
+---
+# No clearState: session reuse, same reasoning as
+# offline-create-observation.yaml's preamble — a full re-login only ever
+# runs on the very first flow of a session; every flow after that restores
+# straight to a logged-in MainScreen from a warm relaunch. Also means the
+# local mutation-queue db is NOT reset between flows — this flow's own
+# create->update->delete cycle is expected to net to zero on its own.
+- launchApp
+
+# Expo dev-client shows its own "pick a dev server" launcher screen on every
+# cold start before it loads the app's JS bundle.
+#
+# HOST-SPECIFIC: this must be the host machine's actual LAN IP (verify with
+# `ifconfig`/`ipconfig`), not the generic Android-emulator loopback alias
+# 10.0.2.2 — that alias only forwards to the host's own localhost, and this
+# app's API base URL (EXPO_PUBLIC_BASE_URL, baked in at build time) is
+# apparently configured against the host's real LAN address, not localhost,
+# so login only succeeds when the emulator reaches Metro the same way.
+# Update this if the host's IP changes (e.g. switching networks).
+# Recently-opened dev server entry — populated once session reuse kicks in
+# (every run after the very first, since we no longer clearState). Tap it
+# directly by its remembered URL instead of retyping the same one; matches
+# by IP rather than the "DiBird (Dev)" label since that same text also
+# appears in this screen's own header, and matching parens in a name would
+# need regex escaping anyway. Optional: a genuinely first-ever run (or one
+# after a manual app-data clear) has nothing here yet, so this just no-ops
+# and the type-URL fallback below handles it instead.
+- tapOn:
+    text: "192.168.0.102:8081"
+    optional: true
+
+- tapOn:
+    below: "Then, select the local server when it appears here."
+    optional: true
+- inputText: "exp://192.168.0.102:8081"
+- tapOn:
+    text: "Connect"
+    optional: true
+# Metro takes a few seconds to reconnect and load the JS bundle after this
+# tap — long enough that the plain waitForAnimationToEnd below wasn't
+# enough on Android (observed: the "Continue with email"/"Continue" checks
+# ran while still on the native "Connecting to the development server..."
+# toast and silently no-opped). Wait for that toast to actually clear first.
+- extendedWaitUntil:
+    notVisible: ".*Connecting to the development server.*"
+    timeout: 20000
+- waitForAnimationToEnd
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Tools button"
+    commands:
+      - tapOn:
+          text: "Tools button"
+      - back
+
+- runFlow:
+    when:
+      visible: ".*Continue with email.*"
+    commands:
+      - tapOn: ".*Continue with email.*"
+      - tapOn:
+          id: "email-input"
+      - setClipboard: "${TEST_EMAIL}"
+      - pasteText
+      - tapOn:
+          id: "password-input"
+      - tapOn:
+          id: "password-input-toggle-visibility"
+      - tapOn:
+          id: "password-input"
+      - setClipboard: "${TEST_PASSWORD}"
+      - pasteText
+      # Plain `back` navigates the stack (popped us to Welcome in testing)
+      # rather than just dismissing the keyboard on this screen, and
+      # hideKeyboard errors on this custom Input — tap a static (non-
+      # interactive) text element instead to defocus without navigating.
+      - tapOn:
+          text: "Welcome back"
+          optional: true
+      - tapOn:
+          id: "login-submit-button"
+      - waitForAnimationToEnd
+      - tapOn:
+          text: "Not Now"
+          optional: true
+# Give MainScreen's initial render a real chance to land first — see
+# offline-create-observation.yaml's equivalent comment for the cold-start
+# race this avoids (a premature back press here can exit the app entirely).
+- extendedWaitUntil:
+    visible:
+      id: "quick-action-observation"
+    timeout: 15000
+    optional: true
+# React Navigation restores whatever screen was open when the app was last
+# backgrounded/killed on a warm relaunch — see
+# offline-create-observation.yaml's equivalent comment for why this pops
+# back to MainScreen first (bounded, conditional) instead of assuming we
+# land there directly.
+- runFlow:
+    when:
+      notVisible:
+        id: "quick-action-observation"
+    commands:
+      - back
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible:
+            id: "quick-action-observation"
+          timeout: 4000
+          optional: true
+- runFlow:
+    when:
+      notVisible:
+        id: "quick-action-observation"
+    commands:
+      - back
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible:
+            id: "quick-action-observation"
+          timeout: 4000
+          optional: true
+- runFlow:
+    when:
+      notVisible:
+        id: "quick-action-observation"
+    commands:
+      - back
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible:
+            id: "quick-action-observation"
+          timeout: 4000
+          optional: true
+- extendedWaitUntil:
+    visible:
+      id: "quick-action-observation"
+    timeout: 15000
+
+# Plain assertVisible times out too fast for the login POST round-trip
+# (observed: still on the Login form with credentials filled in when the
+# original bare assertVisible ran) — give it a real budget. Waits on the
+# stat card's own testID rather than ".*Observations.*" text — see
+# offline-create-observation.yaml's equivalent comment for why (that regex
+# also matches the Sections grid label, which renders before the
+# DashboardStat fetch this flow needs settled for copyTextFrom below).
+- extendedWaitUntil:
+    visible:
+      id: "diaries-stat-value"
+    timeout: 20000
+
+# Capture the current (server-truth) Diaries count before doing anything —
+# see offline-create-observation.yaml's equivalent comment for why this is
+# the real proof the delete at the end actually reaches the server, not
+# just that its confirm dialog was tapped.
+- copyTextFrom:
+    id: "diaries-stat-value"
+# maestro.copiedText is backed by the OS clipboard, not a dedicated
+# "last copyTextFrom result" slot — stash it in Maestro's independent
+# `output` store immediately so a later setClipboard/pasteText elsewhere in
+# this flow (or one added later) can't silently clobber it before the final
+# count check. See offline-create-place.yaml's equivalent comment for the
+# concrete failure this caused there.
+- evalScript: ${output.diaryBaselineCount = maestro.copiedText}
+
+# ---- CREATE, offline ----
+- toggleAirplaneMode
+
+- tapOn:
+    id: "quick-action-diary"
+- tapOn:
+    id: "diary-save-button"
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - back
+      - tapOn:
+          id: "diary-save-button"
+
+# Local-first create lands straight on the (temp-id) detail screen even
+# offline — used here as a wait gate before `back`, same reasoning as
+# offline-create-observation.yaml.
+- extendedWaitUntil:
+    visible: ".*Delete diary.*"
+    timeout: 10000
+- back
+- tapOn:
+    text: "Diaries"
+- assertVisible:
+    id: "diary-sync-pending-icon"
+
+# Tap the pending-sync icon itself to reopen the detail screen — reliable
+# only before reconnecting, see offline-create-observation.yaml's comment
+# on why (a pending create is always prepended to page 1; once synced it
+# sorts wherever normal order places it).
+- tapOn:
+    id: "diary-sync-pending-icon"
+
+- toggleAirplaneMode
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# ---- UPDATE, offline ----
+- toggleAirplaneMode
+- tapOn:
+    id: "diary-edit-button"
+- waitForAnimationToEnd
+# Toggle the privacy switch (defaults to "Public" for a freshly created
+# diary) — a deterministic, position-independent field to assert against
+# afterward, same reasoning as offline-create-observation.yaml.
+- tapOn:
+    text: "Public"
+- tapOn:
+    id: "diary-save-button"
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - back
+      - tapOn:
+          id: "diary-save-button"
+- assertVisible: "Private"
+
+- toggleAirplaneMode
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# ---- DELETE, offline ----
+- toggleAirplaneMode
+- tapOn:
+    id: "diary-delete-button"
+# The confirm sheet slides up asynchronously — see offline-create-place.yaml's
+# equivalent comment for the race this guards against on a slower run.
+- extendedWaitUntil:
+    visible:
+      id: "bottom-sheet-confirm-button"
+    timeout: 5000
+- tapOn:
+    id: "bottom-sheet-confirm-button"
+# Delete's onSuccess navigates back to the Diaries list this detail screen
+# was opened from (pushed via the "Diaries" StatCard tap above) — not
+# Observations, unlike offline-create-observation.yaml's equivalent step.
+- assertVisible: ".*Diaries.*"
+
+- toggleAirplaneMode
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# The real proof the delete synced to the server, not just that its confirm
+# dialog was tapped — see offline-create-observation.yaml's equivalent.
+- back
+- assertVisible:
+    id: "diaries-stat-value"
+    text: ${output.diaryBaselineCount}

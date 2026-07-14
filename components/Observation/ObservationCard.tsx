@@ -66,6 +66,11 @@ const ObservationCard = memo(
               <View style={styles.rightTop}>
                 {item._pendingSync && (
                   <Ionicons
+                    testID={
+                      item._pendingSync === "error"
+                        ? "observation-sync-error-icon"
+                        : "observation-sync-pending-icon"
+                    }
                     name={
                       item._pendingSync === "error"
                         ? "warning-outline"

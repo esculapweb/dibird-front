@@ -703,7 +703,25 @@ export const fetchPlaces = async (
     page,
     {},
     undefined,
-    { table: placesListCacheTable, maxEntries: MAX_ENTRIES },
+    {
+      table: placesListCacheTable,
+      maxEntries: MAX_ENTRIES,
+      // Offline with nothing cached yet for this exact query (e.g. the very
+      // first load of the Places screen while offline, right after signup):
+      // if there's a locally pending place create/update/delete, applyOverlay
+      // below still has something to show, so hand it an empty base instead
+      // of letting the error hide it — same reasoning as fetchDiaries. Only
+      // kicks in when the overlay is non-empty, so this never claims "zero
+      // places" when the truth is merely "never cached".
+      deriveFallback: () => {
+        const overlay = placeRepository.getOverlay();
+        const hasOverlay =
+          overlay.pendingCreates.length > 0 ||
+          overlay.patchesById.size > 0 ||
+          overlay.deletedIds.size > 0;
+        return hasOverlay ? emptyPaginatedResponse<PlaceItem>() : null;
+      },
+    },
     requestOnlyParams,
   );
 
@@ -716,12 +734,6 @@ export const fetchObservations = async (
   search?: string,
   page?: number,
 ): Promise<PaginatedResponse<ObservationItem>> => {
-  // No fallback to a synthetic empty response here: if there's truly nothing
-  // cached for this exact query, we have no way to tell "you have zero
-  // observations" apart from "this view was never cached" — showing an empty
-  // list plus just the pending item would look like the rest of the data
-  // disappeared. Let the normal offline error surface instead; the pending
-  // item is still safe locally and reachable from its own detail screen.
   const data = await fetchAbstract<PaginatedResponse<ObservationItem>>(
     "/myapi/observation2/",
     filters,
@@ -730,7 +742,30 @@ export const fetchObservations = async (
     page,
     {},
     undefined,
-    { table: observationsListCacheTable, maxEntries: MAX_ENTRIES },
+    {
+      table: observationsListCacheTable,
+      maxEntries: MAX_ENTRIES,
+      // Offline with nothing cached yet for this exact query (e.g. the very
+      // first load of the Observations screen while offline, right after
+      // signup): same reasoning/tradeoff as fetchDiaries — a locally pending
+      // create/update/delete is still shown via an empty base instead of
+      // letting the error hide it. This only kicks in when the overlay is
+      // non-empty, so it never claims "zero observations" when the truth is
+      // merely "never cached" for this exact query. The remaining risk this
+      // accepts (same one fetchDiaries already accepts): a user with many
+      // already-synced observations cached under a *different* filter/sort/
+      // page than the current one would see just the pending item here,
+      // which could misleadingly read as "the rest of my data disappeared"
+      // rather than "this specific view was never loaded."
+      deriveFallback: () => {
+        const overlay = observationRepository.getOverlay();
+        const hasOverlay =
+          overlay.pendingCreates.length > 0 ||
+          overlay.patchesById.size > 0 ||
+          overlay.deletedIds.size > 0;
+        return hasOverlay ? emptyPaginatedResponse<ObservationItem>() : null;
+      },
+    },
   );
 
   return observationRepository.applyOverlay(data, page ?? 1);

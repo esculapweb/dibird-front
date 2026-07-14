@@ -18,7 +18,9 @@ const HeaderTitleWithBadge = ({
       </Text>
       {badgeCount !== undefined && (
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>{badgeCount}</Text>
+          <Text style={styles.badgeText} testID="list-header-badge-count">
+            {badgeCount}
+          </Text>
         </View>
       )}
     </View>

@@ -146,6 +146,7 @@ const ObservationDetailScreen = () => {
           }),
         icon: "create-outline" as const,
         disabled: !observation || updateMutation.isPending,
+        testID: "observation-edit-button",
       },
     ],
     [observation, updateMutation.isPending, navigation],
@@ -208,6 +209,7 @@ const ObservationDetailScreen = () => {
       onPress={handleDelete}
       icon="trash-outline"
       loading={deleteMutation.isPending}
+      testID="observation-delete-button"
     >
       {t("delete_observation")}
     </FlatButtonBottom>

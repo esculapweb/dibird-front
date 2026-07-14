@@ -1,0 +1,404 @@
+# Device-level offline test: full create -> update -> delete lifecycle for
+# a Place, each step done while the OS is actually in airplane mode, with a
+# reconnect in between each to verify the sync completes. See
+# offline-create-observation.yaml for the full rationale (Android-only, real
+# OS-level toggleAirplaneMode, no dev-only network override, session-reuse
+# strategy, and every shared bootstrap quirk this flow mirrors one-for-one).
+#
+# Verified end-to-end on a Pixel 9 Pro emulator.
+# - PlaceEditorScreen auto-triggers a GPS fix on mount
+#   (hooks/Place/usePlaceLocation.ts) — needs real permissions/network to
+#   land at all on this emulator setup, and there's no dedicated "done"
+#   signal to assert on today (see the FLAG comment below on the wait used
+#   instead). It also fires a reverse-geocode off that fix, but CREATE below
+#   no longer waits on or depends on that: territory is picked manually from
+#   the dropdown, exercising the flow the fix in PlaceForm.tsx (seeding the
+#   territory dropdown from the saved value in edit mode, not a
+#   network-dependent geocode) was written for.
+# - setLocation below pins the mock GPS fix to Paris, France — no longer
+#   load-bearing for territory (picked manually now), just a deterministic,
+#   valid coordinate; without it the emulator's default mock location still
+#   resolves to *some* real-world spot (observed: Belarus), which is fine
+#   for lat/lng but less predictable to eyeball on failure.
+# - Unlike Observation/Diary, Place has no DashboardStat/StatCard entry on
+#   MainScreen to prove a delete reached the server — instead this uses the
+#   Locations list's own header badge count (ListScreen's
+#   HeaderTitleWithBadge), which reflects data.pages[0].pagination.count —
+#   real server truth once nothing is pending (see the count comment near
+#   the end of this flow).
+#
+# appId is the single Android package used for every build variant
+# (com.dibird.app in app.config.js).
+#
+# Run with:
+#   npm run e2e:android -- .maestro/offline-create-place.yaml
+appId: com.dibird.app
+---
+# Grants location permission up front via Maestro's own permissions config,
+# rather than trying to tap through the native "Allow while using the app" /
+# "Only this time" / "Deny" dialog (button text is Android-version/locale
+# dependent) — PlaceEditorScreen calls locateMe() unconditionally on mount
+# for a new place, and a denied/undecided permission leaves lat/lng
+# unresolved, which blocks saving entirely (a required field, same as
+# territory — picked manually below instead of depending on this fix).
+#
+# No clearState: session reuse, same reasoning as
+# offline-create-observation.yaml's preamble — a full re-login only ever
+# runs on the very first flow of a session; every flow after that restores
+# straight to a logged-in MainScreen from a warm relaunch.
+- launchApp:
+    permissions:
+      location: allow
+
+# Pin the mock GPS fix to Paris, France before anything else runs — see the
+# header comment above for why (a deterministic, valid coordinate; no longer
+# load-bearing for territory, which CREATE now picks manually below).
+- setLocation:
+    latitude: 48.8566
+    longitude: 2.3522
+
+# Expo dev-client's "pick a dev server" launcher screen — types the Metro
+# URL directly. HOST-SPECIFIC: this must be the host's actual LAN IP, not
+# the generic 10.0.2.2 emulator loopback alias — see
+# offline-create-observation.yaml for why. Update if the host's IP changes.
+# Recently-opened dev server entry — populated once session reuse kicks in
+# (every run after the very first, since we no longer clearState). Tap it
+# directly by its remembered URL instead of retyping the same one; matches
+# by IP rather than the "DiBird (Dev)" label since that same text also
+# appears in this screen's own header, and matching parens in a name would
+# need regex escaping anyway. Optional: a genuinely first-ever run (or one
+# after a manual app-data clear) has nothing here yet, so this just no-ops
+# and the type-URL fallback below handles it instead.
+- tapOn:
+    text: "192.168.0.102:8081"
+    optional: true
+
+- tapOn:
+    below: "Then, select the local server when it appears here."
+    optional: true
+- inputText: "exp://192.168.0.102:8081"
+- tapOn:
+    text: "Connect"
+    optional: true
+# Metro takes a few seconds to reconnect and load the JS bundle after this
+# tap — long enough that the plain waitForAnimationToEnd below wasn't
+# enough on Android (observed: the "Continue with email"/"Continue" checks
+# ran while still on the native "Connecting to the development server..."
+# toast and silently no-opped). Wait for that toast to actually clear first.
+- extendedWaitUntil:
+    notVisible: ".*Connecting to the development server.*"
+    timeout: 20000
+- waitForAnimationToEnd
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Tools button"
+    commands:
+      - tapOn:
+          text: "Tools button"
+      - back
+
+- runFlow:
+    when:
+      visible: ".*Continue with email.*"
+    commands:
+      - tapOn: ".*Continue with email.*"
+      - tapOn:
+          id: "email-input"
+      - setClipboard: "${TEST_EMAIL}"
+      - pasteText
+      - tapOn:
+          id: "password-input"
+      - tapOn:
+          id: "password-input-toggle-visibility"
+      - tapOn:
+          id: "password-input"
+      - setClipboard: "${TEST_PASSWORD}"
+      - pasteText
+      # Plain `back` navigates the stack (popped us to Welcome in testing)
+      # rather than just dismissing the keyboard on this screen, and
+      # hideKeyboard errors on this custom Input — tap a static (non-
+      # interactive) text element instead to defocus without navigating.
+      - tapOn:
+          text: "Welcome back"
+          optional: true
+      - tapOn:
+          id: "login-submit-button"
+      - waitForAnimationToEnd
+      - tapOn:
+          text: "Not Now"
+          optional: true
+# Give MainScreen's initial render a real chance to land first — see
+# offline-create-observation.yaml's equivalent comment for the cold-start
+# race this avoids (a premature back press here can exit the app entirely).
+- extendedWaitUntil:
+    visible:
+      id: "quick-action-observation"
+    timeout: 15000
+    optional: true
+# React Navigation restores whatever screen was open when the app was last
+# backgrounded/killed on a warm relaunch — see
+# offline-create-observation.yaml's equivalent comment for why this pops
+# back to MainScreen first (bounded, conditional) instead of assuming we
+# land there directly (observed: this flow reopened straight onto the
+# Locations list left over from a previous run).
+- runFlow:
+    when:
+      notVisible:
+        id: "quick-action-observation"
+    commands:
+      - back
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible:
+            id: "quick-action-observation"
+          timeout: 4000
+          optional: true
+- runFlow:
+    when:
+      notVisible:
+        id: "quick-action-observation"
+    commands:
+      - back
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible:
+            id: "quick-action-observation"
+          timeout: 4000
+          optional: true
+- runFlow:
+    when:
+      notVisible:
+        id: "quick-action-observation"
+    commands:
+      - back
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible:
+            id: "quick-action-observation"
+          timeout: 4000
+          optional: true
+- extendedWaitUntil:
+    visible:
+      id: "quick-action-observation"
+    timeout: 15000
+
+- tapOn:
+    id: "section-Places"
+# The badge count needs the list's first page to actually load before it
+# renders — same class of race as offline-create-observation.yaml's
+# stat-value wait (a plain screen-title check would pass before the real
+# data has arrived).
+- extendedWaitUntil:
+    visible:
+      id: "list-header-badge-count"
+    timeout: 15000
+# Capture the current (server-truth) Locations count before doing anything
+# — see offline-create-observation.yaml's equivalent comment for why this
+# is the real proof the delete at the end actually reaches the server.
+- copyTextFrom:
+    id: "list-header-badge-count"
+# maestro.copiedText is backed by the OS clipboard, not a dedicated
+# "last copyTextFrom result" slot — this flow's own UPDATE step later does
+# setClipboard+pasteText to rename the place, which silently clobbers it
+# before the final count check (observed: the last assertion compared
+# against "Offline Test Place Updated" instead of the baseline count).
+# Stash it in Maestro's independent `output` store instead.
+- evalScript: ${output.placeBaselineCount = maestro.copiedText}
+
+# ---- CREATE ----
+# Open the editor while still ONLINE — locateMe() fires on mount and needs
+# real network to land a GPS fix at all on this emulator setup (opening the
+# screen already offline was tried and breaks it: locateMe() never
+# resolves, coords stay empty, and lat/lng — a required field — can't be
+# saved). We only need that fix, not the reverse-geocode derived from it:
+# territory is now picked manually from the dropdown below (see CountriesDropdown
+# comment), so unlike before, this flow doesn't need to sit online waiting
+# for the geocode to resolve — go offline the moment coords land.
+- tapOn:
+    id: "list-add-button"
+
+# FLAG (unverified): "latitude-input" is visible the instant the screen
+# mounts, empty or not, so this extendedWaitUntil does NOT actually gate on
+# locateMe() resolving — it's a placeholder, not a real wait. There's no
+# signal today for "GPS fix landed" (a real value, not just an empty input,
+# mounting) to assert on. Replace this with a real wait once you can
+# observe the actual timing on a device — e.g. poll latText's rendered value
+# for a non-empty/non-zero string via Maestro's text-match selector, or add
+# a dedicated "location-resolved" testID toggled once usePlaceLocation's fix
+# lands.
+- extendedWaitUntil:
+    visible:
+      id: "latitude-input"
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Go offline for real now — right after the GPS fix, rather than waiting
+# until the name is typed and the country picked (as this flow used to).
+# Everything from here on, including the reverse-geocode this triggers in
+# the background (usePlaceLocation.ts's geocodeTimeout) and the territory
+# dropdown fetch below, runs exactly as a real offline user would see it:
+# the geocode fetch simply fails silently (caught in usePlaceLocation.ts,
+# __DEV__-only warning) since territory is filled manually instead, not
+# derived from it.
+- toggleAirplaneMode
+- tapOn:
+    id: "place-name-input"
+# The field starts pre-filled with the reverse-geocoded address when that
+# resolved in time (e.g. "City Hall Plaza, Paris") — erase it first, or
+# pasteText just appends after it (observed: saved as "City Hall Plaza,
+# ParisOffline Test Place"). Offline, the geocode never resolves at all, so
+# this is now just defensive.
+- eraseText: 50
+- setClipboard: "Offline Test Place"
+- pasteText
+# Dismiss the soft keyboard without navigating (hideKeyboard is unsupported
+# on Android for this form). Plain `back` is unreliable here — whether it
+# just closes the IME or pops the screen depends on the IME's focus state
+# at that exact instant (observed: on one run it silently popped
+# PlaceEditorScreen straight back to the Locations list, before save was
+# even tapped). Tap a static, non-interactive label instead — same fix as
+# the login screen's "Welcome back" tap earlier in this flow.
+- tapOn:
+    text: "Latitude"
+
+# Pick the territory manually instead of relying on the reverse-geocode
+# auto-fill (which needs network, and is what CREATE used to wait online
+# for) — matches how offline-create-observation.yaml picks its species from
+# a dropdown while offline. This works offline because MainScreen
+# (screens/MainScreen.tsx) already warms the exact same
+# ["CountriesDropdown", language, sort] react-query cache entry while still
+# online, right after login, well before this screen is ever reached —
+# staleTime/gcTime are 24h and refetchOnMount is false
+# (hooks/useDropdownQuery.ts), so PlaceForm's identical query reads that
+# cached list here with no new fetch. Picks France specifically (not just
+# the first option, unlike the observation flow's species pick) to match
+# the test account's default territory filter used by the final count
+# assertion at the end of this flow.
+- tapOn:
+    id: "dropdown-trigger-CountriesDropdown"
+- tapOn:
+    text: "Search..."
+- setClipboard: "France"
+- pasteText
+- extendedWaitUntil:
+    visible:
+      id: "option-row-0"
+    timeout: 5000
+- tapOn:
+    id: "option-row-0"
+
+- tapOn:
+    id: "place-save-button"
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - back
+      - tapOn:
+          id: "place-save-button"
+
+# A successful save replaces the editor with PlaceDetailScreen in the stack
+# (rather than pushing it) — used here as a wait gate before `back`, same
+# reasoning as offline-create-observation.yaml (so `back` doesn't fire
+# before the save-then-navigate finishes).
+- assertVisible: "Offline Test Place"
+- back
+- assertVisible:
+    id: "place-sync-pending-icon"
+
+# Tap the pending-sync icon itself to reopen the detail screen — reliable
+# only before reconnecting, see offline-create-observation.yaml's comment
+# on why (a pending create is always prepended to page 1; once synced it
+# sorts wherever normal order places it).
+- tapOn:
+    id: "place-sync-pending-icon"
+
+- toggleAirplaneMode
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# ---- UPDATE, offline ----
+# Rename the place (rather than toggling the header's favourite star,
+# which has no text-based signal to assert against afterward) — a
+# deterministic, position-independent field to confirm the update applied.
+- toggleAirplaneMode
+- tapOn:
+    id: "place-edit-button"
+- waitForAnimationToEnd
+# Regression check: editing an offline-created place used to leave the
+# Country field showing the placeholder instead of the saved territory.
+# PlaceForm's dropdown only ever seeded itself from a reverse-geocode of
+# the current pin (network-dependent), never from the place's own saved
+# territory — so it silently stayed blank while offline even though the
+# correct value was already sitting in formData and would still save fine.
+# See PlaceForm.tsx's isEditMode-gated seeding effect.
+- assertVisible:
+    id: "dropdown-trigger-CountriesDropdown"
+    text: "France"
+- tapOn:
+    id: "place-name-input"
+- eraseText: 50
+- setClipboard: "Offline Test Place Updated"
+- pasteText
+# See the CREATE section's comment on why a static-label tap replaces
+# `back` for keyboard dismiss here.
+- tapOn:
+    text: "Latitude"
+- tapOn:
+    id: "place-save-button"
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - back
+      - tapOn:
+          id: "place-save-button"
+# Edit-mode save navigates back to this same detail screen on success —
+# assert the new name to confirm the update actually applied locally while
+# offline (an update's pending badge isn't guaranteed to be on the visible
+# page the way a create's is, same reasoning as
+# offline-create-observation.yaml).
+- assertVisible: "Offline Test Place Updated"
+
+- toggleAirplaneMode
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# ---- DELETE, offline ----
+- toggleAirplaneMode
+- tapOn:
+    id: "place-delete-button"
+# The confirm sheet slides up asynchronously — a plain tapOn right after
+# the delete-button tap raced it on a slower (cold-boot) run, landing mid-
+# animation (observed: "Delete place" only a sliver visible at the bottom
+# edge, confirm button not yet mounted/hit-testable).
+- extendedWaitUntil:
+    visible:
+      id: "bottom-sheet-confirm-button"
+    timeout: 5000
+- tapOn:
+    id: "bottom-sheet-confirm-button"
+# Delete's onSuccess navigates back to the Locations list this detail
+# screen was opened from (see the CREATE section's comment on why `back`
+# lands there and not MainScreen).
+- assertVisible: ".*Locations.*"
+
+- toggleAirplaneMode
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# The real proof the delete synced to the server, not just that its confirm
+# dialog was tapped: Place add/update/delete all invalidate the ["Places"]
+# query (see util/invalidationMap.ts), and this screen is still mounted and
+# focused, so React Query auto-refetches it once that invalidation fires
+# after reconnecting — refreshing this badge to real server truth. A
+# create+delete round trip should leave it exactly where copyTextFrom
+# captured it at the very start of this flow.
+- assertVisible:
+    id: "list-header-badge-count"
+    text: ${output.placeBaselineCount}

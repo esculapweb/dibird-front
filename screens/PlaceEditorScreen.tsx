@@ -303,6 +303,7 @@ const PlaceEditorScreen = () => {
           (isEditMode
             ? updatePlaceMutation.isPending
             : createPlaceMutation.isPending),
+        testID: "place-save-button",
       },
     ],
     [
@@ -357,6 +358,7 @@ const PlaceEditorScreen = () => {
         errors={errors}
         setErrors={setErrors}
         locationDetails={details}
+        isEditMode={isEditMode}
       />
     </Layout>
   );

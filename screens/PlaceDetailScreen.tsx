@@ -114,6 +114,7 @@ const PlaceDetailScreen = () => {
         onPress: () => navigation.navigate("PlaceEditor", { place }),
         icon: "create-outline" as const,
         disabled: !place || updateMutation.isPending,
+        testID: "place-edit-button",
       },
       {
         condition: !!place,
@@ -122,6 +123,7 @@ const PlaceDetailScreen = () => {
         tintColor: Colors.yellow,
         disabled: updateMutation.isPending || !place,
         loading: updateMutation.isPending,
+        testID: "place-favourite-button",
       },
     ],
     [
@@ -221,6 +223,7 @@ const PlaceDetailScreen = () => {
       onPress={handleDelete}
       icon="trash-outline"
       loading={deleteMutation.isPending}
+      testID="place-delete-button"
     >
       {t("delete_place")}
     </FlatButtonBottom>

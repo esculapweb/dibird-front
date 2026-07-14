@@ -30,6 +30,7 @@ interface PlaceFormProps {
   errors: Errors;
   setErrors: Dispatch<SetStateAction<Errors>>;
   locationDetails?: ReverseGeocode | null;
+  isEditMode?: boolean;
 }
 
 const PlaceForm = ({
@@ -44,6 +45,7 @@ const PlaceForm = ({
   errors,
   setErrors,
   locationDetails,
+  isEditMode,
 }: PlaceFormProps) => {
   const { t } = useTranslation();
   const styles = stylesFn();
@@ -63,7 +65,19 @@ const PlaceForm = ({
 
   const territories = queryMyCountries.data ?? [];
 
+  // Editing an existing place already knows its territory from the saved
+  // record — seed the dropdown from it directly rather than waiting on a
+  // reverse-geocode of the current pin, which needs network and would
+  // otherwise leave the field blank offline (or silently override a
+  // manually-corrected territory once it does resolve).
   useEffect(() => {
+    if (isEditMode && formData.territory) {
+      setTerritory(formData.territory);
+    }
+  }, [isEditMode, formData.territory]);
+
+  useEffect(() => {
+    if (isEditMode) return;
     const countryCode = locationDetails?.country_code;
     if (!territories.length || !countryCode) return;
 
@@ -109,6 +123,7 @@ const PlaceForm = ({
         onUpdateValue={onChangeName}
         isInvalid={!!errors.name}
         error={errors.name}
+        testID="place-name-input"
       />
 
       <View style={styles.coordsContainer}>
@@ -120,6 +135,7 @@ const PlaceForm = ({
             keyboardType="numbers-and-punctuation"
             isInvalid={!!errors.latitude}
             error={errors.latitude}
+            testID="latitude-input"
           />
         </View>
         <View style={styles.coordInputWrapper}>

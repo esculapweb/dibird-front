@@ -42,6 +42,11 @@ const DiaryCard = ({ item, index }: { item: DiaryListItem; index: number }) => {
           <View style={styles.rightTop}>
             {item._pendingSync && (
               <Ionicons
+                testID={
+                  item._pendingSync === "error"
+                    ? "diary-sync-error-icon"
+                    : "diary-sync-pending-icon"
+                }
                 name={
                   item._pendingSync === "error"
                     ? "warning-outline"

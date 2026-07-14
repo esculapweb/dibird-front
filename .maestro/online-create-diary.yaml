@@ -1,0 +1,181 @@
+# Device-level online test: full create -> update -> delete lifecycle for
+# a Diary, entirely online — the network-independent counterpart to
+# offline-create-diary.yaml. See that file (and online-create-observation.yaml)
+# for the full bootstrap rationale — this flow mirrors both exactly except
+# it never touches toggleAirplaneMode.
+#
+# appId is the single Android package used for every build variant
+# (com.dibird.app in app.config.js).
+#
+# Run with:
+#   npm run e2e:android -- .maestro/online-create-diary.yaml
+appId: com.dibird.app
+---
+- launchApp
+
+- tapOn:
+    text: "192.168.0.102:8081"
+    optional: true
+
+- tapOn:
+    below: "Then, select the local server when it appears here."
+    optional: true
+- inputText: "exp://192.168.0.102:8081"
+- tapOn:
+    text: "Connect"
+    optional: true
+- extendedWaitUntil:
+    notVisible: ".*Connecting to the development server.*"
+    timeout: 20000
+- waitForAnimationToEnd
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Tools button"
+    commands:
+      - tapOn:
+          text: "Tools button"
+      - back
+
+- runFlow:
+    when:
+      visible: ".*Continue with email.*"
+    commands:
+      - tapOn: ".*Continue with email.*"
+      - tapOn:
+          id: "email-input"
+      - setClipboard: "${TEST_EMAIL}"
+      - pasteText
+      - tapOn:
+          id: "password-input"
+      - tapOn:
+          id: "password-input-toggle-visibility"
+      - tapOn:
+          id: "password-input"
+      - setClipboard: "${TEST_PASSWORD}"
+      - pasteText
+      - tapOn:
+          text: "Welcome back"
+          optional: true
+      - tapOn:
+          id: "login-submit-button"
+      - waitForAnimationToEnd
+      - tapOn:
+          text: "Not Now"
+          optional: true
+
+# Give MainScreen's initial render a real chance to land first — see
+# offline-create-observation.yaml's equivalent comment for the cold-start
+# race this avoids (a premature back press here can exit the app entirely).
+- extendedWaitUntil:
+    visible:
+      id: "quick-action-observation"
+    timeout: 15000
+    optional: true
+- runFlow:
+    when:
+      notVisible:
+        id: "quick-action-observation"
+    commands:
+      - back
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible:
+            id: "quick-action-observation"
+          timeout: 4000
+          optional: true
+- runFlow:
+    when:
+      notVisible:
+        id: "quick-action-observation"
+    commands:
+      - back
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible:
+            id: "quick-action-observation"
+          timeout: 4000
+          optional: true
+- runFlow:
+    when:
+      notVisible:
+        id: "quick-action-observation"
+    commands:
+      - back
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible:
+            id: "quick-action-observation"
+          timeout: 4000
+          optional: true
+- extendedWaitUntil:
+    visible:
+      id: "quick-action-observation"
+    timeout: 15000
+
+- extendedWaitUntil:
+    visible:
+      id: "diaries-stat-value"
+    timeout: 20000
+- copyTextFrom:
+    id: "diaries-stat-value"
+- evalScript: ${output.diaryBaselineCount = maestro.copiedText}
+
+# ---- CREATE, online ----
+# DiaryEditorScreen only requires territory/date_time (both pre-filled —
+# see offline-create-diary.yaml's header comment), so it's saveable
+# immediately with no extra taps.
+- tapOn:
+    id: "quick-action-diary"
+- tapOn:
+    id: "diary-save-button"
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - back
+      - tapOn:
+          id: "diary-save-button"
+- extendedWaitUntil:
+    visible: ".*Delete diary.*"
+    timeout: 10000
+
+# ---- UPDATE, online ----
+- tapOn:
+    id: "diary-edit-button"
+- waitForAnimationToEnd
+- tapOn:
+    text: "Public"
+- tapOn:
+    id: "diary-save-button"
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - back
+      - tapOn:
+          id: "diary-save-button"
+- assertVisible: "Private"
+
+# ---- DELETE, online ----
+- tapOn:
+    id: "diary-delete-button"
+- extendedWaitUntil:
+    visible:
+      id: "bottom-sheet-confirm-button"
+    timeout: 5000
+- tapOn:
+    id: "bottom-sheet-confirm-button"
+- assertVisible: ".*Diaries.*"
+
+# Delete's onSuccess is a plain navigation.goBack() — since this flow opened
+# straight from MainScreen's quick action (no list screen ever pushed), that
+# goBack() lands directly back on MainScreen. See
+# online-create-observation.yaml's equivalent comment for the overshoot this
+# avoids (an extra `back` here exits the app entirely).
+- assertVisible:
+    id: "diaries-stat-value"
+    text: ${output.diaryBaselineCount}
