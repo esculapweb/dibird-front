@@ -7,19 +7,23 @@
 #
 # Verified end-to-end on a Pixel 9 Pro emulator.
 # - PlaceEditorScreen auto-triggers a GPS fix on mount
-#   (hooks/Place/usePlaceLocation.ts) — needs real permissions/network to
-#   land at all on this emulator setup, and there's no dedicated "done"
-#   signal to assert on today (see the FLAG comment below on the wait used
-#   instead). It also fires a reverse-geocode off that fix, but CREATE below
-#   no longer waits on or depends on that: territory is picked manually from
-#   the dropdown, exercising the flow the fix in PlaceForm.tsx (seeding the
+#   (hooks/Place/usePlaceLocation.ts) — needs real location permissions
+#   (granted up front below) but NOT network: it reads the OS-level mock
+#   coordinate this flow injects via setLocation directly through
+#   expo-location's getCurrentPositionAsync(), so the whole CREATE section
+#   below runs fully offline from the moment the editor opens, screen
+#   included. Only the reverse-geocode derived from that fix
+#   (usePlaceLocation.ts's geocodeTimeout) needs network, and CREATE below
+#   doesn't wait on or depend on that: territory is picked manually from the
+#   dropdown instead, exercising the same fix in PlaceForm.tsx (seeding the
 #   territory dropdown from the saved value in edit mode, not a
-#   network-dependent geocode) was written for.
+#   network-dependent geocode) this flow's UPDATE section regression-checks.
 # - setLocation below pins the mock GPS fix to Paris, France — no longer
 #   load-bearing for territory (picked manually now), just a deterministic,
-#   valid coordinate; without it the emulator's default mock location still
-#   resolves to *some* real-world spot (observed: Belarus), which is fine
-#   for lat/lng but less predictable to eyeball on failure.
+#   valid coordinate that CREATE's own assertions below confirm actually
+#   landed in the form while offline; without it the emulator's default mock
+#   location still resolves to *some* real-world spot (observed: Belarus),
+#   which would still work but be less predictable to eyeball on failure.
 # - Unlike Observation/Diary, Place has no DashboardStat/StatCard entry on
 #   MainScreen to prove a delete reached the server — instead this uses the
 #   Locations list's own header badge count (ListScreen's
@@ -32,7 +36,11 @@
 #
 # Run with:
 #   npm run e2e:android -- .maestro/offline-create-place.yaml
+#
+# tags: android — see login.yaml's equivalent comment.
 appId: com.dibird.app
+tags:
+  - android
 ---
 # Grants location permission up front via Maestro's own permissions config,
 # rather than trying to tap through the native "Allow while using the app" /
@@ -209,43 +217,46 @@ appId: com.dibird.app
 # Stash it in Maestro's independent `output` store instead.
 - evalScript: ${output.placeBaselineCount = maestro.copiedText}
 
-# ---- CREATE ----
-# Open the editor while still ONLINE — locateMe() fires on mount and needs
-# real network to land a GPS fix at all on this emulator setup (opening the
-# screen already offline was tried and breaks it: locateMe() never
-# resolves, coords stay empty, and lat/lng — a required field — can't be
-# saved). We only need that fix, not the reverse-geocode derived from it:
-# territory is now picked manually from the dropdown below (see CountriesDropdown
-# comment), so unlike before, this flow doesn't need to sit online waiting
-# for the geocode to resolve — go offline the moment coords land.
+# Go offline here — still on the Locations list, before ever opening the
+# creation screen — matching offline-create-observation.yaml/
+# offline-create-diary.yaml, which both toggle before tapping their
+# respective quick action rather than after. An earlier version of this
+# flow opened the editor online first, on the assumption that locateMe()
+# (usePlaceLocation.ts) needs real network to land a GPS fix — it doesn't:
+# it calls expo-location's getCurrentPositionAsync() directly
+# (store/location-context.tsx), reading the OS-level mock coordinate this
+# flow already injected via setLocation above, with no network involved at
+# all. Only the *reverse geocode* derived from that fix
+# (usePlaceLocation.ts's geocodeTimeout) needs network, and that was already
+# made non-load-bearing when CREATE below switched to picking territory
+# manually from a dropdown — offline, that geocode fetch now simply fails
+# silently (caught, __DEV__-only warning), exactly as a real offline user
+# would see it.
+- toggleAirplaneMode
+
+# ---- CREATE, fully offline from screen-open ----
 - tapOn:
     id: "list-add-button"
 
-# FLAG (unverified): "latitude-input" is visible the instant the screen
-# mounts, empty or not, so this extendedWaitUntil does NOT actually gate on
-# locateMe() resolving — it's a placeholder, not a real wait. There's no
-# signal today for "GPS fix landed" (a real value, not just an empty input,
-# mounting) to assert on. Replace this with a real wait once you can
-# observe the actual timing on a device — e.g. poll latText's rendered value
-# for a non-empty/non-zero string via Maestro's text-match selector, or add
-# a dedicated "location-resolved" testID toggled once usePlaceLocation's fix
-# lands.
+# "latitude-input" is visible the instant the screen mounts regardless of
+# whether locateMe() has actually resolved yet, so this alone wouldn't
+# prove the offline GPS fix landed — the text assertion right after it
+# does that: confirms the mocked coordinate this flow pinned via
+# setLocation actually populated the field while offline, not just that
+# the input exists.
 - extendedWaitUntil:
     visible:
       id: "latitude-input"
     timeout: 10000
+- assertVisible:
+    id: "latitude-input"
+    text: "48.8566"
+- assertVisible:
+    id: "longitude-input"
+    text: "2.3522"
 - waitForAnimationToEnd:
     timeout: 5000
 
-# Go offline for real now — right after the GPS fix, rather than waiting
-# until the name is typed and the country picked (as this flow used to).
-# Everything from here on, including the reverse-geocode this triggers in
-# the background (usePlaceLocation.ts's geocodeTimeout) and the territory
-# dropdown fetch below, runs exactly as a real offline user would see it:
-# the geocode fetch simply fails silently (caught in usePlaceLocation.ts,
-# __DEV__-only warning) since territory is filled manually instead, not
-# derived from it.
-- toggleAirplaneMode
 - tapOn:
     id: "place-name-input"
 # The field starts pre-filled with the reverse-geocoded address when that
@@ -336,10 +347,20 @@ appId: com.dibird.app
 # the current pin (network-dependent), never from the place's own saved
 # territory — so it silently stayed blank while offline even though the
 # correct value was already sitting in formData and would still save fine.
-# See PlaceForm.tsx's isEditMode-gated seeding effect.
-- assertVisible:
-    id: "dropdown-trigger-CountriesDropdown"
-    text: "France"
+# See PlaceForm.tsx's isEditMode-gated seeding effect — confirmed working
+# correctly (screen genuinely shows "France"). The combined id+text
+# selector this used to be written as can never match here regardless of
+# timeout, though: confirmed via `maestro hierarchy` that the ViewGroup
+# carrying resource-id "dropdown-trigger-CountriesDropdown" has an empty
+# own `text` (only a non-empty `accessibilityText`, "🇫🇷, France, ") — the
+# actual "France" string lives on a separate child Text node with no id of
+# its own (the flag emoji is a second, sibling Text node). No single node
+# has both the id and that exact text, so id+text together is not just
+# flaky here, it's unmatchable by construction — text alone is enough to
+# confirm the regression fix, and safe to assume unambiguous on this screen
+# (the only "France" text visible here; the CREATE section's country
+# search modal is a different, already-dismissed overlay).
+- assertVisible: "France"
 - tapOn:
     id: "place-name-input"
 - eraseText: 50

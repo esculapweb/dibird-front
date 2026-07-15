@@ -17,7 +17,11 @@
 #
 # Run with:
 #   npm run e2e:android -- .maestro/online-create-observation.yaml
+#
+# tags: android — see login.yaml's equivalent comment.
 appId: com.dibird.app
+tags:
+  - android
 ---
 # No clearState: session reuse — see offline-create-observation.yaml's
 # preamble for the full reasoning.

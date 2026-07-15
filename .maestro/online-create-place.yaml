@@ -9,7 +9,11 @@
 #
 # Run with:
 #   npm run e2e:android -- .maestro/online-create-place.yaml
+#
+# tags: android — see login.yaml's equivalent comment.
 appId: com.dibird.app
+tags:
+  - android
 ---
 - launchApp:
     permissions:

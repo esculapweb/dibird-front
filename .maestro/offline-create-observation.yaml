@@ -21,7 +21,13 @@
 #
 # Run with:
 #   npm run e2e:android -- .maestro/offline-create-observation.yaml
+#
+# tags: android — lets `npm run e2e`/`e2e:android` (.maestro/run.sh) filter
+# via `--include-tags` so each only picks up flows built for its own
+# platform, instead of relying on always passing an explicit flow path.
 appId: com.dibird.app
+tags:
+  - android
 ---
 # No clearState: session reuse, same reasoning as create-observation.yaml's
 # preamble — a full re-login (dev-launcher EAS-account bottom sheet, Tools

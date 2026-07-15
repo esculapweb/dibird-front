@@ -5,16 +5,23 @@
 # where device auto-detection can hang forever if a stale/unrelated Android
 # adb server happens to be running (see RELEASE_CHECKLIST.md).
 #
-# Defaults to iOS (the only platform with real flows historically). Pass
-# `android` as the first argument to target a booted Android emulator/device
-# instead — this is how the offline-*.yaml flows are run, since Maestro's
-# `toggleAirplaneMode` command (a real OS-level airplane-mode toggle,
-# needed to exercise offline sync for real) only works on Android; iOS
-# Simulators have no radio stack for it to switch. Maestro itself scans this
-# whole .maestro/ directory regardless of platform, so running against
-# Android here would also try to run the iOS-only login.yaml/
-# create-observation.yaml (appId: com.dibird.app.dev, an iOS bundle id) —
-# pass an explicit flow path as the second argument when targeting Android.
+# Defaults to iOS. Pass `android` as the first argument to target a booted
+# Android emulator/device instead — this is how the offline-*.yaml flows are
+# run, since Maestro's `toggleAirplaneMode` command (a real OS-level
+# airplane-mode toggle, needed to exercise offline sync for real) only works
+# on Android; iOS Simulators have no radio stack for it to switch.
+#
+# Maestro itself always scans the whole .maestro/ directory regardless of
+# platform, and it contains flows for both (iOS: appId com.dibird.app.dev —
+# login.yaml/create-observation.yaml; Android: appId com.dibird.app — every
+# other flow). Rather than relying on the caller to always remember an
+# explicit flow path to avoid running the wrong platform's flows against the
+# wrong app, every flow file declares its own `tags: [ios]`/`tags:
+# [android]` in its config header — `--include-tags` below filters the
+# directory scan down to just this run's platform, so both `npm run e2e` and
+# `npm run e2e:android` are safe to run bare. An explicit flow path can still
+# be passed as a second argument (Android only, see below) to narrow further
+# to one specific flow.
 set -e
 cd "$(dirname "$0")/.."
 
@@ -58,6 +65,21 @@ if [ "$PLATFORM" = "android" ]; then
     echo "No running Android emulator/device found — boot an AVD (or connect a device) first, and make sure a dev-client build is installed on it (see RELEASE_CHECKLIST.md)." >&2
     exit 1
   fi
+
+  # A prior run that crashed mid-offline-cycle (toggleAirplaneMode flips it
+  # on, then a failed assertion aborts the flow before the matching
+  # reconnect toggle) leaves the device stuck in airplane mode — every
+  # offline-*.yaml flow assumes it starts OFF (toggleAirplaneMode only flips
+  # whatever the current state is, it can't be set directly), so an
+  # undetected leftover ON state doesn't just fail that one flow again, it
+  # cascades into every *other* flow afterward too (login/Metro can't reach
+  # the network either) — observed taking down 6/6 flows in one
+  # `npm run e2e:android` batch. Force it off unconditionally before every
+  # invocation: harmless if it's already off. Only guards the *start* of this
+  # invocation — a crash mid-batch, between two flows in the same `maestro
+  # test` process, still isn't covered by this alone.
+  adb -s "$TARGET" shell cmd connectivity airplane-mode disable
+
   TARGET_PATH="${1:-.maestro}"
 else
   TARGET=$(xcrun simctl list devices 2>/dev/null | grep -i booted | grep -oE '[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}' | head -1)
@@ -70,6 +92,7 @@ fi
 
 MAESTRO_CLI_NO_ANALYTICS=1 exec maestro test \
   --device "$TARGET" \
+  --include-tags "$PLATFORM" \
   --env TEST_EMAIL="$TEST_EMAIL" \
   --env TEST_PASSWORD="$TEST_PASSWORD" \
   "$TARGET_PATH"

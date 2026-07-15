@@ -18,7 +18,11 @@
 #
 # Run with:
 #   npm run e2e:android -- .maestro/offline-create-diary.yaml
+#
+# tags: android — see login.yaml's equivalent comment.
 appId: com.dibird.app
+tags:
+  - android
 ---
 # No clearState: session reuse, same reasoning as
 # offline-create-observation.yaml's preamble — a full re-login only ever

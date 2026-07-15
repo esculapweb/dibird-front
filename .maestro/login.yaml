@@ -13,7 +13,12 @@
 #
 # Run with:
 #   maestro test --env TEST_EMAIL=... --env TEST_PASSWORD=... .maestro/login.yaml
+#
+# tags: ios — lets `npm run e2e`/`e2e:android` (.maestro/run.sh) filter via
+# `--include-tags` so each only picks up flows built for its own platform.
 appId: com.dibird.app.dev
+tags:
+  - ios
 ---
 # NOTE on text selectors below: RN buttons that pair an icon with a label
 # (e.g. the mail icon next to "Continue with email") get their accessible
@@ -50,14 +55,33 @@ appId: com.dibird.app.dev
 # onboarding tour and — by design — opens the actual dev menu rather than
 # just dismissing the tooltip, so we close that menu right after. Both steps
 # only apply to dev-client builds.
+#
+# The floating dev-tools trigger button (the same "Tools button" tapped
+# here) sits on top of this app's own header buttons on this screen size
+# (create-observation.yaml hits the identical collision on its save
+# button) — left enabled, it silently reopens the native "DiBird (Dev)"
+# menu on a later unrelated tap and blocks the rest of the flow (observed:
+# a stray open menu over the splash screen at the point of failure). Once
+# this menu is open, permanently disable it via its "Tools button" switch
+# (tapped by exact point — confirmed via `maestro hierarchy` that the
+# switch is a separate, unlabeled element to the right of that text, not
+# the label itself) before dismissing via its "Close" button — not
+# Maestro's `back` command, which iOS has no system-level gesture for.
 - tapOn:
     text: "Continue"
     optional: true
 - waitForAnimationToEnd
-- tapOn:
-    text: "Close"
-    optional: true
-- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Tools button"
+    commands:
+      - tapOn:
+          text: "Tools button"
+      - waitForAnimationToEnd
+      - tapOn:
+          point: "85%,95%"
+      - tapOn:
+          text: "Close"
 
 # Phase 1: deliberately wrong password first — proves the login attempt is
 # actually submitted and rejected, rather than just checking the welcome

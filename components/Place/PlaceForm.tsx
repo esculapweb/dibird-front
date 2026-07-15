@@ -146,6 +146,7 @@ const PlaceForm = ({
             keyboardType="numbers-and-punctuation"
             isInvalid={!!errors.longitude}
             error={errors.longitude}
+            testID="longitude-input"
           />
         </View>
       </View>

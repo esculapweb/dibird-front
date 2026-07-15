@@ -41,7 +41,11 @@
 #
 # Run with:
 #   maestro test --env TEST_EMAIL=... --env TEST_PASSWORD=... .maestro/create-observation.yaml
+#
+# tags: ios — see login.yaml's equivalent comment.
 appId: com.dibird.app.dev
+tags:
+  - ios
 ---
 - launchApp
 
@@ -53,10 +57,13 @@ appId: com.dibird.app.dev
     text: "Continue"
     optional: true
 - waitForAnimationToEnd
-- tapOn:
-    text: "Close"
-    optional: true
-- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Tools button"
+    commands:
+      - tapOn:
+          text: "Tools button"
+      - back
 
 # Fallback only: runs the full email+password entry when no valid session
 # was restored (Welcome screen still showing). Skipped entirely on the
@@ -85,7 +92,76 @@ appId: com.dibird.app.dev
       - tapOn:
           text: "Not Now"
           optional: true
-- assertVisible: ".*Observations.*"
+
+# React Navigation restores whatever screen was open when the app was last
+# backgrounded/killed on a warm relaunch (no clearState, same reasoning as
+# the header comment above) — it does NOT necessarily land on MainScreen,
+# it can reopen directly on whatever screen a previous run left the app on
+# (observed: opened straight onto the Rating screen). Give MainScreen's
+# initial render a real chance to land first (optional, so it doesn't fail
+# outright if we're genuinely on some other screen), then pop back a
+# bounded number of times — not blindly, since tapping this at the stack
+# root would just no-op (no back button rendered there), settling briefly
+# after each tap so one that DID reach MainScreen isn't immediately
+# followed by another premature tap while it's still mid-render.
+#
+# Uses id: "BackButton" (react-navigation's native-stack header back button,
+# rendered by both AppStack and AuthStack via headerBackButtonDisplayMode —
+# see navigation/AppStack.tsx/AuthStack.tsx — so it's present on any pushed
+# screen, not app-authored) rather than Maestro's generic `back` command:
+# unlike Android, iOS has no system-level back button/gesture for `back` to
+# invoke — see offline-create-observation.yaml's equivalent comment (the
+# Android counterpart of this exact fix) for the underlying navigation-
+# restore issue this addresses.
+- extendedWaitUntil:
+    visible:
+      id: "quick-action-observation"
+    timeout: 15000
+    optional: true
+- runFlow:
+    when:
+      notVisible:
+        id: "quick-action-observation"
+    commands:
+      - tapOn:
+          id: "BackButton"
+          optional: true
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible:
+            id: "quick-action-observation"
+          timeout: 4000
+          optional: true
+- runFlow:
+    when:
+      notVisible:
+        id: "quick-action-observation"
+    commands:
+      - tapOn:
+          id: "BackButton"
+          optional: true
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible:
+            id: "quick-action-observation"
+          timeout: 4000
+          optional: true
+- runFlow:
+    when:
+      notVisible:
+        id: "quick-action-observation"
+    commands:
+      - tapOn:
+          id: "BackButton"
+          optional: true
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible:
+            id: "quick-action-observation"
+          timeout: 4000
+          optional: true
+- assertVisible:
+    id: "quick-action-observation"
 
 - tapOn:
     id: "quick-action-observation"
@@ -103,6 +179,37 @@ appId: com.dibird.app.dev
     id: "option-row-0"
 - tapOn:
     id: "observation-save-button"
+# The floating dev-tools trigger button sits right on top of the header's
+# own save button on this screen size (same issue as the Android flows deal
+# with — see offline-create-observation.yaml's equivalent guard): every tap
+# there opens the native "DiBird (Dev)" menu instead of submitting, not just
+# a one-off mistap — confirmed by this recurring identically on a retry
+# that only dismissed and re-tapped without disabling the trigger. Detected
+# via "Reload", unique to that menu. Toggles the "Tools button" switch off
+# first (permanently hides the floating trigger for the rest of the run,
+# same as Android's proactive disable), then dismisses via the sheet's
+# "Close" button (accessibility text, confirmed via `maestro hierarchy`)
+# rather than Android's `back` — iOS has no system-level back gesture for
+# Maestro's `back` command to invoke.
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      # The switch itself has no accessible text of its own (confirmed via
+      # `maestro hierarchy`) — it's a separate element to the right of the
+      # "Tools button" label, not the label itself, so tapping the label
+      # text (Android's approach, where they're the same tappable row)
+      # leaves the switch untouched and this menu keeps reopening on every
+      # retry. `rightOf: "Tools button"` also missed it (still landed
+      # outside the switch's real hit-testable bounds) — tap its exact
+      # center instead, computed from `maestro hierarchy`'s reported bounds
+      # ([342,897]-[403,924] in this menu's 440x956 point space).
+      - tapOn:
+          point: "85%,95%"
+      - tapOn:
+          text: "Close"
+      - tapOn:
+          id: "observation-save-button"
 
 # A successful save navigates to the new observation's own detail screen
 # (ObservationEditorScreen's onSuccess replaces the route rather than just
