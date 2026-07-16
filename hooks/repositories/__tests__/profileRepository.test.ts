@@ -61,7 +61,24 @@ describe("applyLocalPatch", () => {
     expect(mutations[0].payload).toEqual({ first_name: "Janet" });
   });
 
-  it("KNOWN GAP: queues the mutation but does not create the profile row if none exists yet", () => {
+  // applyLocalPatch has no `.where()`/upsert fallback on the row UPDATE — a
+  // call with no existing row updates zero rows and orphans the mutation it
+  // still queues. Unlike alertSettingsRepository's equivalent (a fixed
+  // ROW_ID=1 singleton with a schema-free JSON blob, safe to upsert),
+  // profileTable's primary key is the real server user id — applyLocalPatch
+  // never receives it, and every NOT NULL column (username/first_name/
+  // last_name/email/is_active/private/private_diary) has no default, so an
+  // upsert here would have to fabricate a row's worth of fake user data.
+  // Not fixed, because it's provably unreachable through the app: the only
+  // caller (updateProfile in store/profile-context.tsx, called from
+  // screens/ProfileScreen.tsx's submit handler) is gated behind `profile`
+  // already being loaded (ProfileScreen returns a loading/error overlay
+  // instead of rendering the form otherwise), and the backend guarantees a
+  // Profile row exists for every User from the moment of registration
+  // (myapi/signals.py's post_save receiver) — so "edit before any profile
+  // was ever fetched" isn't a real user-reachable state, just what this
+  // function does in isolation if that invariant were ever violated.
+  it("does not create the profile row if none exists yet (documented invariant, not reachable through the app UI)", () => {
     profileRepository.applyLocalPatch({ first_name: "Janet" });
 
     expect(rawRow()).toBeUndefined();
@@ -225,12 +242,7 @@ describe("discardMutation vs. resolveMutation", () => {
     expect(rawRow()?.pendingAvatarOp).toBeNull();
   });
 
-  // KNOWN INCONSISTENCY: unlike discardMutation just above, resolveMutation
-  // marks the profile row "synced" unconditionally, without checking whether
-  // another profile/avatar mutation is still pending — same documented gap as
-  // alertSettingsRepository.test.ts's resolveMutation. This documents current
-  // behavior, not the intended contract.
-  it("KNOWN INCONSISTENCY: resolveMutation marks the row synced unconditionally, even with another mutation still pending", () => {
+  it("resolveMutation checks for other remaining pending mutations too, same as discardMutation", () => {
     profileRepository.upsertProfileFromServer(SERVER_PROFILE);
     profileRepository.applyLocalPatch({ first_name: "Janet" });
     profileRepository.queuePendingAvatar("upload", "file://a.jpg");
@@ -238,7 +250,13 @@ describe("discardMutation vs. resolveMutation", () => {
 
     profileRepository.resolveMutation(profileMutation.id);
 
+    // The avatar mutation is still pending, so the row must stay pending too.
     expect(profileRepository.getPendingAvatarMutation()).not.toBeNull();
+    expect(rawRow()?.status).toBe("pending");
+
+    const avatarMutation = profileRepository.getPendingAvatarMutation()!;
+    profileRepository.resolveMutation(avatarMutation.id);
+
     expect(rawRow()?.status).toBe("synced");
   });
 });

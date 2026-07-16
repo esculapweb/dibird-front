@@ -1,228 +1,51 @@
 # Device-level offline test: full create -> update -> delete lifecycle for
-# an Observation, each step done while the OS is actually in airplane mode,
-# with a reconnect in between each to verify the sync completes.
+# an Observation, each step done in real airplane mode, with a reconnect
+# between each to verify sync completes.
 #
-# Android only: `toggleAirplaneMode` is a real OS-level radio toggle (via
-# adb), and Maestro has no equivalent for iOS Simulators (no radio stack to
-# switch) — see RELEASE_CHECKLIST.md §3/§6 for why this was previously left
-# as a manual-only checklist item, and .maestro/run.sh for how to target an
-# Android emulator/device (`npm run e2e:android`). No dev-only network
-# override exists anywhere in this app — this is a genuine disconnect, so
-# services/sync/networkStatus.ts sees it exactly like a real user would.
+# Android only: toggleAirplaneMode is a real OS-level radio toggle (adb);
+# Maestro has no iOS Simulator equivalent (no radio stack). No dev-only
+# network override exists — this is a genuine disconnect, so
+# services/sync/networkStatus.ts sees it like a real user would.
 #
-# appId is the single Android package used for every build variant
-# (com.dibird.app in app.config.js) — unlike iOS, which has a distinct
-# bundleIdentifier per channel (see login.yaml).
+# appId is the single Android package for every build variant (unlike
+# iOS, which has a distinct bundleIdentifier per channel).
 #
-# Assumes the emulator starts with airplane mode OFF (the default) —
-# toggleAirplaneMode flips whatever the current state is, so this flow
-# toggles it on once (go offline) and off once (reconnect), not to a named
-# state.
+# Assumes the emulator starts with airplane mode OFF — toggleAirplaneMode
+# flips whatever the current state is, so this toggles on once (go
+# offline) and off once (reconnect), not to a named state.
 #
-# Run with:
-#   npm run e2e:android -- .maestro/offline-create-observation.yaml
-#
-# tags: android — lets `npm run e2e`/`e2e:android` (.maestro/run.sh) filter
-# via `--include-tags` so each only picks up flows built for its own
-# platform, instead of relying on always passing an explicit flow path.
+# tags: android — see login.yaml.
 appId: com.dibird.app
 tags:
   - android
 ---
-# No clearState: session reuse, same reasoning as create-observation.yaml's
-# preamble — a full re-login (dev-launcher EAS-account bottom sheet, Tools
-# button re-disable, email+password + the login POST round trip) only ever
-# runs on the very first flow of a session; every flow after that restores
-# straight to a logged-in MainScreen from a warm relaunch. Also means the
-# local mutation-queue db is NOT reset between flows — each flow's own
-# create->update->delete cycle is expected to net to zero on its own; a
-# prior run that crashed mid-cycle can leave stray local/server data behind
-# (surfaces as the count-based delete check at the end reading one high —
-# clean that up by hand before trusting subsequent runs).
+# No clearState: session reuse — a full re-login only runs on the very
+# first flow of a session. The local mutation-queue db also isn't reset
+# between flows, so each flow's create->update->delete cycle must net to
+# zero on its own; a crashed prior run can leave stray data behind (shows
+# up as the final count check reading one high — clean up by hand).
 - launchApp
 
-# Expo dev-client shows its own "pick a dev server" launcher screen on every
-# cold start before it loads the app's JS bundle.
-#
-# HOST-SPECIFIC: this must be the host machine's actual LAN IP (verify with
-# `ifconfig`/`ipconfig`), not the generic Android-emulator loopback alias
-# 10.0.2.2 — that alias only forwards to the host's own localhost, and this
-# app's API base URL (EXPO_PUBLIC_BASE_URL, baked in at build time) is
-# apparently configured against the host's real LAN address, not localhost,
-# so login only succeeds when the emulator reaches Metro the same way.
-# Update this if the host's IP changes (e.g. switching networks).
-# Recently-opened dev server entry — populated once session reuse kicks in
-# (every run after the very first, since we no longer clearState). Tap it
-# directly by its remembered URL instead of retyping the same one; matches
-# by IP rather than the "DiBird (Dev)" label since that same text also
-# appears in this screen's own header, and matching parens in a name would
-# need regex escaping anyway. Optional: a genuinely first-ever run (or one
-# after a manual app-data clear) has nothing here yet, so this just no-ops
-# and the type-URL fallback below handles it instead.
-- tapOn:
-    text: "192.168.0.102:8081"
-    optional: true
+- runFlow: common/android-bootstrap.yaml
 
-- tapOn:
-    below: "Then, select the local server when it appears here."
-    optional: true
-- inputText: "exp://192.168.0.102:8081"
-- tapOn:
-    text: "Connect"
-    optional: true
-# Metro takes a few seconds to reconnect and load the JS bundle after this
-# tap — long enough that the plain waitForAnimationToEnd below wasn't
-# enough on Android (observed: the "Continue with email"/"Continue" checks
-# ran while still on the native "Connecting to the development server..."
-# toast and silently no-opped). Wait for that toast to actually clear first.
-- extendedWaitUntil:
-    notVisible: ".*Connecting to the development server.*"
-    timeout: 20000
-- waitForAnimationToEnd
-- tapOn:
-    text: "Continue"
-    optional: true 
-- waitForAnimationToEnd
-- runFlow:
-    when:
-      visible: "Tools button"
-    commands:
-      - tapOn:
-          text: "Tools button"
-      - back
-
-# Reuse-the-session preamble (see create-observation.yaml) — full
-# login.yaml-style credential entry only runs as a fallback if no valid
-# session was restored from a previous run.
-- runFlow:
-    when:
-      visible: ".*Continue with email.*"
-    commands:
-      - tapOn: ".*Continue with email.*"
-      - tapOn:
-          id: "email-input"
-      - setClipboard: "${TEST_EMAIL}"
-      - pasteText
-      - tapOn:
-          id: "password-input"
-      - tapOn:
-          id: "password-input-toggle-visibility"
-      - tapOn:
-          id: "password-input"
-      - setClipboard: "${TEST_PASSWORD}"
-      - pasteText
-      # Plain `back` navigates the stack (popped us to Welcome in testing)
-      # rather than just dismissing the keyboard on this screen, and
-      # hideKeyboard errors on this custom Input — tap a static (non-
-      # interactive) text element instead to defocus without navigating.
-      - tapOn:
-          text: "Welcome back"
-          optional: true
-      - tapOn:
-          id: "login-submit-button"
-      - waitForAnimationToEnd
-      - tapOn:
-          text: "Not Now"
-          optional: true
-# Give MainScreen's initial render a real chance to land first — on a
-# genuinely cold process start (e.g. after a force-stop, or the very first
-# launch of a session) the very first conditional check below can race the
-# JS thread's first render, see "not visible" only because it hasn't
-# painted yet, and press back while already sitting at the stack root,
-# exiting the app entirely (observed). optional: true so a real "wrong
-# screen" case still falls through to the bounded back-unwind below
-# instead of hard-failing here.
-- extendedWaitUntil:
-    visible:
-      id: "quick-action-observation"
-    timeout: 15000
-    optional: true
-# React Navigation restores whatever screen was open when the app was last
-# backgrounded/killed — a warm relaunch (no clearState) does NOT necessarily
-# land on MainScreen, it can reopen directly on whatever screen a previous
-# flow left the app on (observed: opened straight to a list screen).
-# "quick-action-observation" only exists on MainScreen, so pop back until
-# it's there — bounded to a few presses rather than pressing back blindly
-# (which risks backgrounding/exiting the app entirely if already at the
-# stack root) and only presses at all if genuinely not on MainScreen yet.
-- runFlow:
-    when:
-      notVisible:
-        id: "quick-action-observation"
-    commands:
-      - back
-      - waitForAnimationToEnd
-      - extendedWaitUntil:
-          visible:
-            id: "quick-action-observation"
-          timeout: 4000
-          optional: true
-- runFlow:
-    when:
-      notVisible:
-        id: "quick-action-observation"
-    commands:
-      - back
-      - waitForAnimationToEnd
-      - extendedWaitUntil:
-          visible:
-            id: "quick-action-observation"
-          timeout: 4000
-          optional: true
-- runFlow:
-    when:
-      notVisible:
-        id: "quick-action-observation"
-    commands:
-      - back
-      - waitForAnimationToEnd
-      - extendedWaitUntil:
-          visible:
-            id: "quick-action-observation"
-          timeout: 4000
-          optional: true
-- extendedWaitUntil:
-    visible:
-      id: "quick-action-observation"
-    timeout: 15000
-
-# Plain assertVisible times out too fast for the login POST round-trip
-# (observed: still on the Login form with credentials filled in when the
-# original bare assertVisible ran) — give it a real budget. Waits on the
-# stat card's own testID, not ".*Observations.*" text: that regex also
-# matches the Sections grid label further down MainScreen, which renders
-# immediately and independently of the DashboardStat fetch this flow
-# actually needs settled before copyTextFrom below — matching just the
-# text let this proceed while the real stat value was still a loading
-# skeleton (observed: copyTextFrom then failed with "element not found").
+# Real budget for the login POST round-trip. Waits on the stat card's own
+# testID, not ".*Observations.*" text — that regex also matches an
+# unrelated grid label that renders before the real stat value is ready.
 - extendedWaitUntil:
     visible:
       id: "observations-stat-value"
     timeout: 20000
 
-# Capture the current (server-truth) Observations count before doing
-# anything, to prove the delete at the end of this flow actually took
-# effect — not just that its confirm dialog was tapped. A create+delete
-# round trip should leave this exact number unchanged; if the delete only
-# looked like it worked locally (confirm dialog dismissed, navigated back)
-# but never actually reached the server, this count would stay at +1
-# instead of returning to this baseline.
+# Capture the server-truth count now — real proof the delete at the end
+# reached the server, not just that its confirm dialog was tapped.
 - copyTextFrom:
     id: "observations-stat-value"
-# maestro.copiedText is backed by the OS clipboard, not a dedicated
-# "last copyTextFrom result" slot — stash it in Maestro's independent
-# `output` store immediately so a later setClipboard/pasteText elsewhere in
-# this flow (or one added later) can't silently clobber it before the final
-# count check. See offline-create-place.yaml's equivalent comment for the
-# concrete failure this caused there.
+# maestro.copiedText is clipboard-backed, not a dedicated result slot —
+# stash it in the `output` store before a later setClipboard can clobber it.
 - evalScript: ${output.observationBaselineCount = maestro.copiedText}
 
-# Go offline for real before creating anything, so the record enqueues
-# locally (mutation-queue "pending") instead of ever reaching the API. No
-# cache-warming visit to the Observations list is needed first: fetchObservations
-# (util/fetches.ts) now falls back to an overlay-only view when there's a
-# pending mutation and nothing cached for this exact query, matching how
-# fetchDiaries already worked — see the same fix in fetchPlaces/fetchDiaries.
+# Go offline before creating anything, so the record enqueues locally
+# instead of reaching the API.
 - toggleAirplaneMode
 
 - tapOn:
@@ -238,8 +61,6 @@ tags:
 - tapOn:
     id: "observation-save-button"
 
-# Defensive fallback in case the dev-tools overlay reappears despite the
-# proactive disable above.
 - runFlow:
     when:
       visible: "Reload"
@@ -248,12 +69,10 @@ tags:
       - tapOn:
           id: "observation-save-button"
 
-# Local-first create lands straight on the (temp-id) detail screen even
-# offline — is_owner is always true for what the user just created, synced
-# or not (see observationRepository.ts's synthesize), so the presence of a
-# delete button there doesn't prove anything about sync state; it's just
-# used here as a wait gate, so `back` below doesn't fire before the
-# save-then-navigate (a local DB write + requestAnimationFrame) finishes.
+# Local-first create lands on the (temp-id) detail screen even offline —
+# used only as a wait gate before `back` (is_owner is always true for a
+# just-created record, synced or not, so it doesn't itself prove sync
+# state).
 - extendedWaitUntil:
     visible: ".*Delete observation.*"
     timeout: 10000
@@ -263,40 +82,28 @@ tags:
 - assertVisible:
     id: "observation-sync-pending-icon"
 
-# Tap the pending-sync icon itself to reopen the detail screen. This works
-# because the icon is a non-interactive child inside the card's own
-# Pressable (see ObservationCard.tsx) — the tap still lands on the card's
-# onPress. Only reliable *before* reconnecting: a pending create is always
-# prepended to page 1 (observationRepository.ts's applyOverlay), guaranteeing
-# it's the one under this icon; once synced it sorts wherever normal order
-# places it, with no stable position to tap back into.
+# Tap the pending icon to reopen the detail screen — reliable only before
+# reconnecting, since a pending create is always prepended to page 1;
+# once synced it sorts wherever normal order places it.
 - tapOn:
     id: "observation-sync-pending-icon"
 
-# Reconnect for real. networkStatus.ts's subscribeToReconnect fires on this
-# disconnected->connected edge, which wakes useObservationSync's reconnect
-# listener and drains the mutation queue against the live API. Still sitting
-# on the detail screen (opened via the alias row created by
-# replaceLocalWithServer, which keeps the temp id readable after sync).
+# Reconnect for real — wakes the reconnect listener and drains the
+# mutation queue against the live API.
 - toggleAirplaneMode
 - waitForAnimationToEnd:
     timeout: 5000
 
 # ---- UPDATE, offline ----
-# Go offline again, then edit the now-synced observation (a real positive
-# id at this point) — this exercises a genuine "update" mutation, unlike
-# editing a still-pending create, which just amends that create in place
-# (observationRepository.ts's isUnsyncedDraft branch) rather than queuing a
-# distinct update.
+# Editing the now-synced (real positive id) observation exercises a
+# genuine update mutation, unlike editing a still-pending create (which
+# just amends that create in place).
 - toggleAirplaneMode
 - tapOn:
     id: "observation-edit-button"
 - waitForAnimationToEnd
-# Toggle the privacy switch (defaults to "Public" — visible_to_everyone —
-# for a freshly created observation) rather than re-touching species: a
-# deterministic, position-independent field to assert against afterward,
-# unlike checking the pending-sync icon's list position (see the comment
-# on why that's only reliable for creates).
+# Toggle privacy (defaults to "Public") — a deterministic field to assert
+# against, unlike the pending icon's list position.
 - tapOn:
     text: "Public"
 - tapOn:
@@ -308,17 +115,13 @@ tags:
       - back
       - tapOn:
           id: "observation-save-button"
-# Edit-mode save navigates back to this same detail screen on success
-# (ObservationEditorScreen's onSuccess: () => navigation.goBack()) — assert
-# the flipped label to confirm the update actually applied locally while
-# offline, rather than re-checking the list (an update's pending badge isn't
-# guaranteed to be on the visible/first page the way a create's is, given
-# this account's accumulated test data from earlier runs).
+# Edit-mode save navigates back to this same detail screen — assert the
+# flipped label rather than re-checking the list (an update's pending
+# badge isn't guaranteed to be on the first page).
 - assertVisible: "Private"
 
-# Reconnect — the update mutation drains the same way the create did.
-# Not re-verified via the list for the reason above; drain/retry/backoff
-# behavior itself is covered directly by services/sync/__tests__/observationSync.test.ts.
+# Reconnect — drain/retry/backoff itself is covered directly by
+# services/sync/__tests__/observationSync.test.ts.
 - toggleAirplaneMode
 - waitForAnimationToEnd:
     timeout: 5000
@@ -327,30 +130,21 @@ tags:
 - toggleAirplaneMode
 - tapOn:
     id: "observation-delete-button"
-# The confirm sheet slides up asynchronously — see offline-create-place.yaml's
-# equivalent comment for the race this guards against on a slower run.
+# Confirm sheet slides up asynchronously — wait for it, don't race it.
 - extendedWaitUntil:
     visible:
       id: "bottom-sheet-confirm-button"
     timeout: 5000
 - tapOn:
     id: "bottom-sheet-confirm-button"
-# Delete's onSuccess also navigates back — this time to the Observations
-# list this detail screen was originally opened from (see the reconnect
-# comment above for why that's a real screen and not MainScreen).
 - assertVisible: ".*Observations.*"
 
 - toggleAirplaneMode
 - waitForAnimationToEnd:
     timeout: 5000
 
-# The real proof the delete synced to the server, not just that its confirm
-# dialog was tapped: Observation add/delete both invalidate the
-# ["DashboardStat"] query (see util/invalidationMap.ts), so this count
-# refetches once back online. A create+delete round trip should leave it
-# exactly where copyTextFrom captured it at the very start of this flow —
-# if the delete never actually reached the server, this would still read
-# one higher.
+# Add/delete both invalidate ["DashboardStat"], so this refetches once
+# back online — should land exactly back on the baseline captured above.
 - back
 - assertVisible:
     id: "observations-stat-value"

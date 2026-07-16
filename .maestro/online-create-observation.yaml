@@ -1,136 +1,24 @@
 # Device-level online test: full create -> update -> delete lifecycle for
-# an Observation, entirely online — the network-independent counterpart to
-# offline-create-observation.yaml. See that file for the full bootstrap
-# rationale (Android-only appId, session-reuse strategy, dev-launcher
-# quirks, navigation-restore back-unwind, the copyTextFrom/output-store
-# split for the count-based delete proof) — this flow mirrors it exactly
-# except it never touches toggleAirplaneMode, so create/update/delete all
-# round-trip the API directly instead of queuing through the local
-# mutation-queue-then-sync path. No pending-icon dance either: a create
-# made online resolves to a synced state fast enough that there's no
-# reliable window to assert a *pending* icon, so this flow instead treats
-# the immediate presence of "Delete observation" (is_owner-gated, only true
-# for a real persisted record) as proof the save round-tripped the server.
+# an Observation, entirely online — network-independent counterpart to
+# offline-create-observation.yaml, mirrored exactly except it never
+# touches toggleAirplaneMode, so create/update/delete round-trip the API
+# directly instead of queuing through the mutation-queue-then-sync path.
+# No pending-icon dance either: an online create resolves to synced fast
+# enough that there's no reliable window to assert a pending icon, so
+# this flow treats the immediate presence of "Delete observation"
+# (is_owner-gated, only true for a real persisted record) as proof the
+# save round-tripped the server.
 #
-# appId is the single Android package used for every build variant
-# (com.dibird.app in app.config.js).
-#
-# Run with:
-#   npm run e2e:android -- .maestro/online-create-observation.yaml
-#
-# tags: android — see login.yaml's equivalent comment.
+# appId is the single Android package for every build variant.
+# tags: android — see login.yaml.
 appId: com.dibird.app
 tags:
   - android
 ---
-# No clearState: session reuse — see offline-create-observation.yaml's
-# preamble for the full reasoning.
+# No clearState: session reuse — see offline-create-observation.yaml.
 - launchApp
 
-- tapOn:
-    text: "192.168.0.102:8081"
-    optional: true
-
-- tapOn:
-    below: "Then, select the local server when it appears here."
-    optional: true
-- inputText: "exp://192.168.0.102:8081"
-- tapOn:
-    text: "Connect"
-    optional: true
-- extendedWaitUntil:
-    notVisible: ".*Connecting to the development server.*"
-    timeout: 20000
-- waitForAnimationToEnd
-- tapOn:
-    text: "Continue"
-    optional: true
-- waitForAnimationToEnd
-- runFlow:
-    when:
-      visible: "Tools button"
-    commands:
-      - tapOn:
-          text: "Tools button"
-      - back
-
-- runFlow:
-    when:
-      visible: ".*Continue with email.*"
-    commands:
-      - tapOn: ".*Continue with email.*"
-      - tapOn:
-          id: "email-input"
-      - setClipboard: "${TEST_EMAIL}"
-      - pasteText
-      - tapOn:
-          id: "password-input"
-      - tapOn:
-          id: "password-input-toggle-visibility"
-      - tapOn:
-          id: "password-input"
-      - setClipboard: "${TEST_PASSWORD}"
-      - pasteText
-      - tapOn:
-          text: "Welcome back"
-          optional: true
-      - tapOn:
-          id: "login-submit-button"
-      - waitForAnimationToEnd
-      - tapOn:
-          text: "Not Now"
-          optional: true
-
-# Give MainScreen's initial render a real chance to land first — see
-# offline-create-observation.yaml's equivalent comment for the cold-start
-# race this avoids (a premature back press here can exit the app entirely).
-- extendedWaitUntil:
-    visible:
-      id: "quick-action-observation"
-    timeout: 15000
-    optional: true
-# React Navigation restores whatever screen was open on a warm relaunch —
-# see offline-create-observation.yaml's equivalent comment.
-- runFlow:
-    when:
-      notVisible:
-        id: "quick-action-observation"
-    commands:
-      - back
-      - waitForAnimationToEnd
-      - extendedWaitUntil:
-          visible:
-            id: "quick-action-observation"
-          timeout: 4000
-          optional: true
-- runFlow:
-    when:
-      notVisible:
-        id: "quick-action-observation"
-    commands:
-      - back
-      - waitForAnimationToEnd
-      - extendedWaitUntil:
-          visible:
-            id: "quick-action-observation"
-          timeout: 4000
-          optional: true
-- runFlow:
-    when:
-      notVisible:
-        id: "quick-action-observation"
-    commands:
-      - back
-      - waitForAnimationToEnd
-      - extendedWaitUntil:
-          visible:
-            id: "quick-action-observation"
-          timeout: 4000
-          optional: true
-- extendedWaitUntil:
-    visible:
-      id: "quick-action-observation"
-    timeout: 15000
+- runFlow: common/android-bootstrap.yaml
 
 - extendedWaitUntil:
     visible:
@@ -138,8 +26,8 @@ tags:
     timeout: 20000
 - copyTextFrom:
     id: "observations-stat-value"
-# See offline-create-observation.yaml's equivalent comment: maestro.copiedText
-# is backed by the OS clipboard, so stash it before any later setClipboard.
+# maestro.copiedText is clipboard-backed — stash it before any later
+# setClipboard can clobber it.
 - evalScript: ${output.observationBaselineCount = maestro.copiedText}
 
 # ---- CREATE, online ----
@@ -192,15 +80,11 @@ tags:
     id: "bottom-sheet-confirm-button"
 - assertVisible: ".*Observations.*"
 
-# Delete's onSuccess is a plain navigation.goBack() — since this flow opened
-# straight from MainScreen's quick action (no list screen was ever pushed,
-# unlike offline-create-observation.yaml which navigates the list first to
-# work the pending-sync icon), that goBack() lands directly back on
-# MainScreen. No extra `back` needed here — one was tried and overshot
-# past MainScreen, exiting the app entirely (landed on the Android home
-# screen, observed via screenshot).
-#
-# Real proof the whole cycle round-tripped the server cleanly.
+# Delete's onSuccess is a plain goBack() — opened straight from
+# MainScreen's quick action (no list ever pushed, unlike the offline
+# flow, which navigates the list to work the pending-sync icon), so it
+# lands directly back on MainScreen. No extra `back` here — one was
+# tried and overshot past MainScreen, exiting the app entirely.
 - assertVisible:
     id: "observations-stat-value"
     text: ${output.observationBaselineCount}

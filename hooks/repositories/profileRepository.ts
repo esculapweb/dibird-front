@@ -181,7 +181,16 @@ export const getFailedMutations = (): MutationRow[] =>
 export const resolveMutation = (id: number) => {
   db.transaction((tx) => {
     tx.delete(mutationQueueTable).where(eq(mutationQueueTable.id, id)).run();
-    tx.update(profileTable).set({ status: "synced" }).run();
+
+    const remaining = tx
+      .select()
+      .from(mutationQueueTable)
+      .where(inArray(mutationQueueTable.entity, [...PROFILE_ENTITIES]))
+      .all();
+
+    tx.update(profileTable)
+      .set({ status: remaining.length > 0 ? "pending" : "synced" })
+      .run();
   });
 };
 

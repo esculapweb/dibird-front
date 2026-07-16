@@ -4,6 +4,11 @@ process.env.TZ = "UTC";
 
 module.exports = {
   preset: "jest-expo",
+  // react-native-worklets (reanimated 4's native backend) ships a native
+  // (.native.ts) and a plain implementation; without this resolver jest
+  // picks the native one and throws "Worklets doesn't seem to be
+  // initialized" the moment anything transitively imports reanimated.
+  resolver: "react-native-worklets/jest/resolver.js",
   setupFiles: [
     "./jest/env.js",
     "@react-native-async-storage/async-storage/jest/async-storage-mock",
@@ -25,7 +30,7 @@ module.exports = {
     "util/**/*.{ts,tsx}",
     "hooks/**/*.{ts,tsx}",
     "components/**/*.{ts,tsx}",
-    "services/sync/**/*.{ts,tsx}",
+    "services/**/*.{ts,tsx}",
     "store/**/*.{ts,tsx}",
     "!**/*.d.ts",
   ],

@@ -63,7 +63,11 @@ export const saveTokens = async ({
 };
 
 export const clearTokens = async (): Promise<void> => {
-  isLoggingOut = false;
+  // isLoggingOut is deliberately NOT reset here — this function is called
+  // *from inside* the forced-logout flow below, which relies on the flag
+  // staying true until that flow finishes to guard against a second
+  // concurrent 401 double-firing onUnauthorizedCallback. saveTokens() is
+  // the correct place to clear it, on the next successful login.
   cachedAccessToken = null;
   cachedRefreshToken = null;
   await SecureStore.deleteItemAsync("access");

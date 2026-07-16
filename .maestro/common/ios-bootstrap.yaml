@@ -1,0 +1,29 @@
+# Shared subflow for both iOS flows: dismiss Expo dev-launcher's
+# server-picker + onboarding tooltip, then permanently disable the
+# floating "Tools button" (it overlaps app buttons later on). Lives under
+# common/ so Maestro's directory scan never picks it up as its own
+# top-level flow — still needs its own appId + `---` below, though:
+# `maestro test` refuses to load a runFlow-referenced file without one.
+appId: com.dibird.app.dev
+---
+- tapOn:
+    below: "DEVELOPMENT SERVERS"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    text: "Continue"
+    optional: true
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Tools button"
+    commands:
+      - tapOn:
+          text: "Tools button"
+      - waitForAnimationToEnd
+      # The switch has no accessible text of its own — tap its known
+      # on-screen position instead of the (untappable) label.
+      - tapOn:
+          point: "85%,95%"
+      - tapOn:
+          text: "Close"

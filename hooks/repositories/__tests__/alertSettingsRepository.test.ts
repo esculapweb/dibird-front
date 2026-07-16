@@ -57,18 +57,13 @@ describe("applyLocalPatch", () => {
     expect(mutations()).toHaveLength(1);
   });
 
-  // No `.where()` and no upsert on the settings row's UPDATE — verified
-  // directly here rather than assumed, since it's easy to expect an
-  // insert-if-missing fallback that this function doesn't actually have.
-  // If applyLocalPatch is ever called before any settings row exists (no
-  // server fetch has happened yet), the UPDATE affects zero rows: the
-  // mutation still gets queued, but the settings row itself is never
-  // created. A caller relying on the settings row existing after this call
-  // would find nothing.
-  it("KNOWN GAP: queues the mutation but does not create the settings row if none exists yet", () => {
+  it("creates the settings row via upsert if none exists yet (e.g. edited before the first server fetch)", () => {
     alertSettingsRepository.applyLocalPatch({ radius_km: 50 }, true);
 
-    expect(rawRow()).toBeUndefined();
+    const row = rawRow();
+    expect(row).not.toBeUndefined();
+    expect(row?.status).toBe("pending");
+    expect((row?.data as AlertSettings).radius_km).toBe(50);
     expect(mutations()).toHaveLength(1);
   });
 
@@ -127,7 +122,7 @@ describe("retryMutation", () => {
   });
 });
 
-describe("discardMutation vs. resolveMutation: known inconsistency", () => {
+describe("discardMutation and resolveMutation", () => {
   it("discardMutation checks for other remaining pending mutations before deciding the settings row's resulting status", () => {
     alertSettingsRepository.upsertFromServer(SERVER_SETTINGS);
     alertSettingsRepository.applyLocalPatch({ radius_km: 50 }, true);
@@ -143,21 +138,18 @@ describe("discardMutation vs. resolveMutation: known inconsistency", () => {
     expect(rawRow()?.status).toBe("synced");
   });
 
-  // KNOWN INCONSISTENCY: unlike discardMutation just above, resolveMutation
-  // marks the settings row "synced" unconditionally, without checking
-  // whether another alertSettings mutation is still pending. This documents
-  // current behavior, not the intended contract — a deliberate future fix
-  // should update this test, not be surprised by it.
-  it("KNOWN INCONSISTENCY: resolveMutation marks the settings row synced unconditionally, even with another mutation still pending", () => {
+  it("resolveMutation checks for other remaining pending mutations too, same as discardMutation", () => {
     alertSettingsRepository.upsertFromServer(SERVER_SETTINGS);
     alertSettingsRepository.applyLocalPatch({ radius_km: 50 }, true);
     alertSettingsRepository.applyLocalPatch({ is_enabled: false }, true);
-    const [first] = alertSettingsRepository.getPendingMutations();
+    const [first, second] = alertSettingsRepository.getPendingMutations();
 
     alertSettingsRepository.resolveMutation(first.id);
-
+    // The second mutation is still pending, so the settings row must stay pending too.
     expect(alertSettingsRepository.getPendingMutations()).toHaveLength(1);
-    // The row is marked synced even though a second mutation is still pending.
+    expect(rawRow()?.status).toBe("pending");
+
+    alertSettingsRepository.resolveMutation(second.id);
     expect(rawRow()?.status).toBe("synced");
   });
 });

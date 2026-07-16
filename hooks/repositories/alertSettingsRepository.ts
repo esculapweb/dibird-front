@@ -32,9 +32,20 @@ export const applyLocalPatch = (patch: AlertSettingsPatch, sync: boolean) => {
   db.transaction((tx) => {
     const [existing] = tx.select().from(alertSettingsTable).all();
     const nextData = { ...(existing?.data as AlertSettings), ...patch };
+    const row = {
+      id: ROW_ID,
+      data: nextData,
+      status: "pending" as const,
+      updatedAt: Date.now(),
+    };
 
-    tx.update(alertSettingsTable)
-      .set({ data: nextData, status: "pending", updatedAt: Date.now() })
+    // Upsert, not a plain update: a local edit made before the first-ever
+    // server fetch (no row yet) used to silently update zero rows while
+    // still queuing the mutation, orphaning it against a settings row that
+    // never got created.
+    tx.insert(alertSettingsTable)
+      .values(row)
+      .onConflictDoUpdate({ target: alertSettingsTable.id, set: row })
       .run();
 
     tx.insert(mutationQueueTable)
@@ -76,7 +87,16 @@ export const getFailedMutations = (): MutationRow[] =>
 export const resolveMutation = (id: number) => {
   db.transaction((tx) => {
     tx.delete(mutationQueueTable).where(eq(mutationQueueTable.id, id)).run();
-    tx.update(alertSettingsTable).set({ status: "synced" }).run();
+
+    const remaining = tx
+      .select()
+      .from(mutationQueueTable)
+      .where(eq(mutationQueueTable.entity, "alertSettings"))
+      .all();
+
+    tx.update(alertSettingsTable)
+      .set({ status: remaining.length > 0 ? "pending" : "synced" })
+      .run();
   });
 };
 
