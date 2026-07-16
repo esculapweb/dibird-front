@@ -60,7 +60,11 @@ const FilterChips = ({
                 <Text style={styles.filterValue}>{filterLabel}</Text>
               </Text>
               <View style={styles.removeIcon}>
-                <Pressable onPress={() => onRemove(key)} hitSlop={8}>
+                <Pressable
+                  onPress={() => onRemove(key)}
+                  hitSlop={8}
+                  testID={`remove-filter-${key}`}
+                >
                   <Ionicons
                     name="close-circle"
                     size={16}

@@ -39,7 +39,12 @@ const IconButton = ({
     >
       <Ionicons name={icon} size={size} color={tintColor ?? Colors.textMain} />
 
-      {active && <View style={styles.active} />}
+      {active && (
+        <View
+          style={styles.active}
+          testID={testID ? `${testID}-active-dot` : undefined}
+        />
+      )}
     </Pressable>
   );
 };

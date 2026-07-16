@@ -11,6 +11,7 @@ interface PrivacyToggleProps {
   style?: StyleType;
   descriptionType?: string;
   disabled?: boolean;
+  testID?: string;
 }
 
 const PrivacyToggle = ({
@@ -19,6 +20,7 @@ const PrivacyToggle = ({
   style,
   descriptionType,
   disabled,
+  testID,
 }: PrivacyToggleProps) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -30,6 +32,7 @@ const PrivacyToggle = ({
       style={[styles.row, style, disabled && styles.disabled]}
       disabled={!onChange || disabled}
       onPress={() => onChange && onChange(!value)}
+      testID={testID}
     >
       <View style={[styles.left, onChange && { flex: 1 }]}>
         <View style={[styles.iconWrap, value && styles.iconWrapActive]}>
@@ -55,6 +58,7 @@ const PrivacyToggle = ({
           trackColor={{ false: Colors.border, true: Colors.main100 }}
           thumbColor={Colors.primary100}
           disabled={disabled}
+          testID={testID ? `${testID}-switch` : undefined}
         />
       )}
     </Pressable>

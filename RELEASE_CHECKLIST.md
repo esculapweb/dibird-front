@@ -292,52 +292,53 @@ OS-level `toggleAirplaneMode`, полный цикл create → update → delet
 
 ### Следующие кандидаты на автотесты (по коду покрытия, приоритет по риску)
 
-`npm run test:coverage` после двух батчей — 69.0% stmts (был 47.3% →
-60.39% → 69.0%). Список из прошлой ревизии этого раздела (репозитории/
-`useDropdownQuery`/`usePlaceLocation`/`storageHelper`/`alertSettings`/
-`useApiError`/8 Card-компонентов/4 общих поля форм) полностью закрыт —
-см. журнал (§7) для деталей. Ниже — не выполненный, а предлагаемый
-порядок для следующего захода:
+`npm run test:coverage` после пятого батча — 83.21% stmts (был 47.3% →
+60.39% → 69.0% → 74.23% → 78.16% → 83.21%). Список из прошлой ревизии
+этого раздела — `components/Filters/{FilterChips,FilterSheetContent}.tsx`/
+`DateRangeFilter.tsx`/`SortSheetContent.tsx`, `RadioGroup`/`SearchInput`/
+`DefaultOptionRow`/`SpeciesOptionRow`, `hooks/useItem.ts`/`useList.ts`,
+`UniversalBottomSheet`/`ThemedToast`/`GlobalBottomSheet`,
+`hooks/Profile/useExportProfile.ts` — полностью закрыт, см. журнал (§7)
+для деталей. Ниже — не выполненный, а предлагаемый порядок для
+следующего захода:
 
-1. **`components/Auth/{AuthContent,AuthForm}.tsx`** (0%) — форма входа,
-   прямая зависимость `WelcomeScreen`/`LoginScreen`, риск из §2; сейчас
-   застаблены целиком в тестах этих экранов, сама валидация/wiring полей
-   формы логина нигде не проверена напрямую (тот же класс пробела, что
-   был у `ObservationForm`/`DiaryForm`/`PlaceForm`/`ProfileForm` до
-   прошлого батча).
-2. **`components/ui/{IconsHeader,IconButton}.tsx`** (0%/22%) — общий
-   header-виджет, используется в большинстве экранов и уже дважды
-   всплывал как источник ложных тестов на уровне экранов (см. журнал §6:
-   `condition`-фильтрация, `disabled` не долетающий до `onPress`) —
-   сейчас проверяется только опосредованно через самодельные стабы в
-   каждом экранном тесте, а не напрямую.
-3. **`components/ui/{Section,PrivacyToggle,RadiusRow,TimeWindowRow,Tabs}.tsx`**
-   (0%) — общие поля `AlertSettingsScreen`/форм редакторов, тот же класс
-   риска, что и уже закрытые общие поля форм.
-4. **`hooks/useFilterLabels.ts`/`hooks/useSyncedFilters.ts`** (0%) —
-   деривация текста фильтров и синхронизация URL/deep-link фильтров с
-   `filters-context`, нетривиальная логика без прямого покрытия.
-5. **`components/ui/{DropdownInput.tsx}`'s делегаты
-   `SpeciesDropdown.tsx`/`PlaceDropdown.tsx`/`SelectListModal.tsx`**
-   (5–7%) — сам `DropdownInput` теперь 98%, но три компонента, которым он
-   делегирует специализированный рендеринг, остаются непокрытыми (были
-   замоканы в `DropdownInput.test.tsx` как раз чтобы изолировать его
-   собственную оркестрацию).
-6. **`services/errors.ts`** (51%) — `toUIError`/error-классификация,
-   центральная для `useApiError`/`useMutationWithTranslation`, сейчас
-   покрыта только частично через побочный эффект других тестов.
-7. **`hooks/useBiometricSetting.ts`** (0%) — `SecureStore`-обёртка,
-   маленькая, но напрямую отвечает за пункт риска в §2 (Face ID/Touch ID
-   toggle), уже используется в `SettingsScreen` (застаблен там).
-8. **`components/Profile/{Avatar,ProfileAvatar,CompareProfileHeader}.tsx`**
-   (0–35%) — аватар/профильные виджеты, используются почти во всех
-   detail-экранах (сейчас застаблены везде).
+1. **`components/{Diary/DiaryObservationCard,Place/PlaceBlock,
+   Place/PlacePreviewRow}.tsx`** (0%) — карточки/блоки списков, тот же
+   класс риска, что уже закрытые Card-компоненты (§7, второй батч).
+2. **`components/Map/MapL.tsx`** (0%) — карта используется в
+   `PlaceEditorScreen`/`PlaceDetailScreen` (уже застаблена там через
+   `__mocks__/maplibreMock.tsx`), сама обёртка/маркеры/интеракции не
+   проверены напрямую.
+3. **`components/ui/{DatePickerField,HourPicker}.tsx`** (0%) — `HourPicker`
+   уже был застаблен при тестировании `TimeWindowRow` (см. §7, третий
+   батч), сам пикер — нет; `DatePickerField` не проверен вовсе.
+4. **`components/{Language/LanguageSwitcher,Theme/ThemeSwitcher}.tsx`**
+   (0%) — настройки, используются в `SettingsScreen` (сейчас застаблены
+   там).
+5. **`hooks/{useMediaLibraryUnavailable,useContentWidth,useSavedSort}.ts`/
+   `hooks/Profile/useUpdateProfile.ts`** (0–7%) — маленькие переиспользуемые
+   хуки; `useMediaLibraryUnavailable` уже используется в `Avatar.tsx`
+   (застаблен там), `useUpdateProfile`'s `useInvalidateProfile` тоже
+   (застаблен в `Avatar.test.tsx`).
+6. **`services/bottomSheet.ts`/`components/ui/ModalWrapper.tsx`**
+   (33–50%) — `bottomSheetRef`/`BottomSheet.show`/`.showMenu` вызываются
+   из большинства экранов (сейчас замокан везде как API), сама
+   orchestration-логика не проверена напрямую; `ModalWrapper` — общий
+   chrome для `SelectListModal` (застаблен в его тесте, см. §7, четвёртый
+   батч), сам не проверен.
 
 Не включены намеренно: `components/Main/*` (дашборд-виджеты, чисто
-презентационные, низкий риск), `store/theme-context.tsx`/`language-context.tsx`
+презентационные, низкий риск), `components/ui/{BackgroundScene*,
+CustomSplash}.tsx` (чисто декоративные), `components/ui/Layout.tsx`
+(тонкая chrome-обёртка, уже стаблена passthrough-мок во всех экранных
+тестах), `store/theme-context.tsx`/`language-context.tsx`
 (конфигурационные, меняются редко), `services/{sentry,queryClient,
-navigationRef}.ts` (тонкие обёртки над SDK), `components/ui/BackgroundScene*.tsx`/
-`CustomSplash.tsx` (чисто декоративные).
+navigationRef,db/client}.ts` (тонкие обёртки над SDK),
+`screens/{AchievementsScreen,SpeciesDetailScreen}.tsx` (целиком заглушки,
+см. §7), `util/openSupportEmail.ts` (однострочный `Linking.openURL`
+wrapper), `util/sortOptionsList.ts` (уже пассивно покрыт побочным
+эффектом множества экранных/хуковых тестов, которые проверяют его вывод
+косвенно через `sort`/`options`).
 
 ## 7. Журнал закрытых пробелов покрытия (справочно, не влияет на гейт)
 
@@ -487,3 +488,130 @@ navigationRef}.ts` (тонкие обёртки над SDK), `components/ui/Back
   что меньше 22 строк порог не перейти). Итог: 1071 тестов, 91 suite,
   `npm run test`, `npm run check` и `npm run test:coverage` (69.0% stmts,
   было 47.3% в начале всей инициативы) зелёные.
+- Третий батч (69.0% → 74.23% stmts), четыре пункта из прошлой ревизии
+  этого раздела: `components/Auth/{AuthContent,AuthForm}.tsx` (риск §2,
+  логин/сигнап валидация — email `@`/пароль `>6`/confirm-match/
+  username≠email, trimming, `extractApiError`'s разбор `non_field_errors`/
+  `email`/`username`/`password`/fallback-join, connectivity-ветка без
+  extractor'а); `components/ui/{IconsHeader,IconButton}.tsx` (порядок
+  `headerRightBeginning`/встроенные кнопки/`headerRightEnd`,
+  `condition`-фильтрация именно вместо "disabled"-рендера — см. §6);
+  `components/ui/{Section,PrivacyToggle,RadiusRow,TimeWindowRow,Tabs}.tsx`
+  (collapsible/`collapsed`-без-`collapsible` эджкейс у `Section`,
+  `RadiusRow`'s presets+slider wiring, `TimeWindowRow`'s expand/collapse и
+  проброс в `HourPicker`, `Tabs`'s 999+ cap и haptic); `hooks/
+  useFilterLabels.ts`/`hooks/useSyncedFilters.ts` (риск §4 —
+  территория/место/вид резолвятся из dropdown-кэша с фоллбэком на
+  placeholder, `formatDateFilter`'s все ветки, deep-link vs
+  `filtersOverride` vs context-инициализация, dedup по `lastDeepLinkKeyRef`,
+  focus-effect ресинк с контекстом включая сброс place/species при смене
+  territory и "stale species" коррекцию, `loadAndApplySort`'s distance-
+  fallback когда `locationCoords===null` — не только на denied-permission,
+  как можно было бы предположить). Два маленьких прод-фикса по пути:
+  `IconButton`'s "active" индикатор и `PrivacyToggle`'s Pressable/Switch не
+  имели `testID` вообще — добавлен опциональный `testID`-проп на оба (тот
+  же паттерн, что уже был у `Input`/`IconsHeader`). Ещё раз подтверждён тот
+  же RN/RTL-баг из §6 (`fireEvent.press` не уважает реальный
+  `onPress: undefined` при `disabled` на `Pressable`) — на этот раз в
+  выделенном `IconButton.test.tsx`, обойдено проверкой резолвленного
+  `.props.onPress` вместо симуляции нажатия; для disabled-состояния самого
+  `Pressable` понадобился `.props.accessibilityState.disabled` — RN не
+  прокидывает `disabled` как обычный проп на нижележащий host-node. Мок
+  `useFocusEffect: (cb) => cb()`, который работает в экранных тестах, в
+  выделенном тесте `useSyncedFilters` вызывал "Too many re-renders" (его
+  focus-callback дергает `setFilters` во время рендера) — заменён на
+  `useEffect(cb, [cb])`, что ближе к реальной семантике (эффект после
+  коммита, перезапуск при смене зависимостей `cb`). Итог: 1184 тестов, 102
+  suite, `npm run test`, `npm run check` и `npm run test:coverage`
+  (74.23% stmts) зелёные.
+- Четвёртый батч (74.23% → 78.16% stmts), четыре пункта из прошлой
+  ревизии этого раздела: `DropdownInput`'s делегаты — `SpeciesDropdown.tsx`
+  (loading/error/thumb/placeholder/пустое состояние, info-кнопка →
+  `speciesDetails`, отличие латинского названия от отображаемого),
+  `PlaceDropdown.tsx` (превью карты: сразу из `placeData.preview` vs
+  `fetchMapPreview`-запрос с `previewLoading`, ошибка запроса логируется и
+  не блокирует UI, expand-оверлей → `navigation.navigate("PlaceDetail")`,
+  clear-кнопка), `SelectListModal.tsx` (фильтрация с ё→е нормализацией,
+  `renderOption` override, шторка сортировки — resync на внешний `sort`,
+  disabled-значения дистанции без геолокации → `onLocationUnavailable`);
+  `services/errors.ts` (`normalizeApiError`'s все ветки статусов/timeout/
+  network, `extractServerMessage`'s `non_field_errors` → первое truthy
+  поле → null, `toUIError`'s extractor vs policy-fallback vs
+  server-message-приоритет, `showError`'s Toast-вызов, `logError`'s
+  `__DEV__`-гейт и error/warn по статусу); `hooks/useBiometricSetting.ts`
+  (SecureStore round-trip, optimistic `toggle`); `components/Profile/
+  {Avatar,ProfileAvatar,CompareProfileHeader}.tsx` (`Avatar`'s
+  `pendingAvatarOp` resolution, permission-цепочка `ImagePicker` (denied →
+  unavailable-шторка, undetermined → request → possibly-denied stop),
+  полный upload-пайплайн `manipulateAsync` → `copyAsync` в
+  `documentDirectory` → `queuePendingAvatar` → `runAvatarSync` →
+  invalidate, error → toast; `ProfileAvatar`'s URI-резолв — bare path
+  получает `Config.mediaUrl` префикс, `file://`/`http(s)://` используются
+  как есть; `CompareProfileHeader`'s `< 2 профилей → null`, навигация на
+  Stat vs UserStat по `myProfileId`). По пути добавлен `testID` на
+  `PlaceDropdown`'s корневой `Pressable` (`SpeciesDropdown` его уже имел,
+  `PlaceDropdown` — нет, понадобился, чтобы не завязываться на
+  `fireEvent.press` по тексту loading/error-состояний). Итог: 1279 тестов,
+  110 suite, `npm run test`, `npm run check` и `npm run test:coverage`
+  (78.16% stmts) зелёные.
+- Пятый батч (78.16% → 83.21% stmts), пять пунктов из прошлой ревизии
+  этого раздела: `components/Filters/{FilterChips,FilterSheetContent}.tsx`/
+  `DateRangeFilter.tsx`/`SortSheetContent.tsx` (allowed-based видимость
+  полей, `effectiveTerritory`/`extraTerritory` гейтинг, territory-change
+  сбрасывает place/species только НЕ на первом монтировании,
+  stale-species коррекция, `applyHandler`'s `getNewFilters`+контекст-пропагация,
+  `DateRangeFilter`'s все ветки `handleModeChange`/range-normalize/invalid-range,
+  `SortSheetContent`'s distance-disabling); `RadioGroup`/`SearchInput`/
+  `DefaultOptionRow`/`SpeciesOptionRow` (per-option `disabledValues` →
+  `onDisabledPress` вместо `onChange`, `DefaultOptionRow`'s distance
+  null/NaN-фильтрация, `SpeciesOptionRow`'s latin-name-когда-отличается);
+  `hooks/useItem.ts`/`useList.ts` (URL по типу, cache-fallback на
+  ошибку, `useList`'s `mergedFilters`/query-key чувствительность ко всем
+  входам); `UniversalBottomSheet`/`ThemedToast`/`GlobalBottomSheet`
+  (imperative `present`/`dismiss`, menu/confirm/content режимы,
+  required-input match с trim+case-insensitive, `handleConfirm`'s
+  error → dismiss сразу → `onError` через 400мс, `handleDismiss`'s guard
+  против spurious replace-echo); `hooks/Profile/useExportProfile.ts`
+  (`triggerExport`'s 429-still-polls-ветка, 5с polling loop,
+  completed-без-download_token не останавливает поллинг, download-без-uri
+  → failed, `cleanup` останавливает interval).
+
+  Один реальный прод-баг найден и исправлен: `hooks/useList.ts`'s
+  `locationKey` использовал `locationCoords?.[1]` **дважды** вместо `[0]`
+  и `[1]` — смена одной только широты никогда не меняла query key, то
+  есть список не перезапрашивался при таком изменении локации (кэш считал
+  запрос идентичным). Заодно два прод-гэпа тестируемости закрыты:
+  `PlaceDropdown` уже получил `testID` в прошлом батче;
+  `PrivacyToggle`/`IconButton` — раньше; в этом батче — `RadioGroup`
+  получил опциональный `testID`-проп (сгенерированные `${testID}-option-N`/
+  `${testID}-option-N-checked`) по тому же паттерну, понадобился, чтобы
+  проверить "который вариант отмечен" без завязки на визуальный стиль.
+
+  Два методологических открытия, релевантных для будущих тестов той же
+  формы:
+  1. **react-query v5 "tracked queries"**: `useQuery`/`useInfiniteQuery`
+     результат — объект с геттерами, который триггерит ре-рендер
+     подписчика только на поля, реально прочитанные во время рендера.
+     Кастомный хук вроде `useItem`, который читает только `query.error`
+     (в deps эффекта) и возвращает весь `query` как есть, никогда не
+     триггерит ре-рендер на переход pending→success в `renderHook`-тесте
+     (raw `result.current` замирает на первом снепшоте навсегда —
+     выглядит как зависший тест, а не как падение). Фикс — рендерить
+     `() => ({ ...useItem(...) })` вместо `() => useItem(...)`,
+     принудительно читая все поля (так же, как это делает реальный экран,
+     который деструктурирует `{ data, isLoading, ... }`). См. комментарий
+     в `useItem.test.tsx`/`useList.test.tsx`.
+  2. Мнимый "хэнг" в одном прогоне `UniversalBottomSheet.test.tsx` при
+     прямом вызове `onDismiss`-колбэка (симуляция реального dismiss от
+     библиотеки) синхронным `act(() => cb())` — вторая setState-цепочка
+     из трёх вызовов (`setPayload(null)`/`setInputValue("")`/
+     `setIsLoading(false)`) выполнялась (подтверждено логами), но React
+     не перерисовывал дерево до конца текущего теста; `await act(async
+     () => { cb(); })` (асинхронная форма) чинит это — тот же класс
+     проблемы, что и `useFocusEffect`-мок в `useSyncedFilters.test.tsx`
+     (см. §6/четвёртый батч): синхронные обновления состояния вне
+     event-хендлера иногда требуют асинхронного `act()`, даже когда сам
+     колбэк синхронный.
+
+  Итог: 1411 тестов, 124 suite, `npm run test`, `npm run check` и
+  `npm run test:coverage` (83.21% stmts) зелёные.

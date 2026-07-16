@@ -16,6 +16,7 @@ interface RadioGroupProps<
   style?: StyleType;
   disabledValues?: T[];
   onDisabledPress?: (value: T) => void;
+  testID?: string;
 }
 
 export const RadioGroup = <T extends string | number | boolean | null>({
@@ -29,6 +30,7 @@ export const RadioGroup = <T extends string | number | boolean | null>({
   style,
   disabledValues = [],
   onDisabledPress,
+  testID,
 }: RadioGroupProps<T>) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -49,6 +51,7 @@ export const RadioGroup = <T extends string | number | boolean | null>({
           return (
             <Pressable
               key={String(option.value ?? index)}
+              testID={testID ? `${testID}-option-${index}` : undefined}
               onPress={() => {
                 if (disabled) return;
                 if (disabledValues.includes(option.value)) {
@@ -66,7 +69,12 @@ export const RadioGroup = <T extends string | number | boolean | null>({
               ]}
             >
               <View style={[styles.outer, checked && styles.outerChecked]}>
-                {checked && <View style={styles.inner} />}
+                {checked && (
+                  <View
+                    style={styles.inner}
+                    testID={testID ? `${testID}-option-${index}-checked` : undefined}
+                  />
+                )}
               </View>
               <Text style={styles.label}>{option.label}</Text>
             </Pressable>

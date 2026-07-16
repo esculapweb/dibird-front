@@ -43,7 +43,7 @@ export const useList = <T>({
 
   const locationKey = useMemo(() => {
     if (!locationCoords) return null;
-    return `${locationCoords?.[1] ?? ""},${locationCoords?.[1] ?? ""}`;
+    return `${locationCoords?.[0] ?? ""},${locationCoords?.[1] ?? ""}`;
   }, [locationCoords]);
 
   const queryKey = useMemo(() => {
