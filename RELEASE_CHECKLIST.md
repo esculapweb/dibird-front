@@ -249,39 +249,129 @@ OS-level `toggleAirplaneMode`, полный цикл create → update → delet
 
 ## 6. Что дальше (осознанно не входит в этот релизный гейт)
 
-- Готово: 8 Maestro-флоу — `login.yaml`/`create-observation.yaml` (iOS) и
+Платформенно/инфраструктурно заблокированное — не задача тестирования,
+ждёт либо возможностей платформы, либо CI-инфраструктуры:
+
+- iOS-офлайн (раздел 3) и push-уведомления (раздел 5) осознанно не
+  автоматизированы в Maestro — `toggleAirplaneMode` недоступен на iOS
+  Simulator (нет radio-стека), а push требует управления инфраструктурой
+  пуш-сервиса; надёжность такой автоматизации под вопросом, пока остаются
+  ручными пунктами чек-листа.
+- iOS-флоу для update/delete (только create на данный момент) и iOS-версии
+  offline-*.yaml (см. выше, блокировано платформой, не приоритетом).
+- CI на GitHub Actions, гоняющий `npm run check` + `npm test` (и, когда
+  будет готова сборка для симулятора/эмулятора в CI, `npm run e2e` /
+  `npm run e2e:android`) на каждый PR — сейчас всё из раздела 1
+  выполняется вручную разработчиком перед релизом.
+
+### Известные баги, найденные тестами, но сознательно не исправленные
+
+- **`hooks/repositories/profileRepository.ts`'s `applyLocalPatch()`** не
+  создаёт settings-строку, если её ещё не было (голый `UPDATE` без
+  `.where()`/upsert) — тот же класс бага, что был в
+  `alertSettingsRepository.ts` (там пофикшен, см. журнал ниже). **Почему
+  не исправлено:** первичный ключ таблицы — реальный `user`-id с сервера,
+  а не фиксированный синглтон, так что создать валидную строку без него
+  нечем (в отличие от alertSettings, где upsert на известный синглтон-ключ
+  тривиален). Вместо фикса — тест задокументировал, что сценарий
+  недостижим через реальный UI: `ProfileScreen.tsx` не рендерит форму
+  редактирования, пока `profile` не загружен, а бэкенд создаёт `Profile`
+  для любого `User` сразу при регистрации (`myapi/signals.py`'s
+  `post_save`). Если когда-нибудь появится путь к `applyLocalPatch` без
+  загруженного профиля, тест должен упасть первым.
+- **`components/Profile/ProfileForm.tsx`'s `validateForm()`** считает
+  `invalid.territory`/`invalid.timezone`, но эти флаги никогда не
+  передаются в соответствующие `DropdownInput` (только
+  `invalid.userName` доходит до `Input`'s `isInvalid`) — заблокированный
+  submit не даёт пользователю видимой подсказки, какое поле не заполнено,
+  кроме username. **Почему не исправлено:** это изменение видимого
+  поведения UI (какое именно визуальное состояние error должно показывать
+  `DropdownInput` — рамка, текст под полем и т.д.), а не только тестовый
+  гэп; требует отдельного решения/дизайн-ревью, не входит в задачу
+  написания тестов.
+
+### Следующие кандидаты на автотесты (по коду покрытия, приоритет по риску)
+
+`npm run test:coverage` после двух батчей — 69.0% stmts (был 47.3% →
+60.39% → 69.0%). Список из прошлой ревизии этого раздела (репозитории/
+`useDropdownQuery`/`usePlaceLocation`/`storageHelper`/`alertSettings`/
+`useApiError`/8 Card-компонентов/4 общих поля форм) полностью закрыт —
+см. журнал (§7) для деталей. Ниже — не выполненный, а предлагаемый
+порядок для следующего захода:
+
+1. **`components/Auth/{AuthContent,AuthForm}.tsx`** (0%) — форма входа,
+   прямая зависимость `WelcomeScreen`/`LoginScreen`, риск из §2; сейчас
+   застаблены целиком в тестах этих экранов, сама валидация/wiring полей
+   формы логина нигде не проверена напрямую (тот же класс пробела, что
+   был у `ObservationForm`/`DiaryForm`/`PlaceForm`/`ProfileForm` до
+   прошлого батча).
+2. **`components/ui/{IconsHeader,IconButton}.tsx`** (0%/22%) — общий
+   header-виджет, используется в большинстве экранов и уже дважды
+   всплывал как источник ложных тестов на уровне экранов (см. журнал §6:
+   `condition`-фильтрация, `disabled` не долетающий до `onPress`) —
+   сейчас проверяется только опосредованно через самодельные стабы в
+   каждом экранном тесте, а не напрямую.
+3. **`components/ui/{Section,PrivacyToggle,RadiusRow,TimeWindowRow,Tabs}.tsx`**
+   (0%) — общие поля `AlertSettingsScreen`/форм редакторов, тот же класс
+   риска, что и уже закрытые общие поля форм.
+4. **`hooks/useFilterLabels.ts`/`hooks/useSyncedFilters.ts`** (0%) —
+   деривация текста фильтров и синхронизация URL/deep-link фильтров с
+   `filters-context`, нетривиальная логика без прямого покрытия.
+5. **`components/ui/{DropdownInput.tsx}`'s делегаты
+   `SpeciesDropdown.tsx`/`PlaceDropdown.tsx`/`SelectListModal.tsx`**
+   (5–7%) — сам `DropdownInput` теперь 98%, но три компонента, которым он
+   делегирует специализированный рендеринг, остаются непокрытыми (были
+   замоканы в `DropdownInput.test.tsx` как раз чтобы изолировать его
+   собственную оркестрацию).
+6. **`services/errors.ts`** (51%) — `toUIError`/error-классификация,
+   центральная для `useApiError`/`useMutationWithTranslation`, сейчас
+   покрыта только частично через побочный эффект других тестов.
+7. **`hooks/useBiometricSetting.ts`** (0%) — `SecureStore`-обёртка,
+   маленькая, но напрямую отвечает за пункт риска в §2 (Face ID/Touch ID
+   toggle), уже используется в `SettingsScreen` (застаблен там).
+8. **`components/Profile/{Avatar,ProfileAvatar,CompareProfileHeader}.tsx`**
+   (0–35%) — аватар/профильные виджеты, используются почти во всех
+   detail-экранах (сейчас застаблены везде).
+
+Не включены намеренно: `components/Main/*` (дашборд-виджеты, чисто
+презентационные, низкий риск), `store/theme-context.tsx`/`language-context.tsx`
+(конфигурационные, меняются редко), `services/{sentry,queryClient,
+navigationRef}.ts` (тонкие обёртки над SDK), `components/ui/BackgroundScene*.tsx`/
+`CustomSplash.tsx` (чисто декоративные).
+
+## 7. Журнал закрытых пробелов покрытия (справочно, не влияет на гейт)
+
+Хронология того, что уже сделано сверх раздела 1 — оставлено как
+справочный журнал (что покрыто, зачем, какие баги попутно нашлись), не
+как чек-лист задач.
+
+- Maestro (8 флоу): `login.yaml`/`create-observation.yaml` (iOS) и
   `{offline,online}-create-{diary,observation,place}.yaml` (Android,
   полный create → update → delete цикл, офлайн-версии с реальным
   OS-level airplane mode). Потребовали добавить `testID` в несколько
   ключевых мест (`Input`, `IconButton`/`IconsHeader`, FAB/quick-actions,
   триггеры дропдаунов территории/вида) — в приложении не было ни testID,
   ни accessibilityLabel.
-- Готово: repository-слой (`diary`/`observation`/`place`/`alertSettings`/
+- Repository-слой (`diary`/`observation`/`place`/`alertSettings`/
   `profile`Repository) покрыт jest-тестами поверх реальной sqlite
   (`hooks/repositories/testDb.ts`, checked-in миграции) — входит в
   `npm run test`, сократил долю ручной проверки в разделе 3 (error/retry/
-  discard, резолв temp-id). При написании тестов всплыли и исправлены два
-  однотипных бага в `profileRepository.ts`/`alertSettingsRepository.ts`:
+  discard, резолв temp-id). При написании тестов всплыли и **исправлены**
+  два однотипных бага в `profileRepository.ts`/`alertSettingsRepository.ts`:
   `resolveMutation()` в обоих файлах помечала запись `"synced"`
   безусловно, не проверяя другие ещё pending-мутации (теперь пересчитывает
   `remaining`, как уже делал `discardMutation()`); `applyLocalPatch()` в
   `alertSettingsRepository.ts` не создавала settings-строку, если её ещё
   не было (голый `UPDATE` без `.where()`/upsert) — заменено на
   `onConflictDoUpdate`. Аналогичный баг в `profileRepository.ts`'s
-  `applyLocalPatch()` сознательно **не** чинили: там первичный ключ —
-  реальный `user`-id с сервера, а не фиксированный синглтон, так что
-  создать валидную строку без него нечем; вместо фикса — тест
-  задокументировал, что сценарий недостижим через реальный UI
-  (`ProfileScreen.tsx` не рендерит форму редактирования, пока `profile` не
-  загружен, а бэкенд создаёт `Profile` для любого `User` сразу при
-  регистрации — `myapi/signals.py`'s `post_save`).
-- Готово: auth/security (`util/auth.ts`, `services/api.ts`'s 401-refresh
+  `applyLocalPatch()` остался **не исправлен** — см. раздел 6.
+- Auth/security (`util/auth.ts`, `services/api.ts`'s 401-refresh
   интерсептор, `services/bio.ts`) и push/alert-sync
   (`usePushNotifications.ts`, `alertSettingsSync.ts` + его
   reconnect/foreground-триггер в `alert-settings-context.tsx`) закрыты
   юнит-тестами — раньше это были модули с нулевым покрытием, теперь входят
   в обязательный гейт раздела 1. При написании `api.test.ts` нашли и
-  исправили баг: `clearTokens()` сбрасывала `isLoggingOut` в `false`
+  **исправили** баг: `clearTokens()` сбрасывала `isLoggingOut` в `false`
   первой же строкой, из-за чего guard от повторного форсированного
   логаута не работал — при двух параллельных запросах, оба словивших
   неудачный refresh, `onUnauthorizedCallback` мог вызваться дважды подряд;
@@ -294,12 +384,25 @@ OS-level `toggleAirplaneMode`, полный цикл create → update → delet
   `react-native-reanimated` 4.x (через `react-native-worklets`) требует
   свой `resolver` в `jest.config.js` — добавлен, чинит любой будущий тест,
   который транзитивно тронет reanimated.
-- Готово (batch 1/N): `screens/**` — раньше 0 файлов на весь каталог (29
-  экранов) и полностью исключён из `collectCoverageFrom`. Первые 5 —
+- `screens/**`: раньше 0 файлов на весь каталог и полностью исключён из
+  `collectCoverageFrom`. Теперь 28 из 30 экранов (плюс общий shell
+  `ListScreen.tsx`, самая широкая поверхность мока в репозитории —
+  filters-context/location-context/language-context/BottomSheet,
+  переиспользуется 9 экранами: Diaries/Observations/Places/Community/
+  Rating/RatingsCompare/Stat/UserStat) покрыты; `collectCoverageFrom`
+  включает `screens/**/*.{ts,tsx}`. Первые 5 —
   `WelcomeScreen`/`ProfileScreen`/`AlertSettingsScreen`/
   `NotificationsScreen`/`ObservationEditorScreen` — выбраны как самые
-  рискованные по самому этому чек-листу (см. §2/§4/§5 выше). Установлены
-  переиспользуемые конвенции для всех будущих экранных тестов:
+  рискованные по самому этому чек-листу (см. §2/§4/§5 выше); остальные
+  дописаны тем же паттерном, включая detail-экраны с owner/non-owner
+  ветвлением (`ObservationDetail`/`DiaryDetail`/`PlaceDetail`/
+  `CommunityDetail`), stat/checklist-режимы (`StatScreen`) и системные
+  настройки с биометрией/экспортом/удалением профиля (`SettingsScreen`).
+  Оставшиеся 2 из 30 — `AchievementsScreen.tsx`/`SpeciesDetailScreen.tsx` —
+  не покрыты **намеренно**: обе целиком заглушки (`<Text>ScreenName</Text>`,
+  ни одного хука/ветвления), фича ещё не реализована — тестировать
+  нечего, добавить тест вместе с реализацией.
+  Установлены переиспользуемые конвенции для всех экранных тестов:
   `screens/test-utils.tsx` (фабрика мока навигации,
   `useNavigation`/`useRoute`/`getParent`) и `screens/mockTheme.ts`
   (расшаренный `Colors`-мок, ранее дублировался в 2 компонентных тестах) —
@@ -308,31 +411,79 @@ OS-level `toggleAirplaneMode`, полный цикл create → update → delet
   такое же расположение для repository-тестов). Для `@tanstack/react-query`
   — мокать модуль/кастомный хук, не поднимать `QueryClientProvider`
   (соответствует единственному прежнему прецеденту в репо). Тяжёлые дочерние
-  формы/виджеты (`ProfileForm`, `ObservationForm`, `RadiusRow`,
-  `TimeWindowRow`, `IconsHeader`) застаблены — тестируется оркестрация
-  экрана, а не чужая вложенная форма. По пути найдены и обойдены четыре
-  дыры окружения (не в коде продукта): `react-native-safe-area-context` и
-  `RTL v14` убрала `UNSAFE_getByType`/`UNSAFE_getByProps` (добавлены два
-  `testID` — `ItemsList`'s `FlatList`, `LoadingOverlay`); `Pressable`
-  внутри `IconButton` не всегда уважает `onPress: undefined` при disabled
-  под fireEvent.press в этой связке RN/RTL (обойдено стабом
-  `IconsHeader`); реальные `setTimeout(…, 1500)` в `ProfileScreen`/
-  `ObservationEditorScreen` требуют fake timers, иначе тест оставляет
-  висящий таймер.
-- В процессе: `ListScreen.tsx` (общий shell для 8+ экранов —
-  Diaries/Observations/Places/Community/Rating/RatingsCompare/Stat/
-  UserStat, самая широкая поверхность мока в репозитории — filters-
-  context/location-context/language-context/BottomSheet) и оставшиеся ~23
-  экрана. См. `screens/__tests__/` по мере готовности; этот пункт чек-
-  листа обновится, когда batch закроется.
-- iOS-офлайн (раздел 3) и push-уведомления (раздел 5) осознанно не
-  автоматизированы в Maestro — `toggleAirplaneMode` недоступен на iOS
-  Simulator (нет radio-стека), а push требует управления инфраструктурой
-  пуш-сервиса; надёжность такой автоматизации под вопросом, пока остаются
-  ручными пунктами чек-листа.
-- iOS-флоу для update/delete (только create на данный момент) и iOS-версии
-  offline-*.yaml (см. выше, блокировано платформой, не приоритетом).
-- CI на GitHub Actions, гоняющий `npm run check` + `npm test` (и, когда
-  будет готова сборка для симулятора/эмулятора в CI, `npm run e2e` /
-  `npm run e2e:android`) на каждый PR — сейчас всё из раздела 1
-  выполняется вручную разработчиком перед релизом.
+  формы/виджеты (`ProfileForm`, `ObservationForm`, `DiaryForm`, `PlaceForm`,
+  `RadiusRow`, `TimeWindowRow`, `IconsHeader`, `Tabs`, `StatCard`,
+  `ChecklistCard`, `CommunityCard`, `DiaryCard`, `PlacePreviewRow`,
+  `Section`, `ProfileAvatar`, `MapL`, `FilterChips`) застаблены —
+  тестируется оркестрация экрана, а не чужая вложенная форма. По пути
+  найдены и обойдены дыры окружения (не в коде продукта): `RTL v14` убрала
+  `UNSAFE_getByType`/`UNSAFE_getByProps` (добавлены `testID` —
+  `ItemsList`'s `FlatList`, `LoadingOverlay`, `StaticScreen`'s loader);
+  `Pressable`/`IconButton` не всегда уважает `onPress: undefined` при
+  disabled под fireEvent.press в этой связке RN/RTL (обойдено стабом
+  `IconsHeader`, который также должен фильтровать по `btn.condition`, а не
+  только `disabled` — иначе кнопка, скрытая по условию видимости для
+  non-owner, ошибочно тестируется как "disabled" вместо "не рендерится");
+  реальные `setTimeout`/`requestAnimationFrame` (success-flash таймеры,
+  `navigation.replace`-отложки) требуют fake timers, иначе тест оставляет
+  висящий таймер; RTL v14's `render`/`fireEvent`/`unmount` асинхронны —
+  `unmount()` тоже нужно `await`, иначе cleanup-эффекты
+  (`useEffect(() => () => cleanup(), [])`) не успевают сработать до
+  assert.
+- Пробелы за пределами `screens/**`, найденные через
+  `npm run test:coverage` (был 47.3% stmts, стал 60.39%). Порядок
+  выбирался по риску, не по объёму: сперва офлайн-мутационные хуки
+  (`hooks/{Diary,Observation,Place}/useOffline*.ts` — сам механизм
+  create/update/delete "онлайн успех → сеть упала → локальный драфт →
+  триггер sync", уже названный ключевым риском в разделе 3), затем
+  `hooks/useEditorForm.ts` (общая форм-логика редакторов),
+  `util/fetches.ts` (был самым большим непокрытым файлом, ~700 строк —
+  общий `fetchAbstract`-кэш-фолбэк плюс уникальные `deriveFallback`/
+  `resort` каждого списка), 4 формы (`ObservationForm`/`DiaryForm`/
+  `PlaceForm`/`ProfileForm` — валидация и wiring полей, ранее
+  проверялись только через мок в экранных тестах), и 3 давно непокрытых
+  стор-контекста (`auth-context.tsx` — восстановление токена/биометрия/
+  logout, `filters-context.tsx`, `location-context.tsx` — permission-флоу
+  и guard от повторного одновременного запроса). `useOffline*`-хуки и
+  `useEditorForm` тестируются через настоящий `QueryClient`/
+  `QueryClientProvider` (а не мок `@tanstack/react-query`, как в остальном
+  репозитории) — сама react-query-оркестрация тут и есть предмет теста;
+  репозитории (`diaryRepository`/`observationRepository`/
+  `placeRepository`) при этом замоканы целиком, так как уже покрыты
+  отдельно. Новая для репозитория деталь тестового окружения: react-query
+  batches уведомления через реальный `setTimeout(0)` вне `act()`, что
+  даёт зависший таймер и act()-warning — фиксится
+  `notifyManager.setScheduler((cb) => cb())` в начале файла. При написании
+  тестов на `ProfileForm.tsx` найден баг, оставшийся **не исправлен** —
+  см. раздел 6. Итог всей инициативы (`screens/**` + этот батч): 814
+  тестов, 71 suite, `npm run test` и `npm run check` зелёные.
+- Второй батч пробелов покрытия (60.39% → 69.0% stmts), выбранный по
+  тому же принципу риска из предыдущей ревизии раздела 6, в порядке
+  выполнения: три оставшихся низкопокрытых repository-модуля
+  (`notificationRepository.ts` — offline-пометка "прочитано",
+  `listCacheRepository.ts` — общий кэш-фолбэк механизм с LRU-подобным
+  вытеснением по `updated_at`, `referenceRepository.ts` — countries/
+  timezones справочники), `hooks/useDropdownQuery.ts` (общий движок сорта
+  всех 4 форм — distance-sort permission-гейтинг, отложенный sort после
+  `requestLocation`), `hooks/Place/usePlaceLocation.ts` (`normalizeCoords`
+  + геолокационная логика создания места, риск из §4), `util/storageHelper.ts`
+  (save/load для глобальных фильтров), `services/alertSettings.ts`
+  (прямая зависимость `AlertSettingsScreen`), `hooks/useApiError.ts`, все
+  8 Card-компонентов списков (`ObservationCard`/`DiaryCard`/`PlaceCard`/
+  `CommunityCard`/`ChecklistCard`/`components/Stats/StatCard.tsx`/
+  `RatingCard`/`RatingCompareCard` — не путать с уже покрытым
+  `components/ui/StatCard.tsx`, другим одноимённым файлом), и 4 общих
+  поля форм (`Input`/`DateInput`/`TimeInput`/`DropdownInput` —
+  используются всеми 4 формами и большинством экранов, раньше везде
+  застаблены вместо прямого тестирования). `DateInput`/`TimeInput`
+  впервые в репозитории тестируют платформенно-ветвящийся (Android
+  inline-picker vs iOS spinner-панель) компонент с `@react-native-community/
+  datetimepicker` — сам пикер застаблен целиком (захват `onChange`-пропа,
+  вызывается вручную в тесте), поскольку рендерить настоящий нативный
+  пикер в jest бессмысленно; `expo-haptics` тоже застаблен. `listCacheRepository`'s
+  eviction-тест — единственный во всём наборе, что намеренно вставляет
+  22 строки подряд (порог вытеснения = `maxEntries + max(20, round(maxEntries*0.1))`,
+  а `MIN_HYSTERESIS=20` доминирует при любом разумном `maxEntries`, так
+  что меньше 22 строк порог не перейти). Итог: 1071 тестов, 91 suite,
+  `npm run test`, `npm run check` и `npm run test:coverage` (69.0% stmts,
+  было 47.3% в начале всей инициативы) зелёные.

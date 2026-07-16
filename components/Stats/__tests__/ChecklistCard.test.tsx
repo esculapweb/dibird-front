@@ -1,0 +1,189 @@
+jest.mock("react-i18next", () => ({
+  useTranslation: () => ({ t: (key: string) => key }),
+  initReactI18next: { type: "3rdParty", init: () => {} },
+}));
+jest.mock("../../../store/theme-context", () => ({
+  useTheme: () => ({
+    Colors: {
+      primary100: "#fff",
+      backgroundMain: "#f5f5f5",
+      shadow: "#000",
+      imageBg: "#eee",
+      textMain: "#000",
+      textSecondary: "#666",
+      statIcon: "#999",
+      main100: "#0a0",
+      border: "#ccc",
+    },
+  }),
+}));
+jest.mock("@expo/vector-icons", () => {
+  const { Text } = require("react-native");
+  return {
+    Ionicons: ({ name, testID }: { name: string; testID?: string }) => (
+      <Text testID={testID ?? `icon-${name}`}>{name}</Text>
+    ),
+  };
+});
+jest.mock("expo-image", () => {
+  const { View } = require("react-native");
+  return {
+    Image: (props: Record<string, unknown>) => <View testID="species-thumb" {...props} />,
+  };
+});
+jest.mock("../../ui/Svgs", () => {
+  const { View } = require("react-native");
+  return {
+    BirdSVG: (props: Record<string, unknown>) => <View testID="species-thumb-placeholder" {...props} />,
+  };
+});
+
+import { fireEvent, render, screen } from "@testing-library/react-native";
+import ChecklistCard from "../ChecklistCard";
+
+const mockOnPress = jest.fn();
+const mockOnToggle = jest.fn();
+
+beforeEach(() => {
+  jest.clearAllMocks();
+});
+
+describe("order divider", () => {
+  const ORDER_ITEM = { type: "order", name_lang: "Perching birds", latin: "Passeriformes", total: 0, seen_count: 0 };
+
+  it("shows the order label, name and latin (with a dot separator)", async () => {
+    await render(
+      <ChecklistCard item={ORDER_ITEM as never} index={0} onPress={mockOnPress} onToggle={mockOnToggle} />,
+    );
+    expect(screen.getByText("order")).toBeOnTheScreen();
+    expect(screen.getByText("Perching birds")).toBeOnTheScreen();
+    expect(screen.getByText("Passeriformes")).toBeOnTheScreen();
+    expect(screen.getByText("·")).toBeOnTheScreen();
+  });
+
+  it("omits the latin name and dot when there's none", async () => {
+    await render(
+      <ChecklistCard item={{ ...ORDER_ITEM, latin: null } as never} index={0} onPress={mockOnPress} onToggle={mockOnToggle} />,
+    );
+    expect(screen.queryByText("·")).not.toBeOnTheScreen();
+  });
+
+  it("shows a seen/total count when there's a total but it isn't complete", async () => {
+    await render(
+      <ChecklistCard
+        item={{ ...ORDER_ITEM, total: 10, seen_count: 3 } as never}
+        index={0}
+        onPress={mockOnPress}
+        onToggle={mockOnToggle}
+      />,
+    );
+    expect(screen.getByText("3 / 10")).toBeOnTheScreen();
+  });
+
+  it("shows an 'all' badge instead once seen_count reaches total", async () => {
+    await render(
+      <ChecklistCard
+        item={{ ...ORDER_ITEM, total: 10, seen_count: 10 } as never}
+        index={0}
+        onPress={mockOnPress}
+        onToggle={mockOnToggle}
+      />,
+    );
+    expect(screen.getByText("all")).toBeOnTheScreen();
+    expect(screen.queryByText("10 / 10")).not.toBeOnTheScreen();
+  });
+
+  it("shows neither a count nor a badge when there's no total yet", async () => {
+    await render(
+      <ChecklistCard item={ORDER_ITEM as never} index={0} onPress={mockOnPress} onToggle={mockOnToggle} />,
+    );
+    expect(screen.queryByText("all")).not.toBeOnTheScreen();
+    expect(screen.queryByText(/\//)).not.toBeOnTheScreen();
+  });
+});
+
+describe("family divider", () => {
+  const FAMILY_ITEM = { type: "family", name_lang: "Thrushes", latin: "Turdidae", total: 5, seen_count: 5 };
+
+  it("shows the family label, name, and an 'all' badge once complete", async () => {
+    await render(
+      <ChecklistCard item={FAMILY_ITEM as never} index={0} onPress={mockOnPress} onToggle={mockOnToggle} />,
+    );
+    expect(screen.getByText("family")).toBeOnTheScreen();
+    expect(screen.getByText("Thrushes")).toBeOnTheScreen();
+    expect(screen.getByText("Turdidae")).toBeOnTheScreen();
+    expect(screen.getByText("all")).toBeOnTheScreen();
+  });
+
+  it("shows a seen/total count when not yet complete", async () => {
+    await render(
+      <ChecklistCard
+        item={{ ...FAMILY_ITEM, seen_count: 2 } as never}
+        index={0}
+        onPress={mockOnPress}
+        onToggle={mockOnToggle}
+      />,
+    );
+    expect(screen.getByText("2 / 5")).toBeOnTheScreen();
+  });
+});
+
+describe("species row", () => {
+  const SPECIES_ITEM = { type: "species", name_lang: "Blackbird", latin: "Turdus merula", thumb: null, seen: false };
+
+  it("renders the species name and latin", async () => {
+    await render(
+      <ChecklistCard item={SPECIES_ITEM as never} index={0} onPress={mockOnPress} onToggle={mockOnToggle} />,
+    );
+    expect(screen.getByText("Blackbird")).toBeOnTheScreen();
+    expect(screen.getByText("Turdus merula")).toBeOnTheScreen();
+  });
+
+  it("shows the real thumbnail or a placeholder based on the item's own thumb", async () => {
+    await render(
+      <ChecklistCard item={SPECIES_ITEM as never} index={0} onPress={mockOnPress} onToggle={mockOnToggle} />,
+    );
+    expect(screen.getByTestId("species-thumb-placeholder")).toBeOnTheScreen();
+
+    await render(
+      <ChecklistCard
+        item={{ ...SPECIES_ITEM, thumb: "t.jpg" } as never}
+        index={0}
+        onPress={mockOnPress}
+        onToggle={mockOnToggle}
+      />,
+    );
+    expect(screen.getByTestId("species-thumb")).toBeOnTheScreen();
+  });
+
+  it("shows an empty checkbox for an unseen species, a checked one for a seen one", async () => {
+    await render(
+      <ChecklistCard item={SPECIES_ITEM as never} index={0} onPress={mockOnPress} onToggle={mockOnToggle} />,
+    );
+    expect(screen.getByTestId("icon-square-outline")).toBeOnTheScreen();
+
+    await render(
+      <ChecklistCard
+        item={{ ...SPECIES_ITEM, seen: true } as never}
+        index={0}
+        onPress={mockOnPress}
+        onToggle={mockOnToggle}
+      />,
+    );
+    expect(screen.getByTestId("icon-checkbox")).toBeOnTheScreen();
+  });
+
+  it("presses on the row call onPress, presses on the checkbox call onToggle", async () => {
+    await render(
+      <ChecklistCard item={SPECIES_ITEM as never} index={0} onPress={mockOnPress} onToggle={mockOnToggle} />,
+    );
+
+    await fireEvent.press(screen.getByText("Blackbird"));
+    expect(mockOnPress).toHaveBeenCalledTimes(1);
+    expect(mockOnToggle).not.toHaveBeenCalled();
+
+    await fireEvent.press(screen.getByTestId("icon-square-outline"));
+    expect(mockOnToggle).toHaveBeenCalledTimes(1);
+    expect(mockOnPress).toHaveBeenCalledTimes(1);
+  });
+});

@@ -232,7 +232,6 @@ describe("favourite toggle", () => {
   it("reports an error via showErrorToast on failure", async () => {
     await render(<PlaceDetailScreen />);
     await headerButton("place-favourite-button");
-    const { onError } = mockUpdateMutate.mock.calls[0]?.[1] ?? {};
     // Trigger via a fresh press since mutate isn't auto-invoked above.
     await fireEvent.press(screen.getByTestId("place-favourite-button"));
     const call = mockUpdateMutate.mock.calls.at(-1)![1];

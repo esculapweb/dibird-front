@@ -1,0 +1,92 @@
+import { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
+
+import { createTestDb, loadRepos } from "../testDb";
+import { speciesDropdownCacheTable } from "../../../services/db/schema";
+import * as schema from "../../../services/db/schema";
+
+type ListCacheRepo = typeof import("../listCacheRepository");
+
+let db: BetterSQLite3Database<typeof schema>;
+let listCacheRepository: ListCacheRepo;
+
+beforeEach(() => {
+  db = createTestDb();
+  const repos = loadRepos(db, ["listCacheRepository"]);
+  listCacheRepository = repos.listCacheRepository as ListCacheRepo;
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});
+
+const allRows = () => db.select().from(speciesDropdownCacheTable).all();
+
+describe("cacheListResponse / getCachedListResponse", () => {
+  it("stores a response under its key and reads it back", () => {
+    listCacheRepository.cacheListResponse(speciesDropdownCacheTable, "key1", { a: 1 }, 100);
+    expect(listCacheRepository.getCachedListResponse(speciesDropdownCacheTable, "key1")).toEqual({ a: 1 });
+  });
+
+  it("returns null for a key that was never cached", () => {
+    expect(listCacheRepository.getCachedListResponse(speciesDropdownCacheTable, "missing")).toBeNull();
+  });
+
+  it("overwrites the existing row (not a duplicate) when the same key is cached again", () => {
+    listCacheRepository.cacheListResponse(speciesDropdownCacheTable, "key1", { a: 1 }, 100);
+    listCacheRepository.cacheListResponse(speciesDropdownCacheTable, "key1", { a: 2 }, 100);
+
+    expect(allRows()).toHaveLength(1);
+    expect(listCacheRepository.getCachedListResponse(speciesDropdownCacheTable, "key1")).toEqual({ a: 2 });
+  });
+});
+
+describe("getCachedListResponseByPrefix", () => {
+  it("returns the most recently updated row among those matching the prefix", async () => {
+    listCacheRepository.cacheListResponse(speciesDropdownCacheTable, "species|5|name", { order: "name" }, 100);
+    await new Promise((r) => setTimeout(r, 2));
+    listCacheRepository.cacheListResponse(speciesDropdownCacheTable, "species|5|ioc_id", { order: "ioc_id" }, 100);
+
+    const result = listCacheRepository.getCachedListResponseByPrefix(speciesDropdownCacheTable, "species|5|");
+    expect(result).toEqual({ order: "ioc_id" });
+  });
+
+  it("does not match a key under a different prefix", () => {
+    listCacheRepository.cacheListResponse(speciesDropdownCacheTable, "species|9|name", { order: "name" }, 100);
+    expect(
+      listCacheRepository.getCachedListResponseByPrefix(speciesDropdownCacheTable, "species|5|"),
+    ).toBeNull();
+  });
+
+  it("returns null when nothing has been cached yet", () => {
+    expect(
+      listCacheRepository.getCachedListResponseByPrefix(speciesDropdownCacheTable, "species|5|"),
+    ).toBeNull();
+  });
+});
+
+describe("eviction", () => {
+  it("keeps growing under the cap (maxEntries + hysteresis) without evicting anything", () => {
+    for (let i = 0; i < 15; i++) {
+      listCacheRepository.cacheListResponse(speciesDropdownCacheTable, `key${i}`, { i }, 1);
+    }
+    // maxEntries=1, but MIN_HYSTERESIS=20 keeps the real threshold at 21 —
+    // 15 rows is still comfortably under it.
+    expect(allRows()).toHaveLength(15);
+  });
+
+  it("evicts the oldest rows down to exactly maxEntries once the hysteresis threshold is crossed", () => {
+    let clock = 0;
+    jest.spyOn(Date, "now").mockImplementation(() => ++clock);
+
+    // maxEntries=1 + MIN_HYSTERESIS=20 → threshold is 21; the 22nd insert
+    // crosses it and trims back down to maxEntries.
+    for (let i = 0; i < 22; i++) {
+      listCacheRepository.cacheListResponse(speciesDropdownCacheTable, `key${i}`, { i }, 1);
+    }
+
+    const rows = allRows();
+    expect(rows).toHaveLength(1);
+    // The single survivor is the most recently written key.
+    expect(rows[0].key).toBe("key21");
+  });
+});

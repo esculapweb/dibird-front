@@ -90,11 +90,11 @@ jest.mock("../../components/ui/IconsHeader", () => {
   return {
     __esModule: true,
     default: ({ headerRightBeginning, onSharePress }: {
-      headerRightBeginning: Array<{ onPress: () => void; disabled?: boolean; testID?: string }>;
+      headerRightBeginning: Array<{ onPress: () => void; disabled?: boolean; condition?: unknown; testID?: string }>;
       onSharePress?: () => void;
     }) => (
       <>
-        {headerRightBeginning.map((btn, i) => (
+        {headerRightBeginning.filter((btn) => btn.condition).map((btn, i) => (
           <TouchableOpacity key={i} testID={btn.testID} onPress={btn.disabled ? undefined : btn.onPress}>
             <Text>{btn.disabled ? "disabled" : "enabled"}</Text>
           </TouchableOpacity>
@@ -242,7 +242,7 @@ describe("owner-only header actions", () => {
       expect.objectContaining({ observation: expect.objectContaining({ id: 1 }) }),
     );
 
-    mockNavigation.navigate.mockClear();
+    (mockNavigation.navigate as jest.Mock).mockClear();
     mockItem({ data: { ...OBSERVATION, diary: 7 } });
     await render(<ObservationDetailScreen />);
     const diaryBtn = await headerButton("observation-edit-button");
@@ -253,12 +253,12 @@ describe("owner-only header actions", () => {
     );
   });
 
-  it("edit button is disabled for a non-owner", async () => {
+  it("edit button does not render at all for a non-owner", async () => {
     mockItem({ data: { ...OBSERVATION, is_owner: false } });
     await render(<ObservationDetailScreen />);
-    const btn = await headerButton("observation-edit-button");
-    await fireEvent.press(btn);
-    expect(mockNavigation.navigate).not.toHaveBeenCalled();
+    const headerRight = (mockNavigation.setOptions as jest.Mock).mock.calls.at(-1)![0].headerRight;
+    await render(headerRight());
+    expect(screen.queryByTestId("observation-edit-button")).not.toBeOnTheScreen();
   });
 
   it("bottomEl (delete button) only renders for the owner", async () => {
