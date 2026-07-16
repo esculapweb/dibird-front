@@ -2,7 +2,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
 const LoadingOverlay = ({ message }: { message?: string }) => {
   return (
-    <View style={styles.rootContainer}>
+    <View testID="loading-overlay" style={styles.rootContainer}>
       {message && <Text style={styles.message}>{message}</Text>}
       <ActivityIndicator size="large" />
     </View>

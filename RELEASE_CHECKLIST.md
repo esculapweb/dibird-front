@@ -79,23 +79,20 @@ Keychain/сессии авторизацию вместо повторного �
 - `services/__tests__/bio.test.ts` — `canUseBiometrics`/
   `shouldUseBiometrics` целиком, включая ветку "App Store review sandbox".
 
-⚠️ **Известный баг, найденный при написании `api.test.ts`** (см. тест
-`KNOWN GAP: concurrent refresh failures both fire the forced-logout
-callback...`): `clearTokens()` сбрасывает `isLoggingOut` в `false` первой
-же строкой — из-за этого guard от повторного форсированного логаута
-фактически не работает, и при двух параллельных запросах, оба словивших
-неудачный refresh, `onUnauthorizedCallback` (→ `logout()` в
-`auth-context.tsx`) может вызваться дважды подряд. Не блокирует релиз
-само по себе (просто лишний повторный логаут-запрос), но стоит завести
-отдельным issue и почитать `services/api.ts`'s `is401`-ветку перед
-следующей правкой авторизации.
+Автоматизировано юнит-тестами уровня экрана
+(`screens/__tests__/WelcomeScreen.test.tsx`): видимость кнопки Apple по
+платформе/`isAvailableAsync()`; тап по Google/Apple вызывает нужный метод и
+блокирует повторный тап во время запроса; ошибка показывает toast, но не
+на коде отмены пользователем (`SIGN_IN_CANCELLED`/`ERR_REQUEST_CANCELED`);
+переходы на Login/Terms/Privacy.
 
 Остаётся ручной проверкой (нативные SDK/UI, которые юнит-тестами не
 покрыть):
 - [ ] Вход через Google (`GoogleSignin`) и через Apple
       (`expo-apple-authentication`, только iOS, за `isAvailableAsync()`) —
       сам системный диалог, оба варианта на чистой установке (логика
-      запроса/сохранения токенов уже покрыта `auth.test.ts`).
+      запроса/сохранения токенов и вся оркестрация экрана уже покрыты
+      `auth.test.ts` + `WelcomeScreen.test.tsx`).
 - [ ] Первый вход нового пользователя (`is_new_user`) не путается с
       повторным логином — экран не дублирует онбординг.
 - [ ] Face ID/Touch ID: включить `biometric_enabled`, перезапустить
@@ -169,6 +166,16 @@ OS-level `toggleAirplaneMode`, полный цикл create → update → delet
       и подтверждение по count-based delete проверке.
 - [x] Полный офлайн create → update → delete на Android
       (`offline-create-{diary,observation,place}.yaml`, см. раздел 3).
+- [x] `screens/__tests__/ObservationEditorScreen.test.tsx` — оркестрация
+      экрана юнит-тестами: create/edit режим (правильные параметры в
+      `useEditorForm`, заголовок), блокировка сохранения при невалидной
+      форме или отсутствующих обязательных значениях, ветвление навигации
+      после сохранения (`returnMode: "back"` vs `replace` на
+      ObservationDetail vs update → `goBack`), маппинг серверной ошибки на
+      конкретное поле формы vs fallback-toast, "save and add another" в
+      diary-режиме (сброс полей, инвалидация `DiarySpecies`), регистрация
+      nav-callback при добавлении нового места, игнор повторного тапа на
+      кнопку сохранения во время pending-мутации.
 
 Остаётся ручной проверкой:
 
@@ -210,6 +217,17 @@ OS-level `toggleAirplaneMode`, полный цикл create → update → delet
   единственным непокрытым sync-движком из шести; теперь push/pull целиком
   и reconnect/foreground-триггер (аналог уже покрытого
   `profile-context.test.tsx`) тоже под тестами.
+- `screens/__tests__/NotificationsScreen.test.tsx` — loading/empty state;
+  mark-all-read (двойная инвалидация); тап по непрочитанному помечает+
+  инвалидирует, по уже прочитанному — no-op; вся таблица роутинга по тапу
+  (`Community`/`CommunityDetail`/`SpeciesDetail`/`Achievements`/`Checklist`
+  + неизвестный тип — no-op); `onEndReached`-пагинация.
+- `screens/__tests__/AlertSettingsScreen.test.tsx` — loading/error-гейт
+  (с сохранением кэша при ошибке-но-есть-данные); все `save()` call-sites
+  (enable-свитч, watchlist/seen_mode, radius, стрелки max_alerts_per_day,
+  окна расписания add/edit/remove); **отдельно** денай геолокации: экран
+  показывает bottom-sheet вместо крэша и не идёт в `requestLocation` —
+  закрывает пункт, явно названный в чек-листе.
 
 Остаётся ручной проверкой (реальное устройство/системные диалоги):
 - [ ] Разрешение на push-уведомления: первый вход → системный запрос →
@@ -217,11 +235,13 @@ OS-level `toggleAirplaneMode`, полный цикл create → update → delet
       регистрируется на бэкенде (сам системный диалог и реальный
       push-токен — логика регистрации/ретрая уже покрыта юнит-тестом).
 - [ ] Тап по реальному push-уведомлению с устройства открывает нужный
-      экран (маршрутизация уже покрыта юнит-тестом, но не факт что реальный
-      payload от бэкенда доходит и парсится как ожидается).
-- [ ] `AlertSettingsScreen`: включить алерты с геолокацией → отклонить
+      экран (маршрутизация уже покрыта юнит-тестами на двух уровнях —
+      `usePushNotifications.test.ts` и `NotificationsScreen.test.tsx`, но
+      не факт что реальный payload от бэкенда доходит и парсится как
+      ожидается).
+- [x] `AlertSettingsScreen`: включить алерты с геолокацией → отклонить
       разрешение на локацию → экран показывает понятное состояние, а не
-      крашится (`useLocationUnavailable`).
+      крашится — теперь юнит-тест, не только ручная проверка.
 - [ ] Изменения настроек алертов, сделанные офлайн, реально
       синхронизируются при восстановлении сети на реальном устройстве —
       сама sync-логика и reconnect/foreground-триггер уже покрыты юнит-
@@ -240,22 +260,71 @@ OS-level `toggleAirplaneMode`, полный цикл create → update → delet
   `profile`Repository) покрыт jest-тестами поверх реальной sqlite
   (`hooks/repositories/testDb.ts`, checked-in миграции) — входит в
   `npm run test`, сократил долю ручной проверки в разделе 3 (error/retry/
-  discard, резолв temp-id).
+  discard, резолв temp-id). При написании тестов всплыли и исправлены два
+  однотипных бага в `profileRepository.ts`/`alertSettingsRepository.ts`:
+  `resolveMutation()` в обоих файлах помечала запись `"synced"`
+  безусловно, не проверяя другие ещё pending-мутации (теперь пересчитывает
+  `remaining`, как уже делал `discardMutation()`); `applyLocalPatch()` в
+  `alertSettingsRepository.ts` не создавала settings-строку, если её ещё
+  не было (голый `UPDATE` без `.where()`/upsert) — заменено на
+  `onConflictDoUpdate`. Аналогичный баг в `profileRepository.ts`'s
+  `applyLocalPatch()` сознательно **не** чинили: там первичный ключ —
+  реальный `user`-id с сервера, а не фиксированный синглтон, так что
+  создать валидную строку без него нечем; вместо фикса — тест
+  задокументировал, что сценарий недостижим через реальный UI
+  (`ProfileScreen.tsx` не рендерит форму редактирования, пока `profile` не
+  загружен, а бэкенд создаёт `Profile` для любого `User` сразу при
+  регистрации — `myapi/signals.py`'s `post_save`).
 - Готово: auth/security (`util/auth.ts`, `services/api.ts`'s 401-refresh
   интерсептор, `services/bio.ts`) и push/alert-sync
   (`usePushNotifications.ts`, `alertSettingsSync.ts` + его
   reconnect/foreground-триггер в `alert-settings-context.tsx`) закрыты
   юнит-тестами — раньше это были модули с нулевым покрытием, теперь входят
-  в обязательный гейт раздела 1. Заодно почищены две дыры в самом
-  jest-конфиге, которые вскрылись при первом импорте этих модулей в
-  тестах (не относятся к тестируемому коду — только к тестовой
-  инфраструктуре): `@react-native-async-storage/async-storage` в
-  `setupFiles` только вычислялся, но не подключался как замена модуля
-  (нужен явный `jest.mock`, теперь в `auth.test.ts`); `react-native-reanimated`
-  4.x (через `react-native-worklets`) требует свой `resolver` в
-  `jest.config.js` — добавлен, чинит любой будущий тест, который
-  транзитивно тронет reanimated. См. также ⚠️ в разделе 2 — при этой
-  работе всплыл небольшой, не блокирующий релиз баг в `services/api.ts`.
+  в обязательный гейт раздела 1. При написании `api.test.ts` нашли и
+  исправили баг: `clearTokens()` сбрасывала `isLoggingOut` в `false`
+  первой же строкой, из-за чего guard от повторного форсированного
+  логаута не работал — при двух параллельных запросах, оба словивших
+  неудачный refresh, `onUnauthorizedCallback` мог вызваться дважды подряд;
+  теперь флаг сбрасывается только в `saveTokens()`, на следующем успешном
+  логине. Заодно почищены две дыры в самом jest-конфиге, которые вскрылись
+  при первом импорте этих модулей в тестах (не относятся к тестируемому
+  коду — только к тестовой инфраструктуре): `@react-native-async-storage/
+  async-storage` в `setupFiles` только вычислялся, но не подключался как
+  замена модуля (нужен явный `jest.mock`, теперь в `auth.test.ts`);
+  `react-native-reanimated` 4.x (через `react-native-worklets`) требует
+  свой `resolver` в `jest.config.js` — добавлен, чинит любой будущий тест,
+  который транзитивно тронет reanimated.
+- Готово (batch 1/N): `screens/**` — раньше 0 файлов на весь каталог (29
+  экранов) и полностью исключён из `collectCoverageFrom`. Первые 5 —
+  `WelcomeScreen`/`ProfileScreen`/`AlertSettingsScreen`/
+  `NotificationsScreen`/`ObservationEditorScreen` — выбраны как самые
+  рискованные по самому этому чек-листу (см. §2/§4/§5 выше). Установлены
+  переиспользуемые конвенции для всех будущих экранных тестов:
+  `screens/test-utils.tsx` (фабрика мока навигации,
+  `useNavigation`/`useRoute`/`getParent`) и `screens/mockTheme.ts`
+  (расшаренный `Colors`-мок, ранее дублировался в 2 компонентных тестах) —
+  оба лежат **рядом** с `screens/__tests__/`, не внутри (иначе jest
+  пытается запускать их как отдельные test suite, см. `testDb.ts`'s
+  такое же расположение для repository-тестов). Для `@tanstack/react-query`
+  — мокать модуль/кастомный хук, не поднимать `QueryClientProvider`
+  (соответствует единственному прежнему прецеденту в репо). Тяжёлые дочерние
+  формы/виджеты (`ProfileForm`, `ObservationForm`, `RadiusRow`,
+  `TimeWindowRow`, `IconsHeader`) застаблены — тестируется оркестрация
+  экрана, а не чужая вложенная форма. По пути найдены и обойдены четыре
+  дыры окружения (не в коде продукта): `react-native-safe-area-context` и
+  `RTL v14` убрала `UNSAFE_getByType`/`UNSAFE_getByProps` (добавлены два
+  `testID` — `ItemsList`'s `FlatList`, `LoadingOverlay`); `Pressable`
+  внутри `IconButton` не всегда уважает `onPress: undefined` при disabled
+  под fireEvent.press в этой связке RN/RTL (обойдено стабом
+  `IconsHeader`); реальные `setTimeout(…, 1500)` в `ProfileScreen`/
+  `ObservationEditorScreen` требуют fake timers, иначе тест оставляет
+  висящий таймер.
+- В процессе: `ListScreen.tsx` (общий shell для 8+ экранов —
+  Diaries/Observations/Places/Community/Rating/RatingsCompare/Stat/
+  UserStat, самая широкая поверхность мока в репозитории — filters-
+  context/location-context/language-context/BottomSheet) и оставшиеся ~23
+  экрана. См. `screens/__tests__/` по мере готовности; этот пункт чек-
+  листа обновится, когда batch закроется.
 - iOS-офлайн (раздел 3) и push-уведомления (раздел 5) осознанно не
   автоматизированы в Maestro — `toggleAirplaneMode` недоступен на iOS
   Simulator (нет radio-стека), а push требует управления инфраструктурой

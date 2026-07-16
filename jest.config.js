@@ -32,6 +32,7 @@ module.exports = {
     "components/**/*.{ts,tsx}",
     "services/**/*.{ts,tsx}",
     "store/**/*.{ts,tsx}",
+    "screens/**/*.{ts,tsx}",
     "!**/*.d.ts",
   ],
 };

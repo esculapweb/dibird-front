@@ -1,0 +1,14 @@
+// Shared useTheme() mock factory — same Colors shape duplicated across
+// components/Profile/__tests__/FailedEditBanner.test.tsx and
+// components/ui/__tests__/StatCard.test.tsx, lifted here so screens/__tests__
+// files don't reinvent it a third/fourth time. Extend the returned object
+// with whatever additional Colors keys a given screen reads.
+export const mockColors = {
+  main100: "#1a73e8",
+  error100: "#fee",
+  error600: "#900",
+  textMain: "#000",
+  textMiddle: "#666",
+};
+
+export const mockUseTheme = () => ({ Colors: mockColors });

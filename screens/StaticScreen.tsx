@@ -54,7 +54,7 @@ const StaticScreen = () => {
     );
 
   if (isLoading)
-    return <ActivityIndicator size="large" style={styles.loader} />;
+    return <ActivityIndicator testID="static-loading" size="large" style={styles.loader} />;
 
   if (!data) return null;
 

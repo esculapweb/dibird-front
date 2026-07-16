@@ -58,6 +58,7 @@ const ItemsList = <T,>({
   return (
     <>
       <FlatList
+        testID="items-list"
         data={data}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
