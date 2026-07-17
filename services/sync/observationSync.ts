@@ -10,7 +10,7 @@ import { INVALIDATION_MAP } from "../../util/invalidationMap";
 
 const OBSERVATION_URL = "/myapi/observation2/";
 
-const invalidateObservationQueries = (id?: number | null) => {
+const invalidateObservationQueries = (...ids: (number | null | undefined)[]) => {
   // refetchType: "all" (not the default "active") matters here: this sync runs
   // in the background on reconnect regardless of which screen is mounted, and
   // useList's infinite query has refetchOnMount disabled — so a query that's
@@ -25,13 +25,17 @@ const invalidateObservationQueries = (id?: number | null) => {
   INVALIDATION_MAP.Observation.update.forEach((key) =>
     queryClient.invalidateQueries({ queryKey: key, exact: false, refetchType: "all" }),
   );
-  if (id != null) {
+  // Takes every id to invalidate in one call (rather than being called once
+  // per id) so the loop above — and the network refetches it triggers —
+  // only runs once per sync event instead of once per id.
+  ids.forEach((id) => {
+    if (id == null) return;
     queryClient.invalidateQueries({
       queryKey: ["Observation", id],
       exact: false,
       refetchType: "all",
     });
-  }
+  });
 };
 
 // Drains the local mutation queue for entity "observation". Unlike profileSync
@@ -203,8 +207,7 @@ const runObservationSyncInternal = async () => {
           client_request_id: payload.clientRequestId,
         });
         observationRepository.replaceLocalWithServer(payload.localId, res.data);
-        invalidateObservationQueries(payload.localId);
-        invalidateObservationQueries(res.data.id);
+        invalidateObservationQueries(payload.localId, res.data.id);
       } else if (payload.op === "update") {
         const res = await api.patch(`${OBSERVATION_URL}${payload.localId}/`, payload.data);
         observationRepository.upsertFromServer(res.data);

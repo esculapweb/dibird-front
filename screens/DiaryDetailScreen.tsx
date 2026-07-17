@@ -262,6 +262,7 @@ const DiaryDetailScreen = () => {
     navigation.navigate("ObservationEditor", {
       diaryId: diary.id,
       territoryValue: diary.territory,
+      diaryLocationPrivate: diary.location_private,
       returnMode: "back",
     });
   }, [navigation, diary]);

@@ -194,6 +194,7 @@ describe("owner-only actions", () => {
     expect(mockNavigation.navigate).toHaveBeenCalledWith("ObservationEditor", {
       diaryId: 1,
       territoryValue: 5,
+      diaryLocationPrivate: false,
       returnMode: "back",
     });
 

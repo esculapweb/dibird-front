@@ -711,6 +711,7 @@ export type AppStackParamList = {
     observationId?: number;
     diaryId?: number;
     territoryValue?: number;
+    diaryLocationPrivate?: boolean;
     defaultTerritory?: number | null;
     defaultPlace?: number | null;
     defaultSpecies?: number | null;

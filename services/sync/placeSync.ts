@@ -10,7 +10,7 @@ import { INVALIDATION_MAP } from "../../util/invalidationMap";
 
 const PLACE_URL = "/myapi/place2/";
 
-const invalidatePlaceQueries = (id?: number | null) => {
+const invalidatePlaceQueries = (...ids: (number | null | undefined)[]) => {
   // refetchType "all" (not the default "active") matters here: this sync
   // runs in the background regardless of which screen is mounted, and
   // useList's infinite query has refetchOnMount disabled — so a query that's
@@ -24,13 +24,17 @@ const invalidatePlaceQueries = (id?: number | null) => {
   INVALIDATION_MAP.Place.update.forEach((key) =>
     queryClient.invalidateQueries({ queryKey: key, exact: false, refetchType: "all" }),
   );
-  if (id != null) {
+  // Takes every id to invalidate in one call (rather than being called once
+  // per id) so the loop above — and the network refetches it triggers —
+  // only runs once per sync event instead of once per id.
+  ids.forEach((id) => {
+    if (id == null) return;
     queryClient.invalidateQueries({
       queryKey: ["Place", id],
       exact: false,
       refetchType: "all",
     });
-  }
+  });
 };
 
 // Mirrors diarySync.ts's runDiarySync one-for-one — see its comments for the
@@ -91,8 +95,7 @@ const runPlaceSyncInternal = async () => {
           client_request_id: payload.clientRequestId,
         });
         placeRepository.replaceLocalWithServer(payload.localId, res.data);
-        invalidatePlaceQueries(payload.localId);
-        invalidatePlaceQueries(res.data.id);
+        invalidatePlaceQueries(payload.localId, res.data.id);
         // Any observation/diary queued against this place's temp id while it
         // was still pending can now resolve it — wake both queues
         // immediately instead of leaving them to their own retry timers.

@@ -7,21 +7,16 @@ import { isConnected } from "./networkStatus";
 
 const NOTIFICATIONS_READ_URL = "/myapi/notifications/read/";
 
-// Mirrors the ["notifications", "unread-count"] key in hooks/useUnreadCount.ts
-// — inlined rather than imported to avoid a require cycle back through
-// fetches.ts (same reasoning as diarySync.ts inlining ["Diaries"]).
-const UNREAD_COUNT_KEY = ["notifications", "unread-count"];
-
 const invalidateNotificationQueries = () => {
   // refetchType "all": this runs in the background regardless of which screen
   // is mounted, same reasoning as diarySync.ts's invalidateDiaryQueries.
+  //
+  // A single call covers the ["notifications", "unread-count"] query too (see
+  // hooks/useUnreadCount.ts) — it's a child of ["notifications"], and
+  // invalidateQueries matches hierarchically (exact: false), so a second,
+  // separate call on that key would just refetch that same query again.
   queryClient.invalidateQueries({
     queryKey: ["notifications"],
-    exact: false,
-    refetchType: "all",
-  });
-  queryClient.invalidateQueries({
-    queryKey: UNREAD_COUNT_KEY,
     exact: false,
     refetchType: "all",
   });

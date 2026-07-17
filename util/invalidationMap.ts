@@ -81,6 +81,8 @@ export const INVALIDATION_MAP = {
     update: [
       ["Diaries"],
       ["Diary"],
+      ["DiaryDetail"],
+      ["Observations"],
       ["Observation"],
       ["Place"],
       ["DashboardStat"],

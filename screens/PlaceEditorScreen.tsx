@@ -5,7 +5,7 @@ import {
   useLayoutEffect,
   useMemo,
 } from "react";
-import { StyleSheet, Text } from "react-native";
+import { Keyboard, StyleSheet, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import type { PressEvent } from "@maplibre/maplibre-react-native";
@@ -262,12 +262,16 @@ const PlaceEditorScreen = () => {
 
     if (isEditMode) {
       updatePlaceMutation.mutate(placeData, {
-        onSuccess: () => navigation.goBack(),
+        onSuccess: () => {
+          Keyboard.dismiss();
+          navigation.goBack();
+        },
         onError: (e) => handleMutateError(e),
       });
     } else {
       createPlaceMutation.mutate(placeData, {
         onSuccess: (item) => {
+          Keyboard.dismiss();
           if (returnToScreen) {
             callNavigationCallback(
               "onPlaceCreated",

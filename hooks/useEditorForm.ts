@@ -26,6 +26,7 @@ interface UseEditorFormParams {
   hasSpecies?: boolean;
   requiredFields?: string[];
   diaryId?: number | null;
+  defaultLocationPrivate?: boolean;
 }
 
 type ParsedEditorItem = {
@@ -55,6 +56,7 @@ export const useEditorForm = ({
   hasSpecies = false,
   requiredFields = [],
   diaryId = null,
+  defaultLocationPrivate = true,
 }: UseEditorFormParams) => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -100,7 +102,8 @@ export const useEditorForm = ({
       date_time: initialDate,
       time: itemWithParsedDate?.time ?? null,
       private: itemWithParsedDate?.private ?? profile?.private_diary,
-      location_private: itemWithParsedDate?.location_private ?? true,
+      location_private:
+        itemWithParsedDate?.location_private ?? defaultLocationPrivate,
       quantity: itemWithParsedDate?.quantity ?? null,
       notes: itemWithParsedDate?.notes ?? null,
       name: itemWithParsedDate?.name ?? null,

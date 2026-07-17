@@ -6,25 +6,35 @@ import { DiaryMutationPayload } from "../../hooks/repositories/diaryRepository";
 import * as placeRepository from "../../hooks/repositories/placeRepository";
 import { isConnected } from "./networkStatus";
 import { runObservationSync } from "./observationSync";
+import { INVALIDATION_MAP } from "../../util/invalidationMap";
 
 const DIARY_URL = "/myapi/diary2/";
 
-const invalidateDiaryQueries = (id?: number | null) => {
+const invalidateDiaryQueries = (...ids: (number | null | undefined)[]) => {
   // Same reasoning as observationSync.ts's invalidateObservationQueries:
   // refetchType "all" because this runs in the background regardless of which
   // screen is mounted, and useList's infinite query has refetchOnMount disabled.
-  queryClient.invalidateQueries({
-    queryKey: ["Diaries"],
-    exact: false,
-    refetchType: "all",
-  });
-  if (id != null) {
+  //
+  // Uses the same key list as the live (online) update path (useOfflineDiary's
+  // invalidateDiaryCaches) — a diary's PATCH cascades private/location_private/
+  // date_time/place to every observation in it server-side (see the backend's
+  // DiaryBaseSerializer.update), so this must also invalidate the Observation
+  // caches, not just the diary's own. Missing that left an offline-edited
+  // diary's observations showing stale (pre-cascade) data forever after sync.
+  INVALIDATION_MAP.Diary.update.forEach((key) =>
+    queryClient.invalidateQueries({ queryKey: key, exact: false, refetchType: "all" }),
+  );
+  // Takes every id to invalidate in one call (rather than being called once
+  // per id) so the loop above — and the network refetches it triggers —
+  // only runs once per sync event instead of once per id.
+  ids.forEach((id) => {
+    if (id == null) return;
     queryClient.invalidateQueries({
       queryKey: ["Diary", id],
       exact: false,
       refetchType: "all",
     });
-  }
+  });
 };
 
 // Mirrors observationSync.ts's runObservationSync one-for-one — see its
@@ -116,8 +126,7 @@ const runDiarySyncInternal = async () => {
           client_request_id: payload.clientRequestId,
         });
         diaryRepository.replaceLocalWithServer(payload.localId, res.data);
-        invalidateDiaryQueries(payload.localId);
-        invalidateDiaryQueries(res.data.id);
+        invalidateDiaryQueries(payload.localId, res.data.id);
         // Any observation queued against this diary's temp id while it was
         // still pending (see observationSync.ts's `resolved < 0` backoff) can
         // now resolve it — wake that queue immediately instead of leaving it

@@ -57,12 +57,13 @@ describe("markAll / markIds", () => {
     await runNotificationSync();
 
     expect(apiPost).toHaveBeenCalledWith("/myapi/notifications/read/", { all: true });
+    // A single invalidation on ["notifications"] also covers the child key
+    // ["notifications", "unread-count"] (hooks/useUnreadCount.ts) — invalidateQueries
+    // matches hierarchically, so no separate call for it is needed.
     expect(queryClient.invalidateQueries).toHaveBeenCalledWith(
       expect.objectContaining({ queryKey: ["notifications"] }),
     );
-    expect(queryClient.invalidateQueries).toHaveBeenCalledWith(
-      expect.objectContaining({ queryKey: ["notifications", "unread-count"] }),
-    );
+    expect(queryClient.invalidateQueries).toHaveBeenCalledTimes(1);
   });
 
   it("posts { ids } for a markIds mutation", async () => {
@@ -86,8 +87,9 @@ describe("markAll / markIds", () => {
     await runNotificationSync();
 
     expect(apiPost).toHaveBeenCalledTimes(2);
-    // Invalidation happens once after the whole pass, not once per mutation.
-    expect(queryClient.invalidateQueries).toHaveBeenCalledTimes(2);
+    // Invalidation happens once after the whole pass, not once per mutation
+    // (and not once per key it happens to also cover — see the test above).
+    expect(queryClient.invalidateQueries).toHaveBeenCalledTimes(1);
   });
 });
 

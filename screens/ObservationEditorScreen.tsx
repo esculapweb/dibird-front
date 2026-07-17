@@ -6,6 +6,7 @@ import {
   Dispatch,
   SetStateAction,
 } from "react";
+import { Keyboard } from "react-native";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -64,6 +65,7 @@ const ObservationEditorScreen = () => {
     defaultSpecies,
     diaryId,
     territoryValue: diaryTerritoryValue,
+    diaryLocationPrivate,
     returnMode,
   } = route.params || {};
   const isEditMode = !!observation;
@@ -94,6 +96,7 @@ const ObservationEditorScreen = () => {
     hasSpecies: true,
     requiredFields: ["territory", "species", "date_time"],
     diaryId,
+    defaultLocationPrivate: diaryLocationPrivate ?? true,
   });
 
   const { data: diarySpeciesIds } = useQuery({
@@ -197,7 +200,10 @@ const ObservationEditorScreen = () => {
       updateObservationMutation.mutate(
         { payload, speciesData, placeData },
         {
-          onSuccess: () => navigation.goBack(),
+          onSuccess: () => {
+            Keyboard.dismiss();
+            navigation.goBack();
+          },
           onError: handleMutateError,
         },
       );
@@ -207,6 +213,7 @@ const ObservationEditorScreen = () => {
         {
           onSuccess: (item) => {
             setSession("lastDate", payload.date_time);
+            Keyboard.dismiss();
             if (returnMode === "back") {
               navigation.goBack();
             } else {
