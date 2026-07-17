@@ -121,7 +121,7 @@ const MainScreen = () => {
 
         <QuickActions filters={filters} />
 
-        <Sections data={dataStats} />
+        <Sections />
       </ScrollView>
     </Layout>
   );

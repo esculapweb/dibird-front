@@ -143,6 +143,7 @@ const ProfileForm = ({
         type="CountriesDropdown"
         sort={countriesSort}
         onSortChange={onCountriesSortChange}
+        error={invalid.territory ? t("territory_required") : undefined}
       />
 
       <DropdownInput
@@ -151,6 +152,7 @@ const ProfileForm = ({
         value={timezoneValue}
         setValue={setTimezoneValue}
         query={queryTimeZones}
+        error={invalid.timezone ? t("timezone_required") : undefined}
       />
 
       <View style={styles.hairline} />

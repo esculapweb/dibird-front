@@ -61,28 +61,17 @@ describe("applyLocalPatch", () => {
     expect(mutations[0].payload).toEqual({ first_name: "Janet" });
   });
 
-  // applyLocalPatch has no `.where()`/upsert fallback on the row UPDATE — a
-  // call with no existing row updates zero rows and orphans the mutation it
-  // still queues. Unlike alertSettingsRepository's equivalent (a fixed
-  // ROW_ID=1 singleton with a schema-free JSON blob, safe to upsert),
-  // profileTable's primary key is the real server user id — applyLocalPatch
-  // never receives it, and every NOT NULL column (username/first_name/
-  // last_name/email/is_active/private/private_diary) has no default, so an
-  // upsert here would have to fabricate a row's worth of fake user data.
-  // Not fixed, because it's provably unreachable through the app: the only
-  // caller (updateProfile in store/profile-context.tsx, called from
-  // screens/ProfileScreen.tsx's submit handler) is gated behind `profile`
-  // already being loaded (ProfileScreen returns a loading/error overlay
-  // instead of rendering the form otherwise), and the backend guarantees a
-  // Profile row exists for every User from the moment of registration
-  // (myapi/signals.py's post_save receiver) — so "edit before any profile
-  // was ever fetched" isn't a real user-reachable state, just what this
-  // function does in isolation if that invariant were ever violated.
-  it("does not create the profile row if none exists yet (documented invariant, not reachable through the app UI)", () => {
+  // profileTable's primary key is the real server user id, so applyLocalPatch
+  // can't upsert a row into existence the way alertSettingsRepository does
+  // for its fixed ROW_ID=1 singleton. Rather than attempt that, a missing
+  // row is treated as "nothing to do here" — see the logout-race describe
+  // block below for why this is reachable (a forced logout racing an
+  // in-flight edit), not just a theoretical guard.
+  it("is a no-op — no row created, no mutation queued — when no profile row exists yet", () => {
     profileRepository.applyLocalPatch({ first_name: "Janet" });
 
     expect(rawRow()).toBeUndefined();
-    expect(mutationsFor("profile")).toHaveLength(1);
+    expect(mutationsFor("profile")).toHaveLength(0);
   });
 
   it("enqueues a second, independent mutation on a second call while the first is still pending", () => {
@@ -112,6 +101,13 @@ describe("queuePendingAvatar", () => {
     const mutations = mutationsFor("avatar");
     expect(mutations).toHaveLength(1);
     expect(mutations[0].payload).toEqual({ op: "upload", uri: "file://new-avatar.jpg" });
+  });
+
+  it("is a no-op — no row created, no mutation queued — when no profile row exists yet", () => {
+    profileRepository.queuePendingAvatar("upload", "file://new-avatar.jpg");
+
+    expect(rawRow()).toBeUndefined();
+    expect(mutationsFor("avatar")).toHaveLength(0);
   });
 
   it("queues a delete the same way, with a null uri", () => {
@@ -258,6 +254,44 @@ describe("discardMutation vs. resolveMutation", () => {
     profileRepository.resolveMutation(avatarMutation.id);
 
     expect(rawRow()?.status).toBe("synced");
+  });
+});
+
+describe("logout race: clearProfile() interleaved with an in-flight edit", () => {
+  // Reproduces a real (if narrow) path to the "no row exists yet" state
+  // that the comment on the test above calls unreachable: ProfileScreen
+  // does gate the form behind a loaded profile, but nothing stops a
+  // forced logout (api.ts's 401 interceptor -> auth-context -> this
+  // module's clearProfile()) from firing between the user tapping Save
+  // and applyLocalPatch's transaction actually running - both are async
+  // and unsynchronized. When clearProfile() wins that race, applyLocalPatch
+  // still unconditionally queues a mutation-queue row for an UPDATE that
+  // touched nothing. That row has no user/session reference, and
+  // getPendingMutations()/pushPending() (services/sync/profileSync.ts)
+  // don't filter by user either - so it survives to the *next* login and
+  // gets pushed against whichever profile is current then.
+  const OTHER_PROFILE: Profile = {
+    ...SERVER_PROFILE,
+    user: 99,
+    user_data: { ...SERVER_PROFILE.user_data, username: "other", first_name: "Other" },
+  };
+
+  it("orphans a mutation that outlives the session and would leak into the next login's sync", () => {
+    profileRepository.upsertProfileFromServer(SERVER_PROFILE);
+
+    // Forced logout wins the race and clears everything first...
+    profileRepository.clearProfile();
+    // ...but the in-flight Save handler was already past the point of no
+    // return and still calls applyLocalPatch.
+    profileRepository.applyLocalPatch({ first_name: "Janet" });
+
+    // A different account (or the same one, re-logging in) now loads on
+    // this device.
+    profileRepository.upsertProfileFromServer(OTHER_PROFILE);
+
+    // The stale mutation from the logged-out session should not still be
+    // sitting in the queue for the new session's sync to pick up and push.
+    expect(profileRepository.getPendingMutations()).toHaveLength(0);
   });
 });
 

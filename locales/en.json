@@ -378,6 +378,7 @@
   "this_year": "This year",
   "this_year_": "this year",
   "timezone": "Timezone",
+  "timezone_required": "Timezone is required",
   "to": "to",
   "to_date": "To date",
   "today": "Today",

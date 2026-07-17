@@ -9,11 +9,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
-import {
-  AppStackNavigationProp,
-  DashboardStat,
-  IconType,
-} from "../../types";
+import { AppStackNavigationProp, IconType } from "../../types";
 import { useContentWidth } from "../../hooks/useContentWidth";
 
 const H_PAD = 16;
@@ -32,10 +28,9 @@ interface Section {
   key: SectionKey;
   icon: IconType;
   labelKey: string;
-  showBadge?: boolean;
 }
 
-const Sections = ({ data }: { data: DashboardStat }) => {
+const Sections = () => {
   const navigation = useNavigation<AppStackNavigationProp>();
   const { t } = useTranslation();
   const width = useContentWidth();
@@ -48,7 +43,7 @@ const Sections = ({ data }: { data: DashboardStat }) => {
     { key: "Observations", icon: "binoculars", labelKey: "observations" },
     { key: "Places", icon: "location", labelKey: "places" },
     { key: "Stat", icon: "stats-chart", labelKey: "statistics" },
-    { key: "Diaries", icon: "book", labelKey: "diaries", showBadge: false },
+    { key: "Diaries", icon: "book", labelKey: "diaries" },
     { key: "Rating", icon: "trophy", labelKey: "rating" },
     { key: "Checklist", icon: "checkbox", labelKey: "checklist" },
   ];
@@ -76,25 +71,6 @@ const Sections = ({ data }: { data: DashboardStat }) => {
                     onPress={() => navigation.navigate(sec.key)}
                     testID={`section-${sec.key}`}
                   >
-                    {sec.showBadge && data.diaries > 0 && (
-                      <View
-                        style={[
-                          styles.secBadge,
-                          { backgroundColor: Colors.main100 },
-                        ]}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 11,
-                            fontWeight: "600",
-                            color: Colors.textOpposite,
-                          }}
-                        >
-                          {data.diaries}
-                        </Text>
-                      </View>
-                    )}
-
                     <Ionicons
                       name={sec.icon}
                       size={30}
@@ -157,13 +133,4 @@ const stylesFn = (Colors: ThemeColors) =>
       textAlign: "center",
       color: Colors.textSecondary,
     },
-    secBadge: {
-      position: "absolute",
-      top: 8,
-      right: 9,
-      borderRadius: 9,
-      paddingHorizontal: 7,
-      paddingVertical: 2,
-    },
-    secBadgeText: { fontSize: 11, fontWeight: "600" },
   });

@@ -61,8 +61,19 @@ export const upsertProfileFromServer = (data: Profile) => {
     .run();
 };
 
+// Guards against a logout racing an in-flight edit: if clearProfile() (see
+// below) wins that race and wipes the row first, there is nothing left to
+// patch and no user id on hand to fabricate one — queuing a mutation anyway
+// would orphan it (no FK ties mutationQueueTable to a user), and it would
+// sit there until the *next* login's sync blindly pushes stale data from
+// the logged-out session onto whichever profile is current by then.
+const hasProfileRow = (tx: { select: typeof db.select }) =>
+  tx.select().from(profileTable).limit(1).all().length > 0;
+
 export const applyLocalPatch = (patch: Partial<ProfileFormData>) => {
   db.transaction((tx) => {
+    if (!hasProfileRow(tx)) return;
+
     const fields: Partial<ProfileInsert> = {};
     if (patch.first_name !== undefined) fields.firstName = patch.first_name;
     if (patch.last_name !== undefined) fields.lastName = patch.last_name;
@@ -91,6 +102,8 @@ export const queuePendingAvatar = (
   uri: string | null,
 ) => {
   db.transaction((tx) => {
+    if (!hasProfileRow(tx)) return;
+
     tx.update(profileTable)
       .set({
         pendingAvatarUri: uri,

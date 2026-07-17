@@ -137,6 +137,24 @@ describe("submit", () => {
 
     expect(mockSubmitHandler).not.toHaveBeenCalled();
     expect(inputProps("username").isInvalid).toBe(true);
+    expect(dropdownProps("my_country").error).toBe("territory_required");
+    expect(dropdownProps("timezone").error).toBe("timezone_required");
+  });
+
+  it("clears the dropdown errors once required fields are filled and resubmitted", async () => {
+    await render(<ProfileForm submitHandler={mockSubmitHandler} loading={false} success={false} />);
+    await fireEvent.press(screen.getByTestId("submit-button"));
+    expect(dropdownProps("my_country").error).toBe("territory_required");
+
+    await fillRequiredFields();
+    await act(async () => {
+      inputProps("first_name").onUpdateValue("Jane");
+      inputProps("last_name").onUpdateValue("Doe");
+    });
+    await fireEvent.press(screen.getByTestId("submit-button"));
+
+    expect(dropdownProps("my_country").error).toBeUndefined();
+    expect(dropdownProps("timezone").error).toBeUndefined();
   });
 
   it("never flags first/last name as invalid even when empty", async () => {

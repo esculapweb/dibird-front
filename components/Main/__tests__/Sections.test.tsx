@@ -19,18 +19,15 @@ jest.mock("@react-navigation/native", () => ({ useNavigation: () => mockNavigati
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { createNavigationMock } from "../../../screens/test-utils";
 import Sections from "../Sections";
-import { DashboardStat } from "../../../types";
 
 const mockNavigation = createNavigationMock();
-
-const DATA: DashboardStat = { seen: 1, observations: 2, diaries: 5, rank: 1, total: 10 };
 
 beforeEach(() => {
   jest.clearAllMocks();
 });
 
 it("renders all 6 section buttons with translated labels", async () => {
-  await render(<Sections data={DATA} />);
+  await render(<Sections />);
   for (const key of ["observations", "places", "statistics", "diaries", "rating", "checklist"]) {
     expect(screen.getByText(key)).toBeOnTheScreen();
   }
@@ -45,13 +42,8 @@ describe.each([
   ["Checklist"],
 ] as const)("%s section", (key) => {
   it(`navigates to ${key} when tapped`, async () => {
-    await render(<Sections data={DATA} />);
+    await render(<Sections />);
     await fireEvent.press(screen.getByTestId(`section-${key}`));
     expect(mockNavigation.navigate).toHaveBeenCalledWith(key);
   });
-});
-
-it("never shows a badge, even on Diaries with diaries > 0 (showBadge is hardcoded false)", async () => {
-  await render(<Sections data={{ ...DATA, diaries: 99 }} />);
-  expect(screen.queryByText("99")).not.toBeOnTheScreen();
 });
