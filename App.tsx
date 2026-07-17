@@ -40,6 +40,7 @@ import { useObservationSync } from "./hooks/Observation/useObservationSync";
 import { useDiarySync } from "./hooks/Diary/useDiarySync";
 import { usePlaceSync } from "./hooks/Place/usePlaceSync";
 import { useNotificationSync } from "./hooks/Notification/useNotificationSync";
+import { useSpeciesImagePrefetch } from "./hooks/useSpeciesImagePrefetch";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -123,6 +124,7 @@ const Root = () => {
   useDiarySync(isAuthenticated);
   usePlaceSync(isAuthenticated);
   useNotificationSync(isAuthenticated);
+  useSpeciesImagePrefetch(isAuthenticated);
 
   useEffect(() => {
     if (!isAuthenticated) {
