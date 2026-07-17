@@ -137,6 +137,34 @@ describe("updateLocal", () => {
     });
   });
 
+  // Regression test: creating a place offline whose name collides with one
+  // already on the server fails with a real (non-network) error once synced,
+  // leaving the queued create at status "error". Renaming it afterwards must
+  // still amend that same queued create (not silently no-op) — otherwise a
+  // subsequent retry keeps resending the original stale name and reproduces
+  // the same "already exists" error forever.
+  it("amends a create that already failed once (status error), not just ones still pending", () => {
+    const created = placeRepository.createLocal(placePayload(), "req-1");
+    const claimed = placeRepository.claimNextMutation()!;
+    placeRepository.requeueFailedMutation(
+      claimed.payload as never,
+      claimed.createdAt,
+      0,
+      created.id,
+      "Place with this name already exists",
+    );
+    expect(rawRow(created.id)?.status).toBe("error");
+
+    placeRepository.updateLocal(created.id, { name: "Renamed Place" }, created);
+
+    expect(mutations()).toHaveLength(1);
+    expect(mutations()[0].payload).toMatchObject({
+      op: "create",
+      localId: created.id,
+      data: expect.objectContaining({ name: "Renamed Place" }),
+    });
+  });
+
   it("enqueues a new update mutation for an already-synced row", () => {
     placeRepository.upsertFromServer(serverPlace());
 
@@ -189,6 +217,27 @@ describe("resolvePlaceId", () => {
     expect(placeRepository.resolvePlaceId(created.id)).toBe(created.id);
 
     expect(placeRepository.resolvePlaceId(-123456)).toBeUndefined();
+  });
+
+  // Regression test: a place whose create permanently failed (a real,
+  // non-network error) stays in the DB with status "error" rather than being
+  // deleted — resolvePlaceId used to return its still-negative id unchanged
+  // for this case, indistinguishable from "hasn't synced yet", so an
+  // observation/diary referencing it got deferred and retried forever
+  // instead of ever being told the place couldn't sync.
+  it("resolves to undefined once the place's own create mutation fails for real", () => {
+    const created = placeRepository.createLocal(placePayload(), "req-1");
+    const claimed = placeRepository.claimNextMutation()!;
+
+    placeRepository.requeueFailedMutation(
+      claimed.payload as never,
+      claimed.createdAt,
+      0,
+      created.id,
+      "boom",
+    );
+
+    expect(placeRepository.resolvePlaceId(created.id)).toBeUndefined();
   });
 });
 

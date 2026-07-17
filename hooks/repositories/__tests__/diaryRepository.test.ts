@@ -287,6 +287,32 @@ describe("resolveDiaryId", () => {
     );
     expect(diaryRepository.resolveDiaryId(created.id)).toBe(created.id);
   });
+
+  // Regression test: a diary whose create permanently failed (a real,
+  // non-network error) stays in the DB with status "error" rather than being
+  // deleted — resolveDiaryId used to return its still-negative id unchanged
+  // for this case, indistinguishable from "hasn't synced yet", so an
+  // observation referencing it got deferred and retried forever instead of
+  // ever being told the diary couldn't sync.
+  it("returns undefined once the diary's own create mutation fails for real", () => {
+    const created = diaryRepository.createLocal(
+      diaryPayload(),
+      {},
+      PROFILE,
+      "req-1",
+    );
+    const claimed = diaryRepository.claimNextMutation()!;
+
+    diaryRepository.requeueFailedMutation(
+      claimed.payload as never,
+      claimed.createdAt,
+      0,
+      created.id,
+      "boom",
+    );
+
+    expect(diaryRepository.resolveDiaryId(created.id)).toBeUndefined();
+  });
 });
 
 describe("cacheKnownSnapshot", () => {

@@ -134,17 +134,18 @@ const runObservationSyncInternal = async () => {
       if (diaryId != null && diaryId < 0) {
         const resolved = diaryRepository.resolveDiaryId(diaryId);
         if (resolved == null) {
-          // Parent diary was discarded before it ever synced — this
-          // reference can never resolve. Surface it like any other real
-          // failure (via FailedEditBanner's retry/discard) instead of
-          // retrying forever.
+          // Parent diary was discarded before it ever synced, or its own
+          // create permanently failed (see diaryRepository.resolveDiaryId) —
+          // either way this reference can never resolve. Surface it like any
+          // other real failure (via FailedEditBanner's retry/discard) instead
+          // of retrying forever.
           retryDelayMs = RETRY_BASE_MS;
           observationRepository.requeueFailedMutation(
             payload,
             mutation.createdAt,
             mutation.attempts,
             payload.localId,
-            "Parent diary was removed before it ever synced",
+            "Parent diary could not be synced",
           );
           invalidateObservationQueries(payload.localId);
           continue;
@@ -171,13 +172,15 @@ const runObservationSyncInternal = async () => {
       if (placeId != null && placeId < 0) {
         const resolved = placeRepository.resolvePlaceId(placeId);
         if (resolved == null) {
+          // Same reasoning as the diary branch above, for a place created
+          // offline in the same session — see placeRepository.resolvePlaceId.
           retryDelayMs = RETRY_BASE_MS;
           observationRepository.requeueFailedMutation(
             payload,
             mutation.createdAt,
             mutation.attempts,
             payload.localId,
-            "Parent place was removed before it ever synced",
+            "Parent place could not be synced",
           );
           invalidateObservationQueries(payload.localId);
           continue;

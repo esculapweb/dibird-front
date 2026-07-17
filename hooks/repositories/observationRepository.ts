@@ -244,15 +244,15 @@ export const updateLocal = (
         .where(eq(observationTable.id, id))
         .run();
 
+      // Not filtered to status "pending": a create that already failed once
+      // (e.g. server-side validation error) sits here with status "error"
+      // until explicitly retried — excluding it meant editing a failed draft
+      // never updated the queued payload, so retrying kept resending the
+      // stale data and reproducing the same error forever.
       const pendingCreate = tx
         .select()
         .from(mutationQueueTable)
-        .where(
-          and(
-            eq(mutationQueueTable.entity, "observation"),
-            eq(mutationQueueTable.status, "pending"),
-          ),
-        )
+        .where(eq(mutationQueueTable.entity, "observation"))
         .all()
         .find(
           (m) =>
@@ -317,12 +317,7 @@ export const deleteLocal = (id: number): void => {
 
       tx.select()
         .from(mutationQueueTable)
-        .where(
-          and(
-            eq(mutationQueueTable.entity, "observation"),
-            eq(mutationQueueTable.status, "pending"),
-          ),
-        )
+        .where(eq(mutationQueueTable.entity, "observation"))
         .all()
         .filter((m) => (m.payload as ObservationMutationPayload).localId === id)
         .forEach((m) => tx.delete(mutationQueueTable).where(eq(mutationQueueTable.id, m.id)).run());

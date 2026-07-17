@@ -63,17 +63,23 @@ export const getDiary = (id: number): DiaryRecord | null => {
 // hooks/Observation/useOfflineObservation.ts and services/sync/observationSync.ts):
 // - null/positive id: nothing to resolve, returned unchanged.
 // - negative id whose local row is gone (diary deleted/discarded before it ever
-//   synced): returns undefined — this reference can never resolve.
-// - negative id whose local row still exists: returns its current `.id`, which
-//   is still the same negative id if the diary hasn't synced yet, or the real
-//   server id once replaceLocalWithServer has run (the alias row's `data.id`
-//   becomes the server id while the row's own primary key stays the old temp id).
+//   synced), or whose own create mutation hit a real (non-network) error:
+//   returns undefined — this reference can never resolve on its own. Without
+//   the error case, a diary that permanently failed to sync (status stays
+//   "error", the row is never deleted) looked identical to one that simply
+//   hadn't synced *yet* — callers kept deferring the dependent observation
+//   forever instead of ever surfacing the failure.
+// - negative id whose local row still exists and is only pending: returns its
+//   current `.id`, which is still the same negative id if the diary hasn't
+//   synced yet, or the real server id once replaceLocalWithServer has run (the
+//   alias row's `data.id` becomes the server id while the row's own primary
+//   key stays the old temp id).
 export const resolveDiaryId = (
   id: number | null | undefined,
 ): number | null | undefined => {
   if (id == null || id > 0) return id;
   const local = getDiary(id);
-  if (!local) return undefined;
+  if (!local || local._pendingSync === "error") return undefined;
   return local.id;
 };
 
@@ -236,12 +242,15 @@ export const updateLocal = (
         .where(eq(diaryTable.id, id))
         .run();
 
+      // Not filtered to status "pending": a create that already failed once
+      // (e.g. server-side validation error) sits here with status "error"
+      // until explicitly retried — excluding it meant editing a failed draft
+      // never updated the queued payload, so retrying kept resending the
+      // stale data and reproducing the same error forever.
       const pendingCreate = tx
         .select()
         .from(mutationQueueTable)
-        .where(
-          and(eq(mutationQueueTable.entity, "diary"), eq(mutationQueueTable.status, "pending")),
-        )
+        .where(eq(mutationQueueTable.entity, "diary"))
         .all()
         .find(
           (m) =>
@@ -302,9 +311,7 @@ export const deleteLocal = (id: number): void => {
 
       tx.select()
         .from(mutationQueueTable)
-        .where(
-          and(eq(mutationQueueTable.entity, "diary"), eq(mutationQueueTable.status, "pending")),
-        )
+        .where(eq(mutationQueueTable.entity, "diary"))
         .all()
         .filter((m) => (m.payload as DiaryMutationPayload).localId === id)
         .forEach((m) => tx.delete(mutationQueueTable).where(eq(mutationQueueTable.id, m.id)).run());

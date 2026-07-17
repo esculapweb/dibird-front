@@ -96,7 +96,7 @@ const runDiarySyncInternal = async () => {
             mutation.createdAt,
             mutation.attempts,
             payload.localId,
-            "Parent place was removed before it ever synced",
+            "Parent place could not be synced",
           );
           invalidateDiaryQueries(payload.localId);
           continue;

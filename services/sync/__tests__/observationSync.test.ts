@@ -140,7 +140,7 @@ describe("create", () => {
       1,
       0,
       -1,
-      "Parent diary was removed before it ever synced",
+      "Parent diary could not be synced",
     );
   });
 
@@ -160,7 +160,7 @@ describe("create", () => {
       1,
       0,
       -1,
-      "Parent place was removed before it ever synced",
+      "Parent place could not be synced",
     );
   });
 });

@@ -43,16 +43,21 @@ export const getPlace = (id: number): PlaceItem | null => {
 // services/sync/observationSync.ts and services/sync/diarySync.ts):
 // - null/positive id: nothing to resolve, returned unchanged.
 // - negative id whose local row is gone (place deleted/discarded before it
-//   ever synced): returns undefined — this reference can never resolve.
-// - negative id whose local row still exists: returns its current `.id`,
-//   which is still the same negative id if the place hasn't synced yet, or
-//   the real server id once replaceLocalWithServer has run.
+//   ever synced), or whose own create mutation hit a real (non-network)
+//   error: returns undefined — this reference can never resolve on its own.
+//   Without the error case, a place that permanently failed to sync (status
+//   stays "error", the row is never deleted) looked identical to one that
+//   simply hadn't synced *yet* — callers kept deferring the dependent
+//   observation/diary forever instead of ever surfacing the failure.
+// - negative id whose local row still exists and is only pending: returns
+//   its current `.id`, which is still the same negative id until the place
+//   itself syncs, or the real server id once replaceLocalWithServer has run.
 export const resolvePlaceId = (
   id: number | null | undefined,
 ): number | null | undefined => {
   if (id == null || id > 0) return id;
   const local = getPlace(id);
-  if (!local) return undefined;
+  if (!local || local._pendingSync === "error") return undefined;
   return local.id;
 };
 
@@ -153,12 +158,15 @@ export const updateLocal = (
         .where(eq(placeTable.id, id))
         .run();
 
+      // Not filtered to status "pending": a create that already failed once
+      // (e.g. server-side "name already exists") sits here with status
+      // "error" until explicitly retried — excluding it meant editing a
+      // failed draft never updated the queued payload, so retrying kept
+      // resending the stale data and reproducing the same error forever.
       const pendingCreate = tx
         .select()
         .from(mutationQueueTable)
-        .where(
-          and(eq(mutationQueueTable.entity, "place"), eq(mutationQueueTable.status, "pending")),
-        )
+        .where(eq(mutationQueueTable.entity, "place"))
         .all()
         .find(
           (m) =>
@@ -219,9 +227,7 @@ export const deleteLocal = (id: number): void => {
 
       tx.select()
         .from(mutationQueueTable)
-        .where(
-          and(eq(mutationQueueTable.entity, "place"), eq(mutationQueueTable.status, "pending")),
-        )
+        .where(eq(mutationQueueTable.entity, "place"))
         .all()
         .filter((m) => (m.payload as PlaceMutationPayload).localId === id)
         .forEach((m) => tx.delete(mutationQueueTable).where(eq(mutationQueueTable.id, m.id)).run());
