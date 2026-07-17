@@ -1,5 +1,4 @@
 import api from "../api";
-import { queryClient } from "../queryClient";
 import { AppError } from "../../types";
 import * as placeRepository from "../../hooks/repositories/placeRepository";
 import { PlaceMutationPayload } from "../../hooks/repositories/placeRepository";
@@ -7,6 +6,7 @@ import { isConnected } from "./networkStatus";
 import { runObservationSync } from "./observationSync";
 import { runDiarySync } from "./diarySync";
 import { INVALIDATION_MAP } from "../../util/invalidationMap";
+import { beginSyncPass, endSyncPass, queueInvalidation } from "./syncBatch";
 
 const PLACE_URL = "/myapi/place2/";
 
@@ -21,20 +21,12 @@ const invalidatePlaceQueries = (...ids: (number | null | undefined)[]) => {
   // useOfflinePlace.ts's invalidatePlaceCaches) — a place's counts/name feed
   // into Observation/Diary cards' denormalized place_data snapshot and
   // DashboardStat, same reasoning as observationSync.ts's equivalent.
-  INVALIDATION_MAP.Place.update.forEach((key) =>
-    queryClient.invalidateQueries({ queryKey: key, exact: false, refetchType: "all" }),
-  );
-  // Takes every id to invalidate in one call (rather than being called once
-  // per id) so the loop above — and the network refetches it triggers —
-  // only runs once per sync event instead of once per id.
-  ids.forEach((id) => {
-    if (id == null) return;
-    queryClient.invalidateQueries({
-      queryKey: ["Place", id],
-      exact: false,
-      refetchType: "all",
-    });
-  });
+  //
+  // Queued rather than invalidated immediately — see syncBatch.ts.
+  queueInvalidation([
+    ...INVALIDATION_MAP.Place.update,
+    ...ids.filter((id) => id != null).map((id) => ["Place", id]),
+  ]);
 };
 
 // Mirrors diarySync.ts's runDiarySync one-for-one — see its comments for the
@@ -70,8 +62,10 @@ export const stopPlaceSyncRetries = () => {
 export const runPlaceSync = (): Promise<void> => {
   clearScheduledRetry();
   if (inFlight) return inFlight;
+  beginSyncPass();
   inFlight = runPlaceSyncInternal().finally(() => {
     inFlight = null;
+    endSyncPass();
   });
   return inFlight;
 };

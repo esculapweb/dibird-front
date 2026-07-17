@@ -1,9 +1,9 @@
 import api from "../api";
-import { queryClient } from "../queryClient";
 import { AppError } from "../../types";
 import * as notificationRepository from "../../hooks/repositories/notificationRepository";
 import { NotificationMutationPayload } from "../../hooks/repositories/notificationRepository";
 import { isConnected } from "./networkStatus";
+import { beginSyncPass, endSyncPass, queueInvalidation } from "./syncBatch";
 
 const NOTIFICATIONS_READ_URL = "/myapi/notifications/read/";
 
@@ -15,11 +15,9 @@ const invalidateNotificationQueries = () => {
   // hooks/useUnreadCount.ts) — it's a child of ["notifications"], and
   // invalidateQueries matches hierarchically (exact: false), so a second,
   // separate call on that key would just refetch that same query again.
-  queryClient.invalidateQueries({
-    queryKey: ["notifications"],
-    exact: false,
-    refetchType: "all",
-  });
+  //
+  // Queued rather than invalidated immediately — see syncBatch.ts.
+  queueInvalidation([["notifications"]]);
 };
 
 // Mirrors diarySync.ts's runDiarySync — see its comments for the reasoning
@@ -55,8 +53,10 @@ export const stopNotificationSyncRetries = () => {
 export const runNotificationSync = (): Promise<void> => {
   clearScheduledRetry();
   if (inFlight) return inFlight;
+  beginSyncPass();
   inFlight = runNotificationSyncInternal().finally(() => {
     inFlight = null;
+    endSyncPass();
   });
   return inFlight;
 };

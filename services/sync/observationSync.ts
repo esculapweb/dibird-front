@@ -1,5 +1,4 @@
 import api from "../api";
-import { queryClient } from "../queryClient";
 import { AppError } from "../../types";
 import * as observationRepository from "../../hooks/repositories/observationRepository";
 import { ObservationMutationPayload } from "../../hooks/repositories/observationRepository";
@@ -7,6 +6,7 @@ import * as diaryRepository from "../../hooks/repositories/diaryRepository";
 import * as placeRepository from "../../hooks/repositories/placeRepository";
 import { isConnected } from "./networkStatus";
 import { INVALIDATION_MAP } from "../../util/invalidationMap";
+import { beginSyncPass, endSyncPass, queueInvalidation } from "./syncBatch";
 
 const OBSERVATION_URL = "/myapi/observation2/";
 
@@ -22,20 +22,15 @@ const invalidateObservationQueries = (...ids: (number | null | undefined)[]) => 
   // hardcode just ["Observations"], which meant a diary's card/detail screen
   // never refetched once one of its observations finished syncing in the
   // background, leaving it stuck without that observation's thumbnail.
-  INVALIDATION_MAP.Observation.update.forEach((key) =>
-    queryClient.invalidateQueries({ queryKey: key, exact: false, refetchType: "all" }),
-  );
-  // Takes every id to invalidate in one call (rather than being called once
-  // per id) so the loop above — and the network refetches it triggers —
-  // only runs once per sync event instead of once per id.
-  ids.forEach((id) => {
-    if (id == null) return;
-    queryClient.invalidateQueries({
-      queryKey: ["Observation", id],
-      exact: false,
-      refetchType: "all",
-    });
-  });
+  //
+  // Queued rather than invalidated immediately — see syncBatch.ts — so a
+  // pass that processes several queued observations (or wakes/is woken by
+  // diarySync/placeSync) invalidates each key once for the whole cascade
+  // instead of once per mutation.
+  queueInvalidation([
+    ...INVALIDATION_MAP.Observation.update,
+    ...ids.filter((id) => id != null).map((id) => ["Observation", id]),
+  ]);
 };
 
 // Drains the local mutation queue for entity "observation". Unlike profileSync
@@ -96,8 +91,10 @@ export const stopObservationSyncRetries = () => {
 export const runObservationSync = (): Promise<void> => {
   clearScheduledRetry();
   if (inFlight) return inFlight;
+  beginSyncPass();
   inFlight = runObservationSyncInternal().finally(() => {
     inFlight = null;
+    endSyncPass();
   });
   return inFlight;
 };

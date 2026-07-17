@@ -1,5 +1,4 @@
 import api from "../api";
-import { queryClient } from "../queryClient";
 import { AppError } from "../../types";
 import * as diaryRepository from "../../hooks/repositories/diaryRepository";
 import { DiaryMutationPayload } from "../../hooks/repositories/diaryRepository";
@@ -7,6 +6,7 @@ import * as placeRepository from "../../hooks/repositories/placeRepository";
 import { isConnected } from "./networkStatus";
 import { runObservationSync } from "./observationSync";
 import { INVALIDATION_MAP } from "../../util/invalidationMap";
+import { beginSyncPass, endSyncPass, queueInvalidation } from "./syncBatch";
 
 const DIARY_URL = "/myapi/diary2/";
 
@@ -21,20 +21,12 @@ const invalidateDiaryQueries = (...ids: (number | null | undefined)[]) => {
   // DiaryBaseSerializer.update), so this must also invalidate the Observation
   // caches, not just the diary's own. Missing that left an offline-edited
   // diary's observations showing stale (pre-cascade) data forever after sync.
-  INVALIDATION_MAP.Diary.update.forEach((key) =>
-    queryClient.invalidateQueries({ queryKey: key, exact: false, refetchType: "all" }),
-  );
-  // Takes every id to invalidate in one call (rather than being called once
-  // per id) so the loop above — and the network refetches it triggers —
-  // only runs once per sync event instead of once per id.
-  ids.forEach((id) => {
-    if (id == null) return;
-    queryClient.invalidateQueries({
-      queryKey: ["Diary", id],
-      exact: false,
-      refetchType: "all",
-    });
-  });
+  //
+  // Queued rather than invalidated immediately — see syncBatch.ts.
+  queueInvalidation([
+    ...INVALIDATION_MAP.Diary.update,
+    ...ids.filter((id) => id != null).map((id) => ["Diary", id]),
+  ]);
 };
 
 // Mirrors observationSync.ts's runObservationSync one-for-one — see its
@@ -70,8 +62,10 @@ export const stopDiarySyncRetries = () => {
 export const runDiarySync = (): Promise<void> => {
   clearScheduledRetry();
   if (inFlight) return inFlight;
+  beginSyncPass();
   inFlight = runDiarySyncInternal().finally(() => {
     inFlight = null;
+    endSyncPass();
   });
   return inFlight;
 };
