@@ -8,6 +8,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   jest.spyOn(Linking, "canOpenURL");
   jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+  jest.spyOn(console, "error").mockImplementation(() => {});
 });
 
 afterEach(() => {

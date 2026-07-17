@@ -16,7 +16,7 @@ export function navigateFromNotification<K extends keyof AppStackParamList>(
 ): void {
   const go = () =>
     navigationRef.current?.dispatch(
-      CommonActions.navigate({ name: screen as string, params }),
+      CommonActions.navigate(screen as string, params),
     );
 
   if (navigationRef.current?.isReady()) {

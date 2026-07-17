@@ -23,10 +23,8 @@ const gdprExport = (overrides: Partial<GdprExport> = {}): GdprExport => ({
 });
 
 const advance = async (ms: number) => {
-  jest.advanceTimersByTime(ms);
   await act(async () => {
-    await Promise.resolve();
-    await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(ms);
   });
 };
 
@@ -193,7 +191,7 @@ describe("cleanup", () => {
     });
     expect(pollExportStatus).toHaveBeenCalledTimes(1);
 
-    act(() => {
+    await act(() => {
       result.current.cleanup();
     });
 

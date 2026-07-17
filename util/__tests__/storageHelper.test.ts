@@ -12,6 +12,11 @@ import * as storageHelper from "../storageHelper";
 
 beforeEach(async () => {
   await AsyncStorage.clear();
+  jest.spyOn(console, "warn").mockImplementation(() => {});
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
 });
 
 describe("saveSort / loadSort / clearSort", () => {

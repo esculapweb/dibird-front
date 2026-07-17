@@ -31,10 +31,12 @@ beforeEach(() => {
   (Notifications.getExpoPushTokenAsync as jest.Mock).mockResolvedValue({ data: "push-tok" });
   (Logout as jest.Mock).mockImplementation(async (cb: () => void) => cb());
   setOnLogout(mockOnLogoutCallback);
+  jest.spyOn(console, "warn").mockImplementation(() => {});
 });
 
 afterEach(() => {
   setOnLogout(null);
+  jest.restoreAllMocks();
 });
 
 describe("token restoration on mount", () => {

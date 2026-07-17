@@ -126,11 +126,19 @@ describe("filtersOverride route param", () => {
   it("uses params.o for sort directly instead of loading the stored sort", async () => {
     await renderSyncedFilters({ filtersOverride: { territory: 5 }, o: "-date_time" });
     expect(loadSort).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
   });
 
   it("loads the stored sort when params.o is absent", async () => {
     await renderSyncedFilters({ filtersOverride: { territory: 5 } });
     expect(loadSort).toHaveBeenCalledWith("Diaries");
+
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
   });
 });
 
@@ -236,6 +244,10 @@ describe("removeFilter", () => {
 
     expect(mockSetSpecies).toHaveBeenCalledWith(null);
     expect(result.current.filters.species).toBe(3);
+
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
   });
 });
 

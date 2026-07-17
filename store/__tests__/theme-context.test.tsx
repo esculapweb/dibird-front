@@ -34,6 +34,7 @@ beforeEach(() => {
   (AsyncStorage.removeItem as jest.Mock).mockResolvedValue(undefined);
   jest.spyOn(Appearance, "getColorScheme").mockReturnValue("light");
   jest.spyOn(Appearance, "setColorScheme").mockImplementation(() => {});
+  jest.spyOn(console, "warn").mockImplementation(() => {});
 });
 
 afterEach(() => {

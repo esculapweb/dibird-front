@@ -11,6 +11,11 @@ import { LocationProvider, useLocation } from "../location-context";
 
 beforeEach(() => {
   jest.clearAllMocks();
+  jest.spyOn(console, "warn").mockImplementation(() => {});
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
 });
 
 it("starts with no location and no known permission status", async () => {

@@ -31,10 +31,12 @@ beforeEach(() => {
   (useLocationUnavailable as jest.Mock).mockReturnValue(mockHandleLocationUnavailable);
   (reverseGeocoding as jest.Mock).mockResolvedValue({ country_code: "fr" });
   mockLocationCtx();
+  jest.spyOn(console, "warn").mockImplementation(() => {});
 });
 
 afterEach(() => {
   jest.useRealTimers();
+  jest.restoreAllMocks();
 });
 
 describe("normalizeCoords", () => {

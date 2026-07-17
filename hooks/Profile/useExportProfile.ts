@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import * as Sharing from "expo-sharing";
 
 import {
@@ -67,6 +67,8 @@ export const useExportProfile = () => {
   }, [startPolling]);
 
   const cleanup = useCallback(() => stopPolling(), []);
+
+  useEffect(() => stopPolling, [stopPolling]);
 
   return { state, triggerExport, cleanup };
 };

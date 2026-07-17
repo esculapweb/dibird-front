@@ -12,8 +12,20 @@ import * as schema from "../../services/db/schema";
 // ever changes. better-sqlite3 is fully synchronous, matching the sync-call
 // shape (`.all()`/`.run()`/`.transaction()`, no `await`) every repository
 // already assumes from drizzle-orm/expo-sqlite in production.
+// better-sqlite3 holds a native handle that Node never reclaims on its own;
+// left open across the many `beforeEach` calls in the repository test files,
+// these accumulate for the whole worker process and are why jest reports
+// "A worker process has failed to exit gracefully" at the end of a run.
+let currentSqlite: Database.Database | undefined;
+
+afterEach(() => {
+  currentSqlite?.close();
+  currentSqlite = undefined;
+});
+
 export const createTestDb = (): BetterSQLite3Database<typeof schema> => {
   const sqlite = new Database(":memory:");
+  currentSqlite = sqlite;
   const db = drizzle(sqlite, { schema });
   migrate(db, { migrationsFolder: path.join(__dirname, "../../drizzle") });
   return db;
