@@ -290,55 +290,70 @@ OS-level `toggleAirplaneMode`, полный цикл create → update → delet
   гэп; требует отдельного решения/дизайн-ревью, не входит в задачу
   написания тестов.
 
-### Следующие кандидаты на автотесты (по коду покрытия, приоритет по риску)
+### Состояние покрытия и что осталось
 
-`npm run test:coverage` после пятого батча — 83.21% stmts (был 47.3% →
-60.39% → 69.0% → 74.23% → 78.16% → 83.21%). Список из прошлой ревизии
-этого раздела — `components/Filters/{FilterChips,FilterSheetContent}.tsx`/
-`DateRangeFilter.tsx`/`SortSheetContent.tsx`, `RadioGroup`/`SearchInput`/
-`DefaultOptionRow`/`SpeciesOptionRow`, `hooks/useItem.ts`/`useList.ts`,
-`UniversalBottomSheet`/`ThemedToast`/`GlobalBottomSheet`,
-`hooks/Profile/useExportProfile.ts` — полностью закрыт, см. журнал (§7)
-для деталей. Ниже — не выполненный, а предлагаемый порядок для
-следующего захода:
+`npm run test:coverage` после седьмого батча — 92.01% stmts (был 47.3% →
+60.39% → 69.0% → 74.23% → 78.16% → 83.21% → 86.88% → 92.01%).
 
-1. **`components/{Diary/DiaryObservationCard,Place/PlaceBlock,
-   Place/PlacePreviewRow}.tsx`** (0%) — карточки/блоки списков, тот же
-   класс риска, что уже закрытые Card-компоненты (§7, второй батч).
-2. **`components/Map/MapL.tsx`** (0%) — карта используется в
-   `PlaceEditorScreen`/`PlaceDetailScreen` (уже застаблена там через
-   `__mocks__/maplibreMock.tsx`), сама обёртка/маркеры/интеракции не
-   проверены напрямую.
-3. **`components/ui/{DatePickerField,HourPicker}.tsx`** (0%) — `HourPicker`
-   уже был застаблен при тестировании `TimeWindowRow` (см. §7, третий
-   батч), сам пикер — нет; `DatePickerField` не проверен вовсе.
-4. **`components/{Language/LanguageSwitcher,Theme/ThemeSwitcher}.tsx`**
-   (0%) — настройки, используются в `SettingsScreen` (сейчас застаблены
-   там).
-5. **`hooks/{useMediaLibraryUnavailable,useContentWidth,useSavedSort}.ts`/
-   `hooks/Profile/useUpdateProfile.ts`** (0–7%) — маленькие переиспользуемые
-   хуки; `useMediaLibraryUnavailable` уже используется в `Avatar.tsx`
-   (застаблен там), `useUpdateProfile`'s `useInvalidateProfile` тоже
-   (застаблен в `Avatar.test.tsx`).
-6. **`services/bottomSheet.ts`/`components/ui/ModalWrapper.tsx`**
-   (33–50%) — `bottomSheetRef`/`BottomSheet.show`/`.showMenu` вызываются
-   из большинства экранов (сейчас замокан везде как API), сама
-   orchestration-логика не проверена напрямую; `ModalWrapper` — общий
-   chrome для `SelectListModal` (застаблен в его тесте, см. §7, четвёртый
-   батч), сам не проверен.
+Этот батч — не продолжение коверидж-driven списка, а **ревизия самого
+списка "не включено намеренно"** ниже: два Explore-агента перечитали
+каждый файл из старого списка целиком (не только однострочное
+обоснование) и сверили с реальным использованием в тестах. Вывод:
+**большая часть обоснований была написана по памяти и не подтвердилась
+при чтении кода.** Конкретно опровергнуто:
+- `util/sortOptionsList.ts` — заявлялось "пассивно покрыт побочным
+  эффектом тестов"; на деле упоминается в ровно одном тесте, и даже там
+  замокан целиком. Ни одна из 13 веток switch реально не выполнялась.
+- `store/theme-context.tsx`/`language-context.tsx` — заявлялось "конфиг,
+  меняется редко"; на деле оба содержат настоящий async
+  AsyncStorage-round-trip, ветвление manual-vs-system темы/языка и
+  обработку ошибок — ничего из этого не выполнялось (все потребители
+  мокали `useTheme`/`useLanguage` целиком).
+- `components/Main/*` — заявлялось "чисто презентационные"; на деле 9 из
+  13 файлов делают реальные `useQuery`/`useList`-запросы, вычисления и
+  `onPress` → `navigation.navigate`. Презентационны только 4
+  `*Skeleton.tsx`.
+- `components/ui/Layout.tsx` — заявлялось "уже покрыт passthrough-моком
+  во всех экранных тестах"; на самом деле наоборот — этот мок как раз
+  ОБХОДИТ тройное ветвление (`withKeyboard`/`withScroll`/plain), которое
+  и надо было тестировать.
+- `components/ui/CustomSplash.tsx` — содержит реальную async-оркестрацию
+  (`setTimeout` + `waitFor` + `SplashScreen.hideAsync` + `onFinish`), не
+  просто декорацию.
+- `services/queryClient.ts` (3-ветвевой retry-предикат) и
+  `services/navigationRef.ts` (pending-navigation очередь/flush) —
+  заявлялись "тонкие обёртки над SDK", но имеют настоящую логику.
+- `util/openSupportEmail.ts` — заявлялось "однострочный wrapper"; на деле
+  есть `canOpenURL`-ветка и catch-ветка, обе через общий Toast-хендлер.
 
-Не включены намеренно: `components/Main/*` (дашборд-виджеты, чисто
-презентационные, низкий риск), `components/ui/{BackgroundScene*,
-CustomSplash}.tsx` (чисто декоративные), `components/ui/Layout.tsx`
-(тонкая chrome-обёртка, уже стаблена passthrough-мок во всех экранных
-тестах), `store/theme-context.tsx`/`language-context.tsx`
-(конфигурационные, меняются редко), `services/{sentry,queryClient,
-navigationRef,db/client}.ts` (тонкие обёртки над SDK),
-`screens/{AchievementsScreen,SpeciesDetailScreen}.tsx` (целиком заглушки,
-см. §7), `util/openSupportEmail.ts` (однострочный `Linking.openURL`
-wrapper), `util/sortOptionsList.ts` (уже пассивно покрыт побочным
-эффектом множества экранных/хуковых тестов, которые проверяют его вывод
-косвенно через `sort`/`options`).
+Все 17 файлов из этого списка теперь покрыты тестами — см. журнал (§7)
+для деталей по батчам 7–11.
+
+Подтверждено, что остаётся легитимно исключённым: `components/ui/
+{BackgroundScene*,CustomSplash}.tsx`'s декоративные соседи (сам
+`BackgroundScene.tsx`/`BackgroundScene3.tsx` — чистая SVG-геометрия;
+`BackgroundScene2.tsx` — минимальный `useState` для `onLayout`, но без
+интерактивности), 4 `*Skeleton.tsx`-файла в `components/Main/`
+(`BirdOfTheDaySceleton`/`ChecklistHeroSkeleton`/`SparklineSkeleton`/
+`StatsSkeleton` — чисто статичная разметка), `services/sentry.ts`
+(конфиг-объект + один `!__DEV__`-тернарник, не более),
+`services/db/client.ts` (глобально замокан в `jest.setup.js`, реальная
+логика байпасится целиком), `screens/{AchievementsScreen,
+SpeciesDetailScreen}.tsx` (буквально `<Text>ScreenName</Text>`, ноль
+хуков).
+
+Оставшиеся кандидаты ниже ~70% stmts, не входившие в этот батч:
+`store/profile-context.tsx` (62.76%), `store/alert-settings-context.tsx`
+(66.21%), `hooks/useLocationUnavailable.ts` (66.66%),
+`services/authService.ts` (66.66%) — все реально используются и
+тестируются транзитивно через `useApiError`/`AlertSettingsScreen`/
+`PlaceBlock`/`ObservationForm`-тесты и т.п., просто без выделенного файла
+на сам модуль; `hooks/useLocationUnavailable.ts` — самый дешёвый следующий
+шаг (симметричен уже покрытому `useMediaLibraryUnavailable.ts`). За их
+пределами дальнейшее движение разумнее не через stmts-процент, а через
+интеграционные/e2e-сценарии из раздела 6 (iOS-офлайн, push, iOS
+update/delete), которые вне гейта по инфраструктурным, не тестовым
+причинам.
 
 ## 7. Журнал закрытых пробелов покрытия (справочно, не влияет на гейт)
 
@@ -615,3 +630,93 @@ wrapper), `util/sortOptionsList.ts` (уже пассивно покрыт поб
 
   Итог: 1411 тестов, 124 suite, `npm run test`, `npm run check` и
   `npm run test:coverage` (83.21% stmts) зелёные.
+- Шестой батч (83.21% → 86.88% stmts), шесть пунктов из прошлой ревизии
+  этого раздела: `DiaryObservationCard`/`PlaceBlock`/`PlacePreviewRow`
+  (тот же паттерн preview-fetch-с-кэшем, что уже был у `PlaceDropdown`);
+  `MapL` (offline-фолбэк, 8с map-load timeout с ретраем, copy-coords,
+  accuracy-оверлей, `subscribeToConnectionChange`-реакция — все смокано
+  через `@maplibre/maplibre-react-native`, не реальный рендер тайлов);
+  `DatePickerField`/`HourPicker` (Android скрывает пикер после выбора,
+  iOS держит открытым; `HourPicker`'s авто-скролл к выбранному часу не
+  падает); `LanguageSwitcher`/`ThemeSwitcher`; `useMediaLibraryUnavailable`/
+  `useContentWidth`/`useSavedSort`/`useUpdateProfile` (`useContentWidth`'s
+  breakpoint-клампинг, `useSavedSort`'s invalid-stored-value fallback);
+  `services/bottomSheet.ts`/`ModalWrapper` (`bottomSheetRef.current`
+  null-safety, `ModalWrapper`'s sort/apply-иконки условно).
+
+  Два методологических уточнения, оба спровоцированы попыткой
+  замокать/переопределить `react-native`'s core-экспорты:
+  1. **Полная замена `react-native` через `jest.mock("react-native", () =>
+     ({...jest.requireActual("react-native"), X: ...}))` ломает окружение**
+     — react-native лениво объявляет свои экспорты через `Object.defineProperty`
+     геттерами; spread (`{...actual}`) вычисляет их все сразу, что валит
+     нативные-только модули (`DevMenu` и т.п.) вне контекста, где они
+     обычно лениво не трогаются. Фикс — оборачивать `jest.requireActual
+     ("react-native")` в `Proxy`, который форвардит доступ лениво и
+     подменяет только нужный экспорт (`useWindowDimensions` в
+     `useContentWidth.test.ts`, `Modal` в `ModalWrapper.test.tsx`) — тот же
+     приём, что использовался для `@maplibre/maplibre-react-native` в
+     `MapL.test.tsx`, только теперь для самого `react-native`.
+  2. **`jest.spyOn` на namespace-объект НЕ ловит уже импортированную именную
+     привязку**: `import { useWindowDimensions } from "react-native"` внутри
+     `hooks/useContentWidth.ts` резолвится в конкретную функцию при загрузке
+     файла (до того, как тест успевает вызвать `spyOn` внутри `it()`), так
+     что подмена свойства на объекте модуля впоследствии эту привязку уже
+     не меняет — нужен `jest.mock` (Proxy-вариант выше), а не `spyOn`,
+     когда тестируемый модуль импортирует именованный экспорт напрямую.
+
+  Итог: 1499 тестов, 138 suite, `npm run test`, `npm run check` и
+  `npm run test:coverage` (86.88% stmts) зелёные.
+- Батчи 7–11 (86.88% → 92.01% stmts) — не по коверидж-приоритету, а по
+  ревизии списка "не включено намеренно" (см. новый текст в начале этого
+  раздела для того, что именно было опровергнуто и почему). Пять батчей
+  по плану ревизии:
+  - **Батч 7** (state/persistence): `theme-context.tsx` (manual-vs-system
+    приоритет, AsyncStorage save/load/remove round-trip, `ready`-гейт
+    возвращает `null` до гидратации, ошибка при `getItem` не блокирует
+    `ready`), `language-context.tsx` (stored-язык vs device-locale
+    fallback, `i18n.changeLanguage`, персистентность). Рендерился реальный
+    `*Provider` + `renderHook`, а не мок хука — паттерн из
+    `auth-context.test.tsx`.
+  - **Батч 8** (мелкая инфра, ошибочно считавшаяся тривиальной):
+    `sortOptionsList.ts` (все 13 веток screen-кейсов + default),
+    `openSupportEmail.ts` (`canOpenURL` true/false/throw, все три ведут в
+    общий Toast-хендлер), `queryClient.ts` (retry-предикат:
+    UNAUTHORIZED/isServerError не ретраятся, иначе один повтор),
+    `navigationRef.ts` (`isReady()` true → dispatch сразу, false →
+    очередь; `flushPendingNavigation` дренирует и чистит очередь один раз;
+    более новый queued вызов перезаписывает более старый неслитый).
+  - **Батч 9** (Layout/Splash, логика байпасилась моками в других
+    тестах): `Layout.tsx` (тройное ветвление
+    `withKeyboard`/`withScroll`/plain, `hideBackground`, `top`/`bottom`-
+    слоты), `CustomSplash.tsx` (`onFinish` только после того, как ОБА —
+    1с-таймер И `waitFor` — резолвнулись; таймер чистится на unmount).
+  - **Батч 10** (простые Main-виджеты): `QuickActions.tsx`,
+    `Stats.tsx`, `Sections.tsx` (обнаружено и задокументировано, не
+    исправлено: `showBadge` на "Diaries" захардкожен в `false`, поэтому
+    бейдж непрочитанных дневников никогда не рендерится — не баг в смысле
+    краша, но тест зафиксировал текущее поведение, а не гипотезу),
+    `FloatingNavbar.tsx` (99+-кап, flag-vs-globe иконка,
+    `useUnreadCount` замокан как отдельно покрытый хук).
+  - **Батч 11** (Main-виджеты с реальным `useQuery`/`useList`):
+    `ChecklistHero.tsx`, `BirdOfTheDay.tsx` (permission-подобная
+    territory-резолюция filters→profile, BottomSheet-меню с двумя
+    пунктами), `NewSpecies.tsx`/`RareNearby.tsx` (оба на `useList`,
+    захвачен и напрямую протестирован `fetchFunction`-wrapper, который
+    им передаётся — `fetchStatSeen` вырезает place/species и форсит
+    `seen:true`; `RareNearby`'s дата+дистанция рендерятся только вместе,
+    как единый блок, скрываемый целиком при `distance` falsy),
+    `Sparkline.tsx` (dropdown-переключение режима меняет query key и
+    реально ретриггерит fetch).
+
+  Подтверждено на практике (не как открытие, а как принцип, применённый
+  специально к КОМПОНЕНТНЫМ, не хуковым тестам): react-query v5's
+  tracked-queries проблема из `useItem.test.tsx` (§7, пятый батч)
+  проявляется только у `renderHook`-тестов кастомных хуков, которые
+  возвращают весь `query`-объект как есть. У компонентов (`BirdOfTheDay`,
+  `Sparkline`), которые сами деструктурируют `{ data, isLoading }` при
+  рендере, поле уже "прочитано" естественным образом — спред не нужен,
+  обычный `render` + реальный `QueryClient` работает как есть.
+
+  Итог: 1643 теста, 155 suite, `npm run test`, `npm run check` и
+  `npm run test:coverage` (92.01% stmts) зелёные.

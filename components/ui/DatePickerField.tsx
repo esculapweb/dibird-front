@@ -53,6 +53,7 @@ const DatePickerField = ({
       <Pressable
         onPress={() => setShow(true)}
         style={[styles.button, { borderColor: Colors.border }]}
+        testID="date-picker-field-button"
       >
         <Text style={{ color: Colors.textMain }}>{formatDate(date)}</Text>
       </Pressable>
