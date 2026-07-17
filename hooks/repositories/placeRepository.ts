@@ -508,3 +508,13 @@ export const applyDropdownOverlay = (
 
   return [...toPrepend, ...filtered];
 };
+
+// Same reasoning as observationRepository.clearAllLocal — wipes every
+// locally-known place (synced mirror rows + pending mutations) plus its
+// queued mutations, on an account switch rather than ordinary logout.
+export const clearAllLocal = () => {
+  db.transaction((tx) => {
+    tx.delete(placeTable).run();
+    tx.delete(mutationQueueTable).where(eq(mutationQueueTable.entity, "place")).run();
+  });
+};

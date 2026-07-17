@@ -125,6 +125,28 @@ describe("initGlobalFilters", () => {
   });
 });
 
+describe("getLastLoggedInUserId / setLastLoggedInUserId", () => {
+  it("round-trips a user id", async () => {
+    await storageHelper.setLastLoggedInUserId(42);
+    expect(await storageHelper.getLastLoggedInUserId()).toBe(42);
+  });
+
+  it("returns null when nothing has been saved yet", async () => {
+    expect(await storageHelper.getLastLoggedInUserId()).toBeNull();
+  });
+
+  it("survives clearAllGlobalFilters and clearSort — it's a separate key, not swept up by logout's own cleanup", async () => {
+    await storageHelper.setLastLoggedInUserId(42);
+    await storageHelper.saveGlobalTerritory(5);
+    await storageHelper.saveSort("Observations", "-date_time");
+
+    await storageHelper.clearAllGlobalFilters();
+    await storageHelper.clearSort("Observations");
+
+    expect(await storageHelper.getLastLoggedInUserId()).toBe(42);
+  });
+});
+
 describe("error resilience", () => {
   it("save* swallows an AsyncStorage failure instead of throwing", async () => {
     jest.spyOn(AsyncStorage, "setItem").mockRejectedValueOnce(new Error("disk full"));

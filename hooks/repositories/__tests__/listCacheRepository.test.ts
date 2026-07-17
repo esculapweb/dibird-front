@@ -1,7 +1,7 @@
 import { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 
 import { createTestDb, loadRepos } from "../testDb";
-import { speciesDropdownCacheTable } from "../../../services/db/schema";
+import { speciesDropdownCacheTable, placesDropdownCacheTable, statCacheTable } from "../../../services/db/schema";
 import * as schema from "../../../services/db/schema";
 
 type ListCacheRepo = typeof import("../listCacheRepository");
@@ -88,5 +88,19 @@ describe("eviction", () => {
     expect(rows).toHaveLength(1);
     // The single survivor is the most recently written key.
     expect(rows[0].key).toBe("key21");
+  });
+});
+
+describe("clearAllListCaches", () => {
+  it("wipes every cache table, not just the one under test elsewhere in this file", () => {
+    listCacheRepository.cacheListResponse(speciesDropdownCacheTable, "species|5|name", { a: 1 }, 100);
+    listCacheRepository.cacheListResponse(placesDropdownCacheTable, "places|5|name", { b: 2 }, 100);
+    listCacheRepository.cacheListResponse(statCacheTable, "stat|5", { c: 3 }, 100);
+
+    listCacheRepository.clearAllListCaches();
+
+    expect(db.select().from(speciesDropdownCacheTable).all()).toHaveLength(0);
+    expect(db.select().from(placesDropdownCacheTable).all()).toHaveLength(0);
+    expect(db.select().from(statCacheTable).all()).toHaveLength(0);
   });
 });

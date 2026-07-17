@@ -1,5 +1,25 @@
 jest.mock("../useSavedSort", () => ({ useSavedSort: jest.fn() }));
 jest.mock("../../util/sortOptionsList", () => ({ sortOptionsList: jest.fn() }));
+// The upstream NetInfo-backed subscribeToReconnect isn't what's under test
+// here (see services/sync/__tests__/networkStatus.test.ts for that) — this is
+// just a controllable stand-in that tracks registered callbacks so a test can
+// fire a simulated reconnect and confirm cleanup unregisters it, mirroring
+// hooks/__tests__/syncHooks.test.tsx's mock.
+jest.mock("../../services/sync/networkStatus", () => {
+  let listeners: Array<() => void> = [];
+  return {
+    subscribeToReconnect: jest.fn((cb: () => void) => {
+      listeners.push(cb);
+      return () => {
+        listeners = listeners.filter((l) => l !== cb);
+      };
+    }),
+    __emitReconnect: () => listeners.forEach((l) => l()),
+    __resetReconnectListeners: () => {
+      listeners = [];
+    },
+  };
+});
 
 import { QueryClient, QueryClientProvider, notifyManager } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
@@ -24,6 +44,11 @@ const mockOnLocationUnavailable = jest.fn();
 const mockRequestLocation = jest.fn();
 const mockQueryFn = jest.fn();
 
+const networkStatusMock = require("../../services/sync/networkStatus") as {
+  __emitReconnect: () => void;
+  __resetReconnectListeners: () => void;
+};
+
 let queryClient: QueryClient;
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
@@ -40,6 +65,7 @@ const mockSavedSort = (overrides: Partial<{ sort: string; loaded: boolean }> = {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  networkStatusMock.__resetReconnectListeners();
   queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   (sortOptionsList as jest.Mock).mockReturnValue(PLACES_DROPDOWN_OPTIONS);
   mockQueryFn.mockResolvedValue([{ value: 1, label: "Item" }]);
@@ -277,5 +303,63 @@ describe("onSortChange", () => {
 
     await rerender({ locationAvailable: true });
     expect(mockOnChange).toHaveBeenCalledWith("distance");
+  });
+});
+
+describe("reconnect refetch", () => {
+  it("refetches on reconnect when the effective sort is a distance sort", async () => {
+    mockSavedSort({ sort: "distance" });
+    const { result } = await renderHook(
+      () =>
+        useDropdownQuery({
+          type: "PlacesDropdown",
+          queryFn: mockQueryFn,
+          params: [],
+          permissionStatus: "granted",
+        }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.query.isSuccess).toBe(true));
+    expect(mockQueryFn).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      networkStatusMock.__emitReconnect();
+    });
+    await waitFor(() => expect(mockQueryFn).toHaveBeenCalledTimes(2));
+  });
+
+  it("does not refetch on reconnect for a non-distance sort", async () => {
+    mockSavedSort({ sort: "name" });
+    const { result } = await renderHook(
+      () => useDropdownQuery({ type: "PlacesDropdown", queryFn: mockQueryFn, params: [] }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.query.isSuccess).toBe(true));
+    expect(mockQueryFn).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      networkStatusMock.__emitReconnect();
+    });
+    expect(mockQueryFn).toHaveBeenCalledTimes(1);
+  });
+
+  it("stops refetching on reconnect after unmount", async () => {
+    mockSavedSort({ sort: "distance" });
+    const { result, unmount } = await renderHook(
+      () =>
+        useDropdownQuery({
+          type: "PlacesDropdown",
+          queryFn: mockQueryFn,
+          params: [],
+          permissionStatus: "granted",
+        }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.query.isSuccess).toBe(true));
+
+    await unmount();
+
+    networkStatusMock.__emitReconnect();
+    expect(mockQueryFn).toHaveBeenCalledTimes(1);
   });
 });

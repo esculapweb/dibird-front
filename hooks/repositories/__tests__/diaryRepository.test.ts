@@ -534,3 +534,48 @@ describe("applyOverlay", () => {
     expect(spliced.observation_count).toBe(7);
   });
 });
+
+describe("clearAllLocal", () => {
+  it("wipes both synced mirror rows and pending mutations, plus their queue entries", () => {
+    diaryRepository.upsertFromServer({
+      id: 888,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+      date_time: "2026-01-01T00:00:00Z",
+      name: null,
+      observation_count: 0,
+      place: null,
+      place_data: null,
+      private: false,
+      location_private: true,
+      profile: 42,
+      territory: 5,
+      territory_data: { code: "", id: 5, name: "", segment: "" },
+      is_owner: true,
+      owner: {
+        avatar: "",
+        first_name: "Jane",
+        id: 42,
+        last_name: "Doe",
+        private: false,
+        timezone_id: "",
+        username: "jdoe",
+      },
+      user_data: {
+        avatar: "",
+        first_name: "Jane",
+        id: 42,
+        last_name: "Doe",
+        timezone_id: "",
+        username: "jdoe",
+      },
+    });
+    const created = diaryRepository.createLocal(diaryPayload(), {}, PROFILE, "req-1");
+
+    diaryRepository.clearAllLocal();
+
+    expect(rawDiaryRow(888)).toBeUndefined();
+    expect(rawDiaryRow(created.id)).toBeUndefined();
+    expect(pendingCreateMutations()).toHaveLength(0);
+  });
+});

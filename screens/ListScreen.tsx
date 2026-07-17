@@ -323,7 +323,14 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
     });
   }, [navigation, data]);
 
-  if (isError)
+  // isError also fires when a load-more (page > 1) fetch fails while earlier
+  // pages already loaded successfully — react-query keeps `data` populated
+  // with those pages in that case. Only replace the whole screen with the
+  // error overlay when there's nothing to show yet (page 1 itself failed);
+  // otherwise keep the already-loaded items and just let load-more silently
+  // stop (hasNextPage still reflects the last successful page, so scrolling
+  // to the end will simply retry).
+  if (isError && !data)
     return (
       <ErrorOverlay
         title={errorTitle}

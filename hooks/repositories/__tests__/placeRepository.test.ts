@@ -309,3 +309,16 @@ describe("applyDropdownOverlay", () => {
     expect(result).toHaveLength(1);
   });
 });
+
+describe("clearAllLocal", () => {
+  it("wipes both synced mirror rows and pending mutations, plus their queue entries", () => {
+    placeRepository.upsertFromServer(serverPlace({ id: 555 }));
+    const created = placeRepository.createLocal(placePayload(), "req-1");
+
+    placeRepository.clearAllLocal();
+
+    expect(rawRow(555)).toBeUndefined();
+    expect(rawRow(created.id)).toBeUndefined();
+    expect(mutations()).toHaveLength(0);
+  });
+});

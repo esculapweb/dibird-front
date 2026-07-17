@@ -79,3 +79,15 @@ export const getCachedTimezones = (): DropdownItem[] =>
     .orderBy(asc(timezoneTable.sortOrder))
     .all()
     .map((row) => ({ value: row.value, label: row.label }));
+
+// countryTable carries a per-user `favourite` flag (see cacheCountries
+// above), so it shouldn't survive a logout — left behind, it'd show the
+// previous account's favourite countries to whoever logs in next on this
+// device. timezoneTable isn't user-specific, but there's no separate cache
+// to keep it around for once countries are gone, so it's cleared alongside.
+export const clearReferenceData = () => {
+  db.transaction((tx) => {
+    tx.delete(countryTable).run();
+    tx.delete(timezoneTable).run();
+  });
+};

@@ -3,6 +3,7 @@ import { useQuery, UseQueryResult } from "@tanstack/react-query";
 
 import { useSavedSort } from "./useSavedSort";
 import { sortOptionsList } from "../util/sortOptionsList";
+import { subscribeToReconnect } from "../services/sync/networkStatus";
 import { DropdownItem, AppError } from "../types";
 
 interface UseDropdownQueryProps<T extends DropdownItem = DropdownItem> {
@@ -95,10 +96,27 @@ export function useDropdownQuery<T extends DropdownItem = DropdownItem>({
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,
+    placeholderData: (previousData) => previousData,
     select: mapResult
       ? (data) => new Map(data.map((i) => [i.value, i?.name_lang ?? i.label]))
       : undefined,
   });
+
+  // "distance"/"-distance" can't be reproduced offline (no stored device
+  // position), so a sort change made while offline is served from a stale
+  // cache entry rather than the actual requested order — see fetchMyPlaces'
+  // offline fallback in util/fetches.ts. Force a real refetch once
+  // connectivity returns so the list catches up to the sort the user already
+  // picked, instead of silently sitting on that stale order until the 24h
+  // staleTime expires. query.refetch is intentionally left out of the deps —
+  // it's a stable method on the underlying observer, so re-subscribing only
+  // when effectiveSort changes (not on every render) is enough.
+  useEffect(() => {
+    if (!isDistanceSort(effectiveSort)) return undefined;
+    return subscribeToReconnect(() => {
+      query.refetch();
+    });
+  }, [effectiveSort]);
 
   return { query, sort: effectiveSort, onSortChange: handleSortChange };
 }

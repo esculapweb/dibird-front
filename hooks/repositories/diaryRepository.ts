@@ -551,3 +551,13 @@ export const applyOverlay = (
 
   return { ...response, results, pagination: { ...response.pagination, count } };
 };
+
+// Same reasoning as observationRepository.clearAllLocal — wipes every
+// locally-known diary (synced mirror rows + pending mutations) plus its
+// queued mutations, on an account switch rather than ordinary logout.
+export const clearAllLocal = () => {
+  db.transaction((tx) => {
+    tx.delete(diaryTable).run();
+    tx.delete(mutationQueueTable).where(eq(mutationQueueTable.entity, "diary")).run();
+  });
+};

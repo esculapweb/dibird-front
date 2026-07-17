@@ -218,6 +218,20 @@ export const fetchMyPlaces = async (
     );
     if (cached) return placeRepository.applyDropdownOverlay(cached, territory);
 
+    // Same territory, but cached under a different sort order — still useful
+    // offline (e.g. the user just switched sort with no connection): reuse it
+    // resorted client-side rather than surfacing an error.
+    const relaxed = getCachedListResponseByPrefix<PlaceDropdownItem[]>(
+      placesDropdownCacheTable,
+      `places|${territory}|`,
+    );
+    if (relaxed) {
+      return placeRepository.applyDropdownOverlay(
+        resortPlaceItems(relaxed, order),
+        territory,
+      );
+    }
+
     // Nothing cached either: still worth showing a place created offline in
     // this territory (better than an error screen hiding it), but if there's
     // truly nothing — no cache, no pending place — keep surfacing the error
@@ -235,7 +249,9 @@ export const fetchSpecies = async (
 ): Promise<SpeciesDropdownItem[]> => {
   if (!territory) return [];
 
-  const cacheKey = `species|${territory}|${order}|${stableStringify(dateFilter ?? {})}`;
+  // Order is kept last so a prefix match (territory + date filter, any order)
+  // can be done offline below without it — see the catch block.
+  const cacheKey = `species|${territory}|${stableStringify(dateFilter ?? {})}|${order}`;
 
   try {
     const params = {
@@ -257,6 +273,7 @@ export const fetchSpecies = async (
       thumb: item.sp_thumb ?? undefined,
       seen: item.seen,
       segment: item.segment,
+      ioc_id: item.ioc_id,
     }));
     cacheListResponse(speciesDropdownCacheTable, cacheKey, items, MAX_ENTRIES);
     return items;
@@ -266,6 +283,16 @@ export const fetchSpecies = async (
       cacheKey,
     );
     if (cached) return cached;
+
+    // Same territory/date filter, but cached under a different sort order —
+    // still useful offline (e.g. the user just switched sort with no
+    // connection): reuse it resorted client-side rather than surfacing an error.
+    const relaxed = getCachedListResponseByPrefix<SpeciesDropdownItem[]>(
+      speciesDropdownCacheTable,
+      `species|${territory}|${stableStringify(dateFilter ?? {})}|`,
+    );
+    if (relaxed) return resortSpeciesDropdownItems(relaxed, order);
+
     throw e;
   }
 };
@@ -605,6 +632,409 @@ export const sortSpeciesItems = <T extends SpeciesItem>(
   });
 };
 
+// Same idea as sortSpeciesItems, for the Places dropdown's offline fallback
+// (see fetchMyPlaces). "distance" is only resortable when every cached item
+// actually carries a numeric distance — the backend only computes it when the
+// original request itself was a distance-sorted fetch with live coords (see
+// fetchMyPlaces' isDistanceSort/coords handling), so a cache entry written
+// under e.g. "name" won't have it. When it's missing, flipping asc/desc can't
+// be reproduced offline and the cached order is left as-is.
+const placeSortValue = (
+  item: PlaceDropdownItem,
+  field: string,
+): string | number | null => {
+  switch (field) {
+    case "name":
+      return item.label ?? "";
+    case "favourite":
+      return item.iconLabel === "star" ? 1 : 0;
+    case "distance":
+      return typeof item.distance === "number" ? item.distance : null;
+    default:
+      return null;
+  }
+};
+
+export const resortPlaceItems = <T extends PlaceDropdownItem>(
+  items: T[],
+  order: string | null,
+): T[] => {
+  if (!order) return items;
+
+  const tokens = order.split(",").map((token) => ({
+    field: token.replace(/^-/, ""),
+    desc: token.startsWith("-"),
+  }));
+
+  const canSort = tokens.every(
+    (t) =>
+      t.field === "name" ||
+      t.field === "favourite" ||
+      (t.field === "distance" &&
+        items.every((i) => typeof i.distance === "number")),
+  );
+  if (!canSort) return items;
+
+  return [...items].sort((a, b) => {
+    for (const { field, desc } of tokens) {
+      const cmp = compareSortValues(
+        placeSortValue(a, field),
+        placeSortValue(b, field),
+      );
+      if (cmp !== 0) return desc ? -cmp : cmp;
+    }
+    return 0;
+  });
+};
+
+// Same idea again, for the Species dropdown's offline fallback (see
+// fetchSpecies). SpeciesDropdownItem is a different, slimmer shape than
+// SpeciesItem, but it does carry `ioc_id` (populated from the same API field
+// as SpeciesItem.ioc_id, see fetchSpecies above), so — like sortSpeciesItems —
+// an "ioc_id" order can be reproduced offline as long as every cached item
+// actually has it (older cache entries written before ioc_id was added here
+// won't, so that's checked per-call rather than assumed).
+const speciesDropdownSortValue = (
+  item: SpeciesDropdownItem,
+  field: string,
+): string | number | null => {
+  switch (field) {
+    case "name":
+      return item.name_lang ?? item.label ?? "";
+    case "seen":
+      return item.seen ? 1 : 0;
+    case "ioc_id":
+      return item.ioc_id ?? null;
+    default:
+      return null;
+  }
+};
+
+export const resortSpeciesDropdownItems = <T extends SpeciesDropdownItem>(
+  items: T[],
+  order: string | null,
+): T[] => {
+  if (!order) return items;
+
+  const tokens = order.split(",").map((token) => ({
+    field: token.replace(/^-/, ""),
+    desc: token.startsWith("-"),
+  }));
+
+  const canSort = tokens.every(
+    (t) =>
+      t.field === "name" ||
+      t.field === "seen" ||
+      (t.field === "ioc_id" &&
+        items.every((i) => typeof i.ioc_id === "number")),
+  );
+  if (!canSort) return items;
+
+  return [...items].sort((a, b) => {
+    for (const { field, desc } of tokens) {
+      const cmp = compareSortValues(
+        speciesDropdownSortValue(a, field),
+        speciesDropdownSortValue(b, field),
+      );
+      if (cmp !== 0) return desc ? -cmp : cmp;
+    }
+    return 0;
+  });
+};
+
+// Same idea again, for the main Places list's offline fallback (fetchPlaces
+// below) — distinct from resortPlaceItems above, which is for the
+// PlaceDropdownItem picker and doesn't carry species_count/observation_count.
+const placeListSortValue = (
+  item: PlaceItem,
+  field: string,
+): string | number | null => {
+  switch (field) {
+    case "name":
+      return item.name ?? "";
+    case "favourite":
+      return item.favourite ? 1 : 0;
+    case "distance":
+      return typeof item.distance === "number" ? item.distance : null;
+    case "species_count":
+      return item.species_count ?? 0;
+    case "observation_count":
+      return item.observation_count ?? 0;
+    default:
+      return null;
+  }
+};
+
+export const resortPlaceListItems = <T extends PlaceItem>(
+  items: T[],
+  order: string | null,
+): T[] => {
+  if (!order) return items;
+
+  const tokens = order.split(",").map((token) => ({
+    field: token.replace(/^-/, ""),
+    desc: token.startsWith("-"),
+  }));
+
+  const canSort = tokens.every(
+    (t) =>
+      t.field === "name" ||
+      t.field === "favourite" ||
+      t.field === "species_count" ||
+      t.field === "observation_count" ||
+      (t.field === "distance" &&
+        items.every((i) => typeof i.distance === "number")),
+  );
+  if (!canSort) return items;
+
+  return [...items].sort((a, b) => {
+    for (const { field, desc } of tokens) {
+      const cmp = compareSortValues(
+        placeListSortValue(a, field),
+        placeListSortValue(b, field),
+      );
+      if (cmp !== 0) return desc ? -cmp : cmp;
+    }
+    return 0;
+  });
+};
+
+// For fetchObservations/fetchCommunityObservations's offline fallback.
+// "species_name" and "ioc_id" are order strings the API accepts, but neither
+// maps to a literal field on ObservationItem — name is nested under
+// species_data.name_lang, and there's no ioc_id at all here (same gap as
+// SpeciesItem/sortSpeciesItems), so "ioc_id" can't be reproduced offline and
+// is left as an unsupported token below.
+const observationSortValue = (
+  item: ObservationItem,
+  field: string,
+): string | number | null => {
+  switch (field) {
+    case "species_name":
+      return item.species_data?.name_lang ?? "";
+    case "date_time":
+      return item.date_time ?? null;
+    case "distance":
+      return typeof item.distance === "number" ? item.distance : null;
+    default:
+      return null;
+  }
+};
+
+export const resortObservationItems = <T extends ObservationItem>(
+  items: T[],
+  order: string | null,
+): T[] => {
+  if (!order) return items;
+
+  const tokens = order.split(",").map((token) => ({
+    field: token.replace(/^-/, ""),
+    desc: token.startsWith("-"),
+  }));
+
+  const canSort = tokens.every(
+    (t) =>
+      t.field === "species_name" ||
+      t.field === "date_time" ||
+      (t.field === "distance" &&
+        items.every((i) => typeof i.distance === "number")),
+  );
+  if (!canSort) return items;
+
+  return [...items].sort((a, b) => {
+    for (const { field, desc } of tokens) {
+      const cmp = compareSortValues(
+        observationSortValue(a, field),
+        observationSortValue(b, field),
+      );
+      if (cmp !== 0) return desc ? -cmp : cmp;
+    }
+    return 0;
+  });
+};
+
+// For fetchDiaryObservations' offline fallback. DiaryObservationItem is a
+// slimmer shape than ObservationItem (no date_time/ioc_id at all), so only
+// "species_name" (via species_data.name_lang) and "created_at" are
+// reproducible offline.
+const diaryObservationSortValue = (
+  item: DiaryObservationItem,
+  field: string,
+): string | number | null => {
+  switch (field) {
+    case "species_name":
+      return item.species_data?.name_lang ?? "";
+    case "created_at":
+      return item.created_at ?? null;
+    default:
+      return null;
+  }
+};
+
+export const resortDiaryObservationItems = <T extends DiaryObservationItem>(
+  items: T[],
+  order: string | null,
+): T[] => {
+  if (!order) return items;
+
+  const tokens = order.split(",").map((token) => ({
+    field: token.replace(/^-/, ""),
+    desc: token.startsWith("-"),
+  }));
+
+  const canSort = tokens.every(
+    (t) => t.field === "species_name" || t.field === "created_at",
+  );
+  if (!canSort) return items;
+
+  return [...items].sort((a, b) => {
+    for (const { field, desc } of tokens) {
+      const cmp = compareSortValues(
+        diaryObservationSortValue(a, field),
+        diaryObservationSortValue(b, field),
+      );
+      if (cmp !== 0) return desc ? -cmp : cmp;
+    }
+    return 0;
+  });
+};
+
+// For fetchDiaries' offline fallback. "name" here is the diary's own title
+// (DiaryListItem.name), not a species name.
+const diaryListSortValue = (
+  item: DiaryListItem,
+  field: string,
+): string | number | null => {
+  switch (field) {
+    case "date_time":
+      return item.date_time ?? null;
+    case "observation_count":
+      return item.observation_count ?? 0;
+    case "name":
+      return item.name ?? "";
+    default:
+      return null;
+  }
+};
+
+export const resortDiaryListItems = <T extends DiaryListItem>(
+  items: T[],
+  order: string | null,
+): T[] => {
+  if (!order) return items;
+
+  const tokens = order.split(",").map((token) => ({
+    field: token.replace(/^-/, ""),
+    desc: token.startsWith("-"),
+  }));
+
+  const canSort = tokens.every(
+    (t) =>
+      t.field === "date_time" ||
+      t.field === "observation_count" ||
+      t.field === "name",
+  );
+  if (!canSort) return items;
+
+  return [...items].sort((a, b) => {
+    for (const { field, desc } of tokens) {
+      const cmp = compareSortValues(
+        diaryListSortValue(a, field),
+        diaryListSortValue(b, field),
+      );
+      if (cmp !== 0) return desc ? -cmp : cmp;
+    }
+    return 0;
+  });
+};
+
+// For fetchRating's offline fallback.
+const ratingSortValue = (
+  item: RatingItem,
+  field: string,
+): string | number | null => {
+  switch (field) {
+    case "observations":
+      return item.seen_qty ?? 0;
+    case "last_update":
+      return item.last_update ?? null;
+    default:
+      return null;
+  }
+};
+
+export const resortRatingItems = <T extends RatingItem>(
+  items: T[],
+  order: string | null,
+): T[] => {
+  if (!order) return items;
+
+  const tokens = order.split(",").map((token) => ({
+    field: token.replace(/^-/, ""),
+    desc: token.startsWith("-"),
+  }));
+
+  const canSort = tokens.every(
+    (t) => t.field === "observations" || t.field === "last_update",
+  );
+  if (!canSort) return items;
+
+  return [...items].sort((a, b) => {
+    for (const { field, desc } of tokens) {
+      const cmp = compareSortValues(
+        ratingSortValue(a, field),
+        ratingSortValue(b, field),
+      );
+      if (cmp !== 0) return desc ? -cmp : cmp;
+    }
+    return 0;
+  });
+};
+
+// For fetchRatingCompare's offline fallback. The UI's "ioc_id" sort token
+// maps to RatingCompareItem.taxon_id — a different field name, but (unlike
+// SpeciesItem.ioc_id) always present and numeric, so it's always safe to sort
+// by rather than needing a per-call "does every item have it" check.
+const ratingCompareSortValue = (
+  item: RatingCompareItem,
+  field: string,
+): string | number | null => {
+  switch (field) {
+    case "name":
+      return item.name_lang ?? "";
+    case "ioc_id":
+      return item.taxon_id ?? null;
+    default:
+      return null;
+  }
+};
+
+export const resortRatingCompareItems = <T extends RatingCompareItem>(
+  items: T[],
+  order: string | null,
+): T[] => {
+  if (!order) return items;
+
+  const tokens = order.split(",").map((token) => ({
+    field: token.replace(/^-/, ""),
+    desc: token.startsWith("-"),
+  }));
+
+  const canSort = tokens.every((t) => t.field === "name" || t.field === "ioc_id");
+  if (!canSort) return items;
+
+  return [...items].sort((a, b) => {
+    for (const { field, desc } of tokens) {
+      const cmp = compareSortValues(
+        ratingCompareSortValue(a, field),
+        ratingCompareSortValue(b, field),
+      );
+      if (cmp !== 0) return desc ? -cmp : cmp;
+    }
+    return 0;
+  });
+};
+
 export const fetchStat = (
   filters: Filters,
   order: string | null = "name",
@@ -706,6 +1136,10 @@ export const fetchPlaces = async (
     {
       table: placesListCacheTable,
       maxEntries: MAX_ENTRIES,
+      resort: (data, ord) => ({
+        ...data,
+        results: resortPlaceListItems(data.results, ord),
+      }),
       // Offline with nothing cached yet for this exact query (e.g. the very
       // first load of the Places screen while offline, right after signup):
       // if there's a locally pending place create/update/delete, applyOverlay
@@ -745,6 +1179,10 @@ export const fetchObservations = async (
     {
       table: observationsListCacheTable,
       maxEntries: MAX_ENTRIES,
+      resort: (data, ord) => ({
+        ...data,
+        results: resortObservationItems(data.results, ord),
+      }),
       // Offline with nothing cached yet for this exact query (e.g. the very
       // first load of the Observations screen while offline, right after
       // signup): same reasoning/tradeoff as fetchDiaries — a locally pending
@@ -788,6 +1226,10 @@ export const fetchDiaries = async (
     {
       table: diariesListCacheTable,
       maxEntries: MAX_ENTRIES,
+      resort: (data, ord) => ({
+        ...data,
+        results: resortDiaryListItems(data.results, ord),
+      }),
       // Offline with nothing cached yet for this exact query (e.g. the very
       // first load of the Diaries screen while offline): if there's a locally
       // pending diary create/update/delete, applyOverlay below still has
@@ -825,6 +1267,10 @@ export const fetchDiaryObservations = async (
     {
       table: diaryObservationsListCacheTable,
       maxEntries: MAX_ENTRIES,
+      resort: (data, ord) => ({
+        ...data,
+        results: resortDiaryObservationItems(data.results, ord),
+      }),
       // Offline with nothing cached for this exact query: only safe to show
       // "no observations" instead of erroring when we actually know that's
       // true. A diary with a temp (negative) id only exists locally and was
@@ -864,7 +1310,14 @@ export const fetchRating = (
     page,
     {},
     undefined,
-    { table: ratingCacheTable, maxEntries: MAX_ENTRIES },
+    {
+      table: ratingCacheTable,
+      maxEntries: MAX_ENTRIES,
+      resort: (data, ord) => ({
+        ...data,
+        results: resortRatingItems(data.results, ord),
+      }),
+    },
   );
 };
 
@@ -913,7 +1366,14 @@ export const fetchRatingCompare = (
     page,
     {},
     undefined,
-    { table: ratingCompareCacheTable, maxEntries: MAX_ENTRIES },
+    {
+      table: ratingCompareCacheTable,
+      maxEntries: MAX_ENTRIES,
+      resort: (data, ord) => ({
+        ...data,
+        results: resortRatingCompareItems(data.results, ord),
+      }),
+    },
   );
 };
 
@@ -940,7 +1400,14 @@ export const fetchCommunityObservations = (
     page,
     {},
     per_page,
-    { table: communityObservationsCacheTable, maxEntries: MAX_ENTRIES },
+    {
+      table: communityObservationsCacheTable,
+      maxEntries: MAX_ENTRIES,
+      resort: (data, ord) => ({
+        ...data,
+        results: resortObservationItems(data.results, ord),
+      }),
+    },
     requestOnlyParams,
   );
 };

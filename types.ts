@@ -279,6 +279,7 @@ export interface SpeciesDropdownItem extends DropdownItem {
   thumb?: string;
   seen?: boolean;
   segment?: string;
+  ioc_id?: number;
 }
 
 export interface PlaceDropdownItem extends DropdownItem {

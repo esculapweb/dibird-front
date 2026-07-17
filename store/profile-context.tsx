@@ -15,10 +15,17 @@ import { getAnalytics, setUserId } from "@react-native-firebase/analytics";
 import { db } from "../services/db/client";
 import { mutationQueueTable, profileTable } from "../services/db/schema";
 import * as profileRepository from "../hooks/repositories/profileRepository";
+import * as observationRepository from "../hooks/repositories/observationRepository";
+import * as diaryRepository from "../hooks/repositories/diaryRepository";
+import * as placeRepository from "../hooks/repositories/placeRepository";
 import * as profileSync from "../services/sync/profileSync";
 import * as avatarSync from "../services/sync/avatarSync";
 import { subscribeToReconnect } from "../services/sync/networkStatus";
-import { initGlobalFilters } from "../util/storageHelper";
+import {
+  initGlobalFilters,
+  getLastLoggedInUserId,
+  setLastLoggedInUserId,
+} from "../util/storageHelper";
 import { AppError, Profile, ProfileFormData } from "../types";
 import { logError } from "../services/errors";
 
@@ -143,6 +150,24 @@ export const ProfileProvider = ({
     if (!profile) return;
 
     (async () => {
+      // A different account logging in on the same device shouldn't inherit
+      // whatever offline observation/diary/place data (synced mirrors *and*
+      // still-unsynced edits) the previous session left behind — but an
+      // ordinary re-login of the *same* user (e.g. after a 401-triggered
+      // logout) must keep it, since that's exactly the data a forced logout
+      // shouldn't lose. lastLoggedInUserId deliberately survives Logout()'s
+      // AsyncStorage wipe (see util/storageHelper.ts) so this comparison
+      // still works right after a logout, not just across app restarts.
+      if (profile.user) {
+        const lastUserId = await getLastLoggedInUserId();
+        if (lastUserId !== null && lastUserId !== profile.user) {
+          observationRepository.clearAllLocal();
+          diaryRepository.clearAllLocal();
+          placeRepository.clearAllLocal();
+        }
+        await setLastLoggedInUserId(profile.user);
+      }
+
       await initGlobalFilters(profile.territory ?? null);
       onProfileSavedCallbacks.forEach((cb) => cb(profile.territory ?? null));
 

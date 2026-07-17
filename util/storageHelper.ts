@@ -3,6 +3,11 @@ import { DateFilter } from "../types";
 
 const SORT_KEY = "sorting";
 const GLOBAL_KEY = "global";
+// Deliberately NOT included in Logout()'s AsyncStorage.multiRemove (util/auth.ts)
+// — it needs to survive logout so the next login can compare against it and
+// tell "same user re-authenticating" from "different account on this device"
+// (see store/profile-context.tsx).
+const LAST_USER_KEY = "last_logged_in_user";
 
 const saveItem = async (key: string, screen: string, value: unknown): Promise<void> => {
   try {
@@ -58,6 +63,24 @@ export const loadGlobalSpecies = (): Promise<unknown> => loadItem(GLOBAL_KEY, "s
 
 export const clearAllGlobalFilters = async (): Promise<void> => {
   await AsyncStorage.multiRemove([GLOBAL_KEY, "filters_inited"]);
+};
+
+export const getLastLoggedInUserId = async (): Promise<number | null> => {
+  try {
+    const raw = await AsyncStorage.getItem(LAST_USER_KEY);
+    return raw ? Number(raw) : null;
+  } catch (e) {
+    if (__DEV__) console.warn(`Failed to load ${LAST_USER_KEY}`, e);
+    return null;
+  }
+};
+
+export const setLastLoggedInUserId = async (userId: number): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(LAST_USER_KEY, String(userId));
+  } catch (e) {
+    if (__DEV__) console.warn(`Failed to save ${LAST_USER_KEY}`, e);
+  }
 };
 
 export const initGlobalFilters = async (profileTerritory: number | null): Promise<void> => {

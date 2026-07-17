@@ -108,3 +108,15 @@ describe("cacheTimezones / getCachedTimezones", () => {
     expect(referenceRepository.getCachedTimezones()).toEqual([]);
   });
 });
+
+describe("clearReferenceData", () => {
+  it("wipes both countries and timezones", () => {
+    referenceRepository.cacheCountries([FRANCE, ALBANIA]);
+    referenceRepository.cacheTimezones([{ value: "UTC", label: "UTC" }]);
+
+    referenceRepository.clearReferenceData();
+
+    expect(referenceRepository.getCachedCountries("name")).toEqual([]);
+    expect(referenceRepository.getCachedTimezones()).toEqual([]);
+  });
+});

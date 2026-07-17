@@ -37,6 +37,8 @@ import CommunityDetailScreen from "../screens/CommunityDetailScreen";
 
 import { useAuth, setOnLogout } from "../store/auth-context";
 import { useProfile } from "../store/profile-context";
+import { clearAllListCaches } from "../hooks/repositories/listCacheRepository";
+import { clearReferenceData } from "../hooks/repositories/referenceRepository";
 import Avatar from "../components/Profile/Avatar";
 import LanguageSwitcher from "../components/Language/LanguageSwitcher";
 import ThemeSwitcher from "../components/Theme/ThemeSwitcher";
@@ -183,6 +185,8 @@ const AppNavigator = () => {
     setOnLogout(async () => {
       await resetFilters();
       queryClient.clear();
+      clearAllListCaches();
+      clearReferenceData();
     });
 
     return () => setOnLogout(null);

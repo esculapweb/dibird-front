@@ -1,7 +1,31 @@
 import { asc, desc, eq, inArray, like, sql } from "drizzle-orm";
 
 import { db } from "../../services/db/client";
-import { cacheTable } from "../../services/db/schema";
+import {
+  cacheTable,
+  speciesDropdownCacheTable,
+  placesDropdownCacheTable,
+  statCacheTable,
+  checklistCacheTable,
+  placesListCacheTable,
+  observationsListCacheTable,
+  diariesListCacheTable,
+  diaryObservationsListCacheTable,
+  ratingCacheTable,
+  ratingCompareCacheTable,
+  ratingCompareHeaderCacheTable,
+  communityObservationsCacheTable,
+  communityItemCacheTable,
+  notificationsListCacheTable,
+  staticPageCacheTable,
+  notificationUnreadCountCacheTable,
+  dashboardStatCacheTable,
+  activityCacheTable,
+  birdOfDayCacheTable,
+  userProfileCacheTable,
+  mapPreviewCacheTable,
+  diarySpeciesIdsCacheTable,
+} from "../../services/db/schema";
 
 // Every table built by the cacheTable factory (schema.ts) shares this exact
 // TS shape, so these functions work generically across all of them — one
@@ -85,4 +109,43 @@ export const getCachedListResponseByPrefix = <T>(
     .all();
 
   return rows[0] ? (rows[0].response as T) : null;
+};
+
+// Every offline read-cache table built by the cacheTable factory (see
+// schema.ts) — kept as one explicit list rather than reflecting over the
+// schema module, so adding a new cache table can't silently skip this. Called
+// on logout: none of this is user-specific-safe to keep around (e.g. a
+// cached Places/Countries dropdown list carries per-user `favourite` flags),
+// and it's all cheap to refetch.
+const ALL_CACHE_TABLES: CacheTable[] = [
+  speciesDropdownCacheTable,
+  placesDropdownCacheTable,
+  statCacheTable,
+  checklistCacheTable,
+  placesListCacheTable,
+  observationsListCacheTable,
+  diariesListCacheTable,
+  diaryObservationsListCacheTable,
+  ratingCacheTable,
+  ratingCompareCacheTable,
+  ratingCompareHeaderCacheTable,
+  communityObservationsCacheTable,
+  communityItemCacheTable,
+  notificationsListCacheTable,
+  staticPageCacheTable,
+  notificationUnreadCountCacheTable,
+  dashboardStatCacheTable,
+  activityCacheTable,
+  birdOfDayCacheTable,
+  userProfileCacheTable,
+  mapPreviewCacheTable,
+  diarySpeciesIdsCacheTable,
+];
+
+export const clearAllListCaches = () => {
+  db.transaction((tx) => {
+    for (const table of ALL_CACHE_TABLES) {
+      tx.delete(table).run();
+    }
+  });
 };

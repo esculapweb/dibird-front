@@ -25,6 +25,15 @@ jest.mock("../../hooks/repositories/profileRepository", () => ({
   retryMutation: jest.fn(),
   discardMutation: jest.fn(),
 }));
+jest.mock("../../hooks/repositories/observationRepository", () => ({
+  clearAllLocal: jest.fn(),
+}));
+jest.mock("../../hooks/repositories/diaryRepository", () => ({
+  clearAllLocal: jest.fn(),
+}));
+jest.mock("../../hooks/repositories/placeRepository", () => ({
+  clearAllLocal: jest.fn(),
+}));
 
 jest.mock("../../services/sync/profileSync", () => ({
   runProfileSync: jest.fn(async () => {}),
@@ -49,6 +58,8 @@ jest.mock("../../services/sync/networkStatus", () => {
 });
 jest.mock("../../util/storageHelper", () => ({
   initGlobalFilters: jest.fn(async () => {}),
+  getLastLoggedInUserId: jest.fn(async () => null),
+  setLastLoggedInUserId: jest.fn(async () => {}),
 }));
 jest.mock("../../services/errors", () => ({
   logError: jest.fn(),
@@ -59,10 +70,16 @@ jest.mock("@react-native-firebase/analytics", () => ({
 }));
 
 import { AppState } from "react-native";
-import { render } from "@testing-library/react-native";
+import { render, waitFor } from "@testing-library/react-native";
+import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import { ProfileProvider } from "../profile-context";
 import { runProfileSync } from "../../services/sync/profileSync";
 import { runAvatarSync } from "../../services/sync/avatarSync";
+import * as profileRepository from "../../hooks/repositories/profileRepository";
+import * as observationRepository from "../../hooks/repositories/observationRepository";
+import * as diaryRepository from "../../hooks/repositories/diaryRepository";
+import * as placeRepository from "../../hooks/repositories/placeRepository";
+import { getLastLoggedInUserId, setLastLoggedInUserId } from "../../util/storageHelper";
 
 const networkStatusMock = require("../../services/sync/networkStatus") as {
   __emitReconnect: () => void;
@@ -135,4 +152,73 @@ it("does not re-run on a quick background/foreground flicker under the 10 second
 
   expect(runProfileSync).not.toHaveBeenCalled();
   expect(runAvatarSync).not.toHaveBeenCalled();
+});
+
+// A different account logging in on the same device shouldn't inherit
+// whatever offline observation/diary/place data the previous session left
+// behind (both synced mirror rows and still-unsynced edits — see
+// hooks/repositories/{observation,diary,place}Repository.ts's clearAllLocal),
+// but an ordinary re-login of the *same* user (e.g. after a 401-triggered
+// logout) must keep it. lastLoggedInUserId is what distinguishes the two —
+// see the effect in profile-context.tsx keyed on `updatedAt`.
+describe("account switch detection", () => {
+  const mockLoadedProfile = (userId: number) => {
+    (useLiveQuery as jest.Mock).mockReturnValue({
+      data: [{}],
+      updatedAt: Date.now(),
+    });
+    (profileRepository.rowToProfile as jest.Mock).mockReturnValue({
+      user: userId,
+      user_data: {
+        username: "u",
+        first_name: "F",
+        last_name: "L",
+        email: "u@example.com",
+        is_active: true,
+      },
+      avatar: "",
+      avatar_thumbnail: "",
+      private: false,
+      private_diary: false,
+      registration_ip: "",
+      timezone: "",
+      territory: null,
+    });
+  };
+
+  it("wipes observation/diary/place local data when a different user logs in", async () => {
+    (getLastLoggedInUserId as jest.Mock).mockResolvedValue(10);
+    mockLoadedProfile(99);
+
+    await renderProvider();
+
+    await waitFor(() => expect(setLastLoggedInUserId).toHaveBeenCalledWith(99));
+    expect(observationRepository.clearAllLocal).toHaveBeenCalledTimes(1);
+    expect(diaryRepository.clearAllLocal).toHaveBeenCalledTimes(1);
+    expect(placeRepository.clearAllLocal).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not wipe when the same user re-authenticates (e.g. after a 401-triggered logout)", async () => {
+    (getLastLoggedInUserId as jest.Mock).mockResolvedValue(99);
+    mockLoadedProfile(99);
+
+    await renderProvider();
+
+    await waitFor(() => expect(setLastLoggedInUserId).toHaveBeenCalledWith(99));
+    expect(observationRepository.clearAllLocal).not.toHaveBeenCalled();
+    expect(diaryRepository.clearAllLocal).not.toHaveBeenCalled();
+    expect(placeRepository.clearAllLocal).not.toHaveBeenCalled();
+  });
+
+  it("does not wipe on the very first login on a device (no last user recorded yet)", async () => {
+    (getLastLoggedInUserId as jest.Mock).mockResolvedValue(null);
+    mockLoadedProfile(99);
+
+    await renderProvider();
+
+    await waitFor(() => expect(setLastLoggedInUserId).toHaveBeenCalledWith(99));
+    expect(observationRepository.clearAllLocal).not.toHaveBeenCalled();
+    expect(diaryRepository.clearAllLocal).not.toHaveBeenCalled();
+    expect(placeRepository.clearAllLocal).not.toHaveBeenCalled();
+  });
 });

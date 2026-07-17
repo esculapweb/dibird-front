@@ -615,3 +615,19 @@ export const applyDiaryOverlay = (
 
   return { ...response, results, pagination: { ...response.pagination, count } };
 };
+
+// Wipes every locally-known observation (both synced mirror rows used for
+// offline overlay and genuinely-pending unsynced mutations — see the module
+// comment on ObservationRow's op/status) plus its queued mutations. Called
+// when a different account logs in on the same device (see
+// store/profile-context.tsx), not on ordinary logout — a session merely
+// expiring and the same user logging back in should keep whatever hasn't
+// synced yet.
+export const clearAllLocal = () => {
+  db.transaction((tx) => {
+    tx.delete(observationTable).run();
+    tx.delete(mutationQueueTable)
+      .where(eq(mutationQueueTable.entity, "observation"))
+      .run();
+  });
+};

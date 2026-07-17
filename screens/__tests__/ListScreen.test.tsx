@@ -200,13 +200,21 @@ it("shows a loading overlay while there's no data yet", async () => {
   expect(screen.getByTestId("loading-overlay")).toBeOnTheScreen();
 });
 
-it("shows an error overlay with retry on fetch failure", async () => {
-  mockListQuery({ isError: true, error: { message: "boom" } });
+it("shows an error overlay with retry when the first page fails and there's no data yet", async () => {
+  mockListQuery({ data: undefined, isError: true, error: { message: "boom" } });
   await render(<ListScreen {...defaultProps()} />);
 
   expect(screen.getByText("list_error_title")).toBeOnTheScreen();
   await fireEvent.press(screen.getByText("try_again"));
   expect(mockRefetch).toHaveBeenCalledTimes(1);
+});
+
+it("keeps showing already-loaded items instead of an error overlay when a load-more (page > 1) fetch fails", async () => {
+  mockListQuery({ isError: true, error: { message: "boom" } });
+  await render(<ListScreen {...defaultProps()} />);
+
+  expect(screen.queryByText("list_error_title")).not.toBeOnTheScreen();
+  expect(screen.getByText("Alpha")).toBeOnTheScreen();
 });
 
 it("renders items and de-duplicates repeated ids across pages", async () => {

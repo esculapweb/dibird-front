@@ -384,3 +384,21 @@ describe("applyDiaryOverlay", () => {
     expect(result.pagination.count).toBe(8);
   });
 });
+
+describe("clearAllLocal", () => {
+  it("wipes both synced mirror rows and pending mutations, plus their queue entries", () => {
+    observationRepository.upsertFromServer(serverObservation({ id: 555 }));
+    const created = observationRepository.createLocal(
+      observationPayload(),
+      {},
+      PROFILE,
+      "req-1",
+    );
+
+    observationRepository.clearAllLocal();
+
+    expect(rawRow(555)).toBeUndefined();
+    expect(rawRow(created.id)).toBeUndefined();
+    expect(mutations()).toHaveLength(0);
+  });
+});
