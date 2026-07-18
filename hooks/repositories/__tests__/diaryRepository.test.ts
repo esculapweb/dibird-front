@@ -561,6 +561,64 @@ describe("applyOverlay", () => {
   });
 });
 
+describe("getUnsyncedItems", () => {
+  it("returns pending creates plus patched/errored rows, but not synced ones", () => {
+    diaryRepository.upsertFromServer({
+      id: 111,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+      date_time: "2026-01-01T00:00:00Z",
+      name: "Original",
+      observation_count: 0,
+      place: null,
+      place_data: null,
+      private: false,
+      location_private: true,
+      profile: 42,
+      territory: 5,
+      territory_data: { code: "", id: 5, name: "", segment: "" },
+      is_owner: true,
+      owner: {
+        avatar: "",
+        first_name: "Jane",
+        id: 42,
+        last_name: "Doe",
+        private: false,
+        timezone_id: "",
+        username: "jdoe",
+      },
+      user_data: {
+        avatar: "",
+        first_name: "Jane",
+        id: 42,
+        last_name: "Doe",
+        timezone_id: "",
+        username: "jdoe",
+      },
+    });
+    diaryRepository.updateLocal(111, diaryPayload({ name: "Patched" }), null, {}, PROFILE);
+    const created = diaryRepository.createLocal(diaryPayload(), {}, PROFILE, "req-1");
+
+    const items = diaryRepository.getUnsyncedItems();
+
+    expect(items.map((item) => item.id).sort()).toEqual([111, created.id].sort());
+    expect(items.find((item) => item.id === 111)?._pendingSync).toBe("pending");
+  });
+
+  it("folds in pending observations the same way applyOverlay does", () => {
+    const diary = diaryRepository.createLocal(diaryPayload(), {}, PROFILE, "req-1");
+    observationRepository.createLocal(
+      observationPayload({ diary: diary.id }),
+      {},
+      PROFILE,
+      "obs-req-1",
+    );
+
+    const [item] = diaryRepository.getUnsyncedItems();
+    expect(item.observation_count).toBe(1);
+  });
+});
+
 describe("clearAllLocal", () => {
   it("wipes both synced mirror rows and pending mutations, plus their queue entries", () => {
     diaryRepository.upsertFromServer({

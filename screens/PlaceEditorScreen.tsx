@@ -65,7 +65,7 @@ const PlaceEditorScreen = () => {
     setLatText,
     lngText,
     setLngText,
-    isLoading: isLocating,
+    isLocating,
     updateCoords,
     locateMe,
   } = usePlaceLocation();

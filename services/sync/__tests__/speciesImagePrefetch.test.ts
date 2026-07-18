@@ -94,13 +94,23 @@ it("re-fetches when the territory changes", async () => {
   expect(fetchSpeciesMock).toHaveBeenLastCalledWith(9, "name");
 });
 
+it("does not re-fetch when switching back to a previously prefetched territory", async () => {
+  fetchSpeciesMock.mockResolvedValue([species("a.jpg")]);
+
+  await runSpeciesImagePrefetch(5);
+  await runSpeciesImagePrefetch(9);
+  await runSpeciesImagePrefetch(5);
+
+  expect(fetchSpeciesMock).toHaveBeenCalledTimes(2);
+});
+
 it("does not fail the batch when an individual thumbnail fails to prefetch", async () => {
   fetchSpeciesMock.mockResolvedValueOnce([species("a.jpg"), species("b.jpg")]);
   prefetchMock.mockRejectedValueOnce(new Error("404"));
 
   await expect(runSpeciesImagePrefetch(5)).resolves.toBeUndefined();
   expect(await AsyncStorage.getItem("species_images_prefetched")).toBe(
-    JSON.stringify({ territory: 5, count: 2 }),
+    JSON.stringify({ territories: [5] }),
   );
 });
 

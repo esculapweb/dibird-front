@@ -62,6 +62,7 @@ interface ListScreenProps<T, RouteName extends ScreenWithFiltersOnly> {
   locationAvailable?: boolean;
   onLocationUnavailable?: () => void;
   allowSort?: boolean;
+  staleTime?: number;
   onOpenFilterModal?: (fn: () => void) => void;
   showHeaderBadge?: boolean;
   customHeaderBadge?: (
@@ -97,6 +98,7 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
   locationAvailable = true,
   onLocationUnavailable,
   allowSort = true,
+  staleTime,
   onOpenFilterModal,
   showHeaderBadge = true,
   customHeaderBadge,
@@ -169,6 +171,7 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
     extraFilters,
     locationCoords,
     enabled: sortReady && filtersLoaded,
+    staleTime,
   });
 
   useEffect(() => {

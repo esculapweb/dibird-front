@@ -57,7 +57,12 @@ it("passes fetchPlaces, restricted filters, search, and location props through t
   expect(props.fetchFunction).toBe(fetchPlaces);
   expect(props.title).toBe("places");
   expect(props.errorTitle).toBe("places_unavailable");
-  expect(props.allowedFilters).toEqual(["territory", "date", "favourite"]);
+  expect(props.allowedFilters).toEqual([
+    "territory",
+    "date",
+    "favourite",
+    "unsynced",
+  ]);
   expect(props.showSearch).toBe(true);
   expect(props.locationCoords).toEqual({ lat: 1, lon: 2 });
   expect(props.locationAvailable).toBe(true);

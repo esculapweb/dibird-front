@@ -322,6 +322,29 @@ describe("applyOverlay", () => {
   });
 });
 
+describe("getUnsyncedItems", () => {
+  it("returns pending creates plus patched/errored rows, but not synced ones", () => {
+    observationRepository.upsertFromServer(serverObservation({ id: 555 }));
+    observationRepository.updateLocal(555, observationPayload({ notes: "Patched" }), null, {}, PROFILE);
+    const created = observationRepository.createLocal(
+      observationPayload(),
+      {},
+      PROFILE,
+      "req-1",
+    );
+
+    const items = observationRepository.getUnsyncedItems();
+
+    expect(items.map((item) => item.id).sort()).toEqual([555, created.id].sort());
+    expect(items.find((item) => item.id === 555)?._pendingSync).toBe("pending");
+  });
+
+  it("returns nothing once every local mutation has synced", () => {
+    observationRepository.upsertFromServer(serverObservation({ id: 555 }));
+    expect(observationRepository.getUnsyncedItems()).toEqual([]);
+  });
+});
+
 describe("applyDiaryOverlay", () => {
   const pageResponse = (results: ObservationItem[], count: number) => ({
     results,
@@ -382,6 +405,60 @@ describe("applyDiaryOverlay", () => {
     expect(result.results).toHaveLength(0);
     // Only this page's 2 deleted items are subtracted, not the global 5.
     expect(result.pagination.count).toBe(8);
+  });
+});
+
+describe("getPendingSpeciesForDiary", () => {
+  it("collects species from pending creates and patched-in updates for the given diary", () => {
+    observationRepository.createLocal(
+      observationPayload({ diary: 7, species: 100 }),
+      {},
+      PROFILE,
+      "req-1",
+    );
+    observationRepository.createLocal(
+      observationPayload({ diary: 8, species: 200 }),
+      {},
+      PROFILE,
+      "req-2",
+    );
+    observationRepository.upsertFromServer(serverObservation({ id: 555, diary: 7, species: 300 }));
+    observationRepository.updateLocal(
+      555,
+      observationPayload({ diary: 7, species: 301 }),
+      null,
+      {},
+      PROFILE,
+    );
+
+    const result = observationRepository.getPendingSpeciesForDiary(7);
+
+    expect(result).toEqual(new Set([100, 301]));
+  });
+
+  it("excludes the given observation id, so editing it doesn't disable its own species", () => {
+    const created = observationRepository.createLocal(
+      observationPayload({ diary: 7, species: 100 }),
+      {},
+      PROFILE,
+      "req-1",
+    );
+
+    const result = observationRepository.getPendingSpeciesForDiary(7, created.id);
+
+    expect(result.size).toBe(0);
+  });
+
+  it("returns an empty set once a pending create is deleted before it ever synced", () => {
+    const created = observationRepository.createLocal(
+      observationPayload({ diary: 7, species: 100 }),
+      {},
+      PROFILE,
+      "req-1",
+    );
+    observationRepository.deleteLocal(created.id);
+
+    expect(observationRepository.getPendingSpeciesForDiary(7)).toEqual(new Set());
   });
 });
 

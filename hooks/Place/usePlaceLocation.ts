@@ -74,6 +74,13 @@ export const usePlaceLocation = () => {
   const [lngText, setLngText] = useState("");
   const [details, setDetails] = useState<ReverseGeocode | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  // Deliberately separate from isLoading: that one tracks the debounced
+  // reverse-geocode fetch, which usually resolves in under a second. Sharing
+  // a single flag meant the geocode finishing early flipped isLoading back
+  // to false while locateMe's GPS fix (which can take several more seconds)
+  // was still pending, silently killing the "locate me" spinner well before
+  // the fix actually arrived.
+  const [isLocating, setIsLocating] = useState(false);
   const { locationCoords, permissionStatus, requestLocation } = useLocation();
   const { t } = useTranslation();
   const handleLocationUnavailable = useLocationUnavailable(t('location_unavailable_map_hint'));
@@ -140,7 +147,7 @@ export const usePlaceLocation = () => {
       return;
     }
 
-    setIsLoading(true);
+    setIsLocating(true);
     try {
       // Place pinning is a one-off, precision-sensitive action (unlike the
       // app's other lightweight requestLocation() callers — distance sort,
@@ -157,7 +164,7 @@ export const usePlaceLocation = () => {
     } catch (e) {
       if (__DEV__) console.warn("Failed to use location:", e);
     } finally {
-      setIsLoading(false);
+      setIsLocating(false);
     }
   }, [permissionStatus, requestLocation, handleLocationUnavailable]);
 
@@ -172,6 +179,7 @@ export const usePlaceLocation = () => {
     lngText,
     setLngText,
     isLoading,
+    isLocating,
     updateCoords,
     locateMe,
   };

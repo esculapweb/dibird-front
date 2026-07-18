@@ -182,7 +182,7 @@ describe("locateMe", () => {
 
     expect(mockHandleLocationUnavailable).toHaveBeenCalledTimes(1);
     expect(mockRequestLocation).not.toHaveBeenCalled();
-    expect(result.current.isLoading).toBe(false);
+    expect(result.current.isLocating).toBe(false);
   });
 
   it("requests a high-accuracy fix and derives zoom from the returned accuracy", async () => {
@@ -196,7 +196,7 @@ describe("locateMe", () => {
     expect(mockRequestLocation).toHaveBeenCalledWith(6);
     expect(result.current.accuracy).toBe(30);
     expect(result.current.zoom).toBe(15);
-    expect(result.current.isLoading).toBe(false);
+    expect(result.current.isLocating).toBe(false);
   });
 
   it.each([
@@ -233,7 +233,7 @@ describe("locateMe", () => {
     await act(async () => {
       await result.current.locateMe();
     });
-    expect(result.current.isLoading).toBe(false);
+    expect(result.current.isLocating).toBe(false);
     expect(result.current.accuracy).toBe(0);
   });
 
@@ -244,6 +244,39 @@ describe("locateMe", () => {
     await act(async () => {
       await result.current.locateMe();
     });
-    expect(result.current.isLoading).toBe(false);
+    expect(result.current.isLocating).toBe(false);
+  });
+
+  it("keeps isLocating true across a slow GPS fix, independent of a faster-resolving reverse geocode", async () => {
+    let resolveRequestLocation!: (value: unknown) => void;
+    mockRequestLocation.mockReturnValue(
+      new Promise((resolve) => {
+        resolveRequestLocation = resolve;
+      }),
+    );
+    mockLocationCtx({ locationCoords: [2, 48] });
+    const { result } = await renderHook(() => usePlaceLocation());
+
+    let locateMeCall!: Promise<void>;
+    await act(async () => {
+      locateMeCall = result.current.locateMe();
+    });
+    expect(result.current.isLocating).toBe(true);
+
+    // The debounced reverse-geocode triggered by the already-known
+    // locationCoords resolves well before the GPS fix does.
+    await act(async () => {
+      jest.advanceTimersByTime(400);
+      await Promise.resolve();
+    });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.isLocating).toBe(true);
+
+    await act(async () => {
+      resolveRequestLocation({ coords: [2, 48], accuracy: 12 });
+      await locateMeCall;
+    });
+    expect(result.current.isLocating).toBe(false);
+    expect(result.current.accuracy).toBe(12);
   });
 });

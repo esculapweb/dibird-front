@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import Layout from "../components/ui/Layout";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import { fetchPage } from "../util/fetches";
+import { StaleTime } from "../constants/staleTime";
 import { useLanguage } from "../store/language-context";
 import { useTheme, ThemeColors } from "../store/theme-context";
 import { useContentWidth } from "../hooks/useContentWidth";
@@ -36,6 +37,7 @@ const StaticScreen = () => {
     queryKey: ["Page", page, language],
     queryFn: () => fetchPage(slugs?.[page]),
     enabled: !!page,
+    staleTime: StaleTime.ONE_DAY,
   });
 
   // isError can be set by a failed background refetch even when cached data

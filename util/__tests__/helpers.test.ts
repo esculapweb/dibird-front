@@ -12,6 +12,7 @@ import {
   formatMonthLabel,
   formatDayLabel,
   buildDateParams,
+  roundCoords,
 } from "../helpers";
 
 const FIXED_DATE = "2024-01-15T12:00:00.000Z";
@@ -205,5 +206,30 @@ describe("buildDateParams", () => {
     expect(buildDateParams({ type: "range", to: "2024-01-05" })).toEqual({
       date_time_max: "2024-01-06",
     });
+  });
+});
+
+describe("roundCoords", () => {
+  it("rounds both coordinates to 4 decimal places by default", () => {
+    expect(roundCoords([27.12413523716059, 53.67784851150585])).toEqual([
+      27.1241, 53.6778,
+    ]);
+  });
+
+  it("returns null for null/undefined input", () => {
+    expect(roundCoords(null)).toBeNull();
+    expect(roundCoords(undefined)).toBeNull();
+  });
+
+  it("maps GPS-jitter-sized differences to the same rounded value", () => {
+    const a = roundCoords([27.12413523716059, 53.67784851150585]);
+    const b = roundCoords([27.124135237740607, 53.67784851149391]);
+    expect(a).toEqual(b);
+  });
+
+  it("respects a custom precision", () => {
+    expect(roundCoords([27.12413523716059, 53.67784851150585], 2)).toEqual([
+      27.12, 53.68,
+    ]);
   });
 });

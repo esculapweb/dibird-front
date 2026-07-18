@@ -10,6 +10,7 @@ import { Config } from "../../constants/config";
 import { BirdSVG } from "../ui/Svgs";
 import { formatDateShort } from "../../util/helpers";
 import { fetchStat } from "../../util/fetches";
+import { StaleTime } from "../../constants/staleTime";
 import { Filters, AppStackNavigationProp, SpeciesItem } from "../../types";
 
 const H_PAD = 16;
@@ -51,6 +52,7 @@ const NewSpecies: FC<NewSpeciesProps> = ({ filters, filtersLoaded }) => {
     sort: "-seen,-date_time",
     tabsMode: "seen",
     enabled: filtersLoaded,
+    staleTime: StaleTime.FIVE_MINUTES,
   });
 
   const isYearFilter =

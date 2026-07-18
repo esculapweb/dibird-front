@@ -2,7 +2,7 @@ import { Config } from "../constants/config";
 import { Linking } from "react-native";
 import i18n from "../services/i18n";
 import { buildDeepLinkParams } from "./buildDeepLinkParams";
-import { DateFilter, Filters } from "../types";
+import { Coords, DateFilter, Filters } from "../types";
 import * as Application from "expo-application";
 
 export const isoToFlagEmoji = (isoCode: string | null): string => {
@@ -261,3 +261,20 @@ export const normalizeDistance = (distance: number): string =>
   distance >= 1000
     ? `~${(distance / 1000).toFixed(1)} ${i18n.t("km")}`
     : `~${distance} ${i18n.t("m")}`;
+
+// Buckets GPS coordinates to ~10m precision (4 decimals) so a fresh fix that
+// differs only by natural GPS jitter still produces the same query key —
+// used exclusively for cache/query-key identity, never for the actual
+// request sent to the server (see hooks/useList.ts's locationKey and the
+// PlacesDropdown call sites in useDropdownQuery consumers).
+export const roundCoords = (
+  coords: Coords | null | undefined,
+  precision = 4,
+): Coords | null => {
+  if (!coords) return null;
+  const factor = 10 ** precision;
+  return [
+    Math.round(coords[0] * factor) / factor,
+    Math.round(coords[1] * factor) / factor,
+  ];
+};

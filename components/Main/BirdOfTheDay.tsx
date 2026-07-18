@@ -6,6 +6,7 @@ import { Image } from "expo-image";
 import { useQuery } from "@tanstack/react-query";
 
 import { fetchBirdOfDay } from "../../util/fetches";
+import { StaleTime } from "../../constants/staleTime";
 import { BirdSVG } from "../ui/Svgs";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { Config } from "../../constants/config";
@@ -36,6 +37,7 @@ const BirdOfTheDay = ({ filters }: { filters: Filters }) => {
     queryKey: ["BirdOfDay", territory, language],
     queryFn: () => fetchBirdOfDay(territory),
     enabled: !!filters && !!territory,
+    staleTime: StaleTime.ONE_HOUR,
   });
 
   if (isLoading) return <BirdOfTheDaySkeleton />;

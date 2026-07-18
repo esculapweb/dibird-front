@@ -210,7 +210,8 @@ export type AllowedFilterKey =
   | "date"
   | "place"
   | "species"
-  | "favourite";
+  | "favourite"
+  | "unsynced";
 
 export interface Filters {
   date?: DateFilter | null;
@@ -231,6 +232,10 @@ export interface Filters {
   user_id?: number | null;
   year?: number | null;
   radius?: number | null;
+  // Client-only: never sent to the server (see util/fetches.ts's
+  // fetchObservations/fetchDiaries/fetchPlaces) — filters the list down to
+  // items with a queued local create/update/delete that hasn't synced yet.
+  unsynced?: boolean | null;
 }
 
 export type AllFiltersKey = keyof Filters;

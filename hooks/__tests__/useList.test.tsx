@@ -186,6 +186,52 @@ describe("query key sensitivity — a changed input triggers a refetch", () => {
     await rerender({ ...baseArgs({ locationCoords: [2, 50] }) } as never);
     await waitFor(() => expect(mockFetchFunction).toHaveBeenCalledTimes(2));
   });
+
+  // Regression test for GPS jitter defeating the cache: two fixes for
+  // "the same spot" that differ only past the 4th decimal (~10m, well below
+  // GPS noise) must not look like a new query — see roundCoords in
+  // util/helpers.ts and its use in locationKey below.
+  it("does not refetch when coords change only past the 4th decimal (GPS jitter)", async () => {
+    const { result, rerender } = await renderUseList(
+      baseArgs({ locationCoords: [27.12413523716059, 53.67784851150585] }),
+    );
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockFetchFunction).toHaveBeenCalledTimes(1);
+
+    await rerender({
+      ...baseArgs({ locationCoords: [27.124135237740607, 53.67784851149391] }),
+    } as never);
+
+    // Nothing to wait on for a non-event, so just assert no extra call happened.
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockFetchFunction).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("staleTime", () => {
+  it("defaults to 60s when not passed, and is overridden when passed", async () => {
+    const { result } = await renderUseList(baseArgs({ staleTime: 5_000 }));
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    const cacheEntry = queryClient
+      .getQueryCache()
+      .findAll()
+      .find((q) => q.queryKey[0] === "Diaries");
+    expect((cacheEntry?.options as { staleTime?: number })?.staleTime).toBe(5_000);
+  });
+
+  it("falls back to the 60s default when omitted", async () => {
+    const { result } = await renderUseList(baseArgs());
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    const cacheEntry = queryClient
+      .getQueryCache()
+      .findAll()
+      .find((q) => q.queryKey[0] === "Diaries");
+    expect((cacheEntry?.options as { staleTime?: number })?.staleTime).toBe(
+      1000 * 60,
+    );
+  });
 });
 
 describe("reconnect refetch", () => {

@@ -109,7 +109,7 @@ describe("requestLocation", () => {
     expect(result.current.isRequesting).toBe(false);
   });
 
-  it("ignores a re-entrant call while a request is already in flight", async () => {
+  it("shares the in-flight fix with a re-entrant call instead of dropping it", async () => {
     (Location.getForegroundPermissionsAsync as jest.Mock).mockResolvedValue({ status: "granted" });
     let resolvePosition!: (value: unknown) => void;
     (Location.getCurrentPositionAsync as jest.Mock).mockReturnValue(
@@ -121,19 +121,29 @@ describe("requestLocation", () => {
     const { result } = await renderHook(() => useLocation(), { wrapper: LocationProvider });
 
     let firstCall!: Promise<unknown>;
+    let secondCall!: Promise<unknown>;
     await act(async () => {
       firstCall = result.current.requestLocation();
     });
     await waitFor(() => expect(result.current.isRequesting).toBe(true));
 
-    const secondReturn = await result.current.requestLocation();
-    expect(secondReturn).toBeNull();
+    await act(async () => {
+      secondCall = result.current.requestLocation(Location.Accuracy.High);
+    });
     expect(Location.getForegroundPermissionsAsync).toHaveBeenCalledTimes(1);
+    // The second caller's requested accuracy is moot — it rides along on the
+    // fix already in flight rather than triggering a second native lookup.
+    expect(Location.getCurrentPositionAsync).toHaveBeenCalledTimes(1);
 
+    let firstReturn: unknown;
+    let secondReturn: unknown;
     await act(async () => {
       resolvePosition({ coords: { latitude: 1, longitude: 2, accuracy: 1 } });
-      await firstCall;
+      [firstReturn, secondReturn] = await Promise.all([firstCall, secondCall]);
     });
+
+    expect(firstReturn).toEqual({ coords: [2, 1], accuracy: 1 });
+    expect(secondReturn).toEqual({ coords: [2, 1], accuracy: 1 });
     expect(result.current.isRequesting).toBe(false);
   });
 });

@@ -124,7 +124,7 @@ const mockLocation = (overrides: Record<string, unknown> = {}) => {
     setLatText: mockSetLatText,
     lngText: "2.35",
     setLngText: mockSetLngText,
-    isLoading: false,
+    isLocating: false,
     updateCoords: mockUpdateCoords,
     locateMe: mockLocateMe,
     ...overrides,
@@ -207,7 +207,7 @@ describe("map tap", () => {
   });
 
   it("is ignored while a GPS fix is already in progress", async () => {
-    mockLocation({ isLoading: true });
+    mockLocation({ isLocating: true });
     await render(<PlaceEditorScreen />);
     await fireEvent.press(screen.getByTestId("map"));
     expect(mockUpdateCoords).not.toHaveBeenCalled();
@@ -230,7 +230,7 @@ it("shows the low-accuracy hint above the GPS threshold", async () => {
 });
 
 it("does not show the low-accuracy hint while still locating, even above the threshold", async () => {
-  mockLocation({ accuracy: 150, isLoading: true });
+  mockLocation({ accuracy: 150, isLocating: true });
   await render(<PlaceEditorScreen />);
   expect(screen.queryByText("gps_low_accuracy_hint")).not.toBeOnTheScreen();
 });
@@ -308,7 +308,7 @@ it("maps a per-field server error onto the matching form field instead of a toas
 });
 
 it("marks the save button disabled while locating or while a mutation is pending", async () => {
-  mockLocation({ isLoading: true });
+  mockLocation({ isLocating: true });
   await render(<PlaceEditorScreen />);
   const headerRight = (mockNavigation.setOptions as jest.Mock).mock.calls.at(-1)![0].headerRight;
   await render(headerRight());

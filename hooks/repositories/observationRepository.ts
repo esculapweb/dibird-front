@@ -531,6 +531,16 @@ export const getOverlay = (): Overlay => {
   return { pendingCreates, patchesById, deletedIds };
 };
 
+// Backs the client-only "unsynced" filter (see util/fetches.ts's
+// fetchObservations). Every row getOverlay() returns already has a queued
+// mutation still pending or errored — a successful sync always
+// replaceLocalWithServer's/removeLocal's the row (see
+// services/sync/observationSync.ts) — so this is simply all of it.
+export const getUnsyncedItems = (): ObservationItem[] => {
+  const { pendingCreates, patchesById } = getOverlay();
+  return [...pendingCreates, ...patchesById.values()];
+};
+
 export const applyOverlay = (
   response: PaginatedResponse<ObservationItem>,
   page: number,
@@ -609,6 +619,24 @@ export const applyDiaryOverlay = (
   }
 
   return { ...response, results, pagination: { ...response.pagination, count } };
+};
+
+// Diary-scoped species already present due to local overlay entries the
+// server hasn't seen yet: brand-new offline creates, and species changed via
+// an offline edit to an already-synced observation. Mirrors
+// fetchDiarySpeciesIds's own exclusion of the observation currently being
+// edited (see ObservationEditorScreen), via `excludeObservationId`, so
+// editing an observation never disables its own current species.
+export const getPendingSpeciesForDiary = (
+  diaryId: number,
+  excludeObservationId?: number | null,
+): Set<number> => {
+  const { pendingCreates, patchesById } = getOverlay();
+  return new Set(
+    [...pendingCreates, ...patchesById.values()]
+      .filter((item) => item.diary === diaryId && item.id !== excludeObservationId)
+      .map((item) => item.species),
+  );
 };
 
 // Wipes every locally-known observation (both synced mirror rows used for

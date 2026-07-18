@@ -36,20 +36,31 @@ export const stopSpeciesImagePrefetchRetries = () => {
   retryDelayMs = RETRY_BASE_MS;
 };
 
-const wasAlreadyPrefetched = async (territory: number): Promise<boolean> => {
+const readPrefetchedTerritories = async (): Promise<number[]> => {
   try {
     const raw = await AsyncStorage.getItem(MARKER_KEY);
-    if (!raw) return false;
-    const marker = JSON.parse(raw) as { territory: number };
-    return marker.territory === territory;
+    if (!raw) return [];
+    const marker = JSON.parse(raw) as { territories?: number[]; territory?: number };
+    // territory (singular) is the pre-multi-territory marker shape; keep reading
+    // it so upgrades don't lose an already-warmed cache and force a re-prefetch.
+    if (Array.isArray(marker.territories)) return marker.territories;
+    if (typeof marker.territory === "number") return [marker.territory];
+    return [];
   } catch {
-    return false;
+    return [];
   }
 };
 
-const markPrefetched = async (territory: number, count: number): Promise<void> => {
+const wasAlreadyPrefetched = async (territory: number): Promise<boolean> => {
+  const territories = await readPrefetchedTerritories();
+  return territories.includes(territory);
+};
+
+const markPrefetched = async (territory: number): Promise<void> => {
   try {
-    await AsyncStorage.setItem(MARKER_KEY, JSON.stringify({ territory, count }));
+    const territories = await readPrefetchedTerritories();
+    if (!territories.includes(territory)) territories.push(territory);
+    await AsyncStorage.setItem(MARKER_KEY, JSON.stringify({ territories }));
   } catch {
     // best-effort — worst case we re-run the prefetch next trigger
   }
@@ -104,7 +115,7 @@ const runSpeciesImagePrefetchInternal = async (territory: number): Promise<void>
     );
 
     await prefetchWithConcurrency(urls);
-    await markPrefetched(territory, urls.length);
+    await markPrefetched(territory);
     retryDelayMs = RETRY_BASE_MS;
   } catch (e) {
     const error = e as AppError;

@@ -23,6 +23,7 @@ import { useProfile } from "../store/profile-context";
 import { setSession } from "../util/sessionStore";
 import { setTypedNavigationCallback } from "../util/navigationCallbacks";
 import { useEditorForm } from "../hooks/useEditorForm";
+import * as observationRepository from "../hooks/repositories/observationRepository";
 import { fetchDiarySpeciesIds } from "../util/fetches";
 import IconsHeader from "../components/ui/IconsHeader";
 import Layout from "../components/ui/Layout";
@@ -111,6 +112,17 @@ const ObservationEditorScreen = () => {
       (id: number) => id !== observationWithParsedDate?.species,
     ),
   );
+  // Extends the server-driven set above with species from local, not-yet-synced
+  // observations for this diary (offline creates/edits) — otherwise a species
+  // added while offline stays pickable again until it syncs.
+  if (diaryId != null) {
+    for (const id of observationRepository.getPendingSpeciesForDiary(
+      diaryId,
+      observationWithParsedDate?.id,
+    )) {
+      existingSpecies.add(id);
+    }
+  }
 
   const buildObservationPayload = (
     data: ObservationFormData,

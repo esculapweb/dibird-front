@@ -37,6 +37,7 @@ jest.mock("@tanstack/react-query", () => ({
 }));
 jest.mock("../../hooks/Place/useOfflinePlace", () => ({
   usePlaceItem: jest.fn(),
+  usePlaceDiaryCount: jest.fn(),
   useUpdatePlace: jest.fn(),
   useDeletePlace: jest.fn(),
 }));
@@ -87,6 +88,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   usePlaceItem,
+  usePlaceDiaryCount,
   useUpdatePlace,
   useDeletePlace,
 } from "../../hooks/Place/useOfflinePlace";
@@ -146,6 +148,10 @@ beforeEach(() => {
   (useQueryClient as jest.Mock).mockReturnValue({ invalidateQueries: mockInvalidateQueries });
   (useFilters as jest.Mock).mockReturnValue({ date: null, setDate: mockSetDate });
   (placeRepository.getFailedMutationFor as jest.Mock).mockReturnValue(null);
+  // Deliberately different from PLACE.diary_count (2): diary_count counts
+  // diary-linked observations, not distinct diaries — this is the real
+  // (distinct) count that should end up on screen instead.
+  (usePlaceDiaryCount as jest.Mock).mockReturnValue({ data: 1 });
 });
 
 it("retries the place sync queue on focus", async () => {
@@ -173,7 +179,22 @@ it("renders the place's name, territory, counts, and creation date", async () =>
   expect(screen.getByText("City Park")).toBeOnTheScreen();
   expect(screen.getByText("3")).toBeOnTheScreen();
   expect(screen.getByText("10")).toBeOnTheScreen();
+  expect(screen.getByText("1")).toBeOnTheScreen();
+});
+
+it("falls back to place.diary_count while the distinct diary count is still loading", async () => {
+  (usePlaceDiaryCount as jest.Mock).mockReturnValue({ data: undefined });
+  await render(<PlaceDetailScreen />);
   expect(screen.getByText("2")).toBeOnTheScreen();
+});
+
+it("requests the distinct diary count scoped to this place", async () => {
+  await render(<PlaceDetailScreen />);
+  expect(usePlaceDiaryCount).toHaveBeenCalledWith(1, {
+    territory: 5,
+    place: 1,
+    date: null,
+  });
 });
 
 it("shows the updated date only when it differs from the created date", async () => {

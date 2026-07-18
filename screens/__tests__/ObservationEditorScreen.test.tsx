@@ -55,6 +55,9 @@ jest.mock("../../hooks/useEditorForm", () => ({
 jest.mock("../../util/fetches", () => ({
   fetchDiarySpeciesIds: jest.fn(),
 }));
+jest.mock("../../hooks/repositories/observationRepository", () => ({
+  getPendingSpeciesForDiary: jest.fn(() => new Set()),
+}));
 jest.mock("../../hooks/useApiError", () => ({
   useApiError: () => ({ showErrorToast: mockShowErrorToast }),
 }));

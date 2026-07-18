@@ -16,6 +16,7 @@ import FilterSheetContent from "../components/Filters/FilterSheetContent";
 import { useSyncedFilters } from "../hooks/useSyncedFilters";
 import { useDropdownQuery } from "../hooks/useDropdownQuery";
 import { fetchMyCountries, fetchMyDashboardStat } from "../util/fetches";
+import { StaleTime } from "../constants/staleTime";
 import Layout from "../components/ui/Layout";
 import { useLanguage } from "../store/language-context";
 import {
@@ -66,6 +67,7 @@ const MainScreen = () => {
     ],
     queryFn: () => fetchMyDashboardStat(filters),
     enabled: filtersLoaded,
+    staleTime: StaleTime.TEN_MINUTES,
   });
 
   const openFilters = () => {

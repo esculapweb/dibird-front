@@ -14,6 +14,7 @@ import {
 import DateRangeFilter from "../ui/DateRangeFilter";
 import { useLanguage } from "../../store/language-context";
 import RadioGroup from "../ui/RadioGroup";
+import { roundCoords } from "../../util/helpers";
 import SpeciesOptionRow from "../ui/SpeciesOptionRow";
 import { useLocation } from "../../store/location-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
@@ -78,6 +79,11 @@ const FilterSheetContent = ({
     { label: t("non_favourites_only"), value: false },
   ];
 
+  const unsyncedOptions: { label: string; value: boolean | null }[] = [
+    { label: t("all"), value: null },
+    { label: t("unsynced_only"), value: true },
+  ];
+
   const dateFilterInitial: DateFilter = {
     mode: "any",
     from: null,
@@ -102,6 +108,9 @@ const FilterSheetContent = ({
   const [favouriteValue, setFavouriteValue] = useState(
     filters?.favourite ?? null,
   );
+  const [unsyncedValue, setUnsyncedValue] = useState(
+    filters?.unsynced ?? null,
+  );
 
   const effectiveTerritory: number | null =
     (allowed.includes("territory") ? territoryValue : extraTerritory) ?? null;
@@ -123,7 +132,7 @@ const FilterSheetContent = ({
   } = useDropdownQuery({
     type: "PlacesDropdown",
     queryFn: (sort) => fetchMyPlaces(effectiveTerritory, locationCoords, sort),
-    params: [effectiveTerritory, locationCoords],
+    params: [effectiveTerritory, roundCoords(locationCoords)],
     enabled: !!effectiveTerritory && allowed.includes("place"),
     locationAvailable,
     requestLocation,
@@ -185,6 +194,7 @@ const FilterSheetContent = ({
     if (allowed.includes("date"))
       res.date = isDateFilterActive(dateFilter) ? dateFilter : undefined;
     if (allowed.includes("favourite")) res.favourite = favouriteValue;
+    if (allowed.includes("unsynced")) res.unsynced = unsyncedValue;
     return res;
   };
 
@@ -288,6 +298,18 @@ const FilterSheetContent = ({
               onChange={(value) => setFavouriteValue(value as boolean | null)}
               direction="column"
               options={favouriteOptions}
+            />
+          </View>
+        )}
+        {allowed.includes("unsynced") && (
+          <View style={{ marginTop: 12 }}>
+            <RadioGroup
+              label={`${t("sync_status")}:`}
+              value={unsyncedValue}
+              onChange={(value) => setUnsyncedValue(value as boolean | null)}
+              direction="column"
+              options={unsyncedOptions}
+              testID="unsynced-filter"
             />
           </View>
         )}

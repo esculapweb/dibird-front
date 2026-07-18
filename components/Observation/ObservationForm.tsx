@@ -12,6 +12,7 @@ import {
   fetchSpecies,
 } from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
+import { roundCoords } from "../../util/helpers";
 import SpeciesOptionRow from "../ui/SpeciesOptionRow";
 import Input from "../ui/Input";
 import Section from "../ui/Section";
@@ -115,7 +116,7 @@ const ObservationForm = ({
   } = useDropdownQuery({
     type: "PlacesDropdown",
     queryFn: (sort) => fetchMyPlaces(territoryValue, locationCoords, sort),
-    params: [territoryValue, locationCoords],
+    params: [territoryValue, roundCoords(locationCoords)],
     enabled: !!territoryValue && !hideDiaryFields,
     locationAvailable,
     requestLocation,

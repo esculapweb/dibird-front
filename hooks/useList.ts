@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useLanguage } from "../store/language-context";
-import { stableStringify } from "../util/helpers";
+import { stableStringify, roundCoords } from "../util/helpers";
 import { subscribeToReconnect } from "../services/sync/networkStatus";
 import { FetchFunction, Filters, PaginatedResponse, seenMode, Coords} from "../types";
 
@@ -15,6 +15,7 @@ interface useListProps<T> {
   extraFilters?: Filters | null;
   locationCoords?: Coords | null;
   enabled: boolean;
+  staleTime?: number;
 }
 
 export const useList = <T>({
@@ -27,6 +28,7 @@ export const useList = <T>({
   extraFilters,
   locationCoords,
   enabled,
+  staleTime,
 }: useListProps<T>) => {
   const { language } = useLanguage();
 
@@ -43,8 +45,9 @@ export const useList = <T>({
   );
 
   const locationKey = useMemo(() => {
-    if (!locationCoords) return null;
-    return `${locationCoords?.[0] ?? ""},${locationCoords?.[1] ?? ""}`;
+    const rounded = roundCoords(locationCoords);
+    if (!rounded) return null;
+    return `${rounded[0]},${rounded[1]}`;
   }, [locationCoords]);
 
   const queryKey = useMemo(() => {
@@ -71,7 +74,7 @@ export const useList = <T>({
         : undefined;
     },
     placeholderData: (previousData) => previousData,
-    staleTime: 1000 * 60,
+    staleTime: staleTime ?? 1000 * 60,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,

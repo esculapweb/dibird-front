@@ -520,6 +520,37 @@ const withPendingObservations = (
   };
 };
 
+const buildPendingByDiaryMap = (): Map<number, DiaryListItem["observation_data"][number][]> => {
+  const pendingByDiary = new Map<number, DiaryListItem["observation_data"][number][]>();
+  for (const obs of observationRepository.getOverlay().pendingCreates) {
+    if (obs.diary == null) continue;
+    const preview = {
+      species_data: {
+        name_lang: obs.species_data.name_lang,
+        segment: obs.species_data.segment,
+        thumb: obs.species_data.thumb ?? "",
+      },
+    };
+    const list = pendingByDiary.get(obs.diary);
+    if (list) list.push(preview);
+    else pendingByDiary.set(obs.diary, [preview]);
+  }
+  return pendingByDiary;
+};
+
+// Backs the client-only "unsynced" filter (see util/fetches.ts's
+// fetchDiaries). Every row getOverlay() returns already has a queued
+// mutation still pending or errored — a successful sync always
+// replaceLocalWithServer's/removeLocal's the row — so this is simply all of
+// it, with the same pending-observations count folded in as applyOverlay.
+export const getUnsyncedItems = (): DiaryListItem[] => {
+  const { pendingCreates, patchesById } = getOverlay();
+  const pendingByDiary = buildPendingByDiaryMap();
+  return [...pendingCreates, ...patchesById.values()].map((item) =>
+    withPendingObservations(item, pendingByDiary),
+  );
+};
+
 export const applyOverlay = (
   response: PaginatedResponse<DiaryListItem>,
   page: number,
@@ -539,21 +570,7 @@ export const applyOverlay = (
     count += toPrepend.length;
   }
 
-  const pendingByDiary = new Map<number, DiaryListItem["observation_data"][number][]>();
-  for (const obs of observationRepository.getOverlay().pendingCreates) {
-    if (obs.diary == null) continue;
-    const preview = {
-      species_data: {
-        name_lang: obs.species_data.name_lang,
-        segment: obs.species_data.segment,
-        thumb: obs.species_data.thumb ?? "",
-      },
-    };
-    const list = pendingByDiary.get(obs.diary);
-    if (list) list.push(preview);
-    else pendingByDiary.set(obs.diary, [preview]);
-  }
-
+  const pendingByDiary = buildPendingByDiaryMap();
   results = results.map((item) => withPendingObservations(item, pendingByDiary));
 
   return { ...response, results, pagination: { ...response.pagination, count } };

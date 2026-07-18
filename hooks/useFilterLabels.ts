@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useLanguage } from "../store/language-context";
 import { useDropdownQuery } from "./useDropdownQuery";
 
-import { formatDate } from "../util/helpers";
+import { formatDate, roundCoords } from "../util/helpers";
 import { fetchMyCountries, fetchMyPlaces, fetchSpecies } from "../util/fetches";
 import { useLocation } from "../store/location-context";
 
@@ -32,7 +32,7 @@ export const useFilterLabels = (
   const { query: placesQuery } = useDropdownQuery({
     type: "PlacesDropdown",
     queryFn: (sort) => fetchMyPlaces(effectiveTerritory, locationCoords, sort),
-    params: [effectiveTerritory, locationCoords],
+    params: [effectiveTerritory, roundCoords(locationCoords)],
     mapResult: true,
     enabled: !!effectiveTerritory,
   });
@@ -76,6 +76,9 @@ export const useFilterLabels = (
 
       case "favourite":
         return [t("favourite"), value ? t("yes") : t("no")];
+
+      case "unsynced":
+        return [t("sync_status"), t("unsynced_only")];
 
       case "date":
         return formatDateFilter(value as DateFilter, t);

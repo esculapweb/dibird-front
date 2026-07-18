@@ -7,8 +7,9 @@ import { useMutationWithTranslation } from "../useMutationWithTranslation";
 import { isConnected } from "../../services/sync/networkStatus";
 import { runPlaceSync } from "../../services/sync/placeSync";
 import * as placeRepository from "../repositories/placeRepository";
+import { fetchDiaries } from "../../util/fetches";
 import { INVALIDATION_MAP } from "../../util/invalidationMap";
-import { AppError, PlaceFormData, PlaceItem } from "../../types";
+import { AppError, Filters, PlaceFormData, PlaceItem } from "../../types";
 
 const PLACE_URL = "/myapi/place2/";
 
@@ -81,6 +82,31 @@ export const usePlaceItem = (
   }, [query.isError, query.error, query.data]);
 
   return query;
+};
+
+// place.diary_count (both the server field and
+// placeRepository.withPendingObservationCount's offline adjustment) mirrors
+// the backend's own definition for the place endpoint: a count of
+// diary-linked *observations*, not a distinct count of diaries — a single
+// diary with two observations at this place legitimately makes that number
+// 2. The Diaries list itself is the one place that's inherently distinct
+// (one row per Diary), so its own paginated `count` for this place is the
+// accurate number to show on the "diaries" stat card.
+export const usePlaceDiaryCount = (
+  placeId: number | null | undefined,
+  filters: Filters | null,
+) => {
+  return useQuery({
+    queryKey: ["Diaries", "count", placeId, filters],
+    queryFn: async () => {
+      const res = await fetchDiaries(filters!, null, undefined, 1);
+      return res.pagination.count;
+    },
+    enabled: !!placeId && placeId > 0 && !!filters,
+    staleTime: 1000 * 60 * 60 * 24,
+    gcTime: 1000 * 60 * 60 * 24,
+    refetchOnWindowFocus: false,
+  });
 };
 
 export const useCreatePlace = () => {

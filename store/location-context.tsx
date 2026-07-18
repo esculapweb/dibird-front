@@ -3,6 +3,7 @@ import {
   useContext,
   useState,
   useCallback,
+  useRef,
   ReactNode,
 } from "react";
 import * as Location from "expo-location";
@@ -25,9 +26,15 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
   const [locationCoords, setLocationCoords] = useState<Coords | null>(null);
   const [permissionStatus, setPermissionStatus] = useState<string | null>(null);
   const [isRequesting, setIsRequesting] = useState(false);
+  // Callers throughout the app share one native GPS request at a time (a
+  // low-priority background fetch and an explicit high-accuracy "locate me"
+  // can easily overlap). Rather than dropping the late caller's request on
+  // the floor — which silently left PlaceEditor's accuracy at 0 whenever it
+  // raced App.tsx's startup fetch — everyone in flight awaits the same
+  // promise and gets that one fix.
+  const inFlightRef = useRef<Promise<{ coords: Coords; accuracy: number | null } | null> | null>(null);
 
-  const requestLocation = useCallback(async (desiredAccuracy: Location.Accuracy = Location.Accuracy.Balanced) => {
-    if (isRequesting) return null;
+  const requestLocationOnce = useCallback(async (desiredAccuracy: Location.Accuracy) => {
     setIsRequesting(true);
 
     try {
@@ -56,7 +63,19 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setIsRequesting(false);
     }
-  }, [isRequesting]);
+  }, []);
+
+  const requestLocation = useCallback(async (desiredAccuracy: Location.Accuracy = Location.Accuracy.Balanced) => {
+    if (inFlightRef.current) return inFlightRef.current;
+
+    const promise = requestLocationOnce(desiredAccuracy);
+    inFlightRef.current = promise;
+    try {
+      return await promise;
+    } finally {
+      inFlightRef.current = null;
+    }
+  }, [requestLocationOnce]);
 
   return (
     <LocationContext.Provider

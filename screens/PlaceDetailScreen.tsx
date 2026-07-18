@@ -17,6 +17,7 @@ import FailedEditBanner from "../components/Profile/FailedEditBanner";
 
 import {
   usePlaceItem,
+  usePlaceDiaryCount,
   useUpdatePlace,
   useDeletePlace,
 } from "../hooks/Place/useOfflinePlace";
@@ -184,6 +185,11 @@ const PlaceDetailScreen = () => {
       });
   }, [place, filtersOverride, navigation]);
 
+  const { data: diaryCount } = usePlaceDiaryCount(
+    place && place.id > 0 ? place.id : null,
+    filtersOverride,
+  );
+
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: [type, placeId], exact: false });
   }, [date]);
@@ -270,7 +276,7 @@ const PlaceDetailScreen = () => {
           onPress={handleObservationsPress}
         />
         <StatCard
-          value={place.diary_count}
+          value={diaryCount ?? place.diary_count}
           label={t("diaries")}
           onPress={handleDiariesPress}
         />

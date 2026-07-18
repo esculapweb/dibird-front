@@ -27,16 +27,19 @@ jest.mock("../../hooks/repositories/observationRepository", () => ({
   getOverlay: jest.fn(() => ({ pendingCreates: [], patchesById: new Map(), deletedIds: new Set() })),
   applyOverlay: jest.fn((data) => data),
   applyDiaryOverlay: jest.fn((data) => data),
+  getUnsyncedItems: jest.fn(() => []),
 }));
 jest.mock("../../hooks/repositories/diaryRepository", () => ({
   getOverlay: jest.fn(() => ({ pendingCreates: [], patchesById: new Map(), deletedIds: new Set() })),
   applyOverlay: jest.fn((data) => data),
   getDiary: jest.fn(),
+  getUnsyncedItems: jest.fn(() => []),
 }));
 jest.mock("../../hooks/repositories/placeRepository", () => ({
   getOverlay: jest.fn(() => ({ pendingCreates: [], patchesById: new Map(), deletedIds: new Set() })),
   applyOverlay: jest.fn((data) => data),
   applyDropdownOverlay: jest.fn((items) => items),
+  getUnsyncedItems: jest.fn(() => []),
 }));
 jest.mock("../../hooks/repositories/notificationRepository", () => ({
   applyOverlay: jest.fn((data) => data),
@@ -269,6 +272,41 @@ describe.each([
     });
 
     await expect(fn({} as never, null, "", 1)).rejects.toBe(err);
+  });
+});
+
+describe.each([
+  { name: "fetchPlaces", fn: fetches.fetchPlaces, repo: placeRepository },
+  { name: "fetchObservations", fn: fetches.fetchObservations, repo: observationRepository },
+  { name: "fetchDiaries", fn: fetches.fetchDiaries, repo: diaryRepository },
+])("$name (unsynced filter)", ({ fn, repo }) => {
+  it("skips the network/cache entirely and returns the repository's local unsynced set", async () => {
+    (repo.getUnsyncedItems as jest.Mock).mockReturnValue([{ id: -1 }, { id: 2 }]);
+
+    const result = await fn({ unsynced: true } as never, null, "", 1);
+
+    expect(api.get).not.toHaveBeenCalled();
+    expect(result.results).toEqual([{ id: -1 }, { id: 2 }]);
+    expect(result.pagination.count).toBe(2);
+  });
+
+  it("returns an empty page beyond page 1, since every unsynced item is already on the first", async () => {
+    (repo.getUnsyncedItems as jest.Mock).mockReturnValue([{ id: -1 }]);
+
+    const result = await fn({ unsynced: true } as never, null, "", 2);
+
+    expect(api.get).not.toHaveBeenCalled();
+    expect(result.results).toEqual([]);
+  });
+
+  it("falls through to the normal live fetch when unsynced isn't set", async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: { results: [{ id: 1 }] } });
+    (repo.applyOverlay as jest.Mock).mockReturnValue({ results: [{ id: 1 }] });
+
+    await fn({} as never, null, "", 1);
+
+    expect(api.get).toHaveBeenCalled();
+    expect(repo.getUnsyncedItems).not.toHaveBeenCalled();
   });
 });
 

@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { fetchMyActivity } from "../../util/fetches";
+import { StaleTime } from "../../constants/staleTime";
 import { SparklineSkeleton } from "./SparklineSkeleton";
 import { ActivityResponse, Filters } from "../../types";
 import { useContentWidth } from "../../hooks/useContentWidth";
@@ -48,6 +49,7 @@ const Sparkline = ({
       }),
 
     enabled: !!filters,
+    staleTime: StaleTime.FIVE_MINUTES,
   });
 
   const data = activity?.data ?? [];

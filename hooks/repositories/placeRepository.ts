@@ -453,6 +453,16 @@ export const withPendingObservationCount = (item: PlaceItem): PlaceItem => {
   };
 };
 
+// Backs the client-only "unsynced" filter (see util/fetches.ts's
+// fetchPlaces). Every row getOverlay() returns already has a queued mutation
+// still pending or errored — a successful sync always
+// replaceLocalWithServer's/removeLocal's the row — so this is simply all of
+// it, with the same pending-observation-count adjustment as applyOverlay.
+export const getUnsyncedItems = (): PlaceItem[] => {
+  const { pendingCreates, patchesById } = getOverlay();
+  return [...pendingCreates, ...patchesById.values()].map(withPendingObservationCount);
+};
+
 export const applyOverlay = (
   response: PaginatedResponse<PlaceItem>,
   page: number,

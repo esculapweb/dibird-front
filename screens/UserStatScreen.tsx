@@ -6,6 +6,7 @@ import { useRoute } from "@react-navigation/native";
 
 import ListScreen from "./ListScreen";
 import { fetchStat, fetchUserProfile } from "../util/fetches";
+import { StaleTime } from "../constants/staleTime";
 import StatCard from "../components/Stats/StatCard";
 import Tabs from "../components/ui/Tabs";
 import { useFilters } from "../store/filters-context";
@@ -55,6 +56,7 @@ const UserStatScreen = () => {
     queryKey: ["userProfile", profileId],
     queryFn: () => fetchUserProfile(profileId),
     enabled: !!profileId,
+    staleTime: StaleTime.TEN_MINUTES,
   });
 
   const firstName = userProfile?.user_data_public.first_name;

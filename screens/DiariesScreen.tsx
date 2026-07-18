@@ -4,6 +4,7 @@ import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/nativ
 
 import ListScreen from "./ListScreen";
 import { fetchDiaries } from "../util/fetches";
+import { StaleTime } from "../constants/staleTime";
 import DiaryCard from "../components/Diary/DiaryCard";
 import { useFilters } from "../store/filters-context";
 import { runDiarySync } from "../services/sync/diarySync";
@@ -54,12 +55,14 @@ const DiariesScreen = () => {
     <ListScreen
       route={route}
       fetchFunction={fetchDiaries}
+      allowedFilters={["territory", "place", "date", "species", "unsynced"]}
       errorTitle={t("diaries_unavailable")}
       onFiltersChange={async (val) => setCurrentFilters(val)}
       onAdd={handleAdd}
       renderItem={renderItem}
       noItems={noItems}
       title={t("diaries")}
+      staleTime={StaleTime.TWO_MINUTES}
     />
   );
 };

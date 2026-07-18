@@ -1110,6 +1110,25 @@ export const fetchChecklist = (
   );
 };
 
+// Backs the client-only "unsynced" filter on fetchObservations/fetchDiaries/
+// fetchPlaces below: that filter has no server-side meaning (it reflects
+// this device's local mutation queue), so those fetches bypass the
+// network/cache entirely and hand back just the local unsynced set instead
+// of sending it as a query param. Everything is already loaded locally, so
+// it's all returned as a single page — a page beyond the first has nothing
+// left to add.
+const buildLocalOnlyResponse = <T>(items: T[]): PaginatedResponse<T> => ({
+  results: items,
+  pagination: {
+    count: items.length,
+    per_page: Math.max(items.length, 1),
+    current: 1,
+    final: 1,
+    next: null,
+    previous: null,
+  },
+});
+
 export const fetchPlaces = async (
   filters: Filters,
   order: string | null = "distance",
@@ -1117,6 +1136,12 @@ export const fetchPlaces = async (
   page?: number,
   coords?: Coords | null,
 ) => {
+  if (filters.unsynced) {
+    if ((page ?? 1) > 1) return emptyPaginatedResponse<PlaceItem>();
+    const items = resortPlaceListItems(placeRepository.getUnsyncedItems(), order);
+    return buildLocalOnlyResponse(items);
+  }
+
   const isDistanceSort = order === "distance" || order === "-distance";
   // Coordinates go in requestOnlyParams, not the cache key: whether they're
   // present/what they are shouldn't determine whether a cached list counts
@@ -1168,6 +1193,15 @@ export const fetchObservations = async (
   search?: string,
   page?: number,
 ): Promise<PaginatedResponse<ObservationItem>> => {
+  if (filters.unsynced) {
+    if ((page ?? 1) > 1) return emptyPaginatedResponse<ObservationItem>();
+    const items = resortObservationItems(
+      observationRepository.getUnsyncedItems(),
+      order,
+    );
+    return buildLocalOnlyResponse(items);
+  }
+
   const data = await fetchAbstract<PaginatedResponse<ObservationItem>>(
     "/myapi/observation2/",
     filters,
@@ -1215,6 +1249,12 @@ export const fetchDiaries = async (
   search?: string,
   page?: number,
 ) => {
+  if (filters.unsynced) {
+    if ((page ?? 1) > 1) return emptyPaginatedResponse<DiaryListItem>();
+    const items = resortDiaryListItems(diaryRepository.getUnsyncedItems(), order);
+    return buildLocalOnlyResponse(items);
+  }
+
   const data = await fetchAbstract<PaginatedResponse<DiaryListItem>>(
     "/myapi/diary2/",
     filters,

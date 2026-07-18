@@ -337,6 +337,26 @@ describe("withPendingObservationCount / applyOverlay", () => {
   });
 });
 
+describe("getUnsyncedItems", () => {
+  it("returns pending creates plus patched/errored rows (with the pending-observation count folded in), but not synced ones", () => {
+    placeRepository.upsertFromServer(serverPlace({ id: 555 }));
+    placeRepository.updateLocal(555, { favourite: true }, null);
+    const created = placeRepository.createLocal(placePayload(), "req-1");
+    observationRepository.createLocal(
+      observationPayload({ place: created.id }),
+      {},
+      PROFILE,
+      "obs-1",
+    );
+
+    const items = placeRepository.getUnsyncedItems();
+
+    expect(items.map((item) => item.id).sort()).toEqual([555, created.id].sort());
+    expect(items.find((item) => item.id === 555)?._pendingSync).toBe("pending");
+    expect(items.find((item) => item.id === created.id)?.observation_count).toBe(1);
+  });
+});
+
 describe("applyDropdownOverlay", () => {
   it("filters deleted ids and prepends pending-create places matching the given territory", () => {
     placeRepository.upsertFromServer(serverPlace({ id: 601, territory: 5 }));

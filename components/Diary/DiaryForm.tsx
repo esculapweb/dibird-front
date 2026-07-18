@@ -5,6 +5,7 @@ import DropdownInput from "../ui/DropdownInput";
 import DateInput from "../ui/DateInput";
 import { fetchMyCountries, fetchMyPlaces } from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
+import { roundCoords } from "../../util/helpers";
 import Input from "../ui/Input";
 import Section from "../ui/Section";
 import PrivacyToggle from "../ui/PrivacyToggle";
@@ -79,7 +80,7 @@ const DiaryForm = ({
   } = useDropdownQuery({
     type: "PlacesDropdown",
     queryFn: (sort) => fetchMyPlaces(territoryValue, locationCoords, sort),
-    params: [territoryValue, locationCoords],
+    params: [territoryValue, roundCoords(locationCoords)],
     enabled: !!territoryValue,
     locationAvailable,
     requestLocation,

@@ -14,6 +14,7 @@ import { useProfile } from "../store/profile-context";
 import { buildShareUrl, speciesDetails } from "../util/helpers";
 import { parseDeepLinkParams } from "../util/parseDeepLinkParams";
 import { BottomSheet } from "../services/bottomSheet";
+import { StaleTime } from "../constants/staleTime";
 import {
   AppStackNavigationProp,
   AppStackRouteProp,
@@ -72,6 +73,7 @@ const StatScreen = () => {
         icon: "stats-chart" as const,
         iconOpposite: "checkbox-outline" as const,
         noItemsMessage: t("no_stat_yet"),
+        staleTime: StaleTime.FIVE_MINUTES,
       },
       checklist: {
         fetch: fetchChecklist,
@@ -85,6 +87,7 @@ const StatScreen = () => {
         icon: "checkbox-outline" as const,
         iconOpposite: "stats-chart" as const,
         noItemsMessage: t("no_checklist_yet"),
+        staleTime: StaleTime.TEN_MINUTES,
       },
     }),
     [t],
@@ -366,6 +369,7 @@ const StatScreen = () => {
         onFiltersChange={async (val) => setCurrentFilters(val)}
         onSortChange={async (val) => setCurrentSort(val)}
         allowSort={config.allowSort}
+        staleTime={config.staleTime}
         handleSharePress={viewMode === "stats" ? handleShare : undefined}
         onOpenFilterModal={(fn) => {
           openFilterRef.current = fn;

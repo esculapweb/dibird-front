@@ -29,6 +29,7 @@ import Section from "../components/ui/Section";
 import PrivacyToggle from "../components/ui/PrivacyToggle";
 import ListScreen from "./ListScreen";
 import { fetchDiaryObservations } from "../util/fetches";
+import { StaleTime } from "../constants/staleTime";
 import DiaryObservationCard from "../components/Diary/DiaryObservationCard";
 import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
@@ -395,6 +396,7 @@ const DiaryDetailScreen = () => {
       listHeader={listHeader}
       bottomEl={bottomEl}
       fabBottomOffset={60}
+      staleTime={StaleTime.TWO_MINUTES}
     />
   );
 };

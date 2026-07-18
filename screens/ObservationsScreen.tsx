@@ -4,6 +4,7 @@ import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/nativ
 
 import ListScreen from "./ListScreen";
 import { fetchObservations } from "../util/fetches";
+import { StaleTime } from "../constants/staleTime";
 import ObservationCard from "../components/Observation/ObservationCard";
 import { useFilters } from "../store/filters-context";
 import { runObservationSync } from "../services/sync/observationSync";
@@ -61,12 +62,14 @@ const ObservationsScreen = () => {
     <ListScreen
       route={route}
       fetchFunction={fetchObservations}
+      allowedFilters={["territory", "place", "date", "species", "unsynced"]}
       errorTitle={t("observations_unavailable")}
       onFiltersChange={async (val) => setCurrentFilters(val)}
       onAdd={handleAdd}
       renderItem={renderItem}
       noItems={noItems}
       title={t("observations")}
+      staleTime={StaleTime.TWO_MINUTES}
     />
   );
 };

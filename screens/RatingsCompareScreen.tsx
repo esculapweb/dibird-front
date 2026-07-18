@@ -6,6 +6,7 @@ import Toast from "react-native-toast-message";
 import { useRoute } from "@react-navigation/native";
 
 import { fetchRatingCompareHeader, fetchRatingCompare } from "../util/fetches";
+import { StaleTime } from "../constants/staleTime";
 import ListScreen from "./ListScreen";
 import Tabs from "../components/ui/Tabs";
 import CompareProfileHeader from "../components/Profile/CompareProfileHeader";
@@ -33,6 +34,7 @@ const RatingsCompareScreen = () => {
     queryKey: ["ratingCompareHeader", profile1, profile2, currentFilters],
     queryFn: () => fetchRatingCompareHeader(profile1, profile2, currentFilters),
     enabled: !!profile1 && !!profile2,
+    staleTime: StaleTime.FIVE_MINUTES,
   });
 
   const renderItem = useCallback(
