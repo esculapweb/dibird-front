@@ -76,7 +76,6 @@ export const useList = <T>({
     placeholderData: (previousData) => previousData,
     staleTime: staleTime ?? 1000 * 60,
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
     refetchOnReconnect: false,
     enabled,
   });

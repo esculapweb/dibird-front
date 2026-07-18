@@ -53,7 +53,11 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
       });
 
       const { latitude, longitude, accuracy } = loc.coords;
-      const coords: Coords = [longitude, latitude];
+      // Round raw GPS output (15-17 significant digits) down to ~1m
+      // precision — plenty for distance-sort queries, and keeps it out of
+      // request URLs/logs at full sensor precision.
+      const round5 = (v: number) => Math.round(v * 1e5) / 1e5;
+      const coords: Coords = [round5(longitude), round5(latitude)];
       setLocationCoords(coords);
 
       return { coords, accuracy: accuracy ?? null };

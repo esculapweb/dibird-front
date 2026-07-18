@@ -64,6 +64,16 @@ jest.mock("../../util/storageHelper", () => ({
 jest.mock("../../services/errors", () => ({
   logError: jest.fn(),
 }));
+// Real services/queryPersist.ts touches the actual AsyncStorage native
+// module (unmocked here, unlike util/storageHelper.ts's tests) — stub both
+// it and queryClient so this test stays focused on the account-switch
+// wiring in profile-context.tsx rather than React Query internals.
+jest.mock("../../services/queryClient", () => ({
+  queryClient: { clear: jest.fn() },
+}));
+jest.mock("../../services/queryPersist", () => ({
+  clearPersistedQueryCache: jest.fn(async () => {}),
+}));
 jest.mock("@react-native-firebase/analytics", () => ({
   getAnalytics: jest.fn(() => ({})),
   setUserId: jest.fn(async () => {}),
@@ -80,6 +90,8 @@ import * as observationRepository from "../../hooks/repositories/observationRepo
 import * as diaryRepository from "../../hooks/repositories/diaryRepository";
 import * as placeRepository from "../../hooks/repositories/placeRepository";
 import { getLastLoggedInUserId, setLastLoggedInUserId } from "../../util/storageHelper";
+import { queryClient } from "../../services/queryClient";
+import { clearPersistedQueryCache } from "../../services/queryPersist";
 
 const networkStatusMock = require("../../services/sync/networkStatus") as {
   __emitReconnect: () => void;
@@ -196,6 +208,8 @@ describe("account switch detection", () => {
     expect(observationRepository.clearAllLocal).toHaveBeenCalledTimes(1);
     expect(diaryRepository.clearAllLocal).toHaveBeenCalledTimes(1);
     expect(placeRepository.clearAllLocal).toHaveBeenCalledTimes(1);
+    expect(queryClient.clear).toHaveBeenCalledTimes(1);
+    expect(clearPersistedQueryCache).toHaveBeenCalledTimes(1);
   });
 
   it("does not wipe when the same user re-authenticates (e.g. after a 401-triggered logout)", async () => {
@@ -208,6 +222,8 @@ describe("account switch detection", () => {
     expect(observationRepository.clearAllLocal).not.toHaveBeenCalled();
     expect(diaryRepository.clearAllLocal).not.toHaveBeenCalled();
     expect(placeRepository.clearAllLocal).not.toHaveBeenCalled();
+    expect(queryClient.clear).not.toHaveBeenCalled();
+    expect(clearPersistedQueryCache).not.toHaveBeenCalled();
   });
 
   it("does not wipe on the very first login on a device (no last user recorded yet)", async () => {
@@ -220,5 +236,7 @@ describe("account switch detection", () => {
     expect(observationRepository.clearAllLocal).not.toHaveBeenCalled();
     expect(diaryRepository.clearAllLocal).not.toHaveBeenCalled();
     expect(placeRepository.clearAllLocal).not.toHaveBeenCalled();
+    expect(queryClient.clear).not.toHaveBeenCalled();
+    expect(clearPersistedQueryCache).not.toHaveBeenCalled();
   });
 });

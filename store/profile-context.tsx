@@ -13,6 +13,8 @@ import { and, asc, eq, inArray } from "drizzle-orm";
 import { getAnalytics, setUserId } from "@react-native-firebase/analytics";
 
 import { db } from "../services/db/client";
+import { queryClient } from "../services/queryClient";
+import { clearPersistedQueryCache } from "../services/queryPersist";
 import { mutationQueueTable, profileTable } from "../services/db/schema";
 import * as profileRepository from "../hooks/repositories/profileRepository";
 import * as observationRepository from "../hooks/repositories/observationRepository";
@@ -164,6 +166,12 @@ export const ProfileProvider = ({
           observationRepository.clearAllLocal();
           diaryRepository.clearAllLocal();
           placeRepository.clearAllLocal();
+          // Same reasoning as the local repositories above, but for the
+          // React Query cache (in-memory and its AsyncStorage persistence,
+          // see services/queryPersist.ts) — territory/species/stat data
+          // cached under the previous account must not leak into this one.
+          queryClient.clear();
+          await clearPersistedQueryCache();
         }
         await setLastLoggedInUserId(profile.user);
       }

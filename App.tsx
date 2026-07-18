@@ -36,6 +36,7 @@ import { useLanguage } from "./store/language-context";
 import { useAlertSettings } from "./store/alert-settings-context";
 import type { AlertSettingsPatch } from "./services/alertSettings";
 import { queryClient } from "./services/queryClient";
+import { restoreQueryCache, startPersistingQueryCache } from "./services/queryPersist";
 import { useObservationSync } from "./hooks/Observation/useObservationSync";
 import { useDiarySync } from "./hooks/Diary/useDiarySync";
 import { usePlaceSync } from "./hooks/Place/usePlaceSync";
@@ -64,6 +65,19 @@ const appInitPromise: Promise<void> = (async () => {
     });
     throw e;
   }
+
+  try {
+    // Hydrates the React Query cache from the previous session before the
+    // splash screen hides, so the first-mounted screen paints from
+    // last-known data instead of an empty cache — see services/queryPersist.ts.
+    await restoreQueryCache();
+  } catch (e) {
+    Sentry.captureException(e, {
+      tags: { context: "query-cache-restore" },
+      level: "warning",
+    });
+  }
+  startPersistingQueryCache();
 
   try {
     await setAnalyticsCollectionEnabled(getAnalytics(), !__DEV__);

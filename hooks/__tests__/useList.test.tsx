@@ -234,6 +234,28 @@ describe("staleTime", () => {
   });
 });
 
+describe("refetchOnMount", () => {
+  // Regression test: this hook used to hardcode refetchOnMount: false, which
+  // meant a query restored from a persisted (AsyncStorage-backed) cache on
+  // app cold start — see services/queryPersist.ts — would sit there stale
+  // forever with nothing to trigger a background refresh. Dropping that
+  // override (back to React Query's default of true) means a new observer
+  // mounting on invalidated/stale data revalidates automatically.
+  it("refetches when a new observer mounts on invalidated data", async () => {
+    const { result, unmount } = await renderUseList(baseArgs());
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockFetchFunction).toHaveBeenCalledTimes(1);
+    await unmount();
+
+    await act(async () => {
+      await queryClient.invalidateQueries({ queryKey: ["Diaries"] });
+    });
+
+    await renderUseList(baseArgs());
+    await waitFor(() => expect(mockFetchFunction).toHaveBeenCalledTimes(2));
+  });
+});
+
 describe("reconnect refetch", () => {
   // Regression test: offline, page 1 can come back from the cache's
   // "relaxed match" fallback in util/fetches.ts — the nearest-100-by-distance

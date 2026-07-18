@@ -94,7 +94,6 @@ export function useDropdownQuery<T extends DropdownItem = DropdownItem>({
     staleTime: 1000 * 60 * 60 * 24,
     gcTime: 1000 * 60 * 60 * 24,
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
     refetchOnReconnect: false,
     placeholderData: (previousData) => previousData,
     select: mapResult
