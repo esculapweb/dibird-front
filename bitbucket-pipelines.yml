@@ -1,0 +1,13 @@
+image: node:20
+
+pipelines:
+  branches:
+    master:
+      - step:
+          name: Check + Test
+          caches:
+            - node
+          script:
+            - npm ci
+            - npm run check
+            - npm run test
