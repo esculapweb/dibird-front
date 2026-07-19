@@ -1,0 +1,170 @@
+# Device-level offline test: an Observation created *inside* a Diary that
+# hasn't synced yet (temp negative diary id), covering the nested temp-id
+# resolution path called out in RELEASE_CHECKLIST.md §3 — repository-level
+# resolveDiaryId is already unit-tested (observationSync.test.ts), but the
+# end-to-end UI path (offline Diary → offline Observation nested inside it →
+# reconnect → both resolve) had no automated coverage before this flow.
+#
+# Unlike the single-entity offline-create-*.yaml flows, this one creates two
+# related entities and needs to reopen each of them independently after
+# reconnect (once synced, list rows carry no testID and no longer have a
+# pending icon to tap back into). The Diary is given a unique, distinctive
+# `name` note precisely so it can be found by visible text in the Diaries
+# list after sync, regardless of pending/synced state — the pending-icon
+# reopen trick offline-create-diary.yaml relies on only works pre-sync.
+#
+# appId is the single Android package for every build variant.
+# tags: android — see login.yaml.
+appId: com.dibird.app
+tags:
+  - android
+---
+# No clearState: session reuse — see offline-create-observation.yaml. The
+# local mutation-queue db also isn't reset between flows, so this flow's own
+# create->delete cycle for both entities must net to zero on its own.
+- launchApp
+
+- runFlow: common/android-bootstrap.yaml
+
+- extendedWaitUntil:
+    visible:
+      id: "diaries-stat-value"
+    timeout: 20000
+- copyTextFrom:
+    id: "diaries-stat-value"
+- evalScript: ${output.diaryBaselineCount = maestro.copiedText}
+- copyTextFrom:
+    id: "observations-stat-value"
+- evalScript: ${output.observationBaselineCount = maestro.copiedText}
+
+# ---- CREATE Diary, offline ----
+- toggleAirplaneMode
+
+- tapOn:
+    id: "quick-action-diary"
+# A distinctive note, so this specific diary can be found by visible text
+# later, after it's synced and its pending icon (the usual reopen handle)
+# is gone.
+- tapOn: "Add a note"
+- setClipboard: "Nested E2E Diary"
+- pasteText
+- tapOn:
+    text: "Location"
+- tapOn:
+    id: "diary-save-button"
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - back
+      - tapOn:
+          id: "diary-save-button"
+
+# Local-first create lands on the (temp-id) detail screen even offline.
+- extendedWaitUntil:
+    visible: ".*Delete diary.*"
+    timeout: 6000
+
+# ---- CREATE Observation nested inside that (still unsynced) Diary ----
+# DiaryDetailScreen's own "add observation" action (list-add-button, same
+# testID ListScreen's generic onAdd uses elsewhere) opens ObservationEditor
+# pre-filled with this diary's id/territory — payload.data.diary carries the
+# diary's temp negative id at this point.
+- tapOn:
+    id: "list-add-button"
+- tapOn:
+    id: "species-dropdown-trigger"
+- extendedWaitUntil:
+    visible:
+      id: "option-row-0"
+    timeout: 6000
+- tapOn:
+    id: "option-row-0"
+- tapOn:
+    id: "observation-save-button"
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - back
+      - tapOn:
+          id: "observation-save-button"
+
+# Diary-scoped create/edit navigates back to the diary detail it was opened
+# from (returnMode: "back" — see DiaryDetailScreen's handleAdd), unlike the
+# MainScreen quick-action path, which replaces onto the new item's own
+# detail screen.
+- extendedWaitUntil:
+    visible: ".*Delete diary.*"
+    timeout: 6000
+
+- back
+- tapOn:
+    id: "section-Diaries"
+- assertVisible:
+    id: "diary-sync-pending-icon"
+
+- tapOn:
+    id: "section-Observations"
+- assertVisible:
+    id: "observation-sync-pending-icon"
+# Reopen the nested Observation's own detail via its pending icon — the
+# same trick offline-create-observation.yaml uses — while it's still
+# possible, i.e. before reconnecting resolves it.
+- tapOn:
+    id: "observation-sync-pending-icon"
+- extendedWaitUntil:
+    visible: ".*Delete observation.*"
+    timeout: 6000
+
+# ---- Reconnect: both the Diary and its nested Observation must resolve ----
+# Diary sync's create success wakes observation sync immediately (see
+# diarySync.ts's runObservationSync() call after a successful diary POST),
+# so the deferred observation resolves without waiting out its own backoff
+# — but give it real margin over a single-entity flow's 4s, since this is a
+# two-step cascade (diary POST, then the woken observation POST).
+- toggleAirplaneMode
+- waitForAnimationToEnd:
+    timeout: 8000
+
+# Still on the Observation's own detail screen the whole time — a failed
+# diary_id resolution would either leave this record in a permanent error
+# state or the delete button gone; still being able to delete it below is
+# itself part of the proof that resolution succeeded.
+- assertVisible: ".*Delete observation.*"
+
+# ---- Cleanup: Observation first (references the diary), then the Diary ----
+- tapOn:
+    id: "observation-delete-button"
+- extendedWaitUntil:
+    visible:
+      id: "bottom-sheet-confirm-button"
+    timeout: 4000
+- tapOn:
+    id: "bottom-sheet-confirm-button"
+- assertVisible: ".*Observations.*"
+
+- back
+- tapOn:
+    id: "section-Diaries"
+# Found by its distinctive note text rather than a pending icon or list
+# position — true regardless of whether it's already synced by now.
+- tapOn: "Nested E2E Diary"
+- assertVisible: ".*Delete diary.*"
+- tapOn:
+    id: "diary-delete-button"
+- extendedWaitUntil:
+    visible:
+      id: "bottom-sheet-confirm-button"
+    timeout: 4000
+- tapOn:
+    id: "bottom-sheet-confirm-button"
+- assertVisible: ".*Diaries.*"
+
+- back
+- assertVisible:
+    id: "observations-stat-value"
+    text: ${output.observationBaselineCount}
+- assertVisible:
+    id: "diaries-stat-value"
+    text: ${output.diaryBaselineCount}

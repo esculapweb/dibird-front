@@ -6,28 +6,35 @@
 # own top-level flow — still needs its own appId + `---` below, though:
 # `maestro test` refuses to load a runFlow-referenced file without one.
 #
-# HOST-SPECIFIC: the dev-server URL below must be the host machine's real
-# LAN IP (verify with `ifconfig`), not the emulator's 10.0.2.2 loopback
-# alias — the app's baked-in API base URL points at the LAN address, not
+# HOST-SPECIFIC: the IP below must be the host machine's real LAN IP
+# (verify with `ifconfig`), not the emulator's 10.0.2.2 loopback alias —
+# the app's baked-in API base URL points at the LAN address, not
 # localhost. Update this if the host's IP changes.
+#
+# Connects via the same exp+dibird:// deep link Metro's own CLI opens when
+# you press `a` (shown in its terminal output as "Opening exp+dibird://...
+# on <device>") — an Android intent (openLink), not a UI tap. Tapping the
+# dev-client's on-screen server list was flaky: Maestro's tap sometimes
+# didn't register on that particular list item even though the element was
+# found, silently leaving the app stuck on the native chooser screen for
+# the rest of the flow. The deep link sidesteps that UI entirely and also
+# doesn't depend on whichever address the dev-client's discovery happens to
+# show (LAN vs a VPN tunnel IP, which has flipped mid-session before).
+#
+# stopApp first is load-bearing: every caller already did `launchApp`
+# before running this shared flow, so without this the deep link's intent
+# lands on the already-running chooser activity via onNewIntent — which
+# doesn't act on it — instead of a cold launch that actually connects.
 appId: com.dibird.app
 ---
-- tapOn:
-    text: "192.168.0.103:8081"
-    optional: true
+- stopApp
 
-- tapOn:
-    below: "Then, select the local server when it appears here."
-    optional: true
-- inputText: "exp://192.168.0.103:8081"
-- tapOn:
-    text: "Connect"
-    optional: true
+- openLink: "exp+dibird://expo-development-client/?url=http%3A%2F%2F192.168.0.103%3A8081"
 # Metro takes a few seconds to reconnect — wait out the connecting toast
 # instead of racing it with a plain waitForAnimationToEnd.
 - extendedWaitUntil:
     notVisible: ".*Connecting to the development server.*"
-    timeout: 20000
+    timeout: 12000
 - waitForAnimationToEnd
 - tapOn:
     text: "Continue"
@@ -79,7 +86,7 @@ appId: com.dibird.app
 - extendedWaitUntil:
     visible:
       id: "quick-action-observation"
-    timeout: 15000
+    timeout: 10000
     optional: true
 - runFlow:
     when:
@@ -120,4 +127,4 @@ appId: com.dibird.app
 - extendedWaitUntil:
     visible:
       id: "quick-action-observation"
-    timeout: 15000
+    timeout: 10000

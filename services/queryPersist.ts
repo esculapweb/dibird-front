@@ -24,7 +24,8 @@ const persister = createAsyncStoragePersister({
 // DiarySpecies is editor-context-only data with an explicit staleTime: 0
 // (see screens/ObservationEditorScreen.tsx) — it always revalidates on the
 // next mount regardless, so persisting it buys nothing.
-const shouldDehydrateQuery = (query: Query) => query.queryKey[0] !== "DiarySpecies";
+const shouldDehydrateQuery = (query: Query) =>
+  query.queryKey[0] !== "DiarySpecies" && query.state.status === "success";
 
 export const restoreQueryCache = () =>
   persistQueryClientRestore({

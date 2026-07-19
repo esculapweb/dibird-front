@@ -1,0 +1,79 @@
+# Device-level offline test: an alert-settings change (radius) made in
+# airplane mode reaches the backend once reconnected — the sync/reconnect
+# logic itself (alertSettingsSync.ts, alert-settings-context.tsx's
+# reconnect/foreground trigger) is already unit-tested, but per
+# RELEASE_CHECKLIST.md §5 the end-to-end UI path (screen → offline edit →
+# reconnect → change actually persisted server-side) had no automated
+# coverage before this flow.
+#
+# Uses the radius preset chips (RadiusRow), not the slider — Maestro has no
+# reliable way to drag a native Slider to an exact value, but the presets
+# are plain buttons with their own visible, deterministic text ("5 km",
+# "250 km", ...), and both change + save fire together on tap (see
+# RadiusRow.tsx's preset onPress).
+#
+# Proof of a real server round-trip: after reconnecting, the app is force-
+# quit and relaunched (not just left running) before re-checking the
+# value. AlertSettingsProvider is a single shared instance for the whole
+# app lifetime (see alert-settings-context.tsx's own comment on why), so
+# simply navigating away from and back to this screen would still show
+# the same in-memory (possibly only-ever-local) state — only a fresh
+# process reads the value back from the server on first load.
+#
+# appId is the single Android package for every build variant.
+# tags: android — see login.yaml.
+appId: com.dibird.app
+tags:
+  - android
+---
+# No clearState: session reuse — see offline-create-observation.yaml.
+- launchApp
+
+- runFlow: common/android-bootstrap.yaml
+
+- tapOn:
+    id: "burger-menu-button"
+- tapOn:
+    text: "Settings"
+- tapOn:
+    text: "Alert settings"
+
+# Known starting point, set for real (online) first, so the offline change
+# below has an unambiguous before/after — not "250 km" is app default.
+- extendedWaitUntil:
+    visible: "250 km"
+    timeout: 8000
+- tapOn: "250 km"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# ---- Change radius while offline ----
+- toggleAirplaneMode
+
+- tapOn: "5 km"
+# Optimistic local update — see useAlertSettings' save(), cached data keeps
+# working offline even though the request itself is queued, not sent yet.
+- assertVisible: "5 km"
+
+- toggleAirplaneMode
+- waitForAnimationToEnd:
+    timeout: 6000
+
+# ---- Force-quit and relaunch: only a fresh process proves the value came
+# back from the server, not just local optimistic state ----
+- stopApp
+- launchApp
+- runFlow: common/android-bootstrap.yaml
+
+- tapOn:
+    id: "burger-menu-button"
+- tapOn:
+    text: "Settings"
+- tapOn:
+    text: "Alert settings"
+- extendedWaitUntil:
+    visible: "5 km"
+    timeout: 8000
+
+# ---- Reset to the default for the next run ----
+- tapOn: "250 km"

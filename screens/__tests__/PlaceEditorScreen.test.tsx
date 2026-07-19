@@ -195,6 +195,25 @@ it("suggests the reverse-geocoded name only in create mode, once details arrive"
   );
 });
 
+it("keeps a name the user already typed when the reverse-geocode result arrives late, instead of clobbering/appending to it", async () => {
+  mockLocation({ details: null });
+  const { rerender } = await render(<PlaceEditorScreen />);
+  await fireEvent.press(screen.getByTestId("fill-territory"));
+  await fireEvent.press(screen.getByTestId("fill-name"));
+
+  // The debounced reverse-geocode (util/fetches' reverseGeocoding, behind a
+  // real network round-trip) resolves only now — after the user has already
+  // typed a name, not before.
+  mockLocation({ details: { name: "City Hall" } });
+  await rerender(<PlaceEditorScreen />);
+
+  await pressSave();
+  expect(mockCreateMutate).toHaveBeenCalledWith(
+    expect.objectContaining({ name: "Test Place" }),
+    expect.anything(),
+  );
+});
+
 describe("map tap", () => {
   it("updates coords with geocode and clears lat/lng errors", async () => {
     await render(<PlaceEditorScreen />);

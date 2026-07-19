@@ -392,3 +392,61 @@ describe("refetchOnMount", () => {
     await waitFor(() => expect(mockQueryFn).toHaveBeenCalledTimes(2));
   });
 });
+
+// Every Maestro flow that touches SpeciesDropdown always hits a cold or a
+// same-session warm cache — it never runs long enough to observe the 24h
+// staleTime (see useDropdownQuery's own query config) actually expiring, so
+// that lapse had no automated coverage at all before this (RELEASE_CHECKLIST.md
+// §4). Date.now is spied directly rather than jest.useFakeTimers() +
+// advanceTimersByTime — react-query's own staleness check just compares
+// against Date.now(), and shifting only that avoids fake timers interfering
+// with waitFor's internal polling (a real setTimeout(0) loop).
+describe("24h staleTime", () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it("does not refetch a new observer mounted on still-fresh (<24h old) data", async () => {
+    mockSavedSort({ sort: "name" });
+    const { result: first, unmount } = await renderHook(
+      () => useDropdownQuery({ type: "PlacesDropdown", queryFn: mockQueryFn, params: [] }),
+      { wrapper },
+    );
+    await waitFor(() => expect(first.current.query.isSuccess).toBe(true));
+    expect(mockQueryFn).toHaveBeenCalledTimes(1);
+    await unmount();
+
+    jest.spyOn(Date, "now").mockReturnValue(Date.now() + 1000 * 60 * 60 * 23);
+
+    await renderHook(
+      () => useDropdownQuery({ type: "PlacesDropdown", queryFn: mockQueryFn, params: [] }),
+      { wrapper },
+    );
+    // No waitFor here on purpose: asserting a fetch never happens can only be
+    // done by giving react-query a chance to have started one and checking
+    // it didn't, not by waiting for a success state that would also occur
+    // without a refetch (placeholderData keeps serving the cached value).
+    await act(async () => {});
+    expect(mockQueryFn).toHaveBeenCalledTimes(1);
+  });
+
+  it("refetches a new observer mounted on data older than the 24h staleTime", async () => {
+    mockSavedSort({ sort: "name" });
+    const { result: first, unmount } = await renderHook(
+      () => useDropdownQuery({ type: "PlacesDropdown", queryFn: mockQueryFn, params: [] }),
+      { wrapper },
+    );
+    await waitFor(() => expect(first.current.query.isSuccess).toBe(true));
+    expect(mockQueryFn).toHaveBeenCalledTimes(1);
+    await unmount();
+
+    jest.spyOn(Date, "now").mockReturnValue(Date.now() + 1000 * 60 * 60 * 25);
+
+    const { result: second } = await renderHook(
+      () => useDropdownQuery({ type: "PlacesDropdown", queryFn: mockQueryFn, params: [] }),
+      { wrapper },
+    );
+    await waitFor(() => expect(mockQueryFn).toHaveBeenCalledTimes(2));
+    expect(second.current.query.isSuccess).toBe(true);
+  });
+});

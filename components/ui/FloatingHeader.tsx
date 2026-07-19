@@ -18,7 +18,12 @@ const BurgerButton = ({
   const { Colors } = useTheme();
 
   return (
-    <TouchableOpacity onPress={onPress} hitSlop={8} style={style}>
+    <TouchableOpacity
+      onPress={onPress}
+      hitSlop={8}
+      style={style}
+      testID="burger-menu-button"
+    >
       <View style={[styles.line, { backgroundColor: Colors.textMain }]} />
       <View style={[styles.line, { backgroundColor: Colors.textMain }]} />
       <View style={[styles.line, { backgroundColor: Colors.textMain }]} />

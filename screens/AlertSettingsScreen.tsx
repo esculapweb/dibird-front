@@ -61,6 +61,7 @@ interface RowSwitchProps {
   onValueChange: (v: boolean) => void;
   colors: ThemeColors;
   styles: ReturnType<typeof stylesFn>;
+  testID?: string;
 }
 
 const RowSwitch = ({
@@ -71,6 +72,7 @@ const RowSwitch = ({
   onValueChange,
   colors,
   styles,
+  testID,
 }: RowSwitchProps) => (
   <View style={styles.row}>
     <Ionicons name={icon} size={18} color={colors.main100} />
@@ -79,6 +81,7 @@ const RowSwitch = ({
       {subtitle ? <Text style={styles.rowDesc}>{subtitle}</Text> : null}
     </View>
     <Switch
+      testID={testID}
       value={value}
       onValueChange={onValueChange}
       trackColor={{ true: colors.main100 }}
@@ -198,6 +201,7 @@ export default function AlertSettingsScreen() {
           onValueChange={(v) => save({ is_enabled: v })}
           colors={Colors}
           styles={styles}
+          testID="alert-enabled-switch"
         />
       </Section>
 

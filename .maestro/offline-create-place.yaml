@@ -48,7 +48,7 @@ tags:
 - extendedWaitUntil:
     visible:
       id: "list-header-badge-count"
-    timeout: 15000
+    timeout: 10000
 # Capture the server-truth count now — real proof the delete at the end
 # reached the server.
 - copyTextFrom:
@@ -75,7 +75,7 @@ tags:
 - extendedWaitUntil:
     visible:
       id: "latitude-input"
-    timeout: 10000
+    timeout: 6000
 - assertVisible:
     id: "latitude-input"
     text: "48.8566"
@@ -83,7 +83,7 @@ tags:
     id: "longitude-input"
     text: "2.3522"
 - waitForAnimationToEnd:
-    timeout: 5000
+    timeout: 4000
 
 - tapOn:
     id: "place-name-input"
@@ -113,7 +113,7 @@ tags:
 - extendedWaitUntil:
     visible:
       id: "option-row-0"
-    timeout: 5000
+    timeout: 4000
 - tapOn:
     id: "option-row-0"
 
@@ -141,7 +141,7 @@ tags:
 
 - toggleAirplaneMode
 - waitForAnimationToEnd:
-    timeout: 5000
+    timeout: 4000
 
 # ---- UPDATE, offline ----
 # Rename the place (a deterministic field to assert against), rather than
@@ -178,7 +178,7 @@ tags:
 
 - toggleAirplaneMode
 - waitForAnimationToEnd:
-    timeout: 5000
+    timeout: 4000
 
 # ---- DELETE, offline ----
 - toggleAirplaneMode
@@ -188,14 +188,14 @@ tags:
 - extendedWaitUntil:
     visible:
       id: "bottom-sheet-confirm-button"
-    timeout: 5000
+    timeout: 4000
 - tapOn:
     id: "bottom-sheet-confirm-button"
 - assertVisible: ".*Locations.*"
 
 - toggleAirplaneMode
 - waitForAnimationToEnd:
-    timeout: 5000
+    timeout: 4000
 
 # Add/update/delete all invalidate ["Places"], and this screen stays
 # mounted/focused, so it auto-refetches once reconnected — should land

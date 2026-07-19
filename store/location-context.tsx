@@ -42,6 +42,18 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
         await Location.getForegroundPermissionsAsync();
       setPermissionStatus(existingStatus);
 
+      // Every caller of requestLocation() across the app checks
+      // permissionStatus === "denied" first to avoid re-nagging — but that
+      // guard is only as good as this function's own respect for it. An
+      // already-denied status must not fall through to
+      // requestForegroundPermissionsAsync(): on Android that reopens the
+      // real OS dialog even though the user (or, in e2e tests, `launchApp:
+      // permissions: location: deny`) already answered — "undetermined" is
+      // the only status that should ever trigger a fresh prompt.
+      if (existingStatus === "denied") {
+        return null;
+      }
+
       if (existingStatus !== "granted") {
         const { status } = await Location.requestForegroundPermissionsAsync();
         setPermissionStatus(status);

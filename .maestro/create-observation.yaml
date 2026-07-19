@@ -1,4 +1,9 @@
-# Core flow: create an Observation while online.
+# Core flow: full create -> update -> delete lifecycle for an Observation
+# while online, on iOS. Android already has this full lifecycle
+# (online-create-observation.yaml); this file used to cover create only —
+# update/delete were left as a manual checklist item (RELEASE_CHECKLIST.md
+# §4) purely because no one had gotten to the iOS parity yet, not because
+# of any platform limitation like the offline/airplane-mode gap (see §6).
 #
 # Fast reuse-the-session login, not a full login test (see login.yaml for
 # that, including its wrong-password check). No clearKeychain/clearState:
@@ -46,7 +51,7 @@ tags:
 - extendedWaitUntil:
     visible:
       id: "quick-action-observation"
-    timeout: 15000
+    timeout: 10000
     optional: true
 - runFlow:
     when:
@@ -101,7 +106,7 @@ tags:
 - extendedWaitUntil:
     visible:
       id: "option-row-0"
-    timeout: 8000
+    timeout: 6000
 - tapOn:
     id: "option-row-0"
 - tapOn:
@@ -126,3 +131,47 @@ tags:
 # on the delete button specifically: it only renders when is_owner is
 # true on a real persisted item, confirming the save reached the server.
 - assertVisible: ".*Delete observation.*"
+
+# ---- UPDATE, online ----
+# Mirrors online-create-observation.yaml's UPDATE step — same testIDs,
+# same "Private" assertion — just without ever touching
+# toggleAirplaneMode (unsupported on iOS Simulator, see the file header).
+#
+# Unlike Android, iOS's accessibility tree merges the PrivacyToggle's
+# icon + label + description into one element (e.g. ", Public, Visible
+# to everyone"), so a bare "Public"/"Private" regex never matches the
+# whole string — wrap in .* like the "Delete observation" assertion
+# above does for the same reason.
+- tapOn:
+    id: "observation-edit-button"
+- waitForAnimationToEnd
+- tapOn:
+    text: ".*Public.*"
+- tapOn:
+    id: "observation-save-button"
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - tapOn:
+          point: "85%,95%"
+      - tapOn:
+          text: "Close"
+      - tapOn:
+          id: "observation-save-button"
+- assertVisible: ".*Private.*"
+
+# ---- DELETE, online ----
+- tapOn:
+    id: "observation-delete-button"
+- extendedWaitUntil:
+    visible:
+      id: "bottom-sheet-confirm-button"
+    timeout: 4000
+- tapOn:
+    id: "bottom-sheet-confirm-button"
+# Delete's onSuccess is a plain goBack() straight to MainScreen — this flow
+# opened the editor from MainScreen's quick action with no list ever
+# pushed in between, same as the Android counterpart.
+- assertVisible:
+    id: "quick-action-observation"

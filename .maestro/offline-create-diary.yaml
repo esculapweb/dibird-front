@@ -55,7 +55,7 @@ tags:
 # used as a wait gate before `back`.
 - extendedWaitUntil:
     visible: ".*Delete diary.*"
-    timeout: 10000
+    timeout: 6000
 - back
 - tapOn:
     text: "Diaries"
@@ -69,7 +69,7 @@ tags:
 
 - toggleAirplaneMode
 - waitForAnimationToEnd:
-    timeout: 5000
+    timeout: 4000
 
 # ---- UPDATE, offline ----
 - toggleAirplaneMode
@@ -93,7 +93,7 @@ tags:
 
 - toggleAirplaneMode
 - waitForAnimationToEnd:
-    timeout: 5000
+    timeout: 4000
 
 # ---- DELETE, offline ----
 - toggleAirplaneMode
@@ -103,7 +103,7 @@ tags:
 - extendedWaitUntil:
     visible:
       id: "bottom-sheet-confirm-button"
-    timeout: 5000
+    timeout: 4000
 - tapOn:
     id: "bottom-sheet-confirm-button"
 # Delete's onSuccess navigates back to the Diaries list this screen was
@@ -112,7 +112,7 @@ tags:
 
 - toggleAirplaneMode
 - waitForAnimationToEnd:
-    timeout: 5000
+    timeout: 4000
 
 - back
 - assertVisible:

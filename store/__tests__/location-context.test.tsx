@@ -94,6 +94,21 @@ describe("requestLocation", () => {
     expect(returned).toBeNull();
   });
 
+  it("does not re-prompt when the OS already reports the permission denied", async () => {
+    (Location.getForegroundPermissionsAsync as jest.Mock).mockResolvedValue({ status: "denied" });
+
+    const { result } = await renderHook(() => useLocation(), { wrapper: LocationProvider });
+    let returned: unknown = "not-set";
+    await act(async () => {
+      returned = await result.current.requestLocation();
+    });
+
+    expect(Location.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
+    expect(Location.getCurrentPositionAsync).not.toHaveBeenCalled();
+    expect(result.current.permissionStatus).toBe("denied");
+    expect(returned).toBeNull();
+  });
+
   it("swallows a lookup failure (e.g. GPS timeout) and returns null instead of throwing", async () => {
     (Location.getForegroundPermissionsAsync as jest.Mock).mockResolvedValue({ status: "granted" });
     (Location.getCurrentPositionAsync as jest.Mock).mockRejectedValue(new Error("timed out"));

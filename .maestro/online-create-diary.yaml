@@ -35,7 +35,7 @@ tags:
           id: "diary-save-button"
 - extendedWaitUntil:
     visible: ".*Delete diary.*"
-    timeout: 10000
+    timeout: 8000
 
 # ---- UPDATE, online ----
 - tapOn:
@@ -60,7 +60,7 @@ tags:
 - extendedWaitUntil:
     visible:
       id: "bottom-sheet-confirm-button"
-    timeout: 5000
+    timeout: 4000
 - tapOn:
     id: "bottom-sheet-confirm-button"
 - assertVisible: ".*Diaries.*"

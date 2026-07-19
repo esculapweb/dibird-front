@@ -55,7 +55,7 @@ tags:
 - extendedWaitUntil:
     visible:
       id: "option-row-0"
-    timeout: 8000
+    timeout: 6000
 - tapOn:
     id: "option-row-0"
 - tapOn:
@@ -75,7 +75,7 @@ tags:
 # state).
 - extendedWaitUntil:
     visible: ".*Delete observation.*"
-    timeout: 10000
+    timeout: 6000
 - back
 - tapOn:
     id: "section-Observations"
@@ -92,7 +92,7 @@ tags:
 # mutation queue against the live API.
 - toggleAirplaneMode
 - waitForAnimationToEnd:
-    timeout: 5000
+    timeout: 4000
 
 # ---- UPDATE, offline ----
 # Editing the now-synced (real positive id) observation exercises a
@@ -124,7 +124,7 @@ tags:
 # services/sync/__tests__/observationSync.test.ts.
 - toggleAirplaneMode
 - waitForAnimationToEnd:
-    timeout: 5000
+    timeout: 4000
 
 # ---- DELETE, offline ----
 - toggleAirplaneMode
@@ -134,14 +134,14 @@ tags:
 - extendedWaitUntil:
     visible:
       id: "bottom-sheet-confirm-button"
-    timeout: 5000
+    timeout: 4000
 - tapOn:
     id: "bottom-sheet-confirm-button"
 - assertVisible: ".*Observations.*"
 
 - toggleAirplaneMode
 - waitForAnimationToEnd:
-    timeout: 5000
+    timeout: 4000
 
 # Add/delete both invalidate ["DashboardStat"], so this refetches once
 # back online — should land exactly back on the baseline captured above.

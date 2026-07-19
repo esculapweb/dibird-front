@@ -4,6 +4,7 @@ import {
   useEffect,
   useLayoutEffect,
   useMemo,
+  useRef,
 } from "react";
 import { Keyboard, StyleSheet, Text } from "react-native";
 import { useTranslation } from "react-i18next";
@@ -145,11 +146,22 @@ const PlaceEditorScreen = () => {
     }
   }, [isEditMode]);
 
+  // A previous suggestion, so a late-arriving reverse-geocode (debounced,
+  // then a real network round-trip) can be told apart from a name the user
+  // already typed over it — without this, typing a custom name while the
+  // geocode is still in flight gets silently clobbered/appended-to the
+  // moment `details` updates.
+  const lastSuggestedNameRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (!details || isEditMode) return;
     const suggestedName = details?.name ?? "";
     if (!suggestedName) return;
-    setFormData((prev) => ({ ...prev, name: suggestedName }));
+    setFormData((prev) => {
+      if (prev.name && prev.name !== lastSuggestedNameRef.current) return prev;
+      return { ...prev, name: suggestedName };
+    });
+    lastSuggestedNameRef.current = suggestedName;
     setErrors((prev) => ({ ...prev, name: undefined }));
   }, [details, isEditMode]);
 

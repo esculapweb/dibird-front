@@ -1,0 +1,118 @@
+# Device-level test: creating a Place after explicitly denying location
+# permission — covers the manual-entry fallback called out in
+# RELEASE_CHECKLIST.md §4 ("Разрешение геолокации: явно отклонить
+# permission... и убедиться, что ручной ввод координат/выбор на карте
+# всё ещё работает, а не блокирует экран целиком"), which every other
+# Place flow sidesteps by granting location up front.
+#
+# usePlaceLocation's locateMe() checks permissionStatus === "denied" and
+# calls useLocationUnavailable() instead of requesting a GPS fix (see
+# usePlaceLocation.ts) — a bottom sheet, not a crash or a blocked screen.
+# latitude-input/longitude-input start genuinely empty in this path (no GPS
+# fix means no reverse-geocode autofill either) — but this flow's own manual
+# lat/lng entry below still triggers a reverse-geocode (this variant is
+# online, unlike offline-create-place.yaml), which can suggest a name into
+# place-name-input asynchronously; erase before typing there for the same
+# reason every other Place flow does.
+#
+# appId is the single Android package for every build variant.
+# tags: android — see login.yaml.
+appId: com.dibird.app
+tags:
+  - android
+---
+- launchApp:
+    permissions:
+      location: deny
+
+- runFlow: common/android-bootstrap.yaml
+
+- tapOn:
+    id: "section-Places"
+- extendedWaitUntil:
+    visible:
+      id: "list-header-badge-count"
+    timeout: 10000
+- copyTextFrom:
+    id: "list-header-badge-count"
+- evalScript: ${output.placeBaselineCount = maestro.copiedText}
+
+- tapOn:
+    id: "list-add-button"
+
+# locateMe() fires on mount, sees the denied permission, and shows this
+# bottom sheet instead of ever requesting a fix — dismiss it and confirm
+# the screen underneath is still fully usable, not blocked.
+- extendedWaitUntil:
+    visible: ".*Location unavailable.*"
+    timeout: 8000
+- tapOn:
+    id: "bottom-sheet-cancel-button"
+
+- extendedWaitUntil:
+    visible:
+      id: "latitude-input"
+    timeout: 8000
+# Genuinely empty — no GPS fix ever arrived to autofill these, unlike
+# every other Place flow (which erases pre-filled text first).
+- assertVisible:
+    id: "latitude-input"
+    text: ""
+- assertVisible:
+    id: "longitude-input"
+    text: ""
+
+- tapOn:
+    id: "latitude-input"
+- inputText: "48.8566"
+- tapOn:
+    id: "longitude-input"
+- inputText: "2.3522"
+
+- tapOn:
+    id: "place-name-input"
+- eraseText: 50
+- setClipboard: "Denied-Location Test Place"
+- pasteText
+- tapOn:
+    text: "Latitude"
+
+# Territory has no reverse-geocode to auto-fill either — pick manually,
+# same technique offline-create-place.yaml uses.
+- tapOn:
+    id: "dropdown-trigger-CountriesDropdown"
+- tapOn:
+    text: "Search..."
+- setClipboard: "France"
+- pasteText
+- extendedWaitUntil:
+    visible:
+      id: "option-row-0"
+    timeout: 4000
+- tapOn:
+    id: "option-row-0"
+
+- tapOn:
+    id: "place-save-button"
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - back
+      - tapOn:
+          id: "place-save-button"
+- assertVisible: "Denied-Location Test Place"
+
+# ---- Cleanup ----
+- tapOn:
+    id: "place-delete-button"
+- extendedWaitUntil:
+    visible:
+      id: "bottom-sheet-confirm-button"
+    timeout: 4000
+- tapOn:
+    id: "bottom-sheet-confirm-button"
+- assertVisible: ".*Locations.*"
+- assertVisible:
+    id: "list-header-badge-count"
+    text: ${output.placeBaselineCount}

@@ -80,6 +80,15 @@ if [ "$PLATFORM" = "android" ]; then
   # test` process, still isn't covered by this alone.
   adb -s "$TARGET" shell cmd connectivity airplane-mode disable
 
+  # Disable animations: every screen transition, and the explicit
+  # waitForAnimationToEnd waits gating them throughout the flows, otherwise
+  # ride out the real (short but nonzero) transition time on every single
+  # navigation. Pure test-speed win — nothing in these flows asserts on
+  # animation timing itself.
+  adb -s "$TARGET" shell settings put global window_animation_scale 0
+  adb -s "$TARGET" shell settings put global transition_animation_scale 0
+  adb -s "$TARGET" shell settings put global animator_duration_scale 0
+
   TARGET_PATH="${1:-.maestro}"
 else
   TARGET=$(xcrun simctl list devices 2>/dev/null | grep -i booted | grep -oE '[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}' | head -1)
