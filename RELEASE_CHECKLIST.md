@@ -15,10 +15,19 @@ npm run test           # весь текущий jest-набор, включая
                         # drizzle)
 ```
 
-`npm run check` и `npm run test` гоняются автоматически в
+`npm run check` и `npm run test` (в CI — `npm run test:ci` = `jest
+--forceExit`, см. ниже почему) гоняются автоматически в
 `bitbucket-pipelines.yml` на каждый push в master; ручной прогон перед
 релизом остаётся дополнительной подстраховкой, а не единственной линией
 защиты.
+
+`--forceExit` нужен только в CI: repository-тесты держат нативные
+`better-sqlite3`-хендлы открытыми на весь воркер-процесс (см. коммент в
+`hooks/repositories/testDb.ts`) — локально jest сам форсированно
+завершается после предупреждения и команда всё равно выходит за секунды,
+но под контейнером Bitbucket Pipelines шаг без `--forceExit` зависал
+бесконечно ("In progress" без дальнейшего вывода), несмотря на то что все
+тесты уже прошли зелёными.
 
 `npm run e2e` / `npm run e2e:android` пока **не входят** в автоматический
 гейт (нет CI-раннера с эмулятором/симулятором и собранным dev-client
@@ -330,7 +339,7 @@ OS-level `toggleAirplaneMode`, полный цикл create → update → delet
   причине, просто не влезло в этот батч (см. раздел 3).
 - CI для e2e (`npm run e2e` / `npm run e2e:android` в Bitbucket Pipelines)
   — не сделано: нет CI-раннера с эмулятором/симулятором и собранным
-  dev-client билдом. `npm run check` + `npm run test` теперь гоняются
+  dev-client билдом. `npm run check` + `npm run test:ci` теперь гоняются
   автоматически в `bitbucket-pipelines.yml` на каждый push в master (см.
   раздел 1) — ручной прогон перед релизом остаётся дополнительной
   подстраховкой, а не единственной линией защиты.
@@ -890,3 +899,17 @@ update/delete), которые вне гейта по инфраструктур
   - Про CI (`bitbucket-pipelines.yml`) — обсуждалось отдельно с
     пользователем, сознательно не взято в этот батч по приоритету (см.
     раздел 6) — не потому что сложно или не нужно.
+- CI (`bitbucket-pipelines.yml`) добавлен: `npm run check` + `npm run
+  test:ci` на каждый push в master (Pipelines включены в Bitbucket UI).
+  Первый прогон нашёл упавший `queryPersist.test.ts` — мок
+  `shouldDehydrateQuery` для `"Places"`/`"DashboardStat"` не передавал
+  `state: { status: "success" }`, из-за чего код падал на
+  `query.state.status` (проходило только для `"DiarySpecies"` благодаря
+  короткому замыканию `&&`); поправлено. Отдельно от этого пайплайн
+  зависал даже на зелёном прогоне — repository-тесты держат нативные
+  `better-sqlite3`-хендлы открытыми на весь воркер-процесс (см. коммент в
+  `hooks/repositories/testDb.ts`), и под контейнером Bitbucket jest не
+  завершал процесс сам после печати предупреждения об этом, в отличие от
+  локального запуска; добавлен `test:ci` = `jest --forceExit`,
+  используется только в pipeline, `npm run test` для локальной разработки
+  не тронут.
