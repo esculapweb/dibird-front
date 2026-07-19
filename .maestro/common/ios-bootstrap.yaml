@@ -1,14 +1,29 @@
-# Shared subflow for both iOS flows: dismiss Expo dev-launcher's
-# server-picker + onboarding tooltip, then permanently disable the
-# floating "Tools button" (it overlaps app buttons later on). Lives under
-# common/ so Maestro's directory scan never picks it up as its own
-# top-level flow — still needs its own appId + `---` below, though:
-# `maestro test` refuses to load a runFlow-referenced file without one.
+# Shared subflow for both iOS flows: connect via the same exp+dibird://
+# deep link android-bootstrap.yaml uses (Maestro's openLink isn't
+# platform-specific), instead of tapping the dev-launcher's on-screen
+# server list — see android-bootstrap.yaml for the full rationale on why
+# that tap-based connect was dropped there. Then dismiss the onboarding
+# tooltip and permanently disable the floating "Tools button" (it overlaps
+# app buttons later on). Lives under common/ so Maestro's directory scan
+# never picks it up as its own top-level flow — still needs its own appId
+# + `---` below, though: `maestro test` refuses to load a runFlow-
+# referenced file without one.
+#
+# HOST-SPECIFIC: the IP below must be the host machine's real LAN IP
+# (verify with `ifconfig`) — see android-bootstrap.yaml.
+#
+# stopApp first, same reason as Android: every caller already did
+# launchApp before running this shared flow, so without this the deep
+# link's intent can land on the already-running chooser screen instead of
+# triggering a cold launch that actually connects.
 appId: com.dibird.app.dev
 ---
-- tapOn:
-    below: "DEVELOPMENT SERVERS"
-    optional: true
+- stopApp
+
+- openLink: "exp+dibird://expo-development-client/?url=http%3A%2F%2F192.168.0.103%3A8081"
+- extendedWaitUntil:
+    notVisible: ".*Connecting to the development server.*"
+    timeout: 12000
 - waitForAnimationToEnd
 - tapOn:
     text: "Continue"
