@@ -53,14 +53,16 @@ it("subscribes with a shouldDehydrateQuery that excludes only DiarySpecies", () 
   startPersistingQueryCache();
 
   const call = mockPersistQueryClientSubscribe.mock.calls[0][0] as {
-    dehydrateOptions?: { shouldDehydrateQuery?: (q: { queryKey: unknown[] }) => boolean };
+    dehydrateOptions?: {
+      shouldDehydrateQuery?: (q: { queryKey: unknown[]; state?: { status: string } }) => boolean;
+    };
   };
   const shouldDehydrateQuery = call.dehydrateOptions?.shouldDehydrateQuery;
   expect(shouldDehydrateQuery).toBeDefined();
 
   expect(shouldDehydrateQuery!({ queryKey: ["DiarySpecies", 1] })).toBe(false);
-  expect(shouldDehydrateQuery!({ queryKey: ["Places"] })).toBe(true);
-  expect(shouldDehydrateQuery!({ queryKey: ["DashboardStat"] })).toBe(true);
+  expect(shouldDehydrateQuery!({ queryKey: ["Places"], state: { status: "success" } })).toBe(true);
+  expect(shouldDehydrateQuery!({ queryKey: ["DashboardStat"], state: { status: "success" } })).toBe(true);
 });
 
 it("clears the persisted cache via the persister", async () => {
