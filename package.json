@@ -12,6 +12,7 @@
     "lint": "eslint .",
     "check": "tsc --noEmit && eslint .",
     "test": "jest",
+    "test:ci": "jest --forceExit",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "e2e": "bash .maestro/run.sh",

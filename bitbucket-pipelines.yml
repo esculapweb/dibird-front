@@ -10,4 +10,10 @@ pipelines:
           script:
             - npm ci
             - npm run check
-            - npm run test
+            # test:ci = jest --forceExit. Repository tests leave native
+            # better-sqlite3 handles open across the whole worker process
+            # (documented in hooks/repositories/testDb.ts) — locally jest
+            # force-exits on its own after printing a warning, but under
+            # Bitbucket's container this leaves the step hanging forever
+            # ("In progress" with no further output) instead of exiting.
+            - npm run test:ci
