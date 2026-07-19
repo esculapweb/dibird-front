@@ -291,6 +291,7 @@ const ObservationForm = ({
 
         {!hideDiaryFields && (
           <DateInput
+            testID="observation-date-input"
             value={formData.date_time ?? null}
             onChange={(newDate) => {
               setFormData((prev) => ({ ...prev, date_time: newDate }));

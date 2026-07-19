@@ -1,13 +1,23 @@
 # Device-level online test: full create -> update -> delete lifecycle for
 # an Observation, entirely online — network-independent counterpart to
-# offline-create-observation.yaml, mirrored exactly except it never
-# touches toggleAirplaneMode, so create/update/delete round-trip the API
-# directly instead of queuing through the mutation-queue-then-sync path.
-# No pending-icon dance either: an online create resolves to synced fast
-# enough that there's no reliable window to assert a pending icon, so
+# offline-create-observation.yaml, mirrored except it never touches
+# toggleAirplaneMode (create/update/delete round-trip the API directly
+# instead of queuing through the mutation-queue-then-sync path), and CREATE
+# additionally exercises components/ui/DateInput.tsx's real Android date
+# picker. No pending-icon dance either: an online create resolves to synced
+# fast enough that there's no reliable window to assert a pending icon, so
 # this flow treats the immediate presence of "Delete observation"
 # (is_owner-gated, only true for a real persisted record) as proof the
 # save round-tripped the server.
+#
+# DateInput's Android picker is @react-native-community/datetimepicker's
+# native DatePickerDialog — a real Android Dialog outside the RN view tree,
+# not addressable by testID, and the one widget DateInput.test.tsx mocks
+# out entirely, so this flow is the only place it's exercised at all.
+# Needed a new `testID="observation-date-input"` on DateInput's own trigger
+# Pressable (components/ui/DateInput.tsx, optional prop, only wired up from
+# ObservationForm.tsx — DateRangeFilter.tsx's two DateInputs are untouched)
+# since the trigger had no accessible identifier before.
 #
 # appId is the single Android package for every build variant.
 # tags: android — see login.yaml.
@@ -41,6 +51,27 @@ tags:
     timeout: 6000
 - tapOn:
     id: "option-row-0"
+
+# DateInput's Android picker is @react-native-community/datetimepicker's
+# native DatePickerDialog (a real Android Dialog outside the RN view tree,
+# not addressable by testID) — every unit test for DateInput mocks this
+# library entirely, so this is the only place the real widget gets
+# exercised at all. Day "1" is always in-range (maximumDate caps at today,
+# and the 1st of the current month is never in the future) and reliably
+# tappable without scrolling/month-navigation. \b1\b rules out matching the
+# "1" inside an unrelated "19"/"21"/etc. day-of-month if this flow happens
+# to run on the 1st itself (harmless no-op that day, not a failure).
+- tapOn:
+    id: "observation-date-input"
+- extendedWaitUntil:
+    visible: "1"
+    timeout: 4000
+- tapOn: "1"
+- tapOn: "OK"
+- assertVisible:
+    id: "observation-date-input"
+    text: ".*\\b1\\b.*"
+
 - tapOn:
     id: "observation-save-button"
 - runFlow:

@@ -53,6 +53,7 @@ interface DateInputProps {
   allowClear?: boolean;
   disabled?: boolean;
   style?: StyleType;
+  testID?: string;
 }
 
 const DateInput = ({
@@ -65,6 +66,7 @@ const DateInput = ({
   allowClear = true,
   disabled = false,
   style,
+  testID,
 }: DateInputProps) => {
   const { t, i18n } = useTranslation();
   const { Colors, theme } = useTheme();
@@ -155,6 +157,7 @@ const DateInput = ({
 
       <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
         <Pressable
+          testID={testID}
           onPress={handleFieldPress}
           onPressIn={() => !disabled && animatePress(0.97)}
           onPressOut={() => animatePress(1)}

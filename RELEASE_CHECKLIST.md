@@ -215,6 +215,19 @@ OS-level `toggleAirplaneMode`, полный цикл create → update → delet
 - [x] iOS: update/delete записи — `create-observation.yaml` расширен до
       полного create → update → delete цикла, тем же паттерном что и
       Android (требует один ручной прогон на устройстве — см. §1).
+- [x] `DateInput`'s реальный Android date-picker (`@react-native-community/
+      datetimepicker`'s нативный `DatePickerDialog`, вне RN-дерева — юнит-
+      тест `DateInput.test.tsx` полностью мокает эту библиотеку, так что
+      это единственное место, где виджет вообще проверяется) —
+      `.maestro/online-create-observation.yaml`, прогнан на устройстве
+      2026-07-19, зелёный с первого раза. Потребовал новый опциональный
+      `testID` на `DateInput`'s триггере (`components/ui/DateInput.tsx`,
+      вайрится только из `ObservationForm.tsx` — два `DateInput` в
+      `DateRangeFilter.tsx` не тронуты). Остальные опциональные поля формы
+      (quantity/notes/name) сознательно не добавлены в e2e — их payload-
+      логика уже полностью покрыта `ObservationForm.test.tsx`/
+      `DiaryForm.test.tsx`, а сами виджеты (обычный `TextInput`) не несут
+      того риска нативного стороннего компонента, который есть у date-picker.
 - [x] `SpeciesDropdown`: реальный 24ч TTL кэша (`useDropdownQuery`) —
       `hooks/__tests__/useDropdownQuery.test.tsx`'s новый блок "24h
       staleTime" (мокает `Date.now`, не `jest.useFakeTimers`, чтобы не
