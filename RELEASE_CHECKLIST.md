@@ -106,13 +106,20 @@ Keychain/сессии авторизацию вместо повторного �
       запроса/сохранения токенов и вся оркестрация экрана уже покрыты
       `auth.test.ts` + `WelcomeScreen.test.tsx`).
 - [ ] Первый вход нового пользователя (`is_new_user`) не путается с
-      повторным логином — экран не дублирует онбординг.
+      повторным логином — экран не дублирует онбординг. Уточнение
+      (2026-07-19): `is_new_user` — флаг только Google/Apple социального
+      логина (`app/myapi/adapters.py:41-43` на бэкенде), у email/password
+      логина в ответе его нет вовсе — это подпункт Google/Apple Sign-In
+      выше, не отдельный сценарий.
 - [ ] Face ID/Touch ID: включить `biometric_enabled`, перезапустить
       приложение — `restoreToken` требует `LocalAuthentication` перед
       восстановлением токена. Сам системный prompt и его отмену
       (`res.success === false`) — только на устройстве/симуляторе
       (гейтинг-логика `canUseBiometrics`/`shouldUseBiometrics` уже
-      покрыта `bio.test.ts`).
+      покрыта `bio.test.ts`). Проверено (2026-07-19): не автоматизируемо
+      через `xcrun simctl` — нет CLI subcommand для Face ID enrollment
+      (только GUI-меню Simulator.app), обход через AppleScript упирается в
+      отсутствие Accessibility-разрешений. Остаётся ручным.
 
 ## 3. Офлайн-синхронизация (ключевой риск)
 
