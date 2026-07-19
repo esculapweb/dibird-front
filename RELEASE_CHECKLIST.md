@@ -23,19 +23,20 @@ npm run test           # весь текущий jest-набор, включая
 ```bash
 npm run e2e             # iOS: login.yaml + create-observation.yaml (full create/update/delete)
 npm run e2e:android      # Android: offline-/online-create-{diary,observation,place}.yaml,
-                         # offline-nested-observation-in-diary.yaml, offline-alert-settings.yaml,
+                         # offline-nested-observation-in-diary.yaml,
+                         # offline-observation-with-offline-place.yaml,
+                         # offline-alert-settings.yaml,
                          # online-create-place-location-denied.yaml
 npm run e2e:android -- .maestro/offline-create-place.yaml   # можно указать один флоу явно
 ```
 
-Три Android-флоу и iOS-флоу выше — `offline-nested-observation-in-diary.yaml`,
-`offline-alert-settings.yaml`, `online-create-place-location-denied.yaml`,
-и update/delete в `create-observation.yaml` — добавлены в этом батче (см.
-§7) и написаны по образцу уже проверенных флоу того же файла, но **ещё ни
-разу не прогонялись на реальном эмуляторе/симуляторе** (написаны без
-доступа к устройству) — обязательно дать им один ручной прогон и
-поправить по месту, если какой-то селектор не совпал, прежде чем
-полагаться на них как на часть релизного гейта.
+Четыре Android-флоу и iOS-флоу выше — `offline-nested-observation-in-diary.yaml`,
+`offline-observation-with-offline-place.yaml`, `offline-alert-settings.yaml`,
+`online-create-place-location-denied.yaml`, и update/delete в
+`create-observation.yaml` — добавлены в этом батче (см. §7) и написаны по
+образцу уже проверенных флоу того же файла; прогнаны на реальном
+эмуляторе/симуляторе (2026-07-19, iOS 2/2, Android 10/10, все зелёные с
+первого раза, без правок селекторов).
 
 Оба скрипта — обёртка `.maestro/run.sh`: сами находят booted-симулятор
 (iOS) или подключённый emulator/device (Android, включая автопоиск `adb`
@@ -142,13 +143,15 @@ OS-level `toggleAirplaneMode`, полный цикл create → update → delet
 - [ ] iOS: тот же offline-цикл (create в авиарежиме → pending-иконка →
       реконнект → синк) — Maestro не может переключать авиарежим на
       симуляторе, аналога `offline-create-*.yaml` для iOS нет.
-- [ ] `PlaceEditorScreen`, созданный офлайн и использованный в
-      Observation (а не в Diary — см. ниже), аналогично резолвится через
-      `placeRepository.resolvePlaceId`. Сознательно не покрыт этим же
-      батчем: связывание offline-Place с offline-Observation в одном
-      Maestro-флоу требует ещё и location-permission/`setLocation`
-      обвязки поверх уже сложного nested-flow ниже — решили не
-      перегружать один флоу двумя независимыми nested-сценариями сразу.
+- [x] `PlaceEditorScreen`, созданный офлайн и использованный в
+      Observation (а не в Diary), аналогично резолвится через
+      `placeRepository.resolvePlaceId` — покрыто Maestro:
+      `.maestro/offline-observation-with-offline-place.yaml` (новый,
+      прогнан на устройстве — см. §1, зелёный). Проверяет и локальный join
+      (`place_data.name` виден на только что созданном офлайн Observation),
+      и резолюцию после реконнекта — `placeSync.ts`'s `runObservationSync()`
+      каскадом будит очередь Observation сразу после успешного синка
+      Place, не дожидаясь его собственного backoff.
 
 Автоматизировано в этом батче (см. §7 за деталями, включая пометку "нужен
 ручной прогон на устройстве" для новых Maestro-флоу):

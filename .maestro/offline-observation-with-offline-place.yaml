@@ -1,0 +1,242 @@
+# Device-level offline test: an Observation created *referencing* a Place
+# that hasn't synced yet (temp negative place id), covering the id-resolution
+# path called out in RELEASE_CHECKLIST.md §3 as deliberately deferred from
+# the batch that produced offline-nested-observation-in-diary.yaml (that one
+# does the same nested-temp-id dance for Diary -> Observation; this is the
+# Place -> Observation analog, kept as its own flow rather than combined
+# with location-permission plumbing).
+#
+# hooks/repositories/placeRepository.ts's resolvePlaceId is the repository-
+# level resolver, already covered by unit tests; this flow is the missing
+# end-to-end UI proof. Unlike diary/observation sync (which only cascades
+# forward via diarySync.ts's runObservationSync() call), services/sync/
+# placeSync.ts's runPlaceSyncInternal explicitly calls both
+# runObservationSync() *and* runDiarySync() right after a place create
+# succeeds — so the queued Observation below is woken immediately on
+# reconnect, not left to its own retry/backoff timer.
+#
+# Verification is stronger than the nested-diary flow's "still deletable
+# implies resolved": ObservationDetailScreen renders the linked place's name
+# via observation.place_data.name as plain text (only when is_owner), so
+# this flow asserts that text directly on the Observation's own detail
+# screen, both right after the offline create (local-only join) and again
+# after reconnect (proves the resolved id still joins correctly, not just
+# that the record didn't error out).
+#
+# PlacesDropdown's query (util/fetches.ts's fetchMyPlaces) already splices
+# locally-pending places into the front of the list via applyDropdownOverlay
+# (placeRepository.ts) filtered by matching territory, so the still-offline
+# Place below shows up as option-row-0 in the Observation editor's own
+# place-dropdown-trigger without needing to reconnect first — same
+# no-search "just take option-row-0" technique species-dropdown-trigger
+# already uses elsewhere, since it's guaranteed to be the only entry
+# prepended.
+#
+# appId is the single Android package for every build variant.
+# tags: android — see login.yaml.
+appId: com.dibird.app
+tags:
+  - android
+---
+# Grant location permission up front — PlaceEditorScreen calls locateMe()
+# unconditionally on mount; see offline-create-place.yaml for the full
+# rationale (mocked coordinate lets CREATE run fully offline from
+# screen-open, territory picked manually instead of relying on the
+# network-only reverse-geocode).
+#
+# No clearState: session reuse — see offline-create-observation.yaml. The
+# local mutation-queue db also isn't reset between flows, so this flow's own
+# create->delete cycle for both entities must net to zero on its own.
+- launchApp:
+    permissions:
+      location: allow
+
+- setLocation:
+    latitude: 48.8566
+    longitude: 2.3522
+
+- runFlow: common/android-bootstrap.yaml
+
+- extendedWaitUntil:
+    visible:
+      id: "observations-stat-value"
+    timeout: 20000
+- copyTextFrom:
+    id: "observations-stat-value"
+- evalScript: ${output.observationBaselineCount = maestro.copiedText}
+
+- tapOn:
+    id: "section-Places"
+- extendedWaitUntil:
+    visible:
+      id: "list-header-badge-count"
+    timeout: 10000
+- copyTextFrom:
+    id: "list-header-badge-count"
+- evalScript: ${output.placeBaselineCount = maestro.copiedText}
+
+# ---- CREATE Place, offline (temp id) ----
+- toggleAirplaneMode
+
+- tapOn:
+    id: "list-add-button"
+- extendedWaitUntil:
+    visible:
+      id: "latitude-input"
+    timeout: 6000
+- assertVisible:
+    id: "latitude-input"
+    text: "48.8566"
+- assertVisible:
+    id: "longitude-input"
+    text: "2.3522"
+- waitForAnimationToEnd:
+    timeout: 4000
+
+- tapOn:
+    id: "place-name-input"
+- eraseText: 50
+- setClipboard: "Nested E2E Place"
+- pasteText
+- tapOn:
+    text: "Latitude"
+
+# Territory picked manually, same as offline-create-place.yaml — France to
+# match the test account's default territory filter, which is also what
+# PlacesDropdown's overlay below filters by.
+- tapOn:
+    id: "dropdown-trigger-CountriesDropdown"
+- tapOn:
+    text: "Search..."
+- setClipboard: "France"
+- pasteText
+- extendedWaitUntil:
+    visible:
+      id: "option-row-0"
+    timeout: 4000
+- tapOn:
+    id: "option-row-0"
+
+- tapOn:
+    id: "place-save-button"
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - back
+      - tapOn:
+          id: "place-save-button"
+
+# A successful save replaces the editor with the detail screen.
+- assertVisible: "Nested E2E Place"
+- back
+- assertVisible:
+    id: "place-sync-pending-icon"
+
+# ---- CREATE Observation, offline, referencing that still-pending Place ----
+- back
+- tapOn:
+    id: "quick-action-observation"
+- tapOn:
+    id: "species-dropdown-trigger"
+- extendedWaitUntil:
+    visible:
+      id: "option-row-0"
+    timeout: 6000
+- tapOn:
+    id: "option-row-0"
+
+- tapOn:
+    id: "place-dropdown-trigger"
+- extendedWaitUntil:
+    visible:
+      id: "option-row-0"
+    timeout: 6000
+- tapOn:
+    id: "option-row-0"
+
+- tapOn:
+    id: "observation-save-button"
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - back
+      - tapOn:
+          id: "observation-save-button"
+
+# Local-first create lands on the (temp-id) detail screen even offline —
+# place_data.name already resolves locally via the join to the pending
+# Place row, before either side has synced.
+- extendedWaitUntil:
+    visible: ".*Delete observation.*"
+    timeout: 6000
+- assertVisible: "Nested E2E Place"
+
+- back
+- tapOn:
+    id: "section-Observations"
+- assertVisible:
+    id: "observation-sync-pending-icon"
+# Reopen via the pending icon — reliable only before reconnecting, same
+# caveat as every other offline-create-*.yaml flow.
+- tapOn:
+    id: "observation-sync-pending-icon"
+- extendedWaitUntil:
+    visible: ".*Delete observation.*"
+    timeout: 6000
+
+# ---- Reconnect: Place resolves first, cascades into waking Observation sync ----
+# placeSync.ts's runObservationSync() call after a successful place create
+# wakes the queued observation immediately, so it doesn't wait out its own
+# backoff — give it real margin over a single-entity flow's 4s anyway, since
+# this is still a two-step cascade (place POST, then the woken observation POST).
+- toggleAirplaneMode
+- waitForAnimationToEnd:
+    timeout: 8000
+
+# Real proof of resolution: place_data.name still renders the real place's
+# name (not a blank/fallback state), and the record is still deletable, not
+# stuck in a permanent error state from a failed place id resolution.
+- assertVisible: "Nested E2E Place"
+- assertVisible: ".*Delete observation.*"
+
+# ---- Cleanup: Observation first (references the place), then the Place ----
+- tapOn:
+    id: "observation-delete-button"
+- extendedWaitUntil:
+    visible:
+      id: "bottom-sheet-confirm-button"
+    timeout: 4000
+- tapOn:
+    id: "bottom-sheet-confirm-button"
+- assertVisible: ".*Observations.*"
+
+- back
+- tapOn:
+    id: "section-Places"
+# Found by its distinctive name rather than a pending icon or list
+# position — true regardless of whether it's already synced by now.
+- tapOn: "Nested E2E Place"
+- assertVisible:
+    id: "place-delete-button"
+- tapOn:
+    id: "place-delete-button"
+- extendedWaitUntil:
+    visible:
+      id: "bottom-sheet-confirm-button"
+    timeout: 4000
+- tapOn:
+    id: "bottom-sheet-confirm-button"
+- assertVisible: ".*Locations.*"
+# Place has no DashboardStat on MainScreen — check its own list's header
+# badge count while still on this screen, same technique
+# offline-create-place.yaml uses.
+- assertVisible:
+    id: "list-header-badge-count"
+    text: ${output.placeBaselineCount}
+
+- back
+- assertVisible:
+    id: "observations-stat-value"
+    text: ${output.observationBaselineCount}
