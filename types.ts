@@ -804,12 +804,13 @@ export type NotificationScreen = keyof Pick<
   "Notifications" | "Community" | "SpeciesDetail" | "Achievements"
 >;
 
-export type NotificationPayload =
+export type NotificationPayload = (
   | { screen: "Community"; highlightObsIds: number[] }
   | { screen: "SpeciesDetail"; speciesId: number }
   | { screen: "Achievements"; achievementId?: string }
   | { screen: "Notifications" }
-  | { screen: "Checklist" };
+  | { screen: "Checklist" }
+) & { id?: number };
 
 export function isNotificationPayload(
   data: unknown,

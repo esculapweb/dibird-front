@@ -6,6 +6,8 @@ jest.mock("expo-notifications", () => ({
   getExpoPushTokenAsync: jest.fn(),
   addNotificationReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
   addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+  getLastNotificationResponse: jest.fn(() => null),
+  clearLastNotificationResponse: jest.fn(),
 }));
 jest.mock("expo-constants", () => ({
   __esModule: true,
@@ -14,6 +16,7 @@ jest.mock("expo-constants", () => ({
 jest.mock("expo-device", () => ({ isDevice: true }));
 jest.mock("../../util/fetches", () => ({
   registerPushToken: jest.fn(),
+  markNotificationsRead: jest.fn(),
 }));
 jest.mock("../../services/navigationRef", () => ({
   navigateFromNotification: jest.fn(),
@@ -43,7 +46,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import { renderHook } from "@testing-library/react-native";
-import { registerPushToken } from "../../util/fetches";
+import { registerPushToken, markNotificationsRead } from "../../util/fetches";
 import { navigateFromNotification } from "../../services/navigationRef";
 import { UNREAD_COUNT_KEY } from "../useUnreadCount";
 import { usePushNotifications, handleNotificationNavigation } from "../usePushNotifications";
@@ -70,8 +73,10 @@ beforeEach(() => {
   requestPermissionsAsync.mockResolvedValue({ status: "granted" });
   getExpoPushTokenAsync.mockResolvedValue({ data: "expo-token" });
   (registerPushToken as jest.Mock).mockResolvedValue(undefined);
+  (markNotificationsRead as jest.Mock).mockResolvedValue(undefined);
   addNotificationReceivedListener.mockReturnValue({ remove: jest.fn() });
   addNotificationResponseReceivedListener.mockReturnValue({ remove: jest.fn() });
+  (Notifications.getLastNotificationResponse as jest.Mock).mockReturnValue(null);
 });
 
 describe("handleNotificationNavigation", () => {
@@ -171,6 +176,53 @@ describe("usePushNotifications", () => {
     onResponse({ notification: { request: { content: { data: { screen: "Checklist" } } } } });
 
     expect(navigateFromNotification).toHaveBeenCalledWith("Checklist", undefined);
+  });
+
+  it("marks the notification read and refreshes badges when a tapped payload carries an id", async () => {
+    await renderHook(() => usePushNotifications(true));
+    await flush();
+
+    const onResponse = addNotificationResponseReceivedListener.mock.calls[0][0] as (r: unknown) => void;
+    onResponse({
+      notification: { request: { content: { data: { screen: "Checklist", id: 7 } } } },
+    });
+    await flush();
+
+    expect(markNotificationsRead).toHaveBeenCalledWith([7]);
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ["notifications"] });
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: UNREAD_COUNT_KEY });
+  });
+
+  it("does not attempt to mark read when the tapped payload has no id", async () => {
+    await renderHook(() => usePushNotifications(true));
+    await flush();
+
+    const onResponse = addNotificationResponseReceivedListener.mock.calls[0][0] as (r: unknown) => void;
+    onResponse({ notification: { request: { content: { data: { screen: "Checklist" } } } } });
+    await flush();
+
+    expect(markNotificationsRead).not.toHaveBeenCalled();
+  });
+
+  it("recovers a cold-start notification via getLastNotificationResponse and navigates", async () => {
+    (Notifications.getLastNotificationResponse as jest.Mock).mockReturnValue({
+      notification: { request: { content: { data: { screen: "Checklist", id: 9 } } } },
+    });
+
+    await renderHook(() => usePushNotifications(true));
+    await flush();
+
+    expect(Notifications.clearLastNotificationResponse).toHaveBeenCalled();
+    expect(navigateFromNotification).toHaveBeenCalledWith("Checklist", undefined);
+    expect(markNotificationsRead).toHaveBeenCalledWith([9]);
+  });
+
+  it("does nothing extra when there is no last notification response", async () => {
+    await renderHook(() => usePushNotifications(true));
+    await flush();
+
+    expect(Notifications.clearLastNotificationResponse).not.toHaveBeenCalled();
+    expect(navigateFromNotification).not.toHaveBeenCalled();
   });
 
   it("removes both listeners and cancels any pending reconnect subscription on unmount", async () => {

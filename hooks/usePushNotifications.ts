@@ -1,13 +1,13 @@
 import { useEffect, useRef } from "react";
 import "react-native-gesture-handler";
 import "react-native-reanimated";
-import { useQueryClient } from "@tanstack/react-query";
+import { QueryClient, useQueryClient } from "@tanstack/react-query";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import * as Device from "expo-device";
 
 import "../services/i18n";
-import { registerPushToken } from "../util/fetches";
+import { registerPushToken, markNotificationsRead } from "../util/fetches";
 import { UNREAD_COUNT_KEY } from "../hooks/useUnreadCount";
 import { navigateFromNotification } from "../services/navigationRef";
 import { logError } from "../services/errors";
@@ -33,6 +33,24 @@ export const handleNotificationNavigation = (raw: NotificationPayload) => {
       navigateFromNotification("Checklist", undefined);
       break;
   }
+};
+
+// Tapping a push should mark its underlying notification read, same as
+// tapping it in the in-app list (NotificationsScreen.handlePress) — otherwise
+// it stays unread and keeps counting toward the badge.
+const handleNotificationTap = (
+  raw: NotificationPayload,
+  queryClient: QueryClient,
+) => {
+  if (raw.id != null) {
+    markNotificationsRead([raw.id])
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ["notifications"] });
+        queryClient.invalidateQueries({ queryKey: UNREAD_COUNT_KEY });
+      })
+      .catch((e) => logError(e as AppError, "markNotificationsRead from push tap"));
+  }
+  handleNotificationNavigation(raw);
 };
 
 export const usePushNotifications = (isAuthenticated: boolean) => {
@@ -86,6 +104,16 @@ export const usePushNotifications = (isAuthenticated: boolean) => {
     }
     register();
 
+    // addNotificationResponseReceivedListener isn't guaranteed to fire for
+    // the tap that cold-launched the app (process wasn't alive yet to
+    // subscribe in time), so that case must be recovered separately here.
+    const lastResponse = Notifications.getLastNotificationResponse();
+    if (lastResponse) {
+      Notifications.clearLastNotificationResponse();
+      const raw = lastResponse.notification.request.content.data;
+      if (isNotificationPayload(raw)) handleNotificationTap(raw, queryClient);
+    }
+
     const receivedSub = Notifications.addNotificationReceivedListener(() => {
       queryClient.invalidateQueries({ queryKey: UNREAD_COUNT_KEY });
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
@@ -95,7 +123,7 @@ export const usePushNotifications = (isAuthenticated: boolean) => {
       (response) => {
         const raw = response.notification.request.content.data;
         if (!isNotificationPayload(raw)) return;
-        handleNotificationNavigation(raw);
+        handleNotificationTap(raw, queryClient);
       },
     );
 
