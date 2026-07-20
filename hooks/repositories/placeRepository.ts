@@ -236,14 +236,22 @@ export const deleteLocal = (id: number): void => {
   }
 
   db.transaction((tx) => {
-    const data = existingRow ? (existingRow.data as PlaceItem) : ({ id } as PlaceItem);
-    tx.insert(placeTable)
-      .values({ id, data, op: "delete", status: "pending", updatedAt: Date.now() })
-      .onConflictDoUpdate({
-        target: placeTable.id,
-        set: { op: "delete", status: "pending", lastError: null, updatedAt: Date.now() },
-      })
-      .run();
+    // Only write a "delete, pending" overlay row when we have real place data
+    // to fall back to (location, name, ...) if the delete mutation later
+    // errors and getOverlay() has to surface this row back into the list
+    // (see the op === "delete" / status === "error" branch below). Without
+    // existingRow there's nothing valid to show, so we just queue the
+    // mutation and let the server DELETE (or the next refetch) resolve it —
+    // never fabricate a stub PlaceItem missing required fields like location.
+    if (existingRow) {
+      tx.insert(placeTable)
+        .values({ id, data: existingRow.data as PlaceItem, op: "delete", status: "pending", updatedAt: Date.now() })
+        .onConflictDoUpdate({
+          target: placeTable.id,
+          set: { op: "delete", status: "pending", lastError: null, updatedAt: Date.now() },
+        })
+        .run();
+    }
 
     tx.insert(mutationQueueTable)
       .values({
@@ -377,7 +385,22 @@ export const retryMutation = (mutationId: number, localId: number) => {
 export const discardMutation = (mutationId: number, localId: number) => {
   db.transaction((tx) => {
     tx.delete(mutationQueueTable).where(eq(mutationQueueTable.id, mutationId)).run();
-    tx.delete(placeTable).where(eq(placeTable.id, localId)).run();
+
+    const row = tx.select().from(placeTable).where(eq(placeTable.id, localId)).all()[0];
+    if (row?.op === "create") {
+      // Never existed on the server — nothing to fall back to, safe to drop.
+      tx.delete(placeTable).where(eq(placeTable.id, localId)).run();
+    } else if (row) {
+      // A discarded failed update/delete on an already-synced place still has
+      // a real server counterpart — clearing back to "synced" (instead of
+      // deleting the row) keeps its last-known-good `data` (location, name,
+      // ...) around for any later local operation (e.g. deleteLocal) that
+      // falls back to it.
+      tx.update(placeTable)
+        .set({ op: null, status: "synced", lastError: null })
+        .where(eq(placeTable.id, localId))
+        .run();
+    }
   });
 };
 

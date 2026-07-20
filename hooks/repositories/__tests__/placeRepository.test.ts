@@ -281,6 +281,38 @@ describe("mutation-queue lifecycle", () => {
     expect(rawRow(created.id)).toBeUndefined();
     expect(mutations()).toHaveLength(0);
   });
+
+  // Regression test: discarding a failed *update* on an already-synced place
+  // used to delete the entity row outright (same as discarding a failed
+  // create). That left deleteLocal() with no existingRow to fall back to,
+  // so it wrote a stub PlaceItem missing `location` — which later surfaced
+  // in the Places list and crashed PlaceCard on `item.location.coordinates`.
+  it("discardMutation on a failed update resets the row to synced instead of deleting it, so a later deleteLocal still has real data", () => {
+    placeRepository.upsertFromServer(serverPlace());
+    placeRepository.updateLocal(555, { favourite: true }, null);
+    const [mutation] = mutations();
+
+    placeRepository.requeueFailedMutation(
+      mutation.payload as never,
+      mutation.createdAt,
+      0,
+      555,
+      "boom",
+    );
+    placeRepository.discardMutation(
+      placeRepository.getFailedMutationFor(555)!.id,
+      555,
+    );
+
+    const row = rawRow(555);
+    expect(row?.status).toBe("synced");
+    expect(row?.data).toMatchObject({ location: { coordinates: [1, 2] } });
+
+    placeRepository.deleteLocal(555);
+
+    const deleteRow = rawRow(555);
+    expect((deleteRow?.data as PlaceItem).location.coordinates).toEqual([1, 2]);
+  });
 });
 
 describe("withPendingObservationCount / applyOverlay", () => {
