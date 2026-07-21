@@ -126,7 +126,7 @@ const RareNearby: FC<NewSpeciesProps> = ({ filters }) => {
             navigation.navigate("Community", {
               filtersOverride: {
                 ...filters,
-                territory: settings?.territory_data.id,
+                territory: settings?.territory_data?.id,
                 species: null,
                 place: null,
               },
