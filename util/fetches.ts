@@ -50,6 +50,8 @@ import {
   userProfileCacheTable,
   mapPreviewCacheTable,
   diarySpeciesIdsCacheTable,
+  taxonListCacheTable,
+  taxonDetailCacheTable,
 } from "../services/db/schema";
 
 // Shared cap for every dedicated offline-cache table (see the cacheTable
@@ -89,6 +91,11 @@ import {
   ReverseGeocode,
   emptyPaginatedResponse,
   AppError,
+  TaxonRank,
+  TaxonListItem,
+  TaxonGroupDetail,
+  TaxonSpeciesDetail,
+  FetchFunction,
 } from "../types";
 
 export const exportProfileData = async (): Promise<void> => {
@@ -140,6 +147,69 @@ export const fetchPage = async (slug: string) => {
     if (cached) return cached;
     throw e;
   }
+};
+
+// Taxonomy catalog (order -> family -> genus -> species), backed by
+// /api/taxon/. A screen browsing one rank binds `rank` (and, when drilling
+// into a parent's children, `parent`) up front via this factory — the
+// returned function then matches FetchFunction<T> so it can go straight into
+// useList, same as fetchPlaces/fetchObservations.
+export const fetchTaxonList = (
+  rank: TaxonRank,
+  parent?: { segment: string; rank: TaxonRank } | null,
+  extinct?: boolean,
+): FetchFunction<TaxonListItem> => {
+  return (_filters, order, search, page) =>
+    fetchAbstract<PaginatedResponse<TaxonListItem>>(
+      "/api/taxon/",
+      {},
+      order ?? "name",
+      search,
+      page,
+      {
+        rank,
+        ...(parent && { parent: parent.segment, parent_rank: parent.rank }),
+        ...(extinct && { extinct: true }),
+      },
+      100,
+      { table: taxonListCacheTable, maxEntries: MAX_ENTRIES },
+    );
+};
+
+export const fetchTaxonDetail = async <
+  T extends TaxonGroupDetail | TaxonSpeciesDetail,
+>(
+  segment: string,
+  rank: TaxonRank,
+): Promise<T> => {
+  const cacheKey = `taxon-detail|${segment}|${rank}|${i18n.language}`;
+
+  try {
+    const res = await api.get<T>(`/api/taxon/${segment}/`, {
+      params: { rank },
+    });
+    cacheListResponse(taxonDetailCacheTable, cacheKey, res.data, MAX_ENTRIES);
+    return res.data;
+  } catch (e) {
+    const cached = getCachedListResponse<T>(taxonDetailCacheTable, cacheKey);
+    if (cached) return cached;
+    throw e;
+  }
+};
+
+// Resolves a species' segment from its numeric taxon id — needed only when a
+// caller has just the id (push notifications carry speciesId, not a
+// segment); every in-app link already has the segment and calls
+// fetchTaxonDetail directly.
+export const fetchTaxonSegmentById = async (
+  taxonId: number,
+): Promise<string> => {
+  const res = await api.get<PaginatedResponse<TaxonListItem>>("/api/taxon/", {
+    params: { rank: 5, taxon_id: taxonId, per_page: 1 },
+  });
+  const segment = res.data.results[0]?.segment;
+  if (!segment) throw new Error(`Species not found for id ${taxonId}`);
+  return segment;
 };
 
 export const fetchMyCountries = async (

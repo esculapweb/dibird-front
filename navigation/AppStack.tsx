@@ -50,6 +50,8 @@ import { fetchSpecies } from "../util/fetches";
 import { BottomSheet } from "../services/bottomSheet";
 import type { AppDrawerParamList, AppStackParamList } from "../types";
 import StaticScreen from "../screens/StaticScreen";
+import TaxonomyScreen from "../screens/TaxonomyScreen";
+import TaxonGroupDetailScreen from "../screens/TaxonGroupDetailScreen";
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 const Drawer = createDrawerNavigator<AppDrawerParamList>();
@@ -360,6 +362,18 @@ const AppNavigator = () => {
       <Stack.Screen
         name="SpeciesDetail"
         component={SpeciesDetailScreen}
+        options={{ title: t("species") }}
+      />
+
+      <Stack.Screen
+        name="Taxonomy"
+        component={TaxonomyScreen}
+        options={{ title: t("species") }}
+      />
+
+      <Stack.Screen
+        name="TaxonGroupDetail"
+        component={TaxonGroupDetailScreen}
         options={{ title: t("species") }}
       />
       <Stack.Screen

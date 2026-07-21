@@ -341,6 +341,133 @@ export interface SpeciesData {
   thumb: string | null;
 }
 
+// Taxonomy catalog (order -> family -> genus -> species), backed by
+// /api/taxon/ and /api/taxon/<segment>/ — ranks match settings.RANKS on the
+// backend (1 is unused/root, 2..5 are the browsable levels).
+export type TaxonRank = 2 | 3 | 4 | 5;
+
+export interface TaxonListItem {
+  name: string;
+  name_lang: string;
+  segment: string;
+  thumb?: string | null;
+  status?: string | null;
+  status_name?: string | null;
+  s_id?: number | null;
+}
+
+export interface TaxonSibling {
+  segment: string;
+  name: string;
+  name_lang: string;
+}
+
+export interface TaxonParentCrumb {
+  depth: number;
+  parent_name: string;
+  parent_name_lang: string;
+  parent_segment: string;
+}
+
+export interface TaxonDescendant {
+  depth: number;
+  numchild: number;
+  thumb: string | null;
+  d_name: string;
+  d_name_lang: string;
+  d_segment: string;
+  d_status: number | null;
+  s_id: number | null;
+}
+
+interface TaxonDetailBase {
+  taxon_id: number;
+  name: string;
+  name_lang: string;
+  segment: string;
+  extinct: boolean;
+  metadata: {
+    title: string;
+    meta_description: string;
+    h1: string;
+    short: string;
+    image: string | null;
+  };
+  alternates: { lang_id: string; segment: string }[];
+  // Keyed by child rank id; each value is already a fully localized,
+  // number-agreed label (e.g. {"5": "2 вида"}), not a plain count.
+  count: Record<string, string> | null;
+  paging: {
+    prev: TaxonSibling | null;
+    next: TaxonSibling | null;
+  };
+  redirect?: string;
+}
+
+// Order/Family/Genus detail: a description plus its direct children.
+export interface TaxonGroupDetail extends TaxonDetailBase {
+  parents?: TaxonParentCrumb[];
+  descendants: TaxonDescendant[];
+}
+
+export interface TaxonSubspecies {
+  name: string;
+  extinct: boolean;
+  authority: string;
+  breeding_subregion: string | null;
+  nonbreeding_region: string | null;
+}
+
+export interface TaxonPhoto {
+  thumb: string;
+  url: string;
+  ownername: string;
+}
+
+export interface TaxonSound {
+  xeno_id: number;
+  type: string;
+  recorder: string;
+  country: string;
+  license: string;
+  sound?: string;
+}
+
+export interface TaxonRelated {
+  count: number;
+  species: { name: string; name_lang: string; segment: string; thumb: string | null }[];
+}
+
+export interface TaxonCountry {
+  code: string;
+  name: string;
+  segment: string;
+  status: string;
+  region: string | null;
+}
+
+export interface TaxonMultilangs {
+  langs: Record<string, string[]>;
+  synonyms: string[];
+  protonyms: string[];
+}
+
+// Species detail (rank 5) — the richest of the taxon detail shapes.
+export interface TaxonSpeciesDetail extends TaxonDetailBase {
+  status: { status_id: number; name: string; s_id: number } | null;
+  authority: string;
+  breeding_regions: string[];
+  breeding_subregion: string | null;
+  nonbreeding_region: string | null;
+  parents: TaxonParentCrumb[];
+  subspecies: TaxonSubspecies[];
+  photos: TaxonPhoto[];
+  sounds: TaxonSound[];
+  related: TaxonRelated;
+  countries: TaxonCountry[];
+  multilangs: TaxonMultilangs;
+}
+
 export interface DiaryFormData {
   territory: number | null;
   date_time?: string | null;
@@ -739,7 +866,15 @@ export type AppStackParamList = {
   Notifications: undefined;
   Community: ScreenWithFilters | undefined;
   CommunityDetail: { observationId: number };
-  SpeciesDetail: { id: number };
+  SpeciesDetail: { segment: string } | { id: number };
+  Taxonomy: {
+    rank: TaxonRank;
+    parentSegment?: string;
+    parentRank?: TaxonRank;
+    extinct?: boolean;
+    title?: string;
+  };
+  TaxonGroupDetail: { segment: string; rank: 2 | 3 | 4 };
   Achievements: { highlightId?: string } | undefined;
   Privacy: undefined;
   Terms: undefined;

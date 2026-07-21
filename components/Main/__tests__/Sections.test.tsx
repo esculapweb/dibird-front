@@ -26,9 +26,17 @@ beforeEach(() => {
   jest.clearAllMocks();
 });
 
-it("renders all 6 section buttons with translated labels", async () => {
+it("renders all 7 section buttons with translated labels", async () => {
   await render(<Sections />);
-  for (const key of ["observations", "places", "statistics", "diaries", "rating", "checklist"]) {
+  for (const key of [
+    "observations",
+    "places",
+    "statistics",
+    "diaries",
+    "rating",
+    "checklist",
+    "species_catalog",
+  ]) {
     expect(screen.getByText(key)).toBeOnTheScreen();
   }
 });
@@ -46,4 +54,10 @@ describe.each([
     await fireEvent.press(screen.getByTestId(`section-${key}`));
     expect(mockNavigation.navigate).toHaveBeenCalledWith(key);
   });
+});
+
+it("navigates to the species catalog (Taxonomy, orders) when tapped", async () => {
+  await render(<Sections />);
+  await fireEvent.press(screen.getByTestId("section-Taxonomy"));
+  expect(mockNavigation.navigate).toHaveBeenCalledWith("Taxonomy", { rank: 2 });
 });

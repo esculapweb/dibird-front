@@ -1,9 +1,9 @@
 import { Config } from "../constants/config";
-import { Linking } from "react-native";
 import i18n from "../services/i18n";
 import { buildDeepLinkParams } from "./buildDeepLinkParams";
 import { Coords, DateFilter, Filters } from "../types";
 import * as Application from "expo-application";
+import { navigateFromNotification } from "../services/navigationRef";
 
 export const isoToFlagEmoji = (isoCode: string | null): string => {
   if (!isoCode) return "";
@@ -248,7 +248,7 @@ export const stableStringify = (
 
 export const speciesDetails = (segment: string) => {
   if (!segment) return;
-  Linking.openURL(`${langBaseUrl()}/species/${segment}/`);
+  navigateFromNotification("SpeciesDetail", { segment });
 };
 
 export const getFullVersion = () => {

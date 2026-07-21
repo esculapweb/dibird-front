@@ -1,6 +1,7 @@
 const baseUrl = process.env.EXPO_PUBLIC_BASE_URL;
 const mediaBaseUrl = process.env.EXPO_PUBLIC_MEDIA_URL;
 const env = process.env.EXPO_PUBLIC_ENV;
+const appSecretKey = process.env.EXPO_PUBLIC_APP_SECRET_KEY;
 
 if (!baseUrl) {
   throw new Error("EXPO_PUBLIC_BASE_URL is missing");
@@ -8,6 +9,10 @@ if (!baseUrl) {
 
 if (!mediaBaseUrl) {
   throw new Error("EXPO_PUBLIC_MEDIA_URL is missing");
+}
+
+if (!appSecretKey) {
+  throw new Error("EXPO_PUBLIC_APP_SECRET_KEY is missing");
 }
 
 if (!__DEV__) {
@@ -19,6 +24,7 @@ if (!__DEV__) {
 export const Config = {
   env,
   baseUrl,
+  appSecretKey,
   mediaUrl: `${mediaBaseUrl}/media`,
   mapTileUrl: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
   email: "admin@dibird.com",

@@ -118,6 +118,12 @@ export const birdOfDayCacheTable = cacheTable("bird_of_day_cache");
 export const userProfileCacheTable = cacheTable("user_profile_cache");
 export const mapPreviewCacheTable = cacheTable("map_preview_cache");
 export const diarySpeciesIdsCacheTable = cacheTable("diary_species_ids_cache");
+// Taxonomy catalog reads (see fetchTaxonList/fetchTaxonDetail in
+// util/fetches.ts) — same read-through cache-fallback shape, one table for
+// every rank's list (order/family/genus/species) since the cache key already
+// encodes rank + parent + search + page.
+export const taxonListCacheTable = cacheTable("taxon_list_cache");
+export const taxonDetailCacheTable = cacheTable("taxon_detail_cache");
 
 // Durable local record of "read" state applied on top of whatever's in
 // notifications_list_cache (see notificationRepository.applyOverlay) — needed

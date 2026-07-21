@@ -16,18 +16,11 @@ const H_PAD = 16;
 const SEC_GAP = 8;
 const SEC_COLS = 3;
 
-type SectionKey =
-  | "Observations"
-  | "Places"
-  | "Stat"
-  | "Diaries"
-  | "Rating"
-  | "Checklist";
-
 interface Section {
-  key: SectionKey;
+  key: string;
   icon: IconType;
   labelKey: string;
+  onPress: () => void;
 }
 
 const Sections = () => {
@@ -40,12 +33,48 @@ const Sections = () => {
   const SEC_W = (width - H_PAD * 2 - SEC_GAP * (SEC_COLS - 1)) / SEC_COLS;
 
   const SECTIONS: Section[] = [
-    { key: "Observations", icon: "binoculars", labelKey: "observations" },
-    { key: "Places", icon: "location", labelKey: "places" },
-    { key: "Stat", icon: "stats-chart", labelKey: "statistics" },
-    { key: "Diaries", icon: "book", labelKey: "diaries" },
-    { key: "Rating", icon: "trophy", labelKey: "rating" },
-    { key: "Checklist", icon: "checkbox", labelKey: "checklist" },
+    {
+      key: "Observations",
+      icon: "binoculars",
+      labelKey: "observations",
+      onPress: () => navigation.navigate("Observations"),
+    },
+    {
+      key: "Places",
+      icon: "location",
+      labelKey: "places",
+      onPress: () => navigation.navigate("Places"),
+    },
+    {
+      key: "Stat",
+      icon: "stats-chart",
+      labelKey: "statistics",
+      onPress: () => navigation.navigate("Stat"),
+    },
+    {
+      key: "Diaries",
+      icon: "book",
+      labelKey: "diaries",
+      onPress: () => navigation.navigate("Diaries"),
+    },
+    {
+      key: "Rating",
+      icon: "trophy",
+      labelKey: "rating",
+      onPress: () => navigation.navigate("Rating"),
+    },
+    {
+      key: "Checklist",
+      icon: "checkbox",
+      labelKey: "checklist",
+      onPress: () => navigation.navigate("Checklist"),
+    },
+    {
+      key: "Taxonomy",
+      icon: "list",
+      labelKey: "species_catalog",
+      onPress: () => navigation.navigate("Taxonomy", { rank: 2 }),
+    },
   ];
 
   return (
@@ -68,7 +97,7 @@ const Sections = () => {
                       { backgroundColor: Colors.primary100, width: SEC_W },
                     ]}
                     activeOpacity={0.8}
-                    onPress={() => navigation.navigate(sec.key)}
+                    onPress={sec.onPress}
                     testID={`section-${sec.key}`}
                   >
                     <Ionicons
