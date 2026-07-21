@@ -106,6 +106,15 @@ export default {
     },
     plugins: [
       [
+        "expo-build-properties",
+        {
+          android: {
+            enableMinifyInReleaseBuilds: true,
+            enableShrinkResourcesInReleaseBuilds: true,
+          },
+        },
+      ],
+      [
         "expo-splash-screen",
         {
           image: "./assets/splash-icon.png",
