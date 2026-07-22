@@ -75,16 +75,32 @@ it("offers the flat species list and the extinct list from the catalogue root", 
   expect(screen.getByText("extinct_species")).toBeOnTheScreen();
 });
 
-it("opens the species list with the keyboard up, so a species can be found without knowing its order", async () => {
+it("links from the order tree to the flat species list", async () => {
   await render(<TaxonomyScreen />);
 
   await fireEvent.press(screen.getByText("all_species"));
 
   expect(mockNavigation.push).toHaveBeenCalledWith("Taxonomy", {
     rank: 5,
-    title: "all_species",
-    focusSearch: true,
+    title: "species_catalog",
   });
+});
+
+it("links back to the order tree from the species list, so neither root is a dead end", async () => {
+  mockRoute = createRouteMock("Taxonomy", { rank: 5 });
+
+  await render(<TaxonomyScreen />);
+  await fireEvent.press(screen.getByText("browse_by_groups"));
+
+  expect(mockNavigation.push).toHaveBeenCalledWith("Taxonomy", { rank: 2 });
+});
+
+it("offers no cross-links while picking a species for the comparison", async () => {
+  mockRoute = createRouteMock("Taxonomy", { rank: 5, pickerKey: "x" });
+
+  await render(<TaxonomyScreen />);
+
+  expect(screen.queryByText("browse_by_groups")).toBeNull();
 });
 
 it("opens the extinct species list", async () => {

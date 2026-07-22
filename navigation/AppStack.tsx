@@ -131,7 +131,10 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
           labelStyle={{ color: Colors.textMain }}
           onPress={() => {
             navigation.closeDrawer();
-            navigation.navigate("Taxonomy", { rank: 2 });
+            navigation.navigate("Taxonomy", {
+              rank: 5,
+              title: t("species_catalog"),
+            });
           }}
           icon={({ color, size }) => (
             <Ionicons name="book-outline" color={color} size={size} />

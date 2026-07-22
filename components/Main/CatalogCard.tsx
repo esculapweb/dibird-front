@@ -28,18 +28,18 @@ const CatalogCard = () => {
     staleTime: StaleTime.ONE_DAY,
   });
 
-  const openSearch = () =>
-    navigation.navigate("Taxonomy", {
-      rank: 5,
-      title: t("all_species"),
-      focusSearch: true,
-    });
-
   return (
     <TouchableOpacity
       style={styles.card}
       activeOpacity={0.85}
-      onPress={() => navigation.navigate("Taxonomy", { rank: 2 })}
+      // Straight to the birds. The order tree is a step for someone who
+      // already knows the taxonomy — it isn't a place to land a newcomer.
+      onPress={() =>
+        navigation.navigate("Taxonomy", {
+          rank: 5,
+          title: t("species_catalog"),
+        })
+      }
       testID="catalog-card"
     >
       <View style={styles.header}>
@@ -64,11 +64,11 @@ const CatalogCard = () => {
       <View style={styles.actions}>
         <TouchableOpacity
           style={styles.action}
-          onPress={openSearch}
-          testID="catalog-card-search"
+          onPress={() => navigation.navigate("Taxonomy", { rank: 2 })}
+          testID="catalog-card-groups"
         >
-          <Ionicons name="search" size={16} color={Colors.main100} />
-          <Text style={styles.actionText}>{t("search")}</Text>
+          <Ionicons name="git-branch" size={16} color={Colors.main100} />
+          <Text style={styles.actionText}>{t("groups")}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity

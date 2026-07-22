@@ -42,7 +42,11 @@ const TaxonomyScreen = () => {
   const route = useRoute<AppStackRouteProp<"Taxonomy">>();
   const { rank, parentSegment, parentRank, extinct, title, focusSearch, pickerKey } =
     route.params;
-  const isRoot = rank === 2 && !parentSegment && !extinct;
+  // Two roots now: the flat species list (where the catalogue opens) and
+  // the order tree behind it. Each links to the other so neither is a dead
+  // end, and neither shows the links when it is nested under a parent.
+  const isOrderRoot = rank === 2 && !parentSegment && !extinct;
+  const isSpeciesRoot = rank === 5 && !parentSegment && !extinct && !pickerKey;
   const { sort, openSortSheet } = useTaxonomySort();
   const [traits, setTraits] = useState<TaxonTraitFilters>({});
 
@@ -81,7 +85,11 @@ const TaxonomyScreen = () => {
 
   const shortcut = (
     label: string,
-    icon: "search-outline" | "skull-outline" | "git-compare-outline",
+    icon:
+      | "search-outline"
+      | "skull-outline"
+      | "git-compare-outline"
+      | "git-branch-outline",
     onPress: () => void,
   ) => (
     <Pressable style={styles.shortcut} onPress={onPress}>
@@ -117,18 +125,19 @@ const TaxonomyScreen = () => {
         errorTitle={t("taxonomy_unavailable")}
         emptyMessage={t(RANK_EMPTY_KEY[rank])}
         listHeader={
-          isRoot ? (
-            // Browsing down from an order only helps when you already know
-            // where the species sits — these two jump straight into the flat
-            // species list instead.
+          isOrderRoot || isSpeciesRoot ? (
             <View style={styles.shortcuts}>
-              {shortcut(t("all_species"), "search-outline", () =>
-                navigation.push("Taxonomy", {
-                  rank: 5,
-                  title: t("all_species"),
-                  focusSearch: true,
-                }),
-              )}
+              {isSpeciesRoot &&
+                shortcut(t("browse_by_groups"), "git-branch-outline", () =>
+                  navigation.push("Taxonomy", { rank: 2 }),
+                )}
+              {isOrderRoot &&
+                shortcut(t("all_species"), "search-outline", () =>
+                  navigation.push("Taxonomy", {
+                    rank: 5,
+                    title: t("species_catalog"),
+                  }),
+                )}
               {shortcut(t("extinct_species"), "skull-outline", () =>
                 navigation.push("Taxonomy", {
                   rank: 5,

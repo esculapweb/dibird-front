@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import Layout from "../components/ui/Layout";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import { fetchPage } from "../util/fetches";
+import { htmlBaseStyle, htmlTagsStyles } from "../util/htmlStyles";
 import { StaleTime } from "../constants/staleTime";
 import { useLanguage } from "../store/language-context";
 import { useTheme, ThemeColors } from "../store/theme-context";
@@ -71,23 +72,8 @@ const StaticScreen = () => {
       <RenderHtml
         contentWidth={width - 32}
         source={{ html: data }}
-        tagsStyles={{
-          h2: {
-            color: Colors.textMain,
-            fontSize: 18,
-            fontWeight: "600",
-            marginTop: 24,
-          },
-          h3: {
-            color: Colors.textMain,
-            fontSize: 15,
-            fontWeight: "500",
-            marginTop: 16,
-          },
-          p: { color: Colors.textMiddle, fontSize: 14, lineHeight: 22 },
-          li: { color: Colors.textMiddle, fontSize: 14, lineHeight: 22 },
-          a: { color: Colors.main100 },
-        }}
+        baseStyle={htmlBaseStyle(Colors)}
+        tagsStyles={htmlTagsStyles(Colors)}
       />
     </Layout>
   );

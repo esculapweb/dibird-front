@@ -34,6 +34,7 @@ import {
   iucnColors,
   countryStatusKey,
 } from "../util/taxonomy";
+import { htmlBaseStyle, htmlTagsStyles } from "../util/htmlStyles";
 import { useLanguage } from "../store/language-context";
 import { useTheme, ThemeColors } from "../store/theme-context";
 import { useContentWidth } from "../hooks/useContentWidth";
@@ -406,9 +407,8 @@ const SpeciesDetailScreen = () => {
                 <RenderHtml
                   contentWidth={width - 64}
                   source={{ html: data.metadata.short }}
-                  tagsStyles={{
-                    p: { color: Colors.textMiddle, fontSize: 14, lineHeight: 22 },
-                  }}
+                  baseStyle={htmlBaseStyle(Colors)}
+                  tagsStyles={htmlTagsStyles(Colors)}
                 />
               </Section>
             )}

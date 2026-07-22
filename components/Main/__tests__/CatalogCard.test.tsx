@@ -33,22 +33,23 @@ beforeEach(() => {
   mockUseQuery.mockReturnValue({ data: 11250 });
 });
 
-it("opens the order tree when the card itself is tapped", async () => {
+it("opens the birds themselves, not the taxonomic tree", async () => {
+  // Landing a newcomer on a list of orders in Latin is not an introduction
+  // to the catalogue.
   await render(<CatalogCard />);
 
   await fireEvent.press(screen.getByTestId("catalog-card"));
-  expect(mockNavigation.navigate).toHaveBeenCalledWith("Taxonomy", { rank: 2 });
-});
-
-it("goes straight to searching species by name", async () => {
-  await render(<CatalogCard />);
-
-  await fireEvent.press(screen.getByTestId("catalog-card-search"));
   expect(mockNavigation.navigate).toHaveBeenCalledWith("Taxonomy", {
     rank: 5,
-    title: "all_species",
-    focusSearch: true,
+    title: "species_catalog",
   });
+});
+
+it("keeps the taxonomic tree one tap away for whoever wants it", async () => {
+  await render(<CatalogCard />);
+
+  await fireEvent.press(screen.getByTestId("catalog-card-groups"));
+  expect(mockNavigation.navigate).toHaveBeenCalledWith("Taxonomy", { rank: 2 });
 });
 
 it("opens the comparison screen with no species preselected", async () => {
