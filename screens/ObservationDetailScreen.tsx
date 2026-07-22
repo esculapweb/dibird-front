@@ -63,6 +63,7 @@ const ObservationDetailScreen = () => {
     isLoading,
     isError,
     error,
+    isRefetching,
     refetch,
   } = useObservationItem(observationId, initialObservation);
 
@@ -216,7 +217,13 @@ const ObservationDetailScreen = () => {
   );
 
   return (
-    <Layout style={{ padding: 12 }} bottom={bottomEl} withScroll={true}>
+    <Layout
+      style={{ padding: 12 }}
+      bottom={bottomEl}
+      withScroll={true}
+      onRefresh={refetch}
+      isRefreshing={isRefetching}
+    >
       {observation._syncError && failedMutation && (
         <FailedEditBanner
           failedEdit={{ message: observation._syncError, createdAt: Date.now() }}

@@ -22,8 +22,15 @@ jest.mock("../../hooks/useSyncedFilters", () => ({
 jest.mock("../../hooks/useDropdownQuery", () => ({
   useDropdownQuery: jest.fn(),
 }));
+// jest.config.js's setupFiles path only evaluates the async-storage mock
+// without wiring it up as a replacement — WelcomeCard pulls in navigation
+// helpers that touch it.
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
+);
 jest.mock("@tanstack/react-query", () => ({
   useQuery: jest.fn(),
+  useQueryClient: () => mockQueryClient,
 }));
 jest.mock("../../util/fetches", () => ({
   fetchMyCountries: jest.fn(),
@@ -87,6 +94,23 @@ jest.mock("../../components/Main/QuickActions", () => {
   const { Text } = require("react-native");
   return { __esModule: true, default: (props: Record<string, unknown>) => <Text>{`QuickActions:${JSON.stringify(props)}`}</Text> };
 });
+jest.mock("../../components/Main/CatalogCard", () => {
+  const { Text } = require("react-native");
+  return { __esModule: true, default: () => <Text>CatalogCard</Text> };
+});
+jest.mock("../../components/Main/WelcomeCard", () => {
+  const { Text } = require("react-native");
+  return { __esModule: true, default: () => <Text>WelcomeCard</Text> };
+});
+jest.mock("../../components/Main/WidgetError", () => {
+  const { Text } = require("react-native");
+  return {
+    __esModule: true,
+    default: (props: Record<string, unknown>) => (
+      <Text>{`WidgetError:${JSON.stringify(props)}`}</Text>
+    ),
+  };
+});
 jest.mock("../../components/Main/Sections", () => {
   const { Text } = require("react-native");
   return { __esModule: true, default: (props: Record<string, unknown>) => <Text>{`Sections:${JSON.stringify(props)}`}</Text> };
@@ -102,6 +126,7 @@ import { createNavigationMock, createRouteMock } from "../test-utils";
 import MainScreen from "../MainScreen";
 
 const mockNavigation = createNavigationMock();
+const mockQueryClient = { refetchQueries: jest.fn(async () => {}) };
 const mockRoute = createRouteMock("Main", {});
 const mockHandleClearFilters = jest.fn();
 const mockHandleFiltersApplied = jest.fn();
@@ -164,4 +189,83 @@ it("tapping the navbar opens the filter sheet wired to handleClearFilters", asyn
   expect(BottomSheet.showContent).toHaveBeenCalledWith(
     expect.objectContaining({ title: "filters", onReset: mockHandleClearFilters }),
   );
+});
+
+it("pull to refresh refetches every widget the dashboard has mounted", async () => {
+  // The dashboard is a dozen independent queries; refetching the active ones
+  // beats threading a refetch through each widget.
+  await render(<MainScreen />);
+
+  // The dashboard scroll view has no testID; walk up from a widget inside it.
+  let node = screen.getByText(/^Sparkline:/).parent;
+  while (node && node.type !== "RCTScrollView") node = node.parent;
+  await node!.props.refreshControl.props.onRefresh();
+
+  expect(mockQueryClient.refetchQueries).toHaveBeenCalledWith({
+    type: "active",
+  });
+});
+
+it("puts logging a sighting above the content blocks", async () => {
+  // The quick actions used to sit seventh of eight, below every widget.
+  await render(<MainScreen />);
+
+  const order = screen
+    .getAllByText(/^(Stats:|QuickActions|Sparkline:|Sections)/)
+    .map((node) => String(node.props.children).split(":")[0]);
+
+  expect(order.indexOf("QuickActions")).toBeLessThan(
+    order.indexOf("Sparkline"),
+  );
+  expect(order.indexOf("Stats")).toBeLessThan(order.indexOf("QuickActions"));
+});
+
+it("offers a retry instead of dropping the stats when their query fails", async () => {
+  (useQuery as jest.Mock).mockReturnValue({
+    data: undefined,
+    isLoading: false,
+    isError: true,
+    refetch: jest.fn(),
+  });
+
+  await render(<MainScreen />);
+
+  expect(screen.getByText(/^WidgetError:/)).toBeOnTheScreen();
+  expect(screen.queryByText(/^Stats:/)).toBeNull();
+});
+
+it("keeps showing the stats it has when a background refetch fails", async () => {
+  (useQuery as jest.Mock).mockReturnValue({
+    data: { total: 10, observations: 3, diaries: 1 },
+    isLoading: false,
+    isError: true,
+    refetch: jest.fn(),
+  });
+
+  await render(<MainScreen />);
+
+  expect(screen.getByText(/^Stats:/)).toBeOnTheScreen();
+  expect(screen.queryByText(/^WidgetError:/)).toBeNull();
+});
+
+it("welcomes an account that has logged nothing yet", async () => {
+  (useQuery as jest.Mock).mockReturnValue({
+    data: { total: 10, observations: 0, diaries: 0 },
+    isLoading: false,
+  });
+
+  await render(<MainScreen />);
+
+  expect(screen.getByText("WelcomeCard")).toBeOnTheScreen();
+});
+
+it("drops the welcome card as soon as there is anything to show", async () => {
+  (useQuery as jest.Mock).mockReturnValue({
+    data: { total: 10, observations: 1, diaries: 0 },
+    isLoading: false,
+  });
+
+  await render(<MainScreen />);
+
+  expect(screen.queryByText("WelcomeCard")).toBeNull();
 });

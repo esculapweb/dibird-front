@@ -26,7 +26,7 @@ beforeEach(() => {
   jest.clearAllMocks();
 });
 
-it("renders all 7 section buttons with translated labels", async () => {
+it("renders the six sections about the user's own data", async () => {
   await render(<Sections />);
   for (const key of [
     "observations",
@@ -35,10 +35,17 @@ it("renders all 7 section buttons with translated labels", async () => {
     "diaries",
     "rating",
     "checklist",
-    "species_catalog",
   ]) {
     expect(screen.getByText(key)).toBeOnTheScreen();
   }
+});
+
+it("leaves the species catalogue out — it is reference material, not my data", async () => {
+  // It lives in the header search, the drawer and its own dashboard card.
+  await render(<Sections />);
+
+  expect(screen.queryByText("species_catalog")).toBeNull();
+  expect(screen.queryByTestId("section-Taxonomy")).toBeNull();
 });
 
 describe.each([
@@ -56,8 +63,4 @@ describe.each([
   });
 });
 
-it("navigates to the species catalog (Taxonomy, orders) when tapped", async () => {
-  await render(<Sections />);
-  await fireEvent.press(screen.getByTestId("section-Taxonomy"));
-  expect(mockNavigation.navigate).toHaveBeenCalledWith("Taxonomy", { rank: 2 });
-});
+

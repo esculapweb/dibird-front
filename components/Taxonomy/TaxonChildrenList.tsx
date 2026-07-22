@@ -1,4 +1,5 @@
 import { ReactNode, useState } from "react";
+import { StyleSheet, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 
@@ -7,11 +8,19 @@ import SearchInput from "../ui/SearchInput";
 import ErrorOverlay from "../Error/ErrorOverlay";
 import LoadingOverlay from "../ui/LoadingOverlay";
 import TaxonRow from "./TaxonRow";
+import { useTheme } from "../../store/theme-context";
 import { useList } from "../../hooks/useList";
 import { useDebounce } from "../../hooks/useDebounce";
 import { StaleTime } from "../../constants/staleTime";
 import { fetchTaxonList } from "../../util/fetches";
-import { AppStackNavigationProp, TaxonListItem, TaxonRank } from "../../types";
+import { stableStringify } from "../../util/helpers";
+import { latinPart } from "../../util/taxonomy";
+import {
+  AppStackNavigationProp,
+  TaxonListItem,
+  TaxonRank,
+  TaxonTraitFilters,
+} from "../../types";
 
 interface TaxonChildrenListProps {
   rank: TaxonRank;
@@ -20,6 +29,14 @@ interface TaxonChildrenListProps {
   errorTitle: string;
   emptyMessage: string;
   listHeader?: ReactNode;
+  sort?: string | null;
+  traits?: TaxonTraitFilters | null;
+  onClearTraits?: () => void;
+  // Picker mode: hand the tapped species to this callback instead of opening
+  // its page (see AppStackParamList.Taxonomy.pickerKey).
+  onPick?: (item: TaxonListItem) => void;
+  searchPlaceholder?: string;
+  autoFocusSearch?: boolean;
 }
 
 const TaxonChildrenList = ({
@@ -29,13 +46,27 @@ const TaxonChildrenList = ({
   errorTitle,
   emptyMessage,
   listHeader,
+  sort = "name",
+  traits,
+  onClearTraits,
+  onPick,
+  searchPlaceholder,
+  autoFocusSearch,
 }: TaxonChildrenListProps) => {
   const { t } = useTranslation();
+  const { Colors } = useTheme();
   const navigation = useNavigation<AppStackNavigationProp>();
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search);
 
-  const screenName = `Taxonomy-${rank}-${parent?.segment ?? "root"}-${!!extinct}`;
+  // The trait filters travel inside fetchTaxonList's closure, which useList
+  // can't see — they have to be part of the query key here, or react-query
+  // keeps serving the unfiltered pages it already has.
+  const screenName = `Taxonomy-${rank}-${parent?.segment ?? "root"}-${!!extinct}-${stableStringify({ ...traits })}`;
+  const styles = stylesFn(Colors);
+  const hasTraitFilters = Object.values(traits ?? {}).some((value) =>
+    Array.isArray(value) ? value.length > 0 : value != null,
+  );
 
   const {
     data,
@@ -44,21 +75,27 @@ const TaxonChildrenList = ({
     isFetchingNextPage,
     isLoading,
     isError,
+    isRefetching,
     error,
     refetch,
   } = useList<TaxonListItem>({
     screenName,
-    fetchFunction: fetchTaxonList(rank, parent, extinct),
+    fetchFunction: fetchTaxonList(rank, parent, extinct, traits),
     filters: {},
-    sort: "name",
+    sort,
     search: debouncedSearch,
     enabled: true,
     staleTime: StaleTime.ONE_DAY,
   });
 
   const items = data?.pages.flatMap((page) => page.results) ?? [];
+  const total = data?.pages[0]?.pagination?.count;
 
   const handlePress = (item: TaxonListItem) => {
+    if (onPick) {
+      onPick(item);
+      return;
+    }
     if (rank === 5) {
       navigation.navigate("SpeciesDetail", { segment: item.segment });
     } else {
@@ -93,12 +130,23 @@ const TaxonChildrenList = ({
       onEndReached={handleLoadMore}
       isLoadingMore={isFetchingNextPage}
       renderItem={({ item }) => (
-        <TaxonRow item={item} rank={rank} onPress={() => handlePress(item)} />
+        <TaxonRow
+          title={item.name_lang}
+          latin={latinPart(item.name, item.name_lang)}
+          thumb={item.thumb}
+          statusCode={item.status}
+          onPress={() => handlePress(item)}
+        />
       )}
       keyExtractor={(item) => item.segment}
-      emptyType={debouncedSearch ? "filtered" : "initial"}
-      onClear={() => setSearch("")}
+      emptyType={debouncedSearch || hasTraitFilters ? "filtered" : "initial"}
+      onClear={() => {
+        setSearch("");
+        onClearTraits?.();
+      }}
       noItems={{ icon: "leaf-outline", message: emptyMessage }}
+      onRefresh={refetch}
+      isRefreshing={isRefetching}
       listHeader={
         <>
           {listHeader}
@@ -106,8 +154,14 @@ const TaxonChildrenList = ({
             value={search}
             onChange={setSearch}
             onClear={() => setSearch("")}
-            placeholder={t("search")}
+            placeholder={searchPlaceholder ?? t("search")}
+            autoFocus={autoFocusSearch}
           />
+          {hasTraitFilters && total != null && (
+            <Text style={styles.total}>
+              {t("found")}: {total}
+            </Text>
+          )}
         </>
       }
     />
@@ -115,3 +169,13 @@ const TaxonChildrenList = ({
 };
 
 export default TaxonChildrenList;
+
+const stylesFn = (Colors: { textSecondary: string }) =>
+  StyleSheet.create({
+    total: {
+      fontSize: 12,
+      color: Colors.textSecondary,
+      marginTop: 6,
+      marginLeft: 4,
+    },
+  });

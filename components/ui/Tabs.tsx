@@ -4,15 +4,15 @@ import * as Haptics from "expo-haptics";
 import { EdgeInsets, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
-import { TabOption, compareMode, seenMode } from "../../types";
+import { TabOption } from "../../types";
 
-interface TabsProps {
-  tabOptions: TabOption[];
-  tabsMode: seenMode | compareMode;
-  setTabsMode: (value: seenMode | compareMode) => void;
+interface TabsProps<T extends string> {
+  tabOptions: TabOption<T>[];
+  tabsMode: T;
+  setTabsMode: (value: T) => void;
 }
 
-const Tabs = ({ tabOptions, tabsMode, setTabsMode }: TabsProps) => {
+const Tabs = <T extends string>({ tabOptions, tabsMode, setTabsMode }: TabsProps<T>) => {
   const { Colors } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = stylesFn(Colors, insets);

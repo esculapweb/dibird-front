@@ -20,7 +20,7 @@ const TaxonBreadcrumbs = ({ parents }: TaxonBreadcrumbsProps) => {
     <View style={styles.crumbs}>
       {parents.map((p, i) => (
         <Fragment key={p.parent_segment}>
-          {i > 0 && <Text style={styles.separator}>/</Text>}
+          {i > 0 && <Text style={styles.separator}>·</Text>}
           <Pressable
             onPress={() =>
               navigation.navigate("TaxonGroupDetail", {

@@ -33,7 +33,7 @@ const StaticScreen = () => {
     Terms: "terms",
   };
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
+  const { data, isLoading, isError, isRefetching, error, refetch } = useQuery({
     queryKey: ["Page", page, language],
     queryFn: () => fetchPage(slugs?.[page]),
     enabled: !!page,
@@ -63,6 +63,8 @@ const StaticScreen = () => {
   return (
     <Layout
       withScroll={true}
+      onRefresh={refetch}
+      isRefreshing={isRefetching}
       style={styles.base}
       contentContainerStyle={styles.content}
     >

@@ -192,7 +192,12 @@ export default function AlertSettingsScreen() {
   };
 
   return (
-    <Layout withScroll contentContainerStyle={styles.scroll}>
+    <Layout
+      withScroll
+      contentContainerStyle={styles.scroll}
+      onRefresh={refresh}
+      isRefreshing={loading}
+    >
       <Section title={t("alert_section_general")} styles={styles}>
         <RowSwitch
           icon="notifications-outline"

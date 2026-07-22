@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   FlatListProps,
   ListRenderItem,
+  RefreshControl,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 
@@ -21,6 +22,10 @@ interface ItemsListProps<T> {
   onClear?: () => void;
   noItems?: EmptyStateProps;
   listHeader?: FlatListProps<T>["ListHeaderComponent"];
+  // Pull to refresh. Lists are cached (some for a day) and revalidate on
+  // their own schedule; this is the way to ask for fresh data right now.
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
 }
 
 const ItemsList = <T,>({
@@ -33,6 +38,8 @@ const ItemsList = <T,>({
   onClear,
   noItems,
   listHeader,
+  onRefresh,
+  isRefreshing,
 }: ItemsListProps<T>) => {
   const { Colors } = useTheme();
   const { t } = useTranslation();
@@ -90,6 +97,16 @@ const ItemsList = <T,>({
               style={{ marginVertical: 10 }}
             />
           ) : null
+        }
+        refreshControl={
+          onRefresh ? (
+            <RefreshControl
+              refreshing={!!isRefreshing}
+              onRefresh={onRefresh}
+              tintColor={Colors.textMain}
+              colors={[Colors.textMain]}
+            />
+          ) : undefined
         }
         initialNumToRender={12}
         maxToRenderPerBatch={10}

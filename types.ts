@@ -179,13 +179,20 @@ export interface AvatarResponse {
 export type seenMode = "seen" | "unseen" | "all";
 export type compareMode = "common" | "different" | "all";
 
-export interface TabOption {
-  value: seenMode | compareMode;
+export interface TabOption<T extends string = string> {
+  value: T;
   icon: IconType;
   iconInactive: IconType;
   labelKey: string;
   count?: number;
 }
+
+export type SpeciesDetailTab =
+  | "overview"
+  | "traits"
+  | "sounds"
+  | "countries"
+  | "names";
 
 export type DateFilterType =
   | "all"
@@ -360,6 +367,7 @@ export interface TaxonSibling {
   segment: string;
   name: string;
   name_lang: string;
+  thumb?: string | null;
 }
 
 export interface TaxonParentCrumb {
@@ -376,7 +384,8 @@ export interface TaxonDescendant {
   d_name: string;
   d_name_lang: string;
   d_segment: string;
-  d_status: number | null;
+  // IUCN category code ("LC", "VU", …) — the status table is keyed by code.
+  d_status: string | null;
   s_id: number | null;
 }
 
@@ -384,6 +393,7 @@ interface TaxonDetailBase {
   taxon_id: number;
   name: string;
   name_lang: string;
+  latin_name: string;
   segment: string;
   extinct: boolean;
   metadata: {
@@ -416,6 +426,11 @@ export interface TaxonSubspecies {
   authority: string;
   breeding_subregion: string | null;
   nonbreeding_region: string | null;
+  // The same ranges with the IOC shorthand spelled out and localized by the
+  // backend ("w, c" -> "запад, центр"). Absent on responses cached before
+  // the field existed, hence optional.
+  breeding_subregion_text?: string | null;
+  nonbreeding_region_text?: string | null;
 }
 
 export interface TaxonPhoto {
@@ -447,18 +462,90 @@ export interface TaxonCountry {
 }
 
 export interface TaxonMultilangs {
-  langs: Record<string, string[]>;
+  // Keyed by ISO 639-1 code; `label` is the language's name already
+  // localized to the current UI language by the backend.
+  langs: Record<string, { label: string; names: string[] }>;
   synonyms: string[];
   protonyms: string[];
 }
 
+// Trait filters accepted by /api/taxon/ (see the backend's
+// TaxonMetaFilterSet). Ranges are in the trait's own units — grams for mass,
+// eggs for clutch — and the multi-selects are sent comma-separated.
+export interface TaxonTraitFilters {
+  mass_min?: number | null;
+  mass_max?: number | null;
+  clutch_min?: number | null;
+  clutch_max?: number | null;
+  habitat?: string[];
+  migration?: string[];
+  trophic_level?: string[];
+  trophic_niche?: string[];
+}
+
+export type TaxonTraitFilterKey = keyof TaxonTraitFilters;
+
+export interface TraitFilterOption {
+  value: string;
+  label: string;
+  count: number;
+}
+
+// /api/trait-filters/ — what the filter sheet can offer, straight from the
+// data (so a vocabulary added upstream shows up without an app release).
+export interface TraitFilterOptions {
+  mass: { units: string; min: number | null; max: number | null };
+  clutch: { units: string; min: number | null; max: number | null };
+  habitat: TraitFilterOption[];
+  migration: TraitFilterOption[];
+  trophic_level: TraitFilterOption[];
+  trophic_niche: TraitFilterOption[];
+}
+
+// Curated facts from Avibase (body measurements, diet, breeding, lifespan),
+// already grouped, localized and formatted by the backend — the app only
+// prints what it gets.
+export interface TaxonTrait {
+  key: string;
+  label: string;
+  value: string;
+  // Raw number behind `value` (null for categorical traits) — the compare
+  // screen needs it to tell which species is bigger, since `value` is both
+  // localized and sometimes rescaled (3350 g -> "3,35 кг").
+  num: number | null;
+  // Measurements are averaged across every source that has them: how many
+  // agreed, how far apart they were ("3,4–3,45 кг"), and the already
+  // localized "2 источника". Empty/1 when a single source had the figure.
+  sample_size: number;
+  spread: string;
+  sources_label: string;
+  male: string | null;
+  female: string | null;
+  source: string;
+  source_url: string | null;
+}
+
+export interface TaxonTraitGroup {
+  key: string;
+  label: string;
+  traits: TaxonTrait[];
+}
+
+export interface TaxonTraitHighlight {
+  key: string;
+  label: string;
+  value: string;
+}
+
 // Species detail (rank 5) — the richest of the taxon detail shapes.
 export interface TaxonSpeciesDetail extends TaxonDetailBase {
-  status: { status_id: number; name: string; s_id: number } | null;
+  status: { status_id: string; name: string; s_id: number } | null;
   authority: string;
   breeding_regions: string[];
   breeding_subregion: string | null;
   nonbreeding_region: string | null;
+  breeding_subregion_text?: string | null;
+  nonbreeding_region_text?: string | null;
   parents: TaxonParentCrumb[];
   subspecies: TaxonSubspecies[];
   photos: TaxonPhoto[];
@@ -466,6 +553,9 @@ export interface TaxonSpeciesDetail extends TaxonDetailBase {
   related: TaxonRelated;
   countries: TaxonCountry[];
   multilangs: TaxonMultilangs;
+  // Absent on responses cached before traits existed.
+  traits?: TaxonTraitGroup[];
+  trait_highlights?: TaxonTraitHighlight[];
 }
 
 export interface DiaryFormData {
@@ -873,8 +963,15 @@ export type AppStackParamList = {
     parentRank?: TaxonRank;
     extinct?: boolean;
     title?: string;
+    // Opens with the keyboard up — used by the "all species" shortcut, whose
+    // whole point is searching by name.
+    focusSearch?: boolean;
+    // When set, the screen picks instead of navigates: tapping a species
+    // hands it to the callback registered under this key and pops back.
+    pickerKey?: string;
   };
   TaxonGroupDetail: { segment: string; rank: 2 | 3 | 4 };
+  SpeciesCompare: { segmentA?: string; segmentB?: string } | undefined;
   Achievements: { highlightId?: string } | undefined;
   Privacy: undefined;
   Terms: undefined;

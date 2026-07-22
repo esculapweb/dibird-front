@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 import { Image } from "expo-image";
 
+import WidgetError from "./WidgetError";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { useList } from "../../hooks/useList";
 import { Config } from "../../constants/config";
@@ -45,7 +46,12 @@ const NewSpecies: FC<NewSpeciesProps> = ({ filters, filtersLoaded }) => {
     [],
   );
 
-  const { data: newSpeciesData, isLoading } = useList({
+  const {
+    data: newSpeciesData,
+    isLoading,
+    isError,
+    refetch,
+  } = useList({
     screenName: "Stat",
     fetchFunction: fetchStatSeen,
     filters,
@@ -126,6 +132,8 @@ const NewSpecies: FC<NewSpeciesProps> = ({ filters, filtersLoaded }) => {
     );
   }
 
+  if (isError && data.length === 0)
+    return <WidgetError title={t("new_species")} onRetry={refetch} />;
   if (data.length === 0) return null;
 
   return (

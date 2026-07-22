@@ -11,6 +11,7 @@ interface SearchInputProps {
   placeholder: string;
   onClear?: () => void;
   style?: StyleType;
+  autoFocus?: boolean;
 }
 
 const SearchInput = ({
@@ -19,6 +20,7 @@ const SearchInput = ({
   placeholder,
   onClear,
   style,
+  autoFocus,
 }: SearchInputProps) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -37,6 +39,7 @@ const SearchInput = ({
         onChangeText={onChange}
         autoCorrect={false}
         autoCapitalize="none"
+        autoFocus={autoFocus}
       />
 
       {showClear && (

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 
+import WidgetError from "./WidgetError";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { fetchMyActivity } from "../../util/fetches";
 import { StaleTime } from "../../constants/staleTime";
@@ -32,7 +33,7 @@ const Sparkline = ({
   const mutedColor = Colors.main300;
   const styles = stylesFn(Colors, mainColor, mutedColor);
 
-  const { data: activity, isLoading } = useQuery({
+  const { data: activity, isLoading, isError, refetch } = useQuery({
     queryKey: [
       "Activity",
       filters?.territory ?? null,
@@ -97,6 +98,8 @@ const Sparkline = ({
     );
   const allZero = data.every((v) => v === 0);
   if (isLoading) return <SparklineSkeleton />;
+  if (isError && !data.length)
+    return <WidgetError title={t("activity")} onRetry={refetch} />;
   if (!data.length || allZero) return null;
 
   return (

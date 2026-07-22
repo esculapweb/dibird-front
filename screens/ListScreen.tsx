@@ -159,6 +159,7 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
     isFetchingNextPage,
     isLoading,
     isError,
+    isRefetching,
     error,
     refetch,
   } = useList({
@@ -387,6 +388,8 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
         keyExtractor={keyExtractor}
         noItems={noItems}
         listHeader={listHeader}
+        onRefresh={refetch}
+        isRefreshing={isRefetching}
       />
     </Layout>
   );

@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchBirdOfDay } from "../../util/fetches";
 import { StaleTime } from "../../constants/staleTime";
 import { BirdSVG } from "../ui/Svgs";
+import WidgetError from "./WidgetError";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { Config } from "../../constants/config";
 import BirdOfTheDaySkeleton from "./BirdOfTheDaySceleton";
@@ -33,7 +34,7 @@ const BirdOfTheDay = ({ filters }: { filters: Filters }) => {
   const { profile } = useProfile();
   const territory = filters?.territory ?? profile?.territory ?? null;
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["BirdOfDay", territory, language],
     queryFn: () => fetchBirdOfDay(territory),
     enabled: !!filters && !!territory,
@@ -41,6 +42,8 @@ const BirdOfTheDay = ({ filters }: { filters: Filters }) => {
   });
 
   if (isLoading) return <BirdOfTheDaySkeleton />;
+  if (isError && !data)
+    return <WidgetError title={t("bird_of_day")} onRetry={refetch} />;
   if (!data) return null;
 
   const isAlreadySeen = [

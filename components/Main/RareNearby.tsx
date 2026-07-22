@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 import { Image } from "expo-image";
 
+import WidgetError from "./WidgetError";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { useList } from "../../hooks/useList";
 import { Config } from "../../constants/config";
@@ -43,7 +44,12 @@ const RareNearby: FC<NewSpeciesProps> = ({ filters }) => {
     [fetchCommunityObservations, locationCoords],
   );
 
-  const { data: communityData, isLoading } = useList({
+  const {
+    data: communityData,
+    isLoading,
+    isError,
+    refetch,
+  } = useList({
     screenName: "RareNearby",
     fetchFunction: fetchDataWrapper,
     filters: {territory: settings?.territory_data?.id, radius: settings?.radius_km},
@@ -115,12 +121,34 @@ const RareNearby: FC<NewSpeciesProps> = ({ filters }) => {
     );
   }
 
+  if (isError && data.length === 0)
+    return <WidgetError title={t("rare_nearby")} onRetry={refetch} />;
   if (data.length === 0) return null;
+
+  // This block deliberately ignores the header's territory filter: "nearby"
+  // means the territory and radius from the alert settings. Say so, and make
+  // the label the way to change it — otherwise switching country in the
+  // header looks broken when this list doesn't move.
+  const scope = [
+    settings?.territory_data?.name,
+    settings?.radius_km ? normalizeDistance(settings.radius_km * 1000) : null,
+  ]
+    .filter(Boolean)
+    .join(", ");
 
   return (
     <>
       <View style={styles.sectionHeader}>
-        <Text style={styles.groupLabel}>{t("rare_nearby")}</Text>
+        <TouchableOpacity
+          onPress={() => navigation.navigate("AlertSettings")}
+          hitSlop={8}
+          testID="rare-nearby-scope"
+        >
+          <Text style={styles.groupLabel}>{t("rare_nearby")}</Text>
+          <Text style={styles.scope} numberOfLines={1}>
+            {scope || t("rare_nearby_by_alerts")}
+          </Text>
+        </TouchableOpacity>
         <TouchableOpacity
           onPress={() =>
             navigation.navigate("Community", {
@@ -209,6 +237,12 @@ const stylesFn = (Colors: ThemeColors) =>
       fontWeight: "600",
       color: Colors.textMain,
       marginLeft: H_PAD,
+    },
+    scope: {
+      fontSize: 12,
+      color: Colors.textSecondary,
+      marginLeft: H_PAD,
+      marginTop: 1,
       marginBottom: 8,
     },
     seeAll: {

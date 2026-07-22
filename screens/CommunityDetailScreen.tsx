@@ -44,6 +44,7 @@ const CommunityDetailScreen = () => {
     isLoading,
     isError,
     error,
+    isRefetching,
     refetch,
   } = useItem(observationId, type);
 
@@ -112,7 +113,13 @@ const CommunityDetailScreen = () => {
   );
 
   return (
-    <Layout style={{ padding: 12 }} bottom={bottomEl} withScroll={true}>
+    <Layout
+      style={{ padding: 12 }}
+      bottom={bottomEl}
+      withScroll={true}
+      onRefresh={refetch}
+      isRefreshing={isRefetching}
+    >
       <Section title={formatDateLong(observation.date_time)}>
         <Pressable
           style={styles.header}

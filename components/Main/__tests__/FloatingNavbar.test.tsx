@@ -91,3 +91,15 @@ describe("notifications bell", () => {
     expect(screen.getByText("99+")).toBeOnTheScreen();
   });
 });
+
+it("puts species search one tap away in the header", async () => {
+  await render(<FloatingNavbar onPress={mockOnPress} filters={{} as Filters} />);
+
+  await fireEvent.press(screen.getByTestId("navbar-species-search"));
+
+  expect(mockNavigation.navigate).toHaveBeenCalledWith("Taxonomy", {
+    rank: 5,
+    title: "All species",
+    focusSearch: true,
+  });
+});

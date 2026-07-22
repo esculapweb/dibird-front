@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
@@ -21,6 +22,7 @@ const FloatingNavbar = ({
   filters: Filters;
   country?: TerritoryDropdownItem;
 }) => {
+  const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const navigation = useNavigation<AppStackNavigationProp>();
@@ -44,24 +46,45 @@ const FloatingNavbar = ({
         <Ionicons name="chevron-down" size={14} color={Colors.textSecondary} />
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.bell}
-        onPress={() => navigation.navigate("Notifications")}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-      >
-        <Ionicons
-          name="notifications-outline"
-          size={22}
-          color={Colors.textMain}
-        />
-        {unreadCount > 0 && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>
-              {unreadCount > 99 ? "99+" : unreadCount}
-            </Text>
-          </View>
-        )}
-      </TouchableOpacity>
+      {/* One group, or the header's space-between would spread the two
+          icons apart as if they were separate sections. */}
+      <View style={styles.actions}>
+        <TouchableOpacity
+          style={styles.icon}
+          onPress={() =>
+            // "Look up a bird" is a search intent, so it opens straight into
+            // the flat species list with the keyboard up, not the order tree.
+            navigation.navigate("Taxonomy", {
+              rank: 5,
+              title: t("all_species"),
+              focusSearch: true,
+            })
+          }
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          testID="navbar-species-search"
+        >
+          <Ionicons name="search" size={22} color={Colors.textMain} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.bell}
+          onPress={() => navigation.navigate("Notifications")}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons
+            name="notifications-outline"
+            size={22}
+            color={Colors.textMain}
+          />
+          {unreadCount > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      </View>
     </FloatingHeader>
   );
 };
@@ -90,7 +113,9 @@ const stylesFn = (Colors: ThemeColors) =>
       color: Colors.textMain,
       flexShrink: 1,
     },
-    bell: { position: "relative", width: 36, alignItems: "center" },
+    actions: { flexDirection: "row", alignItems: "center", gap: 4 },
+    bell: { position: "relative", width: 32, alignItems: "center" },
+    icon: { width: 32, alignItems: "center" },
     badge: {
       position: "absolute",
       top: -4,

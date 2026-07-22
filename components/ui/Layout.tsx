@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { View, ScrollView, StyleSheet } from "react-native";
+import { View, ScrollView, StyleSheet, RefreshControl } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 import BackgroundScene2 from "./BackgroundScene2";
@@ -15,6 +15,10 @@ interface LayoutProps {
   style?: StyleType;
   contentContainerStyle?: StyleType;
   hideBackground?: boolean;
+  // Pull to refresh for the `withScroll` layout — the screen's own data is
+  // cached and won't revalidate on its own for a while.
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
 }
 
 const Layout = ({
@@ -26,6 +30,8 @@ const Layout = ({
   style,
   contentContainerStyle,
   hideBackground = false,
+  onRefresh,
+  isRefreshing,
 }: LayoutProps) => {
   const maxWidth = useContentWidth();
 
@@ -47,6 +53,14 @@ const Layout = ({
         <ScrollView
           style={[styles.inner, style, { maxWidth }]}
           contentContainerStyle={contentContainerStyle}
+          refreshControl={
+            onRefresh ? (
+              <RefreshControl
+                refreshing={!!isRefreshing}
+                onRefresh={onRefresh}
+              />
+            ) : undefined
+          }
         >
           {top}
           {children}

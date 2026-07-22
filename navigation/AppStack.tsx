@@ -52,6 +52,7 @@ import type { AppDrawerParamList, AppStackParamList } from "../types";
 import StaticScreen from "../screens/StaticScreen";
 import TaxonomyScreen from "../screens/TaxonomyScreen";
 import TaxonGroupDetailScreen from "../screens/TaxonGroupDetailScreen";
+import SpeciesCompareScreen from "../screens/SpeciesCompareScreen";
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 const Drawer = createDrawerNavigator<AppDrawerParamList>();
@@ -121,6 +122,19 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
           }}
           icon={({ color, size }) => (
             <Ionicons name="people-circle-outline" color={color} size={size} />
+          )}
+        />
+
+        {/* Каталог видов — справочник, а не «мои данные» */}
+        <DrawerItem
+          label={t("species_catalog")}
+          labelStyle={{ color: Colors.textMain }}
+          onPress={() => {
+            navigation.closeDrawer();
+            navigation.navigate("Taxonomy", { rank: 2 });
+          }}
+          icon={({ color, size }) => (
+            <Ionicons name="book-outline" color={color} size={size} />
           )}
         />
 
@@ -375,6 +389,12 @@ const AppNavigator = () => {
         name="TaxonGroupDetail"
         component={TaxonGroupDetailScreen}
         options={{ title: t("species") }}
+      />
+
+      <Stack.Screen
+        name="SpeciesCompare"
+        component={SpeciesCompareScreen}
+        options={{ title: t("compare_species") }}
       />
       <Stack.Screen
         name="Achievements"

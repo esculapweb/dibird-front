@@ -64,6 +64,7 @@ const PlaceDetailScreen = () => {
     data: place,
     isLoading,
     isError,
+    isRefetching,
     error,
     refetch,
   } = usePlaceItem(
@@ -236,7 +237,13 @@ const PlaceDetailScreen = () => {
   );
 
   return (
-    <Layout withScroll={true} style={{ paddingBottom: 40 }} bottom={bottomEl}>
+    <Layout
+      withScroll={true}
+      style={{ paddingBottom: 40 }}
+      bottom={bottomEl}
+      onRefresh={refetch}
+      isRefreshing={isRefetching}
+    >
       {place._syncError && failedMutation && (
         <View style={{ paddingHorizontal: H_PAD, paddingTop: H_PAD }}>
           <FailedEditBanner

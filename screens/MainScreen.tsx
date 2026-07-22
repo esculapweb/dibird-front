@@ -1,6 +1,7 @@
-import { ScrollView } from "react-native";
+import { useCallback, useState } from "react";
+import { RefreshControl, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigation, useRoute } from "@react-navigation/native";
 
 import FloatingNavbar from "../components/Main/FloatingNavbar";
@@ -12,6 +13,9 @@ import RareNearby from "../components/Main/RareNearby";
 import NewSpecies from "../components/Main/NewSpecies";
 import QuickActions from "../components/Main/QuickActions";
 import Sections from "../components/Main/Sections";
+import CatalogCard from "../components/Main/CatalogCard";
+import WelcomeCard from "../components/Main/WelcomeCard";
+import WidgetError from "../components/Main/WidgetError";
 import FilterSheetContent from "../components/Filters/FilterSheetContent";
 import { useSyncedFilters } from "../hooks/useSyncedFilters";
 import { useDropdownQuery } from "../hooks/useDropdownQuery";
@@ -56,7 +60,27 @@ const MainScreen = () => {
     (item) => item.value === filters?.territory,
   );
 
-  const { data: dataStats, isLoading: isLoadingDataStat } = useQuery({
+  const queryClient = useQueryClient();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // The dashboard is a dozen widgets, each with its own query — refetching
+  // whatever is currently mounted is both simpler and more complete than
+  // threading a refetch through every one of them.
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await queryClient.refetchQueries({ type: "active" });
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [queryClient]);
+
+  const {
+    data: dataStats,
+    isLoading: isLoadingDataStat,
+    isError: isDataStatError,
+    refetch: refetchDataStat,
+  } = useQuery({
     queryKey: [
       "DashboardStat",
       filters?.territory ?? null,
@@ -69,6 +93,11 @@ const MainScreen = () => {
     enabled: filtersLoaded,
     staleTime: StaleTime.TEN_MINUTES,
   });
+
+  // Nothing logged yet: every content widget below hides itself, so without
+  // this the screen would be zeros and an icon grid.
+  const isNewUser =
+    !!dataStats && dataStats.observations === 0 && dataStats.diaries === 0;
 
   const openFilters = () => {
     BottomSheet.showContent({
@@ -99,12 +128,36 @@ const MainScreen = () => {
           paddingTop: NAVBAR_HEIGHT + 8,
           paddingBottom: insets.bottom,
         }}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            // Clear of the floating navbar (which is NAVBAR_HEIGHT + 20
+            // tall), otherwise the spinner comes up under its gradient.
+            progressViewOffset={NAVBAR_HEIGHT + 20}
+          />
+        }
       >
-        <Stats
-          data={dataStats}
-          filters={filters}
-          isLoading={isLoadingDataStat}
-        />
+        {isDataStatError && !dataStats ? (
+          // Stats and the checklist hero share this one query, so one line
+          // covers both rather than two blocks vanishing without a word.
+          <WidgetError
+            onRetry={refetchDataStat}
+            testID="dashboard-stat-error"
+          />
+        ) : (
+          <Stats
+            data={dataStats}
+            filters={filters}
+            isLoading={isLoadingDataStat}
+          />
+        )}
+
+        {/* Logging a sighting is what the app is for — it shouldn't sit
+            below five content blocks. */}
+        <QuickActions filters={filters} />
+
+        {isNewUser && <WelcomeCard />}
 
         <Sparkline filters={filters} chartType="bar" />
 
@@ -119,9 +172,9 @@ const MainScreen = () => {
 
         <BirdOfTheDay filters={filters} />
 
-        <NewSpecies filters={filters} filtersLoaded={filtersLoaded} />
+        <CatalogCard />
 
-        <QuickActions filters={filters} />
+        <NewSpecies filters={filters} filtersLoaded={filtersLoaded} />
 
         <Sections />
       </ScrollView>

@@ -38,7 +38,14 @@ const FloatingHeader = ({ children }: { children?: React.ReactNode }) => {
   const NAVBAR_HEIGHT = insets.top + 60;
 
   return (
-    <View style={[styles.container, { height: NAVBAR_HEIGHT + 20 }]}>
+    // The header floats over the screen's own scroll view, so it must not
+    // swallow touches: "box-none" lets a drag started anywhere in the strip
+    // reach the content underneath (pull to refresh lives up here), while the
+    // buttons below still get their taps.
+    <View
+      style={[styles.container, { height: NAVBAR_HEIGHT + 20 }]}
+      pointerEvents="box-none"
+    >
       <LinearGradient
         colors={
           isDark
@@ -53,8 +60,12 @@ const FloatingHeader = ({ children }: { children?: React.ReactNode }) => {
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
         style={StyleSheet.absoluteFill}
+        pointerEvents="none"
       />
-      <View style={[styles.row, { paddingTop: insets.top + 8 }]}>
+      <View
+        style={[styles.row, { paddingTop: insets.top + 8 }]}
+        pointerEvents="box-none"
+      >
         <BurgerButton onPress={() => navigation.openDrawer()} />
         {children}
       </View>

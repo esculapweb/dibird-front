@@ -93,6 +93,8 @@ import {
   AppError,
   TaxonRank,
   TaxonListItem,
+  TaxonTraitFilters,
+  TraitFilterOptions,
   TaxonGroupDetail,
   TaxonSpeciesDetail,
   FetchFunction,
@@ -158,6 +160,7 @@ export const fetchTaxonList = (
   rank: TaxonRank,
   parent?: { segment: string; rank: TaxonRank } | null,
   extinct?: boolean,
+  traits?: TaxonTraitFilters | null,
 ): FetchFunction<TaxonListItem> => {
   return (_filters, order, search, page) =>
     fetchAbstract<PaginatedResponse<TaxonListItem>>(
@@ -170,10 +173,54 @@ export const fetchTaxonList = (
         rank,
         ...(parent && { parent: parent.segment, parent_rank: parent.rank }),
         ...(extinct && { extinct: true }),
+        ...traitParams(traits),
       },
       100,
       { table: taxonListCacheTable, maxEntries: MAX_ENTRIES },
     );
+};
+
+// Trait filters go in extraParams (they change what is being asked for, so
+// they belong in the cache key); the multi-selects travel comma-separated.
+const traitParams = (traits?: TaxonTraitFilters | null) => {
+  const params: Record<string, string | number> = {};
+  if (!traits) return params;
+
+  for (const [key, value] of Object.entries(traits)) {
+    if (value == null) continue;
+    if (Array.isArray(value)) {
+      if (value.length > 0) params[key] = value.join(",");
+    } else {
+      params[key] = value;
+    }
+  }
+  return params;
+};
+
+// Just the total for the catalogue card — per_page=1 so the server counts
+// without sending a page of species.
+export const fetchSpeciesCount = async (): Promise<number> => {
+  const res = await api.get<PaginatedResponse<TaxonListItem>>("/api/taxon/", {
+    params: { rank: 5, per_page: 1 },
+  });
+  return res.data.pagination.count;
+};
+
+export const fetchTraitFilters = async (): Promise<TraitFilterOptions> => {
+  const cacheKey = `trait-filters|${i18n.language}`;
+
+  try {
+    const res = await api.get<TraitFilterOptions>("/api/trait-filters/");
+    cacheListResponse(taxonDetailCacheTable, cacheKey, res.data, MAX_ENTRIES);
+    return res.data;
+  } catch (e) {
+    const cached = getCachedListResponse<TraitFilterOptions>(
+      taxonDetailCacheTable,
+      cacheKey,
+    );
+    if (cached) return cached;
+    throw e;
+  }
 };
 
 export const fetchTaxonDetail = async <

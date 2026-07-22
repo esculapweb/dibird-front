@@ -4,63 +4,70 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
-import { Config } from "../../constants/config";
 import { BirdSVG } from "../ui/Svgs";
-import { TaxonListItem, TaxonRank } from "../../types";
+import { resolveTaxonImage, iucnColors } from "../../util/taxonomy";
 
 interface TaxonRowProps {
-  item: TaxonListItem;
-  rank: TaxonRank;
+  title: string;
+  latin?: string;
+  thumb?: string | null;
+  statusCode?: string | null;
   onPress: () => void;
 }
 
-const TaxonRow = memo(({ item, rank, onPress }: TaxonRowProps) => {
-  const { Colors } = useTheme();
-  const styles = stylesFn(Colors);
-  const isSpecies = rank === 5;
+const TaxonRow = memo(
+  ({ title, latin, thumb, statusCode, onPress }: TaxonRowProps) => {
+    const { Colors } = useTheme();
+    const styles = stylesFn(Colors);
+    const uri = resolveTaxonImage(thumb);
+    const status = iucnColors(statusCode);
 
-  return (
-    <Pressable
-      style={({ pressed }) => [styles.card, pressed && styles.pressedCard]}
-      onPress={onPress}
-    >
-      {isSpecies && (
-        <View style={styles.thumb}>
-          {item.thumb ? (
-            <Image
-              source={{ uri: `${Config.mediaUrl}/${item.thumb}` }}
-              style={styles.thumb}
-              contentFit="cover"
-              cachePolicy="disk"
-            />
-          ) : (
-            <View style={[styles.thumb, styles.thumbPlaceholder]}>
-              <BirdSVG size={26} color={Colors.textSecondary} />
-            </View>
+    return (
+      <Pressable
+        style={({ pressed }) => [styles.card, pressed && styles.pressedCard]}
+        onPress={onPress}
+      >
+        {uri ? (
+          <Image
+            source={{ uri }}
+            style={styles.thumb}
+            contentFit="cover"
+            cachePolicy="disk"
+          />
+        ) : (
+          <View style={[styles.thumb, styles.thumbPlaceholder]}>
+            <BirdSVG size={26} color={Colors.textSecondary} />
+          </View>
+        )}
+
+        <View style={styles.info}>
+          <Text style={styles.title} numberOfLines={1}>
+            {title}
+          </Text>
+          {!!latin && (
+            <Text style={styles.latin} numberOfLines={1}>
+              {latin}
+            </Text>
           )}
         </View>
-      )}
 
-      <View style={styles.info}>
-        <Text style={styles.title} numberOfLines={1}>
-          {item.name_lang}
-        </Text>
-        {item.name && item.name !== item.name_lang && (
-          <Text style={styles.latin} numberOfLines={1}>
-            {item.name}
-          </Text>
+        {status && (
+          <View style={[styles.status, { backgroundColor: status.background }]}>
+            <Text style={[styles.statusText, { color: status.text }]}>
+              {statusCode}
+            </Text>
+          </View>
         )}
-        {isSpecies && item.status_name && (
-          <Text style={styles.status} numberOfLines={1}>
-            {item.status_name}
-          </Text>
-        )}
-      </View>
 
-      <Ionicons name="chevron-forward" size={20} color={Colors.textSecondary} />
-    </Pressable>
-  );
-});
+        <Ionicons
+          name="chevron-forward"
+          size={20}
+          color={Colors.textSecondary}
+        />
+      </Pressable>
+    );
+  },
+);
 
 export default TaxonRow;
 
@@ -81,7 +88,6 @@ const stylesFn = (Colors: ThemeColors) =>
       height: 52,
       borderRadius: 10,
       backgroundColor: Colors.imageBg,
-      overflow: "hidden",
     },
     thumbPlaceholder: {
       justifyContent: "center",
@@ -104,8 +110,13 @@ const stylesFn = (Colors: ThemeColors) =>
       marginTop: 2,
     },
     status: {
+      borderRadius: 6,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+    },
+    statusText: {
       fontSize: 11,
-      color: Colors.main100,
-      marginTop: 2,
+      fontWeight: "700",
+      letterSpacing: 0.3,
     },
   });

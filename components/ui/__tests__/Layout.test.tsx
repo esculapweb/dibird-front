@@ -101,3 +101,35 @@ describe("top/bottom slots", () => {
     expect(screen.getByText("bottom-slot")).toBeOnTheScreen();
   });
 });
+
+// The scroll view has no testID of its own, so find it by walking the tree.
+const scrollProps = () => {
+  let node = screen.getByText("content").parent;
+  while (node && node.type !== "RCTScrollView") node = node.parent;
+  return node?.props ?? {};
+};
+
+it("has no refresh control unless the screen asked for one", async () => {
+  await render(
+    <Layout withScroll>
+      <Text>content</Text>
+    </Layout>,
+  );
+
+  expect(scrollProps().refreshControl).toBeUndefined();
+});
+
+it("pulls to refresh when the screen passes a handler", async () => {
+  const onRefresh = jest.fn();
+
+  await render(
+    <Layout withScroll onRefresh={onRefresh} isRefreshing>
+      <Text>content</Text>
+    </Layout>,
+  );
+
+  const control = scrollProps().refreshControl;
+  expect(control.props.refreshing).toBe(true);
+  await control.props.onRefresh();
+  expect(onRefresh).toHaveBeenCalledTimes(1);
+});

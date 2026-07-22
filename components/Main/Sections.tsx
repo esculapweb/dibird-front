@@ -69,12 +69,6 @@ const Sections = () => {
       labelKey: "checklist",
       onPress: () => navigation.navigate("Checklist"),
     },
-    {
-      key: "Taxonomy",
-      icon: "list",
-      labelKey: "species_catalog",
-      onPress: () => navigation.navigate("Taxonomy", { rank: 2 }),
-    },
   ];
 
   return (

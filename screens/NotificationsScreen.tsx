@@ -21,14 +21,21 @@ export default function NotificationsScreen() {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
-    useInfiniteQuery({
-      queryKey: ["notifications"],
-      queryFn: ({ pageParam = 1 }) => fetchNotifications(pageParam),
-      getNextPageParam: (last, pages) =>
-        last.pagination.next ? pages.length + 1 : undefined,
-      initialPageParam: 1,
-    });
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isRefetching,
+    refetch,
+  } = useInfiniteQuery({
+    queryKey: ["notifications"],
+    queryFn: ({ pageParam = 1 }) => fetchNotifications(pageParam),
+    getNextPageParam: (last, pages) =>
+      last.pagination.next ? pages.length + 1 : undefined,
+    initialPageParam: 1,
+  });
 
   const handleMarkAllRead = useCallback(async () => {
     await markNotificationsRead();
@@ -101,6 +108,8 @@ export default function NotificationsScreen() {
         keyExtractor={(item) => `notif-${item.id}`}
         onEndReached={() => hasNextPage && fetchNextPage()}
         isLoadingMore={isFetchingNextPage}
+        onRefresh={refetch}
+        isRefreshing={isRefetching}
         emptyType={items.length === 0 ? "initial" : undefined}
         noItems={{
           icon: "notifications-outline",
