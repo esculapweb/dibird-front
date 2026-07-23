@@ -245,6 +245,16 @@ const CommunityDetailScreen = () => {
                 {isoToFlagEmoji(observation?.territory_data?.code)}{" "}
                 {observation?.territory_data?.name}
               </Text>
+
+              {(observation.is_owner || observation.location_private) && (
+                <Text style={styles.placeName} numberOfLines={2}>
+                  {observation?.place_data?.name
+                    ? observation.is_owner
+                      ? observation.place_data.name
+                      : t("approximate_area")
+                    : t("location_not_specified")}
+                </Text>
+              )}
             </View>
           </View>
         </View>

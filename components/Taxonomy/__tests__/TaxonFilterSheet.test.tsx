@@ -19,10 +19,42 @@ jest.mock("@gorhom/bottom-sheet", () => {
   return { BottomSheetScrollView: ScrollView };
 });
 jest.mock("@tanstack/react-query", () => ({ useQuery: jest.fn() }));
-jest.mock("../../../util/fetches", () => ({ fetchTraitFilters: jest.fn() }));
+jest.mock("../../../util/fetches", () => ({
+  fetchTraitFilters: jest.fn(),
+  fetchMyCountries: jest.fn(),
+}));
 jest.mock("../../../store/language-context", () => ({
   useLanguage: () => ({ language: "en" }),
 }));
+// The country dropdown carries its own react-query/AsyncStorage machinery
+// (useDropdownQuery → useSavedSort, networkStatus); stub it and the input so
+// the sheet's own logic is what's under test.
+jest.mock("../../../hooks/useDropdownQuery", () => ({
+  useDropdownQuery: () => ({
+    query: { data: [{ value: 5, label: "France" }] },
+    sort: "name",
+    onSortChange: jest.fn(),
+  }),
+}));
+jest.mock("../../ui/DropdownInput", () => {
+  const { Text, Pressable } = require("react-native");
+  return {
+    __esModule: true,
+    default: ({
+      value,
+      setValue,
+      placeholder,
+    }: {
+      value: number | null;
+      setValue: (v: number | null) => void;
+      placeholder: string;
+    }) => (
+      <Pressable testID="country-dropdown" onPress={() => setValue(5)}>
+        <Text>{value == null ? placeholder : `country-${value}`}</Text>
+      </Pressable>
+    ),
+  };
+});
 
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { useQuery } from "@tanstack/react-query";
@@ -177,6 +209,26 @@ it("starts from the filters already applied", async () => {
   expect(mockOnApply).toHaveBeenCalledWith({ habitat: ["Marine", "Forest"] });
 });
 
+it("adds the chosen country to the filters", async () => {
+  await renderSheet();
+
+  expect(screen.getByText("all_countries")).toBeOnTheScreen();
+  await fireEvent.press(screen.getByTestId("country-dropdown"));
+  await fireEvent.press(screen.getByText("apply"));
+
+  expect(mockOnApply).toHaveBeenCalledWith({ territory: 5 });
+});
+
+it("shows the already-applied country and clears it on reset", async () => {
+  await renderSheet({ territory: 5 });
+
+  expect(screen.getByText("country-5")).toBeOnTheScreen();
+  await fireEvent.press(screen.getByText("reset_filters"));
+  await fireEvent.press(screen.getByText("apply"));
+
+  expect(mockOnApply).toHaveBeenCalledWith({});
+});
+
 describe("hasTraitFilters", () => {
   it("ignores empty selections and unset ranges", () => {
     expect(hasTraitFilters({})).toBe(false);
@@ -186,5 +238,6 @@ describe("hasTraitFilters", () => {
   it("reports a filter as soon as anything is chosen", () => {
     expect(hasTraitFilters({ mass_min: 1000 })).toBe(true);
     expect(hasTraitFilters({ habitat: ["Forest"] })).toBe(true);
+    expect(hasTraitFilters({ territory: 5 })).toBe(true);
   });
 });

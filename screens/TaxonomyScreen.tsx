@@ -1,5 +1,5 @@
 import { useLayoutEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, Share, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -13,6 +13,10 @@ import TaxonFilterSheet, {
 import { BottomSheet } from "../services/bottomSheet";
 import { callNavigationCallback } from "../util/navigationCallbacks";
 import { useTaxonomySort } from "../hooks/useTaxonomySort";
+import {
+  buildTaxonCatalogUrl,
+  taxonListSharePath,
+} from "../util/taxonShareLink";
 import { useTheme, ThemeColors } from "../store/theme-context";
 import {
   AppStackNavigationProp,
@@ -40,27 +44,54 @@ const TaxonomyScreen = () => {
   const styles = stylesFn(Colors);
   const navigation = useNavigation<AppStackNavigationProp>();
   const route = useRoute<AppStackRouteProp<"Taxonomy">>();
-  const { rank, parentSegment, parentRank, extinct, title, focusSearch, pickerKey } =
-    route.params;
+  const {
+    rank,
+    parentSegment,
+    parentRank,
+    extinct,
+    title,
+    focusSearch,
+    pickerKey,
+    initialTraits,
+    initialSort,
+  } = route.params;
   // Two roots now: the flat species list (where the catalogue opens) and
   // the order tree behind it. Each links to the other so neither is a dead
   // end, and neither shows the links when it is nested under a parent.
   const isOrderRoot = rank === 2 && !parentSegment && !extinct;
   const isSpeciesRoot = rank === 5 && !parentSegment && !extinct && !pickerKey;
-  const { sort, openSortSheet } = useTaxonomySort();
-  const [traits, setTraits] = useState<TaxonTraitFilters>({});
+  // A shared link can pin the sort; the hook drops the pin once the user picks
+  // their own order, so the sort control keeps working.
+  const { sort, openSortSheet } = useTaxonomySort(initialSort);
+  const [traits, setTraits] = useState<TaxonTraitFilters>(initialTraits ?? {});
 
   // Traits are only recorded for species, so the filter button would come
   // back empty-handed on any other rank.
   const canFilter = rank === 5;
 
+  // Shareable list roots — all species, extinct, orders — each at its own web
+  // path. Nested lists (families/genera under a parent) and pickers can't be
+  // shared, so this is null there.
+  const sharePath =
+    !pickerKey && !parentSegment ? taxonListSharePath(rank, extinct) : null;
+
   useLayoutEffect(() => {
     navigation.setOptions({
-      title: title ?? t(RANK_TITLE_KEY[rank]),
+      title: title ?? (extinct ? t("extinct_species") : t(RANK_TITLE_KEY[rank])),
       headerRight: () => (
         <IconsHeader
           onSortPress={openSortSheet}
           hasActiveFilters={hasTraitFilters(traits)}
+          onSharePress={
+            sharePath
+              ? async () => {
+                  const url = buildTaxonCatalogUrl(sharePath, traits, sort);
+                  await Share.share(
+                    Platform.OS === "ios" ? { url } : { message: url },
+                  );
+                }
+              : undefined
+          }
           onFilterPress={
             canFilter
               ? () =>
@@ -81,7 +112,18 @@ const TaxonomyScreen = () => {
         />
       ),
     });
-  }, [navigation, title, rank, t, openSortSheet, traits, canFilter]);
+  }, [
+    navigation,
+    title,
+    rank,
+    extinct,
+    t,
+    openSortSheet,
+    traits,
+    canFilter,
+    sharePath,
+    sort,
+  ]);
 
   const shortcut = (
     label: string,
@@ -112,6 +154,7 @@ const TaxonomyScreen = () => {
         sort={sort}
         traits={traits}
         onClearTraits={() => setTraits({})}
+        onChangeTraits={setTraits}
         onPick={
           pickerKey
             ? (item) => {

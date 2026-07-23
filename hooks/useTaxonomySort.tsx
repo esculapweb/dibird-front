@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import SortSheetContent from "../components/Sort/SortSheetContent";
@@ -10,9 +10,25 @@ const SCREEN = "Taxonomy";
 
 // Shared by every taxonomy list screen so the chosen order (alphabetical or
 // scientific) carries across orders → families → genera → species.
-export const useTaxonomySort = () => {
+//
+// `pinnedSort` lets a shared deep link open the list in a specific order
+// without touching the saved preference. It's an override, not a seed: the
+// first time the user picks a sort themselves it's dropped, so the control
+// keeps working (otherwise the pinned route param would mask every change).
+export const useTaxonomySort = (pinnedSort?: string) => {
   const { t } = useTranslation();
-  const { sort, onChange } = useSavedSort(SCREEN);
+  const { sort: savedSort, onChange } = useSavedSort(SCREEN);
+  const [override, setOverride] = useState<string | null>(pinnedSort ?? null);
+
+  const sort = override ?? savedSort;
+
+  const setSort = useCallback(
+    (value: string) => {
+      setOverride(null);
+      onChange(value);
+    },
+    [onChange],
+  );
 
   const openSortSheet = useCallback(() => {
     BottomSheet.showContent({
@@ -22,12 +38,12 @@ export const useTaxonomySort = () => {
           screen={SCREEN}
           options={sortOptionsList(SCREEN)}
           sort={sort}
-          setSort={(value) => onChange(value as string)}
+          setSort={(value) => setSort(value as string)}
           dismiss={dismiss}
         />
       ),
     });
-  }, [t, sort, onChange]);
+  }, [t, sort, setSort]);
 
   return { sort, openSortSheet };
 };

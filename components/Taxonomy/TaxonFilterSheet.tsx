@@ -7,7 +7,9 @@ import { useQuery } from "@tanstack/react-query";
 import { EdgeInsets, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import LoadingOverlay from "../ui/LoadingOverlay";
-import { fetchTraitFilters } from "../../util/fetches";
+import DropdownInput from "../ui/DropdownInput";
+import { fetchTraitFilters, fetchMyCountries } from "../../util/fetches";
+import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 import { StaleTime } from "../../constants/staleTime";
 import { useLanguage } from "../../store/language-context";
 import { useTheme, ThemeColors } from "../../store/theme-context";
@@ -16,6 +18,18 @@ import {
   TraitFilterOption,
   TraitFilterOptions,
 } from "../../types";
+import {
+  Bucket,
+  VocabularyKey,
+  GROUPS,
+  matchesBucket,
+  vocabLabels,
+  hasTraitFilters,
+} from "./taxonTraitConfig";
+
+// Re-exported so existing importers (TaxonomyScreen, tests) keep pulling it
+// from the sheet; the definition now lives in the shared config module.
+export { hasTraitFilters };
 
 interface TaxonFilterSheetProps {
   value: TaxonTraitFilters;
@@ -30,66 +44,6 @@ interface TaxonFilterSheetProps {
 // footer view ends up sized by whichever reported last (usually the ~60px
 // title), which is why the sheet opened far shorter than its content. One
 // measured node means the sheet is exactly as tall as what's in it.
-
-type Bucket = Record<string, number | null | string> & { labelKey: string };
-
-// Typing grams on a phone is nobody's idea of a filter, so the numeric
-// traits are offered as buckets that map onto the API's min/max.
-const MASS_BUCKETS: Bucket[] = [
-  { labelKey: "mass_tiny", mass_min: null, mass_max: 20 },
-  { labelKey: "mass_small", mass_min: 20, mass_max: 100 },
-  { labelKey: "mass_medium", mass_min: 100, mass_max: 1000 },
-  { labelKey: "mass_large", mass_min: 1000, mass_max: null },
-];
-
-const CLUTCH_BUCKETS: Bucket[] = [
-  { labelKey: "clutch_small", clutch_min: null, clutch_max: 2 },
-  { labelKey: "clutch_medium", clutch_min: 3, clutch_max: 5 },
-  { labelKey: "clutch_large", clutch_min: 6, clutch_max: null },
-];
-
-type VocabularyKey =
-  | "habitat"
-  | "migration"
-  | "trophic_level"
-  | "trophic_niche";
-
-// One row per group, all collapsed to start with: 36 chips at once was a
-// wall of text nobody could get past to the Apply button.
-const GROUPS: (
-  | { id: string; labelKey: string; buckets: Bucket[] }
-  | { id: VocabularyKey; labelKey: string; vocabulary: VocabularyKey }
-)[] = [
-  { id: "mass", labelKey: "mass", buckets: MASS_BUCKETS },
-  { id: "clutch", labelKey: "clutch", buckets: CLUTCH_BUCKETS },
-  { id: "habitat", labelKey: "habitat", vocabulary: "habitat" },
-  { id: "migration", labelKey: "migration", vocabulary: "migration" },
-  {
-    id: "trophic_level",
-    labelKey: "trophic_level",
-    vocabulary: "trophic_level",
-  },
-  {
-    id: "trophic_niche",
-    labelKey: "trophic_niche",
-    vocabulary: "trophic_niche",
-  },
-];
-
-export const hasTraitFilters = (filters: TaxonTraitFilters) =>
-  Object.values(filters).some((value) =>
-    Array.isArray(value) ? value.length > 0 : value != null,
-  );
-
-// A bucket is "on" when every bound it sets is the one currently applied.
-// An open-ended bucket ("over 1 kg") leaves its other bound unset, so an
-// absent value and a null bound have to compare equal.
-const matchesBucket = (filters: TaxonTraitFilters, bucket: Bucket) =>
-  Object.entries(bucket).every(
-    ([key, bound]) =>
-      key === "labelKey" ||
-      (filters[key as "mass_min"] ?? null) === (bound ?? null),
-  );
 
 const TaxonFilterSheet = ({
   value,
@@ -108,6 +62,17 @@ const TaxonFilterSheet = ({
     queryKey: ["TraitFilters", language],
     queryFn: fetchTraitFilters,
     staleTime: StaleTime.ONE_DAY,
+  });
+
+  // Country distribution filter — same dropdown the diary/place filters use.
+  const {
+    query: countriesQuery,
+    sort: countriesSort,
+    onSortChange: onCountriesSortChange,
+  } = useDropdownQuery({
+    type: "CountriesDropdown",
+    queryFn: (sort) => fetchMyCountries(false, sort),
+    params: [language],
   });
 
   // One open group at a time, so the sheet never grows past a screenful.
@@ -156,9 +121,7 @@ const TaxonFilterSheet = ({
     const selected = draft[group.vocabulary] ?? [];
     if (selected.length === 0) return "";
 
-    const labels = (options?.[group.vocabulary] ?? [])
-      .filter((option) => selected.includes(option.value))
-      .map((option) => option.label);
+    const labels = vocabLabels(options?.[group.vocabulary], selected);
 
     if (labels.length <= 2) return labels.join(", ");
     return `${labels.slice(0, 2).join(", ")} +${labels.length - 2}`;
@@ -198,6 +161,20 @@ const TaxonFilterSheet = ({
           </Pressable>
         )}
       </View>
+
+      <DropdownInput
+        title={t("country")}
+        placeholder={t("all_countries")}
+        value={draft.territory ?? null}
+        setValue={(value) =>
+          setDraft((prev) => ({ ...prev, territory: value }))
+        }
+        query={countriesQuery}
+        type="CountriesDropdown"
+        sort={countriesSort}
+        onSortChange={onCountriesSortChange}
+        allowReset
+      />
 
       {GROUPS.map((group) => {
           const list: TraitFilterOption[] =

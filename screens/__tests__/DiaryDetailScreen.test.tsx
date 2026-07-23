@@ -305,4 +305,32 @@ describe("listHeader", () => {
     await fireEvent.press(screen.getByText("diary_author"));
     expect(mockNavigation.navigate).not.toHaveBeenCalledWith("UserStat", expect.anything());
   });
+
+  // Regression: a non-owner viewing a private-location diary must see the
+  // "approximate area" label, never the real place name; a public location
+  // shows no place name at all. (The owner sees the place preview instead.)
+  describe("place name (non-owner)", () => {
+    const renderHeader = async (data: Record<string, unknown>) => {
+      mockDiaryItem({ data: { ...DIARY, is_owner: false, ...data } });
+      await render(<DiaryDetailScreen />);
+      await render(latestProps().listHeader());
+    };
+
+    it("shows the approximate-area label (not the real place name) for a private location", async () => {
+      await renderHeader({ location_private: true });
+      expect(screen.getByText("approximate_area")).toBeOnTheScreen();
+      expect(screen.queryByText("City Park")).not.toBeOnTheScreen();
+    });
+
+    it("shows location_not_specified for a private diary with no place", async () => {
+      await renderHeader({ location_private: true, place: null, place_data: null });
+      expect(screen.getByText("location_not_specified")).toBeOnTheScreen();
+    });
+
+    it("hides the place name entirely for a public location", async () => {
+      await renderHeader({ location_private: false });
+      expect(screen.queryByText("approximate_area")).not.toBeOnTheScreen();
+      expect(screen.queryByText("City Park")).not.toBeOnTheScreen();
+    });
+  });
 });

@@ -27,6 +27,9 @@ module.exports = {
   },
   testPathIgnorePatterns: ["/node_modules/", "/dist/", "/ios/", "/android/"],
   collectCoverageFrom: [
+    // Root-level sources (linking.ts, App.tsx, types.ts, …); `*` matches only
+    // the repo root, not subfolders. Jest excludes test files automatically.
+    "*.{ts,tsx}",
     "util/**/*.{ts,tsx}",
     "hooks/**/*.{ts,tsx}",
     "components/**/*.{ts,tsx}",
@@ -34,5 +37,9 @@ module.exports = {
     "store/**/*.{ts,tsx}",
     "screens/**/*.{ts,tsx}",
     "!**/*.d.ts",
+    // Deliberately-untestable root wiring: build config and app entry points.
+    "!drizzle.config.ts",
+    "!index.ts",
+    "!App.tsx",
   ],
 };

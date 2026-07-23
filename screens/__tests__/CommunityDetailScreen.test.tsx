@@ -251,3 +251,37 @@ describe("map", () => {
     );
   });
 });
+
+// Regression: the place-name row was missing entirely from this screen, so a
+// private observation of another user showed only the territory + map and never
+// the "approximate area" label. Non-owners must never see the real place name.
+describe("place name", () => {
+  it("shows the approximate-area label (not the real place name) for a private location", async () => {
+    mockItem({ data: { ...OBSERVATION, is_owner: false, location_private: true } });
+    await render(<CommunityDetailScreen />);
+    expect(screen.getByText("approximate_area")).toBeOnTheScreen();
+    expect(screen.queryByText("City Park")).not.toBeOnTheScreen();
+  });
+
+  it("shows location_not_specified for a private observation with no place", async () => {
+    mockItem({
+      data: { ...OBSERVATION, is_owner: false, location_private: true, place_data: null },
+    });
+    await render(<CommunityDetailScreen />);
+    expect(screen.getByText("location_not_specified")).toBeOnTheScreen();
+  });
+
+  it("hides the place name entirely for a public location of another user's observation", async () => {
+    mockItem({ data: { ...OBSERVATION, is_owner: false, location_private: false } });
+    await render(<CommunityDetailScreen />);
+    expect(screen.queryByText("approximate_area")).not.toBeOnTheScreen();
+    expect(screen.queryByText("City Park")).not.toBeOnTheScreen();
+  });
+
+  it("shows the real place name to the owner", async () => {
+    mockItem({ data: { ...OBSERVATION, is_owner: true, location_private: true } });
+    await render(<CommunityDetailScreen />);
+    expect(screen.getByText("City Park")).toBeOnTheScreen();
+    expect(screen.queryByText("approximate_area")).not.toBeOnTheScreen();
+  });
+});

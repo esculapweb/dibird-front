@@ -337,6 +337,40 @@ it("owner tapping the place row navigates to PlaceDetail", async () => {
   expect(mockNavigation.navigate).toHaveBeenCalledWith("PlaceDetail", { placeId: 2 });
 });
 
+// Regression: a non-owner viewing a private-location observation must see the
+// "approximate area" label, never the real place name; a public location shows
+// no place name at all (only the territory + exact map).
+describe("place name", () => {
+  it("shows the approximate-area label (not the real place name) for a non-owner's private location", async () => {
+    mockItem({ data: { ...OBSERVATION, is_owner: false, location_private: true } });
+    await render(<ObservationDetailScreen />);
+    expect(screen.getByText("approximate_area")).toBeOnTheScreen();
+    expect(screen.queryByText("City Park")).not.toBeOnTheScreen();
+  });
+
+  it("shows location_not_specified for a non-owner's private observation with no place", async () => {
+    mockItem({
+      data: { ...OBSERVATION, is_owner: false, location_private: true, place: null, place_data: null },
+    });
+    await render(<ObservationDetailScreen />);
+    expect(screen.getByText("location_not_specified")).toBeOnTheScreen();
+  });
+
+  it("hides the place name entirely for a non-owner's public location", async () => {
+    mockItem({ data: { ...OBSERVATION, is_owner: false, location_private: false } });
+    await render(<ObservationDetailScreen />);
+    expect(screen.queryByText("approximate_area")).not.toBeOnTheScreen();
+    expect(screen.queryByText("City Park")).not.toBeOnTheScreen();
+  });
+
+  it("shows the real place name to the owner", async () => {
+    mockItem({ data: { ...OBSERVATION, is_owner: true, location_private: true } });
+    await render(<ObservationDetailScreen />);
+    expect(screen.getByText("City Park")).toBeOnTheScreen();
+    expect(screen.queryByText("approximate_area")).not.toBeOnTheScreen();
+  });
+});
+
 it("owner tapping the diary block navigates to DiaryDetail", async () => {
   mockItem({ data: { ...OBSERVATION, diary: 7, diary_data: { name: "Morning walk" } } });
   await render(<ObservationDetailScreen />);

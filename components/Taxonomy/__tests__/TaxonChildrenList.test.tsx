@@ -29,6 +29,13 @@ jest.mock("../../ui/SearchInput", () => {
   const { View } = require("react-native");
   return { __esModule: true, default: () => <View testID="search-input" /> };
 });
+jest.mock("../TaxonFilterChips", () => {
+  const { View } = require("react-native");
+  return {
+    __esModule: true,
+    default: () => <View testID="taxon-filter-chips" />,
+  };
+});
 
 import { render, screen } from "@testing-library/react-native";
 import { createNavigationMock } from "../../../screens/test-utils";
@@ -110,6 +117,24 @@ it("keeps the count out of the way when nothing is filtered", async () => {
   await renderList();
 
   expect(screen.queryByText("found: 42")).toBeNull();
+});
+
+it("shows the removable filter chips once per-filter removal is wired in", async () => {
+  const { rerender } = await renderList({ mass_min: 1000 });
+  // No onChangeTraits: nothing to remove a single chip with, so no chips row.
+  expect(screen.queryByTestId("taxon-filter-chips")).toBeNull();
+
+  await rerender(
+    <TaxonChildrenList
+      rank={5}
+      errorTitle="taxonomy_unavailable"
+      emptyMessage="no_species_found"
+      traits={{ mass_min: 1000 }}
+      onChangeTraits={jest.fn()}
+    />,
+  );
+
+  expect(screen.getByTestId("taxon-filter-chips")).toBeOnTheScreen();
 });
 
 it("offers to clear the filters, not just the search, when nothing matches", async () => {

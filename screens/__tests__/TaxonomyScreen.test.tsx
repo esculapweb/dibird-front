@@ -44,9 +44,13 @@ jest.mock("../../components/Taxonomy/TaxonChildrenList", () => {
   };
 });
 jest.mock("../../hooks/useTaxonomySort", () => ({
-  useTaxonomySort: () => ({ sort: "ioc_id", openSortSheet: jest.fn() }),
+  useTaxonomySort: (pinnedSort?: string) => ({
+    sort: pinnedSort ?? "ioc_id",
+    openSortSheet: jest.fn(),
+  }),
 }));
 
+import { Share } from "react-native";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { createNavigationMock, createRouteMock } from "../test-utils";
 import TaxonomyScreen from "../TaxonomyScreen";
@@ -55,6 +59,13 @@ import { setNavigationCallback } from "../../util/navigationCallbacks";
 let mockRoute: ReturnType<typeof createRouteMock>;
 let mockListProps: Record<string, unknown>;
 const mockNavigation = createNavigationMock();
+
+// The IconsHeader props (onSharePress etc.) the screen hands to setOptions,
+// read straight off the headerRight element without mounting it.
+const headerProps = (): Record<string, unknown> => {
+  const options = (mockNavigation.setOptions as jest.Mock).mock.calls.at(-1)![0];
+  return options.headerRight().props;
+};
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -162,6 +173,99 @@ it("passes the trait filters down and can clear them", async () => {
 
   expect(mockListProps.traits).toEqual({});
   expect(typeof mockListProps.onClearTraits).toBe("function");
+});
+
+it("seeds the filters from a shared deep link", async () => {
+  mockRoute = createRouteMock("Taxonomy", {
+    rank: 5,
+    initialTraits: { territory: 5, mass_min: 1000 },
+  });
+
+  await render(<TaxonomyScreen />);
+
+  expect(mockListProps.traits).toEqual({ territory: 5, mass_min: 1000 });
+});
+
+it("shares the catalogue with its current filters", async () => {
+  const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({
+    action: "sharedAction",
+  } as never);
+  mockRoute = createRouteMock("Taxonomy", {
+    rank: 5,
+    initialTraits: { territory: 5 },
+  });
+
+  await render(<TaxonomyScreen />);
+  await (headerProps().onSharePress as () => Promise<void>)();
+
+  const arg = shareSpy.mock.calls[0][0] as { url?: string; message?: string };
+  const shared = arg.url ?? arg.message ?? "";
+  expect(shared).toContain("/species/?territory=5");
+});
+
+it("offers no share action while picking a species", async () => {
+  mockRoute = createRouteMock("Taxonomy", { rank: 5, pickerKey: "x" });
+
+  await render(<TaxonomyScreen />);
+
+  expect(headerProps().onSharePress).toBeUndefined();
+});
+
+it("shares the extinct list at its own path", async () => {
+  const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({
+    action: "sharedAction",
+  } as never);
+  mockRoute = createRouteMock("Taxonomy", { rank: 5, extinct: true });
+
+  await render(<TaxonomyScreen />);
+  await (headerProps().onSharePress as () => Promise<void>)();
+
+  const arg = shareSpy.mock.calls[0][0] as { url?: string; message?: string };
+  expect(arg.url ?? arg.message ?? "").toContain("/extinct/");
+});
+
+it("applies the sort pinned by a shared link", async () => {
+  mockRoute = createRouteMock("Taxonomy", { rank: 5, initialSort: "name" });
+
+  await render(<TaxonomyScreen />);
+
+  expect(mockListProps.sort).toBe("name");
+});
+
+it("titles the extinct deep link 'extinct species', not the plain species list", async () => {
+  // The dibird://extinct/ deep link opens rank 5 with extinct:true and no
+  // title — without the extinct branch the header would read "species".
+  mockRoute = createRouteMock("Taxonomy", { rank: 5, extinct: true });
+
+  await render(<TaxonomyScreen />);
+
+  const options = (mockNavigation.setOptions as jest.Mock).mock.calls.at(-1)![0];
+  expect(options.title).toBe("extinct_species");
+});
+
+it("shares the orders list at its own path", async () => {
+  const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({
+    action: "sharedAction",
+  } as never);
+  mockRoute = createRouteMock("Taxonomy", { rank: 2 });
+
+  await render(<TaxonomyScreen />);
+  await (headerProps().onSharePress as () => Promise<void>)();
+
+  const arg = shareSpy.mock.calls[0][0] as { url?: string; message?: string };
+  expect(arg.url ?? arg.message ?? "").toContain("/order/");
+});
+
+it("offers no share on a nested list", async () => {
+  mockRoute = createRouteMock("Taxonomy", {
+    rank: 3,
+    parentSegment: "hawks-and-relatives",
+    parentRank: 2,
+  });
+
+  await render(<TaxonomyScreen />);
+
+  expect(headerProps().onSharePress).toBeUndefined();
 });
 
 it("autofocuses and relabels the search on the species list", async () => {

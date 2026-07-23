@@ -145,8 +145,11 @@ const SpeciesDetailScreen = () => {
     // Defensive: a locally cached response fetched before the backend
     // started returning {label, names} (instead of a plain name array) can
     // still be sitting in the offline cache and get served on a failed
-    // refetch — fall back to the code rather than crashing on it.
-    const entries = Object.entries(data?.multilangs.langs ?? {}).map(
+    // refetch — fall back to the code rather than crashing on it. `multilangs`
+    // is also absent on the partial {redirect} response (a cross-language deep
+    // link), which renders once before the redirect effect refetches — so
+    // chain through it too, not just `data`.
+    const entries = Object.entries(data?.multilangs?.langs ?? {}).map(
       ([code, entry]) => ({
         code,
         label: entry?.label || code.toUpperCase(),
@@ -154,7 +157,7 @@ const SpeciesDetailScreen = () => {
       }),
     );
     return entries.sort((a, b) => a.label.localeCompare(b.label));
-  }, [data?.multilangs.langs]);
+  }, [data?.multilangs?.langs]);
 
   if (segmentQuery.isError)
     return (

@@ -200,8 +200,12 @@ it("shows an error overlay with retry when the species detail fetch fails", asyn
 });
 
 it("redirects to the canonical segment via setParams when the API returns a redirect", async () => {
+  // The redirect response is partial — just { redirect, name_lang: null }, with
+  // no multilangs/countries/parents — so this must not spread baseDetail, or it
+  // wouldn't catch the crash on data?.multilangs?.langs during the render that
+  // happens before the redirect effect refetches.
   mockQueries({
-    detail: detailResult({ data: { ...baseDetail, redirect: "eurasian-blue-tit" } }),
+    detail: detailResult({ data: { redirect: "eurasian-blue-tit", name_lang: null } }),
   });
 
   await render(<SpeciesDetailScreen />);

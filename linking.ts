@@ -1,6 +1,7 @@
 import { getStateFromPath } from "@react-navigation/native";
 import { AppStackParamList, AuthStackParamList } from "./types";
 import { LinkingOptions } from "@react-navigation/native";
+import { paramsToTaxonFilters } from "./util/taxonShareLink";
 
 const parseString = (v: string | null): string | undefined => v || undefined;
 
@@ -28,6 +29,67 @@ const withBasicFilters = (path: string) => ({
 });
 
 export const DEEP_LINK_PREFIXES = ["dibird://", "https://dibird.com"];
+
+// Web paths for the taxon detail pages, keyed by rank (order/family/genus).
+const GROUP_RANK_BY_PATH: Record<string, 2 | 3 | 4> = {
+  order: 2,
+  family: 3,
+  genus: 4,
+};
+
+type TaxonRoute = { name: "Taxonomy" | "SpeciesDetail" | "TaxonGroupDetail"; params: Record<string, unknown> };
+
+// Maps a (locale-stripped) web path to the in-app route + params. Covers the
+// catalogue lists (all species, extinct, orders) and the detail pages
+// (species/genus/family/order). Returns null for anything else.
+const matchTaxonPath = (normalizedPath: string): TaxonRoute | null => {
+  const [rawPath, query = ""] = normalizedPath.split("?");
+  const segments = rawPath.split("/").filter(Boolean);
+  const params = new URLSearchParams(query);
+  const sort = params.get("o") || undefined;
+
+  // Lists (no slug): /species, /extinct, /order
+  if (segments.length === 1) {
+    const [head] = segments;
+    if (head === "species")
+      return {
+        name: "Taxonomy",
+        params: {
+          rank: 5,
+          initialTraits: paramsToTaxonFilters(params),
+          ...(sort && { initialSort: sort }),
+        },
+      };
+    if (head === "extinct")
+      return {
+        name: "Taxonomy",
+        params: {
+          rank: 5,
+          extinct: true,
+          initialTraits: paramsToTaxonFilters(params),
+          ...(sort && { initialSort: sort }),
+        },
+      };
+    if (head === "order")
+      return {
+        name: "Taxonomy",
+        params: { rank: 2, ...(sort && { initialSort: sort }) },
+      };
+    return null;
+  }
+
+  // Detail pages (with slug): /species/<slug>, /order|family|genus/<slug>
+  if (segments.length === 2) {
+    const [head, slug] = segments;
+    if (head === "species")
+      return { name: "SpeciesDetail", params: { segment: slug } };
+    const rank = GROUP_RANK_BY_PATH[head];
+    if (rank)
+      return { name: "TaxonGroupDetail", params: { segment: slug, rank } };
+  }
+
+  return null;
+};
 
 const linking = (
   isAuthenticated: boolean,
@@ -97,6 +159,15 @@ const linking = (
       return {
         routes: [{ name: "Welcome" }],
       };
+    }
+
+    // Shared taxonomy links (catalogue lists and detail pages). These live in
+    // the authed AppStack, so only deep-link them when signed in; otherwise
+    // fall through and the site opens the page instead. Each is wrapped under
+    // Main so Back returns home, like PlaceDetail.
+    const taxonRoute = matchTaxonPath(normalizedPath);
+    if (isAuthenticated && taxonRoute) {
+      return { index: 1, routes: [{ name: "Main" }, taxonRoute] };
     }
 
     const state = getStateFromPath(normalizedPath, options);

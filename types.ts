@@ -481,6 +481,9 @@ export interface TaxonTraitFilters {
   migration?: string[];
   trophic_level?: string[];
   trophic_niche?: string[];
+  // Distribution filter: api.Territory id from the country dropdown; the
+  // catalogue keeps only species that occur in this territory.
+  territory?: number | null;
 }
 
 export type TaxonTraitFilterKey = keyof TaxonTraitFilters;
@@ -969,6 +972,10 @@ export type AppStackParamList = {
     // When set, the screen picks instead of navigates: tapping a species
     // hands it to the callback registered under this key and pops back.
     pickerKey?: string;
+    // Seeds the trait/country filters and sort when the screen is opened from a
+    // shared catalogue deep link (see linking.ts / util/taxonShareLink.ts).
+    initialTraits?: TaxonTraitFilters;
+    initialSort?: string;
   };
   TaxonGroupDetail: { segment: string; rank: 2 | 3 | 4 };
   SpeciesCompare: { segmentA?: string; segmentB?: string } | undefined;

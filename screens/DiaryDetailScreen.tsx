@@ -218,16 +218,15 @@ const DiaryDetailScreen = () => {
                   {isoToFlagEmoji(diary?.territory_data?.code)}{" "}
                   {diary?.territory_data?.name}
                 </Text>
-                {diary.is_owner ||
-                  (diary.location_private && (
-                    <Text style={styles.placeName} numberOfLines={2}>
-                      {diary?.place_data?.name
-                        ? diary.is_owner
-                          ? diary.place_data.name
-                          : t("approximate_area")
-                        : t("location_not_specified")}
-                    </Text>
-                  ))}
+                {(diary.is_owner || diary.location_private) && (
+                  <Text style={styles.placeName} numberOfLines={2}>
+                    {diary?.place_data?.name
+                      ? diary.is_owner
+                        ? diary.place_data.name
+                        : t("approximate_area")
+                      : t("location_not_specified")}
+                  </Text>
+                )}
               </View>
             </View>
           </View>

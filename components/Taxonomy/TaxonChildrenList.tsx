@@ -8,6 +8,7 @@ import SearchInput from "../ui/SearchInput";
 import ErrorOverlay from "../Error/ErrorOverlay";
 import LoadingOverlay from "../ui/LoadingOverlay";
 import TaxonRow from "./TaxonRow";
+import TaxonFilterChips from "./TaxonFilterChips";
 import { useTheme } from "../../store/theme-context";
 import { useList } from "../../hooks/useList";
 import { useDebounce } from "../../hooks/useDebounce";
@@ -32,6 +33,8 @@ interface TaxonChildrenListProps {
   sort?: string | null;
   traits?: TaxonTraitFilters | null;
   onClearTraits?: () => void;
+  // Per-filter removal from the chips row; without it the chips don't render.
+  onChangeTraits?: (next: TaxonTraitFilters) => void;
   // Picker mode: hand the tapped species to this callback instead of opening
   // its page (see AppStackParamList.Taxonomy.pickerKey).
   onPick?: (item: TaxonListItem) => void;
@@ -49,6 +52,7 @@ const TaxonChildrenList = ({
   sort = "name",
   traits,
   onClearTraits,
+  onChangeTraits,
   onPick,
   searchPlaceholder,
   autoFocusSearch,
@@ -157,6 +161,9 @@ const TaxonChildrenList = ({
             placeholder={searchPlaceholder ?? t("search")}
             autoFocus={autoFocusSearch}
           />
+          {hasTraitFilters && onChangeTraits && traits && (
+            <TaxonFilterChips traits={traits} onChange={onChangeTraits} />
+          )}
           {hasTraitFilters && total != null && (
             <Text style={styles.total}>
               {t("found")}: {total}
