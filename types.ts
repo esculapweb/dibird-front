@@ -972,12 +972,13 @@ export type AppStackParamList = {
     // When set, the screen picks instead of navigates: tapping a species
     // hands it to the callback registered under this key and pops back.
     pickerKey?: string;
-    // Seeds the trait/country filters and sort when the screen is opened from a
-    // shared catalogue deep link (see linking.ts / util/taxonShareLink.ts).
+    // Seeds the trait/country filters, sort and name search when the screen is
+    // opened from a shared catalogue deep link (linking.ts / taxonShareLink.ts).
     initialTraits?: TaxonTraitFilters;
     initialSort?: string;
+    initialSearch?: string;
   };
-  TaxonGroupDetail: { segment: string; rank: 2 | 3 | 4 };
+  TaxonGroupDetail: { segment: string; rank: 2 | 3 | 4; initialSort?: string };
   SpeciesCompare: { segmentA?: string; segmentB?: string } | undefined;
   Achievements: { highlightId?: string } | undefined;
   Privacy: undefined;

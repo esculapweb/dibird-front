@@ -43,9 +43,9 @@ const TaxonGroupDetailScreen = () => {
   const { language } = useLanguage();
   const navigation = useNavigation<AppStackNavigationProp>();
   const route = useRoute<AppStackRouteProp<"TaxonGroupDetail">>();
-  const { segment, rank } = route.params;
+  const { segment, rank, initialSort } = route.params;
   const styles = stylesFn(Colors);
-  const { sort, openSortSheet } = useTaxonomySort();
+  const { sort, openSortSheet } = useTaxonomySort(initialSort);
 
   const { data, isLoading, isError, isRefetching, error, refetch } =
     useQuery<TaxonGroupDetail>({
@@ -61,7 +61,13 @@ const TaxonGroupDetailScreen = () => {
         <IconsHeader
           onSortPress={openSortSheet}
           onSharePress={async () => {
-            const url = buildShareUrl(`${SHARE_PATH[rank]}/${segment}/`);
+            // Carry the current sort so the shared link reopens in the same
+            // order (parsed back via matchTaxonPath's `o` in linking.ts).
+            const url = buildShareUrl(
+              `${SHARE_PATH[rank]}/${segment}/`,
+              null,
+              sort,
+            );
             await Share.share(
               Platform.OS === "ios" ? { url } : { message: url },
             );
@@ -69,7 +75,7 @@ const TaxonGroupDetailScreen = () => {
         />
       ),
     });
-  }, [navigation, data?.name_lang, rank, segment, t, openSortSheet]);
+  }, [navigation, data?.name_lang, rank, segment, t, openSortSheet, sort]);
 
   useEffect(() => {
     if (data?.redirect) {

@@ -54,6 +54,7 @@ const TaxonomyScreen = () => {
     pickerKey,
     initialTraits,
     initialSort,
+    initialSearch,
   } = route.params;
   // Two roots now: the flat species list (where the catalogue opens) and
   // the order tree behind it. Each links to the other so neither is a dead
@@ -64,6 +65,9 @@ const TaxonomyScreen = () => {
   // their own order, so the sort control keeps working.
   const { sort, openSortSheet } = useTaxonomySort(initialSort);
   const [traits, setTraits] = useState<TaxonTraitFilters>(initialTraits ?? {});
+  // Owned here (not inside TaxonChildrenList) so the share button can encode
+  // the current name search into the link, like traits and sort.
+  const [search, setSearch] = useState(initialSearch ?? "");
 
   // Traits are only recorded for species, so the filter button would come
   // back empty-handed on any other rank.
@@ -85,7 +89,12 @@ const TaxonomyScreen = () => {
           onSharePress={
             sharePath
               ? async () => {
-                  const url = buildTaxonCatalogUrl(sharePath, traits, sort);
+                  const url = buildTaxonCatalogUrl(
+                    sharePath,
+                    traits,
+                    sort,
+                    search,
+                  );
                   await Share.share(
                     Platform.OS === "ios" ? { url } : { message: url },
                   );
@@ -123,6 +132,7 @@ const TaxonomyScreen = () => {
     canFilter,
     sharePath,
     sort,
+    search,
   ]);
 
   const shortcut = (
@@ -155,6 +165,8 @@ const TaxonomyScreen = () => {
         traits={traits}
         onClearTraits={() => setTraits({})}
         onChangeTraits={setTraits}
+        search={search}
+        onChangeSearch={setSearch}
         onPick={
           pickerKey
             ? (item) => {

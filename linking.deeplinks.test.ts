@@ -53,9 +53,17 @@ const SUPPORTED: Array<{ path: string; authed?: boolean; screen: string }> = [
     path: "species/?territory=68&habitat=Wetland&o=ioc_id",
     screen: "Taxonomy",
   },
+  { path: "species/?name=duck", screen: "Taxonomy" },
+  {
+    path: "species/?territory=68&o=ioc_id&name=duck",
+    screen: "Taxonomy",
+  },
+  { path: "extinct/?name=dodo", screen: "Taxonomy" },
   { path: "order/", screen: "Taxonomy" },
+  { path: "order/?name=owls&o=ioc_id", screen: "Taxonomy" },
   { path: "extinct/", screen: "Taxonomy" },
   { path: "order/ducks-and-relatives/", screen: "TaxonGroupDetail" },
+  { path: "order/ducks-and-relatives/?o=ioc_id", screen: "TaxonGroupDetail" },
   { path: "family/ducks-geese-swans/", screen: "TaxonGroupDetail" },
   { path: "genus/aix/", screen: "TaxonGroupDetail" },
   { path: "species/mandarin-duck/", screen: "SpeciesDetail" },
@@ -125,9 +133,14 @@ const SUPPORTED: Array<{ path: string; authed?: boolean; screen: string }> = [
     path: "ru/species/?territory=68&habitat=Wetland&o=ioc_id",
     screen: "Taxonomy",
   },
+  { path: "ru/species/?name=zhuravl", screen: "Taxonomy" },
   { path: "ru/order/", screen: "Taxonomy" },
   { path: "ru/extinct/", screen: "Taxonomy" },
   { path: "ru/order/zhuravleobraznye/", screen: "TaxonGroupDetail" },
+  {
+    path: "ru/order/zhuravleobraznye/?o=ioc_id",
+    screen: "TaxonGroupDetail",
+  },
   { path: "ru/family/zhuravlinye/", screen: "TaxonGroupDetail" },
   { path: "ru/genus/grus/", screen: "TaxonGroupDetail" },
   { path: "ru/species/seryj-zhuravl/", screen: "SpeciesDetail" },
@@ -196,5 +209,42 @@ describe("deep links from the QA page resolve to the right screen", () => {
     expect(routeNames(stateFor("my/observation/328145/", false))).toEqual([
       "Welcome",
     ]);
+  });
+
+  // The taxonomy links carry state beyond the screen name: catalogue lists
+  // restore the name search + sort + filters, and group detail pages restore
+  // the sort. The routeNames check above only proves the screen; these assert
+  // the params round-trip so a shared search/order actually reopens as sent.
+  const leafParams = (state: State): Record<string, unknown> => {
+    const routes = state?.routes ?? [];
+    return (routes[routes.length - 1]?.params ?? {}) as Record<string, unknown>;
+  };
+
+  it("restores the name search on a catalogue list link", () => {
+    expect(leafParams(stateFor("species/?name=duck"))).toMatchObject({
+      rank: 5,
+      initialSearch: "duck",
+    });
+  });
+
+  it("restores filters, sort and search together", () => {
+    expect(
+      leafParams(stateFor("species/?territory=68&o=ioc_id&name=duck")),
+    ).toMatchObject({
+      rank: 5,
+      initialSort: "ioc_id",
+      initialSearch: "duck",
+      initialTraits: { territory: 68 },
+    });
+  });
+
+  it("restores the sort on a group detail link", () => {
+    expect(
+      leafParams(stateFor("order/ducks-and-relatives/?o=ioc_id")),
+    ).toMatchObject({
+      segment: "ducks-and-relatives",
+      rank: 2,
+      initialSort: "ioc_id",
+    });
   });
 });

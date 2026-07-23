@@ -80,10 +80,14 @@ export const buildTaxonCatalogUrl = (
   path: TaxonListPath,
   traits: TaxonTraitFilters,
   sort?: string | null,
+  search?: string | null,
 ): string => {
   const base = `${langBaseUrl()}/${path}/`;
   const params = taxonFiltersToParams(traits);
   if (sort) params.o = sort;
+  // The catalogue search box filters by name (see fetchAbstract's `name`
+  // param); carry it so a shared search reopens with the same query.
+  if (search) params.name = search;
   const query = new URLSearchParams(params).toString();
   return query ? `${base}?${query}` : base;
 };

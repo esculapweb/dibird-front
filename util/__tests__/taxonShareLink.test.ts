@@ -73,6 +73,19 @@ it("carries the sort as o and uses each list's own path", () => {
   );
 });
 
+it("carries the name search as the name param", () => {
+  expect(buildTaxonCatalogUrl("species", {}, null, "duck")).toBe(
+    "https://dibird.com/species/?name=duck",
+  );
+  expect(buildTaxonCatalogUrl("species", { territory: 5 }, "name", "duck")).toBe(
+    "https://dibird.com/species/?territory=5&o=name&name=duck",
+  );
+  // Empty/whitespace-free empty string is dropped like the other params.
+  expect(buildTaxonCatalogUrl("species", {}, null, "")).toBe(
+    "https://dibird.com/species/",
+  );
+});
+
 it("maps only the flat roots to a shareable path", () => {
   expect(taxonListSharePath(2)).toBe("order");
   expect(taxonListSharePath(5)).toBe("species");

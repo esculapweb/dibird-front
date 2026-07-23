@@ -40,6 +40,13 @@ interface TaxonChildrenListProps {
   onPick?: (item: TaxonListItem) => void;
   searchPlaceholder?: string;
   autoFocusSearch?: boolean;
+  // Name search. Uncontrolled by default (own state, seeded from
+  // `initialSearch` for shared deep links); when the parent also needs the
+  // current query — e.g. to build a share URL — it passes `search` +
+  // `onChangeSearch` and owns the state instead.
+  initialSearch?: string;
+  search?: string;
+  onChangeSearch?: (next: string) => void;
 }
 
 const TaxonChildrenList = ({
@@ -56,11 +63,16 @@ const TaxonChildrenList = ({
   onPick,
   searchPlaceholder,
   autoFocusSearch,
+  initialSearch,
+  search: controlledSearch,
+  onChangeSearch,
 }: TaxonChildrenListProps) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const navigation = useNavigation<AppStackNavigationProp>();
-  const [search, setSearch] = useState("");
+  const [internalSearch, setInternalSearch] = useState(initialSearch ?? "");
+  const search = controlledSearch ?? internalSearch;
+  const setSearch = onChangeSearch ?? setInternalSearch;
   const debouncedSearch = useDebounce(search);
 
   // The trait filters travel inside fetchTaxonList's closure, which useList

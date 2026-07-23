@@ -47,6 +47,9 @@ const matchTaxonPath = (normalizedPath: string): TaxonRoute | null => {
   const segments = rawPath.split("/").filter(Boolean);
   const params = new URLSearchParams(query);
   const sort = params.get("o") || undefined;
+  // The catalogue's name search (see buildTaxonCatalogUrl); restored into the
+  // search box via Taxonomy.initialSearch.
+  const search = params.get("name") || undefined;
 
   // Lists (no slug): /species, /extinct, /order
   if (segments.length === 1) {
@@ -58,6 +61,7 @@ const matchTaxonPath = (normalizedPath: string): TaxonRoute | null => {
           rank: 5,
           initialTraits: paramsToTaxonFilters(params),
           ...(sort && { initialSort: sort }),
+          ...(search && { initialSearch: search }),
         },
       };
     if (head === "extinct")
@@ -68,12 +72,17 @@ const matchTaxonPath = (normalizedPath: string): TaxonRoute | null => {
           extinct: true,
           initialTraits: paramsToTaxonFilters(params),
           ...(sort && { initialSort: sort }),
+          ...(search && { initialSearch: search }),
         },
       };
     if (head === "order")
       return {
         name: "Taxonomy",
-        params: { rank: 2, ...(sort && { initialSort: sort }) },
+        params: {
+          rank: 2,
+          ...(sort && { initialSort: sort }),
+          ...(search && { initialSearch: search }),
+        },
       };
     return null;
   }
@@ -85,7 +94,10 @@ const matchTaxonPath = (normalizedPath: string): TaxonRoute | null => {
       return { name: "SpeciesDetail", params: { segment: slug } };
     const rank = GROUP_RANK_BY_PATH[head];
     if (rank)
-      return { name: "TaxonGroupDetail", params: { segment: slug, rank } };
+      return {
+        name: "TaxonGroupDetail",
+        params: { segment: slug, rank, ...(sort && { initialSort: sort }) },
+      };
   }
 
   return null;
