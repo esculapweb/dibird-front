@@ -8,6 +8,7 @@ jest.mock("../../../services/api", () => ({
   patch: jest.fn(),
   delete: jest.fn(),
 }));
+jest.mock("../../../store/language-context", () => ({ useLanguage: jest.fn() }));
 jest.mock("../../../services/sync/networkStatus", () => ({ isConnected: jest.fn() }));
 jest.mock("../../../services/sync/placeSync", () => ({ runPlaceSync: jest.fn() }));
 jest.mock("../../repositories/placeRepository", () => ({
@@ -25,6 +26,7 @@ jest.mock("../../useApiError", () => ({ useApiError: () => ({ showErrorToast: mo
 import { QueryClient, QueryClientProvider, notifyManager } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import api from "../../../services/api";
+import { useLanguage } from "../../../store/language-context";
 import { isConnected } from "../../../services/sync/networkStatus";
 import { runPlaceSync } from "../../../services/sync/placeSync";
 import * as placeRepository from "../../repositories/placeRepository";
@@ -51,6 +53,7 @@ beforeEach(() => {
   queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
+  (useLanguage as jest.Mock).mockReturnValue({ language: "en" });
   (isConnected as jest.Mock).mockReturnValue(true);
 });
 
@@ -113,6 +116,32 @@ describe("usePlaceItem", () => {
     // supersedes it — proving the seed doesn't accidentally skip the fetch.
     await waitFor(() => expect(result.current.data).toEqual({ id: 5, name: "Server-fresh", pendingCount: 0 }));
     expect(api.get).toHaveBeenCalledWith("/myapi/place2/5/", { params: undefined });
+  });
+
+  // Regression: a place's territory_data.name is localized by the request's
+  // Accept-Language, so reopening a place after a language switch used to serve
+  // the day-long stale previous-language copy. The language must be part of the
+  // query key.
+  it("refetches under a new key when the language changes, instead of serving the stale previous-language copy", async () => {
+    (api.get as jest.Mock)
+      .mockResolvedValueOnce({ data: { id: 5, territory_data: { name: "Germany" } } })
+      .mockResolvedValueOnce({ data: { id: 5, territory_data: { name: "Германия" } } });
+
+    (useLanguage as jest.Mock).mockReturnValue({ language: "en" });
+    const { result, rerender } = await renderHook(() => usePlaceItem(5), { wrapper });
+    await waitFor(() =>
+      expect(result.current.data?.territory_data?.name).toBe("Germany"),
+    );
+
+    (useLanguage as jest.Mock).mockReturnValue({ language: "ru" });
+    await act(async () => {
+      rerender({});
+    });
+
+    await waitFor(() =>
+      expect(result.current.data?.territory_data?.name).toBe("Германия"),
+    );
+    expect(api.get).toHaveBeenCalledTimes(2);
   });
 });
 

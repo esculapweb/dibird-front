@@ -99,6 +99,22 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
           )}
         />
 
+        {/* Каталог видов — справочник, а не «мои данные» */}
+        <DrawerItem
+          label={t("species_catalog")}
+          labelStyle={{ color: Colors.textMain }}
+          onPress={() => {
+            navigation.closeDrawer();
+            navigation.navigate("Taxonomy", {
+              rank: 5,
+              title: t("species_catalog"),
+            });
+          }}
+          icon={({ color, size }) => (
+            <Ionicons name="book-outline" color={color} size={size} />
+          )}
+        />
+
         {/* Профиль — переход через Stack */}
         <DrawerItem
           label={t("profile")}
@@ -125,21 +141,7 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
           )}
         />
 
-        {/* Каталог видов — справочник, а не «мои данные» */}
-        <DrawerItem
-          label={t("species_catalog")}
-          labelStyle={{ color: Colors.textMain }}
-          onPress={() => {
-            navigation.closeDrawer();
-            navigation.navigate("Taxonomy", {
-              rank: 5,
-              title: t("species_catalog"),
-            });
-          }}
-          icon={({ color, size }) => (
-            <Ionicons name="book-outline" color={color} size={size} />
-          )}
-        />
+        
 
         {/* Настройки — переход через Stack */}
         <DrawerItem

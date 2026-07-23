@@ -5,6 +5,7 @@ import api from "../../services/api";
 import { useApiError } from "../useApiError";
 import { useMutationWithTranslation } from "../useMutationWithTranslation";
 import { useProfile } from "../../store/profile-context";
+import { useLanguage } from "../../store/language-context";
 import { isConnected } from "../../services/sync/networkStatus";
 import { runDiarySync } from "../../services/sync/diarySync";
 import * as diaryRepository from "../repositories/diaryRepository";
@@ -47,6 +48,7 @@ export const useDiaryItem = (
 ) => {
   const { showErrorToast } = useApiError();
   const { profile } = useProfile();
+  const { language } = useLanguage();
 
   const seededInitialItem = useMemo(() => {
     if (!initialItem || initialItem.id !== id) return undefined;
@@ -81,7 +83,12 @@ export const useDiaryItem = (
   }, [initialItem, id, profile?.user]);
 
   const query = useQuery({
-    queryKey: ["Diary", id],
+    // `language` is part of the key because a diary's territory_data.name (and
+    // its observation preview's species names) come back localized by the
+    // request's Accept-Language — without it, switching language reads back the
+    // stale previous-language copy (staleTime is a day). Mirrors
+    // useObservationItem / useItem.
+    queryKey: ["Diary", id, language],
     // Deliberately untyped (matches the generic useItem this replaces).
     queryFn: async () => {
       if (id! < 0) {
@@ -154,6 +161,7 @@ export const useCreateDiary = () => {
 export const useUpdateDiary = (id: number | null | undefined) => {
   const queryClient = useQueryClient();
   const { profile } = useProfile();
+  const { language } = useLanguage();
 
   return useMutationWithTranslation<DiaryItem, AppError, MutateVars>({
     mutationFn: async ({ payload, placeData }) => {
@@ -171,7 +179,11 @@ export const useUpdateDiary = (id: number | null | undefined) => {
       }
 
       const currentItem =
-        queryClient.getQueryData<diaryRepository.DiaryRecord>(["Diary", id]) ?? null;
+        queryClient.getQueryData<diaryRepository.DiaryRecord>([
+          "Diary",
+          id,
+          language,
+        ]) ?? null;
       const item = diaryRepository.updateLocal(id, payload, currentItem, { placeData }, profile);
       if (id > 0) runDiarySync();
       return item;

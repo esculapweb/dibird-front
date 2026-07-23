@@ -12,6 +12,7 @@ jest.mock("../../../services/api", () => ({
   delete: jest.fn(),
 }));
 jest.mock("../../../store/profile-context", () => ({ useProfile: jest.fn() }));
+jest.mock("../../../store/language-context", () => ({ useLanguage: jest.fn() }));
 jest.mock("../../../services/sync/networkStatus", () => ({ isConnected: jest.fn() }));
 jest.mock("../../../services/sync/observationSync", () => ({ runObservationSync: jest.fn() }));
 jest.mock("../../repositories/observationRepository", () => ({
@@ -33,6 +34,7 @@ import { QueryClient, QueryClientProvider, notifyManager } from "@tanstack/react
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import api from "../../../services/api";
 import { useProfile } from "../../../store/profile-context";
+import { useLanguage } from "../../../store/language-context";
 import { isConnected } from "../../../services/sync/networkStatus";
 import { runObservationSync } from "../../../services/sync/observationSync";
 import * as observationRepository from "../../repositories/observationRepository";
@@ -67,6 +69,7 @@ beforeEach(() => {
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   (useProfile as jest.Mock).mockReturnValue({ profile: PROFILE });
+  (useLanguage as jest.Mock).mockReturnValue({ language: "en" });
   (isConnected as jest.Mock).mockReturnValue(true);
   (diaryRepository.resolveDiaryId as jest.Mock).mockImplementation((id: number | null | undefined) => id);
 });
@@ -116,6 +119,40 @@ describe("useObservationItem", () => {
     const { result } = await renderHook(() => useObservationItem(5, initialItem as never), { wrapper });
 
     expect(result.current.data).toEqual(expect.objectContaining({ is_owner: false }));
+  });
+
+  // Regression: opening an observation in one language then switching languages
+  // and reopening it used to keep showing the first-language species name and,
+  // because species_data.segment is localized too, left the "about species"
+  // link unresolvable (ObservationDetailScreen's speciesDetails(segment) no-ops
+  // on a stale/empty segment). The language must be part of the query key so a
+  // switch forces a fresh, correctly-localized fetch rather than the day-long
+  // stale copy.
+  it("refetches under a new key when the language changes, instead of serving the stale previous-language copy", async () => {
+    (api.get as jest.Mock)
+      .mockResolvedValueOnce({
+        data: { id: 5, species_data: { name_lang: "Mallard", segment: "mallard" } },
+      })
+      .mockResolvedValueOnce({
+        data: { id: 5, species_data: { name_lang: "Кряква", segment: "kryakva" } },
+      });
+
+    (useLanguage as jest.Mock).mockReturnValue({ language: "en" });
+    const { result, rerender } = await renderHook(() => useObservationItem(5), { wrapper });
+    await waitFor(() =>
+      expect(result.current.data?.species_data?.name_lang).toBe("Mallard"),
+    );
+
+    (useLanguage as jest.Mock).mockReturnValue({ language: "ru" });
+    await act(async () => {
+      rerender({});
+    });
+
+    await waitFor(() =>
+      expect(result.current.data?.species_data?.name_lang).toBe("Кряква"),
+    );
+    expect(result.current.data?.species_data?.segment).toBe("kryakva");
+    expect(api.get).toHaveBeenCalledTimes(2);
   });
 });
 

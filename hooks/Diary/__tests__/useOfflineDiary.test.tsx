@@ -11,6 +11,7 @@ jest.mock("../../../services/api", () => ({
   delete: jest.fn(),
 }));
 jest.mock("../../../store/profile-context", () => ({ useProfile: jest.fn() }));
+jest.mock("../../../store/language-context", () => ({ useLanguage: jest.fn() }));
 jest.mock("../../../services/sync/networkStatus", () => ({ isConnected: jest.fn() }));
 jest.mock("../../../services/sync/diarySync", () => ({ runDiarySync: jest.fn() }));
 jest.mock("../../repositories/diaryRepository", () => ({
@@ -36,6 +37,7 @@ import { act, renderHook, waitFor } from "@testing-library/react-native";
 notifyManager.setScheduler((callback) => callback());
 import api from "../../../services/api";
 import { useProfile } from "../../../store/profile-context";
+import { useLanguage } from "../../../store/language-context";
 import { isConnected } from "../../../services/sync/networkStatus";
 import { runDiarySync } from "../../../services/sync/diarySync";
 import * as diaryRepository from "../../repositories/diaryRepository";
@@ -65,6 +67,7 @@ beforeEach(() => {
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   (useProfile as jest.Mock).mockReturnValue({ profile: PROFILE });
+  (useLanguage as jest.Mock).mockReturnValue({ language: "en" });
   (isConnected as jest.Mock).mockReturnValue(true);
 });
 
@@ -139,6 +142,32 @@ describe("useDiaryItem", () => {
     expect(diaryRepository.cacheKnownSnapshot).toHaveBeenCalledWith(
       expect.objectContaining({ id: 5, is_owner: true }),
     );
+  });
+
+  // Regression: a diary's territory_data.name (and its observation preview's
+  // species names) are localized by the request's Accept-Language, so reopening
+  // a diary after a language switch used to serve the day-long stale
+  // previous-language copy. The language must be part of the query key.
+  it("refetches under a new key when the language changes, instead of serving the stale previous-language copy", async () => {
+    (api.get as jest.Mock)
+      .mockResolvedValueOnce({ data: { id: 5, territory_data: { name: "Germany" } } })
+      .mockResolvedValueOnce({ data: { id: 5, territory_data: { name: "Германия" } } });
+
+    (useLanguage as jest.Mock).mockReturnValue({ language: "en" });
+    const { result, rerender } = await renderHook(() => useDiaryItem(5), { wrapper });
+    await waitFor(() =>
+      expect(result.current.data?.territory_data?.name).toBe("Germany"),
+    );
+
+    (useLanguage as jest.Mock).mockReturnValue({ language: "ru" });
+    await act(async () => {
+      rerender({});
+    });
+
+    await waitFor(() =>
+      expect(result.current.data?.territory_data?.name).toBe("Германия"),
+    );
+    expect(api.get).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -296,7 +325,8 @@ describe("useUpdateDiary", () => {
   });
 
   it("reads the current cached item as the merge base when falling back locally", async () => {
-    queryClient.setQueryData(["Diary", 5], { id: 5, name: "Cached base" });
+    // Same language-scoped key the hook reads/writes under (see useDiaryItem).
+    queryClient.setQueryData(["Diary", 5, "en"], { id: 5, name: "Cached base" });
     (api.patch as jest.Mock).mockRejectedValue(networkError());
     const { result } = await renderHook(() => useUpdateDiary(5), { wrapper });
 

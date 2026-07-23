@@ -7,15 +7,17 @@ jest.mock("../repositories/listCacheRepository", () => ({
   getCachedListResponse: jest.fn(),
 }));
 jest.mock("../useApiError", () => ({ useApiError: () => ({ showErrorToast: mockShowErrorToast }) }));
+jest.mock("../../store/language-context", () => ({ useLanguage: jest.fn() }));
 
 import { QueryClient, QueryClientProvider, notifyManager } from "@tanstack/react-query";
-import { renderHook, waitFor } from "@testing-library/react-native";
+import { act, renderHook, waitFor } from "@testing-library/react-native";
 
 notifyManager.setScheduler((callback) => callback());
 
 import api from "../../services/api";
 import { cacheListResponse, getCachedListResponse } from "../repositories/listCacheRepository";
 import { communityItemCacheTable } from "../../services/db/schema";
+import { useLanguage } from "../../store/language-context";
 import { useItem } from "../useItem";
 
 const mockShowErrorToast = jest.fn();
@@ -42,6 +44,7 @@ beforeEach(() => {
   queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
+  (useLanguage as jest.Mock).mockReturnValue({ language: "en" });
 });
 
 afterEach(() => {
@@ -112,5 +115,42 @@ describe("on failure", () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(mockShowErrorToast).toHaveBeenCalledWith(expect.any(Error), "useItem:Community");
+  });
+});
+
+// Regression: a Community item's species_data (name_lang, segment) is localized
+// by the request's Accept-Language, so reopening it after a language switch
+// used to serve the day-long stale previous-language copy — CommunityDetailScreen
+// then showed the old name and couldn't resolve speciesDetails(segment). The
+// language must be part of the query key so a switch forces a fresh fetch.
+describe("language changes", () => {
+  it("refetches under a new key instead of serving the stale previous-language copy", async () => {
+    (api.get as jest.Mock)
+      .mockResolvedValueOnce({
+        data: { id: 5, species_data: { name_lang: "Mallard", segment: "mallard" } },
+      })
+      .mockResolvedValueOnce({
+        data: { id: 5, species_data: { name_lang: "Кряква", segment: "kryakva" } },
+      });
+
+    (useLanguage as jest.Mock).mockReturnValue({ language: "en" });
+    const { result, rerender } = await renderHook(
+      () => ({ ...useItem(5, "Community") }),
+      { wrapper },
+    );
+    await waitFor(() =>
+      expect(result.current.data?.species_data?.name_lang).toBe("Mallard"),
+    );
+
+    (useLanguage as jest.Mock).mockReturnValue({ language: "ru" });
+    await act(async () => {
+      rerender({});
+    });
+
+    await waitFor(() =>
+      expect(result.current.data?.species_data?.name_lang).toBe("Кряква"),
+    );
+    expect(result.current.data?.species_data?.segment).toBe("kryakva");
+    expect(api.get).toHaveBeenCalledTimes(2);
   });
 });

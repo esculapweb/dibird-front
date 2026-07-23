@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "../../services/api";
 import { useApiError } from "../useApiError";
 import { useMutationWithTranslation } from "../useMutationWithTranslation";
+import { useLanguage } from "../../store/language-context";
 import { isConnected } from "../../services/sync/networkStatus";
 import { runPlaceSync } from "../../services/sync/placeSync";
 import * as placeRepository from "../repositories/placeRepository";
@@ -38,9 +39,14 @@ export const usePlaceItem = (
   initialItem?: PlaceItem | null,
 ) => {
   const { showErrorToast } = useApiError();
+  const { language } = useLanguage();
 
   const query = useQuery({
-    queryKey: ["Place", id, params ?? null],
+    // `language` is part of the key because a place's territory_data.name comes
+    // back localized by the request's Accept-Language — without it, switching
+    // language reads back the stale previous-language copy (staleTime is a
+    // day). Mirrors useObservationItem / useItem / useDiaryItem.
+    queryKey: ["Place", id, language, params ?? null],
     queryFn: async () => {
       if (id! < 0) {
         const local = placeRepository.getPlace(id!);

@@ -5,6 +5,7 @@ import api from "../../services/api";
 import { useApiError } from "../useApiError";
 import { useMutationWithTranslation } from "../useMutationWithTranslation";
 import { useProfile } from "../../store/profile-context";
+import { useLanguage } from "../../store/language-context";
 import { isConnected } from "../../services/sync/networkStatus";
 import { runObservationSync } from "../../services/sync/observationSync";
 import * as observationRepository from "../repositories/observationRepository";
@@ -98,6 +99,7 @@ export const useObservationItem = (
 ) => {
   const { showErrorToast } = useApiError();
   const { profile } = useProfile();
+  const { language } = useLanguage();
 
   // The list endpoint's `is_owner` has been observed to disagree with the
   // detail endpoint's for the same observation. Online this is invisible —
@@ -112,7 +114,14 @@ export const useObservationItem = (
   }, [initialItem, id, profile?.user]);
 
   const query = useQuery({
-    queryKey: ["Observation", id],
+    // `language` is part of the key because species_data (name_lang, segment)
+    // and territory_data.name come back localized by the request's
+    // Accept-Language — without it, switching language reads back the stale
+    // previous-language copy (staleTime is a day), leaving the detail screen
+    // showing the old name and, worse, an old-language `segment` that the
+    // "about species" tap can't resolve. See ObservationDetailScreen /
+    // CommunityDetailScreen (which have the same fix in useItem).
+    queryKey: ["Observation", id, language],
     // Deliberately untyped (matches the generic useItem this replaces): the
     // real API response and ObservationItem drift in a few display-only fields
     // (e.g. diary_data) that aren't worth reconciling as part of this change.
@@ -227,6 +236,7 @@ export const useCreateObservation = () => {
 export const useUpdateObservation = (id: number | null | undefined) => {
   const queryClient = useQueryClient();
   const { profile } = useProfile();
+  const { language } = useLanguage();
 
   return useMutationWithTranslation<ObservationItem, AppError, MutateVars>({
     mutationFn: async ({ payload, speciesData, placeData }) => {
@@ -253,7 +263,8 @@ export const useUpdateObservation = (id: number | null | undefined) => {
       }
 
       const currentItem =
-        queryClient.getQueryData<ObservationItem>(["Observation", id]) ?? null;
+        queryClient.getQueryData<ObservationItem>(["Observation", id, language]) ??
+        null;
       const item = observationRepository.updateLocal(
         id,
         resolvedPayload,
