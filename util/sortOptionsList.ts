@@ -118,6 +118,17 @@ export const sortOptionsList = (screen: string | undefined) => {
         { label: i18n.t("taxonomic_desc"), value: "-ioc_id" },
       ];
 
+    // Countries/territories catalogue. `species_count` is the backend's
+    // ordering over the precomputed per-territory counts (TerritoryFilterSet),
+    // not something the app can sort locally.
+    case "Territory":
+      return [
+        { label: i18n.t("alphabetic"), value: "name" },
+        { label: i18n.t("alphabetic_desc"), value: "-name" },
+        { label: i18n.t("species_count_desc"), value: "-species_count" },
+        { label: i18n.t("species_count"), value: "species_count" },
+      ];
+
     case "RatingsCompare":
       return [
         { label: i18n.t("taxonomic"), value: "ioc_id" },

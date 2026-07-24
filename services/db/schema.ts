@@ -124,6 +124,13 @@ export const diarySpeciesIdsCacheTable = cacheTable("diary_species_ids_cache");
 // encodes rank + parent + search + page.
 export const taxonListCacheTable = cacheTable("taxon_list_cache");
 export const taxonDetailCacheTable = cacheTable("taxon_detail_cache");
+// Countries/territories catalogue reads (see fetchTerritoryList/
+// fetchTerritoryDetail/fetchTerritoryChecklist/fetchTerritoryCompare in
+// util/fetches.ts). Kept apart from the taxon tables because a territory's
+// checklist is a single huge response (one row can be ~2000 species) — left
+// in the same pool it would evict a lot of much smaller taxon entries.
+export const territoryListCacheTable = cacheTable("territory_list_cache");
+export const territoryDetailCacheTable = cacheTable("territory_detail_cache");
 
 // Durable local record of "read" state applied on top of whatever's in
 // notifications_list_cache (see notificationRepository.applyOverlay) — needed

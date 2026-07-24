@@ -31,6 +31,8 @@ describe("sortOptionsList", () => {
     ["SpeciesDropdown", ["-seen,name", "seen,name", "ioc_id", "-ioc_id", "name", "-name"]],
     ["Rating", ["-observations", "observations", "-last_update", "last_update"]],
     ["RatingsCompare", ["ioc_id", "-ioc_id", "name", "-name"]],
+    ["Taxonomy", ["name", "-name", "ioc_id", "-ioc_id"]],
+    ["Territory", ["name", "-name", "-species_count", "species_count"]],
     ["TimezonesDropdown", ["name"]],
   ] as const)("returns the expected option values for %s", (screen, expectedValues) => {
     const options = sortOptionsList(screen);
@@ -41,6 +43,7 @@ describe("sortOptionsList", () => {
     for (const value of [
       "Stat", "Observations", "DiaryDetail", "Diaries", "Places", "Community",
       "PlacesDropdown", "CountriesDropdown", "SpeciesDropdown", "Rating", "RatingsCompare",
+      "Taxonomy", "Territory",
     ]) {
       for (const option of sortOptionsList(value)) {
         expect(option.label).toEqual(expect.any(String));

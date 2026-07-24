@@ -53,6 +53,9 @@ import StaticScreen from "../screens/StaticScreen";
 import TaxonomyScreen from "../screens/TaxonomyScreen";
 import TaxonGroupDetailScreen from "../screens/TaxonGroupDetailScreen";
 import SpeciesCompareScreen from "../screens/SpeciesCompareScreen";
+import TerritoryListScreen from "../screens/TerritoryListScreen";
+import TerritoryDetailScreen from "../screens/TerritoryDetailScreen";
+import TerritoryCompareScreen from "../screens/TerritoryCompareScreen";
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 const Drawer = createDrawerNavigator<AppDrawerParamList>();
@@ -112,6 +115,19 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
           }}
           icon={({ color, size }) => (
             <Ionicons name="book-outline" color={color} size={size} />
+          )}
+        />
+
+        {/* Птицы по странам — вторая половина справочника, рядом с каталогом */}
+        <DrawerItem
+          label={t("birds_by_country")}
+          labelStyle={{ color: Colors.textMain }}
+          onPress={() => {
+            navigation.closeDrawer();
+            navigation.navigate("TerritoryList", undefined);
+          }}
+          icon={({ color, size }) => (
+            <Ionicons name="globe-outline" color={color} size={size} />
           )}
         />
 
@@ -400,6 +416,24 @@ const AppNavigator = () => {
         name="SpeciesCompare"
         component={SpeciesCompareScreen}
         options={{ title: t("compare_species") }}
+      />
+
+      <Stack.Screen
+        name="TerritoryList"
+        component={TerritoryListScreen}
+        options={{ title: t("countries") }}
+      />
+
+      <Stack.Screen
+        name="TerritoryDetail"
+        component={TerritoryDetailScreen}
+        options={{ title: t("countries") }}
+      />
+
+      <Stack.Screen
+        name="TerritoryCompare"
+        component={TerritoryCompareScreen}
+        options={{ title: t("compare_territories") }}
       />
       <Stack.Screen
         name="Achievements"

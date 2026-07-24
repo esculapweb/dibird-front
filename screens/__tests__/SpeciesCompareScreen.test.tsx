@@ -34,7 +34,7 @@ jest.mock("@expo/vector-icons", () => {
   };
 });
 
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { useQuery } from "@tanstack/react-query";
 import { createNavigationMock, createRouteMock } from "../test-utils";
 import SpeciesCompareScreen from "../SpeciesCompareScreen";
@@ -147,7 +147,11 @@ it("opens the species picker and takes the pick into the empty slot", async () =
   });
 
   mockDetails({ "white-stork": STORK, "eurasian-wren": WREN });
-  await callNavigationCallback("species-compare-b", { segment: "eurasian-wren" });
+  // The picker hands the species back through the callback registry, i.e.
+  // from outside React — the state update it makes needs its own act().
+  await act(async () => {
+    callNavigationCallback("species-compare-b", { segment: "eurasian-wren" });
+  });
 
   expect(await screen.findByText("Eurasian Wren")).toBeOnTheScreen();
 });

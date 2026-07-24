@@ -139,6 +139,40 @@ describe("species row", () => {
     expect(screen.getByText("Turdus merula")).toBeOnTheScreen();
   });
 
+  it("adds the occurrence status of the species on that territory", async () => {
+    await render(
+      <ChecklistCard
+        item={{ ...SPECIES_ITEM, occurrence: "Rare/Accidental", status: "LC" } as never}
+        index={0}
+        onPress={mockOnPress}
+        onToggle={mockOnToggle}
+      />,
+    );
+    expect(screen.getByText("country_status_rare_accidental")).toBeOnTheScreen();
+  });
+
+  it("skips an occurrence status that only spells out the IUCN category", async () => {
+    // Avibase reuses the field for the conservation category; repeating it
+    // would say the same thing twice.
+    await render(
+      <ChecklistCard
+        item={{ ...SPECIES_ITEM, occurrence: "Vulnerable", status: "VU" } as never}
+        index={0}
+        onPress={mockOnPress}
+        onToggle={mockOnToggle}
+      />,
+    );
+    expect(screen.queryByText(/vulnerable/i)).toBeNull();
+    expect(screen.queryByText(/country_status_/)).toBeNull();
+  });
+
+  it("leaves the line out where there is no occurrence status at all", async () => {
+    await render(
+      <ChecklistCard item={SPECIES_ITEM as never} index={0} onPress={mockOnPress} onToggle={mockOnToggle} />,
+    );
+    expect(screen.queryByText(/country_status_/)).toBeNull();
+  });
+
   it("shows the real thumbnail or a placeholder based on the item's own thumb", async () => {
     await render(
       <ChecklistCard item={SPECIES_ITEM as never} index={0} onPress={mockOnPress} onToggle={mockOnToggle} />,
@@ -185,5 +219,63 @@ describe("species row", () => {
     await fireEvent.press(screen.getByTestId("icon-square-outline"));
     expect(mockOnToggle).toHaveBeenCalledTimes(1);
     expect(mockOnPress).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("catalogue mode (personal={false})", () => {
+  // The country page reuses this card as a plain reference list: no checkbox,
+  // no progress, nothing dimmed — "seen" there would beg the question "when?".
+  const SPECIES_ITEM = { type: "species", name_lang: "Blackbird", latin: "Turdus merula", thumb: null, seen: false };
+  const ORDER_ITEM = { type: "order", name_lang: "Perching birds", latin: "Passeriformes", total: 5, seen_count: 2 };
+
+  it("drops the seen checkbox for a chevron", async () => {
+    await render(
+      <ChecklistCard
+        item={SPECIES_ITEM as never}
+        index={0}
+        personal={false}
+        onPress={mockOnPress}
+        onToggle={mockOnToggle}
+      />,
+    );
+    expect(screen.queryByTestId("icon-square-outline")).toBeNull();
+    expect(screen.queryByTestId("icon-checkbox")).toBeNull();
+    expect(screen.getByTestId("icon-chevron-forward")).toBeOnTheScreen();
+  });
+
+  it("shows a group's plain species count instead of a seen/total score", async () => {
+    await render(
+      <ChecklistCard
+        item={ORDER_ITEM as never}
+        index={0}
+        personal={false}
+        onPress={mockOnPress}
+        onToggle={mockOnToggle}
+      />,
+    );
+    expect(screen.getByText("5")).toBeOnTheScreen();
+    expect(screen.queryByText("2 / 5")).toBeNull();
+  });
+
+  it("still keeps the seen/total score on the personal checklist", async () => {
+    await render(
+      <ChecklistCard item={ORDER_ITEM as never} index={0} onPress={mockOnPress} onToggle={mockOnToggle} />,
+    );
+    expect(screen.getByText("2 / 5")).toBeOnTheScreen();
+  });
+
+  it("opens the species from the row, the only gesture left", async () => {
+    await render(
+      <ChecklistCard
+        item={SPECIES_ITEM as never}
+        index={0}
+        personal={false}
+        onPress={mockOnPress}
+        onToggle={mockOnToggle}
+      />,
+    );
+    await fireEvent.press(screen.getByText("Blackbird"));
+    expect(mockOnPress).toHaveBeenCalled();
+    expect(mockOnToggle).not.toHaveBeenCalled();
   });
 });

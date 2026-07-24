@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { Config } from "../../constants/config";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { BirdSVG } from "../ui/Svgs";
+import { territoryStatusNote } from "../../util/taxonomy";
 import { ChecklistItem } from "../../types";
 
 const useStyles = (Colors: ThemeColors) =>
@@ -17,10 +18,15 @@ interface ChecklistCardProps {
   index: number;
   onPress: () => void;
   onToggle: () => void;
+  // The user's own checklist for a territory: the seen checkbox, the
+  // seen/total progress and the dimming of unseen birds. Off on the country
+  // catalogue page, which is reference content — a "seen" mark there raises
+  // the question "seen when?", which the row has no answer to.
+  personal?: boolean;
 }
 
 const ChecklistCard = memo(
-  ({ item, index, onPress, onToggle }: ChecklistCardProps) => {
+  ({ item, index, onPress, onToggle, personal = true }: ChecklistCardProps) => {
     const { t } = useTranslation();
     const { Colors } = useTheme();
     const styles = useStyles(Colors);
@@ -50,7 +56,9 @@ const ChecklistCard = memo(
               </>
             ) : null}
             {total > 0 ? (
-              isComplete ? (
+              !personal ? (
+                <Text style={styles.taxonCount}>{total}</Text>
+              ) : isComplete ? (
                 <View style={styles.doneBadge}>
                   <Ionicons name="checkmark" size={10} color={Colors.main100} />
                   <Text style={styles.doneBadgeText}>{t("all")}</Text>
@@ -62,7 +70,7 @@ const ChecklistCard = memo(
               )
             ) : null}
           </View>
-          {total > 0 && (
+          {personal && total > 0 && (
             <View style={styles.progressTrack}>
               <View
                 style={[
@@ -100,7 +108,9 @@ const ChecklistCard = memo(
                 </>
               ) : null}
               {total > 0 ? (
-                isComplete ? (
+                !personal ? (
+                  <Text style={styles.taxonCount}>{total}</Text>
+                ) : isComplete ? (
                   <View style={styles.doneBadge}>
                     <Ionicons
                       name="checkmark"
@@ -116,7 +126,7 @@ const ChecklistCard = memo(
                 )
               ) : null}
             </View>
-            {total > 0 && (
+            {personal && total > 0 && (
               <View style={styles.progressTrackThin}>
                 <View
                   style={[
@@ -132,7 +142,12 @@ const ChecklistCard = memo(
       );
     }
 
-    const isSeen = item.seen;
+    // Outside the personal checklist every bird is shown the same way — there
+    // is nothing to be "not yet seen" against.
+    const isSeen = personal ? item.seen : true;
+    // How the bird occurs on this territory ("Rare/Accidental", "Endemic") —
+    // worth a line, unlike the values that only spell out the IUCN category.
+    const occurrence = territoryStatusNote(item.occurrence, item.status);
 
     return (
       <View style={[styles.card, !isSeen && styles.cardUnseen]}>
@@ -165,15 +180,29 @@ const ChecklistCard = memo(
             >
               {item.latin}
             </Text>
+            {!!occurrence && (
+              <Text style={styles.occurrence} numberOfLines={1}>
+                {occurrence.key ? t(occurrence.key) : occurrence.raw}
+              </Text>
+            )}
           </View>
         </Pressable>
-        <Pressable onPress={onToggle} style={styles.addIcon} hitSlop={8}>
+        {personal ? (
+          <Pressable onPress={onToggle} style={styles.addIcon} hitSlop={8}>
+            <Ionicons
+              name={isSeen ? "checkbox" : "square-outline"}
+              size={28}
+              color={isSeen ? Colors.main100 : Colors.textSecondary}
+            />
+          </Pressable>
+        ) : (
           <Ionicons
-            name={isSeen ? "checkbox" : "square-outline"}
-            size={28}
-            color={isSeen ? Colors.main100 : Colors.textSecondary}
+            name="chevron-forward"
+            size={20}
+            color={Colors.textSecondary}
+            style={styles.addIcon}
           />
-        </Pressable>
+        )}
       </View>
     );
   },
@@ -249,6 +278,11 @@ const stylesFn = (Colors: ThemeColors) =>
     },
     latinUnseen: {
       color: Colors.statIcon,
+    },
+    occurrence: {
+      fontSize: 11,
+      color: Colors.main100,
+      marginTop: 1,
     },
     addIcon: {
       justifyContent: "center",

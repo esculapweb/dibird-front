@@ -111,12 +111,19 @@ export const getCachedListResponseByPrefix = <T>(
   return rows[0] ? (rows[0].response as T) : null;
 };
 
-// Every offline read-cache table built by the cacheTable factory (see
-// schema.ts) — kept as one explicit list rather than reflecting over the
-// schema module, so adding a new cache table can't silently skip this. Called
-// on logout: none of this is user-specific-safe to keep around (e.g. a
-// cached Places/Countries dropdown list carries per-user `favourite` flags),
-// and it's all cheap to refetch.
+// The cache tables wiped on logout — kept as one explicit list rather than
+// reflecting over the schema module, so a table can't end up here by accident.
+// Everything below is either user-specific or carries per-user fields (e.g. a
+// cached Places/Countries dropdown list has `favourite` flags), and it's all
+// cheap to refetch.
+//
+// Deliberately absent: the catalogue tables (taxon_list_cache,
+// taxon_detail_cache, territory_list_cache, territory_detail_cache). They hold
+// the world's birds and countries — identical for every user, nothing personal
+// in them — and they are the most expensive thing the app caches (a single
+// country's checklist is thousands of rows). Clearing them on logout would
+// only mean re-downloading the same reference data. Pinned by
+// listCacheRepository.test.ts.
 const ALL_CACHE_TABLES: CacheTable[] = [
   speciesDropdownCacheTable,
   placesDropdownCacheTable,

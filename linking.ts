@@ -37,11 +37,60 @@ const GROUP_RANK_BY_PATH: Record<string, 2 | 3 | 4> = {
   genus: 4,
 };
 
-type TaxonRoute = { name: "Taxonomy" | "SpeciesDetail" | "TaxonGroupDetail"; params: Record<string, unknown> };
+type TaxonRoute = {
+  name:
+    | "Taxonomy"
+    | "SpeciesDetail"
+    | "TaxonGroupDetail"
+    | "TerritoryList"
+    | "TerritoryDetail"
+    | "TerritoryCompare";
+  params: Record<string, unknown>;
+};
+
+// Countries catalogue: the list (/territory), one country (/territory/<slug>)
+// and the two-country comparison (/territory_compare/<slug>/<slug>). Kept
+// apart from matchTaxonPath because these are places, not taxa, and only the
+// list takes the `o` sort.
+const matchTerritoryPath = (
+  segments: string[],
+  params: URLSearchParams,
+  sort?: string,
+  search?: string,
+): TaxonRoute | null => {
+  const [head, ...rest] = segments;
+
+  if (head === "territory") {
+    if (rest.length === 0) {
+      const region = Number(params.get("region"));
+      return {
+        name: "TerritoryList",
+        params: {
+          ...(sort && { initialSort: sort }),
+          ...(search && { initialSearch: search }),
+          ...(params.get("region") &&
+            !Number.isNaN(region) && { initialRegion: region }),
+        },
+      };
+    }
+    if (rest.length === 1)
+      return { name: "TerritoryDetail", params: { segment: rest[0] } };
+    return null;
+  }
+
+  if (head === "territory_compare" && rest.length === 2)
+    return {
+      name: "TerritoryCompare",
+      params: { segment1: rest[0], segment2: rest[1] },
+    };
+
+  return null;
+};
 
 // Maps a (locale-stripped) web path to the in-app route + params. Covers the
-// catalogue lists (all species, extinct, orders) and the detail pages
-// (species/genus/family/order). Returns null for anything else.
+// catalogue lists (all species, extinct, orders), the detail pages
+// (species/genus/family/order) and the countries half (see
+// matchTerritoryPath). Returns null for anything else.
 const matchTaxonPath = (normalizedPath: string): TaxonRoute | null => {
   const [rawPath, query = ""] = normalizedPath.split("?");
   const segments = rawPath.split("/").filter(Boolean);
@@ -50,6 +99,9 @@ const matchTaxonPath = (normalizedPath: string): TaxonRoute | null => {
   // The catalogue's name search (see buildTaxonCatalogUrl); restored into the
   // search box via Taxonomy.initialSearch.
   const search = params.get("name") || undefined;
+
+  const territoryRoute = matchTerritoryPath(segments, params, sort, search);
+  if (territoryRoute) return territoryRoute;
 
   // Lists (no slug): /species, /extinct, /order
   if (segments.length === 1) {

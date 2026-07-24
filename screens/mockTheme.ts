@@ -9,6 +9,11 @@ export const mockColors = {
   error600: "#900",
   textMain: "#000",
   textMiddle: "#666",
+  // The two sides of a comparison, plus the "neither" fill — a blank dot has
+  // to be distinguishable from a filled one for the compare rows' tests.
+  compareP1: "#2d6a4f",
+  compareP2: "#9d4edd",
+  imageBg: "#eee",
 };
 
 export const mockUseTheme = () => ({ Colors: mockColors });

@@ -51,6 +51,35 @@ const COUNTRY_STATUS_KEYS: Record<string, string> = {
 export const countryStatusKey = (status?: string | null): string | null =>
   status ? (COUNTRY_STATUS_KEYS[status.trim().toLowerCase()] ?? null) : null;
 
+// The IUCN categories as Avibase spells them out, keyed by the code shown on
+// the badge.
+const IUCN_STATUS_TEXT: Record<string, string> = {
+  CR: "critically endangered",
+  EN: "endangered",
+  VU: "vulnerable",
+  NT: "near-threatened",
+  DD: "data deficient",
+  EX: "extinct",
+  EW: "extinct in the wild",
+};
+
+// A territory checklist's `status` mixes two different things: how the species
+// occurs there ("Rare/Accidental", "Endemic") and — for roughly a third of the
+// rows — its IUCN category written out. The row already carries the category
+// as a coloured badge, so spelling it out again next to it is noise; only the
+// occurrence half earns a line of its own.
+export const territoryStatusNote = (
+  status?: string | null,
+  iucnCode?: string | null,
+): { key: string | null; raw: string } | null => {
+  if (!status) return null;
+  const normalized = status.trim().toLowerCase();
+  // "CR (PE)" is a qualifier on CR, same as in iucnColors.
+  const code = iucnCode?.split(" ")[0].toUpperCase();
+  if (code && IUCN_STATUS_TEXT[code] === normalized) return null;
+  return { key: COUNTRY_STATUS_KEYS[normalized] ?? null, raw: status };
+};
+
 // IUCN Red List category colours, as used on the Red List itself — they are
 // part of the category's meaning, so they stay fixed in both themes and only
 // the text on top switches for contrast.

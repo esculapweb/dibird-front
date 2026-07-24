@@ -52,6 +52,8 @@ import {
   diarySpeciesIdsCacheTable,
   taxonListCacheTable,
   taxonDetailCacheTable,
+  territoryListCacheTable,
+  territoryDetailCacheTable,
 } from "../services/db/schema";
 
 // Shared cap for every dedicated offline-cache table (see the cacheTable
@@ -97,6 +99,10 @@ import {
   TraitFilterOptions,
   TaxonGroupDetail,
   TaxonSpeciesDetail,
+  TerritoryListItem,
+  TerritoryRegionOption,
+  TerritoryDetail,
+  TerritoryCompareResponse,
   FetchFunction,
 } from "../types";
 
@@ -257,6 +263,115 @@ export const fetchTaxonSegmentById = async (
   const segment = res.data.results[0]?.segment;
   if (!segment) throw new Error(`Species not found for id ${taxonId}`);
   return segment;
+};
+
+// Countries and territories catalogue (/api/territory/). Same factory shape as
+// fetchTaxonList so the result drops straight into useList; `name` search and
+// `o` ordering are handled by fetchAbstract. `region` goes in extraParams — it
+// changes what is being asked for, so it belongs in the cache key.
+export const fetchTerritoryList = (
+  region?: number | null,
+): FetchFunction<TerritoryListItem> => {
+  return (_filters, order, search, page) =>
+    fetchAbstract<PaginatedResponse<TerritoryListItem>>(
+      "/api/territory/",
+      {},
+      order ?? "name",
+      search,
+      page,
+      { ...(region != null && { region }) },
+      100,
+      { table: territoryListCacheTable, maxEntries: MAX_ENTRIES },
+    );
+};
+
+// Regions offered by the country list's filter. `has_territories` keeps
+// continents out: countries hang off sub-regions, so /api/territory/?region=
+// rejects a continent id outright (TerritoryFilterSet.region) — offering one
+// would just 400.
+export const fetchTerritoryRegions = async (): Promise<
+  TerritoryRegionOption[]
+> => {
+  const cacheKey = `territory-regions|${i18n.language}`;
+
+  try {
+    const res = await api.get<[number, { label: string }][]>(
+      "/api/region-list/",
+      { params: { has_territories: 1 } },
+    );
+    const items = res.data.map(([id, { label }]) => ({ id, label }));
+    cacheListResponse(territoryListCacheTable, cacheKey, items, MAX_ENTRIES);
+    return items;
+  } catch (e) {
+    const cached = getCachedListResponse<TerritoryRegionOption[]>(
+      territoryListCacheTable,
+      cacheKey,
+    );
+    if (cached) return cached;
+    throw e;
+  }
+};
+
+// Just the total for the catalogue card / shortcut — per_page=1 so the server
+// counts without sending a page of countries.
+export const fetchTerritoryCount = async (): Promise<number> => {
+  const res = await api.get<PaginatedResponse<TerritoryListItem>>(
+    "/api/territory/",
+    { params: { per_page: 1 } },
+  );
+  return res.data.pagination.count;
+};
+
+export const fetchTerritoryDetail = async (
+  segment: string,
+): Promise<TerritoryDetail> => {
+  const cacheKey = `territory-detail|${segment}|${i18n.language}`;
+
+  try {
+    const res = await api.get<TerritoryDetail>(`/api/territory/${segment}/`);
+    cacheListResponse(
+      territoryDetailCacheTable,
+      cacheKey,
+      res.data,
+      MAX_ENTRIES,
+    );
+    return res.data;
+  } catch (e) {
+    const cached = getCachedListResponse<TerritoryDetail>(
+      territoryDetailCacheTable,
+      cacheKey,
+    );
+    if (cached) return cached;
+    throw e;
+  }
+};
+
+export const fetchTerritoryCompare = async (
+  segment1: string,
+  segment2: string,
+): Promise<TerritoryCompareResponse> => {
+  const cacheKey = `territory-compare|${segment1}|${segment2}|${i18n.language}`;
+
+  try {
+    const res = await api.get<TerritoryCompareResponse>(
+      "/api/territory-compare/",
+      { params: { segment1, segment2 } },
+    );
+    cacheListResponse(
+      territoryDetailCacheTable,
+      cacheKey,
+      res.data,
+      MAX_ENTRIES,
+    );
+    return res.data;
+  } catch (e) {
+    const cached = getCachedListResponse<TerritoryCompareResponse>(
+      territoryDetailCacheTable,
+      cacheKey,
+    );
+    if (cached) return cached;
+    throw e;
+  }
 };
 
 export const fetchMyCountries = async (

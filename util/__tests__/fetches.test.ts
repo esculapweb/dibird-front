@@ -428,6 +428,20 @@ describe("simple cache-through fetchers (try live -> cache -> catch -> cached fa
       liveResult: { profile1: 1 },
       cachedData: { profile1: 1, stale: true },
     },
+    {
+      name: "fetchTerritoryDetail",
+      run: () => fetches.fetchTerritoryDetail("argentina"),
+      liveData: { id_avibase: 6142, name: "Argentina" },
+      liveResult: { id_avibase: 6142, name: "Argentina" },
+      cachedData: { id_avibase: 6142, name: "Argentina", stale: true },
+    },
+    {
+      name: "fetchTerritoryCompare",
+      run: () => fetches.fetchTerritoryCompare("argentina", "chile"),
+      liveData: { all_count: 1239 },
+      liveResult: { all_count: 1239 },
+      cachedData: { all_count: 1200 },
+    },
   ];
 
   test.each(cases)("$name: caches a live response", async ({ run, liveData, liveResult }) => {
@@ -449,6 +463,83 @@ describe("simple cache-through fetchers (try live -> cache -> catch -> cached fa
     (api.get as jest.Mock).mockRejectedValue(err);
     (listCacheRepository.getCachedListResponse as jest.Mock).mockReturnValue(undefined);
     await expect(run()).rejects.toBe(err);
+  });
+});
+
+describe("fetchTerritoryList / fetchTerritoryCount / fetchTerritoryRegions", () => {
+  it("sends the region filter and keeps it in the cache key", async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: { results: [] } });
+    await fetches.fetchTerritoryList(15)({}, "name", "", 1);
+
+    expect(api.get).toHaveBeenCalledWith(
+      "/api/territory/",
+      expect.objectContaining({ params: expect.objectContaining({ region: 15 }) }),
+    );
+    // extraParams (unlike requestOnlyParams) go into the key — a cached page
+    // for one region must not be served for another.
+    const [, key] = (listCacheRepository.cacheListResponse as jest.Mock).mock
+      .calls[0];
+    expect(key).toContain("15");
+  });
+
+  it("leaves the region out entirely when nothing is chosen", async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: { results: [] } });
+    await fetches.fetchTerritoryList(null)({}, "name", "", 1);
+
+    expect((api.get as jest.Mock).mock.calls[0][1].params).not.toHaveProperty(
+      "region",
+    );
+  });
+
+  it("asks only for the regions the territory filter accepts", async () => {
+    // Continents have no territories of their own, and /api/territory/?region=
+    // rejects them — offering one would just 400.
+    (api.get as jest.Mock).mockResolvedValue({
+      data: [[15, { label: "South America" }]],
+    });
+
+    await expect(fetches.fetchTerritoryRegions()).resolves.toEqual([
+      { id: 15, label: "South America" },
+    ]);
+    expect(api.get).toHaveBeenCalledWith("/api/region-list/", {
+      params: { has_territories: 1 },
+    });
+  });
+
+  it("falls back to the cached regions when the request fails", async () => {
+    (api.get as jest.Mock).mockRejectedValue(new Error("boom"));
+    (listCacheRepository.getCachedListResponse as jest.Mock).mockReturnValue([
+      { id: 21, label: "Western Europe" },
+    ]);
+
+    await expect(fetches.fetchTerritoryRegions()).resolves.toEqual([
+      { id: 21, label: "Western Europe" },
+    ]);
+  });
+
+  it("defaults to alphabetical order and passes the name search through", async () => {
+    // The server's own default order is neither alphabetical nor stable, so
+    // the list has to name one.
+    (api.get as jest.Mock).mockResolvedValue({ data: { results: [] } });
+    await fetches.fetchTerritoryList()({}, null, "arg", 1);
+
+    expect(api.get).toHaveBeenCalledWith(
+      "/api/territory/",
+      expect.objectContaining({
+        params: expect.objectContaining({ o: "name", name: "arg", per_page: 100 }),
+      }),
+    );
+  });
+
+  it("asks for a single row when all it needs is the total", async () => {
+    (api.get as jest.Mock).mockResolvedValue({
+      data: { pagination: { count: 249 }, results: [] },
+    });
+
+    await expect(fetches.fetchTerritoryCount()).resolves.toBe(249);
+    expect(api.get).toHaveBeenCalledWith("/api/territory/", {
+      params: { per_page: 1 },
+    });
   });
 });
 

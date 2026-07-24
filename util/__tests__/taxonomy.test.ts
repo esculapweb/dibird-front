@@ -1,4 +1,9 @@
-import { resolveTaxonImage, latinPart, iucnColors } from "../taxonomy";
+import {
+  resolveTaxonImage,
+  latinPart,
+  iucnColors,
+  territoryStatusNote,
+} from "../taxonomy";
 
 describe("resolveTaxonImage", () => {
   it("returns null when there is no image", () => {
@@ -59,5 +64,46 @@ describe("iucnColors", () => {
 
   it("treats the 'possibly extinct' qualifier as plain CR", () => {
     expect(iucnColors("CR (PE)")).toEqual(iucnColors("CR"));
+  });
+});
+
+describe("territoryStatusNote", () => {
+  it("maps a known occurrence status onto its locale key", () => {
+    expect(territoryStatusNote("Rare/Accidental", "LC")).toEqual({
+      key: "country_status_rare_accidental",
+      raw: "Rare/Accidental",
+    });
+  });
+
+  it("keeps an unknown status as it came, so nothing is silently dropped", () => {
+    expect(territoryStatusNote("Something new", "LC")).toEqual({
+      key: null,
+      raw: "Something new",
+    });
+  });
+
+  it("drops a status that only spells out the IUCN badge next to it", () => {
+    // Avibase reuses the field for the conservation category; the row already
+    // shows it as a coloured code.
+    expect(territoryStatusNote("Vulnerable", "VU")).toBeNull();
+    expect(territoryStatusNote("Near-threatened", "NT")).toBeNull();
+    expect(territoryStatusNote("Critically endangered", "CR (PE)")).toBeNull();
+  });
+
+  it("keeps the words when they do not match the badge", () => {
+    // "Extinct" as an occurrence status means gone from that country, not
+    // gone from the world.
+    expect(territoryStatusNote("Extinct", "LC")).toEqual({
+      key: "country_status_extinct",
+      raw: "Extinct",
+    });
+  });
+
+  it("returns nothing when there is no status at all", () => {
+    expect(territoryStatusNote(null, "LC")).toBeNull();
+    expect(territoryStatusNote("Endemic", null)).toEqual({
+      key: "country_status_endemic",
+      raw: "Endemic",
+    });
   });
 });

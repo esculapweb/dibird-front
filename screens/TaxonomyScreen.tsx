@@ -141,7 +141,8 @@ const TaxonomyScreen = () => {
       | "search-outline"
       | "skull-outline"
       | "git-compare-outline"
-      | "git-branch-outline",
+      | "git-branch-outline"
+      | "globe-outline",
     onPress: () => void,
   ) => (
     <Pressable style={styles.shortcut} onPress={onPress}>
@@ -202,6 +203,11 @@ const TaxonomyScreen = () => {
               )}
               {shortcut(t("compare_species"), "git-compare-outline", () =>
                 navigation.navigate("SpeciesCompare", undefined),
+              )}
+              {/* The other way into the catalogue: by place rather than by
+                  taxon — a country's checklist. */}
+              {shortcut(t("birds_by_country"), "globe-outline", () =>
+                navigation.navigate("TerritoryList", undefined),
               )}
             </View>
           ) : undefined

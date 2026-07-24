@@ -333,7 +333,12 @@ export interface ChecklistItem {
   seen: boolean;
   species_id?: number;
   id?: number;
+  // IUCN category code ("LC", "VU", …).
   status: string | null;
+  // How the species occurs on that particular territory ("Rare/Accidental",
+  // "Endemic", …) — Avibase free text, mapped by territoryStatusNote. Absent
+  // from responses cached before the backend started sending it.
+  occurrence?: string | null;
   thumb: string | null;
   type: "order" | "family" | "genus" | "species";
   total?: number;
@@ -559,6 +564,83 @@ export interface TaxonSpeciesDetail extends TaxonDetailBase {
   // Absent on responses cached before traits existed.
   traits?: TaxonTraitGroup[];
   trait_highlights?: TaxonTraitHighlight[];
+}
+
+// Countries and territories catalogue, backed by /api/territory/ (list and
+// detail), /api/checklist/ (a territory's species tree) and
+// /api/territory-compare/. Not to be confused with TerritoryDropdownItem,
+// which is the user's own filter dropdown.
+export interface TerritoryListItem {
+  name: string;
+  segment: string;
+  // ISO-3166 alpha-2 ("AR"), rendered as a flag through isoToFlagEmoji.
+  code: string | null;
+  // A paragraph of HTML, not plain text.
+  short: string | null;
+  // Same shape as TaxonDetailBase.count: localized, number-agreed labels
+  // keyed by rank ({"5": "1111 species"}), not numbers.
+  count: Record<string, string> | null;
+}
+
+// One option of the country list's region filter (/api/region-list/), already
+// narrowed to the regions /api/territory/?region= actually accepts.
+export interface TerritoryRegionOption {
+  id: number;
+  label: string;
+}
+
+export interface TerritoryDetail {
+  // Avibase's own territory id, used by the site's /api/checklist/.
+  id_avibase: number;
+  // Our own Territory.pk — the key /myapi/checklist2/ and /api/taxon/'s
+  // `territory` filter take. Absent from responses cached before the backend
+  // started sending it.
+  territory_id?: number | null;
+  name: string;
+  // Locative form of the name ("in Argentina") where the language has one.
+  name_loct: string | null;
+  code: string | null;
+  metadata: {
+    title: string;
+    meta_description: string;
+    h1: string;
+    short: string;
+  } | null;
+  region: {
+    name: string;
+    code_google: string | null;
+    name_gent: string;
+  } | null;
+  count: Record<string, string> | null;
+  paging: {
+    prev: { segment: string; name: string } | null;
+    next: { segment: string; name: string } | null;
+  } | null;
+  alternates: { lang_id: string; segment: string }[];
+  // Set instead of the rest of the payload when the segment has been renamed
+  // (see BaseViewSet.retrieve on the backend) — the response is partial then.
+  redirect?: string;
+}
+
+// One row of /api/territory-compare/: a species and whether each of the two
+// territories has it.
+export interface TerritoryCompareSpecies {
+  name: string;
+  name_lang: string;
+  segment: string;
+  status: string | null;
+  in_object: [boolean, boolean];
+}
+
+export interface TerritoryCompareResponse {
+  all_count: number;
+  common_count: number;
+  different_count: number;
+  territory_data: { name: string; segment: string; code: string | null }[];
+  // Species totals per territory, and how many of them the other one lacks.
+  territory_all_count: [number, number];
+  territory_diff_count: [number, number];
+  species_data: TerritoryCompareSpecies[];
 }
 
 export interface DiaryFormData {
@@ -980,6 +1062,21 @@ export type AppStackParamList = {
   };
   TaxonGroupDetail: { segment: string; rank: 2 | 3 | 4; initialSort?: string };
   SpeciesCompare: { segmentA?: string; segmentB?: string } | undefined;
+  TerritoryList:
+    | {
+        // Same picker contract as Taxonomy.pickerKey: tapping a country hands
+        // it to the callback registered under this key instead of opening it.
+        pickerKey?: string;
+        title?: string;
+        initialSort?: string;
+        initialSearch?: string;
+        // Region id from a shared link (see linking.ts) — same `region` param
+        // /api/territory/ takes.
+        initialRegion?: number;
+      }
+    | undefined;
+  TerritoryDetail: { segment: string };
+  TerritoryCompare: { segment1?: string; segment2?: string } | undefined;
   Achievements: { highlightId?: string } | undefined;
   Privacy: undefined;
   Terms: undefined;

@@ -1,7 +1,15 @@
 import { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 
 import { createTestDb, loadRepos } from "../testDb";
-import { speciesDropdownCacheTable, placesDropdownCacheTable, statCacheTable } from "../../../services/db/schema";
+import {
+  speciesDropdownCacheTable,
+  placesDropdownCacheTable,
+  statCacheTable,
+  taxonListCacheTable,
+  taxonDetailCacheTable,
+  territoryListCacheTable,
+  territoryDetailCacheTable,
+} from "../../../services/db/schema";
 import * as schema from "../../../services/db/schema";
 
 type ListCacheRepo = typeof import("../listCacheRepository");
@@ -92,7 +100,7 @@ describe("eviction", () => {
 });
 
 describe("clearAllListCaches", () => {
-  it("wipes every cache table, not just the one under test elsewhere in this file", () => {
+  it("wipes every user-specific cache table, not just the one under test elsewhere in this file", () => {
     listCacheRepository.cacheListResponse(speciesDropdownCacheTable, "species|5|name", { a: 1 }, 100);
     listCacheRepository.cacheListResponse(placesDropdownCacheTable, "places|5|name", { b: 2 }, 100);
     listCacheRepository.cacheListResponse(statCacheTable, "stat|5", { c: 3 }, 100);
@@ -102,5 +110,25 @@ describe("clearAllListCaches", () => {
     expect(db.select().from(speciesDropdownCacheTable).all()).toHaveLength(0);
     expect(db.select().from(placesDropdownCacheTable).all()).toHaveLength(0);
     expect(db.select().from(statCacheTable).all()).toHaveLength(0);
+  });
+
+  // The catalogue is reference data — the same birds and countries for every
+  // user, nothing personal in it, and by far the most expensive thing the app
+  // caches. Logging out is not a reason to re-download it, so these four are
+  // deliberately left out of ALL_CACHE_TABLES; this pins that decision so a
+  // later "wipe everything" doesn't quietly undo it.
+  const catalogueTables = [
+    ["taxon_list_cache", taxonListCacheTable],
+    ["taxon_detail_cache", taxonDetailCacheTable],
+    ["territory_list_cache", territoryListCacheTable],
+    ["territory_detail_cache", territoryDetailCacheTable],
+  ] as const;
+
+  it.each(catalogueTables)("keeps %s, which holds no user data", (_name, table) => {
+    listCacheRepository.cacheListResponse(table, "key", { a: 1 }, 100);
+
+    listCacheRepository.clearAllListCaches();
+
+    expect(db.select().from(table).all()).toHaveLength(1);
   });
 });

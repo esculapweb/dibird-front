@@ -116,7 +116,7 @@ jest.mock("../../components/Main/Sections", () => {
   return { __esModule: true, default: (props: Record<string, unknown>) => <Text>{`Sections:${JSON.stringify(props)}`}</Text> };
 });
 
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { useQuery } from "@tanstack/react-query";
 import { useSyncedFilters } from "../../hooks/useSyncedFilters";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
@@ -199,7 +199,10 @@ it("pull to refresh refetches every widget the dashboard has mounted", async () 
   // The dashboard scroll view has no testID; walk up from a widget inside it.
   let node = screen.getByText(/^Sparkline:/).parent;
   while (node && node.type !== "RCTScrollView") node = node.parent;
-  await node!.props.refreshControl.props.onRefresh();
+  // onRefresh flips the spinner state around the refetch, so it needs act().
+  await act(async () => {
+    await node!.props.refreshControl.props.onRefresh();
+  });
 
   expect(mockQueryClient.refetchQueries).toHaveBeenCalledWith({
     type: "active",

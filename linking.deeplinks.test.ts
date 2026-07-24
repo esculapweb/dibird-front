@@ -68,6 +68,16 @@ const SUPPORTED: Array<{ path: string; authed?: boolean; screen: string }> = [
   { path: "genus/aix/", screen: "TaxonGroupDetail" },
   { path: "species/mandarin-duck/", screen: "SpeciesDetail" },
 
+  // Countries catalogue
+  { path: "territory/", screen: "TerritoryList" },
+  { path: "territory/?o=-species_count", screen: "TerritoryList" },
+  { path: "territory/?region=15", screen: "TerritoryList" },
+  { path: "territory/austria/", screen: "TerritoryDetail" },
+  {
+    path: "territory_compare/austria/azerbaijan/",
+    screen: "TerritoryCompare",
+  },
+
   // Observations
   { path: "my/observation/", screen: "Observations" },
   { path: "my/observation/328145/", screen: "ObservationDetail" },
@@ -144,6 +154,12 @@ const SUPPORTED: Array<{ path: string; authed?: boolean; screen: string }> = [
   { path: "ru/family/zhuravlinye/", screen: "TaxonGroupDetail" },
   { path: "ru/genus/grus/", screen: "TaxonGroupDetail" },
   { path: "ru/species/seryj-zhuravl/", screen: "SpeciesDetail" },
+  { path: "ru/territory/", screen: "TerritoryList" },
+  { path: "ru/territory/avstrija/", screen: "TerritoryDetail" },
+  {
+    path: "ru/territory_compare/avstrija/azerbajdzhan/",
+    screen: "TerritoryCompare",
+  },
   { path: "ru/my/observation/", screen: "Observations" },
   { path: "ru/my/observation/328145/", screen: "ObservationDetail" },
   {
@@ -170,19 +186,16 @@ const SUPPORTED: Array<{ path: string; authed?: boolean; screen: string }> = [
   { path: "ru/my/checklist/?territory=68&year=2025", screen: "Checklist" },
 ];
 
-// Links present on the QA page that the app deliberately does not route: no
-// territory screens exist, `my/test-push` has no route, and `my/users` is a
-// typo for `users` on the page. These must fall through (getStateFromPath
-// returns undefined) rather than land on a wrong screen.
+// Links present on the QA page that the app deliberately does not route:
+// `my/test-push` has no route, and `my/users` is a typo for `users` on the
+// page. These must fall through (getStateFromPath returns undefined) rather
+// than land on a wrong screen. A territory URL with more segments than the app
+// knows is here too — it must not be mistaken for a country slug.
 const UNSUPPORTED: string[] = [
-  "territory/",
-  "territory/austria/",
-  "territory_compare/austria/azerbaijan/",
   "my/test-push/",
+  "territory/austria/vienna/",
+  "territory_compare/austria/",
   // Russian-locale twins of the unsupported links above.
-  "ru/territory/",
-  "ru/territory/avstrija/",
-  "territory_compare/avstrija/azerbajdzhan/",
   "ru/my/test-push/",
 ];
 
@@ -236,6 +249,21 @@ describe("deep links from the QA page resolve to the right screen", () => {
       initialSearch: "duck",
       initialTraits: { territory: 68 },
     });
+  });
+
+  it("restores the region and the sort on a country list link", () => {
+    expect(
+      leafParams(stateFor("territory/?region=15&o=-species_count")),
+    ).toMatchObject({
+      initialRegion: 15,
+      initialSort: "-species_count",
+    });
+  });
+
+  it("ignores a region that is not a number", () => {
+    expect(leafParams(stateFor("territory/?region=abc"))).not.toHaveProperty(
+      "initialRegion",
+    );
   });
 
   it("restores the sort on a group detail link", () => {
