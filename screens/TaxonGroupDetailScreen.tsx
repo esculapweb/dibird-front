@@ -235,3 +235,8 @@ const stylesFn = (Colors: ThemeColors) =>
       marginBottom: 6,
     },
   });
+
+// CHILD_RANK_TITLE_KEY, resolved by rank at runtime — listed so
+// `npm run i18n:extract` keeps them.
+// t("families")
+// t("species")

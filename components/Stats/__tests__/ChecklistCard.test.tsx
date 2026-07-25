@@ -20,8 +20,18 @@ jest.mock("../../../store/theme-context", () => ({
 jest.mock("@expo/vector-icons", () => {
   const { Text } = require("react-native");
   return {
-    Ionicons: ({ name, testID }: { name: string; testID?: string }) => (
-      <Text testID={testID ?? `icon-${name}`}>{name}</Text>
+    Ionicons: ({
+      name,
+      testID,
+      style,
+    }: {
+      name: string;
+      testID?: string;
+      style?: unknown;
+    }) => (
+      <Text testID={testID ?? `icon-${name}`} style={style}>
+        {name}
+      </Text>
     ),
   };
 });
@@ -38,6 +48,7 @@ jest.mock("../../ui/Svgs", () => {
   };
 });
 
+import { StyleSheet } from "react-native";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import ChecklistCard from "../ChecklistCard";
 
@@ -241,6 +252,25 @@ describe("catalogue mode (personal={false})", () => {
     expect(screen.queryByTestId("icon-square-outline")).toBeNull();
     expect(screen.queryByTestId("icon-checkbox")).toBeNull();
     expect(screen.getByTestId("icon-chevron-forward")).toBeOnTheScreen();
+  });
+
+  it("centres the chevron instead of stretching it over the card", async () => {
+    // Ionicons renders a Text: stretched to the card's height the glyph sits
+    // at the top of the box, not next to the name it points at.
+    await render(
+      <ChecklistCard
+        item={SPECIES_ITEM as never}
+        index={0}
+        personal={false}
+        onPress={mockOnPress}
+        onToggle={mockOnToggle}
+      />,
+    );
+
+    const style = StyleSheet.flatten(
+      screen.getByTestId("icon-chevron-forward").props.style,
+    );
+    expect(style.alignSelf).toBe("center");
   });
 
   it("shows a group's plain species count instead of a seen/total score", async () => {

@@ -64,15 +64,18 @@ jest.mock("../TaxonRow", () => {
     default: ({
       title,
       latin,
+      occurrence,
       onPress,
     }: {
       title: string;
       latin?: string;
+      occurrence?: string | null;
       onPress: () => void;
     }) => (
       <Pressable onPress={onPress}>
         <Text>{title}</Text>
         {!!latin && <Text>{latin}</Text>}
+        {!!occurrence && <Text testID="row-occurrence">{occurrence}</Text>}
       </Pressable>
     ),
   };
@@ -306,6 +309,35 @@ it("shows the localized name of a taxon with the latin one below", async () => {
 
   expect(screen.getByText("Osprey")).toBeOnTheScreen();
   expect(screen.getByText("Pandion haliaetus")).toBeOnTheScreen();
+});
+
+it("says how the species occurs on the country the list is filtered by", async () => {
+  mockUseList.mockReturnValue(
+    loadedWith([{ ...SPECIES[0], occurrence: "Rare/Accidental" }]),
+  );
+
+  await renderList({ territory: 52 });
+  await renderRow({ ...SPECIES[0], occurrence: "Rare/Accidental" });
+
+  expect(screen.getByTestId("row-occurrence")).toHaveTextContent(
+    "country_status_rare_accidental",
+  );
+});
+
+it("leaves out an occurrence that only spells out the IUCN badge", async () => {
+  // A third of Avibase's statuses just write the category out ("Vulnerable"),
+  // which the coloured badge next to it already says.
+  const vulnerable = {
+    ...SPECIES[0],
+    status: "VU",
+    occurrence: "Vulnerable",
+  };
+  mockUseList.mockReturnValue(loadedWith([vulnerable]));
+
+  await renderList({ territory: 52 });
+  await renderRow(vulnerable);
+
+  expect(screen.queryByTestId("row-occurrence")).toBeNull();
 });
 
 it("opens the species page from a species row", async () => {

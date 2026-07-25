@@ -12,7 +12,7 @@ import SearchInput from "../components/ui/SearchInput";
 import IconsHeader from "../components/ui/IconsHeader";
 import EmptyState from "../components/Empty/EmptyState";
 import TerritoryCompareRow from "../components/Territory/TerritoryCompareRow";
-import { fetchTerritoryCompare } from "../util/fetches";
+import { fetchTerritoryCompare, fetchTerritoryDetail } from "../util/fetches";
 import { setNavigationCallback } from "../util/navigationCallbacks";
 import { buildShareUrl, isoToFlagEmoji } from "../util/helpers";
 import { StaleTime } from "../constants/staleTime";
@@ -61,6 +61,26 @@ const TerritoryCompareScreen = () => {
     slots[1]?.segment ?? null,
   ];
   const bothChosen = !!segments[0] && !!segments[1];
+
+  // A slot opened from the country page (or a deep link) carries only the
+  // segment, so without this the card would sit there showing a globe and a
+  // raw latin slug. It's the same query that page uses — arriving from it the
+  // name and flag come straight out of the cache, no request of their own.
+  const detail0 = useQuery({
+    queryKey: ["TerritoryDetail", segments[0], language],
+    queryFn: () => fetchTerritoryDetail(segments[0] as string),
+    enabled: !!segments[0] && !slots[0]?.name,
+    staleTime: StaleTime.ONE_DAY,
+  });
+
+  const detail1 = useQuery({
+    queryKey: ["TerritoryDetail", segments[1], language],
+    queryFn: () => fetchTerritoryDetail(segments[1] as string),
+    enabled: !!segments[1] && !slots[1]?.name,
+    staleTime: StaleTime.ONE_DAY,
+  });
+
+  const details = [detail0.data, detail1.data];
 
   const { data, isLoading, isError, isRefetching, refetch } = useQuery({
     queryKey: ["TerritoryCompare", segments[0], segments[1], language],
@@ -135,8 +155,11 @@ const TerritoryCompareScreen = () => {
   const territoryCard = (side: Side) => {
     const slot = slots[side];
     const fromServer = data?.territory_data?.[side];
-    const name = slot?.name ?? fromServer?.name;
-    const flag = isoToFlagEmoji(slot?.code ?? fromServer?.code ?? null);
+    const fromDetail = details[side];
+    const name = slot?.name ?? fromDetail?.name ?? fromServer?.name;
+    const flag = isoToFlagEmoji(
+      slot?.code ?? fromDetail?.code ?? fromServer?.code ?? null,
+    );
     const dotColor = side === 0 ? Colors.compareP1 : Colors.compareP2;
 
     return (

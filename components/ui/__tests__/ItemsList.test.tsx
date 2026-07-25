@@ -37,6 +37,14 @@ it("renders its rows", async () => {
   expect(screen.getByText("row 1")).toBeOnTheScreen();
 });
 
+it("takes a tap on a row while the search field still has focus", async () => {
+  // Without this the first tap is spent dismissing the keyboard and looks
+  // like it did nothing.
+  await renderList();
+
+  expect(listProps().keyboardShouldPersistTaps).toBe("handled");
+});
+
 it("has no refresh control unless the screen asked for one", async () => {
   await renderList();
 

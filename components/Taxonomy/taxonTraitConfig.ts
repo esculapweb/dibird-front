@@ -68,3 +68,19 @@ export const vocabLabels = (
   (options ?? [])
     .filter((option) => selected.includes(option.value))
     .map((option) => option.label);
+
+// GROUPS' and the buckets' labelKey, resolved at runtime by the filter sheet
+// and the chips row — listed so `npm run i18n:extract` keeps them.
+// t("mass")
+// t("mass_tiny")
+// t("mass_small")
+// t("mass_medium")
+// t("mass_large")
+// t("clutch")
+// t("clutch_small")
+// t("clutch_medium")
+// t("clutch_large")
+// t("habitat")
+// t("migration")
+// t("trophic_level")
+// t("trophic_niche")

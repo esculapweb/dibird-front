@@ -15,7 +15,7 @@ import { useDebounce } from "../../hooks/useDebounce";
 import { StaleTime } from "../../constants/staleTime";
 import { fetchTaxonList } from "../../util/fetches";
 import { stableStringify } from "../../util/helpers";
-import { latinPart } from "../../util/taxonomy";
+import { latinPart, territoryStatusNote } from "../../util/taxonomy";
 import {
   AppStackNavigationProp,
   TaxonListItem,
@@ -145,15 +145,26 @@ const TaxonChildrenList = ({
       data={items}
       onEndReached={handleLoadMore}
       isLoadingMore={isFetchingNextPage}
-      renderItem={({ item }) => (
-        <TaxonRow
-          title={item.name_lang}
-          latin={latinPart(item.name, item.name_lang)}
-          thumb={item.thumb}
-          statusCode={item.status}
-          onPress={() => handlePress(item)}
-        />
-      )}
+      renderItem={({ item }) => {
+        // Only the occurrence half of the country status earns a line — the
+        // rest just spells out the IUCN category the badge already shows
+        // (same rule as the checklist tree).
+        const occurrence = territoryStatusNote(item.occurrence, item.status);
+
+        return (
+          <TaxonRow
+            title={item.name_lang}
+            latin={latinPart(item.name, item.name_lang)}
+            thumb={item.thumb}
+            statusCode={item.status}
+            occurrence={
+              occurrence &&
+              (occurrence.key ? t(occurrence.key) : occurrence.raw)
+            }
+            onPress={() => handlePress(item)}
+          />
+        );
+      }}
       keyExtractor={(item) => item.segment}
       emptyType={debouncedSearch || hasTraitFilters ? "filtered" : "initial"}
       onClear={() => {

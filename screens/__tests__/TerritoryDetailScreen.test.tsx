@@ -24,8 +24,42 @@ jest.mock("../../components/ui/Layout", () => {
   const { View } = require("react-native");
   return {
     __esModule: true,
-    default: ({ children }: { children: import("react").ReactNode }) => (
-      <View>{children}</View>
+    default: ({
+      children,
+      bottom,
+    }: {
+      children: import("react").ReactNode;
+      bottom?: import("react").ReactNode;
+    }) => (
+      <View>
+        {children}
+        {bottom}
+      </View>
+    ),
+  };
+});
+jest.mock("../../components/ui/Tabs", () => {
+  const { Pressable, Text, View } = require("react-native");
+  return {
+    __esModule: true,
+    default: ({
+      tabOptions,
+      setTabsMode,
+    }: {
+      tabOptions: { value: string; labelKey: string }[];
+      setTabsMode: (value: string) => void;
+    }) => (
+      <View testID="tabs">
+        {tabOptions.map((tab) => (
+          <Pressable
+            key={tab.value}
+            testID={`tab-${tab.value}`}
+            onPress={() => setTabsMode(tab.value)}
+          >
+            <Text>{tab.labelKey}</Text>
+          </Pressable>
+        ))}
+      </View>
     ),
   };
 });
@@ -91,8 +125,8 @@ const DETAIL: TerritoryDetail = {
   region: { name: "South America", code_google: "005", name_gent: "South America" },
   count: { "2": "27 orders", "3": "88 families", "5": "1111 species" },
   paging: {
-    prev: { segment: "chile", name: "Chile" },
-    next: { segment: "bolivia", name: "Bolivia" },
+    prev: { segment: "chile", name: "Chile", code: "CL" },
+    next: { segment: "bolivia", name: "Bolivia", code: "BO" },
   },
   alternates: [],
 };
@@ -126,7 +160,7 @@ it("shows the flag, the name, its region, the counts and the description", async
 
   expect(screen.getByText("🇦🇷")).toBeOnTheScreen();
   expect(screen.getByText("Argentina")).toBeOnTheScreen();
-  expect(screen.getByText("South America")).toBeOnTheScreen();
+  expect(screen.getByText("region: South America")).toBeOnTheScreen();
   expect(screen.getByText("27 orders")).toBeOnTheScreen();
   expect(screen.getByText("1111 species")).toBeOnTheScreen();
   expect(
@@ -134,8 +168,25 @@ it("shows the flag, the name, its region, the counts and the description", async
   ).toBeOnTheScreen();
 });
 
+it("opens on the country page, with the species behind their own tab", async () => {
+  await render(<TerritoryDetailScreen />);
+
+  expect(screen.queryByTestId("territory-checklist")).toBeNull();
+  expect(screen.queryByTestId("flat-species-list")).toBeNull();
+
+  await fireEvent.press(screen.getByTestId("tab-species"));
+
+  // The description does not travel with the species list.
+  expect(
+    screen.queryByText("<p>Second in South America only to Brazil.</p>"),
+  ).toBeNull();
+  expect(screen.getByTestId("territory-checklist")).toBeOnTheScreen();
+});
+
 it("opens on the order/family/species tree, keyed by our own territory id", async () => {
   await render(<TerritoryDetailScreen />);
+
+  await fireEvent.press(screen.getByTestId("tab-species"));
 
   expect(screen.getByTestId("territory-checklist")).toBeOnTheScreen();
   expect(screen.queryByTestId("flat-species-list")).toBeNull();
@@ -146,6 +197,7 @@ it("opens on the order/family/species tree, keyed by our own territory id", asyn
 it("switches to the plain species list, filtered to the country", async () => {
   await render(<TerritoryDetailScreen />);
 
+  await fireEvent.press(screen.getByTestId("tab-species"));
   await fireEvent.press(screen.getByTestId("species-view-flat"));
 
   expect(screen.getByTestId("flat-species-list")).toBeOnTheScreen();
@@ -158,6 +210,9 @@ it("offers a sort only on the flat list — the tree is taxonomic by definition"
   await render(<TerritoryDetailScreen />);
   expect(headerProps().onSortPress).toBeUndefined();
 
+  await fireEvent.press(screen.getByTestId("tab-species"));
+  expect(headerProps().onSortPress).toBeUndefined();
+
   await fireEvent.press(screen.getByTestId("species-view-flat"));
   expect(headerProps().onSortPress).toEqual(expect.any(Function));
 });
@@ -168,14 +223,17 @@ it("says so instead of showing an empty list when a stale cache has no territory
   mockDetail({ data: { ...DETAIL, territory_id: undefined } });
 
   await render(<TerritoryDetailScreen />);
+  await fireEvent.press(screen.getByTestId("tab-species"));
 
-  expect(screen.getByText("Argentina")).toBeOnTheScreen();
   expect(screen.queryByTestId("territory-checklist")).toBeNull();
   expect(screen.getByText("taxonomy_unavailable")).toBeOnTheScreen();
 });
 
-it("walks to the neighbouring countries", async () => {
+it("walks to the neighbouring countries, flag first", async () => {
   await render(<TerritoryDetailScreen />);
+
+  expect(screen.getByText("🇧🇴")).toBeOnTheScreen();
+  expect(screen.getByText("🇨🇱")).toBeOnTheScreen();
 
   await fireEvent.press(screen.getByText("Bolivia"));
   expect(mockNavigation.push).toHaveBeenCalledWith("TerritoryDetail", {

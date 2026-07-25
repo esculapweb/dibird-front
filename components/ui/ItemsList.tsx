@@ -108,6 +108,10 @@ const ItemsList = <T,>({
             />
           ) : undefined
         }
+        // Without this a tap on a row while the header's search field has
+        // focus is spent on dismissing the keyboard, so the first tap looks
+        // like it did nothing (same as SelectListModal's list).
+        keyboardShouldPersistTaps="handled"
         initialNumToRender={12}
         maxToRenderPerBatch={10}
         windowSize={5}

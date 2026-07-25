@@ -238,3 +238,14 @@ const stylesFn = (Colors: ThemeColors) =>
       color: Colors.main100,
     },
   });
+
+// RANK_TITLE_KEY and RANK_EMPTY_KEY, resolved by rank at runtime — listed so
+// `npm run i18n:extract` keeps them.
+// t("orders")
+// t("families")
+// t("genera")
+// t("species")
+// t("no_orders_found")
+// t("no_families_found")
+// t("no_genera_found")
+// t("no_species_found")

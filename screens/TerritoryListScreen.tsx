@@ -181,7 +181,6 @@ const TerritoryListScreen = () => {
               onChange={setSearch}
               onClear={() => setSearch("")}
               placeholder={t("search_country_hint")}
-              autoFocus={!!pickerKey}
             />
             <RegionFilterChips value={region} onChange={setRegion} />
           </>

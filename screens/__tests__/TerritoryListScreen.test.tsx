@@ -257,12 +257,12 @@ it("opens the comparison from the shortcut", async () => {
   );
 });
 
-it("opens the search box with the keyboard up in picker mode", async () => {
+it("leaves the keyboard down in picker mode — the list is browsable as is", async () => {
   mockRoute = createRouteMock("TerritoryList", { pickerKey: "k" });
 
   await render(<TerritoryListScreen />);
 
-  expect(screen.getByTestId("search-input").props.autoFocus).toBe(true);
+  expect(screen.getByTestId("search-input").props.autoFocus).toBeFalsy();
 });
 
 it("searches by name through the list query", async () => {

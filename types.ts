@@ -366,6 +366,11 @@ export interface TaxonListItem {
   status?: string | null;
   status_name?: string | null;
   s_id?: number | null;
+  // How the species occurs on the territory the list is filtered by
+  // ("Rare/Accidental", …) — sent only for a `territory` filtered list, and
+  // the same free English text the checklist tree carries (see
+  // territoryStatusNote).
+  occurrence?: string | null;
 }
 
 export interface TaxonSibling {
@@ -613,8 +618,10 @@ export interface TerritoryDetail {
   } | null;
   count: Record<string, string> | null;
   paging: {
-    prev: { segment: string; name: string } | null;
-    next: { segment: string; name: string } | null;
+    // `code` (ISO-3166 alpha-2, for the flag) is absent from responses cached
+    // before the backend started sending it.
+    prev: { segment: string; name: string; code?: string | null } | null;
+    next: { segment: string; name: string; code?: string | null } | null;
   } | null;
   alternates: { lang_id: string; segment: string }[];
   // Set instead of the rest of the payload when the segment has been renamed

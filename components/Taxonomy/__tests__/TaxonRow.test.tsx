@@ -97,6 +97,12 @@ it("keeps the badge off the ranks that have no IUCN status", async () => {
   expect(screen.queryByText("LC")).toBeNull();
 });
 
+it("adds the occurrence line the country lists carry", async () => {
+  await renderRow({ occurrence: "Редкий / залётный" });
+
+  expect(screen.getByText("Редкий / залётный")).toBeOnTheScreen();
+});
+
 it("opens the taxon when the row is tapped", async () => {
   const onPress = jest.fn();
   await renderRow({ onPress });

@@ -12,11 +12,14 @@ interface TaxonRowProps {
   latin?: string;
   thumb?: string | null;
   statusCode?: string | null;
+  // Already-localized line about how the species occurs on the territory the
+  // list is filtered by ("Rare/Accidental"); only country lists have one.
+  occurrence?: string | null;
   onPress: () => void;
 }
 
 const TaxonRow = memo(
-  ({ title, latin, thumb, statusCode, onPress }: TaxonRowProps) => {
+  ({ title, latin, thumb, statusCode, occurrence, onPress }: TaxonRowProps) => {
     const { Colors } = useTheme();
     const styles = stylesFn(Colors);
     const uri = resolveTaxonImage(thumb);
@@ -47,6 +50,11 @@ const TaxonRow = memo(
           {!!latin && (
             <Text style={styles.latin} numberOfLines={1}>
               {latin}
+            </Text>
+          )}
+          {!!occurrence && (
+            <Text style={styles.occurrence} numberOfLines={1}>
+              {occurrence}
             </Text>
           )}
         </View>
@@ -107,6 +115,11 @@ const stylesFn = (Colors: ThemeColors) =>
       fontSize: 12,
       fontStyle: "italic",
       color: Colors.textSecondary,
+      marginTop: 2,
+    },
+    occurrence: {
+      fontSize: 11,
+      color: Colors.main100,
       marginTop: 2,
     },
     status: {

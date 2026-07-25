@@ -196,11 +196,14 @@ const ChecklistCard = memo(
             />
           </Pressable>
         ) : (
+          // Not styles.addIcon: that one stretches to the card's height, and
+          // on a Text (which is what Ionicons renders) the glyph then sits at
+          // the top of the stretched box instead of the middle.
           <Ionicons
             name="chevron-forward"
             size={20}
             color={Colors.textSecondary}
-            style={styles.addIcon}
+            style={styles.chevron}
           />
         )}
       </View>
@@ -287,6 +290,11 @@ const stylesFn = (Colors: ThemeColors) =>
     addIcon: {
       justifyContent: "center",
       alignSelf: "stretch",
+      paddingLeft: 8,
+      flexShrink: 0,
+    },
+    chevron: {
+      alignSelf: "center",
       paddingLeft: 8,
       flexShrink: 0,
     },

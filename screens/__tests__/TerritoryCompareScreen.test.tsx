@@ -304,6 +304,24 @@ it("fills the card from the picked country, not from the comparison response", a
   expect(screen.getByText("pick_country")).toBeOnTheScreen();
 });
 
+it("names the country a single segment came in with, from its own detail query", async () => {
+  // Regression: arriving from the country page only the segment is passed, so
+  // the card showed a globe and the raw latin slug until the *other* country
+  // was picked and the comparison response arrived.
+  mockRoute = createRouteMock("TerritoryCompare", { segment1: "argentina" });
+  mockUseQuery.mockImplementation(({ queryKey }: { queryKey: unknown[] }) =>
+    queryKey[0] === "TerritoryDetail"
+      ? { data: queryKey[1] ? { name: "Argentina", code: "AR" } : undefined }
+      : queryResult({ data: undefined }),
+  );
+
+  await render(<TerritoryCompareScreen />);
+
+  expect(screen.getByText("Argentina")).toBeOnTheScreen();
+  expect(screen.getByText("🇦🇷")).toBeOnTheScreen();
+  expect(screen.queryByText("argentina")).toBeNull();
+});
+
 it("falls back to the server's names for a link that carried only segments", async () => {
   await render(<TerritoryCompareScreen />);
 

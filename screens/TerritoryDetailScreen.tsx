@@ -1,5 +1,13 @@
 import { useEffect, useLayoutEffect, useMemo, useState } from "react";
-import { Platform, Pressable, Share, StyleSheet, Text, View } from "react-native";
+import {
+  Platform,
+  Pressable,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import RenderHtml from "react-native-render-html";
@@ -8,6 +16,7 @@ import { useTranslation } from "react-i18next";
 
 import Layout from "../components/ui/Layout";
 import Section from "../components/ui/Section";
+import Tabs from "../components/ui/Tabs";
 import IconsHeader from "../components/ui/IconsHeader";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
@@ -33,6 +42,11 @@ import {
 // (paginated, sortable, the same one the catalogue uses everywhere else).
 type SpeciesView = "tree" | "flat";
 
+// The country's own page (flag, counts, description, prev/next) and its birds
+// are two separate reads, split by the bottom tabs — the species list would
+// otherwise start below a screenful of description.
+type TerritoryTab = "info" | "species";
+
 const TerritoryDetailScreen = () => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -42,6 +56,7 @@ const TerritoryDetailScreen = () => {
   const navigation = useNavigation<AppStackNavigationProp>();
   const route = useRoute<AppStackRouteProp<"TerritoryDetail">>();
   const { segment } = route.params;
+  const [tab, setTab] = useState<TerritoryTab>("info");
   const [view, setView] = useState<SpeciesView>("tree");
   // The flat list is an ordinary taxonomy listing, so it follows the
   // catalogue-wide order preference. The tree has no sort of its own — it is
@@ -73,7 +88,9 @@ const TerritoryDetailScreen = () => {
               testID: "compare-territory-button",
             },
           ]}
-          onSortPress={view === "flat" ? openSortSheet : undefined}
+          onSortPress={
+            tab === "species" && view === "flat" ? openSortSheet : undefined
+          }
           onSharePress={async () => {
             const url = buildShareUrl(`territory/${segment}/`);
             await Share.share(
@@ -83,7 +100,7 @@ const TerritoryDetailScreen = () => {
         />
       ),
     });
-  }, [navigation, data?.name, segment, t, openSortSheet, view]);
+  }, [navigation, data?.name, segment, t, openSortSheet, tab, view]);
 
   useEffect(() => {
     if (data?.redirect) {
@@ -140,14 +157,34 @@ const TerritoryDetailScreen = () => {
     </Pressable>
   );
 
-  const header = (
+  const pagingFlag = (code?: string | null) => {
+    const pagingEmoji = isoToFlagEmoji(code ?? null);
+
+    return (
+      <View style={styles.pagingFlag}>
+        {pagingEmoji ? (
+          <Text style={styles.pagingFlagText}>{pagingEmoji}</Text>
+        ) : (
+          <Ionicons
+            name="globe-outline"
+            size={18}
+            color={Colors.textSecondary}
+          />
+        )}
+      </View>
+    );
+  };
+
+  const info = (
     <View style={styles.header}>
       <View style={styles.titleRow}>
         {!!flag && <Text style={styles.flag}>{flag}</Text>}
         <View style={styles.titleTexts}>
           <Text style={styles.title}>{data.name}</Text>
           {!!data.region?.name && (
-            <Text style={styles.region}>{data.region.name}</Text>
+            <Text style={styles.region}>
+              {t("region")}: {data.region.name}
+            </Text>
           )}
         </View>
       </View>
@@ -185,6 +222,7 @@ const TerritoryDetailScreen = () => {
                 size={16}
                 color={Colors.textSecondary}
               />
+              {pagingFlag(data.paging.prev.code)}
               <Text style={styles.pagingName} numberOfLines={1}>
                 {data.paging.prev.name}
               </Text>
@@ -204,6 +242,7 @@ const TerritoryDetailScreen = () => {
               >
                 {data.paging.next.name}
               </Text>
+              {pagingFlag(data.paging.next.code)}
               <Ionicons
                 name="chevron-forward"
                 size={16}
@@ -216,19 +255,23 @@ const TerritoryDetailScreen = () => {
         </View>
       )}
 
-      <View style={styles.viewTabs}>
-        {viewTab("tree", t("by_groups"), "git-branch-outline")}
-        {viewTab("flat", t("species"), "list-outline")}
-      </View>
     </View>
   );
 
-  // An offline-cached response from before the backend started sending
-  // territory_id has the header but nothing to key the species list with.
-  if (territoryId == null)
-    return (
-      <Layout>
-        {header}
+  const viewSwitch = (
+    <View style={styles.viewTabs}>
+      {viewTab("tree", t("by_groups"), "git-branch-outline")}
+      {viewTab("flat", t("species"), "list-outline")}
+    </View>
+  );
+
+  const speciesContent =
+    // An offline-cached response from before the backend started sending
+    // territory_id has the country page but nothing to key the species list
+    // with.
+    territoryId == null ? (
+      <>
+        {viewSwitch}
         <EmptyState
           icon="cloud-offline-outline"
           message={t("taxonomy_unavailable")}
@@ -236,23 +279,50 @@ const TerritoryDetailScreen = () => {
             { label: t("try_again"), onPress: () => detailQuery.refetch() },
           ]}
         />
-      </Layout>
+      </>
+    ) : view === "tree" ? (
+      <TerritoryChecklist territoryId={territoryId} listHeader={viewSwitch} />
+    ) : (
+      <TaxonChildrenList
+        rank={5}
+        traits={{ territory: territoryId }}
+        sort={sort}
+        errorTitle={t("taxonomy_unavailable")}
+        emptyMessage={t("no_species_found")}
+        searchPlaceholder={t("search_species_hint")}
+        listHeader={viewSwitch}
+      />
     );
 
   return (
-    <Layout>
-      {view === "tree" ? (
-        <TerritoryChecklist territoryId={territoryId} listHeader={header} />
-      ) : (
-        <TaxonChildrenList
-          rank={5}
-          traits={{ territory: territoryId }}
-          sort={sort}
-          errorTitle={t("taxonomy_unavailable")}
-          emptyMessage={t("no_species_found")}
-          searchPlaceholder={t("search_species_hint")}
-          listHeader={header}
+    <Layout
+      bottom={
+        <Tabs
+          tabOptions={[
+            {
+              value: "info" as const,
+              icon: "information-circle" as const,
+              iconInactive: "information-circle-outline" as const,
+              labelKey: t("description"),
+            },
+            {
+              value: "species" as const,
+              icon: "leaf" as const,
+              iconInactive: "leaf-outline" as const,
+              labelKey: t("species"),
+            },
+          ]}
+          tabsMode={tab}
+          setTabsMode={setTab}
         />
+      }
+    >
+      {tab === "info" ? (
+        <ScrollView contentContainerStyle={styles.infoContent}>
+          {info}
+        </ScrollView>
+      ) : (
+        speciesContent
       )}
     </Layout>
   );
@@ -262,6 +332,7 @@ export default TerritoryDetailScreen;
 
 const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
+    infoContent: { paddingHorizontal: 12, paddingVertical: 8 },
     header: { marginBottom: 4, paddingHorizontal: 4 },
     titleRow: { flexDirection: "row", alignItems: "center", gap: 10 },
     flag: { fontSize: 34 },
@@ -306,6 +377,17 @@ const stylesFn = (Colors: ThemeColors) =>
       paddingHorizontal: 8,
       paddingVertical: 8,
     },
+    // The species page's prev/next shows the bird's thumb here; a country's
+    // portrait is its flag, in a box of the same shape.
+    pagingFlag: {
+      width: 32,
+      height: 32,
+      borderRadius: 6,
+      backgroundColor: Colors.primary200,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    pagingFlagText: { fontSize: 20 },
     pagingName: {
       flex: 1,
       fontSize: 12,
@@ -315,7 +397,6 @@ const stylesFn = (Colors: ThemeColors) =>
     viewTabs: {
       flexDirection: "row",
       gap: 6,
-      marginTop: 14,
       marginBottom: 8,
     },
     viewTab: {

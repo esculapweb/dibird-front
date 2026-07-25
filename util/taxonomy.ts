@@ -110,3 +110,22 @@ export const iucnColors = (
     text: IUCN_LIGHT_TEXT.includes(base) ? "#FFFFFF" : "#1E2A36",
   };
 };
+
+// The keys COUNTRY_STATUS_KEYS resolves at runtime — i18next-parser only sees
+// literal t() calls, so without this list `npm run i18n:extract` drops them.
+// t("country_status_rare_accidental")
+// t("country_status_endemic")
+// t("country_status_near_endemic")
+// t("country_status_breeding_endemic")
+// t("country_status_endemic_country")
+// t("country_status_introduced")
+// t("country_status_uncertain_origin")
+// t("country_status_extirpated")
+// t("country_status_outlying_islands")
+// t("country_status_extinct")
+// t("country_status_extinct_wild")
+// t("country_status_critically_endangered")
+// t("country_status_endangered")
+// t("country_status_vulnerable")
+// t("country_status_near_threatened")
+// t("country_status_data_deficient")

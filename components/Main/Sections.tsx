@@ -157,3 +157,12 @@ const stylesFn = (Colors: ThemeColors) =>
       color: Colors.textSecondary,
     },
   });
+
+// SECTIONS' labelKey, resolved at runtime — listed so `npm run i18n:extract`
+// keeps them (it only sees literal t() calls).
+// t("observations")
+// t("places")
+// t("statistics")
+// t("diaries")
+// t("rating")
+// t("checklist")
