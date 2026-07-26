@@ -2,8 +2,9 @@
 # Wraps `maestro test` so `npm run e2e` needs no extra manual steps:
 # loads real test credentials from .maestro/.env.local (gitignored, not
 # committed) and auto-picks a running device, working around a Maestro quirk
-# where device auto-detection can hang forever if a stale/unrelated Android
-# adb server happens to be running (see RELEASE_CHECKLIST.md).
+# where device auto-detection can hang forever — silently, before any output —
+# if something unrelated is listening on an emulator ADB port (see the
+# port-squatter note below, and RELEASE_CHECKLIST.md).
 #
 # Defaults to iOS. Pass `android` as the first argument to target a booted
 # Android emulator/device instead — this is how the offline-*.yaml flows are
@@ -26,6 +27,50 @@ set -e
 cd "$(dirname "$0")/.."
 
 PLATFORM="${1:-ios}"
+
+# A previous run that was interrupted while Maestro was blocked in a native
+# socket read (see the ADB-port note below) can survive the Ctrl-C / closed
+# terminal that was meant to kill it. The leftover JVM still holds the iOS
+# driver port, so the *next* `npm run e2e` also produces no output — the hang
+# outlives the run that caused it. Reap them before starting: nothing else in
+# this repo runs `maestro.cli.AppKt`, and two concurrent batches against the
+# same device would fight each other anyway.
+STALE_PIDS=$(pgrep -f "maestro\.cli\.AppKt" 2>/dev/null || true)
+if [ -n "$STALE_PIDS" ]; then
+  echo "Killing leftover Maestro process(es) from an earlier run: $(echo "$STALE_PIDS" | tr '\n' ' ')" >&2
+  # shellcheck disable=SC2086
+  kill $STALE_PIDS 2>/dev/null || true
+  sleep 2
+  STILL=$(pgrep -f "maestro\.cli\.AppKt" 2>/dev/null || true)
+  # shellcheck disable=SC2086
+  [ -n "$STILL" ] && kill -9 $STILL 2>/dev/null || true
+fi
+
+# Maestro finds devices by probing the Android emulator ADB ports on localhost
+# itself — it opens a socket on every port in 5555..5683 and waits for an ADB
+# handshake with *no read timeout*, instead of asking the adb server. Any
+# unrelated process listening on one of those ports accepts the connection and
+# never answers, so `maestro test` blocks forever having printed nothing: the
+# "npm run e2e does nothing at all" hang, with no error to go on. This is not
+# an Android-only concern — the scan runs before `--device` is even looked at
+# (TestCommand.getDeviceCount → DeviceService.listAndroidDevices), so it takes
+# down iOS runs just as dead. Our own backend stack used to be the culprit:
+# Flower's default port is 5555, exactly the first emulator's adb port — hence
+# `15555:5555` in dibird_local/docker-compose.yml. Fail fast and name whatever
+# else lands there next, rather than hanging again.
+if command -v lsof >/dev/null 2>&1; then
+  SQUATTERS=$(lsof -nP -iTCP -sTCP:LISTEN 2>/dev/null | awk '
+    { n = split($9, a, ":"); port = a[n] + 0 }
+    port >= 5555 && port <= 5683 && $1 !~ /^(adb|emulator|qemu)/ {
+      print "  port " port " — " $1 " (pid " $2 ")"
+    }' | sort -u)
+  if [ -n "$SQUATTERS" ]; then
+    echo "Emulator ADB port(s) 5555-5683 held by unrelated process(es):" >&2
+    echo "$SQUATTERS" >&2
+    echo "Maestro's device scan hangs forever on these. Free the port(s) and re-run." >&2
+    exit 1
+  fi
+fi
 
 ENV_FILE=".maestro/.env.local"
 if [ -f "$ENV_FILE" ]; then
