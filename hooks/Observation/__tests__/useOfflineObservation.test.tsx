@@ -66,7 +66,11 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 beforeEach(() => {
   jest.clearAllMocks();
   queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    // gcTime: 0 on mutations is load-bearing — see useOfflineDiary.test.tsx.
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false, gcTime: 0 },
+    },
   });
   (useProfile as jest.Mock).mockReturnValue({ profile: PROFILE });
   (useLanguage as jest.Mock).mockReturnValue({ language: "en" });

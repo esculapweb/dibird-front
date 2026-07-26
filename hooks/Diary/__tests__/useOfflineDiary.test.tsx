@@ -64,7 +64,18 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 beforeEach(() => {
   jest.clearAllMocks();
   queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    // gcTime: 0 on mutations is load-bearing, not tuning. Unmounting a
+    // useMutation detaches its observer, and Mutation.removeObserver()
+    // unconditionally calls scheduleGc() — a 5-minute timeout by default.
+    // Unlike QueryCache.remove(), which calls query.destroy(),
+    // MutationCache.remove()/clear() never clear that timeout, so afterEach's
+    // queryClient.clear() cannot cancel it and no afterEach ordering helps.
+    // Left at the default, every mutation test parks a live 5-minute timer and
+    // the jest worker can no longer exit gracefully after a full run.
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false, gcTime: 0 },
+    },
   });
   (useProfile as jest.Mock).mockReturnValue({ profile: PROFILE });
   (useLanguage as jest.Mock).mockReturnValue({ language: "en" });
