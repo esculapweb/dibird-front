@@ -50,6 +50,7 @@ jest.mock("../../hooks/repositories/notificationRepository", () => ({
 
 import { Platform } from "react-native";
 import * as FileSystem from "expo-file-system/legacy";
+import * as Sentry from "@sentry/react-native";
 import api from "../../services/api";
 import { isConnected } from "../../services/sync/networkStatus";
 import { runNotificationSync } from "../../services/sync/notificationSync";
@@ -696,6 +697,63 @@ describe("fetchSpecies", () => {
     expect(result).toEqual([
       { value: 1, label: "Robin", name: "x", name_lang: "Robin", thumb: undefined, seen: true, segment: "robin" },
     ]);
+  });
+});
+
+describe("degraded reads (offline cache masking a server failure)", () => {
+  const captureMessage = Sentry.captureMessage as jest.Mock;
+
+  const httpError = (status: number) =>
+    Object.assign(new Error("boom"), { code: "SERVER_ERROR", status });
+
+  it("still serves the cache on a 500, but flags it in Sentry with the failing source", async () => {
+    (api.get as jest.Mock).mockRejectedValue(httpError(500));
+    (listCacheRepository.getCachedListResponse as jest.Mock).mockReturnValue({ results: [{ id: 9 }] });
+
+    const result = await fetches.fetchChecklist({}, null, "", 1);
+
+    expect(result).toEqual({ results: [{ id: 9 }] });
+    expect(captureMessage).toHaveBeenCalledTimes(1);
+    expect(captureMessage.mock.calls[0][1].tags).toMatchObject({
+      degraded_read: "true",
+      source: "/myapi/checklist2/",
+      fallback_reason: "server",
+      http_status: "500",
+    });
+  });
+
+  it("says nothing when the same cache read is just the app being offline", async () => {
+    (isConnected as jest.Mock).mockReturnValue(false);
+    (api.get as jest.Mock).mockRejectedValue(networkError());
+    (listCacheRepository.getCachedListResponse as jest.Mock).mockReturnValue({ results: [{ id: 9 }] });
+
+    await expect(fetches.fetchChecklist({}, null, "", 1)).resolves.toEqual({ results: [{ id: 9 }] });
+    expect(captureMessage).not.toHaveBeenCalled();
+  });
+
+  it("flags a dropdown fetch masked by its own cache", async () => {
+    (api.get as jest.Mock).mockRejectedValue(httpError(503));
+    (listCacheRepository.getCachedListResponse as jest.Mock).mockReturnValue([{ value: 1, label: "Robin" }]);
+
+    await expect(fetches.fetchSpecies(5, "name")).resolves.toEqual([{ value: 1, label: "Robin" }]);
+    expect(captureMessage.mock.calls[0][1].tags).toMatchObject({ source: "fetchSpecies" });
+  });
+
+  it("rethrows a 404 on a detail fetch instead of serving a taxon the server no longer has", async () => {
+    const gone = httpError(404);
+    (api.get as jest.Mock).mockRejectedValue(gone);
+    (listCacheRepository.getCachedListResponse as jest.Mock).mockReturnValue({ id: 1, name: "Robin" });
+
+    await expect(fetches.fetchTaxonDetail("robin", 5 as never)).rejects.toBe(gone);
+    expect(listCacheRepository.getCachedListResponse).not.toHaveBeenCalled();
+  });
+
+  it("keeps serving the cache for a 404 on a list endpoint (stale URL, not a deleted entity)", async () => {
+    (api.get as jest.Mock).mockRejectedValue(httpError(404));
+    (listCacheRepository.getCachedListResponse as jest.Mock).mockReturnValue({ results: [{ id: 9 }] });
+
+    await expect(fetches.fetchChecklist({}, null, "", 1)).resolves.toEqual({ results: [{ id: 9 }] });
+    expect(captureMessage.mock.calls[0][1].tags).toMatchObject({ fallback_reason: "client" });
   });
 });
 

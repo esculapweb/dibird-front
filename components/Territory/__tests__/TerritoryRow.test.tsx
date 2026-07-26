@@ -16,13 +16,24 @@ jest.mock("@expo/vector-icons", () => {
 
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import TerritoryRow from "../TerritoryRow";
+import { TerritoryListItem } from "../../../types";
+
+const makeItem = (
+  overrides: Partial<TerritoryListItem> = {},
+): TerritoryListItem => ({
+  name: "Argentina",
+  segment: "argentina",
+  code: "AR",
+  region_name: null,
+  short: null,
+  count: null,
+  ...overrides,
+});
 
 it("shows the country flag, its name and the species count", async () => {
   await render(
     <TerritoryRow
-      name="Argentina"
-      code="AR"
-      speciesLabel="1111 species"
+      item={makeItem({ count: { "5": "1111 species" } })}
       onPress={jest.fn()}
     />,
   );
@@ -36,10 +47,10 @@ it("shows the country flag, its name and the species count", async () => {
 it("names the region between the country and its species count", async () => {
   await render(
     <TerritoryRow
-      name="Argentina"
-      code="AR"
-      regionName="South America"
-      speciesLabel="1111 species"
+      item={makeItem({
+        region_name: "South America",
+        count: { "5": "1111 species" },
+      })}
       onPress={jest.fn()}
     />,
   );
@@ -48,31 +59,40 @@ it("names the region between the country and its species count", async () => {
 });
 
 it("leaves the region line out for a row cached before the API sent one", async () => {
-  await render(
-    <TerritoryRow name="Argentina" code="AR" onPress={jest.fn()} />,
-  );
+  await render(<TerritoryRow item={makeItem()} onPress={jest.fn()} />);
 
   expect(screen.queryByText(/region/)).toBeNull();
 });
 
 it("falls back to a globe for the territories that have no ISO code", async () => {
-  await render(<TerritoryRow name="High Seas" code={null} onPress={jest.fn()} />);
+  await render(
+    <TerritoryRow
+      item={makeItem({ name: "High Seas", segment: "high-seas", code: null })}
+      onPress={jest.fn()}
+    />,
+  );
 
   expect(screen.getByTestId("icon-globe-outline")).toBeOnTheScreen();
 });
 
 it("leaves the second line out when the count is missing", async () => {
   // The count comes from a precomputed table and is occasionally absent.
-  await render(<TerritoryRow name="Austria" code="AT" onPress={jest.fn()} />);
+  await render(
+    <TerritoryRow
+      item={makeItem({ name: "Austria", segment: "austria", code: "AT" })}
+      onPress={jest.fn()}
+    />,
+  );
 
   expect(screen.getByText("Austria")).toBeOnTheScreen();
   expect(screen.queryByText(/species/)).toBeNull();
 });
 
-it("opens the country when tapped", async () => {
+it("hands the tapped country to the list", async () => {
   const onPress = jest.fn();
-  await render(<TerritoryRow name="Austria" code="AT" onPress={onPress} />);
+  const item = makeItem({ name: "Austria", segment: "austria", code: "AT" });
+  await render(<TerritoryRow item={item} onPress={onPress} />);
 
   await fireEvent.press(screen.getByText("Austria"));
-  expect(onPress).toHaveBeenCalled();
+  expect(onPress).toHaveBeenCalledWith(item);
 });

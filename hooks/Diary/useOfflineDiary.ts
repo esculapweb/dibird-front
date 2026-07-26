@@ -7,6 +7,7 @@ import { useMutationWithTranslation } from "../useMutationWithTranslation";
 import { useProfile } from "../../store/profile-context";
 import { useLanguage } from "../../store/language-context";
 import { isConnected } from "../../services/sync/networkStatus";
+import { serveFromCache } from "../../services/cacheFallback";
 import { runDiarySync } from "../../services/sync/diarySync";
 import * as diaryRepository from "../repositories/diaryRepository";
 import { ownerFromProfile } from "../repositories/shared";
@@ -103,7 +104,7 @@ export const useDiaryItem = (
         return res.data;
       } catch (e) {
         const local = diaryRepository.getDiary(id!);
-        if (local) return local;
+        if (local) return serveFromCache(local, e, "useOfflineDiary");
         throw e;
       }
     },

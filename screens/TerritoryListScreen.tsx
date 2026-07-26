@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState } from "react";
+import { useCallback, useLayoutEffect, useState } from "react";
 import { Platform, Pressable, Share, StyleSheet, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
@@ -111,14 +111,27 @@ const TerritoryListScreen = () => {
 
   const items = data?.pages.flatMap((page) => page.results) ?? [];
 
-  const handlePress = (item: TerritoryListItem) => {
-    if (pickerKey) {
-      callNavigationCallback(pickerKey, item);
-      navigation.goBack();
-      return;
-    }
-    navigation.navigate("TerritoryDetail", { segment: item.segment });
-  };
+  // Both of these are props of a FlatList cell (which is a PureComponent), so
+  // a new identity on every render of this screen — every keystroke in the
+  // search field — re-renders every mounted row.
+  const handlePress = useCallback(
+    (item: TerritoryListItem) => {
+      if (pickerKey) {
+        callNavigationCallback(pickerKey, item);
+        navigation.goBack();
+        return;
+      }
+      navigation.navigate("TerritoryDetail", { segment: item.segment });
+    },
+    [pickerKey, navigation],
+  );
+
+  const renderItem = useCallback(
+    ({ item }: { item: TerritoryListItem }) => (
+      <TerritoryRow item={item} onPress={handlePress} />
+    ),
+    [handlePress],
+  );
 
   if (isError && !data)
     return (
@@ -142,15 +155,7 @@ const TerritoryListScreen = () => {
           if (hasNextPage && !isFetchingNextPage) fetchNextPage();
         }}
         isLoadingMore={isFetchingNextPage}
-        renderItem={({ item }) => (
-          <TerritoryRow
-            name={item.name}
-            code={item.code}
-            regionName={item.region_name}
-            speciesLabel={item.count?.["5"]}
-            onPress={() => handlePress(item)}
-          />
-        )}
+        renderItem={renderItem}
         keyExtractor={(item) => item.segment}
         emptyType={debouncedSearch || region != null ? "filtered" : "initial"}
         onClear={() => {

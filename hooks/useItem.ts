@@ -10,6 +10,7 @@ import {
   getCachedListResponse,
 } from "./repositories/listCacheRepository";
 import { communityItemCacheTable } from "../services/db/schema";
+import { serveFromCache } from "../services/cacheFallback";
 
 const MAX_ENTRIES = 3000;
 
@@ -53,7 +54,7 @@ export const useItem = (
         return res.data;
       } catch (e) {
         const cached = getCachedListResponse(communityItemCacheTable, cacheKey);
-        if (cached) return cached;
+        if (cached) return serveFromCache(cached, e, `useItem:${type}`);
         throw e;
       }
     },

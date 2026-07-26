@@ -96,17 +96,15 @@ jest.mock("../../components/Territory/TerritoryRow", () => {
   return {
     __esModule: true,
     default: ({
-      name,
-      speciesLabel,
+      item,
       onPress,
     }: {
-      name: string;
-      speciesLabel?: string | null;
-      onPress: () => void;
+      item: { name: string; count?: Record<string, string> | null };
+      onPress: (item: unknown) => void;
     }) => (
-      <Pressable onPress={onPress}>
-        <Text>{name}</Text>
-        {!!speciesLabel && <Text>{speciesLabel}</Text>}
+      <Pressable onPress={() => onPress(item)}>
+        <Text>{item.name}</Text>
+        {!!item.count?.["5"] && <Text>{item.count["5"]}</Text>}
       </Pressable>
     ),
   };

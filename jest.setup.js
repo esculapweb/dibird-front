@@ -9,6 +9,8 @@ jest.mock("@react-native-firebase/analytics", () => ({
 jest.mock("@sentry/react-native", () => ({
   wrap: (component) => component,
   captureException: jest.fn(),
+  captureMessage: jest.fn(),
+  addBreadcrumb: jest.fn(),
   init: jest.fn(),
 }));
 

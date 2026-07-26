@@ -1,4 +1,10 @@
-import { useEffect, useCallback, useLayoutEffect, ReactNode } from "react";
+import {
+  useEffect,
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  ReactNode,
+} from "react";
 import {
   StyleSheet,
   Pressable,
@@ -186,14 +192,22 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
     }
   }, [data?.pages[0], onFirstPageData]);
 
-  const rawItems = data?.pages.flatMap((page) => page.results) ?? [];
-  const objects = new Set();
-  const items = rawItems.filter((item) => {
-    const id = resolvedGetItemId(item);
-    if (objects.has(id)) return false;
-    objects.add(id);
-    return true;
-  });
+  // The dedup walks every loaded page, and with infinite scroll that grows
+  // without bound — no reason to redo it on renders that only changed the
+  // search string or a header option. getItemId is left out of the deps on
+  // purpose: screens pass it inline, so it is a new function every render and
+  // would defeat the memo, while what it returns for a given item never
+  // changes.
+  const items = useMemo(() => {
+    const rawItems = data?.pages.flatMap((page) => page.results) ?? [];
+    const objects = new Set();
+    return rawItems.filter((item) => {
+      const id = resolvedGetItemId(item);
+      if (objects.has(id)) return false;
+      objects.add(id);
+      return true;
+    });
+  }, [data?.pages]);
 
   const isEmpty = items.length === 0;
 

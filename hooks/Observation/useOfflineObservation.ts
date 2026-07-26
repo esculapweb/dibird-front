@@ -7,6 +7,7 @@ import { useMutationWithTranslation } from "../useMutationWithTranslation";
 import { useProfile } from "../../store/profile-context";
 import { useLanguage } from "../../store/language-context";
 import { isConnected } from "../../services/sync/networkStatus";
+import { serveFromCache } from "../../services/cacheFallback";
 import { runObservationSync } from "../../services/sync/observationSync";
 import * as observationRepository from "../repositories/observationRepository";
 import * as diaryRepository from "../repositories/diaryRepository";
@@ -139,7 +140,7 @@ export const useObservationItem = (
         return res.data;
       } catch (e) {
         const local = observationRepository.getObservation(id!);
-        if (local) return local;
+        if (local) return serveFromCache(local, e, "useOfflineObservation");
         throw e;
       }
     },

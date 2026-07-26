@@ -7,6 +7,7 @@ import { Config } from "../constants/config";
 import { notifyTokenUpdate } from "./authService";
 import { AppError } from "../types";
 import { normalizeApiError, toUIError } from "./errors";
+import { isConnected } from "./sync/networkStatus";
 
 let onUnauthorizedCallback: (() => void) | null = null;
 
@@ -118,6 +119,23 @@ const reportToSentry = (error: AxiosError): void => {
   }
 
   if (status === 0) {
+    // Без сети каждый запрос порождал бы отдельное событие — за один
+    // офлайн-запуск это десятки warning'ов, в которых теряются настоящие
+    // 5xx. Оставляем только breadcrumb. Если же сеть есть, а ответа нет
+    // (таймаут, DNS, сервер лёг) — это реальный сигнал, он остаётся.
+    // Оговорка: до первого события NetInfo isConnected() отдаёт true (см.
+    // services/sync/networkStatus.ts), так что самый первый запрос
+    // холодного старта в офлайне всё ещё даст warning.
+    if (!isConnected()) {
+      Sentry.addBreadcrumb({
+        category: "api",
+        level: "info",
+        message: `API ${method} ${url} → offline`,
+        data: { url, method, errorCode: error.code },
+      });
+      return;
+    }
+
     const isTimeout = error.code === "ECONNABORTED";
     Sentry.captureMessage(
       `API ${method} ${url} → ${isTimeout ? "timeout" : "network error"}`,

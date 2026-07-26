@@ -27,6 +27,7 @@ import * as diaryRepository from "../hooks/repositories/diaryRepository";
 import * as placeRepository from "../hooks/repositories/placeRepository";
 import * as notificationRepository from "../hooks/repositories/notificationRepository";
 import { isConnected } from "../services/sync/networkStatus";
+import { serveFromCache, assertNotGone } from "../services/cacheFallback";
 import { runNotificationSync } from "../services/sync/notificationSync";
 import {
   speciesDropdownCacheTable,
@@ -137,7 +138,7 @@ export const fetchTimezones = async () => {
     return items;
   } catch (e) {
     const cached = getCachedTimezones();
-    if (cached.length > 0) return cached;
+    if (cached.length > 0) return serveFromCache(cached, e, "fetchTimezones");
     throw e;
   }
 };
@@ -151,8 +152,9 @@ export const fetchPage = async (slug: string) => {
     cacheListResponse(staticPageCacheTable, cacheKey, content, MAX_ENTRIES);
     return content;
   } catch (e) {
+    assertNotGone(e);
     const cached = getCachedListResponse<string>(staticPageCacheTable, cacheKey);
-    if (cached) return cached;
+    if (cached) return serveFromCache(cached, e, "fetchPage");
     throw e;
   }
 };
@@ -224,7 +226,7 @@ export const fetchTraitFilters = async (): Promise<TraitFilterOptions> => {
       taxonDetailCacheTable,
       cacheKey,
     );
-    if (cached) return cached;
+    if (cached) return serveFromCache(cached, e, "fetchTraitFilters");
     throw e;
   }
 };
@@ -244,8 +246,9 @@ export const fetchTaxonDetail = async <
     cacheListResponse(taxonDetailCacheTable, cacheKey, res.data, MAX_ENTRIES);
     return res.data;
   } catch (e) {
+    assertNotGone(e);
     const cached = getCachedListResponse<T>(taxonDetailCacheTable, cacheKey);
-    if (cached) return cached;
+    if (cached) return serveFromCache(cached, e, "fetchTaxonDetail");
     throw e;
   }
 };
@@ -303,11 +306,12 @@ export const fetchTerritoryRegions = async (): Promise<
     cacheListResponse(territoryListCacheTable, cacheKey, items, MAX_ENTRIES);
     return items;
   } catch (e) {
+    assertNotGone(e);
     const cached = getCachedListResponse<TerritoryRegionOption[]>(
       territoryListCacheTable,
       cacheKey,
     );
-    if (cached) return cached;
+    if (cached) return serveFromCache(cached, e, "fetchTerritoryRegions");
     throw e;
   }
 };
@@ -337,11 +341,12 @@ export const fetchTerritoryDetail = async (
     );
     return res.data;
   } catch (e) {
+    assertNotGone(e);
     const cached = getCachedListResponse<TerritoryDetail>(
       territoryDetailCacheTable,
       cacheKey,
     );
-    if (cached) return cached;
+    if (cached) return serveFromCache(cached, e, "fetchTerritoryDetail");
     throw e;
   }
 };
@@ -365,11 +370,12 @@ export const fetchTerritoryCompare = async (
     );
     return res.data;
   } catch (e) {
+    assertNotGone(e);
     const cached = getCachedListResponse<TerritoryCompareResponse>(
       territoryDetailCacheTable,
       cacheKey,
     );
-    if (cached) return cached;
+    if (cached) return serveFromCache(cached, e, "fetchTerritoryCompare");
     throw e;
   }
 };
@@ -395,7 +401,7 @@ export const fetchMyCountries = async (
   } catch (e) {
     if (!favOnly) {
       const cached = getCachedCountries(order);
-      if (cached.length > 0) return cached;
+      if (cached.length > 0) return serveFromCache(cached, e, "fetchMyCountries");
     }
     throw e;
   }
@@ -448,7 +454,13 @@ export const fetchMyPlaces = async (
       placesDropdownCacheTable,
       cacheKey,
     );
-    if (cached) return placeRepository.applyDropdownOverlay(cached, territory);
+    if (cached) {
+      return serveFromCache(
+        placeRepository.applyDropdownOverlay(cached, territory),
+        e,
+        "fetchMyPlaces",
+      );
+    }
 
     // Same territory, but cached under a different sort order — still useful
     // offline (e.g. the user just switched sort with no connection): reuse it
@@ -458,9 +470,13 @@ export const fetchMyPlaces = async (
       `places|${territory}|`,
     );
     if (relaxed) {
-      return placeRepository.applyDropdownOverlay(
-        resortPlaceItems(relaxed, order),
-        territory,
+      return serveFromCache(
+        placeRepository.applyDropdownOverlay(
+          resortPlaceItems(relaxed, order),
+          territory,
+        ),
+        e,
+        "fetchMyPlaces",
       );
     }
 
@@ -469,7 +485,9 @@ export const fetchMyPlaces = async (
     // truly nothing — no cache, no pending place — keep surfacing the error
     // like before rather than silently showing an empty picker.
     const overlayOnly = placeRepository.applyDropdownOverlay([], territory);
-    if (overlayOnly.length > 0) return overlayOnly;
+    if (overlayOnly.length > 0) {
+      return serveFromCache(overlayOnly, e, "fetchMyPlaces");
+    }
     throw e;
   }
 };
@@ -514,7 +532,7 @@ export const fetchSpecies = async (
       speciesDropdownCacheTable,
       cacheKey,
     );
-    if (cached) return cached;
+    if (cached) return serveFromCache(cached, e, "fetchSpecies");
 
     // Same territory/date filter, but cached under a different sort order —
     // still useful offline (e.g. the user just switched sort with no
@@ -523,7 +541,13 @@ export const fetchSpecies = async (
       speciesDropdownCacheTable,
       `species|${territory}|${stableStringify(dateFilter ?? {})}|`,
     );
-    if (relaxed) return resortSpeciesDropdownItems(relaxed, order);
+    if (relaxed) {
+      return serveFromCache(
+        resortSpeciesDropdownItems(relaxed, order),
+        e,
+        "fetchSpecies",
+      );
+    }
 
     throw e;
   }
@@ -543,7 +567,7 @@ export const fetchDiarySpeciesIds = async (diaryId: number) => {
     return res.data;
   } catch (e) {
     const cached = getCachedListResponse(diarySpeciesIdsCacheTable, cacheKey);
-    if (cached) return cached;
+    if (cached) return serveFromCache(cached, e, "fetchDiarySpeciesIds");
     throw e;
   }
 };
@@ -557,7 +581,7 @@ export const fetchMapPreview = async (placeId: string | number | null) => {
     return res.data;
   } catch (e) {
     const cached = getCachedListResponse(mapPreviewCacheTable, cacheKey);
-    if (cached) return cached;
+    if (cached) return serveFromCache(cached, e, "fetchMapPreview");
     throw e;
   }
 };
@@ -617,8 +641,9 @@ export const fetchUserProfile = async (profileId: number) => {
     cacheListResponse(userProfileCacheTable, cacheKey, res.data, MAX_ENTRIES);
     return res.data;
   } catch (e) {
+    assertNotGone(e);
     const cached = getCachedListResponse(userProfileCacheTable, cacheKey);
-    if (cached) return cached;
+    if (cached) return serveFromCache(cached, e, "fetchUserProfile");
     throw e;
   }
 };
@@ -644,7 +669,7 @@ export const fetchMyActivity = async (filters: Filters) => {
       activityCacheTable,
       cacheKey,
     );
-    if (cached) return cached;
+    if (cached) return serveFromCache(cached, e, "fetchMyActivity");
     throw e;
   }
 };
@@ -663,7 +688,7 @@ export const fetchMyDashboardStat = async (filters: Filters) => {
     return res.data;
   } catch (e) {
     const cached = getCachedListResponse(dashboardStatCacheTable, cacheKey);
-    if (cached) return cached;
+    if (cached) return serveFromCache(cached, e, "fetchMyDashboardStat");
     throw e;
   }
 };
@@ -687,7 +712,7 @@ export const fetchBirdOfDay = async (territory: number | null) => {
       birdOfDayCacheTable,
       cacheKey,
     );
-    if (cached) return cached;
+    if (cached) return serveFromCache(cached, e, "fetchBirdOfDay");
     throw e;
   }
 };
@@ -782,8 +807,12 @@ const fetchAbstract = async <T>(
     cacheListResponse(options.table, cacheKey, res.data, options.maxEntries);
     return res.data;
   } catch (e) {
+    // Один serveFromCache здесь покрывает все списочные фетчеры разом.
+    // assertNotGone намеренно НЕ вызывается: 404 на списочном эндпоинте
+    // означает «устаревший URL», а не «сущности больше нет», а часть
+    // списков фильтруется по id offline-first сущностей с temp id.
     const exactMatch = getCachedListResponse<T>(options.table, cacheKey);
-    if (exactMatch) return exactMatch;
+    if (exactMatch) return serveFromCache(exactMatch, e, fetchUrl);
 
     // Same screen/filters/search/page, but cached under a different sort —
     // still useful offline even if the order doesn't match what was requested.
@@ -792,12 +821,20 @@ const fetchAbstract = async <T>(
       buildListCacheKeyPrefix(fetchUrl, filters, search, page, extraParams),
     );
     if (relaxedMatch) {
-      return options.resort ? options.resort(relaxedMatch, order) : relaxedMatch;
+      return serveFromCache(
+        options.resort ? options.resort(relaxedMatch, order) : relaxedMatch,
+        e,
+        fetchUrl,
+      );
     }
 
     const derived = options.deriveFallback?.() ?? null;
     if (derived) {
-      return options.resort ? options.resort(derived, order) : derived;
+      return serveFromCache(
+        options.resort ? options.resort(derived, order) : derived,
+        e,
+        fetchUrl,
+      );
     }
 
     throw e;
@@ -1633,8 +1670,9 @@ export const fetchRatingCompareHeader = async (
     cacheListResponse(ratingCompareHeaderCacheTable, cacheKey, res.data, MAX_ENTRIES);
     return res.data;
   } catch (e) {
+    assertNotGone(e);
     const cached = getCachedListResponse(ratingCompareHeaderCacheTable, cacheKey);
-    if (cached) return cached;
+    if (cached) return serveFromCache(cached, e, "fetchRatingCompareHeader");
     throw e;
   }
 };
@@ -1733,7 +1771,13 @@ export const fetchUnreadCount = async (): Promise<number> => {
       notificationUnreadCountCacheTable,
       UNREAD_COUNT_CACHE_KEY,
     );
-    if (cached) return notificationRepository.applyPendingUnreadAdjustment(cached.count);
+    if (cached) {
+      return serveFromCache(
+        notificationRepository.applyPendingUnreadAdjustment(cached.count),
+        e,
+        "fetchUnreadCount",
+      );
+    }
     throw e;
   }
 };

@@ -24,15 +24,19 @@ jest.mock("expo-secure-store", () => ({
   deleteItemAsync: jest.fn(),
 }));
 // jest.setup.js's global mock only provides wrap/captureException/init —
-// api.ts also calls captureMessage (reportToSentry's non-5xx paths).
+// api.ts also calls captureMessage/addBreadcrumb (reportToSentry's non-5xx paths).
 jest.mock("@sentry/react-native", () => ({
   captureException: jest.fn(),
   captureMessage: jest.fn(),
+  addBreadcrumb: jest.fn(),
 }));
+jest.mock("../sync/networkStatus", () => ({ isConnected: jest.fn(() => true) }));
 
 import axios, { type AxiosError } from "axios";
 import * as SecureStore from "expo-secure-store";
+import * as Sentry from "@sentry/react-native";
 import api, { clearTokens, saveTokens, setOnUnauthorized } from "../api";
+import { isConnected } from "../sync/networkStatus";
 import i18n from "../i18n";
 
 type RetryableConfig = {
@@ -231,5 +235,55 @@ describe("response interceptor: 401 handling", () => {
 
     expect(axiosPost).not.toHaveBeenCalled();
     expect(apiInstance).not.toHaveBeenCalled();
+  });
+});
+
+describe("response interceptor: Sentry reporting", () => {
+  const noResponseError = (): AxiosError =>
+    ({
+      isAxiosError: true,
+      message: "Network Error",
+      config: { url: "/myapi/stat2/", method: "get" },
+    }) as unknown as AxiosError;
+
+  const captureMessage = Sentry.captureMessage as jest.Mock;
+  const addBreadcrumb = Sentry.addBreadcrumb as jest.Mock;
+
+  it("reports a no-response failure while the connection is up", async () => {
+    (isConnected as jest.Mock).mockReturnValue(true);
+
+    await expect(responseError(noResponseError())).rejects.toBeInstanceOf(Error);
+
+    expect(captureMessage).toHaveBeenCalledTimes(1);
+    expect(captureMessage.mock.calls[0][0]).toContain("network error");
+    expect(addBreadcrumb).not.toHaveBeenCalled();
+  });
+
+  it("leaves only a breadcrumb while offline, so one offline session doesn't bury the real 5xx", async () => {
+    (isConnected as jest.Mock).mockReturnValue(false);
+
+    await expect(responseError(noResponseError())).rejects.toBeInstanceOf(Error);
+
+    expect(captureMessage).not.toHaveBeenCalled();
+    expect(addBreadcrumb).toHaveBeenCalledTimes(1);
+    expect(addBreadcrumb.mock.calls[0][0]).toMatchObject({
+      category: "api",
+      level: "info",
+    });
+  });
+
+  it("still captures a 5xx as an exception, offline flag or not", async () => {
+    (isConnected as jest.Mock).mockReturnValue(false);
+    const error = {
+      isAxiosError: true,
+      message: "Request failed with status code 500",
+      response: { status: 500 },
+      config: { url: "/myapi/stat2/", method: "get" },
+    } as unknown as AxiosError;
+
+    await expect(responseError(error)).rejects.toBeInstanceOf(Error);
+
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+    expect(addBreadcrumb).not.toHaveBeenCalled();
   });
 });

@@ -6,6 +6,7 @@ import { useApiError } from "../useApiError";
 import { useMutationWithTranslation } from "../useMutationWithTranslation";
 import { useLanguage } from "../../store/language-context";
 import { isConnected } from "../../services/sync/networkStatus";
+import { serveFromCache } from "../../services/cacheFallback";
 import { runPlaceSync } from "../../services/sync/placeSync";
 import * as placeRepository from "../repositories/placeRepository";
 import { fetchDiaries } from "../../util/fetches";
@@ -68,7 +69,13 @@ export const usePlaceItem = (
         // date-scoped server-side) — showing the last-known unfiltered
         // counts is still strictly better than an error screen.
         const local = placeRepository.getPlace(id!);
-        if (local) return placeRepository.withPendingObservationCount(local);
+        if (local) {
+          return serveFromCache(
+            placeRepository.withPendingObservationCount(local),
+            e,
+            "useOfflinePlace",
+          );
+        }
         throw e;
       }
     },
