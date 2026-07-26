@@ -3,29 +3,55 @@ jest.mock("../../store/auth-context", () => ({
 }));
 jest.mock("@react-navigation/native", () => ({
   useNavigation: () => mockNavigation,
-}));
-jest.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
+  useRoute: () => mockRoute,
 }));
 jest.mock("../../services/bottomSheet", () => ({
-  BottomSheet: { show: jest.fn() },
+  BottomSheet: { showContent: jest.fn() },
 }));
 jest.mock("../../services/analytics", () => ({ track: jest.fn() }));
+// Заглушка, а не настоящая шторка: содержимое проверяется в
+// components/Auth/__tests__/AuthGateSheet.test.tsx, а здесь важны только
+// колбэки, которые хук в неё передаёт (и не тянуть сюда theme-context).
+jest.mock("../../components/Auth/AuthGateSheet", () => ({
+  __esModule: true,
+  default: () => null,
+}));
+jest.mock("../../services/authReturn", () => ({ setAuthReturn: jest.fn() }));
 
 import { renderHook } from "@testing-library/react-native";
+import type { ReactElement } from "react";
 
 import { useAuth } from "../../store/auth-context";
 import { BottomSheet } from "../../services/bottomSheet";
+import { setAuthReturn } from "../../services/authReturn";
 import { track } from "../../services/analytics";
 import { useRequireAuth } from "../useRequireAuth";
 
 const mockNavigation = { navigate: jest.fn() };
-const mockShow = BottomSheet.show as jest.Mock;
+const mockRoute = {
+  name: "SpeciesDetail",
+  params: { segment: "osprey" },
+};
+const mockShowContent = BottomSheet.showContent as jest.Mock;
 
 const gate = async (isAuthenticated: boolean) => {
   (useAuth as jest.Mock).mockReturnValue({ isAuthenticated });
   const { result } = await renderHook(() => useRequireAuth());
   return result.current;
+};
+
+const dismiss = jest.fn();
+
+// Пропсы, с которыми хук отрисовал шторку.
+const sheetProps = () => {
+  const element = mockShowContent.mock.calls[0][0].renderContent(
+    dismiss,
+  ) as ReactElement;
+  return element.props as {
+    dismiss: () => void;
+    onEmailPress: () => void;
+    onOpenDocument: (screen: "Terms" | "Privacy") => void;
+  };
 };
 
 beforeEach(() => {
@@ -39,29 +65,37 @@ describe("signed in", () => {
     (await gate(true))("add_observation", run);
 
     expect(run).toHaveBeenCalled();
-    expect(mockShow).not.toHaveBeenCalled();
+    expect(mockShowContent).not.toHaveBeenCalled();
   });
 
   it("does not report an auth wall that was never shown", async () => {
     (await gate(true))("add_observation", jest.fn());
 
     expect(track).not.toHaveBeenCalled();
+    expect(setAuthReturn).not.toHaveBeenCalled();
   });
 });
 
 describe("guest", () => {
-  it("holds the action back and offers to create an account", async () => {
+  it("holds the action back and opens the auth sheet", async () => {
     const run = jest.fn();
 
     (await gate(false))("add_observation", run);
 
     expect(run).not.toHaveBeenCalled();
-    expect(mockShow).toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: "auth_required_title",
-        confirmText: "signup",
-      }),
-    );
+    expect(mockShowContent).toHaveBeenCalledTimes(1);
+  });
+
+  // Логин пересоздаёт навигатор: не запомнив экран здесь, вернуть на него
+  // потом будет неоткуда — к моменту входа гость может стоять уже на Login.
+  // Вместе с экраном едет и само действие — за ним гость и регистрировался.
+  it("remembers the screen the wall was hit on, and what was left undone", async () => {
+    (await gate(false))("add_observation", jest.fn());
+
+    expect(setAuthReturn).toHaveBeenCalledWith({
+      name: "SpeciesDetail",
+      params: { segment: "osprey", pendingAction: "add_observation" },
+    });
   });
 
   // Что именно упёрлось в стену — это и есть отчёт «за чем гость приходит»,
@@ -74,12 +108,28 @@ describe("guest", () => {
     });
   });
 
-  it("sends the reader to signup on confirm", async () => {
+  // Регрессия: единственной кнопкой была «Sign Up» на экран регистрации, и
+  // тот, у кого аккаунт уже есть, искал вход в переключателе внизу формы.
+  it("sends the reader to login, not signup, on the email option", async () => {
     (await gate(false))("add_observation", jest.fn());
 
-    mockShow.mock.calls[0][0].onConfirm();
+    sheetProps().onEmailPress();
 
-    expect(mockNavigation.navigate).toHaveBeenCalledWith("Signup");
+    expect(mockNavigation.navigate).toHaveBeenCalledWith("Login");
+    expect(mockNavigation.navigate).not.toHaveBeenCalledWith("Signup");
+  });
+
+  // Шторка живёт в портале вне навигатора: уехать на другой экран, оставив
+  // её висеть поверх, — заметный баг, а не мелочь.
+  it("closes the sheet before navigating away", async () => {
+    (await gate(false))("add_observation", jest.fn());
+
+    sheetProps().onEmailPress();
+    expect(dismiss).toHaveBeenCalledTimes(1);
+
+    sheetProps().onOpenDocument("Terms");
+    expect(mockNavigation.navigate).toHaveBeenCalledWith("Terms");
+    expect(dismiss).toHaveBeenCalledTimes(2);
   });
 
   // Отказ — это отказ: действие не должно выполниться «на всякий случай».
@@ -88,7 +138,8 @@ describe("guest", () => {
 
     (await gate(false))("add_observation", run);
 
-    expect(mockShow.mock.calls[0][0].onConfirm).toBeDefined();
+    sheetProps().dismiss();
+
     expect(run).not.toHaveBeenCalled();
   });
 });

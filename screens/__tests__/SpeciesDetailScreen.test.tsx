@@ -52,6 +52,11 @@ jest.mock("../../hooks/useContentWidth", () => ({ useContentWidth: () => 400 }))
 jest.mock("../../hooks/useDefaultTerritory", () => ({
   useDefaultTerritory: jest.fn(),
 }));
+// Только флаг загрузки — сам контекст тянет services/queryClient, а
+// @tanstack/react-query здесь заглушён одним useQuery.
+jest.mock("../../store/profile-context", () => ({
+  useProfile: () => mockProfile,
+}));
 jest.mock("@expo/vector-icons", () => {
   const { View } = require("react-native");
   return { Ionicons: View };
@@ -79,6 +84,7 @@ import { TaxonSpeciesDetail } from "../../types";
 let mockRoute: ReturnType<typeof createRouteMock>;
 const mockNavigation = createNavigationMock();
 const mockUseQuery = useQuery as jest.Mock;
+const mockProfile = { profileLoading: false };
 
 const baseDetail: TaxonSpeciesDetail = {
   taxon_id: 1,
@@ -145,6 +151,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockRoute = createRouteMock("SpeciesDetail", { segment: "blue-tit" });
   (useDefaultTerritory as jest.Mock).mockReturnValue(4);
+  mockProfile.profileLoading = false;
   mockQueries();
 });
 
@@ -477,6 +484,74 @@ it("opens the observation editor prefilled with this species when the add-observ
     defaultSpecies: baseDetail.taxon_id,
     defaultTerritory: 4,
     returnMode: "back",
+  });
+});
+
+// Гость нажал FAB, завёл аккаунт в шторке и вернулся сюда: заставлять его
+// жать ту же кнопку второй раз — терять его ровно там, где он согласился.
+describe("resuming the action the guest signed up for", () => {
+  const withPendingAction = () => {
+    mockRoute = createRouteMock("SpeciesDetail", {
+      segment: "blue-tit",
+      pendingAction: "add_observation",
+    });
+  };
+
+  it("opens the editor without waiting for another tap", async () => {
+    withPendingAction();
+    mockQueries({ detail: detailResult({ data: baseDetail }) });
+
+    await render(<SpeciesDetailScreen />);
+
+    expect(mockNavigation.navigate).toHaveBeenCalledWith("ObservationEditor", {
+      defaultSpecies: baseDetail.taxon_id,
+      defaultTerritory: 4,
+      returnMode: "back",
+    });
+  });
+
+  // Параметр живёт в маршруте: не погасив его, редактор открывался бы заново
+  // каждый раз, когда пользователь возвращается на этот экран.
+  it("clears the parameter so it fires exactly once", async () => {
+    withPendingAction();
+    mockQueries({ detail: detailResult({ data: baseDetail }) });
+
+    await render(<SpeciesDetailScreen />);
+
+    expect(mockNavigation.setParams).toHaveBeenCalledWith({
+      pendingAction: undefined,
+    });
+  });
+
+  // defaultTerritory собирается из фильтров и страны профиля, а сразу после
+  // логина их ещё нет — поспешив, редактор открылся бы с пустой обязательной
+  // страной.
+  it("waits for the profile before opening anything", async () => {
+    withPendingAction();
+    mockProfile.profileLoading = true;
+    mockQueries({ detail: detailResult({ data: baseDetail }) });
+
+    await render(<SpeciesDetailScreen />);
+
+    expect(mockNavigation.navigate).not.toHaveBeenCalled();
+  });
+
+  it("waits for the species itself too", async () => {
+    withPendingAction();
+    mockQueries({ detail: detailResult({ isLoading: true }) });
+
+    await render(<SpeciesDetailScreen />);
+
+    expect(mockNavigation.navigate).not.toHaveBeenCalled();
+  });
+
+  it("stays put when the screen was opened normally", async () => {
+    mockQueries({ detail: detailResult({ data: baseDetail }) });
+
+    await render(<SpeciesDetailScreen />);
+
+    expect(mockNavigation.navigate).not.toHaveBeenCalled();
+    expect(mockNavigation.setParams).not.toHaveBeenCalled();
   });
 });
 

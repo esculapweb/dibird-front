@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useState, useEffect, useRef } from "react";
-import { InitialState } from "@react-navigation/native";
+import { InitialState, CommonActions } from "@react-navigation/native";
 import { NavigationContainer } from "@react-navigation/native";
 
 import { track } from "../services/analytics";
@@ -18,9 +18,21 @@ import {
   flushPendingNavigation,
   navigationRef,
 } from "../services/navigationRef";
+import { takeAuthReturn } from "../services/authReturn";
 import type { MinimalRoute, NavState } from "../types";
 
 const NAV_STATE_KEY = "NAV_STATE";
+
+// Экраны логина/регистрации. Нужны, чтобы отличить «гость вошёл, не выходя из
+// воронки» от «гость передумал, ушёл гулять и залогинился через час совсем в
+// другом месте»: во втором случае возвращать его на давнюю страницу птицы —
+// телепорт, а не удобство.
+const AUTH_FUNNEL_SCREENS = new Set([
+  "Login",
+  "Signup",
+  "CheckEmail",
+  "ConfirmEmail",
+]);
 
 const extractRoutes = (state: NavState, depth = 0): MinimalRoute[] => {
   if (depth > 10) return [];
@@ -50,9 +62,10 @@ const extractRoutes = (state: NavState, depth = 0): MinimalRoute[] => {
   return [{ name: activeRoute.name, params: activeRoute.params }];
 };
 
-const AUTH_SCREENS = new Set(["Login", "Signup", "CheckEmail", "ConfirmEmail"]);
-
-const buildInitialState = (routes: MinimalRoute[]): InitialState | null => {
+const buildInitialState = (
+  routes: MinimalRoute[],
+  isAuthenticated: boolean,
+): InitialState | null => {
   const screenRoutes =
     routes[0]?.name === "Root" || routes[0]?.name === "Main"
       ? routes.slice(1)
@@ -63,9 +76,14 @@ const buildInitialState = (routes: MinimalRoute[]): InitialState | null => {
     params: r.params,
   }));
 
-  const root = innerRoutes.some((r) => AUTH_SCREENS.has(r.name))
-    ? "Welcome"
-    : "Main";
+  // Корень берётся из фактической аутентификации, а не угадывается по составу
+  // сохранённого стека. Раньше "Welcome" ставился, только если в стеке был
+  // Login/Signup/CheckEmail/ConfirmEmail, иначе — "Main"; но каталожные экраны
+  // (catalogScreens) общие для обоих навигаторов, и гость, закрывший
+  // приложение на Taxonomy, получал корнем "Main", которого в AuthStack нет.
+  // React Navigation такой роут выбрасывает — гость оставался на каталоге
+  // один: ни кнопки «назад», ни бургера, до Welcome и регистрации не добраться.
+  const root = isAuthenticated ? "Main" : "Welcome";
 
   const allRoutes = [{ name: root }, ...innerRoutes];
 
@@ -77,9 +95,12 @@ const buildInitialState = (routes: MinimalRoute[]): InitialState | null => {
 
 const Navigation = () => {
   const { theme } = useTheme();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isInitializing } = useAuth();
   const routeNameRef = useRef<string | undefined>(undefined);
   const prevAuthRef = useRef<boolean | null>(null);
+  // Последний экран, на котором гостя застали до логина. Обновляется только
+  // пока `!isAuthenticated`, поэтому переключение навигатора его не затирает.
+  const lastGuestRouteRef = useRef<MinimalRoute | null>(null);
 
   const [initialState, setInitialState] = useState<
     InitialState | null | undefined
@@ -88,6 +109,13 @@ const Navigation = () => {
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    // Ждём восстановления токена (SecureStore + возможная биометрия): пока оно
+    // идёт, isAuthenticated ещё false, и построенный по нему корень был бы
+    // «гостевым» у залогиненного. NavigationContainer читает initialState один
+    // раз при монтировании, вторая попытка уже ничего не исправит — поэтому
+    // до готовности auth рендерим null (см. ранний return ниже), а не гадаем.
+    if (isInitializing) return;
+
     const restore = async () => {
       try {
         const saved = await AsyncStorage.getItem(NAV_STATE_KEY);
@@ -100,7 +128,7 @@ const Navigation = () => {
         const parsed = JSON.parse(saved);
 
         if (Array.isArray(parsed)) {
-          const built = buildInitialState(parsed);
+          const built = buildInitialState(parsed, isAuthenticated);
           setInitialState(built ?? null);
           return;
         }
@@ -113,21 +141,58 @@ const Navigation = () => {
     };
 
     restore();
+    // isAuthenticated намеренно не в зависимостях: восстановление — разовое,
+    // при смене логина стек сбрасывается эффектом ниже, а не перечитывается.
+  }, [isInitializing]);
+
+  useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     };
   }, []);
 
   useEffect(() => {
+    // Тот же ранний выход, что и в восстановлении: до готовности auth
+    // isAuthenticated ещё false, и первый же его переход в true (просто
+    // прочитали токен из SecureStore) выглядел бы как логин — стек сносился
+    // бы на каждом запуске залогиненного, вдобавок наперегонки с чтением
+    // выше. Стартовое значение фиксируем уже разрешённым.
+    if (isInitializing) return;
+
     if (prevAuthRef.current === null) {
       prevAuthRef.current = isAuthenticated;
       return;
     }
-    if (prevAuthRef.current !== isAuthenticated) {
-      prevAuthRef.current = isAuthenticated;
-      AsyncStorage.removeItem(NAV_STATE_KEY);
-    }
-  }, [isAuthenticated]);
+    if (prevAuthRef.current === isAuthenticated) return;
+
+    prevAuthRef.current = isAuthenticated;
+    AsyncStorage.removeItem(NAV_STATE_KEY);
+
+    // Забираем всегда, даже на логауте: намерение не должно пережить
+    // ситуацию, ради которой ставилось.
+    const target = takeAuthReturn();
+    if (!isAuthenticated || !target) return;
+
+    // Гость вошёл со страницы справочника (шторка useRequireAuth). Навигатор
+    // к этому моменту уже переключился на AppStack и стоит на MainScreen —
+    // возвращаем экран, с которого всё начиналось, поверх Main, чтобы «назад»
+    // вело туда же, куда вело бы у обычного пользователя.
+    const from = lastGuestRouteRef.current?.name;
+    const inFunnel =
+      from !== undefined &&
+      (from === target.name || AUTH_FUNNEL_SCREENS.has(from));
+    if (!inFunnel) return;
+
+    navigationRef.current?.dispatch(
+      CommonActions.reset({
+        index: 1,
+        routes: [
+          { name: "Main" },
+          { name: target.name, params: target.params },
+        ],
+      }),
+    );
+  }, [isAuthenticated, isInitializing]);
 
   if (initialState === undefined) return null;
 
@@ -155,6 +220,9 @@ const Navigation = () => {
       onStateChange={async (state) => {
         if (state) {
           const routes = extractRoutes(state as NavState);
+          if (!isAuthenticated) {
+            lastGuestRouteRef.current = routes.at(-1) ?? null;
+          }
           if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
           saveTimeoutRef.current = setTimeout(() => {
             AsyncStorage.setItem(NAV_STATE_KEY, JSON.stringify(routes)).catch(

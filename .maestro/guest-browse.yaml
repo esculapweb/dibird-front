@@ -35,16 +35,30 @@ tags:
 - tapOn: ".*Browse the birds of the world.*"
 - waitForAnimationToEnd
 
-# Phase 2: the species list loads with no token attached. The screen opens
-# with the search box already focused (focusSearch), so type straight into it.
+# Phase 2: the species list loads with no token attached. The search box is
+# NOT auto-focused on this entry point — WelcomeScreen's handleGuestBrowse
+# navigates to Taxonomy without `focusSearch`, unlike FloatingNavbar's search
+# shortcut — so tap it first: `pasteText` goes to the focused field, and with
+# nothing focused it silently pastes nowhere and the assert below then fails
+# against the default alphabetical list (Abbott's Babbler & co).
+- tapOn: ".*Search a species by name.*"
 - setClipboard: "Osprey"
 - pasteText
-- waitForAnimationToEnd
 - hideKeyboard
-- assertVisible: ".*Osprey.*"
+# Search is debounced and served by the backend (`/api/taxon/?name=`), so the
+# list can't be there yet when pasteText returns — wait for the result rather
+# than asserting on whatever is on screen at that instant.
+- extendedWaitUntil:
+    visible: ".*Osprey.*"
+    timeout: 10000
 
 # Phase 3: the detail page renders for a guest.
-- tapOn: ".*Osprey.*"
+# Tapped by the scientific name, not by ".*Osprey.*": an iOS text field
+# reports its own contents as its accessibility value, so after Phase 2 the
+# search box itself matches "Osprey" — and being higher up the hierarchy it
+# wins, so the tap lands back in the input and the screen never changes.
+# TaxonRow carries no testID, and the latin name is on the row only.
+- tapOn: ".*Pandion haliaetus.*"
 - waitForAnimationToEnd
 - assertVisible:
     id: "species-scroll"
@@ -52,13 +66,28 @@ tags:
 # Phase 4: the one action that needs an account. The sheet is the whole point
 # of guest mode — without it the bird page is a dead end, and behind a hard
 # login wall the guest never reached it at all.
+#
+# Asserted on the buttons, not on the sheet's title ("auth_required_title"):
+# iOS collapses the sheet's content into the accessibility element of the
+# gorhom container, so plain <Text> never reaches the view hierarchy Maestro
+# queries — only the pressables do, as buttons carrying their own label.
+#
+# Google specifically, because it is the one option present on every device:
+# Apple only renders where AppleAuthentication.isAvailableAsync says so. Both
+# of them being in the sheet at all is the point — before, the only way out of
+# it was an email signup form, and social login sat on Welcome, under the
+# whole catalog stack.
 - tapOn:
     id: "add-observation-fab"
 - waitForAnimationToEnd
-- assertVisible: ".*Create an account to save this.*"
+- assertVisible:
+    id: "auth-option-google"
+- assertVisible:
+    id: "auth-option-email"
 
 # Declining must leave the guest where they were: the editor is signed-in only.
-- tapOn: "Cancel"
+- tapOn:
+    id: "auth-gate-cancel-button"
 - waitForAnimationToEnd
 - assertVisible:
     id: "species-scroll"

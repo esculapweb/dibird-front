@@ -43,6 +43,7 @@ import { useTheme, ThemeColors } from "../store/theme-context";
 import { useContentWidth } from "../hooks/useContentWidth";
 import { useDefaultTerritory } from "../hooks/useDefaultTerritory";
 import { useRequireAuth } from "../hooks/useRequireAuth";
+import { useProfile } from "../store/profile-context";
 import {
   AppStackNavigationProp,
   CatalogNavigationProp,
@@ -61,6 +62,7 @@ const SpeciesDetailScreen = () => {
   const navigation = useNavigation<CatalogNavigationProp>();
   const route = useRoute<CatalogRouteProp<"SpeciesDetail">>();
   const requireAuth = useRequireAuth();
+  const { profileLoading } = useProfile();
   const styles = stylesFn(Colors);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [activeSoundId, setActiveSoundId] = useState<number | null>(null);
@@ -104,6 +106,51 @@ const SpeciesDetailScreen = () => {
   });
 
   const defaultTerritory = useDefaultTerritory(data?.countries);
+
+  const openObservationEditor = () => {
+    if (!data) return;
+    (navigation as unknown as AppStackNavigationProp).navigate(
+      "ObservationEditor",
+      {
+        defaultSpecies: data.taxon_id,
+        // Unlike the observation/stat/rating screens this one has no country
+        // of its own — it is reached from search, the taxonomy tree or a
+        // deep link — so the editor used to open with its required country
+        // field empty. Passed explicitly (null included) so that a country
+        // ruled out by the species' range isn't re-added by the editor's own
+        // fallback.
+        defaultTerritory,
+        returnMode: "back",
+      },
+    );
+  };
+
+  // Гость нажал «добавить наблюдение», завёл аккаунт в шторке и вернулся сюда
+  // (services/authReturn) — доигрываем то, за чем он приходил, вместо того
+  // чтобы заставлять жать ту же кнопку второй раз.
+  //
+  // Ждём и данные вида, и профиль: `defaultTerritory` собирается из фильтров
+  // и страны профиля, а сразу после логина их ещё нет — редактор открылся бы
+  // с пустой обязательной страной. По той же причине действие доигрывается
+  // здесь, а не подставляется маршрутом при логине: тогда снимок аргументов
+  // был бы снят ещё гостевой, до того как появился профиль.
+  //
+  // Параметр гасится сразу: он живёт в маршруте, и без сброса редактор
+  // открывался бы снова на каждый возврат на этот экран.
+  //
+  // Через requireAuth, а не напрямую: аккаунт к этому моменту уже есть и
+  // проверка проходит насквозь, но если параметр каким-то образом достался
+  // гостю, он увидит ту же шторку, а не молчаливый переход в никуда —
+  // редактора в гостевом стеке нет.
+  const pendingAction = route.params.pendingAction;
+  useEffect(() => {
+    if (pendingAction !== "add_observation" || profileLoading || !data) return;
+
+    navigation.setParams({ pendingAction: undefined });
+    requireAuth("add_observation", openObservationEditor);
+    // openObservationEditor пересоздаётся каждый рендер — в зависимостях
+    // держим то, от чего он на деле зависит.
+  }, [pendingAction, profileLoading, data, defaultTerritory, requireAuth]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -214,22 +261,7 @@ const SpeciesDetailScreen = () => {
   // Типы это и обеспечивают — CatalogNavigationProp про ObservationEditor не
   // знает, отсюда каст внутри уже проверенной на аккаунт ветки.
   const handleAddObservation = () => {
-    requireAuth("add_observation", () => {
-      (navigation as unknown as AppStackNavigationProp).navigate(
-        "ObservationEditor",
-        {
-          defaultSpecies: data.taxon_id,
-          // Unlike the observation/stat/rating screens this one has no country
-          // of its own — it is reached from search, the taxonomy tree or a
-          // deep link — so the editor used to open with its required country
-          // field empty. Passed explicitly (null included) so that a country
-          // ruled out by the species' range isn't re-added by the editor's own
-          // fallback.
-          defaultTerritory,
-          returnMode: "back",
-        },
-      );
-    });
+    requireAuth("add_observation", openObservationEditor);
   };
 
   // "Related" species are siblings within the same genus (see backend

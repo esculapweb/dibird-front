@@ -1,13 +1,11 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Platform,
 } from "react-native";
-import * as AppleAuthentication from "expo-apple-authentication";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets, EdgeInsets } from "react-native-safe-area-context";
@@ -16,14 +14,10 @@ import { useNavigation } from "@react-navigation/native";
 import { ThemeColors, useTheme } from "../store/theme-context";
 import Layout from "../components/ui/Layout";
 import Logo from "../components/ui/Logo";
-import { LoginWithGoogle, LoginWithApple } from "../util/auth";
-import {
-  AppError,
-  WelcomeScreenNavigationProp,
-  AuthStackNavigationProp,
-} from "../types";
+import AuthOptions from "../components/Auth/AuthOptions";
+import AuthAgreement from "../components/Auth/AuthAgreement";
+import { WelcomeScreenNavigationProp, AuthStackNavigationProp } from "../types";
 import FloatingHeader from "../components/ui/FloatingHeader";
-import { useApiError } from "../hooks/useApiError";
 import { track } from "../services/analytics";
 
 const WelcomeScreen = () => {
@@ -33,41 +27,6 @@ const WelcomeScreen = () => {
   const styles = stylesFn(Colors, insets);
   const navigation = useNavigation<WelcomeScreenNavigationProp>();
   const stackNav = navigation.getParent<AuthStackNavigationProp>();
-  const { showErrorToast } = useApiError();
-
-  const [googleLoginInProgress, setGoogleLoginInProgress] = useState(false);
-
-  const handleGoogle = async () => {
-    if (googleLoginInProgress) return;
-    setGoogleLoginInProgress(true);
-
-    try {
-      const result = await LoginWithGoogle();
-      if (result === null) {
-        showErrorToast(
-          { message: "Google Play Services unavailable" } as AppError,
-          "LoginWithGoogle",
-        );
-      }
-    } catch (e) {
-      const err = e as AppError;
-      if (err.code !== "SIGN_IN_CANCELLED") {
-        showErrorToast(err, "LoginWithGoogle");
-      }
-    } finally {
-      setGoogleLoginInProgress(false);
-    }
-  };
-  const handleApple = async () => {
-    try {
-      await LoginWithApple();
-    } catch (e) {
-      const err = e as AppError;
-      if (err.code !== "ERR_REQUEST_CANCELED") {
-        showErrorToast(err, "LoginWithApple");
-      }
-    }
-  };
 
   const handleGuestBrowse = () => {
     track("guest_browse_started", { source: "welcome" });
@@ -76,13 +35,6 @@ const WelcomeScreen = () => {
     stackNav?.navigate("Taxonomy", { rank: 5, title: t("species_catalog") });
   };
 
-  const [appleAvailable, setAppleAvailable] = useState(false);
-  useEffect(() => {
-    if (Platform.OS === "ios") {
-      AppleAuthentication.isAvailableAsync().then(setAppleAvailable);
-    }
-  }, []);
-
   // Вершина воронки: сколько установок вообще дошло до первого экрана.
   useEffect(() => {
     track("welcome_viewed");
@@ -90,22 +42,7 @@ const WelcomeScreen = () => {
 
   const Agreement = () => (
     <View style={styles.agreement}>
-      <Text style={[styles.legalText, { color: Colors.textMiddle }]}>
-        {t("by_continuing")}{" "}
-        <Text
-          style={[styles.legalLink, { color: Colors.main100 }]}
-          onPress={() => stackNav?.navigate("Terms")}
-        >
-          {t("terms_of_service_")}
-        </Text>{" "}
-        {t("and")}{" "}
-        <Text
-          style={[styles.legalLink, { color: Colors.main100 }]}
-          onPress={() => stackNav?.navigate("Privacy")}
-        >
-          {t("privacy_policy_")}
-        </Text>
-      </Text>
+      <AuthAgreement onOpen={(screen) => stackNav?.navigate(screen)} />
     </View>
   );
 
@@ -119,45 +56,7 @@ const WelcomeScreen = () => {
         </View>
 
         <View style={styles.buttons}>
-          {appleAvailable && (
-            <TouchableOpacity style={styles.button} onPress={handleApple}>
-              <Ionicons name="logo-apple" size={20} color={Colors.textMain} />
-              <Text style={styles.buttonText}>{t("continue_with_apple")}</Text>
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleGoogle}
-            disabled={googleLoginInProgress}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="logo-google" size={20} color={Colors.textMain} />
-            <Text style={styles.buttonText}>{t("continue_with_google")}</Text>
-          </TouchableOpacity>
-
-          <View style={styles.dividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>{t("or")}</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <TouchableOpacity
-            style={[
-              styles.button,
-              { backgroundColor: Colors.main100, borderColor: Colors.main100 },
-            ]}
-            onPress={() => stackNav?.navigate("Login")}
-          >
-            <Ionicons
-              name="mail-outline"
-              size={20}
-              color={Colors.textOpposite}
-            />
-            <Text style={[styles.buttonText, { color: Colors.textOpposite }]}>
-              {t("continue_with_email")}
-            </Text>
-          </TouchableOpacity>
+          <AuthOptions onEmailPress={() => stackNav?.navigate("Login")} />
 
           {/* Каталог не требует аккаунта: до регистрации пользователю нечего
               было посмотреть, и установка отваливалась на стене логина. */}
@@ -210,36 +109,6 @@ const stylesFn = (Colors: ThemeColors, insets: EdgeInsets) =>
     buttons: {
       gap: 12,
     },
-    button: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 12,
-      paddingVertical: 14,
-      paddingHorizontal: 16,
-      borderRadius: 10,
-      borderWidth: 0.5,
-      backgroundColor: Colors.primary100,
-      borderColor: Colors.border,
-    },
-    buttonText: {
-      fontSize: 15,
-      color: Colors.textMain,
-    },
-    dividerRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      marginVertical: 4,
-    },
-    dividerLine: {
-      flex: 1,
-      height: StyleSheet.hairlineWidth,
-      backgroundColor: Colors.tabBorder,
-    },
-    dividerText: {
-      marginHorizontal: 12,
-      fontSize: 13,
-      color: Colors.textMiddle,
-    },
     // Без рамки и фона: это выход из воронки регистрации, он не должен
     // конкурировать за внимание с кнопками входа над ним.
     guestButton: {
@@ -260,15 +129,6 @@ const stylesFn = (Colors: ThemeColors, insets: EdgeInsets) =>
       marginHorizontal: 28,
       borderTopColor: Colors.border,
       borderTopWidth: StyleSheet.hairlineWidth,
-    },
-    legalText: {
-      textAlign: "center",
-      fontSize: 12,
-      lineHeight: 18,
-      paddingHorizontal: 8,
-    },
-    legalLink: {
-      textDecorationLine: "underline",
     },
     menuButton: {
       position: "absolute",

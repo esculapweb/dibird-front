@@ -7,6 +7,9 @@ import { CompositeNavigationProp, RouteProp } from "@react-navigation/native";
 import { AxiosResponse } from "axios";
 import { QueryObserverResult } from "@tanstack/react-query";
 import type { Feature, Geometry, GeoJsonProperties } from "geojson";
+// Только тип: services/analytics тянет за собой services/errors, который
+// импортирует отсюда, — на рантайме этот импорт стирается и цикла нет.
+import type { GatedAction } from "./services/analytics";
 
 export type IconType = ComponentProps<typeof Ionicons>["name"];
 export type StyleType = StyleProp<ViewStyle>;
@@ -1102,6 +1105,11 @@ export type CatalogParamList = {
   // (linking.ts / taxonShareLink.ts), same as the catalogue's initialSort etc.
   SpeciesDetail: ({ segment: string } | { id: number }) & {
     initialTab?: SpeciesDetailTab;
+    // Действие, до которого гость не дошёл без аккаунта: после логина
+    // services/authReturn возвращает его на этот экран с этим параметром, и
+    // экран доигрывает начатое (hooks/useRequireAuth). Экран сам сбрасывает
+    // параметр, иначе действие повторялось бы на каждый возврат сюда.
+    pendingAction?: GatedAction;
   };
   Taxonomy: {
     rank: TaxonRank;

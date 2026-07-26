@@ -1,0 +1,91 @@
+# The other half of the guest funnel: signing in from the catalogue, and
+# arriving at the thing you signed in for. guest-browse.yaml deliberately
+# never logs in and ends at the auth sheet's Cancel — this one takes the same
+# sheet the other way.
+#
+# Logging in swaps AuthStack for AppStack, which rebuilds the navigator from
+# scratch: without services/authReturn.ts the guest who registered from a bird
+# page came back to MainScreen, having lost the bird they registered for —
+# and even landing back on the bird, they still had to find and press the same
+# FAB again. Both halves are what the final assertions are about, not the
+# login itself (login.yaml owns that, wrong password and all).
+#
+# Deliberately the longest path — the sheet's "Continue with email" rather
+# than Apple/Google (which can't be driven from a flow anyway): it goes
+# through the Login screen, so by the time the token arrives the origin screen
+# is no longer in the stack at all. The social buttons take the short path
+# through the same intent.
+#
+# clearKeychain + clearState: a leftover session would land on MainScreen and
+# skip the whole funnel, same reasoning as guest-browse.yaml.
+#
+# appId matches the dev-client build (com.dibird.app.dev).
+# tags: ios — see login.yaml.
+appId: com.dibird.app.dev
+tags:
+  - ios
+---
+- clearKeychain
+- launchApp:
+    clearState: true
+
+- runFlow: common/ios-bootstrap.yaml
+
+# Straight to a bird page as a guest — the shortest route to the wall.
+- assertVisible: ".*Browse the birds of the world.*"
+- tapOn: ".*Browse the birds of the world.*"
+- waitForAnimationToEnd
+# The search box is not auto-focused here — see guest-browse.yaml's Phase 2.
+- tapOn: ".*Search a species by name.*"
+- setClipboard: "Osprey"
+- pasteText
+- hideKeyboard
+- extendedWaitUntil:
+    visible: ".*Osprey.*"
+    timeout: 10000
+# By the latin name, not ".*Osprey.*" — the search field matches that too, see
+# guest-browse.yaml's Phase 3.
+- tapOn: ".*Pandion haliaetus.*"
+- waitForAnimationToEnd
+- assertVisible:
+    id: "species-scroll"
+
+# The wall. Its "Continue with email" is the same label the Welcome screen
+# uses, so common/ios-credential-entry.yaml's opening tap fits as-is.
+- tapOn:
+    id: "add-observation-fab"
+- waitForAnimationToEnd
+- assertVisible:
+    id: "auth-option-email"
+- runFlow: common/ios-credential-entry.yaml
+
+# Straight into the observation editor — the action the account was created
+# for, resumed rather than re-demanded. Generous timeout: this waits out the
+# login round-trip, the navigator swap, the species page reloading and the
+# profile arriving (the editor's country default needs it).
+- extendedWaitUntil:
+    visible:
+      id: "observation-save-button"
+    timeout: 25000
+# Prefilled with the bird, not just opened. By the latin name: it appears only
+# once the species dropdown has resolved a label for the id it was handed —
+# on a brand-new account there is no cached list to resolve it from at mount,
+# and the field used to read "select species" over a filled-in value.
+- extendedWaitUntil:
+    visible: ".*Pandion haliaetus.*"
+    timeout: 15000
+
+# Back leads to the bird, and from the bird to Main: the restored screen sits
+# on top of Main rather than in place of it, so the stack reads the same as it
+# would for someone who had been signed in all along.
+- tapOn:
+    id: "BackButton"
+- waitForAnimationToEnd
+- assertVisible:
+    id: "species-scroll"
+- assertVisible: ".*Osprey.*"
+- tapOn:
+    id: "BackButton"
+- waitForAnimationToEnd
+- assertVisible:
+    id: "quick-action-observation"

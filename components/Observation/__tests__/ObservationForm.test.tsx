@@ -275,6 +275,31 @@ describe("species-still-valid effect", () => {
     await render(<ObservationForm {...baseProps()} speciesValue={9} />);
     expect(mockSetSpeciesValue).not.toHaveBeenCalled();
   });
+
+  // useEditorForm ищет подпись к `defaultSpecies` в кэше дропдауна один раз,
+  // на монтировании: у только что заведённого аккаунта кэша ещё нет, и поле
+  // выглядело пустым при заполненном значении — «выберите вид» над уже
+  // выбранным видом.
+  it("labels a prefilled species once the dropdown's results arrive", async () => {
+    queriesByType.SpeciesDropdown = { data: [{ value: 9, label: "Robin" }] };
+    await render(<ObservationForm {...baseProps()} speciesValue={9} />);
+    expect(mockSetSpeciesData).toHaveBeenCalledWith({
+      value: 9,
+      label: "Robin",
+    });
+  });
+
+  it("does not overwrite a label that is already there", async () => {
+    queriesByType.SpeciesDropdown = { data: [{ value: 9, label: "Robin" }] };
+    await render(
+      <ObservationForm
+        {...baseProps()}
+        speciesValue={9}
+        speciesData={{ value: 9, label: "Robin (already resolved)" }}
+      />,
+    );
+    expect(mockSetSpeciesData).not.toHaveBeenCalled();
+  });
 });
 
 describe("date/privacy/place section visibility", () => {

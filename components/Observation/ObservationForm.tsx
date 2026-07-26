@@ -137,10 +137,20 @@ const ObservationForm = ({
 
   useEffect(() => {
     if (!querySpecies.data || !speciesValue) return;
-    const speciesExists = querySpecies.data.some(
-      (item) => item.value === speciesValue,
-    );
-    if (!speciesExists) setSpeciesValue(null);
+    const found = querySpecies.data.find((item) => item.value === speciesValue);
+    if (!found) {
+      setSpeciesValue(null);
+      return;
+    }
+    // Подпись к уже проставленному виду. useEditorForm ищет её в кэше
+    // react-query один раз, на монтировании, — а у только что заведённого
+    // аккаунта кэша дропдауна ещё нет, и поле с `defaultSpecies` (со
+    // страницы вида, из статистики) выглядело пустым при заполненном
+    // значении. Список приехал — берём подпись из него.
+    if (!speciesData) setSpeciesData(found);
+    // Зависимости курируются: speciesData нарочно не здесь — эффект и так
+    // отрабатывает на приход списка, а от собственной записи перезапускаться
+    // ему незачем.
   }, [querySpecies.data]);
 
   const DiaryBanner = () => (
