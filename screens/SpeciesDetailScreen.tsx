@@ -28,7 +28,8 @@ import TaxonSoundRow from "../components/Taxonomy/TaxonSoundRow";
 import { BirdSVG } from "../components/ui/Svgs";
 import { fetchTaxonDetail, fetchTaxonSegmentById } from "../util/fetches";
 import { StaleTime } from "../constants/staleTime";
-import { isoToFlagEmoji, buildShareUrl } from "../util/helpers";
+import { isoToFlagEmoji } from "../util/helpers";
+import { buildSpeciesDetailUrl } from "../util/taxonShareLink";
 import {
   resolveTaxonImage,
   iucnColors,
@@ -58,7 +59,9 @@ const SpeciesDetailScreen = () => {
   const styles = stylesFn(Colors);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [activeSoundId, setActiveSoundId] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<SpeciesDetailTab>("overview");
+  const [activeTab, setActiveTab] = useState<SpeciesDetailTab>(
+    route.params.initialTab ?? "overview",
+  );
   const [tabsHeight, setTabsHeight] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -114,7 +117,9 @@ const SpeciesDetailScreen = () => {
           onSharePress={
             segment
               ? async () => {
-                  const url = buildShareUrl(`species/${segment}/`);
+                  // The page is one long read split into tabs — a link shared
+                  // from "Sounds" should open on sounds, not the overview.
+                  const url = buildSpeciesDetailUrl(segment, activeTab);
                   await Share.share(
                     Platform.OS === "ios" ? { url } : { message: url },
                   );
@@ -124,7 +129,7 @@ const SpeciesDetailScreen = () => {
         />
       ),
     });
-  }, [navigation, data?.name_lang, segment, t]);
+  }, [navigation, data?.name_lang, segment, t, activeTab]);
 
   useEffect(() => {
     if (data?.redirect) {
@@ -280,6 +285,14 @@ const SpeciesDetailScreen = () => {
       : []),
   ];
 
+  // Half the tabs only exist when the species has that content, so a shared
+  // link asking for one this bird lacks (tab=sounds on a silent species, or a
+  // link older than the data) would leave the page blank with nothing
+  // selected. Fall back to the tab every species has.
+  const visibleTab = tabOptions.some((o) => o.value === activeTab)
+    ? activeTab
+    : "overview";
+
   return (
     <Layout
       bottom={
@@ -294,7 +307,7 @@ const SpeciesDetailScreen = () => {
           <View onLayout={(e) => setTabsHeight(e.nativeEvent.layout.height)}>
             <Tabs
               tabOptions={tabOptions}
-              tabsMode={activeTab}
+              tabsMode={visibleTab}
               setTabsMode={handleTabChange}
             />
           </View>
@@ -412,7 +425,7 @@ const SpeciesDetailScreen = () => {
           )}
         </View>
 
-        {activeTab === "overview" && (
+        {visibleTab === "overview" && (
           <>
             {!!data.metadata?.short && (
               <Section title={t("description")}>
@@ -586,7 +599,7 @@ const SpeciesDetailScreen = () => {
           </>
         )}
 
-        {activeTab === "traits" &&
+        {visibleTab === "traits" &&
           traitGroups.map((group) => (
             <Section key={group.key} title={group.label}>
               {group.traits.map((trait) => (
@@ -627,7 +640,7 @@ const SpeciesDetailScreen = () => {
             </Section>
           ))}
 
-        {activeTab === "sounds" && (
+        {visibleTab === "sounds" && (
           <Section title={t("sounds")} hint={String(data.sounds.length)}>
             {data.sounds.map((sound) => (
               // Active means "owns playback": it stays on the last recording
@@ -643,7 +656,7 @@ const SpeciesDetailScreen = () => {
           </Section>
         )}
 
-        {activeTab === "countries" &&
+        {visibleTab === "countries" &&
           groupedCountries.map((group) => (
             <Section
               key={group.region}
@@ -672,7 +685,7 @@ const SpeciesDetailScreen = () => {
             </Section>
           ))}
 
-        {activeTab === "names" && (
+        {visibleTab === "names" && (
           <>
             {data.multilangs.synonyms.length > 0 && (
               <Section title={t("synonyms")}>

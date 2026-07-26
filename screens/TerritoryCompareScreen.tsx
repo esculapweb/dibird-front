@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { Platform, Pressable, Share, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
@@ -15,7 +15,8 @@ import TerritoryCompareRow from "../components/Territory/TerritoryCompareRow";
 import { useScreenSort } from "../hooks/useScreenSort";
 import { fetchTerritoryCompare, fetchTerritoryDetail } from "../util/fetches";
 import { setNavigationCallback } from "../util/navigationCallbacks";
-import { buildShareUrl, isoToFlagEmoji } from "../util/helpers";
+import { buildTerritoryCompareUrl } from "../util/taxonShareLink";
+import { isoToFlagEmoji } from "../util/helpers";
 import { StaleTime } from "../constants/staleTime";
 import { useLanguage } from "../store/language-context";
 import { useTheme, ThemeColors } from "../store/theme-context";
@@ -54,12 +55,18 @@ const TerritoryCompareScreen = () => {
     route.params?.segment1 ? { segment: route.params.segment1 } : null,
     route.params?.segment2 ? { segment: route.params.segment2 } : null,
   ]);
-  const [tabMode, setTabMode] = useState<compareMode>("all");
-  const [search, setSearch] = useState("");
+  const [tabMode, setTabMode] = useState<compareMode>(
+    route.params?.initialTab ?? "all",
+  );
+  const [search, setSearch] = useState(route.params?.initialSearch ?? "");
   // Its own saved preference, not the catalogue's: this list is two countries
   // side by side, and the order that reads best here (taxonomic, so the two
-  // columns line up by family) is not the one the species catalogue is on.
-  const { sort, openSortSheet } = useScreenSort("TerritoryCompare");
+  // columns line up by family) is not the one the species catalogue is on. A
+  // shared link pins its order until the reader picks one.
+  const { sort, openSortSheet } = useScreenSort(
+    "TerritoryCompare",
+    route.params?.initialSort,
+  );
 
   const segments: [string | null, string | null] = [
     slots[0]?.segment ?? null,
@@ -104,8 +111,12 @@ const TerritoryCompareScreen = () => {
           onSharePress={
             bothChosen
               ? async () => {
-                  const url = buildShareUrl(
-                    `territory_compare/${segments[0]}/${segments[1]}/`,
+                  // Carries the open tab, the order and the search box, so the
+                  // link reopens on the same slice of the comparison.
+                  const url = buildTerritoryCompareUrl(
+                    segments[0] as string,
+                    segments[1] as string,
+                    { tab: tabMode, sort, search },
                   );
                   await Share.share(
                     Platform.OS === "ios" ? { url } : { message: url },
@@ -116,7 +127,42 @@ const TerritoryCompareScreen = () => {
         />
       ),
     });
-  }, [navigation, t, bothChosen, segments, openSortSheet]);
+    // segments is rebuilt on every render, so it is spread here rather than
+    // passed as an array — otherwise this runs on every keystroke.
+  }, [
+    navigation,
+    t,
+    bothChosen,
+    segments[0],
+    segments[1],
+    openSortSheet,
+    tabMode,
+    sort,
+    search,
+  ]);
+
+  // A link shared from another language carries that language's slugs. The
+  // API resolves them (see TerritoryCompareViewSet.get_territory_id) and
+  // answers with this language's, so swap them in: without it the screen keeps
+  // working but reshares the foreign slugs and opens the wrong-language
+  // country page on tap. Only the segment is touched — name and code on a slot
+  // the user picked themselves are already right.
+  const serverSegments = data?.territory_data;
+  useEffect(() => {
+    if (!serverSegments) return;
+    setSlots((prev) => {
+      const next: [Slot | null, Slot | null] = [...prev];
+      let changed = false;
+      ([0, 1] as Side[]).forEach((side) => {
+        const local = serverSegments[side]?.segment;
+        const slot = prev[side];
+        if (!local || !slot || slot.segment === local) return;
+        next[side] = { ...slot, segment: local };
+        changed = true;
+      });
+      return changed ? next : prev;
+    });
+  }, [serverSegments]);
 
   const pickTerritory = (side: Side) => {
     const key = `territory-compare-${side}`;

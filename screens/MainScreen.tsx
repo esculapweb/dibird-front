@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { Platform, RefreshControl, ScrollView } from "react-native";
+import { RefreshControl, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -44,7 +44,6 @@ const MainScreen = () => {
   const NAVBAR_HEIGHT = insets.top + 60;
   // Where the content rests: just under the floating navbar's gradient.
   const TOP_INSET = NAVBAR_HEIGHT + 8;
-  const isIOS = Platform.OS === "ios";
 
   const allowedFilters: AllowedFilterKey[] = ["territory", "date"];
   const navigation = useNavigation<AppStackNavigationProp>();
@@ -143,35 +142,28 @@ const MainScreen = () => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          // On iOS the same strip is contentInset instead (see below), and
-          // padding on top of it would double the gap.
-          paddingTop: isIOS ? 0 : TOP_INSET,
+          // Plain padding on both platforms, and deliberately not iOS'
+          // `contentInset`: Fabric zeroes a recycled scroll view's inset
+          // (RCTScrollViewComponentView's prepareForRecycle) and re-applies
+          // props only when they differ from the ones the pooled view came
+          // with — so after enough screen churn the strip was silently gone,
+          // the top of the scroll became 0, and the stat tiles sat under the
+          // floating navbar with no way to scroll up to them.
+          paddingTop: TOP_INSET,
           paddingBottom: insets.bottom,
         }}
-        {...(isIOS
-          ? {
-              // UIRefreshControl draws itself in the scroll view's top inset,
-              // so reserving the navbar's strip as inset (rather than as
-              // content padding) is what puts the spinner below the navbar
-              // instead of under its gradient. progressViewOffset can't do
-              // this on iOS: there it only shifts the control's frame, which
-              // UIKit recomputes on every layout pass.
-              contentInset: { top: TOP_INSET },
-              contentOffset: { x: 0, y: -TOP_INSET },
-              // Our inset must be the only one — "automatic" would add the
-              // safe area on top of it.
-              contentInsetAdjustmentBehavior: "never" as const,
-            }
-          : {})}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={handleRefresh}
             tintColor={Colors.textMain}
             colors={[Colors.textMain]}
-            // Android has no contentInset: there the spinner is placed by
-            // hand, clear of the floating navbar (NAVBAR_HEIGHT + 20 tall).
-            progressViewOffset={isIOS ? 0 : NAVBAR_HEIGHT + 20}
+            // Without the inset the spinner would draw at the very top of the
+            // scroll view, under the navbar's gradient — so it is placed by
+            // hand, clear of the navbar (NAVBAR_HEIGHT + 20 tall). On iOS RN
+            // shifts the UIRefreshControl's bounds for this, which survives
+            // both layout passes and recycling.
+            progressViewOffset={NAVBAR_HEIGHT + 20}
           />
         }
       >

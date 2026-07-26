@@ -61,6 +61,7 @@ jest.mock("react-native-render-html", () => {
   };
 });
 
+import { Share } from "react-native";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { useQuery } from "@tanstack/react-query";
 import { createNavigationMock, createRouteMock } from "../test-utils";
@@ -553,4 +554,51 @@ it("pushes the next species in the paging strip when tapped", async () => {
   await render(<SpeciesDetailScreen />);
   await fireEvent.press(screen.getByText("Great Tit"));
   expect(mockNavigation.push).toHaveBeenCalledWith("SpeciesDetail", { segment: "great-tit" });
+});
+
+// The page is one long read split into tabs, so a link shared from one of them
+// should open there (see buildSpeciesDetailUrl / linking.ts).
+it("opens on the tab a shared link was sent from", async () => {
+  mockRoute = createRouteMock("SpeciesDetail", {
+    segment: "blue-tit",
+    initialTab: "countries",
+  });
+  mockQueries({ detail: detailResult({ data: baseDetail }) });
+
+  await render(<SpeciesDetailScreen />);
+
+  expect(screen.getByText("🇬🇧 United Kingdom")).toBeOnTheScreen();
+});
+
+// Half the tabs only exist when the species has that content, so a link asking
+// for one this bird lacks would otherwise leave the page blank.
+it("falls back to the overview when the shared tab has nothing to show", async () => {
+  mockRoute = createRouteMock("SpeciesDetail", {
+    segment: "blue-tit",
+    initialTab: "sounds",
+  });
+  mockQueries({ detail: detailResult({ data: baseDetail }) });
+
+  await render(<SpeciesDetailScreen />);
+
+  expect(screen.getByText("Blue Tit")).toBeOnTheScreen();
+  // No sounds tab to select, and the overview rendered in its place.
+  expect(screen.queryByText("sounds")).toBeNull();
+});
+
+it("shares the species page on the tab it was read from", async () => {
+  const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({
+    action: "sharedAction",
+  } as never);
+  mockQueries({ detail: detailResult({ data: baseDetail }) });
+
+  await render(<SpeciesDetailScreen />);
+  await fireEvent.press(screen.getByText("countries"));
+  const options = (mockNavigation.setOptions as jest.Mock).mock.calls.at(-1)![0];
+  await options.headerRight().props.onSharePress();
+
+  const arg = shareSpy.mock.calls[0][0] as { url?: string; message?: string };
+  expect(arg.url ?? arg.message ?? "").toContain(
+    "/species/blue-tit/?tab=countries",
+  );
 });

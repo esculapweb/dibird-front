@@ -217,16 +217,21 @@ it("pull to refresh refetches every widget the dashboard has mounted", async () 
   });
 });
 
-it("reserves the navbar's strip as contentInset on iOS, not as padding", async () => {
-  // The spinner is drawn in the scroll view's top inset: as content padding
-  // the strip left it under the floating navbar's gradient, invisible.
+it("reserves the navbar's strip as padding, never as a native contentInset", async () => {
+  // iOS' contentInset was how the pull-to-refresh spinner used to be kept
+  // below the navbar, but Fabric zeroes a recycled scroll view's inset and
+  // re-applies props only on a diff — so after a few screens the strip
+  // vanished and the stat tiles were stuck under the navbar, unreachable by
+  // scrolling. Padding cannot be lost that way; the spinner is placed with
+  // progressViewOffset instead.
   // (jest-expo runs as iOS; insets are mocked to 0, so NAVBAR_HEIGHT is 60.)
   await render(<MainScreen />);
 
   const props = scrollView().props;
-  expect(props.contentInset).toEqual({ top: 68 });
-  expect(props.contentOffset).toEqual({ x: 0, y: -68 });
-  expect(props.contentContainerStyle.paddingTop).toBe(0);
+  expect(props.contentContainerStyle.paddingTop).toBe(68);
+  expect(props.contentInset).toBeUndefined();
+  expect(props.contentOffset).toBeUndefined();
+  expect(props.refreshControl.props.progressViewOffset).toBe(80);
 });
 
 it("drops the spinner on a refetch that never settles", async () => {

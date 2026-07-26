@@ -1,7 +1,14 @@
 import { getStateFromPath } from "@react-navigation/native";
 import { AppStackParamList, AuthStackParamList } from "./types";
 import { LinkingOptions } from "@react-navigation/native";
-import { paramsToTaxonFilters } from "./util/taxonShareLink";
+import {
+  COMPARE_TABS,
+  parseEnumParam,
+  paramsToTaxonFilters,
+  SPECIES_DETAIL_TABS,
+  TERRITORY_TABS,
+  TERRITORY_VIEWS,
+} from "./util/taxonShareLink";
 
 const parseString = (v: string | null): string | undefined => v || undefined;
 
@@ -48,6 +55,13 @@ type TaxonRoute = {
   params: Record<string, unknown>;
 };
 
+// paramsToTaxonFilters always returns an object, so passing it on unchecked
+// would put an empty `initialTraits` on every plain country link — enough to
+// look like "the sharer cleared the filters" to a screen that seeds its state
+// from it. Only send it when the URL actually carried one.
+const hasTraitParams = (params: URLSearchParams): boolean =>
+  Object.keys(paramsToTaxonFilters(params)).length > 0;
+
 // Countries catalogue: the list (/territory), one country (/territory/<slug>)
 // and the two-country comparison (/territory_compare/<slug>/<slug>). Kept
 // apart from matchTaxonPath because these are places, not taxa, and only the
@@ -73,16 +87,40 @@ const matchTerritoryPath = (
         },
       };
     }
-    if (rest.length === 1)
-      return { name: "TerritoryDetail", params: { segment: rest[0] } };
+    if (rest.length === 1) {
+      const tab = parseEnumParam(params.get("tab"), TERRITORY_TABS);
+      const view = parseEnumParam(params.get("view"), TERRITORY_VIEWS);
+      return {
+        name: "TerritoryDetail",
+        params: {
+          segment: rest[0],
+          ...(tab && { initialTab: tab }),
+          ...(view && { initialView: view }),
+          ...(sort && { initialSort: sort }),
+          // Only the flat species list can be filtered, but decoding is
+          // harmless either way — the screen ignores them in tree mode.
+          ...(hasTraitParams(params) && {
+            initialTraits: paramsToTaxonFilters(params),
+          }),
+        },
+      };
+    }
     return null;
   }
 
-  if (head === "territory_compare" && rest.length === 2)
+  if (head === "territory_compare" && rest.length === 2) {
+    const tab = parseEnumParam(params.get("tab"), COMPARE_TABS);
     return {
       name: "TerritoryCompare",
-      params: { segment1: rest[0], segment2: rest[1] },
+      params: {
+        segment1: rest[0],
+        segment2: rest[1],
+        ...(tab && { initialTab: tab }),
+        ...(sort && { initialSort: sort }),
+        ...(search && { initialSearch: search }),
+      },
     };
+  }
 
   return null;
 };
@@ -142,8 +180,13 @@ const matchTaxonPath = (normalizedPath: string): TaxonRoute | null => {
   // Detail pages (with slug): /species/<slug>, /order|family|genus/<slug>
   if (segments.length === 2) {
     const [head, slug] = segments;
-    if (head === "species")
-      return { name: "SpeciesDetail", params: { segment: slug } };
+    if (head === "species") {
+      const tab = parseEnumParam(params.get("tab"), SPECIES_DETAIL_TABS);
+      return {
+        name: "SpeciesDetail",
+        params: { segment: slug, ...(tab && { initialTab: tab }) },
+      };
+    }
     const rank = GROUP_RANK_BY_PATH[head];
     if (rank)
       return {

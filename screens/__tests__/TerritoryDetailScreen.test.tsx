@@ -358,3 +358,60 @@ it("starts a comparison with this country already on one side", async () => {
     segment1: "argentina",
   });
 });
+
+// What a shared link restores. The screen holds this in tabs and switches
+// rather than in a filter sheet, so without it a link sent from the species
+// list drops the reader on the description.
+it("opens on the tab a shared link was sent from", async () => {
+  mockRoute = createRouteMock("TerritoryDetail", {
+    segment: "argentina",
+    initialTab: "info",
+  });
+
+  await render(<TerritoryDetailScreen />);
+
+  expect(screen.getByText("Argentina")).toBeOnTheScreen();
+  expect(screen.queryByTestId("territory-checklist")).toBeNull();
+});
+
+it("opens the flat list, sorted and filtered, from a shared link", async () => {
+  mockRoute = createRouteMock("TerritoryDetail", {
+    segment: "argentina",
+    initialView: "flat",
+    initialSort: "name",
+    initialTraits: { habitat: ["Forest"] },
+  });
+
+  await render(<TerritoryDetailScreen />);
+
+  expect(screen.getByTestId("flat-species-list")).toBeOnTheScreen();
+  expect(mockFlatListProps.sort).toBe("name");
+  expect(mockFlatListProps.traits).toEqual({ habitat: ["Forest"] });
+});
+
+it("shares the tree layout as the plain country link", async () => {
+  const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({
+    action: "sharedAction",
+  } as never);
+
+  await render(<TerritoryDetailScreen />);
+  await (headerProps().onSharePress as () => Promise<void>)();
+
+  const arg = shareSpy.mock.calls[0][0] as { url?: string; message?: string };
+  expect(arg.url ?? arg.message ?? "").toMatch(/\/territory\/argentina\/$/);
+});
+
+it("shares the open tab and layout", async () => {
+  const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({
+    action: "sharedAction",
+  } as never);
+
+  await render(<TerritoryDetailScreen />);
+  await fireEvent.press(screen.getByTestId("tab-info"));
+  await (headerProps().onSharePress as () => Promise<void>)();
+
+  const arg = shareSpy.mock.calls[0][0] as { url?: string; message?: string };
+  expect(arg.url ?? arg.message ?? "").toContain(
+    "/territory/argentina/?tab=info",
+  );
+});

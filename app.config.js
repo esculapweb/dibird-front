@@ -22,6 +22,49 @@ const variants = {
 const env = process.env.EXPO_PUBLIC_ENV ?? "production";
 const variant = variants[env];
 
+// A typo'd or unexpected EXPO_PUBLIC_ENV used to blow up further down with a
+// bare "cannot read property 'name' of undefined". Fail here instead, naming
+// the culprit — silently falling back to a variant would be worse: it can ship
+// production bundle ids and Google services into a dev build.
+if (!variant) {
+  throw new Error(
+    `Unknown EXPO_PUBLIC_ENV "${env}". Expected one of: ${Object.keys(
+      variants,
+    ).join(", ")}.`,
+  );
+}
+
+// Web paths the app claims as App Links / Universal Links. Must stay in sync
+// with linking.ts (what getStateFromPath can resolve) AND with the backend's
+// /.well-known/apple-app-site-association — a path missing from either side
+// opens in the browser instead of the app.
+const APP_LINK_PATHS = [
+  "/accounts/confirm-email/",
+  "/accounts/login/",
+  "/accounts/signup/",
+  "/my/",
+  "/users/",
+  // Legal pages — the same content the in-app StaticScreen renders.
+  "/privacy/",
+  "/terms/",
+  // Countries catalogue and the two-country comparison.
+  "/territory/",
+  "/territory_compare/",
+  // Taxonomy catalogue lists and the taxon detail pages.
+  "/species/",
+  "/extinct/",
+  "/order/",
+  "/family/",
+  "/genus/",
+];
+
+// linking.ts strips the locale prefix before matching, so every path also has
+// a Russian twin on the site.
+const LOCALIZED_APP_LINK_PATHS = APP_LINK_PATHS.flatMap((path) => [
+  path,
+  `/ru${path}`,
+]);
+
 export default {
   expo: {
     name: variant.name,
@@ -73,33 +116,11 @@ export default {
         {
           action: "VIEW",
           autoVerify: true,
-          data: [
-            {
-              scheme: "https",
-              host: "dibird.com",
-              pathPrefix: "/accounts/confirm-email/",
-            },
-            {
-              scheme: "https",
-              host: "dibird.com",
-              pathPrefix: "/accounts/login/",
-            },
-            {
-              scheme: "https",
-              host: "dibird.com",
-              pathPrefix: "/accounts/signup/",
-            },
-            {
-              scheme: "https",
-              host: "dibird.com",
-              pathPrefix: "/my/",
-            },
-            {
-              scheme: "https",
-              host: "dibird.com",
-              pathPrefix: "/users/",
-            },
-          ],
+          data: LOCALIZED_APP_LINK_PATHS.map((pathPrefix) => ({
+            scheme: "https",
+            host: "dibird.com",
+            pathPrefix,
+          })),
           category: ["BROWSABLE", "DEFAULT"],
         },
       ],

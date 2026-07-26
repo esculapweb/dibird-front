@@ -67,14 +67,25 @@ const SUPPORTED: Array<{ path: string; authed?: boolean; screen: string }> = [
   { path: "family/ducks-geese-swans/", screen: "TaxonGroupDetail" },
   { path: "genus/aix/", screen: "TaxonGroupDetail" },
   { path: "species/mandarin-duck/", screen: "SpeciesDetail" },
+  { path: "species/mandarin-duck/?tab=sounds", screen: "SpeciesDetail" },
 
   // Countries catalogue
   { path: "territory/", screen: "TerritoryList" },
   { path: "territory/?o=-species_count", screen: "TerritoryList" },
   { path: "territory/?region=15", screen: "TerritoryList" },
+  { path: "territory/?name=austr", screen: "TerritoryList" },
   { path: "territory/austria/", screen: "TerritoryDetail" },
+  { path: "territory/austria/?tab=info", screen: "TerritoryDetail" },
+  {
+    path: "territory/austria/?view=flat&o=name&habitat=Forest",
+    screen: "TerritoryDetail",
+  },
   {
     path: "territory_compare/austria/azerbaijan/",
+    screen: "TerritoryCompare",
+  },
+  {
+    path: "territory_compare/austria/azerbaijan/?tab=different&o=name&name=duck",
     screen: "TerritoryCompare",
   },
 
@@ -156,6 +167,7 @@ const SUPPORTED: Array<{ path: string; authed?: boolean; screen: string }> = [
   { path: "ru/species/seryj-zhuravl/", screen: "SpeciesDetail" },
   { path: "ru/territory/", screen: "TerritoryList" },
   { path: "ru/territory/avstrija/", screen: "TerritoryDetail" },
+  { path: "ru/territory/avstrija/?tab=info", screen: "TerritoryDetail" },
   {
     path: "ru/territory_compare/avstrija/azerbajdzhan/",
     screen: "TerritoryCompare",
@@ -310,5 +322,93 @@ describe("deep links from the QA page resolve to the right screen", () => {
       rank: 2,
       initialSort: "ioc_id",
     });
+  });
+
+  // Detail pages hold their state in tabs and switches rather than filters, so
+  // `tab` and `view` are what a share carries (see the builders in
+  // taxonShareLink.ts). Unknown values must be dropped, not passed through: a
+  // screen seeded with a tab it can't render shows nothing at all.
+  it("restores the open tab on a species link", () => {
+    expect(leafParams(stateFor("species/mandarin-duck/?tab=sounds"))).toEqual({
+      segment: "mandarin-duck",
+      initialTab: "sounds",
+    });
+  });
+
+  it("drops an unknown tab instead of seeding it", () => {
+    expect(
+      leafParams(stateFor("species/mandarin-duck/?tab=nonsense")),
+    ).not.toHaveProperty("initialTab");
+  });
+
+  it("restores tab, layout, sort and filters on a country link", () => {
+    expect(
+      leafParams(stateFor("territory/austria/?view=flat&o=name&habitat=Forest")),
+    ).toMatchObject({
+      segment: "austria",
+      initialView: "flat",
+      initialSort: "name",
+      initialTraits: { habitat: ["Forest"] },
+    });
+  });
+
+  it("leaves initialTraits off a country link that carried no filters", () => {
+    // An empty object here reads as "the sharer cleared the filters" to the
+    // screen that seeds its state from it.
+    expect(
+      leafParams(stateFor("territory/austria/?tab=info")),
+    ).not.toHaveProperty("initialTraits");
+  });
+
+  it("drops an unknown layout on a country link", () => {
+    expect(
+      leafParams(stateFor("territory/austria/?view=sideways")),
+    ).not.toHaveProperty("initialView");
+  });
+
+  it("restores tab, sort and search on a comparison link", () => {
+    expect(
+      leafParams(
+        stateFor(
+          "territory_compare/austria/azerbaijan/?tab=different&o=name&name=duck",
+        ),
+      ),
+    ).toMatchObject({
+      segment1: "austria",
+      segment2: "azerbaijan",
+      initialTab: "different",
+      initialSort: "name",
+      initialSearch: "duck",
+    });
+  });
+
+  it("restores the search box on a country list link", () => {
+    expect(leafParams(stateFor("territory/?name=austr"))).toMatchObject({
+      initialSearch: "austr",
+    });
+  });
+});
+
+// Resolving a path in linking.ts is only half the job: iOS and Android hand the
+// URL to the app only when the path is also claimed natively (app.config.js
+// `intentFilters` for Android, /.well-known/apple-app-site-association served
+// by the backend for iOS). A path missing there silently opens in the browser
+// — how the /territory/ links shipped broken. This guards the Android half;
+// the AASA file mirrors the same APP_LINK_PATHS list and must be updated with
+// it.
+describe("supported deep links are claimed as Android App Links", () => {
+  // app.config.js picks its variant from EXPO_PUBLIC_ENV, which jest-expo sets
+  // to "test" — an unknown variant, so require it only after pinning a real
+  // one. The intent filters are the same across variants.
+  process.env.EXPO_PUBLIC_ENV = "production";
+  const appConfig = require("./app.config").default;
+
+  const pathPrefixes: (string | undefined)[] = (
+    appConfig.expo.android.intentFilters?.[0]?.data ?? []
+  ).map((d: { pathPrefix?: string }) => d.pathPrefix);
+
+  it.each(SUPPORTED.map(({ path }) => path))("%s is claimed", (path) => {
+    const pathname = `/${path}`.replace(/\/{2,}/g, "/").split("?")[0];
+    expect(pathPrefixes.some((p) => p && pathname.startsWith(p))).toBe(true);
   });
 });

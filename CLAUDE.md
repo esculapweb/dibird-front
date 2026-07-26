@@ -29,7 +29,8 @@
 
 Полный список зависимостей — в `package.json`; ниже только ключевые архитектурные выборы. Для задачи бери библиотеку из этого списка, не добавляй конкурирующую (напр. не тащить redux/zustand поверх react-query, formik, moment, другой HTTP-клиент вместо axios).
 
-- **Платформа**: Expo ~56, режим prebuild / CNG (папки `android`/`ios` закоммичены), `expo-dev-client`; OTA-обновления через `expo-updates` + EAS. Язык — TypeScript (strict).
+- **Платформа**: Expo ~56, режим prebuild / CNG, `expo-dev-client`; OTA-обновления через `expo-updates` + EAS. Язык — TypeScript (strict).
+- **Папки `android`/`ios` НЕ закоммичены** (обе в `.gitignore`) — они генерируются `expo prebuild` из `app.config.js` при сборке. Правки нативной конфигурации (permissions, intent-filters, entitlements, Info.plist) вноси только в `app.config.js` или в config-плагин в `plugins/`: изменения прямо в `android/`/`ios/` никуда не доедут и будут затёрты следующим prebuild.
 - **Навигация**: React Navigation — `native-stack` + `drawer`.
 - **Серверные данные**: TanStack React Query; кэш персистится в AsyncStorage (`query-persist-client-core` + `query-async-storage-persister`). HTTP — `axios`.
 - **Локальная БД / оффлайн**: Drizzle ORM поверх `expo-sqlite` (рантайм); `drizzle-kit` — миграции; `better-sqlite3` — только в тестах.

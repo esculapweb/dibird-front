@@ -33,10 +33,13 @@ import {
 export const buildTerritoryListUrl = (
   region: number | null,
   sort: string | null,
+  search?: string | null,
 ): string => {
   const params = new URLSearchParams();
   if (region != null) params.set("region", String(region));
   if (sort) params.set("o", sort);
+  // Same `name` the taxonomy catalogue shares its search box with.
+  if (search) params.set("name", search);
   const query = params.toString();
   return `${langBaseUrl()}/territory/${query ? `?${query}` : ""}`;
 };
@@ -92,7 +95,7 @@ const TerritoryListScreen = () => {
             pickerKey
               ? undefined
               : async () => {
-                  const url = buildTerritoryListUrl(region, sort);
+                  const url = buildTerritoryListUrl(region, sort, search);
                   await Share.share(
                     Platform.OS === "ios" ? { url } : { message: url },
                   );
@@ -101,7 +104,10 @@ const TerritoryListScreen = () => {
         />
       ),
     });
-  }, [navigation, title, t, openSortSheet, pickerKey, sort]);
+    // region and search belong here: the share button captures them, so
+    // without them it keeps handing out the URL of the list as it was when
+    // the screen opened.
+  }, [navigation, title, t, openSortSheet, pickerKey, sort, region, search]);
 
   const items = data?.pages.flatMap((page) => page.results) ?? [];
 

@@ -179,6 +179,13 @@ export interface AvatarResponse {
 export type seenMode = "seen" | "unseen" | "all";
 export type compareMode = "common" | "different" | "all";
 
+// Which half of a country page is open: its birds (what the page is for) or
+// its description. Travels in shared links as `tab` — see taxonShareLink.ts.
+export type territoryTab = "species" | "info";
+// How that country's birds are laid out: the taxonomic tree ("by groups") or
+// the plain sortable list. Travels in shared links as `view`.
+export type territoryView = "tree" | "flat";
+
 export interface TabOption<T extends string = string> {
   value: T;
   icon: IconType;
@@ -1072,7 +1079,11 @@ export type AppStackParamList = {
   Notifications: undefined;
   Community: ScreenWithFilters | undefined;
   CommunityDetail: { observationId: number };
-  SpeciesDetail: { segment: string } | { id: number };
+  // Seeds the open tab when the link was shared from a particular one
+  // (linking.ts / taxonShareLink.ts), same as the catalogue's initialSort etc.
+  SpeciesDetail: ({ segment: string } | { id: number }) & {
+    initialTab?: SpeciesDetailTab;
+  };
   Taxonomy: {
     rank: TaxonRank;
     parentSegment?: string;
@@ -1106,8 +1117,24 @@ export type AppStackParamList = {
         initialRegion?: number;
       }
     | undefined;
-  TerritoryDetail: { segment: string };
-  TerritoryCompare: { segment1?: string; segment2?: string } | undefined;
+  // Everything after `segment` is what a shared link restores: which tab and
+  // layout were open, and how the flat species list was sorted and filtered.
+  TerritoryDetail: {
+    segment: string;
+    initialTab?: territoryTab;
+    initialView?: territoryView;
+    initialSort?: string;
+    initialTraits?: TaxonTraitFilters;
+  };
+  TerritoryCompare:
+    | {
+        segment1?: string;
+        segment2?: string;
+        initialTab?: compareMode;
+        initialSort?: string;
+        initialSearch?: string;
+      }
+    | undefined;
   Achievements: { highlightId?: string } | undefined;
   Privacy: undefined;
   Terms: undefined;

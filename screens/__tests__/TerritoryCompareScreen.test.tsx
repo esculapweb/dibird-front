@@ -465,3 +465,88 @@ it("offers no share action until both countries are picked", async () => {
 
   expect(headerProps().onSharePress).toBeUndefined();
 });
+
+// A link shared from another language carries that language's slugs. The API
+// resolves them and answers with this language's (territory_data), so the
+// screen must adopt those — otherwise it reshares the foreign ones and its
+// country cards link to the wrong-language pages.
+it("swaps in this language's slugs when the link came from another", async () => {
+  mockRoute = createRouteMock("TerritoryCompare", {
+    segment1: "argentina",
+    segment2: "chili",
+  });
+
+  await render(<TerritoryCompareScreen />);
+
+  const compareKeys = (mockUseQuery.mock.calls as [{ queryKey: unknown[] }][])
+    .map(([options]) => options.queryKey)
+    .filter((key) => key[0] === "TerritoryCompare");
+
+  expect(compareKeys.at(-1)).toEqual([
+    "TerritoryCompare",
+    "argentina",
+    "chile",
+    "en",
+  ]);
+});
+
+it("keeps the slugs it was given when they are already this language's", async () => {
+  await render(<TerritoryCompareScreen />);
+
+  const compareKeys = (mockUseQuery.mock.calls as [{ queryKey: unknown[] }][])
+    .map(([options]) => options.queryKey)
+    .filter((key) => key[0] === "TerritoryCompare");
+
+  // No second key: adopting an identical slug would refetch the whole list.
+  expect(new Set(compareKeys.map((key) => key.join("|"))).size).toBe(1);
+});
+
+it("opens on the tab a shared link was sent from", async () => {
+  mockRoute = createRouteMock("TerritoryCompare", {
+    segment1: "argentina",
+    segment2: "chile",
+    initialTab: "different",
+  });
+
+  await render(<TerritoryCompareScreen />);
+
+  expect(rows().map((s) => s.segment)).toEqual([
+    "greater-rhea",
+    "andean-condor",
+  ]);
+});
+
+it("restores the search box and the sort from a shared link", async () => {
+  mockRoute = createRouteMock("TerritoryCompare", {
+    segment1: "argentina",
+    segment2: "chile",
+    initialSearch: "condor",
+    initialSort: "name",
+  });
+
+  await render(<TerritoryCompareScreen />);
+
+  expect(rows().map((s) => s.segment)).toEqual(["andean-condor"]);
+  expect(mockScreenSortArgs[1]).toBe("name");
+});
+
+it("shares the tab, order and search along with the two countries", async () => {
+  mockSort = "name";
+  mockRoute = createRouteMock("TerritoryCompare", {
+    segment1: "argentina",
+    segment2: "chile",
+    initialTab: "common",
+    initialSearch: "rhea",
+  });
+  const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({
+    action: "sharedAction",
+  } as never);
+
+  await render(<TerritoryCompareScreen />);
+  await (headerProps().onSharePress as () => Promise<void>)();
+
+  const arg = shareSpy.mock.calls[0][0] as { url?: string; message?: string };
+  expect(arg.url ?? arg.message ?? "").toContain(
+    "/territory_compare/argentina/chile/?tab=common&o=name&name=rhea",
+  );
+});

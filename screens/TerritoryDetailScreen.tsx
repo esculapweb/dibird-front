@@ -31,7 +31,8 @@ import { BottomSheet } from "../services/bottomSheet";
 import { useTaxonomySort } from "../hooks/useTaxonomySort";
 import { useContentWidth } from "../hooks/useContentWidth";
 import { fetchTerritoryDetail } from "../util/fetches";
-import { buildShareUrl, isoToFlagEmoji } from "../util/helpers";
+import { buildTerritoryDetailUrl } from "../util/taxonShareLink";
+import { isoToFlagEmoji } from "../util/helpers";
 import { htmlBaseStyle, htmlTagsStyles } from "../util/htmlStyles";
 import { StaleTime } from "../constants/staleTime";
 import { useLanguage } from "../store/language-context";
@@ -41,18 +42,19 @@ import {
   AppStackRouteProp,
   TaxonTraitFilters,
   TerritoryDetail,
+  territoryTab,
+  territoryView,
 } from "../types";
 
 // Two ways to read a country's birds: the taxonomic tree (order → family →
 // species, the app's own checklist, fixed order) and the plain species list
-// (paginated, sortable, the same one the catalogue uses everywhere else).
-type SpeciesView = "tree" | "flat";
-
+// (paginated, sortable, the same one the catalogue uses everywhere else) —
+// `territoryView` in types.ts.
+//
 // The country's own page (flag, counts, description, prev/next) and its birds
-// are two separate reads, split by the bottom tabs — the species list would
-// otherwise start below a screenful of description. The birds are what the
-// page is for, so they open first.
-type TerritoryTab = "species" | "info";
+// are two separate reads, split by the bottom tabs (`territoryTab`) — the
+// species list would otherwise start below a screenful of description. The
+// birds are what the page is for, so they open first.
 
 const TerritoryDetailScreen = () => {
   const { t } = useTranslation();
@@ -62,16 +64,21 @@ const TerritoryDetailScreen = () => {
   const styles = stylesFn(Colors);
   const navigation = useNavigation<AppStackNavigationProp>();
   const route = useRoute<AppStackRouteProp<"TerritoryDetail">>();
-  const { segment } = route.params;
-  const [tab, setTab] = useState<TerritoryTab>("species");
-  const [view, setView] = useState<SpeciesView>("tree");
+  const { segment, initialTab, initialView, initialSort, initialTraits } =
+    route.params;
+  const [tab, setTab] = useState<territoryTab>(initialTab ?? "species");
+  const [view, setView] = useState<territoryView>(initialView ?? "tree");
   // The country is not one of these — it is the page (see fixedTraits below),
   // so the sheet opens without its country dropdown.
-  const [filters, setFilters] = useState<TaxonTraitFilters>({});
+  const [filters, setFilters] = useState<TaxonTraitFilters>(
+    initialTraits ?? {},
+  );
   // The flat list is an ordinary taxonomy listing, so it follows the
-  // catalogue-wide order preference. The tree has no sort of its own — it is
-  // taxonomic by definition (same as the checklist screen, allowSort: false).
-  const { sort, openSortSheet } = useTaxonomySort();
+  // catalogue-wide order preference. A shared link pins its own order until
+  // the reader picks one (useScreenSort drops the pin then). The tree has no
+  // sort of its own — it is taxonomic by definition (same as the checklist
+  // screen, allowSort: false).
+  const { sort, openSortSheet } = useTaxonomySort(initialSort);
 
   const detailQuery = useQuery<TerritoryDetail>({
     queryKey: ["TerritoryDetail", segment, language],
@@ -120,7 +127,14 @@ const TerritoryDetailScreen = () => {
               : undefined
           }
           onSharePress={async () => {
-            const url = buildShareUrl(`territory/${segment}/`);
+            // Reopens on the same tab and layout, with the flat list's sort
+            // and filters — see buildTerritoryDetailUrl / linking.ts.
+            const url = buildTerritoryDetailUrl(segment, {
+              tab,
+              view,
+              sort,
+              traits: filters,
+            });
             await Share.share(
               Platform.OS === "ios" ? { url } : { message: url },
             );
@@ -128,7 +142,17 @@ const TerritoryDetailScreen = () => {
         />
       ),
     });
-  }, [navigation, data?.name, segment, t, openSortSheet, tab, view, filters]);
+  }, [
+    navigation,
+    data?.name,
+    segment,
+    t,
+    openSortSheet,
+    tab,
+    view,
+    filters,
+    sort,
+  ]);
 
   useEffect(() => {
     if (data?.redirect) {
