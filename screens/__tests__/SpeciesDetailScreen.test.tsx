@@ -42,6 +42,9 @@ jest.mock("../../store/language-context", () => ({
   useLanguage: () => ({ language: "en" }),
 }));
 jest.mock("../../hooks/useContentWidth", () => ({ useContentWidth: () => 400 }));
+jest.mock("../../hooks/useDefaultTerritory", () => ({
+  useDefaultTerritory: jest.fn(),
+}));
 jest.mock("@expo/vector-icons", () => {
   const { View } = require("react-native");
   return { Ionicons: View };
@@ -61,6 +64,7 @@ jest.mock("react-native-render-html", () => {
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { useQuery } from "@tanstack/react-query";
 import { createNavigationMock, createRouteMock } from "../test-utils";
+import { useDefaultTerritory } from "../../hooks/useDefaultTerritory";
 import SpeciesDetailScreen from "../SpeciesDetailScreen";
 import { TaxonSpeciesDetail } from "../../types";
 
@@ -132,6 +136,7 @@ const mockQueries = ({
 beforeEach(() => {
   jest.clearAllMocks();
   mockRoute = createRouteMock("SpeciesDetail", { segment: "blue-tit" });
+  (useDefaultTerritory as jest.Mock).mockReturnValue(4);
   mockQueries();
 });
 
@@ -462,6 +467,24 @@ it("opens the observation editor prefilled with this species when the add-observ
   await fireEvent.press(screen.getByTestId("add-observation-fab"));
   expect(mockNavigation.navigate).toHaveBeenCalledWith("ObservationEditor", {
     defaultSpecies: baseDetail.taxon_id,
+    defaultTerritory: 4,
+    returnMode: "back",
+  });
+});
+
+it("hands the species' range to the default-country lookup and passes on its verdict", async () => {
+  // A species page is reached from search or a deep link, so the country can
+  // only come from the app's own fallback — and only if the bird occurs there.
+  (useDefaultTerritory as jest.Mock).mockReturnValue(null);
+  mockQueries({ detail: detailResult({ data: baseDetail }) });
+  await render(<SpeciesDetailScreen />);
+
+  expect(useDefaultTerritory).toHaveBeenCalledWith(baseDetail.countries);
+
+  await fireEvent.press(screen.getByTestId("add-observation-fab"));
+  expect(mockNavigation.navigate).toHaveBeenCalledWith("ObservationEditor", {
+    defaultSpecies: baseDetail.taxon_id,
+    defaultTerritory: null,
     returnMode: "back",
   });
 });

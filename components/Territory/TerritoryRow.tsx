@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { isoToFlagEmoji } from "../../util/helpers";
@@ -13,11 +14,15 @@ interface TerritoryRowProps {
   // Already-localized, number-agreed label from the API ("1111 species"), not
   // a number to format here.
   speciesLabel?: string | null;
+  // Localized region name; missing on offline-cached rows from before the
+  // backend started sending it.
+  regionName?: string | null;
   onPress: () => void;
 }
 
 const TerritoryRow = memo(
-  ({ name, code, speciesLabel, onPress }: TerritoryRowProps) => {
+  ({ name, code, speciesLabel, regionName, onPress }: TerritoryRowProps) => {
+    const { t } = useTranslation();
     const { Colors } = useTheme();
     const styles = stylesFn(Colors);
     const flag = isoToFlagEmoji(code ?? null);
@@ -40,9 +45,16 @@ const TerritoryRow = memo(
         </View>
 
         <View style={styles.info}>
-          <Text style={styles.title} numberOfLines={2}>
+          {/* One line now that the region takes the third one — a two-line
+              name plus two subtitles would outgrow the row. */}
+          <Text style={styles.title} numberOfLines={1}>
             {name}
           </Text>
+          {!!regionName && (
+            <Text style={styles.subtitle} numberOfLines={1}>
+              {t("region")}: {regionName}
+            </Text>
+          )}
           {!!speciesLabel && (
             <Text style={styles.subtitle} numberOfLines={1}>
               {speciesLabel}

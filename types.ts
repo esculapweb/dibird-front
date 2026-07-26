@@ -313,6 +313,9 @@ export interface SpeciesItem {
   sp_thumb: string | null;
   segment: string;
   seen: boolean;
+  // IUCN category code. Absent from responses cached before the backend
+  // started sending it.
+  status?: string | null;
   min_date: string | null;
   max_date: string | null;
   qty_observations: number | null;
@@ -351,6 +354,9 @@ export interface SpeciesData {
   name_lang: string;
   segment: string;
   thumb: string | null;
+  // IUCN category code. Absent from responses cached before the backend
+  // started sending it.
+  status?: string | null;
 }
 
 // Taxonomy catalog (order -> family -> genus -> species), backed by
@@ -491,6 +497,9 @@ export interface TaxonTraitFilters {
   migration?: string[];
   trophic_level?: string[];
   trophic_niche?: string[];
+  // IUCN categories, by their code ("EN", "CR (PE)") — the API takes them
+  // comma-separated, like the trait vocabularies.
+  status?: string[];
   // Distribution filter: api.Territory id from the country dropdown; the
   // catalogue keeps only species that occur in this territory.
   territory?: number | null;
@@ -513,6 +522,10 @@ export interface TraitFilterOptions {
   migration: TraitFilterOption[];
   trophic_level: TraitFilterOption[];
   trophic_niche: TraitFilterOption[];
+  // IUCN categories, in the Red List's own order (most threatened first) —
+  // it is a scale, so unlike the vocabularies it is not sorted by count.
+  // Absent from responses cached before the backend started sending it.
+  status?: TraitFilterOption[];
 }
 
 // Curated facts from Avibase (body measurements, diet, breeding, lifespan),
@@ -580,6 +593,10 @@ export interface TerritoryListItem {
   segment: string;
   // ISO-3166 alpha-2 ("AR"), rendered as a flag through isoToFlagEmoji.
   code: string | null;
+  // Localized region name ("South America"). A plain string here, unlike the
+  // detail response's `region` object; absent from responses cached before the
+  // backend started sending it.
+  region_name?: string | null;
   // A paragraph of HTML, not plain text.
   short: string | null;
   // Same shape as TaxonDetailBase.count: localized, number-agreed labels
@@ -636,6 +653,10 @@ export interface TerritoryCompareSpecies {
   name_lang: string;
   segment: string;
   status: string | null;
+  // Raw stored path (the row comes from a .values() queryset) — resolve it
+  // through resolveTaxonImage. Absent from responses cached before the
+  // backend started sending it.
+  thumb?: string | null;
   in_object: [boolean, boolean];
 }
 
@@ -863,6 +884,9 @@ export interface RatingCompareItem {
   taxon_id: number;
   thumb: string | null;
   segment: string;
+  // IUCN category code. Absent from responses cached before the backend
+  // started sending it.
+  status?: string | null;
 }
 
 export interface RatingCompareProfileCounts {

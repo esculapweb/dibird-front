@@ -1,14 +1,12 @@
 import { useMemo, memo } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
 
 import { formatDate, isoToFlagEmoji } from "../../util/helpers";
-import { Config } from "../../constants/config";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import MetaItem from "../ui/MetaItem";
-import { BirdSVG } from "../ui/Svgs";
+import SpeciesThumb from "../Taxonomy/SpeciesThumb";
 import { seenMode, SpeciesItem } from "../../types";
 
 const useStyles = (Colors: ThemeColors) =>
@@ -61,30 +59,13 @@ const StatCard = memo(
     return (
       <View style={[styles.card, !isSeen && styles.cardUnseen]}>
         <Pressable style={styles.row} onPress={onPress}>
-          <View
-            style={[
-              styles.imageWrapper,
-              showSmallImage && styles.imageWrapperSmall,
-            ]}
-          >
-            {item.sp_thumb ? (
-              <Image
-                source={{ uri: `${Config.mediaUrl}/${item.sp_thumb}` }}
-                style={[styles.image, showSmallImage && styles.imageSmall]}
-                contentFit="cover"
-                cachePolicy="disk"
-              />
-            ) : (
-              <View
-                style={[
-                  styles.imagePlaceholder,
-                  showSmallImage && styles.imageSmall,
-                ]}
-              >
-                <BirdSVG size={26} color={Colors.textSecondary} />
-              </View>
-            )}
-          </View>
+          <SpeciesThumb
+            thumb={item.sp_thumb}
+            statusCode={item.status}
+            size={showSmallImage ? 40 : 56}
+            radius={12}
+            style={showSmallImage ? styles.thumbSmall : styles.thumb}
+          />
 
           <View style={styles.content}>
             <View style={styles.titleLeft}>
@@ -191,34 +172,8 @@ const stylesFn = (Colors: ThemeColors) =>
       alignItems: "center",
       minWidth: 0,
     },
-    imageWrapper: {
-      width: 56,
-      height: 56,
-      marginRight: 12,
-    },
-    image: {
-      width: 56,
-      height: 56,
-      borderRadius: 12,
-      backgroundColor: Colors.imageBg,
-    },
-    imagePlaceholder: {
-      width: 56,
-      height: 56,
-      borderRadius: 12,
-      backgroundColor: Colors.imageBg,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    imageWrapperSmall: {
-      width: 40,
-      height: 40,
-      marginRight: 8,
-    },
-    imageSmall: {
-      width: 40,
-      height: 40,
-    },
+    thumb: { marginRight: 12 },
+    thumbSmall: { marginRight: 8 },
     content: {
       flex: 1,
       justifyContent: "flex-start",

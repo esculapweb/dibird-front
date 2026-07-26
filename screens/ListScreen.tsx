@@ -68,6 +68,9 @@ interface ListScreenProps<T, RouteName extends ScreenWithFiltersOnly> {
   customHeaderBadge?: (
     res: StatPaginatedResponse<T>,
   ) => string | number | undefined;
+  // Something the screen's own fetchFunction varies by, beyond filters/sort/
+  // search — see useList's queryKeyExtra.
+  queryKeyExtra?: string | null;
   topEl?: ReactNode;
   bottomEl?: ReactNode;
   fabBottomOffset?: number;
@@ -102,6 +105,7 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
   onOpenFilterModal,
   showHeaderBadge = true,
   customHeaderBadge,
+  queryKeyExtra,
   topEl,
   bottomEl,
   fabBottomOffset = 0,
@@ -171,6 +175,7 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
     tabsMode,
     extraFilters,
     locationCoords,
+    queryKeyExtra,
     enabled: sortReady && filtersLoaded,
     staleTime,
   });

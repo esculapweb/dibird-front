@@ -76,6 +76,30 @@ it("navigates to ObservationDetail with the observation id and a seed item on pr
   });
 });
 
+it("badges a threatened species on its photo, and leaves the rest alone", async () => {
+  await render(
+    <ObservationCard
+      item={{
+        ...OBSERVATION,
+        species_data: { ...OBSERVATION.species_data, status: "EN" },
+      } as never}
+      index={0}
+    />,
+  );
+  expect(screen.getByText("EN")).toBeOnTheScreen();
+
+  await render(
+    <ObservationCard
+      item={{
+        ...OBSERVATION,
+        species_data: { ...OBSERVATION.species_data, status: "LC" },
+      } as never}
+      index={0}
+    />,
+  );
+  expect(screen.queryByText("LC")).toBeNull();
+});
+
 describe("thumbnail", () => {
   it("shows the bird placeholder icon when there's no thumb", async () => {
     await render(<ObservationCard item={OBSERVATION as never} index={0} />);

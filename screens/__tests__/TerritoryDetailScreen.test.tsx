@@ -86,6 +86,26 @@ jest.mock("../../components/Territory/TerritoryChecklist", () => {
     },
   };
 });
+jest.mock("../../services/bottomSheet", () => ({
+  BottomSheet: {
+    showContent: ({
+      renderContent,
+    }: {
+      renderContent: (dismiss: () => void) => unknown;
+    }) => {
+      mockSheetContent = renderContent(() => {}) as never;
+    },
+  },
+}));
+jest.mock("../../components/Taxonomy/TaxonFilterSheet", () => {
+  const { View } = require("react-native");
+  return {
+    __esModule: true,
+    default: (props: Record<string, unknown>) => <View {...props} />,
+    hasTraitFilters: (filters: Record<string, unknown>) =>
+      Object.keys(filters ?? {}).length > 0,
+  };
+});
 jest.mock("../../components/Taxonomy/TaxonChildrenList", () => {
   const { View } = require("react-native");
   return {
@@ -97,8 +117,9 @@ jest.mock("../../components/Taxonomy/TaxonChildrenList", () => {
   };
 });
 
+import { ReactElement } from "react";
 import { Share } from "react-native";
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { useQuery } from "@tanstack/react-query";
 import { createNavigationMock, createRouteMock } from "../test-utils";
 import TerritoryDetailScreen from "../TerritoryDetailScreen";
@@ -106,6 +127,7 @@ import { TerritoryDetail } from "../../types";
 
 let mockRoute: ReturnType<typeof createRouteMock>;
 let mockChecklistProps: Record<string, unknown>;
+let mockSheetContent: ReactElement<Record<string, unknown>> | null;
 let mockFlatListProps: Record<string, unknown>;
 const mockNavigation = createNavigationMock();
 const mockUseQuery = useQuery as jest.Mock;
@@ -151,12 +173,14 @@ const headerProps = (): Record<string, unknown> => {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockSheetContent = null;
   mockRoute = createRouteMock("TerritoryDetail", { segment: "argentina" });
   mockDetail();
 });
 
 it("shows the flag, the name, its region, the counts and the description", async () => {
   await render(<TerritoryDetailScreen />);
+  await fireEvent.press(screen.getByTestId("tab-info"));
 
   expect(screen.getByText("🇦🇷")).toBeOnTheScreen();
   expect(screen.getByText("Argentina")).toBeOnTheScreen();
@@ -168,25 +192,25 @@ it("shows the flag, the name, its region, the counts and the description", async
   ).toBeOnTheScreen();
 });
 
-it("opens on the country page, with the species behind their own tab", async () => {
+it("opens on the birds, with the country page behind its own tab", async () => {
+  // The species are what the page is for; the description is a second read.
   await render(<TerritoryDetailScreen />);
 
-  expect(screen.queryByTestId("territory-checklist")).toBeNull();
-  expect(screen.queryByTestId("flat-species-list")).toBeNull();
-
-  await fireEvent.press(screen.getByTestId("tab-species"));
-
-  // The description does not travel with the species list.
+  expect(screen.getByTestId("territory-checklist")).toBeOnTheScreen();
   expect(
     screen.queryByText("<p>Second in South America only to Brazil.</p>"),
   ).toBeNull();
-  expect(screen.getByTestId("territory-checklist")).toBeOnTheScreen();
+
+  await fireEvent.press(screen.getByTestId("tab-info"));
+
+  expect(screen.queryByTestId("territory-checklist")).toBeNull();
+  expect(
+    screen.getByText("<p>Second in South America only to Brazil.</p>"),
+  ).toBeOnTheScreen();
 });
 
 it("opens on the order/family/species tree, keyed by our own territory id", async () => {
   await render(<TerritoryDetailScreen />);
-
-  await fireEvent.press(screen.getByTestId("tab-species"));
 
   expect(screen.getByTestId("territory-checklist")).toBeOnTheScreen();
   expect(screen.queryByTestId("flat-species-list")).toBeNull();
@@ -197,24 +221,55 @@ it("opens on the order/family/species tree, keyed by our own territory id", asyn
 it("switches to the plain species list, filtered to the country", async () => {
   await render(<TerritoryDetailScreen />);
 
-  await fireEvent.press(screen.getByTestId("tab-species"));
   await fireEvent.press(screen.getByTestId("species-view-flat"));
 
   expect(screen.getByTestId("flat-species-list")).toBeOnTheScreen();
   expect(screen.queryByTestId("territory-checklist")).toBeNull();
   expect(mockFlatListProps.rank).toBe(5);
-  expect(mockFlatListProps.traits).toEqual({ territory: 52 });
+  // The country is the page, not a filter the user can drop.
+  expect(mockFlatListProps.fixedTraits).toEqual({ territory: 52 });
+  expect(mockFlatListProps.traits).toEqual({});
+});
+
+it("offers the trait filters only on the flat list, and without the country", async () => {
+  // The tree comes from the checklist endpoint, which takes no trait filters;
+  // and the country dropdown would quietly turn this into another page's list.
+  await render(<TerritoryDetailScreen />);
+  expect(headerProps().onFilterPress).toBeUndefined();
+
+  await fireEvent.press(screen.getByTestId("species-view-flat"));
+  (headerProps().onFilterPress as () => void)();
+
+  expect(mockSheetContent).not.toBeNull();
+  expect(mockSheetContent!.props.showCountry).toBe(false);
+});
+
+it("narrows the country's species list by the filters picked in the sheet", async () => {
+  await render(<TerritoryDetailScreen />);
+  await fireEvent.press(screen.getByTestId("species-view-flat"));
+  (headerProps().onFilterPress as () => void)();
+
+  await act(async () =>
+    (mockSheetContent!.props.onApply as (f: object) => void)({
+      status: ["EN", "CR"],
+    }),
+  );
+
+  expect(mockFlatListProps.traits).toEqual({ status: ["EN", "CR"] });
+  expect(mockFlatListProps.fixedTraits).toEqual({ territory: 52 });
+  expect(headerProps().hasActiveFilters).toBe(true);
 });
 
 it("offers a sort only on the flat list — the tree is taxonomic by definition", async () => {
   await render(<TerritoryDetailScreen />);
   expect(headerProps().onSortPress).toBeUndefined();
 
-  await fireEvent.press(screen.getByTestId("tab-species"));
-  expect(headerProps().onSortPress).toBeUndefined();
-
   await fireEvent.press(screen.getByTestId("species-view-flat"));
   expect(headerProps().onSortPress).toEqual(expect.any(Function));
+
+  // ...and not while the country page is the one on screen.
+  await fireEvent.press(screen.getByTestId("tab-info"));
+  expect(headerProps().onSortPress).toBeUndefined();
 });
 
 it("says so instead of showing an empty list when a stale cache has no territory id", async () => {
@@ -223,7 +278,6 @@ it("says so instead of showing an empty list when a stale cache has no territory
   mockDetail({ data: { ...DETAIL, territory_id: undefined } });
 
   await render(<TerritoryDetailScreen />);
-  await fireEvent.press(screen.getByTestId("tab-species"));
 
   expect(screen.queryByTestId("territory-checklist")).toBeNull();
   expect(screen.getByText("taxonomy_unavailable")).toBeOnTheScreen();
@@ -231,6 +285,7 @@ it("says so instead of showing an empty list when a stale cache has no territory
 
 it("walks to the neighbouring countries, flag first", async () => {
   await render(<TerritoryDetailScreen />);
+  await fireEvent.press(screen.getByTestId("tab-info"));
 
   expect(screen.getByText("🇧🇴")).toBeOnTheScreen();
   expect(screen.getByText("🇨🇱")).toBeOnTheScreen();

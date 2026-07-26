@@ -12,6 +12,7 @@ import SearchInput from "../components/ui/SearchInput";
 import IconsHeader from "../components/ui/IconsHeader";
 import EmptyState from "../components/Empty/EmptyState";
 import TerritoryCompareRow from "../components/Territory/TerritoryCompareRow";
+import { useScreenSort } from "../hooks/useScreenSort";
 import { fetchTerritoryCompare, fetchTerritoryDetail } from "../util/fetches";
 import { setNavigationCallback } from "../util/navigationCallbacks";
 import { buildShareUrl, isoToFlagEmoji } from "../util/helpers";
@@ -55,6 +56,10 @@ const TerritoryCompareScreen = () => {
   ]);
   const [tabMode, setTabMode] = useState<compareMode>("all");
   const [search, setSearch] = useState("");
+  // Its own saved preference, not the catalogue's: this list is two countries
+  // side by side, and the order that reads best here (taxonomic, so the two
+  // columns line up by family) is not the one the species catalogue is on.
+  const { sort, openSortSheet } = useScreenSort("TerritoryCompare");
 
   const segments: [string | null, string | null] = [
     slots[0]?.segment ?? null,
@@ -95,6 +100,7 @@ const TerritoryCompareScreen = () => {
       title: t("compare_territories"),
       headerRight: () => (
         <IconsHeader
+          onSortPress={bothChosen ? openSortSheet : undefined}
           onSharePress={
             bothChosen
               ? async () => {
@@ -110,7 +116,7 @@ const TerritoryCompareScreen = () => {
         />
       ),
     });
-  }, [navigation, t, bothChosen, segments]);
+  }, [navigation, t, bothChosen, segments, openSortSheet]);
 
   const pickTerritory = (side: Side) => {
     const key = `territory-compare-${side}`;
@@ -132,8 +138,10 @@ const TerritoryCompareScreen = () => {
     });
   };
 
-  // The whole species list arrives in one response, so both the tab filter and
-  // the search run locally.
+  // The whole species list arrives in one response, so the tab filter, the
+  // search and the sort all run locally. The server sends it in taxonomic
+  // order (order_by ioc_taxon_id), which is what "ioc_id" here means — there
+  // is no ioc id on the rows to sort by, only the order they arrived in.
   const species = useMemo(() => {
     const all = data?.species_data ?? [];
     const byTab = all.filter((s) => {
@@ -144,13 +152,22 @@ const TerritoryCompareScreen = () => {
     });
 
     const query = search.trim().toLowerCase();
-    if (!query) return byTab;
-    return byTab.filter(
-      (s) =>
-        s.name.toLowerCase().includes(query) ||
-        s.name_lang.toLowerCase().includes(query),
-    );
-  }, [data?.species_data, tabMode, search]);
+    const found = !query
+      ? byTab
+      : byTab.filter(
+          (s) =>
+            s.name.toLowerCase().includes(query) ||
+            s.name_lang.toLowerCase().includes(query),
+        );
+
+    if (sort === "name" || sort === "-name") {
+      const sorted = [...found].sort((a, b) =>
+        a.name_lang.localeCompare(b.name_lang, language),
+      );
+      return sort === "-name" ? sorted.reverse() : sorted;
+    }
+    return sort === "-ioc_id" ? [...found].reverse() : found;
+  }, [data?.species_data, tabMode, search, sort, language]);
 
   const territoryCard = (side: Side) => {
     const slot = slots[side];
@@ -195,7 +212,10 @@ const TerritoryCompareScreen = () => {
       value: "common" as const,
       icon: "checkmark-circle" as const,
       iconInactive: "checkmark-circle-outline" as const,
-      labelKey: t("common"),
+      // Own keys, not the "common"/"different" the users' comparison uses:
+      // there the subject is people, here it is countries, and Russian
+      // agrees with it ("у обоих" vs "в обеих").
+      labelKey: t("in_both_territories"),
       count: data?.common_count,
     },
     {
@@ -209,7 +229,7 @@ const TerritoryCompareScreen = () => {
       value: "different" as const,
       icon: "remove-circle" as const,
       iconInactive: "remove-circle-outline" as const,
-      labelKey: t("different"),
+      labelKey: t("in_one_territory_only"),
       count: data?.different_count,
     },
   ];

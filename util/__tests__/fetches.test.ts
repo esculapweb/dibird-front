@@ -69,6 +69,50 @@ beforeEach(() => {
   (isConnected as jest.Mock).mockReturnValue(true);
 });
 
+describe("sortChecklistSpecies", () => {
+  const rows = [
+    { type: "species", species_id: 1, name_lang: "Robin" },
+    { type: "species", species_id: 2, name_lang: "Blackbird" },
+    { type: "species", species_id: 3, name_lang: "Wren" },
+  ] as never[];
+
+  const names = (items: never[]) =>
+    items.map((i: never) => (i as { name_lang: string }).name_lang);
+
+  it("keeps the server's order for the taxonomic sort", () => {
+    // /myapi/checklist2/ answers in taxonomic order and the rows carry no ioc
+    // id, so "taxonomic" is the order they arrived in.
+    expect(fetches.sortChecklistSpecies(rows, "ioc_id")).toBe(rows);
+    expect(fetches.sortChecklistSpecies(rows, null)).toBe(rows);
+  });
+
+  it("reverses it for the descending taxonomic sort", () => {
+    expect(names(fetches.sortChecklistSpecies(rows, "-ioc_id") as never[])).toEqual([
+      "Wren",
+      "Blackbird",
+      "Robin",
+    ]);
+  });
+
+  it("sorts by the localized name both ways", () => {
+    expect(names(fetches.sortChecklistSpecies(rows, "name") as never[])).toEqual([
+      "Blackbird",
+      "Robin",
+      "Wren",
+    ]);
+    expect(names(fetches.sortChecklistSpecies(rows, "-name") as never[])).toEqual([
+      "Wren",
+      "Robin",
+      "Blackbird",
+    ]);
+  });
+
+  it("leaves the caller's array alone", () => {
+    fetches.sortChecklistSpecies(rows, "-name");
+    expect(names(rows)).toEqual(["Robin", "Blackbird", "Wren"]);
+  });
+});
+
 describe("sortSpeciesItems", () => {
   const items = [
     { species_id: 1, sp_name_lang: "Robin", ioc_id: 3, seen: false, max_date: "2026-01-02" },

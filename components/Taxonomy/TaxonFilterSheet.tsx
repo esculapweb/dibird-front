@@ -35,6 +35,10 @@ interface TaxonFilterSheetProps {
   value: TaxonTraitFilters;
   onApply: (filters: TaxonTraitFilters) => void;
   dismiss: () => void;
+  // Off on a page that is already about one country (the country's own
+  // species list): picking another one there would quietly turn it into a
+  // different page's list.
+  showCountry?: boolean;
 }
 
 // Everything lives inside the one BottomSheetScrollView on purpose. With
@@ -49,6 +53,7 @@ const TaxonFilterSheet = ({
   value,
   onApply,
   dismiss,
+  showCountry = true,
 }: TaxonFilterSheetProps) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -162,19 +167,21 @@ const TaxonFilterSheet = ({
         )}
       </View>
 
-      <DropdownInput
-        title={t("country")}
-        placeholder={t("all_countries")}
-        value={draft.territory ?? null}
-        setValue={(value) =>
-          setDraft((prev) => ({ ...prev, territory: value }))
-        }
-        query={countriesQuery}
-        type="CountriesDropdown"
-        sort={countriesSort}
-        onSortChange={onCountriesSortChange}
-        allowReset
-      />
+      {showCountry && (
+        <DropdownInput
+          title={t("country")}
+          placeholder={t("all_countries")}
+          value={draft.territory ?? null}
+          setValue={(value) =>
+            setDraft((prev) => ({ ...prev, territory: value }))
+          }
+          query={countriesQuery}
+          type="CountriesDropdown"
+          sort={countriesSort}
+          onSortChange={onCountriesSortChange}
+          allowReset
+        />
+      )}
 
       {GROUPS.map((group) => {
           const list: TraitFilterOption[] =

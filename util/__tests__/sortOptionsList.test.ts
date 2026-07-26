@@ -33,6 +33,8 @@ describe("sortOptionsList", () => {
     ["RatingsCompare", ["ioc_id", "-ioc_id", "name", "-name"]],
     ["Taxonomy", ["name", "-name", "ioc_id", "-ioc_id"]],
     ["Territory", ["name", "-name", "-species_count", "species_count"]],
+    // Sorted in the app, not by the API — the comparison arrives whole.
+    ["TerritoryCompare", ["ioc_id", "-ioc_id", "name", "-name"]],
     ["TimezonesDropdown", ["name"]],
   ] as const)("returns the expected option values for %s", (screen, expectedValues) => {
     const options = sortOptionsList(screen);
@@ -43,7 +45,7 @@ describe("sortOptionsList", () => {
     for (const value of [
       "Stat", "Observations", "DiaryDetail", "Diaries", "Places", "Community",
       "PlacesDropdown", "CountriesDropdown", "SpeciesDropdown", "Rating", "RatingsCompare",
-      "Taxonomy", "Territory",
+      "Taxonomy", "Territory", "TerritoryCompare",
     ]) {
       for (const option of sortOptionsList(value)) {
         expect(option.label).toEqual(expect.any(String));

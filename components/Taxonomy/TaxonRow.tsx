@@ -1,11 +1,9 @@
 import { memo } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Image } from "expo-image";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
-import { BirdSVG } from "../ui/Svgs";
-import { resolveTaxonImage, iucnColors } from "../../util/taxonomy";
+import SpeciesThumb from "./SpeciesThumb";
 
 interface TaxonRowProps {
   title: string;
@@ -22,26 +20,13 @@ const TaxonRow = memo(
   ({ title, latin, thumb, statusCode, occurrence, onPress }: TaxonRowProps) => {
     const { Colors } = useTheme();
     const styles = stylesFn(Colors);
-    const uri = resolveTaxonImage(thumb);
-    const status = iucnColors(statusCode);
 
     return (
       <Pressable
         style={({ pressed }) => [styles.card, pressed && styles.pressedCard]}
         onPress={onPress}
       >
-        {uri ? (
-          <Image
-            source={{ uri }}
-            style={styles.thumb}
-            contentFit="cover"
-            cachePolicy="disk"
-          />
-        ) : (
-          <View style={[styles.thumb, styles.thumbPlaceholder]}>
-            <BirdSVG size={26} color={Colors.textSecondary} />
-          </View>
-        )}
+        <SpeciesThumb thumb={thumb} statusCode={statusCode} />
 
         <View style={styles.info}>
           <Text style={styles.title} numberOfLines={1}>
@@ -58,14 +43,6 @@ const TaxonRow = memo(
             </Text>
           )}
         </View>
-
-        {status && (
-          <View style={[styles.status, { backgroundColor: status.background }]}>
-            <Text style={[styles.statusText, { color: status.text }]}>
-              {statusCode}
-            </Text>
-          </View>
-        )}
 
         <Ionicons
           name="chevron-forward"
@@ -91,17 +68,6 @@ const stylesFn = (Colors: ThemeColors) =>
       gap: 10,
     },
     pressedCard: { opacity: 0.85 },
-    thumb: {
-      width: 52,
-      height: 52,
-      borderRadius: 10,
-      backgroundColor: Colors.imageBg,
-    },
-    thumbPlaceholder: {
-      justifyContent: "center",
-      alignItems: "center",
-      backgroundColor: Colors.primary200,
-    },
     info: {
       flex: 1,
       justifyContent: "center",
@@ -121,15 +87,5 @@ const stylesFn = (Colors: ThemeColors) =>
       fontSize: 11,
       color: Colors.main100,
       marginTop: 2,
-    },
-    status: {
-      borderRadius: 6,
-      paddingHorizontal: 6,
-      paddingVertical: 2,
-    },
-    statusText: {
-      fontSize: 11,
-      fontWeight: "700",
-      letterSpacing: 0.3,
     },
   });

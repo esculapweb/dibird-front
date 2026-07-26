@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { RefreshControl, ScrollView } from "react-native";
+import { Platform, RefreshControl, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -29,13 +29,22 @@ import {
   AllowedFilterKey,
 } from "../types";
 import { BottomSheet } from "../services/bottomSheet";
+import { useTheme } from "../store/theme-context";
 import { useTranslation } from "react-i18next";
+
+// Offline, react-query pauses refetches and never settles their promise, so
+// the wait for a refresh has to be capped or the spinner spins forever.
+const REFRESH_TIMEOUT = 15000;
 
 const MainScreen = () => {
   const { language } = useLanguage();
   const { t } = useTranslation();
+  const { Colors } = useTheme();
   const insets = useSafeAreaInsets();
   const NAVBAR_HEIGHT = insets.top + 60;
+  // Where the content rests: just under the floating navbar's gradient.
+  const TOP_INSET = NAVBAR_HEIGHT + 8;
+  const isIOS = Platform.OS === "ios";
 
   const allowedFilters: AllowedFilterKey[] = ["territory", "date"];
   const navigation = useNavigation<AppStackNavigationProp>();
@@ -68,9 +77,18 @@ const MainScreen = () => {
   // threading a refetch through every one of them.
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
+    let timer: ReturnType<typeof setTimeout> | undefined;
     try {
-      await queryClient.refetchQueries({ type: "active" });
+      // Losing the race only drops the spinner: the paused refetches still
+      // run once the network is back, they just stop holding the UI hostage.
+      await Promise.race([
+        queryClient.refetchQueries({ type: "active" }),
+        new Promise<void>((resolve) => {
+          timer = setTimeout(resolve, REFRESH_TIMEOUT);
+        }),
+      ]);
     } finally {
+      clearTimeout(timer);
       setIsRefreshing(false);
     }
   }, [queryClient]);
@@ -125,16 +143,35 @@ const MainScreen = () => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingTop: NAVBAR_HEIGHT + 8,
+          // On iOS the same strip is contentInset instead (see below), and
+          // padding on top of it would double the gap.
+          paddingTop: isIOS ? 0 : TOP_INSET,
           paddingBottom: insets.bottom,
         }}
+        {...(isIOS
+          ? {
+              // UIRefreshControl draws itself in the scroll view's top inset,
+              // so reserving the navbar's strip as inset (rather than as
+              // content padding) is what puts the spinner below the navbar
+              // instead of under its gradient. progressViewOffset can't do
+              // this on iOS: there it only shifts the control's frame, which
+              // UIKit recomputes on every layout pass.
+              contentInset: { top: TOP_INSET },
+              contentOffset: { x: 0, y: -TOP_INSET },
+              // Our inset must be the only one — "automatic" would add the
+              // safe area on top of it.
+              contentInsetAdjustmentBehavior: "never" as const,
+            }
+          : {})}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={handleRefresh}
-            // Clear of the floating navbar (which is NAVBAR_HEIGHT + 20
-            // tall), otherwise the spinner comes up under its gradient.
-            progressViewOffset={NAVBAR_HEIGHT + 20}
+            tintColor={Colors.textMain}
+            colors={[Colors.textMain]}
+            // Android has no contentInset: there the spinner is placed by
+            // hand, clear of the floating navbar (NAVBAR_HEIGHT + 20 tall).
+            progressViewOffset={isIOS ? 0 : NAVBAR_HEIGHT + 20}
           />
         }
       >

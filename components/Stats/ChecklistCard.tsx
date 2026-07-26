@@ -1,12 +1,10 @@
 import { useMemo, memo } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
 
-import { Config } from "../../constants/config";
 import { useTheme, ThemeColors } from "../../store/theme-context";
-import { BirdSVG } from "../ui/Svgs";
+import SpeciesThumb from "../Taxonomy/SpeciesThumb";
 import { territoryStatusNote } from "../../util/taxonomy";
 import { ChecklistItem } from "../../types";
 
@@ -152,20 +150,13 @@ const ChecklistCard = memo(
     return (
       <View style={[styles.card, !isSeen && styles.cardUnseen]}>
         <Pressable style={styles.row} onPress={onPress}>
-          <View style={styles.imageWrapper}>
-            {item.thumb ? (
-              <Image
-                source={{ uri: `${Config.mediaUrl}/${item.thumb}` }}
-                style={styles.image}
-                contentFit="cover"
-                cachePolicy="disk"
-              />
-            ) : (
-              <View style={styles.imagePlaceholder}>
-                <BirdSVG size={26} color={Colors.textSecondary} />
-              </View>
-            )}
-          </View>
+          <SpeciesThumb
+            thumb={item.thumb}
+            statusCode={item.status}
+            size={40}
+            radius={12}
+            style={styles.thumb}
+          />
 
           <View style={styles.content}>
             <Text
@@ -238,26 +229,7 @@ const stylesFn = (Colors: ThemeColors) =>
       alignItems: "center",
       minWidth: 0,
     },
-    imageWrapper: {
-      width: 40,
-      height: 40,
-      marginRight: 8,
-      flexShrink: 0,
-    },
-    image: {
-      width: 40,
-      height: 40,
-      borderRadius: 12,
-      backgroundColor: Colors.imageBg,
-    },
-    imagePlaceholder: {
-      width: 40,
-      height: 40,
-      borderRadius: 12,
-      backgroundColor: Colors.imageBg,
-      justifyContent: "center",
-      alignItems: "center",
-    },
+    thumb: { marginRight: 8 },
     content: {
       flex: 1,
       justifyContent: "center",

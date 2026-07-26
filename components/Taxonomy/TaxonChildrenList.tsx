@@ -32,6 +32,10 @@ interface TaxonChildrenListProps {
   listHeader?: ReactNode;
   sort?: string | null;
   traits?: TaxonTraitFilters | null;
+  // Filters the page itself imposes (a country's own species list) — they go
+  // into the query like `traits`, but carry no chip and can't be cleared:
+  // dropping one would turn the page into a different page.
+  fixedTraits?: TaxonTraitFilters | null;
   onClearTraits?: () => void;
   // Per-filter removal from the chips row; without it the chips don't render.
   onChangeTraits?: (next: TaxonTraitFilters) => void;
@@ -58,6 +62,7 @@ const TaxonChildrenList = ({
   listHeader,
   sort = "name",
   traits,
+  fixedTraits,
   onClearTraits,
   onChangeTraits,
   onPick,
@@ -78,7 +83,8 @@ const TaxonChildrenList = ({
   // The trait filters travel inside fetchTaxonList's closure, which useList
   // can't see — they have to be part of the query key here, or react-query
   // keeps serving the unfiltered pages it already has.
-  const screenName = `Taxonomy-${rank}-${parent?.segment ?? "root"}-${!!extinct}-${stableStringify({ ...traits })}`;
+  const query = { ...fixedTraits, ...traits };
+  const screenName = `Taxonomy-${rank}-${parent?.segment ?? "root"}-${!!extinct}-${stableStringify(query)}`;
   const styles = stylesFn(Colors);
   const hasTraitFilters = Object.values(traits ?? {}).some((value) =>
     Array.isArray(value) ? value.length > 0 : value != null,
@@ -96,7 +102,7 @@ const TaxonChildrenList = ({
     refetch,
   } = useList<TaxonListItem>({
     screenName,
-    fetchFunction: fetchTaxonList(rank, parent, extinct, traits),
+    fetchFunction: fetchTaxonList(rank, parent, extinct, query),
     filters: {},
     sort,
     search: debouncedSearch,

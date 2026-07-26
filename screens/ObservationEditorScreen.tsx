@@ -23,6 +23,7 @@ import { useProfile } from "../store/profile-context";
 import { setSession } from "../util/sessionStore";
 import { setTypedNavigationCallback } from "../util/navigationCallbacks";
 import { useEditorForm } from "../hooks/useEditorForm";
+import { useDefaultTerritory } from "../hooks/useDefaultTerritory";
 import * as observationRepository from "../hooks/repositories/observationRepository";
 import { fetchDiarySpeciesIds } from "../util/fetches";
 import IconsHeader from "../components/ui/IconsHeader";
@@ -70,6 +71,7 @@ const ObservationEditorScreen = () => {
     returnMode,
   } = route.params || {};
   const isEditMode = !!observation;
+  const fallbackTerritory = useDefaultTerritory();
 
   const {
     itemWithParsedDate: observationWithParsedDate,
@@ -90,7 +92,16 @@ const ObservationEditorScreen = () => {
     validateForm,
   } = useEditorForm({
     item: observation ?? null,
-    defaultTerritory: defaultTerritory ?? diaryTerritoryValue ?? undefined,
+    // Callers that know the country pass it; the rest get the app's own guess
+    // rather than an empty required field (which also keeps the place
+    // dropdown, gated on a territory, disabled). `defaultTerritory: null` is
+    // not "nothing to say" but "I looked and there is no country worth
+    // offering" — Species detail sends it when the guess falls outside the
+    // species' range — so only an absent param opts into the fallback.
+    defaultTerritory:
+      defaultTerritory !== undefined
+        ? defaultTerritory
+        : (diaryTerritoryValue ?? fallbackTerritory),
     defaultPlace,
     defaultSpecies,
     profile,
@@ -225,6 +236,7 @@ const ObservationEditorScreen = () => {
         {
           onSuccess: (item) => {
             setSession("lastDate", payload.date_time);
+            setSession("lastTerritory", payload.territory);
             Keyboard.dismiss();
             if (returnMode === "back") {
               navigation.goBack();

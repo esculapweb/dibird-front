@@ -168,6 +168,13 @@ describe("query key sensitivity — a changed input triggers a refetch", () => {
     expect(mockFetchFunction).toHaveBeenCalledTimes(2);
   });
 
+  it("refetches when the screen's own extra key changes", async () => {
+    // What the fetch function varies by beyond filters/sort/search — the
+    // checklist's tree/list layout, for one.
+    await rerenderWith({ queryKeyExtra: "flat" });
+    expect(mockFetchFunction).toHaveBeenCalledTimes(2);
+  });
+
   it("refetches when the language changes", async () => {
     const { result, rerender } = await renderUseList(baseArgs());
     await waitFor(() => expect(result.current.isSuccess).toBe(true));

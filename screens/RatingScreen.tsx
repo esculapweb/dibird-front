@@ -51,7 +51,9 @@ const RatingScreen = () => {
   }, []);
 
   const handleAdd = useCallback(async () => {
-    const defaultTerritory = currentFilters?.territory ?? territory ?? null;
+    // undefined, not null — see ObservationsScreen: it lets the editor fall
+    // back to the last saved/profile country instead of opening empty.
+    const defaultTerritory = currentFilters?.territory ?? territory ?? undefined;
     const defaultPlace = currentFilters?.place ?? null;
     const defaultSpecies = currentFilters?.species ?? null;
     navigation.navigate("ObservationEditor", {

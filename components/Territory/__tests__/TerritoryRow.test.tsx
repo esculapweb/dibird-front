@@ -1,3 +1,7 @@
+jest.mock("react-i18next", () => ({
+  useTranslation: () => ({ t: (key: string) => key }),
+  initReactI18next: { type: "3rdParty", init: () => {} },
+}));
 jest.mock("../../../store/theme-context", () => ({
   useTheme: () => require("../../../screens/mockTheme").mockUseTheme(),
 }));
@@ -27,6 +31,28 @@ it("shows the country flag, its name and the species count", async () => {
   expect(screen.getByText("1111 species")).toBeOnTheScreen();
   // "AR" as regional-indicator letters.
   expect(screen.getByText("🇦🇷")).toBeOnTheScreen();
+});
+
+it("names the region between the country and its species count", async () => {
+  await render(
+    <TerritoryRow
+      name="Argentina"
+      code="AR"
+      regionName="South America"
+      speciesLabel="1111 species"
+      onPress={jest.fn()}
+    />,
+  );
+
+  expect(screen.getByText("region: South America")).toBeOnTheScreen();
+});
+
+it("leaves the region line out for a row cached before the API sent one", async () => {
+  await render(
+    <TerritoryRow name="Argentina" code="AR" onPress={jest.fn()} />,
+  );
+
+  expect(screen.queryByText(/region/)).toBeNull();
 });
 
 it("falls back to a globe for the territories that have no ISO code", async () => {

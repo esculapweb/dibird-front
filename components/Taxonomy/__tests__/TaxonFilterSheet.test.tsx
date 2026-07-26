@@ -75,14 +75,19 @@ const OPTIONS = {
   migration: [{ value: "Sedentary", label: "Sedentary", count: 7000 }],
   trophic_level: [{ value: "Carnivore", label: "Carnivore", count: 1200 }],
   trophic_niche: [],
+  status: [
+    { value: "CR", label: "Critically endangered", count: 194 },
+    { value: "EN", label: "Endangered", count: 381 },
+  ],
 };
 
-const renderSheet = (value: TaxonTraitFilters = {}) =>
+const renderSheet = (value: TaxonTraitFilters = {}, showCountry = true) =>
   render(
     <TaxonFilterSheet
       value={value}
       onApply={mockOnApply}
       dismiss={mockDismiss}
+      showCountry={showCountry}
     />,
   );
 
@@ -128,6 +133,39 @@ it("offers the vocabularies the API reports, with their species counts", async (
 
   expect(screen.getByText("Forest")).toBeOnTheScreen();
   expect(screen.getByText("6089")).toBeOnTheScreen();
+});
+
+it("filters by IUCN category, several at a time", async () => {
+  await renderSheet();
+
+  await openGroup("status");
+  await fireEvent.press(screen.getByText("Endangered"));
+  await fireEvent.press(screen.getByText("Critically endangered"));
+  await fireEvent.press(screen.getByText("apply"));
+
+  expect(mockOnApply).toHaveBeenCalledWith({ status: ["EN", "CR"] });
+});
+
+it("keeps the categories in the Red List's own order, not by species count", async () => {
+  // It is a scale — reordering it by how many birds fall in each bucket would
+  // put "least concern" first.
+  await renderSheet();
+  await openGroup("status");
+
+  const chips = screen.getAllByText(/endangered/i).map((node) => node.props.children);
+  expect(chips).toEqual(["Critically endangered", "Endangered"]);
+});
+
+it("drops the country dropdown on a page that is already about one country", async () => {
+  await renderSheet({}, false);
+
+  expect(screen.queryByTestId("country-dropdown")).toBeNull();
+});
+
+it("keeps the country dropdown everywhere else", async () => {
+  await renderSheet();
+
+  expect(screen.getByTestId("country-dropdown")).toBeOnTheScreen();
 });
 
 it("keeps a single group open, so the sheet never grows past a screenful", async () => {

@@ -34,7 +34,10 @@ const ObservationsScreen = () => {
   );
 
   const handleAdd = useCallback(async () => {
-    const defaultTerritory = currentFilters?.territory ?? territory ?? null;
+    // undefined, not null: no filter here means "nothing to say", which lets
+    // the editor fall back to the last saved/profile country. null would tell
+    // it to leave the field empty (see ObservationEditorScreen).
+    const defaultTerritory = currentFilters?.territory ?? territory ?? undefined;
     const defaultPlace = currentFilters?.place ?? null;
     const defaultSpecies = currentFilters?.species ?? null;
     navigation.navigate("ObservationEditor", {

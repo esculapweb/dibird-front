@@ -135,6 +135,8 @@ const TaxonomyScreen = () => {
     search,
   ]);
 
+  // Two per row: as full-width rows the four of them ate a third of the
+  // screen before the first bird.
   const shortcut = (
     label: string,
     icon:
@@ -145,10 +147,11 @@ const TaxonomyScreen = () => {
       | "globe-outline",
     onPress: () => void,
   ) => (
-    <Pressable style={styles.shortcut} onPress={onPress}>
+    <Pressable key={label} style={styles.shortcut} onPress={onPress}>
       <Ionicons name={icon} size={18} color={Colors.main100} />
-      <Text style={styles.shortcutText}>{label}</Text>
-      <Ionicons name="chevron-forward" size={16} color={Colors.main100} />
+      <Text style={styles.shortcutText} numberOfLines={2}>
+        {label}
+      </Text>
     </Pressable>
   );
 
@@ -221,19 +224,27 @@ export default TaxonomyScreen;
 
 const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
-    shortcuts: { gap: 4, marginBottom: 8 },
+    shortcuts: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 6,
+      marginBottom: 8,
+    },
     shortcut: {
+      // Two to a row, whatever the screen width: half of it, less the gap.
+      flexBasis: "48%",
+      flexGrow: 1,
       flexDirection: "row",
       alignItems: "center",
       gap: 8,
       backgroundColor: Colors.main300,
       borderRadius: 12,
-      paddingHorizontal: 12,
+      paddingHorizontal: 10,
       paddingVertical: 10,
     },
     shortcutText: {
       flex: 1,
-      fontSize: 14,
+      fontSize: 13,
       fontWeight: "600",
       color: Colors.main100,
     },

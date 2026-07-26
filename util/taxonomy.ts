@@ -97,6 +97,14 @@ const IUCN_BACKGROUNDS: Record<string, string> = {
 
 const IUCN_LIGHT_TEXT = ["EX", "EW", "CR", "EN"];
 
+// The categories a list row is worth flagging for. "Least concern" and the
+// two no-data ones are ~90% of every list, so a badge on them is noise that
+// costs the species name its width.
+const IUCN_NOTABLE = ["EX", "EW", "CR", "EN", "VU", "NT"];
+
+export const isNotableIucn = (code?: string | null): boolean =>
+  !!code && IUCN_NOTABLE.includes(code.split(" ")[0].toUpperCase());
+
 export const iucnColors = (
   code?: string | null,
 ): { background: string; text: string } | null => {

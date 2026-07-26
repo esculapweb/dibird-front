@@ -5,10 +5,15 @@ import Toast from "react-native-toast-message";
 import { useNavigation, useRoute } from "@react-navigation/native";
 
 import ListScreen from "./ListScreen";
-import { fetchStat, fetchChecklist } from "../util/fetches";
+import {
+  fetchStat,
+  fetchChecklist,
+  sortChecklistSpecies,
+} from "../util/fetches";
 import StatCard from "../components/Stats/StatCard";
 import ChecklistCard from "../components/Stats/ChecklistCard";
 import Tabs from "../components/ui/Tabs";
+import ViewSwitch from "../components/ui/ViewSwitch";
 import { useFilters } from "../store/filters-context";
 import { useProfile } from "../store/profile-context";
 import { buildShareUrl, speciesDetails } from "../util/helpers";
@@ -58,6 +63,10 @@ const StatScreen = () => {
   );
 
   const viewMode = route.name === "Checklist" ? "checklist" : "stats";
+  // How the checklist is laid out: the taxonomic tree it has always been, or
+  // a plain list of species. Same switch as the country page's species tab.
+  const [checklistView, setChecklistView] = useState<"tree" | "flat">("tree");
+  const isFlatChecklist = viewMode === "checklist" && checklistView === "flat";
 
   const MODE_CONFIG = useMemo(
     () => ({
@@ -102,7 +111,9 @@ const StatScreen = () => {
   }, []);
 
   const handleAdd = useCallback(() => {
-    const defaultTerritory = currentFilters?.territory ?? territory ?? null;
+    // undefined, not null — see ObservationsScreen: it lets the editor fall
+    // back to the last saved/profile country instead of opening empty.
+    const defaultTerritory = currentFilters?.territory ?? territory ?? undefined;
     const defaultPlace = currentFilters?.place ?? null;
     navigation.navigate("ObservationEditor", {
       defaultTerritory,
@@ -142,7 +153,7 @@ const StatScreen = () => {
     (item: SpeciesItem | ChecklistItem) => {
       if (!item.seen) {
         navigation.navigate("ObservationEditor", {
-          defaultTerritory: currentFilters?.territory ?? null,
+          defaultTerritory: currentFilters?.territory ?? undefined,
           defaultPlace: currentFilters?.place ?? null,
           defaultSpecies: item.species_id,
           returnMode: "back",
@@ -218,9 +229,24 @@ const StatScreen = () => {
 
       safeFilters.seen =
         seenMode === "seen" ? true : seenMode === "unseen" ? false : null;
-      return config.fetch(safeFilters, sort, search, page);
+
+      const response = config.fetch(safeFilters, sort, search, page);
+      if (!isFlatChecklist) return response;
+
+      // The plain list is the same response with its group headers dropped
+      // and sorted here: /myapi/checklist2/ answers in taxonomic order and in
+      // one page, so there is nothing to ask the server for.
+      return response.then((res) => ({
+        ...res,
+        results: sortChecklistSpecies(
+          (res.results as ChecklistItem[]).filter(
+            (row) => row.type === "species",
+          ),
+          sort,
+        ),
+      }));
     },
-    [seenMode, viewMode, config],
+    [seenMode, viewMode, config, isFlatChecklist],
   );
 
   const handleBottomSheetMenu = useCallback(
@@ -239,7 +265,7 @@ const StatScreen = () => {
             icon: "add-circle-outline" as const,
             onPress: () => {
               navigation.navigate("ObservationEditor", {
-                defaultTerritory: currentFilters?.territory ?? null,
+                defaultTerritory: currentFilters?.territory ?? undefined,
                 defaultPlace: currentFilters?.place ?? null,
                 defaultSpecies: item.species_id,
                 returnMode: "back",
@@ -368,7 +394,10 @@ const StatScreen = () => {
         getItemId={config.getItemId}
         onFiltersChange={async (val) => setCurrentFilters(val)}
         onSortChange={async (val) => setCurrentSort(val)}
-        allowSort={config.allowSort}
+        allowSort={config.allowSort || isFlatChecklist}
+        // The layout lives in fetchData's closure, so without it in the key
+        // the switch would keep showing the pages fetched for the tree.
+        queryKeyExtra={viewMode === "checklist" ? checklistView : null}
         staleTime={config.staleTime}
         handleSharePress={viewMode === "stats" ? handleShare : undefined}
         onOpenFilterModal={(fn) => {
@@ -376,6 +405,23 @@ const StatScreen = () => {
         }}
         customHeaderBadge={customHeaderBadge}
         onFirstPageData={handleFirstPageData}
+        listHeader={
+          viewMode === "checklist" ? (
+            <ViewSwitch
+              options={[
+                {
+                  value: "tree",
+                  label: t("by_groups"),
+                  icon: "git-branch-outline",
+                },
+                { value: "flat", label: t("as_list"), icon: "list-outline" },
+              ]}
+              value={checklistView}
+              onChange={setChecklistView}
+              testIDPrefix="checklist-view"
+            />
+          ) : undefined
+        }
         bottomEl={
           <Tabs
             tabOptions={tabOptions}

@@ -19,6 +19,7 @@ const LIST_KEYS = [
   "migration",
   "trophic_level",
   "trophic_niche",
+  "status",
 ] as const;
 
 export const taxonFiltersToParams = (

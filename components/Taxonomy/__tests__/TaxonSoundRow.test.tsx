@@ -1,3 +1,14 @@
+jest.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (key: string) =>
+      ({
+        sound_type_flight_call: "позывка в полёте",
+        sound_type_male: "самец",
+        sound_type_song: "песня",
+        sound_type_unknown: "неизвестно",
+      })[key] ?? key,
+  }),
+}));
 jest.mock("../../../store/theme-context", () => ({
   useTheme: () => require("../../../screens/mockTheme").mockUseTheme(),
 }));
@@ -74,10 +85,24 @@ beforeEach(() => {
 it("shows only the recording's details until it is played", async () => {
   await renderRow();
 
-  expect(screen.getByText("flight call")).toBeOnTheScreen();
+  expect(screen.getByText("Позывка в полёте")).toBeOnTheScreen();
   expect(screen.getByText("Annette Hamann, Germany")).toBeOnTheScreen();
   expect(screen.queryByTestId(`sound-slider-${SOUND.xeno_id}`)).toBeNull();
   expect(mockSliderCapture).not.toHaveBeenCalled();
+});
+
+it("translates each tag of the recording's type and keeps unknown ones as they came", async () => {
+  await renderRow({
+    sound: { ...SOUND, type: "song, male, st1 male song" },
+  });
+
+  expect(screen.getByText("Песня, самец, st1 male song")).toBeOnTheScreen();
+});
+
+it("labels a recording with no type at all instead of leaving the line blank", async () => {
+  await renderRow({ sound: { ...SOUND, type: "" } });
+
+  expect(screen.getByText("Неизвестно")).toBeOnTheScreen();
 });
 
 it("starts playback and claims the player when play is tapped", async () => {

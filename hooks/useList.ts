@@ -14,6 +14,12 @@ interface useListProps<T> {
   tabsMode?: seenMode;
   extraFilters?: Filters | null;
   locationCoords?: Coords | null;
+  // Anything else the screen varies its request by that isn't a filter, a
+  // sort or a search — it lives inside the fetch function's closure, which
+  // this hook can't see, so react-query would keep serving the pages fetched
+  // under the previous value (see StatScreen's checklist layout switch).
+  // Appended to the key, so the prefix-matched invalidations still hit.
+  queryKeyExtra?: string | null;
   enabled: boolean;
   staleTime?: number;
 }
@@ -27,6 +33,7 @@ export const useList = <T>({
   tabsMode,
   extraFilters,
   locationCoords,
+  queryKeyExtra,
   enabled,
   staleTime,
 }: useListProps<T>) => {
@@ -59,8 +66,18 @@ export const useList = <T>({
       tabsMode ?? null,
       language,
       locationKey,
+      queryKeyExtra ?? null,
     ];
-  }, [screenName, filtersKey, sort, search, tabsMode, language, locationKey]);
+  }, [
+    screenName,
+    filtersKey,
+    sort,
+    search,
+    tabsMode,
+    language,
+    locationKey,
+    queryKeyExtra,
+  ]);
 
   const query = useInfiniteQuery<PaginatedResponse<T>>({
     queryKey,

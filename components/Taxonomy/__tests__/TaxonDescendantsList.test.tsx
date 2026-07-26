@@ -81,11 +81,13 @@ it("groups species under their genus, showing the localized name and the latin o
   expect(screen.getByText("Aquila chrysaetos")).toBeOnTheScreen();
 });
 
-it("shows the IUCN category of each species", async () => {
+it("shows the IUCN category of the threatened species only", async () => {
+  // "Least concern" is most of any list, so its badge said nothing and cost
+  // the species name its width (see isNotableIucn).
   await renderList();
 
   expect(screen.getByText("VU")).toBeOnTheScreen();
-  expect(screen.getAllByText("LC")).toHaveLength(2);
+  expect(screen.queryByText("LC")).toBeNull();
 });
 
 it("hides the genus headers on a genus page, where they would only repeat the title", async () => {

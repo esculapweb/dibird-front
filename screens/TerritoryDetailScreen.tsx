@@ -17,12 +17,17 @@ import { useTranslation } from "react-i18next";
 import Layout from "../components/ui/Layout";
 import Section from "../components/ui/Section";
 import Tabs from "../components/ui/Tabs";
+import ViewSwitch from "../components/ui/ViewSwitch";
 import IconsHeader from "../components/ui/IconsHeader";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import EmptyState from "../components/Empty/EmptyState";
 import TerritoryChecklist from "../components/Territory/TerritoryChecklist";
 import TaxonChildrenList from "../components/Taxonomy/TaxonChildrenList";
+import TaxonFilterSheet, {
+  hasTraitFilters,
+} from "../components/Taxonomy/TaxonFilterSheet";
+import { BottomSheet } from "../services/bottomSheet";
 import { useTaxonomySort } from "../hooks/useTaxonomySort";
 import { useContentWidth } from "../hooks/useContentWidth";
 import { fetchTerritoryDetail } from "../util/fetches";
@@ -34,6 +39,7 @@ import { useTheme, ThemeColors } from "../store/theme-context";
 import {
   AppStackNavigationProp,
   AppStackRouteProp,
+  TaxonTraitFilters,
   TerritoryDetail,
 } from "../types";
 
@@ -44,8 +50,9 @@ type SpeciesView = "tree" | "flat";
 
 // The country's own page (flag, counts, description, prev/next) and its birds
 // are two separate reads, split by the bottom tabs — the species list would
-// otherwise start below a screenful of description.
-type TerritoryTab = "info" | "species";
+// otherwise start below a screenful of description. The birds are what the
+// page is for, so they open first.
+type TerritoryTab = "species" | "info";
 
 const TerritoryDetailScreen = () => {
   const { t } = useTranslation();
@@ -56,8 +63,11 @@ const TerritoryDetailScreen = () => {
   const navigation = useNavigation<AppStackNavigationProp>();
   const route = useRoute<AppStackRouteProp<"TerritoryDetail">>();
   const { segment } = route.params;
-  const [tab, setTab] = useState<TerritoryTab>("info");
+  const [tab, setTab] = useState<TerritoryTab>("species");
   const [view, setView] = useState<SpeciesView>("tree");
+  // The country is not one of these — it is the page (see fixedTraits below),
+  // so the sheet opens without its country dropdown.
+  const [filters, setFilters] = useState<TaxonTraitFilters>({});
   // The flat list is an ordinary taxonomy listing, so it follows the
   // catalogue-wide order preference. The tree has no sort of its own — it is
   // taxonomic by definition (same as the checklist screen, allowSort: false).
@@ -91,6 +101,24 @@ const TerritoryDetailScreen = () => {
           onSortPress={
             tab === "species" && view === "flat" ? openSortSheet : undefined
           }
+          hasActiveFilters={hasTraitFilters(filters)}
+          onFilterPress={
+            // The tree comes from the checklist endpoint, which takes no
+            // trait filters — only the flat list can be narrowed.
+            tab === "species" && view === "flat"
+              ? () =>
+                  BottomSheet.showContent({
+                    renderContent: (dismiss: () => void) => (
+                      <TaxonFilterSheet
+                        value={filters}
+                        onApply={setFilters}
+                        dismiss={dismiss}
+                        showCountry={false}
+                      />
+                    ),
+                  })
+              : undefined
+          }
           onSharePress={async () => {
             const url = buildShareUrl(`territory/${segment}/`);
             await Share.share(
@@ -100,7 +128,7 @@ const TerritoryDetailScreen = () => {
         />
       ),
     });
-  }, [navigation, data?.name, segment, t, openSortSheet, tab, view]);
+  }, [navigation, data?.name, segment, t, openSortSheet, tab, view, filters]);
 
   useEffect(() => {
     if (data?.redirect) {
@@ -137,25 +165,6 @@ const TerritoryDetailScreen = () => {
 
   const flag = isoToFlagEmoji(data.code ?? null);
   const description = data.metadata?.short;
-
-  const viewTab = (value: SpeciesView, label: string, icon: "git-branch-outline" | "list-outline") => (
-    <Pressable
-      style={[styles.viewTab, view === value && styles.viewTabActive]}
-      onPress={() => setView(value)}
-      testID={`species-view-${value}`}
-    >
-      <Ionicons
-        name={icon}
-        size={15}
-        color={view === value ? Colors.main100 : Colors.textSecondary}
-      />
-      <Text
-        style={[styles.viewTabText, view === value && styles.viewTabTextActive]}
-      >
-        {label}
-      </Text>
-    </Pressable>
-  );
 
   const pagingFlag = (code?: string | null) => {
     const pagingEmoji = isoToFlagEmoji(code ?? null);
@@ -259,10 +268,17 @@ const TerritoryDetailScreen = () => {
   );
 
   const viewSwitch = (
-    <View style={styles.viewTabs}>
-      {viewTab("tree", t("by_groups"), "git-branch-outline")}
-      {viewTab("flat", t("species"), "list-outline")}
-    </View>
+    // Not "species" for the flat view — that is the name of the tab this
+    // switch already lives in. It picks how the birds are laid out.
+    <ViewSwitch
+      options={[
+        { value: "tree", label: t("by_groups"), icon: "git-branch-outline" },
+        { value: "flat", label: t("as_list"), icon: "list-outline" },
+      ]}
+      value={view}
+      onChange={setView}
+      testIDPrefix="species-view"
+    />
   );
 
   const speciesContent =
@@ -285,7 +301,10 @@ const TerritoryDetailScreen = () => {
     ) : (
       <TaxonChildrenList
         rank={5}
-        traits={{ territory: territoryId }}
+        fixedTraits={{ territory: territoryId }}
+        traits={filters}
+        onChangeTraits={setFilters}
+        onClearTraits={() => setFilters({})}
         sort={sort}
         errorTitle={t("taxonomy_unavailable")}
         emptyMessage={t("no_species_found")}
@@ -300,16 +319,16 @@ const TerritoryDetailScreen = () => {
         <Tabs
           tabOptions={[
             {
+              value: "species" as const,
+              icon: "list" as const,
+              iconInactive: "list-outline" as const,
+              labelKey: t("species"),
+            },
+            {
               value: "info" as const,
               icon: "information-circle" as const,
               iconInactive: "information-circle-outline" as const,
               labelKey: t("description"),
-            },
-            {
-              value: "species" as const,
-              icon: "leaf" as const,
-              iconInactive: "leaf-outline" as const,
-              labelKey: t("species"),
             },
           ]}
           tabsMode={tab}
@@ -394,26 +413,4 @@ const stylesFn = (Colors: ThemeColors) =>
       color: Colors.textMain,
     },
     pagingNameEnd: { textAlign: "right" },
-    viewTabs: {
-      flexDirection: "row",
-      gap: 6,
-      marginBottom: 8,
-    },
-    viewTab: {
-      flex: 1,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 6,
-      paddingVertical: 8,
-      borderRadius: 10,
-      backgroundColor: Colors.primary100,
-    },
-    viewTabActive: { backgroundColor: Colors.main300 },
-    viewTabText: {
-      fontSize: 13,
-      fontWeight: "600",
-      color: Colors.textSecondary,
-    },
-    viewTabTextActive: { color: Colors.main100 },
   });

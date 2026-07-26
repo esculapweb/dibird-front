@@ -184,6 +184,28 @@ describe("species row", () => {
     expect(screen.queryByText(/country_status_/)).toBeNull();
   });
 
+  it("badges a threatened species on its photo, and leaves the rest alone", async () => {
+    await render(
+      <ChecklistCard
+        item={{ ...SPECIES_ITEM, status: "EN" } as never}
+        index={0}
+        onPress={mockOnPress}
+        onToggle={mockOnToggle}
+      />,
+    );
+    expect(screen.getByText("EN")).toBeOnTheScreen();
+
+    await render(
+      <ChecklistCard
+        item={{ ...SPECIES_ITEM, status: "LC" } as never}
+        index={0}
+        onPress={mockOnPress}
+        onToggle={mockOnToggle}
+      />,
+    );
+    expect(screen.queryByText("LC")).toBeNull();
+  });
+
   it("shows the real thumbnail or a placeholder based on the item's own thumb", async () => {
     await render(
       <ChecklistCard item={SPECIES_ITEM as never} index={0} onPress={mockOnPress} onToggle={mockOnToggle} />,

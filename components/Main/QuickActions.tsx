@@ -22,7 +22,10 @@ const QuickActions = ({ filters }: {filters: Filters}) => {
           activeOpacity={0.85}
           onPress={() =>
             navigation.navigate("DiaryEditor", {
-              defaultTerritory: filters.territory ?? null,
+              // undefined, not null — see ObservationsScreen: it lets the
+              // editor fall back to the last saved/profile country instead of
+              // opening with an empty required field.
+              defaultTerritory: filters.territory ?? undefined,
               returnMode: "back",
             })
           }
@@ -45,7 +48,7 @@ const QuickActions = ({ filters }: {filters: Filters}) => {
           activeOpacity={0.85}
           onPress={() =>
             navigation.navigate("ObservationEditor", {
-              defaultTerritory: filters.territory ?? null,
+              defaultTerritory: filters.territory ?? undefined,
             })
           }
           testID="quick-action-observation"

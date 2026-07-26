@@ -42,6 +42,26 @@ it("renders the index, name and latin", async () => {
   expect(screen.getByText("Turdus merula")).toBeOnTheScreen();
 });
 
+it("badges a threatened species on its photo, and leaves the rest alone", async () => {
+  await render(
+    <RatingCompareCard
+      item={{ ...ITEM, status: "CR" } as never}
+      index={0}
+      onPress={mockOnPress}
+    />,
+  );
+  expect(screen.getByText("CR")).toBeOnTheScreen();
+
+  await render(
+    <RatingCompareCard
+      item={{ ...ITEM, status: "LC" } as never}
+      index={0}
+      onPress={mockOnPress}
+    />,
+  );
+  expect(screen.queryByText("LC")).toBeNull();
+});
+
 it("calls onPress when tapped", async () => {
   await render(<RatingCompareCard item={ITEM as never} index={0} onPress={mockOnPress} />);
   await fireEvent.press(screen.getByText("Blackbird"));

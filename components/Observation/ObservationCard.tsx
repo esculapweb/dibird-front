@@ -2,11 +2,10 @@ import { useMemo, memo } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import { Image } from "expo-image";
 
 import { BirdSVG } from "../ui/Svgs";
+import SpeciesThumb from "../Taxonomy/SpeciesThumb";
 import { formatDateLong, isoToFlagEmoji } from "../../util/helpers";
-import { Config } from "../../constants/config";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { formatTimeString } from "../../util/timeHelpers";
 import { AppStackNavigationProp, ObservationItem } from "../../types";
@@ -38,21 +37,13 @@ const ObservationCard = memo(
         onPress={handlePress}
       >
         <View style={styles.row}>
-          {item.species_data?.thumb ? (
-            <Image
-              source={{
-                uri: `${Config.mediaUrl}/${item.species_data.thumb}`,
-              }}
-              style={styles.image}
-              contentFit="cover"
-              transition={0}
-              cachePolicy="disk"
-            />
-          ) : (
-            <View style={styles.imagePlaceholder}>
-              <BirdSVG size={38} color={Colors.textSecondary} />
-            </View>
-          )}
+          <SpeciesThumb
+            thumb={item.species_data?.thumb}
+            statusCode={item.species_data?.status}
+            size={72}
+            radius={12}
+            style={styles.thumb}
+          />
 
           <View style={styles.content}>
             <View style={styles.titleRow}>
@@ -203,23 +194,7 @@ const stylesFn = (Colors: ThemeColors) =>
       flexDirection: "row",
     },
 
-    image: {
-      width: 72,
-      height: 72,
-      borderRadius: 12,
-      marginRight: 8,
-      backgroundColor: Colors.imageBg,
-    },
-
-    imagePlaceholder: {
-      width: 72,
-      height: 72,
-      borderRadius: 12,
-      marginRight: 8,
-      backgroundColor: Colors.imageBg,
-      justifyContent: "center",
-      alignItems: "center",
-    },
+    thumb: { marginRight: 8 },
 
     content: {
       flex: 1,

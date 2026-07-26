@@ -864,6 +864,22 @@ export const sortSpeciesItems = <T extends SpeciesItem>(
   });
 };
 
+// The checklist laid out as a plain list sorts in the app: /myapi/checklist2/
+// answers in taxonomic order, unpaginated, so "ioc_id" is simply the order it
+// arrived in (and its reverse) — there is no ioc id on the rows to sort by.
+export const sortChecklistSpecies = (
+  items: ChecklistItem[],
+  order: string | null,
+): ChecklistItem[] => {
+  if (order === "name" || order === "-name") {
+    const sorted = [...items].sort((a, b) =>
+      (a.name_lang ?? "").localeCompare(b.name_lang ?? "", i18n.language),
+    );
+    return order === "-name" ? sorted.reverse() : sorted;
+  }
+  return order === "-ioc_id" ? [...items].reverse() : items;
+};
+
 // Same idea as sortSpeciesItems, for the Places dropdown's offline fallback
 // (see fetchMyPlaces). "distance" is only resortable when every cached item
 // actually carries a numeric distance — the backend only computes it when the

@@ -35,6 +35,9 @@ jest.mock("../../util/navigationCallbacks", () => ({
   setNavigationCallback: jest.fn(),
   setTypedNavigationCallback: jest.fn(),
 }));
+jest.mock("../../hooks/useDefaultTerritory", () => ({
+  useDefaultTerritory: jest.fn(),
+}));
 jest.mock("../../hooks/useEditorForm", () => ({
   useEditorForm: jest.fn(),
 }));
@@ -81,6 +84,7 @@ import { useProfile } from "../../store/profile-context";
 import { setSession } from "../../util/sessionStore";
 import { setNavigationCallback, setTypedNavigationCallback } from "../../util/navigationCallbacks";
 import { useEditorForm } from "../../hooks/useEditorForm";
+import { useDefaultTerritory } from "../../hooks/useDefaultTerritory";
 import { createNavigationMock, createRouteMock } from "../test-utils";
 import DiaryEditorScreen from "../DiaryEditorScreen";
 
@@ -119,6 +123,7 @@ beforeEach(() => {
   });
   mockRoute = createRouteMock("DiaryEditor", {});
   (useProfile as jest.Mock).mockReturnValue({ profile: { user: 1, territory: 5 } });
+  (useDefaultTerritory as jest.Mock).mockReturnValue(12);
   (useCreateDiary as jest.Mock).mockReturnValue({ mutate: mockCreateMutate, isPending: false });
   (useUpdateDiary as jest.Mock).mockReturnValue({ mutate: mockUpdateMutate, isPending: false });
   mockValidateForm.mockReturnValue(true);
@@ -154,6 +159,23 @@ describe("mode setup", () => {
     );
   });
 
+  it("create mode: falls back to the last saved/profile country when the caller sent none", async () => {
+    await render(<DiaryEditorScreen />);
+
+    expect(useEditorForm).toHaveBeenCalledWith(
+      expect.objectContaining({ defaultTerritory: 12 }),
+    );
+  });
+
+  it("create mode: leaves the country empty when the caller ruled one out with an explicit null", async () => {
+    mockRoute = createRouteMock("DiaryEditor", { defaultTerritory: null });
+    await render(<DiaryEditorScreen />);
+
+    expect(useEditorForm).toHaveBeenCalledWith(
+      expect.objectContaining({ defaultTerritory: null }),
+    );
+  });
+
   it("edit mode: passes the route's diary as the item and titles the header accordingly", async () => {
     const diary = { id: 99, territory: 5 };
     mockRoute = createRouteMock("DiaryEditor", { diary });
@@ -182,6 +204,8 @@ describe("save navigation branching", () => {
     onSuccess({ id: 123 });
 
     expect(setSession).toHaveBeenCalledWith("lastDate", "2026-01-01");
+    // Seeds the fallback the next diary/observation opens on.
+    expect(setSession).toHaveBeenCalledWith("lastTerritory", 5);
     expect(mockNavigation.replace).toHaveBeenCalledWith("DiaryDetail", { diaryId: 123 });
   });
 

@@ -1,7 +1,6 @@
 import { View, Text, StyleSheet, Pressable } from "react-native";
-import { Image } from "expo-image";
 import { useTheme, ThemeColors } from "../../store/theme-context";
-import { Config } from "../../constants/config";
+import SpeciesThumb from "../Taxonomy/SpeciesThumb";
 import { RatingCompareItem } from "../../types";
 
 const DOT_SIZE = 10;
@@ -37,21 +36,15 @@ const RatingCompareCard = ({
   const styles = stylesFn(Colors);
   const [in0, in1] = item.in_object ?? [false, false];
 
-  const thumbUri = item.thumb ? `${Config.mediaUrl}/${item.thumb}` : null;
-
   return (
     <Pressable onPress={onPress} style={styles.card}>
       <View style={styles.row}>
-        {thumbUri ? (
-          <Image
-            source={{ uri: thumbUri }}
-            style={styles.image}
-            contentFit="cover"
-            cachePolicy="disk"
-          />
-        ) : (
-          <View style={[styles.imagePlaceholder]}></View>
-        )}
+        <SpeciesThumb
+          thumb={item.thumb}
+          statusCode={item.status}
+          size={40}
+          radius={12}
+        />
 
         <View style={styles.content}>
           <View style={styles.titleLeft}>
@@ -137,20 +130,6 @@ const stylesFn = (Colors: ThemeColors) =>
       fontSize: 12,
       fontStyle: "italic",
       color: Colors.statIcon,
-    },
-    image: {
-      width: 40,
-      height: 40,
-      borderRadius: 12,
-      backgroundColor: Colors.imageBg,
-    },
-    imagePlaceholder: {
-      width: 40,
-      height: 40,
-      borderRadius: 12,
-      backgroundColor: Colors.imageBg,
-      justifyContent: "center",
-      alignItems: "center",
     },
     dotsArea: {
       flexDirection: "row",

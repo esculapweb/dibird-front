@@ -108,6 +108,18 @@ export const sortOptionsList = (screen: string | undefined) => {
         { label: i18n.t("last_update_asc"), value: "last_update" },
       ];
 
+    // The user's checklist laid out as a plain list ("Списком"). Sorted in
+    // the app: the whole checklist arrives in one page, and the tree view it
+    // switches from has no order of its own to keep — it is taxonomic by
+    // definition. Not offered while the tree is on screen (allowSort).
+    case "Checklist":
+      return [
+        { label: i18n.t("taxonomic"), value: "ioc_id" },
+        { label: i18n.t("taxonomic_desc"), value: "-ioc_id" },
+        { label: i18n.t("alphabetic"), value: "name" },
+        { label: i18n.t("alphabetic_desc"), value: "-name" },
+      ];
+
     // Every taxonomy list (orders/families/genera/species, and the species
     // grouped by genus inside a family) shares one saved preference.
     case "Taxonomy":
@@ -127,6 +139,17 @@ export const sortOptionsList = (screen: string | undefined) => {
         { label: i18n.t("alphabetic_desc"), value: "-name" },
         { label: i18n.t("species_count_desc"), value: "-species_count" },
         { label: i18n.t("species_count"), value: "species_count" },
+      ];
+
+    // Two countries side by side. Sorted in the app, not by the API: the
+    // whole species list arrives in one response, and "ioc_id" is the order
+    // the server already sent it in (see TerritoryCompareScreen).
+    case "TerritoryCompare":
+      return [
+        { label: i18n.t("taxonomic"), value: "ioc_id" },
+        { label: i18n.t("taxonomic_desc"), value: "-ioc_id" },
+        { label: i18n.t("alphabetic"), value: "name" },
+        { label: i18n.t("alphabetic_desc"), value: "-name" },
       ];
 
     case "RatingsCompare":

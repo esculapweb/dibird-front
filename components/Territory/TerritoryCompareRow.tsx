@@ -2,7 +2,8 @@ import { memo } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
-import { latinPart, iucnColors } from "../../util/taxonomy";
+import SpeciesThumb from "../Taxonomy/SpeciesThumb";
+import { latinPart } from "../../util/taxonomy";
 import { TerritoryCompareSpecies } from "../../types";
 
 const DOT_SIZE = 10;
@@ -41,11 +42,12 @@ const TerritoryCompareRow = memo(
     const { Colors } = useTheme();
     const styles = stylesFn(Colors);
     const [inFirst, inSecond] = item.in_object ?? [false, false];
-    const status = iucnColors(item.status);
     const latin = latinPart(item.name, item.name_lang);
 
     return (
       <Pressable style={styles.card} onPress={onPress}>
+        <SpeciesThumb thumb={item.thumb} statusCode={item.status} size={44} />
+
         <View style={styles.info}>
           <Text style={styles.title} numberOfLines={1}>
             {item.name_lang}
@@ -56,14 +58,6 @@ const TerritoryCompareRow = memo(
             </Text>
           )}
         </View>
-
-        {status && (
-          <View style={[styles.status, { backgroundColor: status.background }]}>
-            <Text style={[styles.statusText, { color: status.text }]}>
-              {item.status}
-            </Text>
-          </View>
-        )}
 
         <View style={styles.dots}>
           <PresenceDot
@@ -115,16 +109,6 @@ const stylesFn = (Colors: ThemeColors) =>
       fontStyle: "italic",
       color: Colors.textSecondary,
       marginTop: 1,
-    },
-    status: {
-      borderRadius: 6,
-      paddingHorizontal: 6,
-      paddingVertical: 2,
-    },
-    statusText: {
-      fontSize: 10,
-      fontWeight: "700",
-      letterSpacing: 0.3,
     },
     dots: { flexDirection: "row", gap: 6, alignItems: "center" },
   });

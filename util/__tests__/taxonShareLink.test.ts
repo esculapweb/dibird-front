@@ -34,6 +34,15 @@ it("round-trips filters through the query string unchanged", () => {
   expect(paramsToTaxonFilters(params)).toEqual(FILTERS);
 });
 
+it("carries the IUCN categories, so a shared link opens the same list", () => {
+  const params = taxonFiltersToParams({ status: ["EN", "CR (PE)"] });
+  expect(params).toEqual({ status: "EN,CR (PE)" });
+
+  expect(
+    paramsToTaxonFilters(new URLSearchParams(params)),
+  ).toEqual({ status: ["EN", "CR (PE)"] });
+});
+
 it("ignores unknown or malformed params", () => {
   const params = new URLSearchParams({
     territory: "abc",

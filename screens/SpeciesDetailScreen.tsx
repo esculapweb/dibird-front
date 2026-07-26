@@ -38,6 +38,7 @@ import { htmlBaseStyle, htmlTagsStyles } from "../util/htmlStyles";
 import { useLanguage } from "../store/language-context";
 import { useTheme, ThemeColors } from "../store/theme-context";
 import { useContentWidth } from "../hooks/useContentWidth";
+import { useDefaultTerritory } from "../hooks/useDefaultTerritory";
 import {
   AppStackNavigationProp,
   AppStackRouteProp,
@@ -93,6 +94,8 @@ const SpeciesDetailScreen = () => {
     enabled: !!segment,
     staleTime: StaleTime.ONE_DAY,
   });
+
+  const defaultTerritory = useDefaultTerritory(data?.countries);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -191,6 +194,12 @@ const SpeciesDetailScreen = () => {
   const handleAddObservation = () => {
     navigation.navigate("ObservationEditor", {
       defaultSpecies: data.taxon_id,
+      // Unlike the observation/stat/rating screens this one has no country of
+      // its own — it is reached from search, the taxonomy tree or a deep link
+      // — so the editor used to open with its required country field empty.
+      // Passed explicitly (null included) so that a country ruled out by the
+      // species' range isn't re-added by the editor's own fallback.
+      defaultTerritory,
       returnMode: "back",
     });
   };

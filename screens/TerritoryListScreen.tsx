@@ -140,6 +140,7 @@ const TerritoryListScreen = () => {
           <TerritoryRow
             name={item.name}
             code={item.code}
+            regionName={item.region_name}
             speciesLabel={item.count?.["5"]}
             onPress={() => handlePress(item)}
           />

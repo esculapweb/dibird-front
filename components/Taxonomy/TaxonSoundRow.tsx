@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
 import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
+import { useTranslation } from "react-i18next";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
+import { soundTypeParts } from "../../util/soundType";
 import { TaxonSound } from "../../types";
 
 interface TaxonSoundRowProps {
@@ -22,7 +24,20 @@ const formatSeconds = (seconds: number) => {
 
 const TaxonSoundRow = ({ sound, isActive, onPlay }: TaxonSoundRowProps) => {
   const { Colors } = useTheme();
+  const { t } = useTranslation();
   const styles = stylesFn(Colors);
+  // Only the first letter is raised: `textTransform: "capitalize"` would also
+  // hit every word after a comma, and a translated tag ("позывка в полёте")
+  // is a phrase, not a title.
+  const typeLabel = useMemo(() => {
+    const label = soundTypeParts(sound.type)
+      .map(
+        (part) =>
+          `${part.key ? t(part.key) : part.raw}${part.uncertain ? "?" : ""}`,
+      )
+      .join(", ");
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  }, [sound.type, t]);
   // Only a subset of recordings are mirrored locally (sound.sound); the rest
   // stream directly from Xeno-canto's public, unauthenticated download route.
   const uri = sound.sound ?? `https://xeno-canto.org/${sound.xeno_id}/download`;
@@ -78,7 +93,7 @@ const TaxonSoundRow = ({ sound, isActive, onPlay }: TaxonSoundRowProps) => {
         </Pressable>
         <View style={styles.info}>
           <Text style={styles.type} numberOfLines={1}>
-            {sound.type}
+            {typeLabel}
           </Text>
           <Text style={styles.meta} numberOfLines={1}>
             {sound.recorder}
@@ -130,7 +145,6 @@ const stylesFn = (Colors: ThemeColors) =>
     type: {
       fontSize: 13,
       color: Colors.textMain,
-      textTransform: "capitalize",
     },
     meta: {
       fontSize: 12,

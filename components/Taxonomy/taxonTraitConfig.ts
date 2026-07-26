@@ -27,7 +27,8 @@ export type VocabularyKey =
   | "habitat"
   | "migration"
   | "trophic_level"
-  | "trophic_niche";
+  | "trophic_niche"
+  | "status";
 
 export type TaxonTraitGroup =
   | { id: string; labelKey: string; buckets: Bucket[] }
@@ -42,6 +43,10 @@ export const GROUPS: TaxonTraitGroup[] = [
   { id: "migration", labelKey: "migration", vocabulary: "migration" },
   { id: "trophic_level", labelKey: "trophic_level", vocabulary: "trophic_level" },
   { id: "trophic_niche", labelKey: "trophic_niche", vocabulary: "trophic_niche" },
+  // Conservation status. Its options come from the same /api/trait-filters/
+  // response as the vocabularies, but already in the Red List's own order —
+  // the sheet renders them as they arrive.
+  { id: "status", labelKey: "iucn_status", vocabulary: "status" },
 ];
 
 export const hasTraitFilters = (filters: TaxonTraitFilters) =>
@@ -84,3 +89,4 @@ export const vocabLabels = (
 // t("migration")
 // t("trophic_level")
 // t("trophic_niche")
+// t("iucn_status")

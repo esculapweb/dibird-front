@@ -266,6 +266,42 @@ describe("deep links from the QA page resolve to the right screen", () => {
     );
   });
 
+  // The countries half is shared from three screens (see buildShareUrl in
+  // TerritoryDetailScreen / TerritoryCompareScreen and buildTerritoryListUrl
+  // in TerritoryListScreen). The paths those build are asserted in the screen
+  // tests; here they are fed back in, so the link a user sends reopens the
+  // page it was sent from.
+  it("reopens a shared country page on its own segment", () => {
+    expect(leafParams(stateFor("territory/austria/"))).toMatchObject({
+      segment: "austria",
+    });
+  });
+
+  it("reopens a shared country page sent in another language", () => {
+    expect(leafParams(stateFor("ru/territory/avstrija/"))).toMatchObject({
+      segment: "avstrija",
+    });
+  });
+
+  it("reopens a shared comparison with both countries in order", () => {
+    expect(
+      leafParams(stateFor("territory_compare/austria/azerbaijan/")),
+    ).toMatchObject({
+      segment1: "austria",
+      segment2: "azerbaijan",
+    });
+  });
+
+  it("reopens the country list exactly as buildTerritoryListUrl shares it", () => {
+    // The path TerritoryListScreen builds for a filtered, sorted list.
+    expect(
+      leafParams(stateFor("territory/?region=15&o=name")),
+    ).toMatchObject({
+      initialRegion: 15,
+      initialSort: "name",
+    });
+  });
+
   it("restores the sort on a group detail link", () => {
     expect(
       leafParams(stateFor("order/ducks-and-relatives/?o=ioc_id")),

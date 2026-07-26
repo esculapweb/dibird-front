@@ -51,6 +51,17 @@ it("fills both dots for a species the two countries share", async () => {
   expect(dotColor(1)).toBe(mockColors.compareP2);
 });
 
+it("keeps the badge off the species nobody worries about", async () => {
+  // Least concern is most of any list: a badge there said nothing and took
+  // the width the species name needs (see isNotableIucn).
+  await render(
+    <TerritoryCompareRow item={species({ status: "LC" })} onPress={jest.fn()} />,
+  );
+
+  expect(screen.getByText("Greater Rhea")).toBeOnTheScreen();
+  expect(screen.queryByText("LC")).toBeNull();
+});
+
 it("leaves the badge out for a species with no IUCN category", async () => {
   await render(
     <TerritoryCompareRow item={species({ status: null })} onPress={jest.fn()} />,

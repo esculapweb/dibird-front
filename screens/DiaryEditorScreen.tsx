@@ -20,6 +20,7 @@ import {
   setTypedNavigationCallback,
 } from "../util/navigationCallbacks";
 import { useEditorForm } from "../hooks/useEditorForm";
+import { useDefaultTerritory } from "../hooks/useDefaultTerritory";
 import IconsHeader from "../components/ui/IconsHeader";
 import Layout from "../components/ui/Layout";
 import { useApiError } from "../hooks/useApiError";
@@ -44,6 +45,7 @@ const DiaryEditorScreen = () => {
 
   const { diary, defaultTerritory, defaultPlace } = route.params || {};
   const isEditMode = !!diary;
+  const fallbackTerritory = useDefaultTerritory();
 
   const {
     itemWithParsedDate: diaryWithParsedDate,
@@ -60,7 +62,11 @@ const DiaryEditorScreen = () => {
     validateForm,
   } = useEditorForm({
     item: diary ?? null,
-    defaultTerritory,
+    // Same contract as ObservationEditorScreen: an absent param means the
+    // caller has nothing to say and takes the app's guess, while an explicit
+    // null means the country was considered and rejected.
+    defaultTerritory:
+      defaultTerritory !== undefined ? defaultTerritory : fallbackTerritory,
     defaultPlace,
     profile,
     hasSpecies: false,
@@ -128,6 +134,10 @@ const DiaryEditorScreen = () => {
         {
           onSuccess: (item) => {
             setSession("lastDate", diaryData.date_time);
+            // Feeds the same session fallback observations start from — a
+            // diary just created for a country is the strongest hint about
+            // where the next record belongs (see useDefaultTerritory).
+            setSession("lastTerritory", diaryData.territory);
             requestAnimationFrame(() =>
               navigation.replace("DiaryDetail", { diaryId: item.id }),
             );

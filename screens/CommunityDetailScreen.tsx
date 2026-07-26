@@ -60,7 +60,9 @@ const CommunityDetailScreen = () => {
 
   const handleAddObservation = () => {
     navigation.navigate("ObservationEditor", {
-      defaultTerritory: observation.territory ?? null,
+      // undefined, not null — see ObservationsScreen: a community observation
+      // without a country shouldn't force the user's own copy to open empty.
+      defaultTerritory: observation.territory ?? undefined,
       defaultSpecies: observation?.species_data.id,
       returnMode: "back",
     });

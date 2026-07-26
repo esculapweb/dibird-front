@@ -14,6 +14,12 @@ jest.mock("@react-navigation/native", () => ({
 }));
 jest.mock("@tanstack/react-query", () => ({ useQuery: jest.fn() }));
 jest.mock("../../util/fetches", () => ({ fetchTerritoryCompare: jest.fn() }));
+jest.mock("../../hooks/useScreenSort", () => ({
+  useScreenSort: (...args: unknown[]) => {
+    mockScreenSortArgs = args;
+    return { sort: mockSort, openSortSheet: mockOpenSortSheet };
+  },
+}));
 jest.mock("../../components/ui/Layout", () => {
   const { View } = require("react-native");
   return {
@@ -44,7 +50,7 @@ jest.mock("../../components/ui/Tabs", () => {
       tabOptions,
       setTabsMode,
     }: {
-      tabOptions: { value: string; count?: number }[];
+      tabOptions: { value: string; count?: number; labelKey: string }[];
       setTabsMode: (value: string) => void;
     }) => (
       <View testID="tabs">
@@ -55,6 +61,7 @@ jest.mock("../../components/ui/Tabs", () => {
             onPress={() => setTabsMode(tab.value)}
           >
             <Text>{`${tab.value}:${tab.count ?? "-"}`}</Text>
+            <Text testID={`tab-label-${tab.value}`}>{tab.labelKey}</Text>
           </Pressable>
         ))}
       </View>
@@ -115,6 +122,9 @@ import { TerritoryCompareResponse, TerritoryCompareSpecies } from "../../types";
 
 let mockRoute: ReturnType<typeof createRouteMock>;
 let mockItemsListProps: Record<string, unknown>;
+let mockScreenSortArgs: unknown[];
+let mockSort = "ioc_id";
+const mockOpenSortSheet = jest.fn();
 const mockNavigation = createNavigationMock();
 const mockUseQuery = useQuery as jest.Mock;
 
@@ -177,6 +187,7 @@ const renderRow = (item: TerritoryCompareSpecies) =>
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockSort = "ioc_id";
   mockRoute = createRouteMock("TerritoryCompare", {
     segment1: "argentina",
     segment2: "chile",
@@ -228,6 +239,81 @@ it("puts the server's counts on the tabs", async () => {
   expect(screen.getByText("all:3")).toBeOnTheScreen();
   expect(screen.getByText("common:1")).toBeOnTheScreen();
   expect(screen.getByText("different:2")).toBeOnTheScreen();
+});
+
+it("labels the tabs about countries, not about users", async () => {
+  // Russian agrees with the subject: the users' comparison says "у обоих",
+  // two countries need "в обеих" — so these are keys of their own.
+  await render(<TerritoryCompareScreen />);
+
+  expect(screen.getByTestId("tab-label-common")).toHaveTextContent(
+    "in_both_territories",
+  );
+  expect(screen.getByTestId("tab-label-different")).toHaveTextContent(
+    "in_one_territory_only",
+  );
+  expect(screen.getByTestId("tab-label-all")).toHaveTextContent("all");
+});
+
+it("keeps its own sort preference, not the species catalogue's", async () => {
+  await render(<TerritoryCompareScreen />);
+
+  expect(mockScreenSortArgs[0]).toBe("TerritoryCompare");
+});
+
+it("sorts alphabetically in the app — the whole list is already here", async () => {
+  mockSort = "name";
+  await render(<TerritoryCompareScreen />);
+
+  expect(rows().map((s) => s.name_lang)).toEqual([
+    "Andean Condor",
+    "Greater Rhea",
+    "Lesser Rhea",
+  ]);
+});
+
+it("reverses the alphabet on the descending option", async () => {
+  mockSort = "-name";
+  await render(<TerritoryCompareScreen />);
+
+  expect(rows().map((s) => s.name_lang)).toEqual([
+    "Lesser Rhea",
+    "Greater Rhea",
+    "Andean Condor",
+  ]);
+});
+
+it("takes the server's order as the taxonomic one", async () => {
+  // The rows carry no ioc id — the API sends them ordered by it, so
+  // "taxonomic" is the order they arrived in, and its reverse.
+  mockSort = "-ioc_id";
+  await render(<TerritoryCompareScreen />);
+
+  expect(rows().map((s) => s.segment)).toEqual([
+    "andean-condor",
+    "lesser-rhea",
+    "greater-rhea",
+  ]);
+});
+
+it("sorts what the tab and the search left, not the whole response", async () => {
+  mockSort = "name";
+  await render(<TerritoryCompareScreen />);
+
+  await fireEvent.press(screen.getByTestId("tab-different"));
+
+  expect(rows().map((s) => s.name_lang)).toEqual([
+    "Andean Condor",
+    "Greater Rhea",
+  ]);
+});
+
+it("offers no sort until there is something to compare", async () => {
+  mockRoute = createRouteMock("TerritoryCompare", { segment1: "argentina" });
+  mockUseQuery.mockReturnValue(queryResult({ data: undefined }));
+
+  await render(<TerritoryCompareScreen />);
+  expect(headerProps().onSortPress).toBeUndefined();
 });
 
 it("filters locally by name, on top of the active tab", async () => {

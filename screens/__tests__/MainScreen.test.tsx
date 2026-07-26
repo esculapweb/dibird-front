@@ -5,6 +5,9 @@ jest.mock("react-i18next", () => ({
 jest.mock("react-native-safe-area-context", () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
+jest.mock("../../store/theme-context", () => ({
+  useTheme: () => require("../mockTheme").mockUseTheme(),
+}));
 jest.mock("../../components/ui/Layout", () => {
   const { View } = require("react-native");
   return {
@@ -191,22 +194,63 @@ it("tapping the navbar opens the filter sheet wired to handleClearFilters", asyn
   );
 });
 
+// The dashboard scroll view has no testID; walk up from a widget inside it.
+// Re-read it after every state change — the props are a render-time snapshot.
+const scrollView = () => {
+  let node = screen.getByText(/^Sparkline:/).parent;
+  while (node && node.type !== "RCTScrollView") node = node.parent;
+  return node!;
+};
+
 it("pull to refresh refetches every widget the dashboard has mounted", async () => {
   // The dashboard is a dozen independent queries; refetching the active ones
   // beats threading a refetch through each widget.
   await render(<MainScreen />);
 
-  // The dashboard scroll view has no testID; walk up from a widget inside it.
-  let node = screen.getByText(/^Sparkline:/).parent;
-  while (node && node.type !== "RCTScrollView") node = node.parent;
   // onRefresh flips the spinner state around the refetch, so it needs act().
   await act(async () => {
-    await node!.props.refreshControl.props.onRefresh();
+    await scrollView().props.refreshControl.props.onRefresh();
   });
 
   expect(mockQueryClient.refetchQueries).toHaveBeenCalledWith({
     type: "active",
   });
+});
+
+it("reserves the navbar's strip as contentInset on iOS, not as padding", async () => {
+  // The spinner is drawn in the scroll view's top inset: as content padding
+  // the strip left it under the floating navbar's gradient, invisible.
+  // (jest-expo runs as iOS; insets are mocked to 0, so NAVBAR_HEIGHT is 60.)
+  await render(<MainScreen />);
+
+  const props = scrollView().props;
+  expect(props.contentInset).toEqual({ top: 68 });
+  expect(props.contentOffset).toEqual({ x: 0, y: -68 });
+  expect(props.contentContainerStyle.paddingTop).toBe(0);
+});
+
+it("drops the spinner on a refetch that never settles", async () => {
+  // Offline, react-query pauses the refetches and refetchQueries' promise
+  // stays pending until the network is back — the spinner used to hang there.
+  jest.useFakeTimers();
+  try {
+    mockQueryClient.refetchQueries.mockReturnValueOnce(
+      new Promise<void>(() => {}),
+    );
+    await render(<MainScreen />);
+
+    await act(async () => {
+      scrollView().props.refreshControl.props.onRefresh();
+    });
+    expect(scrollView().props.refreshControl.props.refreshing).toBe(true);
+
+    await act(async () => {
+      jest.advanceTimersByTime(60000);
+    });
+    expect(scrollView().props.refreshControl.props.refreshing).toBe(false);
+  } finally {
+    jest.useRealTimers();
+  }
 });
 
 it("puts logging a sighting above the content blocks", async () => {

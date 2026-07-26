@@ -52,6 +52,9 @@ jest.mock("../../util/navigationCallbacks", () => ({
 jest.mock("../../hooks/useEditorForm", () => ({
   useEditorForm: jest.fn(),
 }));
+jest.mock("../../hooks/useDefaultTerritory", () => ({
+  useDefaultTerritory: jest.fn(),
+}));
 jest.mock("../../util/fetches", () => ({
   fetchDiarySpeciesIds: jest.fn(),
 }));
@@ -119,6 +122,7 @@ import { useProfile } from "../../store/profile-context";
 import { setSession } from "../../util/sessionStore";
 import { setTypedNavigationCallback } from "../../util/navigationCallbacks";
 import { useEditorForm } from "../../hooks/useEditorForm";
+import { useDefaultTerritory } from "../../hooks/useDefaultTerritory";
 import { createNavigationMock, createRouteMock } from "../test-utils";
 import ObservationEditorScreen from "../ObservationEditorScreen";
 
@@ -168,6 +172,7 @@ beforeEach(() => {
   });
   mockRoute = createRouteMock("ObservationEditor", {});
   (useProfile as jest.Mock).mockReturnValue({ profile: { user: 1, territory: 5 } });
+  (useDefaultTerritory as jest.Mock).mockReturnValue(12);
   (useQueryClient as jest.Mock).mockReturnValue({ invalidateQueries: mockInvalidateQueries });
   (useCreateObservation as jest.Mock).mockReturnValue({ mutate: mockCreateMutate, isPending: false });
   (useUpdateObservation as jest.Mock).mockReturnValue({ mutate: mockUpdateMutate, isPending: false });
@@ -207,6 +212,41 @@ describe("mode setup", () => {
     );
     expect(mockNavigation.setOptions).toHaveBeenCalledWith(
       expect.objectContaining({ title: "new_observation" }),
+    );
+  });
+
+  it("create mode: falls back to the last saved/profile country when the caller sent none", async () => {
+    mockRoute = createRouteMock("ObservationEditor", { defaultSpecies: 9 });
+    await render(<ObservationEditorScreen />);
+
+    expect(useEditorForm).toHaveBeenCalledWith(
+      expect.objectContaining({ defaultTerritory: 12 }),
+    );
+  });
+
+  it("create mode: leaves the country empty when the caller ruled one out with an explicit null", async () => {
+    // Species detail sends null when its guess falls outside the species'
+    // range — the fallback must not quietly put it back.
+    mockRoute = createRouteMock("ObservationEditor", {
+      defaultSpecies: 9,
+      defaultTerritory: null,
+    });
+    await render(<ObservationEditorScreen />);
+
+    expect(useEditorForm).toHaveBeenCalledWith(
+      expect.objectContaining({ defaultTerritory: null }),
+    );
+  });
+
+  it("create mode: prefers the diary's country over the fallback", async () => {
+    mockRoute = createRouteMock("ObservationEditor", {
+      diaryId: 11,
+      territoryValue: 7,
+    });
+    await render(<ObservationEditorScreen />);
+
+    expect(useEditorForm).toHaveBeenCalledWith(
+      expect.objectContaining({ defaultTerritory: 7 }),
     );
   });
 
@@ -261,6 +301,8 @@ describe("save navigation branching", () => {
     onSuccess({ id: 123, date_time: "2026-01-01" });
 
     expect(setSession).toHaveBeenCalledWith("lastDate", "2026-01-01");
+    // Seeds the fallback the next observation opens on.
+    expect(setSession).toHaveBeenCalledWith("lastTerritory", 5);
     expect(mockNavigation.replace).toHaveBeenCalledWith("ObservationDetail", {
       observationId: 123,
       initialObservation: { id: 123, date_time: "2026-01-01" },

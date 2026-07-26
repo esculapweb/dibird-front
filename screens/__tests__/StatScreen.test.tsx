@@ -10,6 +10,10 @@ jest.mock("@react-navigation/native", () => ({
 jest.mock("../../util/fetches", () => ({
   fetchStat: jest.fn(),
   fetchChecklist: jest.fn(),
+  // Identity here: the ordering itself is unit-tested against the real
+  // helper (util/__tests__/fetches.test.ts); what matters on this screen is
+  // which rows reach it.
+  sortChecklistSpecies: <T,>(items: T[]) => items,
 }));
 jest.mock("../../store/filters-context", () => ({
   useFilters: jest.fn(),
@@ -69,6 +73,36 @@ jest.mock("../../components/Stats/ChecklistCard", () => {
     ),
   };
 });
+jest.mock("../../components/ui/ViewSwitch", () => {
+  const { Pressable, Text, View } = require("react-native");
+  return {
+    __esModule: true,
+    default: ({
+      options,
+      value,
+      onChange,
+      testIDPrefix,
+    }: {
+      options: Array<{ value: string; label: string }>;
+      value: string;
+      onChange: (next: string) => void;
+      testIDPrefix: string;
+    }) => (
+      <View testID={`${testIDPrefix}-switch`}>
+        <Text>{`view:${value}`}</Text>
+        {options.map((option) => (
+          <Pressable
+            key={option.value}
+            testID={`${testIDPrefix}-${option.value}`}
+            onPress={() => onChange(option.value)}
+          >
+            <Text>{option.label}</Text>
+          </Pressable>
+        ))}
+      </View>
+    ),
+  };
+});
 jest.mock("../../components/ui/Tabs", () => {
   const { Text } = require("react-native");
   return {
@@ -83,7 +117,9 @@ jest.mock("../ListScreen", () => ({
   __esModule: true,
   default: (props: Record<string, unknown>) => {
     mockListScreenCapture(props);
-    return null;
+    // Only the header is rendered — the rows go through the captured
+    // renderItem, and the header is where the layout switch lives.
+    return (props.listHeader as React.ReactNode) ?? null;
   },
 }));
 
@@ -145,6 +181,89 @@ describe("view mode", () => {
     expect(props.errorTitle).toBe("checklist_unavailable");
     expect(props.allowSort).toBe(false);
     expect(props.handleSharePress).toBeUndefined();
+  });
+});
+
+describe("checklist layout switch", () => {
+  const CHECKLIST_PAGE = {
+    results: [
+      { type: "order", id: 1, name_lang: "Passeriformes" },
+      { type: "species", species_id: 10, name_lang: "Robin", seen: true },
+      { type: "family", id: 2, name_lang: "Turdidae" },
+      { type: "species", species_id: 11, name_lang: "Blackbird", seen: false },
+    ],
+    pagination: { count: 4 },
+  };
+
+  const renderChecklist = async () => {
+    mockRoute = createRouteMock("Checklist", {});
+    (fetchChecklist as jest.Mock).mockResolvedValue(CHECKLIST_PAGE);
+    return render(<StatScreen />);
+  };
+
+  it("offers the switch on the checklist and nowhere else", async () => {
+    await renderChecklist();
+    expect(latestProps().listHeader).toBeTruthy();
+
+    mockRoute = createRouteMock("Stat", {});
+    await render(<StatScreen />);
+    expect(latestProps().listHeader).toBeUndefined();
+  });
+
+  it("opens on the tree, group headers and all", async () => {
+    const screen = await renderChecklist();
+    const rows = await latestProps().fetchFunction({ territory: 1 }, null, "", 1);
+
+    expect(rows.results.map((r: { type: string }) => r.type)).toEqual([
+      "order",
+      "species",
+      "family",
+      "species",
+    ]);
+    expect(screen.getByText("view:tree")).toBeOnTheScreen();
+  });
+
+  it("drops the group headers once switched to the plain list", async () => {
+    const screen = await renderChecklist();
+    await fireEvent.press(screen.getByTestId("checklist-view-flat"));
+
+    const rows = await latestProps().fetchFunction({ territory: 1 }, null, "", 1);
+
+    expect(rows.results.map((r: { name_lang: string }) => r.name_lang)).toEqual([
+      "Robin",
+      "Blackbird",
+    ]);
+    // The counts the tabs show come from the response, not from the rows left.
+    expect(rows.pagination.count).toBe(4);
+  });
+
+  it("re-asks for the rows when the layout changes", async () => {
+    // Regression: the layout lives in fetchData's closure, which useList's
+    // query key can't see — react-query kept serving the tree's pages, so
+    // tapping "as a list" left the order/family headers on screen.
+    const screen = await renderChecklist();
+    expect(latestProps().queryKeyExtra).toBe("tree");
+
+    await fireEvent.press(screen.getByTestId("checklist-view-flat"));
+    expect(latestProps().queryKeyExtra).toBe("flat");
+  });
+
+  it("keeps the key out of the way on the stats screen", async () => {
+    mockRoute = createRouteMock("Stat", {});
+    await render(<StatScreen />);
+
+    expect(latestProps().queryKeyExtra).toBeNull();
+  });
+
+  it("offers a sort only on the plain list — the tree is taxonomic by definition", async () => {
+    const screen = await renderChecklist();
+    expect(latestProps().allowSort).toBe(false);
+
+    await fireEvent.press(screen.getByTestId("checklist-view-flat"));
+    expect(latestProps().allowSort).toBe(true);
+
+    await fireEvent.press(screen.getByTestId("checklist-view-tree"));
+    expect(latestProps().allowSort).toBe(false);
   });
 });
 

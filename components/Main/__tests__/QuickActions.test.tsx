@@ -43,12 +43,12 @@ describe("diary quick action", () => {
     });
   });
 
-  it("passes null when there's no territory filter set", async () => {
+  it("leaves the territory unset when there is no filter, so the editor can fall back to the last saved/profile country", async () => {
     await render(<QuickActions filters={{} as Filters} />);
     await fireEvent.press(screen.getByTestId("quick-action-diary"));
 
     expect(mockNavigation.navigate).toHaveBeenCalledWith("DiaryEditor", {
-      defaultTerritory: null,
+      defaultTerritory: undefined,
       returnMode: "back",
     });
   });
@@ -64,12 +64,12 @@ describe("observation quick action", () => {
     });
   });
 
-  it("passes null when there's no territory filter set", async () => {
+  it("leaves the territory unset when there is no filter, so the editor can fall back to the last saved/profile country", async () => {
     await render(<QuickActions filters={{} as Filters} />);
     await fireEvent.press(screen.getByTestId("quick-action-observation"));
 
     expect(mockNavigation.navigate).toHaveBeenCalledWith("ObservationEditor", {
-      defaultTerritory: null,
+      defaultTerritory: undefined,
     });
   });
 });
