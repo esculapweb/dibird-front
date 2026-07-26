@@ -14,6 +14,8 @@ import RenderHtml from "react-native-render-html";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 
+import { track } from "../services/analytics";
+
 import Layout from "../components/ui/Layout";
 import Section from "../components/ui/Section";
 import Tabs from "../components/ui/Tabs";
@@ -38,8 +40,8 @@ import { StaleTime } from "../constants/staleTime";
 import { useLanguage } from "../store/language-context";
 import { useTheme, ThemeColors } from "../store/theme-context";
 import {
-  AppStackNavigationProp,
-  AppStackRouteProp,
+  CatalogNavigationProp,
+  CatalogRouteProp,
   TaxonTraitFilters,
   TerritoryDetail,
   territoryTab,
@@ -62,8 +64,8 @@ const TerritoryDetailScreen = () => {
   const width = useContentWidth();
   const { language } = useLanguage();
   const styles = stylesFn(Colors);
-  const navigation = useNavigation<AppStackNavigationProp>();
-  const route = useRoute<AppStackRouteProp<"TerritoryDetail">>();
+  const navigation = useNavigation<CatalogNavigationProp>();
+  const route = useRoute<CatalogRouteProp<"TerritoryDetail">>();
   const { segment, initialTab, initialView, initialSort, initialTraits } =
     route.params;
   const [tab, setTab] = useState<territoryTab>(initialTab ?? "species");
@@ -135,6 +137,7 @@ const TerritoryDetailScreen = () => {
               sort,
               traits: filters,
             });
+            track("share_tapped", { type: "territory" });
             await Share.share(
               Platform.OS === "ios" ? { url } : { message: url },
             );
@@ -159,6 +162,11 @@ const TerritoryDetailScreen = () => {
       navigation.setParams({ segment: data.redirect });
     }
   }, [data?.redirect, navigation]);
+
+  // Вторая половина справочника — см. species_viewed на странице вида.
+  useEffect(() => {
+    track("territory_viewed");
+  }, [segment]);
 
   // Already-localized, number-agreed labels keyed by rank ({"5": "1111
   // species"}) — shown in taxonomic order, deepest last.
@@ -321,7 +329,12 @@ const TerritoryDetailScreen = () => {
         />
       </>
     ) : view === "tree" ? (
-      <TerritoryChecklist territoryId={territoryId} listHeader={viewSwitch} />
+      // Дерево ключуется id Avibase, плоский список — нашим Territory.pk:
+      // это две разные ручки (см. fetchTerritoryTree и /api/taxon/).
+      <TerritoryChecklist
+        idAvibase={data.id_avibase}
+        listHeader={viewSwitch}
+      />
     ) : (
       <TaxonChildrenList
         rank={5}

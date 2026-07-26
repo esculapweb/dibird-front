@@ -10,8 +10,7 @@ import {
 import { AppState } from "react-native";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import { and, asc, eq, inArray } from "drizzle-orm";
-import { getAnalytics, setUserId } from "@react-native-firebase/analytics";
-
+import { setAnalyticsUserId, setUserProps } from "../services/analytics";
 import { db } from "../services/db/client";
 import { queryClient } from "../services/queryClient";
 import { clearPersistedQueryCache } from "../services/queryPersist";
@@ -141,7 +140,8 @@ export const ProfileProvider = ({
       profileRepository.clearProfile();
       setError(null);
       setInitialLoadAttempted(false);
-      setUserId(getAnalytics(), null);
+      setAnalyticsUserId(null);
+      setUserProps({ guest_or_registered: "guest" });
       return;
     }
     setInitialLoadAttempted(false);
@@ -180,7 +180,16 @@ export const ProfileProvider = ({
       onProfileSavedCallbacks.forEach((cb) => cb(profile.territory ?? null));
 
       if (profile.user) {
-        await setUserId(getAnalytics(), profile.user.toString());
+        setAnalyticsUserId(profile.user.toString());
+        setUserProps({
+          guest_or_registered: "registered",
+          // Firebase уже режет отчёты по стране устройства — эта строка про
+          // другое: выбрал ли пользователь домашнюю страну сам. «none» — это
+          // непройденная персонализация, а не «страна неизвестна».
+          home_territory: profile.territory
+            ? String(profile.territory)
+            : "none",
+        });
       }
     })();
   }, [updatedAt]);

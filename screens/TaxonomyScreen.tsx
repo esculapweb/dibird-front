@@ -2,6 +2,8 @@ import { useLayoutEffect, useState } from "react";
 import { Platform, Pressable, Share, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+
+import { track } from "../services/analytics";
 import { useNavigation, useRoute } from "@react-navigation/native";
 
 import Layout from "../components/ui/Layout";
@@ -19,8 +21,8 @@ import {
 } from "../util/taxonShareLink";
 import { useTheme, ThemeColors } from "../store/theme-context";
 import {
-  AppStackNavigationProp,
-  AppStackRouteProp,
+  CatalogNavigationProp,
+  CatalogRouteProp,
   TaxonTraitFilters,
 } from "../types";
 
@@ -42,8 +44,8 @@ const TaxonomyScreen = () => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
-  const navigation = useNavigation<AppStackNavigationProp>();
-  const route = useRoute<AppStackRouteProp<"Taxonomy">>();
+  const navigation = useNavigation<CatalogNavigationProp>();
+  const route = useRoute<CatalogRouteProp<"Taxonomy">>();
   const {
     rank,
     parentSegment,
@@ -95,6 +97,7 @@ const TaxonomyScreen = () => {
                     sort,
                     search,
                   );
+                  track("share_tapped", { type: "taxon_list" });
                   await Share.share(
                     Platform.OS === "ios" ? { url } : { message: url },
                   );

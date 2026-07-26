@@ -16,6 +16,8 @@ import RenderHtml from "react-native-render-html";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 
+import { track } from "../services/analytics";
+
 import Layout from "../components/ui/Layout";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
@@ -40,9 +42,11 @@ import { useLanguage } from "../store/language-context";
 import { useTheme, ThemeColors } from "../store/theme-context";
 import { useContentWidth } from "../hooks/useContentWidth";
 import { useDefaultTerritory } from "../hooks/useDefaultTerritory";
+import { useRequireAuth } from "../hooks/useRequireAuth";
 import {
   AppStackNavigationProp,
-  AppStackRouteProp,
+  CatalogNavigationProp,
+  CatalogRouteProp,
   SpeciesDetailTab,
   TabOption,
   TaxonCountry,
@@ -54,8 +58,9 @@ const SpeciesDetailScreen = () => {
   const { Colors } = useTheme();
   const width = useContentWidth();
   const { language } = useLanguage();
-  const navigation = useNavigation<AppStackNavigationProp>();
-  const route = useRoute<AppStackRouteProp<"SpeciesDetail">>();
+  const navigation = useNavigation<CatalogNavigationProp>();
+  const route = useRoute<CatalogRouteProp<"SpeciesDetail">>();
+  const requireAuth = useRequireAuth();
   const styles = stylesFn(Colors);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [activeSoundId, setActiveSoundId] = useState<number | null>(null);
@@ -120,6 +125,7 @@ const SpeciesDetailScreen = () => {
                   // The page is one long read split into tabs — a link shared
                   // from "Sounds" should open on sounds, not the overview.
                   const url = buildSpeciesDetailUrl(segment, activeTab);
+                  track("share_tapped", { type: "species" });
                   await Share.share(
                     Platform.OS === "ios" ? { url } : { message: url },
                   );
@@ -136,6 +142,13 @@ const SpeciesDetailScreen = () => {
       navigation.setParams({ segment: data.redirect });
     }
   }, [data?.redirect, navigation]);
+
+  // Ключевая страница каталога: по ней меряется, доходит ли гость от списка до
+  // вида — то есть увидел ли он вообще ценность до регистрации. Один раз на
+  // вид, а не на каждый ререндер, поэтому в зависимостях segment.
+  useEffect(() => {
+    if (segment) track("species_viewed");
+  }, [segment]);
 
   const groupedCountries = useMemo(() => {
     const groups = new Map<string, TaxonCountry[]>();
@@ -196,16 +209,26 @@ const SpeciesDetailScreen = () => {
   const goToSpecies = (targetSegment: string) =>
     navigation.push("SpeciesDetail", { segment: targetSegment });
 
+  // Единственный переход отсюда за пределы справочника: редактор наблюдений
+  // живёт только в AppStack, поэтому у гостя вместо него шторка регистрации.
+  // Типы это и обеспечивают — CatalogNavigationProp про ObservationEditor не
+  // знает, отсюда каст внутри уже проверенной на аккаунт ветки.
   const handleAddObservation = () => {
-    navigation.navigate("ObservationEditor", {
-      defaultSpecies: data.taxon_id,
-      // Unlike the observation/stat/rating screens this one has no country of
-      // its own — it is reached from search, the taxonomy tree or a deep link
-      // — so the editor used to open with its required country field empty.
-      // Passed explicitly (null included) so that a country ruled out by the
-      // species' range isn't re-added by the editor's own fallback.
-      defaultTerritory,
-      returnMode: "back",
+    requireAuth("add_observation", () => {
+      (navigation as unknown as AppStackNavigationProp).navigate(
+        "ObservationEditor",
+        {
+          defaultSpecies: data.taxon_id,
+          // Unlike the observation/stat/rating screens this one has no country
+          // of its own — it is reached from search, the taxonomy tree or a
+          // deep link — so the editor used to open with its required country
+          // field empty. Passed explicitly (null included) so that a country
+          // ruled out by the species' range isn't re-added by the editor's own
+          // fallback.
+          defaultTerritory,
+          returnMode: "back",
+        },
+      );
     });
   };
 

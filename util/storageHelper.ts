@@ -83,6 +83,23 @@ export const setLastLoggedInUserId = async (userId: number): Promise<void> => {
   }
 };
 
+// Активация: первое созданное наблюдение. Событие должно уйти ровно один раз,
+// иначе «доля дошедших до первого наблюдения» превратится в «сколько всего
+// наблюдений создали». Как и LAST_USER_KEY, флаг переживает логаут — иначе
+// повторный вход того же человека выглядел бы новой активацией.
+const FIRST_OBSERVATION_KEY = "first_observation_tracked";
+
+export const markFirstObservationTracked = async (): Promise<boolean> => {
+  try {
+    if (await AsyncStorage.getItem(FIRST_OBSERVATION_KEY)) return false;
+    await AsyncStorage.setItem(FIRST_OBSERVATION_KEY, "true");
+    return true;
+  } catch (e) {
+    if (__DEV__) console.warn(`Failed to save ${FIRST_OBSERVATION_KEY}`, e);
+    return false;
+  }
+};
+
 export const initGlobalFilters = async (profileTerritory: number | null): Promise<void> => {
   const alreadyInited = await AsyncStorage.getItem("filters_inited");
   if (alreadyInited) return;

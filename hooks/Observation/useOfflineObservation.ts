@@ -8,6 +8,8 @@ import { useProfile } from "../../store/profile-context";
 import { useLanguage } from "../../store/language-context";
 import { isConnected } from "../../services/sync/networkStatus";
 import { serveFromCache } from "../../services/cacheFallback";
+import { track } from "../../services/analytics";
+import { markFirstObservationTracked } from "../../util/storageHelper";
 import { runObservationSync } from "../../services/sync/observationSync";
 import * as observationRepository from "../repositories/observationRepository";
 import * as diaryRepository from "../repositories/diaryRepository";
@@ -229,6 +231,14 @@ export const useCreateObservation = () => {
       );
       runObservationSync(); // in case connectivity just flickered back
       return item;
+    },
+    // Считаем создание, а не успешную отправку: оффлайн-запись — такое же
+    // наблюдение для пользователя, она просто ещё в очереди синка.
+    onSuccess: async () => {
+      track("observation_created");
+      if (await markFirstObservationTracked()) {
+        track("first_observation_created");
+      }
     },
     onSettled: () => invalidateObservationCaches(queryClient),
   });

@@ -209,13 +209,14 @@ it("opens on the birds, with the country page behind its own tab", async () => {
   ).toBeOnTheScreen();
 });
 
-it("opens on the order/family/species tree, keyed by our own territory id", async () => {
+it("opens on the order/family/species tree, keyed by the Avibase id", async () => {
   await render(<TerritoryDetailScreen />);
 
   expect(screen.getByTestId("territory-checklist")).toBeOnTheScreen();
   expect(screen.queryByTestId("flat-species-list")).toBeNull();
-  // /myapi/checklist2/ takes Territory.pk, not the Avibase id.
-  expect(mockChecklistProps.territoryId).toBe(52);
+  // The two species views take different ids: the public /api/checklist/ is
+  // keyed by Avibase's, the flat list by our own Territory.pk below.
+  expect(mockChecklistProps.idAvibase).toBe(6142);
 });
 
 it("switches to the plain species list, filtered to the country", async () => {

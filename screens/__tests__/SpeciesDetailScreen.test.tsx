@@ -1,3 +1,10 @@
+// useRequireAuth pulls in auth-context -> util/auth -> GoogleSignin, which
+// needs a native module this environment has no business loading. The gate
+// itself is covered by hooks/__tests__/useRequireAuth.test.tsx; here we take
+// the signed-in path, which is what the add-observation cases below assert.
+jest.mock("../../hooks/useRequireAuth", () => ({
+  useRequireAuth: () => (_action: string, run: () => void) => run(),
+}));
 jest.mock("../../store/theme-context", () => ({
   useTheme: () => require("../mockTheme").mockUseTheme(),
 }));

@@ -1,10 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
-import { getAnalytics, logEvent } from "@react-native-firebase/analytics";
 import * as Sentry from "@sentry/react-native";
 
 import api, { saveTokens, clearTokens, getRefreshToken } from "../services/api";
+import { track } from "../services/analytics";
 import { Config } from "../constants/config";
 import { AppError } from "../types";
 import { logError } from "../services/errors";
@@ -30,7 +30,7 @@ export const Login = async (email: string, password: string) => {
     refresh,
   });
 
-  logEvent(getAnalytics(), "login", { method: "email" });
+  track("login", { method: "email" });
 
   return access;
 };
@@ -47,7 +47,7 @@ export const CreateUser = async (
     password2: password,
     agree_terms: true,
   });
-  logEvent(getAnalytics(), "sign_up", { method: "email" });
+  track("sign_up", { method: "email" });
   return data;
 };
 
@@ -155,9 +155,7 @@ export const LoginWithGoogle = async () => {
 
     const eventName = is_new_user ? "sign_up" : "login";
 
-    logEvent(getAnalytics(), eventName as string, {
-      method: "google",
-    });
+    track(eventName, { method: "google" });
 
     Sentry.addBreadcrumb({
       category: "auth",
@@ -207,6 +205,6 @@ export const LoginWithApple = async () => {
 
   await saveTokens({ access, refresh });
   const eventName = is_new_user ? "sign_up" : "login";
-  logEvent(getAnalytics(), eventName as string, { method: "apple" });
+  track(eventName, { method: "apple" });
   return access;
 };

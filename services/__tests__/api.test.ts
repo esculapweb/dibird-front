@@ -133,6 +133,34 @@ describe("response interceptor: no request context", () => {
 });
 
 describe("response interceptor: 401 handling", () => {
+  // The catalogue is browsable without an account (navigation/catalogScreens),
+  // so a 401 can now reach a user who has no tokens at all. Refreshing for
+  // them would fail on "No refresh token" — an error with no HTTP response,
+  // which is exactly the shape reportToSentry treats as a network problem.
+  it("rejects a guest's 401 without attempting a refresh", async () => {
+    getItemAsync.mockResolvedValue(null);
+
+    await expect(responseError(error401(config()))).rejects.toBeInstanceOf(
+      Error,
+    );
+
+    expect(axiosPost).not.toHaveBeenCalled();
+    expect(Sentry.captureMessage).not.toHaveBeenCalled();
+  });
+
+  it("does not log a guest out on a 401", async () => {
+    getItemAsync.mockResolvedValue(null);
+    const onUnauthorized = jest.fn();
+    setOnUnauthorized(onUnauthorized);
+
+    await expect(responseError(error401(config()))).rejects.toBeInstanceOf(
+      Error,
+    );
+    await flush();
+
+    expect(onUnauthorized).not.toHaveBeenCalled();
+  });
+
   it("retries with the latest token instead of refreshing, if another request already refreshed it", async () => {
     getItemAsync.mockResolvedValue("newer-token");
     const cfg = config({ _tokenUsed: "stale-token" });

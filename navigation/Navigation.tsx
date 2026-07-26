@@ -2,8 +2,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useState, useEffect, useRef } from "react";
 import { InitialState } from "@react-navigation/native";
 import { NavigationContainer } from "@react-navigation/native";
-import { getAnalytics, logEvent } from "@react-native-firebase/analytics";
 
+import { track } from "../services/analytics";
 import { useAuth } from "../store/auth-context";
 import AuthNavigator from "./AuthStack";
 import AppNavigator from "./AppStack";
@@ -146,7 +146,7 @@ const Navigation = () => {
         routeNameRef.current = current;
 
         if (current) {
-          logEvent(getAnalytics(), "screen_view", {
+          track("screen_view", {
             screen_name: current,
             screen_class: current,
           });
@@ -167,7 +167,7 @@ const Navigation = () => {
         const previous = routeNameRef.current;
 
         if (current && previous !== current) {
-          logEvent(getAnalytics(), "screen_view", {
+          track("screen_view", {
             screen_name: current,
             screen_class: current,
           });

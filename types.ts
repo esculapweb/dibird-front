@@ -1013,7 +1013,7 @@ export type NavState = {
 };
 
 // Auth стек (все экраны, включая те что раньше были в Drawer)
-export type AuthStackParamList = {
+export type AuthStackParamList = CatalogParamList & {
   Welcome: undefined;
   Login: { emailConfirmed?: boolean; prefillEmail?: string } | undefined;
   Signup: undefined;
@@ -1036,7 +1036,7 @@ export type WelcomeScreenNavigationProp = CompositeNavigationProp<
   NativeStackNavigationProp<AuthStackParamList>
 >;
 
-export type AppStackParamList = {
+export type AppStackParamList = CatalogParamList & {
   Main: undefined;
   Profile: undefined;
   Settings: undefined;
@@ -1079,6 +1079,25 @@ export type AppStackParamList = {
   Notifications: undefined;
   Community: ScreenWithFilters | undefined;
   CommunityDetail: { observationId: number };
+  Achievements: { highlightId?: string } | undefined;
+  Privacy: undefined;
+  Terms: undefined;
+};
+
+/**
+ * Экраны справочника: каталог видов и территории. Вынесены из
+ * `AppStackParamList` в отдельную группу, потому что они не показывают личных
+ * данных и потому регистрируются в обоих стеках — залогиненном (`AppStack`) и
+ * гостевом (`AuthStack`). Ни один из них не читает профиль, так что одна и та
+ * же реализация работает и без аккаунта.
+ *
+ * Навигация внутри группы типизируется `CatalogNavigationProp`: он не знает
+ * про `ObservationEditor` и прочие личные экраны, и это осознанно — в гостевом
+ * стеке таких роутов нет, и переход в них должен ловиться компилятором, а не
+ * падать в рантайме. Единственный такой переход — «добавить наблюдение» на
+ * странице вида, он идёт через `useRequireAuth`.
+ */
+export type CatalogParamList = {
   // Seeds the open tab when the link was shared from a particular one
   // (linking.ts / taxonShareLink.ts), same as the catalogue's initialSort etc.
   SpeciesDetail: ({ segment: string } | { id: number }) & {
@@ -1135,9 +1154,6 @@ export type AppStackParamList = {
         initialSearch?: string;
       }
     | undefined;
-  Achievements: { highlightId?: string } | undefined;
-  Privacy: undefined;
-  Terms: undefined;
 };
 
 export type ScreenWithFiltersOnly =
@@ -1173,6 +1189,18 @@ export type AppStackNavigationProp =
 
 export type AuthStackNavigationProp =
   NativeStackNavigationProp<AuthStackParamList>;
+
+// Навигация внутри справочника. Умышленно уже, чем AppStackNavigationProp:
+// эти экраны живут и в гостевом стеке, где личных роутов нет, и попытка уйти
+// в них должна быть ошибкой компиляции, а не падением у пользователя без
+// аккаунта. См. CatalogParamList.
+export type CatalogNavigationProp =
+  NativeStackNavigationProp<CatalogParamList>;
+
+export type CatalogRouteProp<T extends keyof CatalogParamList> = RouteProp<
+  CatalogParamList,
+  T
+>;
 
 // Drawer нужен только для openDrawer/closeDrawer на главном экране
 export type AppDrawerNavigationProp = CompositeNavigationProp<

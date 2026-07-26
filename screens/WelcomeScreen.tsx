@@ -24,6 +24,7 @@ import {
 } from "../types";
 import FloatingHeader from "../components/ui/FloatingHeader";
 import { useApiError } from "../hooks/useApiError";
+import { track } from "../services/analytics";
 
 const WelcomeScreen = () => {
   const { t } = useTranslation();
@@ -68,11 +69,23 @@ const WelcomeScreen = () => {
     }
   };
 
+  const handleGuestBrowse = () => {
+    track("guest_browse_started", { source: "welcome" });
+    // Плоский список видов, а не дерево отрядов: у новичка нет вопроса
+    // «в каком отряде», у него есть птица, которую он хочет найти по имени.
+    stackNav?.navigate("Taxonomy", { rank: 5, title: t("species_catalog") });
+  };
+
   const [appleAvailable, setAppleAvailable] = useState(false);
   useEffect(() => {
     if (Platform.OS === "ios") {
       AppleAuthentication.isAvailableAsync().then(setAppleAvailable);
     }
+  }, []);
+
+  // Вершина воронки: сколько установок вообще дошло до первого экрана.
+  useEffect(() => {
+    track("welcome_viewed");
   }, []);
 
   const Agreement = () => (
@@ -145,6 +158,22 @@ const WelcomeScreen = () => {
               {t("continue_with_email")}
             </Text>
           </TouchableOpacity>
+
+          {/* Каталог не требует аккаунта: до регистрации пользователю нечего
+              было посмотреть, и установка отваливалась на стене логина. */}
+          <TouchableOpacity
+            style={styles.guestButton}
+            onPress={handleGuestBrowse}
+          >
+            <Ionicons
+              name="book-outline"
+              size={18}
+              color={Colors.textMiddle}
+            />
+            <Text style={styles.guestButtonText}>
+              {t("guest_browse_catalog")}
+            </Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -209,6 +238,20 @@ const stylesFn = (Colors: ThemeColors, insets: EdgeInsets) =>
     dividerText: {
       marginHorizontal: 12,
       fontSize: 13,
+      color: Colors.textMiddle,
+    },
+    // Без рамки и фона: это выход из воронки регистрации, он не должен
+    // конкурировать за внимание с кнопками входа над ним.
+    guestButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      paddingVertical: 12,
+      marginTop: 4,
+    },
+    guestButtonText: {
+      fontSize: 14,
       color: Colors.textMiddle,
     },
     agreement: {

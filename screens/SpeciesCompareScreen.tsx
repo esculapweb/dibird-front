@@ -24,8 +24,8 @@ import { StaleTime } from "../constants/staleTime";
 import { useLanguage } from "../store/language-context";
 import { useTheme, ThemeColors } from "../store/theme-context";
 import {
-  AppStackNavigationProp,
-  AppStackRouteProp,
+  CatalogNavigationProp,
+  CatalogRouteProp,
   TaxonListItem,
   TaxonSpeciesDetail,
   TaxonTrait,
@@ -45,8 +45,8 @@ const SpeciesCompareScreen = () => {
   const { Colors } = useTheme();
   const { language } = useLanguage();
   const styles = stylesFn(Colors);
-  const navigation = useNavigation<AppStackNavigationProp>();
-  const route = useRoute<AppStackRouteProp<"SpeciesCompare">>();
+  const navigation = useNavigation<CatalogNavigationProp>();
+  const route = useRoute<CatalogRouteProp<"SpeciesCompare">>();
   const [segments, setSegments] = useState<Record<Side, string | null>>({
     a: route.params?.segmentA ?? null,
     b: route.params?.segmentB ?? null,

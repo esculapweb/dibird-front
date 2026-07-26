@@ -8,6 +8,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "i18n:extract": "i18next",
+    "i18n:unused": "node scripts/i18n-unused.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "check": "tsc --noEmit && eslint .",

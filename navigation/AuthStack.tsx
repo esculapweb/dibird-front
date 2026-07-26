@@ -17,9 +17,15 @@ import ConfirmEmailScreen from "../screens/ConfirmEmailScreen";
 import LanguageSwitcher from "../components/Language/LanguageSwitcher";
 import { useTheme } from "../store/theme-context";
 import ThemeSwitcher from "../components/Theme/ThemeSwitcher";
-import type { AuthDrawerParamList, AuthStackParamList } from "../types";
+import type {
+  AuthDrawerParamList,
+  AuthStackNavigationProp,
+  AuthStackParamList,
+} from "../types";
 import { openSupportEmail } from "../util/openSupportEmail";
 import StaticScreen from "../screens/StaticScreen";
+import { catalogScreens } from "./catalogScreens";
+import { track } from "../services/analytics";
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 const Drawer = createDrawerNavigator<AuthDrawerParamList>();
@@ -28,6 +34,9 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const navigation = props.navigation;
+  // Каталожные экраны лежат в стеке над drawer'ом, поэтому переход — через
+  // родителя, как это делает WelcomeScreen со своими Login/Terms/Privacy.
+  const stackNav = navigation.getParent<AuthStackNavigationProp>();
 
   return (
     <View style={{ flex: 1 }}>
@@ -43,6 +52,37 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
             <Ionicons name="home-outline" color={color} size={size} />
           )}
         />
+        {/* Справочник доступен без аккаунта — те же два пункта, что в
+            бургер-меню залогиненного (см. AppStack). */}
+        <DrawerItem
+          label={t("species_catalog")}
+          labelStyle={{ color: Colors.textMain }}
+          onPress={() => {
+            navigation.closeDrawer();
+            track("guest_browse_started", { source: "drawer" });
+            stackNav?.navigate("Taxonomy", {
+              rank: 5,
+              title: t("species_catalog"),
+            });
+          }}
+          icon={({ color, size }) => (
+            <Ionicons name="book-outline" color={color} size={size} />
+          )}
+        />
+
+        <DrawerItem
+          label={t("birds_by_country")}
+          labelStyle={{ color: Colors.textMain }}
+          onPress={() => {
+            navigation.closeDrawer();
+            track("guest_browse_started", { source: "drawer" });
+            stackNav?.navigate("TerritoryList", undefined);
+          }}
+          icon={({ color, size }) => (
+            <Ionicons name="globe-outline" color={color} size={size} />
+          )}
+        />
+
         <DrawerItem
           label={t("settings_send_feedback")}
           labelStyle={{ color: Colors.textMain }}
@@ -137,6 +177,8 @@ const AuthNavigator = () => {
         component={ConfirmEmailScreen}
         options={{ title: t("confirm_email") }}
       />
+
+      {catalogScreens(Stack, t)}
     </Stack.Navigator>
   );
 };

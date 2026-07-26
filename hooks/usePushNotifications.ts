@@ -10,6 +10,7 @@ import "../services/i18n";
 import { registerPushToken, markNotificationsRead } from "../util/fetches";
 import { UNREAD_COUNT_KEY } from "../hooks/useUnreadCount";
 import { navigateFromNotification } from "../services/navigationRef";
+import { setUserProps } from "../services/analytics";
 import { logError } from "../services/errors";
 import { subscribeToReconnect } from "../services/sync/networkStatus";
 import { isNotificationPayload, NotificationPayload, AppError } from "../types";
@@ -72,6 +73,11 @@ export const usePushNotifications = (isAuthenticated: boolean) => {
           canAskAgain: boolean;
           expires: "never" | number;
         };
+
+      // Доля с пушами — вход в retention-петли, поэтому свойство ставится и
+      // на отказе: иначе «нет значения» смешивает отказавших с теми, кто до
+      // запроса просто не дошёл.
+      setUserProps({ has_push_token: status === "granted" ? "yes" : "no" });
 
       if (status !== "granted") return;
 

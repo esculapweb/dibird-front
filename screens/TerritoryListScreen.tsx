@@ -2,6 +2,8 @@ import { useCallback, useLayoutEffect, useState } from "react";
 import { Platform, Pressable, Share, StyleSheet, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+
+import { track } from "../services/analytics";
 import { useNavigation, useRoute } from "@react-navigation/native";
 
 import Layout from "../components/ui/Layout";
@@ -21,8 +23,8 @@ import { langBaseUrl } from "../util/helpers";
 import { StaleTime } from "../constants/staleTime";
 import { useTheme, ThemeColors } from "../store/theme-context";
 import {
-  AppStackNavigationProp,
-  AppStackRouteProp,
+  CatalogNavigationProp,
+  CatalogRouteProp,
   TerritoryListItem,
 } from "../types";
 
@@ -48,8 +50,8 @@ const TerritoryListScreen = () => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
-  const navigation = useNavigation<AppStackNavigationProp>();
-  const route = useRoute<AppStackRouteProp<"TerritoryList">>();
+  const navigation = useNavigation<CatalogNavigationProp>();
+  const route = useRoute<CatalogRouteProp<"TerritoryList">>();
   const { pickerKey, title, initialSort, initialSearch, initialRegion } =
     route.params ?? {};
 
@@ -96,6 +98,7 @@ const TerritoryListScreen = () => {
               ? undefined
               : async () => {
                   const url = buildTerritoryListUrl(region, sort, search);
+                  track("share_tapped", { type: "territory_list" });
                   await Share.share(
                     Platform.OS === "ios" ? { url } : { message: url },
                   );

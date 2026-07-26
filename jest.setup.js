@@ -4,6 +4,8 @@ jest.mock("@react-native-firebase/analytics", () => ({
   getAnalytics: jest.fn(() => ({})),
   setAnalyticsCollectionEnabled: jest.fn(async () => {}),
   logEvent: jest.fn(async () => {}),
+  setUserId: jest.fn(async () => {}),
+  setUserProperties: jest.fn(async () => {}),
 }));
 
 jest.mock("@sentry/react-native", () => ({

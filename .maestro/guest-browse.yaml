@@ -1,0 +1,78 @@
+# Guest mode: the catalogue is reachable without an account, and the actions
+# that do need one ask for it instead of failing.
+#
+# This is the funnel this release exists for — install → look at a bird → hit
+# a reason to sign up — so it starts from a genuinely clean install.
+# clearKeychain in addition to clearState: the session token lives in the iOS
+# Keychain (expo-secure-store), which clearState does not wipe, and a leftover
+# session from any earlier flow would land on MainScreen and quietly test
+# nothing. The opposite of create-observation.yaml's deliberate session reuse.
+#
+# Deliberately never logs in: everything below has to work with no account at
+# all. If a screen here starts needing one, this fails rather than the
+# regression reaching the store.
+#
+# "Osprey" as the search term: name search is a backend feature
+# (`/api/taxon/?name=`, same one the shared-link fixture uses), and Osprey is
+# in every IOC list — this flow is about guest access, not about which birds
+# the seed data happens to hold.
+#
+# appId matches the dev-client build (com.dibird.app.dev).
+# tags: ios — see login.yaml.
+appId: com.dibird.app.dev
+tags:
+  - ios
+---
+- clearKeychain
+- launchApp:
+    clearState: true
+
+- runFlow: common/ios-bootstrap.yaml
+
+# Phase 1: the guest entry point exists on Welcome, below the sign-in buttons.
+- assertVisible: ".*Continue with email.*"
+- assertVisible: ".*Browse the birds of the world.*"
+- tapOn: ".*Browse the birds of the world.*"
+- waitForAnimationToEnd
+
+# Phase 2: the species list loads with no token attached. The screen opens
+# with the search box already focused (focusSearch), so type straight into it.
+- setClipboard: "Osprey"
+- pasteText
+- waitForAnimationToEnd
+- hideKeyboard
+- assertVisible: ".*Osprey.*"
+
+# Phase 3: the detail page renders for a guest.
+- tapOn: ".*Osprey.*"
+- waitForAnimationToEnd
+- assertVisible:
+    id: "species-scroll"
+
+# Phase 4: the one action that needs an account. The sheet is the whole point
+# of guest mode — without it the bird page is a dead end, and behind a hard
+# login wall the guest never reached it at all.
+- tapOn:
+    id: "add-observation-fab"
+- waitForAnimationToEnd
+- assertVisible: ".*Create an account to save this.*"
+
+# Declining must leave the guest where they were: the editor is signed-in only.
+- tapOn: "Cancel"
+- waitForAnimationToEnd
+- assertVisible:
+    id: "species-scroll"
+
+# Phase 5: a shared link opens in the app without an account — the half of the
+# Share buttons that used to bounce its recipient out to the website
+# (linking.ts). The custom scheme, not https://dibird.com: universal links are
+# associated with the production bundle id, not this dev-client build.
+- openLink: "dibird://species/osprey/"
+- waitForAnimationToEnd
+- assertVisible:
+    id: "species-scroll"
+# Back leads to Welcome, not a crash: the guest stack has no Main to sit under.
+- tapOn:
+    id: "BackButton"
+- waitForAnimationToEnd
+- assertVisible: ".*Continue with email.*"

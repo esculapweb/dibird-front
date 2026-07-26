@@ -8,45 +8,41 @@ import SearchInput from "../ui/SearchInput";
 import ErrorOverlay from "../Error/ErrorOverlay";
 import LoadingOverlay from "../ui/LoadingOverlay";
 import ChecklistCard from "../Stats/ChecklistCard";
-import { fetchChecklist } from "../../util/fetches";
+import { fetchTerritoryTree } from "../../util/fetches";
 import { StaleTime } from "../../constants/staleTime";
 import { useLanguage } from "../../store/language-context";
-import {
-  AppStackNavigationProp,
-  ChecklistItem,
-  StatPaginatedResponse,
-} from "../../types";
+import { CatalogNavigationProp, ChecklistItem } from "../../types";
 
 // How deeply each kind of group header nests, so the search filter knows
 // which pending headers a new one replaces.
 const GROUP_LEVEL: Record<string, number> = { order: 0, family: 1, genus: 2 };
 
 interface TerritoryChecklistProps {
-  // Our own Territory.pk — what /myapi/checklist2/ is keyed by.
-  territoryId: number;
+  // Avibase's own territory id — what the public /api/checklist/ is keyed by.
+  idAvibase: number;
   listHeader?: ReactNode;
 }
 
 // A country's birds in taxonomic order — order, family, species — laid out
-// like the app's own checklist screen and coming from the same endpoint, but
-// with its personal half switched off (see ChecklistCard's `personal`): this
-// is the catalogue, and a checkbox here answers "seen" without saying when.
-// The whole country arrives in a single page (Checklist2ViewSet doesn't
-// paginate), so the search filters in memory.
+// like the app's own checklist screen but with its personal half switched off
+// (see ChecklistCard's `personal`): this is the catalogue, and a checkbox here
+// answers "seen" without saying when. Hence the public endpoint rather than
+// /myapi/checklist2/ — see fetchTerritoryTree. The whole country arrives in a
+// single page, so the search filters in memory.
 const TerritoryChecklist = ({
-  territoryId,
+  idAvibase,
   listHeader,
 }: TerritoryChecklistProps) => {
   const { t } = useTranslation();
   const { language } = useLanguage();
-  const navigation = useNavigation<AppStackNavigationProp>();
+  const navigation = useNavigation<CatalogNavigationProp>();
   const [search, setSearch] = useState("");
 
   const { data, isLoading, isError, isRefetching, error, refetch } = useQuery<
-    StatPaginatedResponse<ChecklistItem>
+    ChecklistItem[]
   >({
-    queryKey: ["TerritoryChecklist", territoryId, language],
-    queryFn: () => fetchChecklist({ territory: territoryId }, null, "", 1),
+    queryKey: ["TerritoryChecklist", idAvibase, language],
+    queryFn: () => fetchTerritoryTree(idAvibase),
     staleTime: StaleTime.ONE_DAY,
   });
 
@@ -56,7 +52,7 @@ const TerritoryChecklist = ({
   // birds all fell out disappears, but the order above it stays if another
   // family under it still has some.
   const items = useMemo(() => {
-    const rows = data?.results ?? [];
+    const rows = data ?? [];
     const query = search.trim().toLowerCase();
     if (!query) return rows;
 
@@ -83,7 +79,7 @@ const TerritoryChecklist = ({
       }
     }
     return kept;
-  }, [data?.results, search]);
+  }, [data, search]);
 
   if (isError && !data)
     return (

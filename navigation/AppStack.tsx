@@ -30,7 +30,6 @@ import UserStatScreen from "../screens/UserStatScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import AlertSettingsScreen from "../screens/AlertSettingsScreen";
 import NotificationsScreen from "../screens/NotificationsScreen";
-import SpeciesDetailScreen from "../screens/SpeciesDetailScreen";
 import AchievementsScreen from "../screens/AchievementsScreen";
 import CommunityScreen from "../screens/CommunityScreen";
 import CommunityDetailScreen from "../screens/CommunityDetailScreen";
@@ -50,12 +49,7 @@ import { fetchSpecies } from "../util/fetches";
 import { BottomSheet } from "../services/bottomSheet";
 import type { AppDrawerParamList, AppStackParamList } from "../types";
 import StaticScreen from "../screens/StaticScreen";
-import TaxonomyScreen from "../screens/TaxonomyScreen";
-import TaxonGroupDetailScreen from "../screens/TaxonGroupDetailScreen";
-import SpeciesCompareScreen from "../screens/SpeciesCompareScreen";
-import TerritoryListScreen from "../screens/TerritoryListScreen";
-import TerritoryDetailScreen from "../screens/TerritoryDetailScreen";
-import TerritoryCompareScreen from "../screens/TerritoryCompareScreen";
+import { catalogScreens } from "./catalogScreens";
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 const Drawer = createDrawerNavigator<AppDrawerParamList>();
@@ -394,47 +388,8 @@ const AppNavigator = () => {
         options={{ title: t("observation") }}
       />
 
-      <Stack.Screen
-        name="SpeciesDetail"
-        component={SpeciesDetailScreen}
-        options={{ title: t("species") }}
-      />
+      {catalogScreens(Stack, t)}
 
-      <Stack.Screen
-        name="Taxonomy"
-        component={TaxonomyScreen}
-        options={{ title: t("species") }}
-      />
-
-      <Stack.Screen
-        name="TaxonGroupDetail"
-        component={TaxonGroupDetailScreen}
-        options={{ title: t("species") }}
-      />
-
-      <Stack.Screen
-        name="SpeciesCompare"
-        component={SpeciesCompareScreen}
-        options={{ title: t("compare_species") }}
-      />
-
-      <Stack.Screen
-        name="TerritoryList"
-        component={TerritoryListScreen}
-        options={{ title: t("countries") }}
-      />
-
-      <Stack.Screen
-        name="TerritoryDetail"
-        component={TerritoryDetailScreen}
-        options={{ title: t("countries") }}
-      />
-
-      <Stack.Screen
-        name="TerritoryCompare"
-        component={TerritoryCompareScreen}
-        options={{ title: t("compare_territories") }}
-      />
       <Stack.Screen
         name="Achievements"
         component={AchievementsScreen}

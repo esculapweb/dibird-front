@@ -221,6 +221,15 @@ api.interceptors.response.use(
       }
       originalRequest._retry = true;
 
+      // Гость: аккаунта нет, обновлять нечего. Без этой ветки каждый 401 у
+      // незалогиненного (например, личная ручка, задетая по ошибке из
+      // каталога) шёл в refreshAccessToken, тот падал на «No refresh token»
+      // без HTTP-ответа, и мы отправляли в Sentry событие, которое ничего не
+      // значит. Разлогинивать тут тоже нечего — logout не вызывается.
+      if (!(await getRefreshToken())) {
+        return Promise.reject(createTranslatedError(error));
+      }
+
       // Если токен уже обновился без нас (другой запрос успел отрефрешить) —
       // просто ретраим с актуальным токеном, НЕ трогая refresh.
       const latestAccess = await getAccessToken();

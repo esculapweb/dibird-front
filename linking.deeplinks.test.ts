@@ -224,6 +224,34 @@ describe("deep links from the QA page resolve to the right screen", () => {
     expect(stateFor(path)).toBeFalsy();
   });
 
+  // The catalogue needs no account — navigation/catalogScreens.tsx registers
+  // it in the guest stack too — so every catalogue link above has to resolve
+  // without one. What this guards against is a Share button whose recipient
+  // gets bounced to the website: that recipient is the traffic sharing exists
+  // to bring in, and they are by definition not signed in yet.
+  const CATALOGUE_SCREENS = [
+    "Taxonomy",
+    "TaxonGroupDetail",
+    "SpeciesDetail",
+    "TerritoryList",
+    "TerritoryDetail",
+    "TerritoryCompare",
+  ];
+  const GUEST_CATALOGUE = SUPPORTED.filter(
+    (link) => CATALOGUE_SCREENS.includes(link.screen) && link.authed !== false,
+  );
+
+  it.each(GUEST_CATALOGUE)(
+    "$path -> $screen without an account",
+    ({ path, screen }) => {
+      const names = routeNames(stateFor(path, false));
+
+      expect(names).toContain(screen);
+      // Back has to land on the guest home: Main exists only in AppStack.
+      expect(names[0]).toBe("Welcome");
+    },
+  );
+
   // Auth-state redirects: the app never lands a signed-in user on an auth
   // screen, nor a signed-out user on a protected page.
   it("sends a signed-in user hitting an auth link to Main", () => {

@@ -1,6 +1,7 @@
 import { getStateFromPath } from "@react-navigation/native";
 import { AppStackParamList, AuthStackParamList } from "./types";
 import { LinkingOptions } from "@react-navigation/native";
+import { track } from "./services/analytics";
 import {
   COMPARE_TABS,
   parseEnumParam,
@@ -268,13 +269,25 @@ const linking = (
       };
     }
 
-    // Shared taxonomy links (catalogue lists and detail pages). These live in
-    // the authed AppStack, so only deep-link them when signed in; otherwise
-    // fall through and the site opens the page instead. Each is wrapped under
-    // Main so Back returns home, like PlaceDetail.
+    // Shared taxonomy links (catalogue lists and detail pages). The catalogue
+    // is registered in both stacks (see navigation/catalogScreens.tsx), so a
+    // shared link opens in the app with or without an account — otherwise
+    // every link we shipped a Share button for would bounce a non-user out to
+    // the website, which is exactly the traffic sharing is meant to bring in.
+    // The route under it differs per stack: Main is the authed home, Welcome
+    // the guest one, so Back lands somewhere that exists either way.
     const taxonRoute = matchTaxonPath(normalizedPath);
-    if (isAuthenticated && taxonRoute) {
-      return { index: 1, routes: [{ name: "Main" }, taxonRoute] };
+    if (taxonRoute) {
+      const root = isAuthenticated ? "Main" : "Welcome";
+      // Единственное место, где точно известно, что пользователь пришёл по
+      // ссылке снаружи, — на самом экране это уже неотличимо от перехода из
+      // дерева. `authed` показывает, сколько ссылок приходит на людей без
+      // аккаунта: до гостевого режима они все уезжали на сайт.
+      track("deep_link_opened", {
+        screen: taxonRoute.name,
+        authed: isAuthenticated ? "yes" : "no",
+      });
+      return { index: 1, routes: [{ name: root }, taxonRoute] };
     }
 
     const state = getStateFromPath(normalizedPath, options);

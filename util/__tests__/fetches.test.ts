@@ -511,6 +511,88 @@ describe("simple cache-through fetchers (try live -> cache -> catch -> cached fa
   });
 });
 
+describe("fetchTerritoryTree (country page tree, public endpoint)", () => {
+  // depth -> type, plus the field renames: the public endpoint is the site's,
+  // so it answers with d_name/d_name_lang/d_segment/d_status and puts the
+  // occurrence in `status`.
+  const ROWS = [
+    { depth: 2, d_name: "Rheiformes", d_name_lang: "Rheas", d_segment: "rheiformes", thumb: null, d_status: null },
+    { depth: 3, d_name: "Rheidae", d_name_lang: "Rhea family", d_segment: "rheidae", thumb: null, d_status: null },
+    { depth: 5, d_name: "Rhea americana", d_name_lang: "Greater Rhea", d_segment: "greater-rhea", thumb: "a.jpg", d_status: "NT", status: "Endemic" },
+    { depth: 5, d_name: "Rhea pennata", d_name_lang: "Lesser Rhea", d_segment: "lesser-rhea", thumb: null, d_status: "LC" },
+    { depth: 2, d_name: "Cathartiformes", d_name_lang: "Condors", d_segment: "cathartiformes", thumb: null, d_status: null },
+    { depth: 3, d_name: "Cathartidae", d_name_lang: "Condor family", d_segment: "cathartidae", thumb: null, d_status: null },
+    { depth: 5, d_name: "Vultur gryphus", d_name_lang: "Andean Condor", d_segment: "andean-condor", thumb: null, d_status: "VU" },
+  ];
+
+  it("asks the public endpoint by the Avibase id", async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: [] });
+    await fetches.fetchTerritoryTree(6142);
+
+    expect(api.get).toHaveBeenCalledWith("/api/checklist/", {
+      params: { id: 6142 },
+    });
+  });
+
+  it("maps the site's field names onto the checklist row shape", async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: ROWS });
+    const items = await fetches.fetchTerritoryTree(6142);
+
+    expect(items.map((i) => i.type)).toEqual([
+      "order",
+      "family",
+      "species",
+      "species",
+      "order",
+      "family",
+      "species",
+    ]);
+    expect(items[2]).toMatchObject({
+      latin: "Rhea americana",
+      name_lang: "Greater Rhea",
+      segment: "greater-rhea",
+      thumb: "a.jpg",
+      // d_status is the IUCN category; `status` on the wire is the occurrence.
+      status: "NT",
+      occurrence: "Endemic",
+      seen: false,
+    });
+  });
+
+  // The endpoint sends no counts, but the group rows show them. The response
+  // is one page in taxonomic order, so they can be counted here exactly.
+  it("counts the species under each group", async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: ROWS });
+    const items = await fetches.fetchTerritoryTree(6142);
+
+    expect(items[0].total).toBe(2); // Rheiformes
+    expect(items[1].total).toBe(2); // Rheidae
+    expect(items[4].total).toBe(1); // Cathartiformes
+    expect(items[5].total).toBe(1); // Cathartidae
+  });
+
+  it("does not let a later order inherit the previous one's count", async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: ROWS });
+    const items = await fetches.fetchTerritoryTree(6142);
+
+    // A new order closes the previous order *and* its family: without that,
+    // the Rhea family would keep collecting condors.
+    expect(items[1].total).toBe(2);
+    expect(items[4].total).not.toBe(3);
+  });
+
+  it("serves the cached tree when the request fails", async () => {
+    (api.get as jest.Mock).mockRejectedValue(new Error("boom"));
+    (listCacheRepository.getCachedListResponse as jest.Mock).mockReturnValue([
+      { type: "species", name_lang: "Cached bird" },
+    ]);
+
+    await expect(fetches.fetchTerritoryTree(6142)).resolves.toEqual([
+      { type: "species", name_lang: "Cached bird" },
+    ]);
+  });
+});
+
 describe("fetchTerritoryList / fetchTerritoryCount / fetchTerritoryRegions", () => {
   it("sends the region filter and keeps it in the cache key", async () => {
     (api.get as jest.Mock).mockResolvedValue({ data: { results: [] } });

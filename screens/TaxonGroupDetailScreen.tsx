@@ -5,6 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 
+import { track } from "../services/analytics";
+
 import Layout from "../components/ui/Layout";
 import IconsHeader from "../components/ui/IconsHeader";
 import TaxonChildrenList from "../components/Taxonomy/TaxonChildrenList";
@@ -20,8 +22,8 @@ import { StaleTime } from "../constants/staleTime";
 import { useLanguage } from "../store/language-context";
 import { useTheme, ThemeColors } from "../store/theme-context";
 import {
-  AppStackNavigationProp,
-  AppStackRouteProp,
+  CatalogNavigationProp,
+  CatalogRouteProp,
   TaxonGroupDetail,
 } from "../types";
 
@@ -41,8 +43,8 @@ const TaxonGroupDetailScreen = () => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const { language } = useLanguage();
-  const navigation = useNavigation<AppStackNavigationProp>();
-  const route = useRoute<AppStackRouteProp<"TaxonGroupDetail">>();
+  const navigation = useNavigation<CatalogNavigationProp>();
+  const route = useRoute<CatalogRouteProp<"TaxonGroupDetail">>();
   const { segment, rank, initialSort } = route.params;
   const styles = stylesFn(Colors);
   const { sort, openSortSheet } = useTaxonomySort(initialSort);
@@ -68,6 +70,7 @@ const TaxonGroupDetailScreen = () => {
               null,
               sort,
             );
+            track("share_tapped", { type: "taxon_group" });
             await Share.share(
               Platform.OS === "ios" ? { url } : { message: url },
             );

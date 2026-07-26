@@ -5,6 +5,9 @@
 // thing genuinely unique to this hook is resolveObservationDiary's temp-id
 // resolution for diary-scoped observations — see the dedicated describe
 // block below.
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
+);
 jest.mock("../../../services/api", () => ({
   get: jest.fn(),
   post: jest.fn(),

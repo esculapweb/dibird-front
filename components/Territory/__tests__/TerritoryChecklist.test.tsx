@@ -12,7 +12,7 @@ jest.mock("@react-navigation/native", () => ({
   useNavigation: () => mockNavigation,
 }));
 jest.mock("@tanstack/react-query", () => ({ useQuery: jest.fn() }));
-jest.mock("../../../util/fetches", () => ({ fetchChecklist: jest.fn() }));
+jest.mock("../../../util/fetches", () => ({ fetchTerritoryTree: jest.fn() }));
 jest.mock("../../ui/ItemsList", () => {
   const { View } = require("react-native");
   return {
@@ -64,13 +64,13 @@ import { fireEvent, render, screen } from "@testing-library/react-native";
 import { useQuery } from "@tanstack/react-query";
 import { createNavigationMock } from "../../../screens/test-utils";
 import TerritoryChecklist from "../TerritoryChecklist";
-import { fetchChecklist } from "../../../util/fetches";
+import { fetchTerritoryTree } from "../../../util/fetches";
 import { ChecklistItem } from "../../../types";
 
 let mockItemsListProps: Record<string, unknown>;
 const mockNavigation = createNavigationMock();
 const mockUseQuery = useQuery as jest.Mock;
-const mockFetchChecklist = fetchChecklist as jest.Mock;
+const mockFetchTerritoryTree = fetchTerritoryTree as jest.Mock;
 
 const group = (
   type: "order" | "family",
@@ -105,8 +105,8 @@ const species = (
   thumb: null,
 });
 
-// The shape /myapi/checklist2/ returns: a flat list where each group header is
-// followed by what belongs under it.
+// The shape fetchTerritoryTree hands back: a flat list where each group header
+// is followed by what belongs under it.
 const ROWS: ChecklistItem[] = [
   group("order", 1, "Rheas order"),
   group("family", 2, "Rheas family"),
@@ -118,7 +118,7 @@ const ROWS: ChecklistItem[] = [
 ];
 
 const queryResult = (overrides: Record<string, unknown> = {}) => ({
-  data: { results: ROWS, total_species: 3, seen_species: 1, pagination: {} },
+  data: ROWS,
   isLoading: false,
   isError: false,
   isRefetching: false,
@@ -144,8 +144,10 @@ beforeEach(() => {
   mockUseQuery.mockReturnValue(queryResult());
 });
 
-it("asks the app's own checklist endpoint for that country", async () => {
-  await render(<TerritoryChecklist territoryId={52} />);
+// The public endpoint, not /myapi/checklist2/: the country page is open to
+// guests, and its personal half is off anyway (see fetchTerritoryTree).
+it("asks the public catalogue endpoint for that country", async () => {
+  await render(<TerritoryChecklist idAvibase={52} />);
   await (mockUseQuery.mock.calls.at(-1)![0].queryFn as () => unknown)();
 
   expect(mockUseQuery.mock.calls.at(-1)![0].queryKey).toEqual([
@@ -153,11 +155,11 @@ it("asks the app's own checklist endpoint for that country", async () => {
     52,
     "en",
   ]);
-  expect(mockFetchChecklist).toHaveBeenCalledWith({ territory: 52 }, null, "", 1);
+  expect(mockFetchTerritoryTree).toHaveBeenCalledWith(52);
 });
 
 it("keeps the order and family headers with the species under them", async () => {
-  await render(<TerritoryChecklist territoryId={52} />);
+  await render(<TerritoryChecklist idAvibase={52} />);
 
   expect(rows().map((r) => r.type)).toEqual([
     "order",
@@ -173,7 +175,7 @@ it("keeps the order and family headers with the species under them", async () =>
 it("leaves the personal half of the checklist card switched off", async () => {
   // The country page is the catalogue: a "seen" checkbox here would answer
   // "seen" without saying over what period.
-  await render(<TerritoryChecklist territoryId={52} />);
+  await render(<TerritoryChecklist idAvibase={52} />);
   await renderRow(ROWS[2]);
 
   expect(screen.getByTestId("personal-Greater Rhea")).toHaveTextContent("false");
@@ -181,7 +183,7 @@ it("leaves the personal half of the checklist card switched off", async () => {
 
 it("filters locally and drops the headers left with nothing under them", async () => {
   // The whole country arrives in one page, so search never hits the network.
-  await render(<TerritoryChecklist territoryId={52} />);
+  await render(<TerritoryChecklist idAvibase={52} />);
 
   await fireEvent.changeText(screen.getByTestId("search-input"), "condor");
 
@@ -193,7 +195,7 @@ it("filters locally and drops the headers left with nothing under them", async (
 });
 
 it("matches the latin name too", async () => {
-  await render(<TerritoryChecklist territoryId={52} />);
+  await render(<TerritoryChecklist idAvibase={52} />);
 
   await fireEvent.changeText(screen.getByTestId("search-input"), "pennata");
 
@@ -205,7 +207,7 @@ it("matches the latin name too", async () => {
 });
 
 it("drops every header when nothing matches at all", async () => {
-  await render(<TerritoryChecklist territoryId={52} />);
+  await render(<TerritoryChecklist idAvibase={52} />);
 
   await fireEvent.changeText(screen.getByTestId("search-input"), "penguin");
 
@@ -214,7 +216,7 @@ it("drops every header when nothing matches at all", async () => {
 });
 
 it("opens the species page from a row", async () => {
-  await render(<TerritoryChecklist territoryId={52} />);
+  await render(<TerritoryChecklist idAvibase={52} />);
   await renderRow(ROWS[2]);
 
   await fireEvent.press(screen.getByTestId("row-species"));
@@ -225,7 +227,7 @@ it("opens the species page from a row", async () => {
 });
 
 it("keys the rows so a group and a species can share an id", async () => {
-  await render(<TerritoryChecklist territoryId={52} />);
+  await render(<TerritoryChecklist idAvibase={52} />);
   const keyOf = mockItemsListProps.keyExtractor as (
     item: ChecklistItem,
     index: number,
@@ -242,7 +244,7 @@ it("offers a retry when the checklist could not be loaded", async () => {
   });
   mockUseQuery.mockReturnValue(result);
 
-  await render(<TerritoryChecklist territoryId={52} />);
+  await render(<TerritoryChecklist idAvibase={52} />);
   expect(screen.getByText("checklist_unavailable")).toBeOnTheScreen();
 
   await fireEvent.press(screen.getByText("try_again"));
@@ -254,22 +256,17 @@ it("keeps an order whose other family still has matches", async () => {
   // the order header has to stay while the first family goes.
   mockUseQuery.mockReturnValue(
     queryResult({
-      data: {
-        results: [
-          group("order", 1, "Hawks order"),
-          group("family", 2, "Ospreys"),
-          species(20, "Osprey", "Pandion haliaetus"),
-          group("family", 3, "Eagles"),
-          species(21, "Golden Eagle", "Aquila chrysaetos"),
-        ],
-        total_species: 2,
-        seen_species: 0,
-        pagination: {},
-      },
+      data: [
+        group("order", 1, "Hawks order"),
+        group("family", 2, "Ospreys"),
+        species(20, "Osprey", "Pandion haliaetus"),
+        group("family", 3, "Eagles"),
+        species(21, "Golden Eagle", "Aquila chrysaetos"),
+      ],
     }),
   );
 
-  await render(<TerritoryChecklist territoryId={52} />);
+  await render(<TerritoryChecklist idAvibase={52} />);
   await fireEvent.changeText(screen.getByTestId("search-input"), "eagle");
 
   expect(rows().map((r) => r.name_lang)).toEqual([

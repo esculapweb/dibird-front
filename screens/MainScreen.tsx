@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { RefreshControl, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -29,6 +29,7 @@ import {
   AllowedFilterKey,
 } from "../types";
 import { BottomSheet } from "../services/bottomSheet";
+import { lifelistBucket, setUserProps } from "../services/analytics";
 import { useTheme } from "../store/theme-context";
 import { useTranslation } from "react-i18next";
 
@@ -115,6 +116,16 @@ const MainScreen = () => {
   // this the screen would be zeros and an icon grid.
   const isNewUser =
     !!dataStats && dataStats.observations === 0 && dataStats.diaries === 0;
+
+  // Размер лайфлиста — свойство, по которому режутся все отчёты об удержании.
+  // Считаем его только по неотфильтрованному дашборду: с выбранной страной или
+  // периодом `seen` — это срез, и пользователь с 300 видами уехал бы в корзину
+  // «1-10» просто потому, что смотрел один месяц.
+  const hasFilters = !!filters?.territory || !!filters?.date;
+  useEffect(() => {
+    if (!dataStats || hasFilters) return;
+    setUserProps({ lifelist_bucket: lifelistBucket(dataStats.seen ?? 0) });
+  }, [dataStats, hasFilters]);
 
   const openFilters = () => {
     BottomSheet.showContent({

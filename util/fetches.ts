@@ -351,6 +351,100 @@ export const fetchTerritoryDetail = async (
   }
 };
 
+// Строка дерева, как её отдаёт публичный /api/checklist/ (TreeViewSet на
+// бэкенде). Имена полей у него свои — это ответ сайта, не приложения.
+interface TerritoryTreeRow {
+  depth: number;
+  d_name: string;
+  d_name_lang: string;
+  d_segment: string;
+  thumb: string | null;
+  // Категория МСОП ("LC", "VU", …).
+  d_status: string | null;
+  // Статус пребывания на территории (свободный текст Avibase) — у /myapi/
+  // это поле зовётся occurrence. Есть только у видов.
+  status?: string | null;
+}
+
+const TREE_DEPTH_TYPE: Record<number, ChecklistItem["type"]> = {
+  2: "order",
+  3: "family",
+  4: "genus",
+  5: "species",
+};
+
+// Насколько глубоко вложена группа — тем же порядком, что у поиска в
+// components/Territory/TerritoryChecklist.tsx.
+const GROUP_LEVEL: Record<string, number> = { order: 0, family: 1, genus: 2 };
+
+/**
+ * Птицы страны для каталога — с публичной ручки `/api/checklist/`, а не с
+ * личной `/myapi/checklist2/`.
+ *
+ * Две причины. Первая: страница страны открыта гостю, а `/myapi/` требует
+ * аккаунт. Вторая: `checklist2` ради этой страницы считал `seen`
+ * Exists-подзапросом на каждую из ~1000-2000 строк, и результат никуда не
+ * шёл — личный слой на странице страны выключен (`ChecklistCard.personal`).
+ *
+ * Ключ здесь — `id_avibase`, а не наш `Territory.pk`: у публичной ручки своя
+ * система идентификаторов. Ответ приходит одной страницей в таксономическом
+ * порядке (родитель всегда раньше своих потомков), поэтому число видов в
+ * группе считается тем же проходом — на бэкенде его нет, а строке отряда и
+ * семейства оно нужно.
+ */
+export const fetchTerritoryTree = async (
+  idAvibase: number,
+): Promise<ChecklistItem[]> => {
+  const cacheKey = `territory-tree|${idAvibase}|${i18n.language}`;
+
+  const toItems = (rows: TerritoryTreeRow[]): ChecklistItem[] => {
+    const items: ChecklistItem[] = rows.map((row) => ({
+      latin: row.d_name,
+      name_lang: row.d_name_lang,
+      segment: row.d_segment,
+      // Личного слоя на странице страны нет, но поле обязательное у
+      // ChecklistItem — `personal={false}` его всё равно не читает.
+      seen: false,
+      status: row.d_status ?? null,
+      occurrence: row.status ?? null,
+      thumb: row.thumb,
+      type: TREE_DEPTH_TYPE[row.depth] ?? "species",
+    }));
+
+    // Стек открытых групп по рангам: вид засчитывается всем группам над ним,
+    // а новая группа закрывает все группы своего ранга и глубже.
+    const open: ChecklistItem[] = [];
+    for (const item of items) {
+      if (item.type === "species") {
+        open.forEach((group) => (group.total = (group.total ?? 0) + 1));
+        continue;
+      }
+      const level = GROUP_LEVEL[item.type] ?? 0;
+      open.length = level;
+      open[level] = item;
+      item.total = 0;
+    }
+
+    return items;
+  };
+
+  try {
+    const res = await api.get<TerritoryTreeRow[]>("/api/checklist/", {
+      params: { id: idAvibase },
+    });
+    const items = toItems(res.data);
+    cacheListResponse(territoryDetailCacheTable, cacheKey, items, MAX_ENTRIES);
+    return items;
+  } catch (e) {
+    const cached = getCachedListResponse<ChecklistItem[]>(
+      territoryDetailCacheTable,
+      cacheKey,
+    );
+    if (cached) return serveFromCache(cached, e, "fetchTerritoryTree");
+    throw e;
+  }
+};
+
 export const fetchTerritoryCompare = async (
   segment1: string,
   segment2: string,

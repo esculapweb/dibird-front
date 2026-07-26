@@ -8,6 +8,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import i18n from "../services/i18n";
 import * as Localization from "expo-localization";
+import { setUserProps } from "../services/analytics";
 
 interface LanguageContextType {
   language: string;
@@ -25,6 +26,13 @@ const getDeviceLanguage = () => {
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [language, setLanguage] = useState("en");
   const [isReady, setIsReady] = useState(false);
+
+  // Язык интерфейса — не язык устройства: у не-EN рынков это как раз то
+  // измерение, ради которого план и различает рынки в отчётах.
+  useEffect(() => {
+    if (!isReady) return;
+    setUserProps({ ui_language: language });
+  }, [language, isReady]);
 
   useEffect(() => {
     const init = async () => {

@@ -91,8 +91,26 @@ it("opens the detail pages for species and each group rank", () => {
   });
 });
 
-it("does not deep-link the catalogue when signed out", () => {
+// The catalogue is registered in the guest stack too, so a shared link has to
+// open in the app without an account — that is the whole point of the Share
+// buttons. Only the route it sits under changes, since the guest stack has no
+// Main: Back must land on Welcome instead.
+it("deep-links the catalogue when signed out, rooted at Welcome", () => {
   const state = stateFor("/species/?territory=5", false);
 
-  expect(JSON.stringify(state ?? null)).not.toContain("Taxonomy");
+  expect(state?.routes[0]).toEqual({ name: "Welcome" });
+  expect(state?.routes[1]).toEqual({
+    name: "Taxonomy",
+    params: { rank: 5, initialTraits: { territory: 5 } },
+  });
+});
+
+it("roots the same catalogue link at Main when signed in", () => {
+  const state = stateFor("/species/osprey/", true);
+
+  expect(state?.routes[0]).toEqual({ name: "Main" });
+  expect(state?.routes[1]).toEqual({
+    name: "SpeciesDetail",
+    params: { segment: "osprey" },
+  });
 });

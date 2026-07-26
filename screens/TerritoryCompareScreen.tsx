@@ -5,6 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 
+import { track } from "../services/analytics";
+
 import Layout from "../components/ui/Layout";
 import Tabs from "../components/ui/Tabs";
 import ItemsList from "../components/ui/ItemsList";
@@ -21,8 +23,8 @@ import { StaleTime } from "../constants/staleTime";
 import { useLanguage } from "../store/language-context";
 import { useTheme, ThemeColors } from "../store/theme-context";
 import {
-  AppStackNavigationProp,
-  AppStackRouteProp,
+  CatalogNavigationProp,
+  CatalogRouteProp,
   compareMode,
   TerritoryCompareSpecies,
   TerritoryListItem,
@@ -43,8 +45,8 @@ const TerritoryCompareScreen = () => {
   const { Colors } = useTheme();
   const { language } = useLanguage();
   const styles = stylesFn(Colors);
-  const navigation = useNavigation<AppStackNavigationProp>();
-  const route = useRoute<AppStackRouteProp<"TerritoryCompare">>();
+  const navigation = useNavigation<CatalogNavigationProp>();
+  const route = useRoute<CatalogRouteProp<"TerritoryCompare">>();
   // Name and flag are kept next to the segment, not read back off the
   // comparison response: that response only exists once *both* countries are
   // picked, so a card driven by it alone would sit there saying "pick a
@@ -118,6 +120,7 @@ const TerritoryCompareScreen = () => {
                     segments[1] as string,
                     { tab: tabMode, sort, search },
                   );
+                  track("share_tapped", { type: "territory_compare" });
                   await Share.share(
                     Platform.OS === "ios" ? { url } : { message: url },
                   );
