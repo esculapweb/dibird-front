@@ -70,6 +70,12 @@ if command -v lsof >/dev/null 2>&1; then
     echo "Maestro's device scan hangs forever on these. Free the port(s) and re-run." >&2
     exit 1
   fi
+else
+  # Skipping silently would hand back exactly the symptom this check exists to
+  # explain: a run that prints nothing and never finishes. Say it out loud, but
+  # don't block — lsof missing is not itself a reason not to try.
+  echo "Note: lsof not found, skipping the ADB port 5555-5683 check." >&2
+  echo "      If this run hangs with no output, a process on one of those ports is why." >&2
 fi
 
 ENV_FILE=".maestro/.env.local"

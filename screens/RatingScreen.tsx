@@ -12,6 +12,7 @@ import { useTheme } from "../store/theme-context";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import { useProfile } from "../store/profile-context";
 import { buildShareUrl } from "../util/helpers";
+import { track } from "../services/analytics";
 import {
   AppStackNavigationProp,
   AppStackRouteProp,
@@ -71,6 +72,7 @@ const RatingScreen = () => {
 
   const handleShare = useCallback(async () => {
     const url = buildShareUrl("users/", currentFilters, currentSort);
+    track("share_tapped", { type: "rating" });
     await Share.share(Platform.OS === "ios" ? { url } : { message: url });
   }, [currentFilters, currentSort]);
 

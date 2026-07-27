@@ -7,13 +7,28 @@ import {
   ReactNode,
 } from "react";
 import * as Location from "expo-location";
+import { track } from "../services/analytics";
 import { Coords } from "../types";
+
+interface LocationOptions {
+  /**
+   * Показывать ли системный диалог, если разрешения ещё не спрашивали.
+   * `false` — «возьми координаты, если они и так доступны, и промолчи»: нужен
+   * фоновым потребителям (App.tsx), которым координаты полезны, но которые не
+   * являются поводом спросить. Диалог должен всплывать там, где пользователь
+   * сам попросил что-то, чему нужна геопозиция.
+   */
+  prompt?: boolean;
+}
 
 interface LocationContextType {
   locationCoords: Coords | null;
   locationAvailable: boolean;
   permissionStatus: string | null;
-  requestLocation: (accuracy?: Location.Accuracy) => Promise<{
+  requestLocation: (
+    accuracy?: Location.Accuracy,
+    options?: LocationOptions,
+  ) => Promise<{
     coords: Coords;
     accuracy: number | null;
   } | null>;
@@ -33,8 +48,16 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
   // raced App.tsx's startup fetch — everyone in flight awaits the same
   // promise and gets that one fix.
   const inFlightRef = useRef<Promise<{ coords: Coords; accuracy: number | null } | null> | null>(null);
+  // ...but a silent request must not stand in for a prompting one. Since
+  // App.tsx's startup fetch became `prompt: false`, plain sharing would let it
+  // answer `null` on behalf of a user who just tapped "locate me" — and the
+  // dialog they asked for would never appear.
+  const inFlightPromptRef = useRef(false);
 
-  const requestLocationOnce = useCallback(async (desiredAccuracy: Location.Accuracy) => {
+  const requestLocationOnce = useCallback(async (
+    desiredAccuracy: Location.Accuracy,
+    prompt: boolean,
+  ) => {
     setIsRequesting(true);
 
     try {
@@ -55,8 +78,16 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (existingStatus !== "granted") {
+        if (!prompt) return null;
+
         const { status } = await Location.requestForegroundPermissionsAsync();
         setPermissionStatus(status);
+        // Только здесь: это единственная ветка, где диалог действительно
+        // показали. Событие на уже известном статусе считало бы каждый запуск
+        // приложения за новый ответ пользователя.
+        track("location_permission", {
+          granted: status === "granted" ? "yes" : "no",
+        });
         if (status !== "granted") return null;
       }
 
@@ -81,15 +112,31 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const requestLocation = useCallback(async (desiredAccuracy: Location.Accuracy = Location.Accuracy.Balanced) => {
-    if (inFlightRef.current) return inFlightRef.current;
+  const requestLocation = useCallback(async (
+    desiredAccuracy: Location.Accuracy = Location.Accuracy.Balanced,
+    { prompt = true }: LocationOptions = {},
+  ) => {
+    if (inFlightRef.current && (inFlightPromptRef.current || !prompt)) {
+      return inFlightRef.current;
+    }
 
-    const promise = requestLocationOnce(desiredAccuracy);
+    // A prompting caller that arrived behind a silent one waits it out first:
+    // two overlapping native requests are exactly what inFlightRef exists to
+    // prevent. If the silent one already produced a fix, that fix is the
+    // answer and no dialog is needed.
+    if (inFlightRef.current) {
+      const silent = await inFlightRef.current.catch(() => null);
+      if (silent) return silent;
+    }
+
+    const promise = requestLocationOnce(desiredAccuracy, prompt);
     inFlightRef.current = promise;
+    inFlightPromptRef.current = prompt;
     try {
       return await promise;
     } finally {
       inFlightRef.current = null;
+      inFlightPromptRef.current = false;
     }
   }, [requestLocationOnce]);
 

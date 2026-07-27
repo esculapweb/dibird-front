@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { ThemeColors, useTheme } from "../../store/theme-context";
 import { LoginWithGoogle, LoginWithApple } from "../../util/auth";
 import { useApiError } from "../../hooks/useApiError";
+import { track } from "../../services/analytics";
 import { AppError } from "../../types";
 
 interface AuthOptionsProps {
@@ -40,9 +41,14 @@ const AuthOptions = ({ onEmailPress, onAuthenticated }: AuthOptionsProps) => {
     }
   }, []);
 
+  // `auth_started` шлётся здесь, а не в util/auth.ts: там известен только
+  // результат (`login`/`sign_up`), и разницу между этими двумя событиями —
+  // отвал в самом провайдере, отмену системного диалога, недоступные Play
+  // Services — видно только отсюда.
   const handleGoogle = async () => {
     if (googleLoginInProgress) return;
     setGoogleLoginInProgress(true);
+    track("auth_started", { method: "google" });
 
     try {
       const result = await LoginWithGoogle();
@@ -65,6 +71,7 @@ const AuthOptions = ({ onEmailPress, onAuthenticated }: AuthOptionsProps) => {
   };
 
   const handleApple = async () => {
+    track("auth_started", { method: "apple" });
     try {
       await LoginWithApple();
       onAuthenticated?.();

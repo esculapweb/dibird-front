@@ -169,29 +169,38 @@ const Navigation = () => {
     AsyncStorage.removeItem(NAV_STATE_KEY);
 
     // Забираем всегда, даже на логауте: намерение не должно пережить
-    // ситуацию, ради которой ставилось.
-    const target = takeAuthReturn();
-    if (!isAuthenticated || !target) return;
+    // ситуацию, ради которой ставилось. Асинхронно, потому что намерение
+    // переживает и перезапуск процесса (см. services/authReturn.ts).
+    takeAuthReturn().then((target) => {
+      if (!isAuthenticated || !target) return;
 
-    // Гость вошёл со страницы справочника (шторка useRequireAuth). Навигатор
-    // к этому моменту уже переключился на AppStack и стоит на MainScreen —
-    // возвращаем экран, с которого всё начиналось, поверх Main, чтобы «назад»
-    // вело туда же, куда вело бы у обычного пользователя.
-    const from = lastGuestRouteRef.current?.name;
-    const inFunnel =
-      from !== undefined &&
-      (from === target.name || AUTH_FUNNEL_SCREENS.has(from));
-    if (!inFunnel) return;
+      // Гость вошёл со страницы справочника (шторка useRequireAuth). Навигатор
+      // к этому моменту уже переключился на AppStack и стоит на MainScreen —
+      // возвращаем экран, с которого всё начиналось, поверх Main, чтобы «назад»
+      // вело туда же, куда вело бы у обычного пользователя.
+      //
+      // Гард нужен, чтобы не телепортировать того, кто передумал, ушёл гулять и
+      // залогинился через час совсем в другом месте. Но работает он только на
+      // тёплом пути: если приложение перезапустилось (регистрация по почте
+      // уводит в почтовый клиент, ссылка возвращает холодным стартом), гость по
+      // этому стеку не ходил и `lastGuestRouteRef` пуст. Там роль «не выходя из
+      // воронки» играет суточный TTL самого намерения.
+      const from = lastGuestRouteRef.current?.name;
+      const coldStart = from === undefined;
+      const inFunnel =
+        coldStart || from === target.name || AUTH_FUNNEL_SCREENS.has(from);
+      if (!inFunnel) return;
 
-    navigationRef.current?.dispatch(
-      CommonActions.reset({
-        index: 1,
-        routes: [
-          { name: "Main" },
-          { name: target.name, params: target.params },
-        ],
-      }),
-    );
+      navigationRef.current?.dispatch(
+        CommonActions.reset({
+          index: 1,
+          routes: [
+            { name: "Main" },
+            { name: target.name, params: target.params },
+          ],
+        }),
+      );
+    });
   }, [isAuthenticated, isInitializing]);
 
   if (initialState === undefined) return null;

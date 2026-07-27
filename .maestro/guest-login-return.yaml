@@ -3,6 +3,12 @@
 # never logs in and ends at the auth sheet's Cancel — this one takes the same
 # sheet the other way.
 #
+# Named "login", not "signup", because that is what it does: it signs in with
+# the existing TEST_EMAIL. Registering a fresh account needs a unique address
+# per run and a mailbox to open the confirmation link from, neither of which
+# Maestro has — that path stays a manual item in RELEASE_CHECKLIST.md §2, and
+# it is the one services/authReturn.ts persists the intent to disk for.
+#
 # Logging in swaps AuthStack for AppStack, which rebuilds the navigator from
 # scratch: without services/authReturn.ts the guest who registered from a bird
 # page came back to MainScreen, having lost the bird they registered for —

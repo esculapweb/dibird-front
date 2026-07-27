@@ -5,8 +5,11 @@ jest.mock("expo-location", () => ({
   getCurrentPositionAsync: jest.fn(),
 }));
 
+jest.mock("../../services/analytics", () => ({ track: jest.fn() }));
+
 import * as Location from "expo-location";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
+import { track } from "../../services/analytics";
 import { LocationProvider, useLocation } from "../location-context";
 
 beforeEach(() => {
@@ -160,5 +163,165 @@ describe("requestLocation", () => {
     expect(firstReturn).toEqual({ coords: [2, 1], accuracy: 1 });
     expect(secondReturn).toEqual({ coords: [2, 1], accuracy: 1 });
     expect(result.current.isRequesting).toBe(false);
+  });
+});
+
+// Вход в аккаунт — не повод показывать системный диалог о геопозиции, поэтому
+// фоновым потребителям (App.tsx) нужен режим «возьми, если уже разрешено».
+describe("prompt: false", () => {
+  it("returns nothing instead of prompting when permission was never asked for", async () => {
+    (Location.getForegroundPermissionsAsync as jest.Mock).mockResolvedValue({
+      status: "undetermined",
+    });
+
+    const { result } = await renderHook(() => useLocation(), {
+      wrapper: LocationProvider,
+    });
+    let returned: unknown;
+    await act(async () => {
+      returned = await result.current.requestLocation(undefined, {
+        prompt: false,
+      });
+    });
+
+    expect(Location.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
+    expect(returned).toBeNull();
+  });
+
+  // У того, кто разрешение уже дал, ничего не меняется — диалога и так не было.
+  it("still fetches the position when permission is already granted", async () => {
+    (Location.getForegroundPermissionsAsync as jest.Mock).mockResolvedValue({
+      status: "granted",
+    });
+    (Location.getCurrentPositionAsync as jest.Mock).mockResolvedValue({
+      coords: { latitude: 48.85, longitude: 2.35, accuracy: 10 },
+    });
+
+    const { result } = await renderHook(() => useLocation(), {
+      wrapper: LocationProvider,
+    });
+    await act(async () => {
+      await result.current.requestLocation(undefined, { prompt: false });
+    });
+
+    expect(result.current.locationCoords).toEqual([2.35, 48.85]);
+  });
+
+  // Молчаливый запрос не должен отвечать за того, кто сам нажал «я здесь»:
+  // иначе диалог, который человек попросил, не появится вовсе.
+  it("does not let an in-flight silent request answer for a prompting one", async () => {
+    let releasePermissions: (v: { status: string }) => void = () => {};
+    (Location.getForegroundPermissionsAsync as jest.Mock).mockReturnValueOnce(
+      new Promise<{ status: string }>((resolve) => {
+        releasePermissions = resolve;
+      }),
+    );
+
+    const { result } = await renderHook(() => useLocation(), {
+      wrapper: LocationProvider,
+    });
+
+    let silent: Promise<unknown> = Promise.resolve();
+    let prompted: Promise<unknown> = Promise.resolve();
+    await act(async () => {
+      silent = result.current.requestLocation(undefined, { prompt: false });
+      prompted = result.current.requestLocation();
+
+      // The silent one finds no permission and bows out.
+      releasePermissions({ status: "undetermined" });
+
+      (Location.getForegroundPermissionsAsync as jest.Mock).mockResolvedValue({
+        status: "undetermined",
+      });
+      (Location.requestForegroundPermissionsAsync as jest.Mock).mockResolvedValue({
+        status: "granted",
+      });
+      (Location.getCurrentPositionAsync as jest.Mock).mockResolvedValue({
+        coords: { latitude: 1, longitude: 2, accuracy: 5 },
+      });
+
+      await silent;
+      await prompted;
+    });
+
+    expect(await silent).toBeNull();
+    expect(Location.requestForegroundPermissionsAsync).toHaveBeenCalledTimes(1);
+    expect(await prompted).toEqual({ coords: [2, 1], accuracy: 5 });
+  });
+});
+
+// Событие меряет ответ на диалог. Ставить его на уже известном статусе значило
+// бы считать каждый запуск приложения за новый ответ пользователя.
+describe("location_permission", () => {
+  it("fires when the dialog was actually shown and accepted", async () => {
+    (Location.getForegroundPermissionsAsync as jest.Mock).mockResolvedValue({
+      status: "undetermined",
+    });
+    (Location.requestForegroundPermissionsAsync as jest.Mock).mockResolvedValue({
+      status: "granted",
+    });
+    (Location.getCurrentPositionAsync as jest.Mock).mockResolvedValue({
+      coords: { latitude: 1, longitude: 2, accuracy: 5 },
+    });
+
+    const { result } = await renderHook(() => useLocation(), {
+      wrapper: LocationProvider,
+    });
+    await act(async () => {
+      await result.current.requestLocation();
+    });
+
+    expect(track).toHaveBeenCalledWith("location_permission", { granted: "yes" });
+  });
+
+  it("fires on a refusal too", async () => {
+    (Location.getForegroundPermissionsAsync as jest.Mock).mockResolvedValue({
+      status: "undetermined",
+    });
+    (Location.requestForegroundPermissionsAsync as jest.Mock).mockResolvedValue({
+      status: "denied",
+    });
+
+    const { result } = await renderHook(() => useLocation(), {
+      wrapper: LocationProvider,
+    });
+    await act(async () => {
+      await result.current.requestLocation();
+    });
+
+    expect(track).toHaveBeenCalledWith("location_permission", { granted: "no" });
+  });
+
+  it("stays quiet when permission was granted on an earlier run", async () => {
+    (Location.getForegroundPermissionsAsync as jest.Mock).mockResolvedValue({
+      status: "granted",
+    });
+    (Location.getCurrentPositionAsync as jest.Mock).mockResolvedValue({
+      coords: { latitude: 1, longitude: 2, accuracy: 5 },
+    });
+
+    const { result } = await renderHook(() => useLocation(), {
+      wrapper: LocationProvider,
+    });
+    await act(async () => {
+      await result.current.requestLocation();
+    });
+
+    expect(track).not.toHaveBeenCalled();
+  });
+
+  it("stays quiet when permission was already refused", async () => {
+    (Location.getForegroundPermissionsAsync as jest.Mock).mockResolvedValue({
+      status: "denied",
+    });
+
+    const { result } = await renderHook(() => useLocation(), {
+      wrapper: LocationProvider,
+    });
+    await act(async () => {
+      await result.current.requestLocation();
+    });
+
+    expect(track).not.toHaveBeenCalled();
   });
 });

@@ -9,6 +9,7 @@ import Logo from "../ui/Logo";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import FormWrapper from "../ui/FormWrapper";
 import { useApiError } from "../../hooks/useApiError";
+import { track } from "../../services/analytics";
 import {
   AppError,
   AuthStackNavigationProp,
@@ -112,6 +113,11 @@ const AuthContent = ({
       });
       return;
     }
+
+    // После валидации, а не по тапу: событие меряет пару «попытка → login/
+    // sign_up», и опечатка в почте, до сервера не дошедшая, испортила бы эту
+    // пару, выглядя как неудачный вход.
+    track("auth_started", { method: "email" });
 
     try {
       await onAuthenticate(authData);

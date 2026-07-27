@@ -129,6 +129,12 @@ const RareNearby: FC<NewSpeciesProps> = ({ filters }) => {
   // means the territory and radius from the alert settings. Say so, and make
   // the label the way to change it — otherwise switching country in the
   // header looks broken when this list doesn't move.
+  //
+  // It also deliberately ignores `settings.is_enabled`, and keeps showing the
+  // list when alerts are off: that flag governs *push notifications*, and who
+  // is around right now is worth reading either way. AlertsCard above says so
+  // in those terms — "you won't be notified", never "alerts are off", which
+  // next to a working list would read as the two being out of sync.
   const scope = [
     settings?.territory_data?.name,
     settings?.radius_km ? normalizeDistance(settings.radius_km * 1000) : null,

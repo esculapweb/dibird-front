@@ -10,7 +10,7 @@ import "../services/i18n";
 import { registerPushToken, markNotificationsRead } from "../util/fetches";
 import { UNREAD_COUNT_KEY } from "../hooks/useUnreadCount";
 import { navigateFromNotification } from "../services/navigationRef";
-import { setUserProps } from "../services/analytics";
+import { setUserProps, track } from "../services/analytics";
 import { logError } from "../services/errors";
 import { subscribeToReconnect } from "../services/sync/networkStatus";
 import { isNotificationPayload, NotificationPayload, AppError } from "../types";
@@ -54,6 +54,70 @@ const handleNotificationTap = (
   handleNotificationNavigation(raw);
 };
 
+type PermissionStatus = "granted" | "denied" | "undetermined";
+
+// Fetch the token and register it with the backend. Split out of the effect so
+// that both paths — "permission was already granted on a previous run" and
+// "the user just granted it from the alerts card" — do the same thing.
+const registerToken = async (
+  onNeedsRetry: (unsubscribe: () => void) => void,
+): Promise<void> => {
+  const token = await Notifications.getExpoPushTokenAsync({
+    projectId: Constants.expoConfig?.extra?.eas?.projectId,
+  });
+
+  const attemptRegister = async (): Promise<boolean> => {
+    try {
+      await registerPushToken(token.data);
+      return true;
+    } catch (e) {
+      const error = e as AppError;
+      logError(error, "registerPushTokenError API ERROR");
+      return !(error.isNetworkError || error.isTimeout);
+    }
+  };
+
+  // If registration failed purely due to connectivity (e.g. permission
+  // was just granted with no signal), retry once the device reconnects
+  // instead of leaving the token unregistered until the next cold start.
+  if (!(await attemptRegister())) {
+    const unsubscribe = subscribeToReconnect(async () => {
+      if (await attemptRegister()) unsubscribe();
+    });
+    onNeedsRetry(unsubscribe);
+  }
+};
+
+/**
+ * Показать системный диалог о пушах и зарегистрировать токен.
+ *
+ * Вызывается **только** из точек, где пользователь сам попросил то, ради чего
+ * нужны уведомления (карточка алертов на главной, свитч в настройках алертов).
+ * Раньше диалог всплывал сразу после логина, ни к чему не привязанный, —
+ * отказать в такой момент проще, чем согласиться, а доля с пушами это вход во
+ * все retention-петли.
+ *
+ * Возвращает, выдано ли разрешение. Повторный вызов после отказа безвреден:
+ * система второй диалог не покажет и вернёт прежний статус.
+ */
+export const requestPushPermission = async (): Promise<boolean> => {
+  if (!Device.isDevice) return false;
+
+  const { status } = (await Notifications.requestPermissionsAsync()) as {
+    status: PermissionStatus;
+  };
+
+  setUserProps({ has_push_token: status === "granted" ? "yes" : "no" });
+  track("push_permission", { granted: status === "granted" ? "yes" : "no" });
+
+  if (status !== "granted") return false;
+
+  // Registration failures are already logged inside; a token that could not be
+  // delivered right now must not read as "permission denied" to the caller.
+  await registerToken(() => {});
+  return true;
+};
+
 export const usePushNotifications = (isAuthenticated: boolean) => {
   const queryClient = useQueryClient();
   const unsubscribeReconnectRef = useRef<(() => void) | null>(null);
@@ -66,47 +130,32 @@ export const usePushNotifications = (isAuthenticated: boolean) => {
         return null;
       }
 
-      const { status } =
-        (await Notifications.requestPermissionsAsync()) as Notifications.NotificationPermissionsStatus & {
-          status: "granted" | "denied" | "undetermined";
-          granted: boolean;
-          canAskAgain: boolean;
-          expires: "never" | number;
-        };
+      // getPermissionsAsync, не request: этот хук монтируется по факту входа в
+      // аккаунт, а вход — не повод показывать системный диалог (см.
+      // requestPushPermission). Здесь только подхватывается разрешение,
+      // выданное раньше, чтобы токен доехал до бэкенда после переустановки,
+      // смены токена или отзыва разрешения в настройках ОС.
+      const { status } = (await Notifications.getPermissionsAsync()) as {
+        status: PermissionStatus;
+      };
 
       // Доля с пушами — вход в retention-петли, поэтому свойство ставится и
-      // на отказе: иначе «нет значения» смешивает отказавших с теми, кто до
-      // запроса просто не дошёл.
-      setUserProps({ has_push_token: status === "granted" ? "yes" : "no" });
+      // на отказе; «ещё не спрашивали» при этом остаётся отдельным значением,
+      // иначе оно смешалось бы с отказавшими.
+      setUserProps({
+        has_push_token:
+          status === "granted"
+            ? "yes"
+            : status === "denied"
+              ? "no"
+              : "not_asked",
+      });
 
       if (status !== "granted") return;
 
-      const token = await Notifications.getExpoPushTokenAsync({
-        projectId: Constants.expoConfig?.extra?.eas?.projectId,
+      await registerToken((unsubscribe) => {
+        unsubscribeReconnectRef.current = unsubscribe;
       });
-
-      const attemptRegister = async (): Promise<boolean> => {
-        try {
-          await registerPushToken(token.data);
-          return true;
-        } catch (e) {
-          const error = e as AppError;
-          logError(error, "registerPushTokenError API ERROR");
-          return !(error.isNetworkError || error.isTimeout);
-        }
-      };
-
-      // If registration failed purely due to connectivity (e.g. permission
-      // was just granted with no signal), retry once the device reconnects
-      // instead of leaving the token unregistered until the next cold start.
-      if (!(await attemptRegister())) {
-        unsubscribeReconnectRef.current = subscribeToReconnect(async () => {
-          if (await attemptRegister()) {
-            unsubscribeReconnectRef.current?.();
-            unsubscribeReconnectRef.current = null;
-          }
-        });
-      }
     }
     register();
 

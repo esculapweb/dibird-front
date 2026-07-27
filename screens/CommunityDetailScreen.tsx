@@ -27,6 +27,7 @@ import Section from "../components/ui/Section";
 import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
 import IconsHeader from "../components/ui/IconsHeader";
+import { track } from "../services/analytics";
 import Layout from "../components/ui/Layout";
 import { AppStackNavigationProp, AppStackRouteProp } from "../types";
 import MapL from "../components/Map/MapL";
@@ -72,6 +73,7 @@ const CommunityDetailScreen = () => {
   const handleShare = useCallback(async () => {
     const url = buildShareUrl(`my/community/${observationId}/`);
 
+    track("share_tapped", { type: "community_observation" });
     await Share.share(Platform.OS === "ios" ? { url } : { message: url });
   }, [observation, observationId]);
 

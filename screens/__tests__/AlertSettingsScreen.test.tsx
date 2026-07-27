@@ -68,12 +68,18 @@ jest.mock("../../store/alert-settings-context", () => ({
 jest.mock("../../store/location-context", () => ({
   useLocation: jest.fn(),
 }));
+jest.mock("../../hooks/usePushNotifications", () => ({
+  requestPushPermission: jest.fn(),
+}));
+jest.mock("../../services/analytics", () => ({ track: jest.fn() }));
 
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { BottomSheet } from "../../services/bottomSheet";
 import { useAlertSettings } from "../../store/alert-settings-context";
 import { useLocation } from "../../store/location-context";
 import { AlertSettings } from "../../services/alertSettings";
+import { requestPushPermission } from "../../hooks/usePushNotifications";
+import { track } from "../../services/analytics";
 import AlertSettingsScreen from "../AlertSettingsScreen";
 
 const mockSave = jest.fn();
@@ -262,5 +268,47 @@ describe("time windows", () => {
     await fireEvent.press(screen.getByTestId("window-remove-0"));
 
     expect(mockSave).toHaveBeenCalledWith({ active_hours_utc: [[1, 5]] });
+  });
+});
+
+// Включение алертов — единственный момент на этом экране, когда пуши реально
+// нужны, поэтому системный диалог просится здесь, а не по входу в аккаунт.
+describe("enabling alerts", () => {
+  beforeEach(() => {
+    mockSettingsContext({ settings: { ...SETTINGS, is_enabled: false } });
+    (requestPushPermission as jest.Mock).mockResolvedValue(true);
+  });
+
+  it("asks for push permission and reports the source", async () => {
+    await render(<AlertSettingsScreen />);
+    await fireEvent(screen.getByRole("switch"), "valueChange", true);
+
+    expect(requestPushPermission).toHaveBeenCalledTimes(1);
+    expect(track).toHaveBeenCalledWith("alerts_enabled", {
+      source: "settings",
+    });
+    expect(mockSave).toHaveBeenCalledWith({ is_enabled: true });
+  });
+
+  // Отказ не отменяет включение: настройки останутся, и уведомления поедут,
+  // как только разрешение выдадут в системных настройках.
+  it("saves the setting even when permission was refused", async () => {
+    (requestPushPermission as jest.Mock).mockResolvedValue(false);
+
+    await render(<AlertSettingsScreen />);
+    await fireEvent(screen.getByRole("switch"), "valueChange", true);
+
+    expect(mockSave).toHaveBeenCalledWith({ is_enabled: true });
+  });
+
+  it("does not prompt when switching alerts off", async () => {
+    mockSettingsContext();
+
+    await render(<AlertSettingsScreen />);
+    await fireEvent(screen.getByRole("switch"), "valueChange", false);
+
+    expect(requestPushPermission).not.toHaveBeenCalled();
+    expect(track).not.toHaveBeenCalled();
+    expect(mockSave).toHaveBeenCalledWith({ is_enabled: false });
   });
 });

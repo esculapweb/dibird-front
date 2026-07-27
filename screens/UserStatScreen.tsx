@@ -14,6 +14,7 @@ import { useTheme, ThemeColors } from "../store/theme-context";
 import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
 import { buildShareUrl, speciesDetails } from "../util/helpers";
+import { track } from "../services/analytics";
 import {
   AppStackRouteProp,
   emptyPaginatedResponse,
@@ -94,6 +95,7 @@ const UserStatScreen = () => {
       currentFilters,
       currentSort,
     );
+    track("share_tapped", { type: "user_stat" });
     await Share.share(Platform.OS === "ios" ? { url } : { message: url });
   }, [profileId, currentFilters, currentSort]);
 

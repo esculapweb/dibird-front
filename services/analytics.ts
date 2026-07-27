@@ -20,7 +20,18 @@ export type ShareType =
   | "taxon_list"
   | "territory"
   | "territory_list"
-  | "territory_compare";
+  | "territory_compare"
+  | "observation"
+  | "diary"
+  | "community_observation"
+  | "rating"
+  | "rating_compare"
+  | "stat"
+  | "user_stat"
+  | "app";
+
+/** Откуда включили алерты — точка входа, а не сам факт включения. */
+export type AlertsEnabledSource = "settings" | "main_card";
 
 /**
  * Имена событий и их параметры. Union нужен, потому что Firebase принимает
@@ -55,6 +66,19 @@ type EventParams = {
   observation_created: undefined;
   /** Ключевая точка активации; шлётся один раз за установку. */
   first_observation_created: undefined;
+  /**
+   * Алерты о редких птицах включили. Главное УТП и вход в retention-петли,
+   * поэтому событие несёт точку входа: карточка на главной и экран настроек
+   * отвечают на разные вопросы — «заметил ли кто-нибудь подсказку» и «дошёл ли
+   * кто-нибудь до настроек сам».
+   */
+  alerts_enabled: { source: AlertsEnabledSource };
+  /**
+   * Ответ на системный диалог. Шлётся только когда его реально показали:
+   * событие на уже известном статусе считало бы каждый запуск за новый ответ.
+   */
+  push_permission: { granted: "yes" | "no" };
+  location_permission: { granted: "yes" | "no" };
 };
 
 export type AnalyticsEventName = keyof EventParams;
@@ -70,7 +94,13 @@ export type UserProps = {
   ui_language: string;
   /** Id страны из профиля или "none" — выбрал ли пользователь её вообще. */
   home_territory: string;
-  has_push_token: "yes" | "no";
+  /**
+   * Три значения, а не два: «ещё не спрашивали» — это не то же самое, что
+   * «отказал». Схлопни их в "no", и доля отказов в любом отчёте окажется
+   * завышена ровно на тех, до кого диалог просто не дошёл, — а с переносом
+   * запроса в контекст таких стало большинство.
+   */
+  has_push_token: "yes" | "no" | "not_asked";
   lifelist_bucket: "0" | "1-10" | "11-100" | "100+";
 };
 

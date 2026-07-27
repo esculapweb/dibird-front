@@ -21,6 +21,8 @@ import { isoToFlagEmoji } from "../util/helpers";
 import { useLocationUnavailable } from "../hooks/useLocationUnavailable";
 import RadiusRow from "../components/ui/RadiusRow";
 import { useAlertSettings } from "../store/alert-settings-context";
+import { requestPushPermission } from "../hooks/usePushNotifications";
+import { track } from "../services/analytics";
 import type {
   AlertSettingsPatch,
   ActiveHourWindow,
@@ -111,6 +113,18 @@ export default function AlertSettingsScreen() {
     setLocalRadius(settings.radius_km);
     setLocalWindows(settings.active_hours_utc);
   }, [settings?.radius_km, settings?.active_hours_utc]);
+
+  // Включение алертов — единственный момент на этом экране, когда пуши
+  // действительно понадобились, поэтому системный диалог просится здесь.
+  // Отказ не отменяет включение: настройки останутся, и уведомления поедут,
+  // как только разрешение выдадут в системных настройках.
+  const handleToggleEnabled = async (enabled: boolean) => {
+    if (enabled) {
+      await requestPushPermission();
+      track("alerts_enabled", { source: "settings" });
+    }
+    await save({ is_enabled: enabled });
+  };
 
   const handleRequestLocation = async () => {
     if (permissionStatus === "denied") {
@@ -203,7 +217,7 @@ export default function AlertSettingsScreen() {
           icon="notifications-outline"
           label={t("alert_enabled")}
           value={settings.is_enabled}
-          onValueChange={(v) => save({ is_enabled: v })}
+          onValueChange={handleToggleEnabled}
           colors={Colors}
           styles={styles}
           testID="alert-enabled-switch"

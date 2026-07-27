@@ -17,6 +17,7 @@ import ViewSwitch from "../components/ui/ViewSwitch";
 import { useFilters } from "../store/filters-context";
 import { useProfile } from "../store/profile-context";
 import { buildShareUrl, speciesDetails } from "../util/helpers";
+import { track } from "../services/analytics";
 import { parseDeepLinkParams } from "../util/parseDeepLinkParams";
 import { BottomSheet } from "../services/bottomSheet";
 import { StaleTime } from "../constants/staleTime";
@@ -335,6 +336,7 @@ const StatScreen = () => {
       currentSort,
     );
 
+    track("share_tapped", { type: "stat" });
     await Share.share(Platform.OS === "ios" ? { url } : { message: url });
   }, [profile, currentFilters, currentSort, t]);
 

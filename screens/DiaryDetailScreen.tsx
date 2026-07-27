@@ -34,6 +34,7 @@ import DiaryObservationCard from "../components/Diary/DiaryObservationCard";
 import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
 import { BottomSheet } from "../services/bottomSheet";
+import { track } from "../services/analytics";
 import { useApiError } from "../hooks/useApiError";
 import FailedEditBanner from "../components/Profile/FailedEditBanner";
 
@@ -283,6 +284,7 @@ const DiaryDetailScreen = () => {
       currentSort,
     );
 
+    track("share_tapped", { type: "diary" });
     await Share.share(Platform.OS === "ios" ? { url } : { message: url });
   }, [diary, diaryId, currentFilters, currentSort]);
 

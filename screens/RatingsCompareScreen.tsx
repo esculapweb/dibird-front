@@ -13,6 +13,7 @@ import CompareProfileHeader from "../components/Profile/CompareProfileHeader";
 import RatingCompareCard from "../components/Rating/RatingCompareCard";
 import { useProfile } from "../store/profile-context";
 import { buildShareUrl, speciesDetails } from "../util/helpers";
+import { track } from "../services/analytics";
 import {
   AppStackRouteProp,
   compareMode,
@@ -65,6 +66,7 @@ const RatingsCompareScreen = () => {
       currentSort,
     );
 
+    track("share_tapped", { type: "rating_compare" });
     await Share.share(Platform.OS === "ios" ? { url } : { message: url });
   }, [profile, currentFilters, currentSort, profile1, profile2, t]);
 

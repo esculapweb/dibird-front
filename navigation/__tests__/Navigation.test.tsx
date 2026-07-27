@@ -12,7 +12,7 @@ import { render, waitFor } from "@testing-library/react-native";
 import type { InitialState } from "@react-navigation/native";
 
 import Navigation from "../Navigation";
-import { setAuthReturn } from "../../services/authReturn";
+import { setAuthReturn, takeAuthReturn } from "../../services/authReturn";
 
 const mockDispatch = jest.fn();
 
@@ -254,6 +254,33 @@ describe("returning the guest after sign-in", () => {
     await signInFrom("Signup");
 
     expect(mockDispatch).not.toHaveBeenCalled();
+  });
+
+  // Регистрация по почте уводит из приложения (CheckEmail → почтовый клиент →
+  // деп-линк confirm-email), и возврат приходит холодным стартом: по гостевому
+  // стеку этот процесс не ходил, `lastGuestRouteRef` пуст. Гард «не выходя из
+  // воронки» здесь неприменим — его роль играет суточный TTL намерения.
+  it("restores an intent that survived a process restart, with no guest route seen", async () => {
+    await takeAuthReturn();
+    await AsyncStorage.setItem(
+      "auth_return",
+      JSON.stringify({
+        name: "SpeciesDetail",
+        params: { segment: "osprey" },
+        savedAt: Date.now(),
+      }),
+    );
+
+    const { rerender } = await render(<Navigation />);
+    mockAuth.isAuthenticated = true;
+    await rerender(<Navigation />);
+
+    await waitFor(() =>
+      expect(resetPayload()?.routes.at(-1)).toEqual({
+        name: "SpeciesDetail",
+        params: { segment: "osprey" },
+      }),
+    );
   });
 
   it("forgets the intent on logout instead of firing it on the next login", async () => {

@@ -3,6 +3,7 @@ jest.mock("@tanstack/react-query", () => ({
 }));
 jest.mock("expo-notifications", () => ({
   requestPermissionsAsync: jest.fn(),
+  getPermissionsAsync: jest.fn(),
   getExpoPushTokenAsync: jest.fn(),
   addNotificationReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
   addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
@@ -23,6 +24,10 @@ jest.mock("../../services/navigationRef", () => ({
 }));
 jest.mock("../../services/errors", () => ({
   logError: jest.fn(),
+}));
+jest.mock("../../services/analytics", () => ({
+  setUserProps: jest.fn(),
+  track: jest.fn(),
 }));
 // Controllable stand-in, same pattern as hooks/__tests__/syncHooks.test.tsx —
 // tracks registered callbacks so a test can fire a simulated reconnect.
@@ -49,7 +54,12 @@ import { renderHook } from "@testing-library/react-native";
 import { registerPushToken, markNotificationsRead } from "../../util/fetches";
 import { navigateFromNotification } from "../../services/navigationRef";
 import { UNREAD_COUNT_KEY } from "../useUnreadCount";
-import { usePushNotifications, handleNotificationNavigation } from "../usePushNotifications";
+import { setUserProps, track } from "../../services/analytics";
+import {
+  usePushNotifications,
+  handleNotificationNavigation,
+  requestPushPermission,
+} from "../usePushNotifications";
 
 const networkStatusMock = require("../../services/sync/networkStatus") as {
   __emitReconnect: () => void;
@@ -57,6 +67,7 @@ const networkStatusMock = require("../../services/sync/networkStatus") as {
 };
 
 const requestPermissionsAsync = Notifications.requestPermissionsAsync as jest.Mock;
+const getPermissionsAsync = Notifications.getPermissionsAsync as jest.Mock;
 const getExpoPushTokenAsync = Notifications.getExpoPushTokenAsync as jest.Mock;
 const addNotificationReceivedListener = Notifications.addNotificationReceivedListener as jest.Mock;
 const addNotificationResponseReceivedListener =
@@ -71,6 +82,7 @@ beforeEach(() => {
   (useQueryClient as jest.Mock).mockReturnValue({ invalidateQueries });
   (Device as { isDevice: boolean }).isDevice = true;
   requestPermissionsAsync.mockResolvedValue({ status: "granted" });
+  getPermissionsAsync.mockResolvedValue({ status: "granted" });
   getExpoPushTokenAsync.mockResolvedValue({ data: "expo-token" });
   (registerPushToken as jest.Mock).mockResolvedValue(undefined);
   (markNotificationsRead as jest.Mock).mockResolvedValue(undefined);
@@ -106,23 +118,24 @@ describe("usePushNotifications", () => {
     await renderHook(() => usePushNotifications(false));
     await flush();
 
+    expect(getPermissionsAsync).not.toHaveBeenCalled();
     expect(requestPermissionsAsync).not.toHaveBeenCalled();
     expect(addNotificationReceivedListener).not.toHaveBeenCalled();
   });
 
-  it("still wires up notification listeners on a non-device, but never requests permission", async () => {
+  it("still wires up notification listeners on a non-device, but never reads permission", async () => {
     (Device as { isDevice: boolean }).isDevice = false;
 
     await renderHook(() => usePushNotifications(true));
     await flush();
 
-    expect(requestPermissionsAsync).not.toHaveBeenCalled();
+    expect(getPermissionsAsync).not.toHaveBeenCalled();
     expect(addNotificationReceivedListener).toHaveBeenCalled();
     expect(addNotificationResponseReceivedListener).toHaveBeenCalled();
   });
 
   it("stops before fetching a token when permission is denied", async () => {
-    requestPermissionsAsync.mockResolvedValue({ status: "denied" });
+    getPermissionsAsync.mockResolvedValue({ status: "denied" });
 
     await renderHook(() => usePushNotifications(true));
     await flush();
@@ -244,5 +257,93 @@ describe("usePushNotifications", () => {
     networkStatusMock.__emitReconnect();
     await flush();
     expect(registerPushToken).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Разрешение на пуши больше не просится по факту входа в аккаунт: диалог,
+// ни к чему не привязанный, легче отклонить, а доля с пушами — вход во все
+// retention-петли. Хук только подхватывает уже выданное разрешение.
+describe("usePushNotifications does not prompt", () => {
+  it("reads the status instead of requesting it", async () => {
+    await renderHook(() => usePushNotifications(true));
+    await flush();
+
+    expect(getPermissionsAsync).toHaveBeenCalled();
+    expect(requestPermissionsAsync).not.toHaveBeenCalled();
+  });
+
+  it("stays quiet when permission was never asked for", async () => {
+    getPermissionsAsync.mockResolvedValue({ status: "undetermined" });
+
+    await renderHook(() => usePushNotifications(true));
+    await flush();
+
+    expect(requestPermissionsAsync).not.toHaveBeenCalled();
+    expect(getExpoPushTokenAsync).not.toHaveBeenCalled();
+  });
+
+  // Три значения, а не два: слитые в "no", «не спрашивали» завысило бы долю
+  // отказов ровно на тех, до кого диалог не дошёл.
+  it.each([
+    ["granted", "yes"],
+    ["denied", "no"],
+    ["undetermined", "not_asked"],
+  ])("reports %s as has_push_token=%s", async (status, expected) => {
+    getPermissionsAsync.mockResolvedValue({ status });
+
+    await renderHook(() => usePushNotifications(true));
+    await flush();
+
+    expect(setUserProps).toHaveBeenCalledWith({ has_push_token: expected });
+  });
+
+  it("still registers a token that was granted on an earlier run", async () => {
+    await renderHook(() => usePushNotifications(true));
+    await flush();
+
+    expect(registerPushToken).toHaveBeenCalledWith("expo-token");
+  });
+});
+
+describe("requestPushPermission", () => {
+  it("prompts, registers the token and reports success", async () => {
+    const granted = await requestPushPermission();
+
+    expect(requestPermissionsAsync).toHaveBeenCalled();
+    expect(registerPushToken).toHaveBeenCalledWith("expo-token");
+    expect(track).toHaveBeenCalledWith("push_permission", { granted: "yes" });
+    expect(setUserProps).toHaveBeenCalledWith({ has_push_token: "yes" });
+    expect(granted).toBe(true);
+  });
+
+  it("reports a refusal without going after a token", async () => {
+    requestPermissionsAsync.mockResolvedValue({ status: "denied" });
+
+    const granted = await requestPushPermission();
+
+    expect(getExpoPushTokenAsync).not.toHaveBeenCalled();
+    expect(track).toHaveBeenCalledWith("push_permission", { granted: "no" });
+    expect(setUserProps).toHaveBeenCalledWith({ has_push_token: "no" });
+    expect(granted).toBe(false);
+  });
+
+  it("never prompts on a simulator", async () => {
+    (Device as { isDevice: boolean }).isDevice = false;
+
+    const granted = await requestPushPermission();
+
+    expect(requestPermissionsAsync).not.toHaveBeenCalled();
+    expect(track).not.toHaveBeenCalled();
+    expect(granted).toBe(false);
+  });
+
+  // Токен, который не доехал из-за сети, — не отказ пользователя: вызывающий
+  // (карточка алертов) обязан всё равно включить алерты.
+  it("still reports success when the token could not be delivered", async () => {
+    (registerPushToken as jest.Mock).mockRejectedValue({ isNetworkError: true });
+
+    const granted = await requestPushPermission();
+
+    expect(granted).toBe(true);
   });
 });

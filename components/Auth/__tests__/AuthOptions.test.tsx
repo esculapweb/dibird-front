@@ -18,12 +18,14 @@ jest.mock("../../../util/auth", () => ({
 jest.mock("../../../hooks/useApiError", () => ({
   useApiError: () => ({ showErrorToast: mockShowErrorToast }),
 }));
+jest.mock("../../../services/analytics", () => ({ track: jest.fn() }));
 
 import { Platform } from "react-native";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import * as AppleAuthentication from "expo-apple-authentication";
 
 import { LoginWithGoogle, LoginWithApple } from "../../../util/auth";
+import { track } from "../../../services/analytics";
 import AuthOptions from "../AuthOptions";
 
 const mockShowErrorToast = jest.fn();
@@ -123,5 +125,48 @@ describe("Apple button visibility", () => {
     await renderOptions();
 
     expect(screen.queryByTestId("auth-option-apple")).not.toBeOnTheScreen();
+  });
+});
+
+// `auth_started` отвечает на вопрос «сколько людей нажало кнопку, но до
+// аккаунта не дошло»: без него отвал в самом провайдере (отменённый системный
+// диалог, недоступные Play Services) неотличим от «не нажимал».
+describe("auth_started", () => {
+  it("fires on the Google tap", async () => {
+    (LoginWithGoogle as jest.Mock).mockResolvedValue("access-token");
+    await renderOptions();
+
+    await fireEvent.press(screen.getByTestId("auth-option-google"));
+
+    expect(track).toHaveBeenCalledWith("auth_started", { method: "google" });
+  });
+
+  it("fires on the Apple tap", async () => {
+    (LoginWithApple as jest.Mock).mockResolvedValue("access-token");
+    await renderOptions();
+
+    await fireEvent.press(await screen.findByTestId("auth-option-apple"));
+
+    expect(track).toHaveBeenCalledWith("auth_started", { method: "apple" });
+  });
+
+  it("still fires when the provider then fails", async () => {
+    (LoginWithGoogle as jest.Mock).mockRejectedValueOnce({ code: "BOOM" });
+    await renderOptions();
+
+    await fireEvent.press(screen.getByTestId("auth-option-google"));
+
+    expect(track).toHaveBeenCalledWith("auth_started", { method: "google" });
+  });
+
+  // Кнопка «по почте» только открывает форму — сама попытка входа происходит
+  // на экране Login, и событие шлётся оттуда (AuthContent), после валидации.
+  it("does not fire on the email button, which only opens the form", async () => {
+    await renderOptions();
+
+    await fireEvent.press(screen.getByTestId("auth-option-email"));
+
+    expect(mockOnEmailPress).toHaveBeenCalledTimes(1);
+    expect(track).not.toHaveBeenCalled();
   });
 });

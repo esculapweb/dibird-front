@@ -35,6 +35,7 @@ import { useApiError } from "../hooks/useApiError";
 import { getFullVersion } from "../util/helpers";
 import api from "../services/api";
 import { logError } from "../services/errors";
+import { track } from "../services/analytics";
 
 interface RowSwitchProps {
   icon: IconType;
@@ -197,6 +198,7 @@ const SettingsScreen = () => {
   });
 
   const handleTellAFriend = async () => {
+    track("share_tapped", { type: "app" });
     await Share.share(
       Platform.OS === "ios"
         ? {

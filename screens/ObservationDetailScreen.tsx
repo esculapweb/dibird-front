@@ -38,6 +38,7 @@ import IconsHeader from "../components/ui/IconsHeader";
 import Layout from "../components/ui/Layout";
 import { AppStackNavigationProp, AppStackRouteProp } from "../types";
 import { BottomSheet } from "../services/bottomSheet";
+import { track } from "../services/analytics";
 import { useApiError } from "../hooks/useApiError";
 import MapL from "../components/Map/MapL";
 
@@ -165,6 +166,7 @@ const ObservationDetailScreen = () => {
 
     const url = buildShareUrl(`my/community/${observationId}/`);
 
+    track("share_tapped", { type: "observation" });
     await Share.share(Platform.OS === "ios" ? { url } : { message: url });
   }, [observation, observationId]);
 

@@ -89,6 +89,10 @@ jest.mock("../../components/Main/RareNearby", () => {
   const { Text } = require("react-native");
   return { __esModule: true, default: (props: Record<string, unknown>) => <Text>{`RareNearby:${JSON.stringify(props)}`}</Text> };
 });
+jest.mock("../../components/Main/AlertsCard", () => {
+  const { Text } = require("react-native");
+  return { __esModule: true, default: () => <Text>AlertsCard</Text> };
+});
 jest.mock("../../components/Main/NewSpecies", () => {
   const { Text } = require("react-native");
   return { __esModule: true, default: (props: Record<string, unknown>) => <Text>{`NewSpecies:${JSON.stringify(props)}`}</Text> };

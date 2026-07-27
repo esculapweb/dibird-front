@@ -140,12 +140,18 @@ const Root = () => {
   useNotificationSync(isAuthenticated);
   useSpeciesImagePrefetch(isAuthenticated);
 
+  // Молча: вход в аккаунт — не повод для системного диалога о геопозиции. У
+  // тех, кто разрешение уже дал, ничего не меняется (диалога и так не было), а
+  // у новой установки он всплывёт там, где в нём появляется смысл — на карточке
+  // алертов, в редакторе места, при сортировке по расстоянию. Координаты нужны
+  // эффекту ниже (lat/lon в настройках алертов), но сами по себе поводом не
+  // являются.
   useEffect(() => {
     if (!isAuthenticated) {
       didAutoSave.current = false;
       return;
     }
-    requestLocation();
+    requestLocation(undefined, { prompt: false });
   }, [isAuthenticated]);
 
   useEffect(() => {
