@@ -104,6 +104,7 @@ import {
   TerritoryRegionOption,
   TerritoryDetail,
   TerritoryCompareResponse,
+  ObservationImport,
   FetchFunction,
 } from "../types";
 
@@ -126,6 +127,34 @@ export const downloadExportFile = async (
     headers: { Authorization: `Bearer ${token}` },
   });
 };
+
+export const startObservationImport = async (
+  file: { uri: string; name: string },
+  makePublic: boolean,
+): Promise<ObservationImport> => {
+  const formData = new FormData();
+
+  // Та же форма, что у аватара (`patchAvatar`): RN-овский FormData принимает
+  // объект-файл, которого нет в вебовском типе Blob.
+  formData.append("file", {
+    uri: file.uri,
+    name: file.name,
+    type: "text/csv",
+  } as unknown as Blob);
+  formData.append("make_public", makePublic ? "true" : "false");
+
+  return (
+    await api.post<ObservationImport>("/myapi/observation-import/", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    })
+  ).data;
+};
+
+export const pollObservationImportStatus =
+  async (): Promise<ObservationImport> => {
+    const res = await api.get("/myapi/observation-import/status/");
+    return res.data;
+  };
 
 export const fetchTimezones = async () => {
   try {

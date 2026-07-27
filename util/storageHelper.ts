@@ -100,6 +100,48 @@ export const markFirstObservationTracked = async (): Promise<boolean> => {
   }
 };
 
+/**
+ * Флаг «регистрация только что произошла», ставится в трёх точках `sign_up`
+ * (util/auth.ts). Гейт намеренно устроен от него, а не от «онбординг уже
+ * видели»: по отсутствию второго от новичка неотличим ветеран, который
+ * переустановил приложение и вошёл в старый аккаунт, — ему открывался бы
+ * корнем стека «выберите страну → отметьте свой первый вид». Здесь же
+ * отсутствие ключа означает «не показывать», и все существующие установки
+ * иммунны по построению, без бэкфилла.
+ *
+ * Как и два ключа выше, флаг не попадает в allowlist `AsyncStorage.multiRemove`
+ * в `Logout()`: регистрация по почте уводит из приложения на подтверждение и
+ * возвращается через экран `Login`, флаг обязан этот путь пережить.
+ */
+const ONBOARDING_KEY = "onboarding_pending";
+
+export const isOnboardingPending = async (): Promise<boolean> => {
+  try {
+    return !!(await AsyncStorage.getItem(ONBOARDING_KEY));
+  } catch (e) {
+    if (__DEV__) console.warn(`Failed to load ${ONBOARDING_KEY}`, e);
+    // Диск не читается — лучше не показать онбординг, чем показать его тому,
+    // кто им не адресован: повторный поток раздражает сильнее пропущенного.
+    return false;
+  }
+};
+
+export const markOnboardingPending = async (): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(ONBOARDING_KEY, "true");
+  } catch (e) {
+    if (__DEV__) console.warn(`Failed to save ${ONBOARDING_KEY}`, e);
+  }
+};
+
+export const clearOnboardingPending = async (): Promise<void> => {
+  try {
+    await AsyncStorage.removeItem(ONBOARDING_KEY);
+  } catch (e) {
+    if (__DEV__) console.warn(`Failed to clear ${ONBOARDING_KEY}`, e);
+  }
+};
+
 export const initGlobalFilters = async (profileTerritory: number | null): Promise<void> => {
   const alreadyInited = await AsyncStorage.getItem("filters_inited");
   if (alreadyInited) return;

@@ -5,6 +5,7 @@ import * as Sentry from "@sentry/react-native";
 
 import api, { saveTokens, clearTokens, getRefreshToken } from "../services/api";
 import { track } from "../services/analytics";
+import { markOnboardingPending } from "./storageHelper";
 import { Config } from "../constants/config";
 import { AppError } from "../types";
 import { logError } from "../services/errors";
@@ -47,6 +48,10 @@ export const CreateUser = async (
     password2: password,
     agree_terms: true,
   });
+  // Токена здесь ещё нет: почту надо подтвердить, и в приложение человек
+  // вернётся через экран `Login`. Флаг лежит в AsyncStorage и этот путь
+  // переживает — иначе онбординг достался бы только Apple/Google.
+  await markOnboardingPending();
   track("sign_up", { method: "email" });
   return data;
 };
@@ -155,6 +160,11 @@ export const LoginWithGoogle = async () => {
 
     const eventName = is_new_user ? "sign_up" : "login";
 
+    // Строго до того, как вызывающая сторона переключит auth-контекст:
+    // `OnboardingProvider` читает флаг по переходу `isAuthenticated` в true и
+    // второй попытки не делает.
+    if (is_new_user) await markOnboardingPending();
+
     track(eventName, { method: "google" });
 
     Sentry.addBreadcrumb({
@@ -205,6 +215,9 @@ export const LoginWithApple = async () => {
 
   await saveTokens({ access, refresh });
   const eventName = is_new_user ? "sign_up" : "login";
+  // См. комментарий в LoginWithGoogle: флаг обязан быть на диске раньше, чем
+  // смонтируется OnboardingProvider.
+  if (is_new_user) await markOnboardingPending();
   track(eventName, { method: "apple" });
   return access;
 };

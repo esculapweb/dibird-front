@@ -312,7 +312,7 @@ const SettingsScreen = () => {
         <Row
           icon="cloud-upload-outline"
           label={t("import_data")}
-          disabled
+          onPress={() => navigation.navigate("Import")}
           colors={Colors}
           styles={styles}
         />

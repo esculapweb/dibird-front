@@ -17,6 +17,8 @@ interface AnimatedLoadingButtonProps {
   onPress: () => void;
   loading: boolean;
   success?: boolean;
+  /** Выключена не из-за запроса, а по состоянию формы: спиннер не показываем. */
+  disabled?: boolean;
   children: ReactNode;
   testID?: string;
 }
@@ -25,6 +27,7 @@ const AnimatedLoadingButton = ({
   onPress,
   loading,
   success,
+  disabled,
   children,
   testID,
 }: AnimatedLoadingButtonProps) => {
@@ -63,12 +66,12 @@ const AnimatedLoadingButton = ({
   return (
     <Pressable
       onPress={onPress}
-      disabled={loading}
+      disabled={loading || disabled}
       testID={testID}
       style={({ pressed }) => [
         styles.button,
-        pressed && !loading ? styles.pressed : null,
-        loading ? styles.disabled : null,
+        pressed && !loading && !disabled ? styles.pressed : null,
+        loading || disabled ? styles.disabled : null,
       ]}
     >
       <View style={styles.content}>

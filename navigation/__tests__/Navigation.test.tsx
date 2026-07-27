@@ -301,4 +301,56 @@ describe("returning the guest after sign-in", () => {
 
     expect(mockDispatch).not.toHaveBeenCalled();
   });
+
+  // Гость, заведший аккаунт ради конкретной птицы, уже активирован. Сброс выше
+  // и так снимает онбординг со стека, но с непогашенным флагом тот всплыл бы на
+  // следующем холодном старте — поверх воронки, из которой человек уже вышел.
+  it("counts the onboarding as done when it returns the guest", async () => {
+    await AsyncStorage.setItem("onboarding_pending", "true");
+    setAuthReturn({ name: "SpeciesDetail", params: { segment: "osprey" } });
+
+    await signInFrom("SpeciesDetail", { segment: "osprey" });
+
+    await waitFor(async () =>
+      expect(await AsyncStorage.getItem("onboarding_pending")).toBeNull(),
+    );
+  });
+
+  it("leaves the onboarding alone for a sign-in with no wall behind it", async () => {
+    await AsyncStorage.setItem("onboarding_pending", "true");
+
+    await signInFrom("WelcomeMain");
+
+    expect(await AsyncStorage.getItem("onboarding_pending")).toBe("true");
+  });
+});
+
+// buildInitialState всегда ставит корнем "Main": сохранённый [Onboarding]
+// вернулся бы как [Main, Onboarding] — незавершённый поток поверх дашборда, с
+// которого «назад» уводит на недонастроенный аккаунт.
+describe("persisting the stack", () => {
+  // Сохранение отложено на 300 мс (см. saveTimeoutRef).
+  const afterDebounce = () => new Promise((resolve) => setTimeout(resolve, 400));
+
+  it("skips the onboarding screen", async () => {
+    mockAuth.isAuthenticated = true;
+    await render(<Navigation />);
+
+    emitStateChange?.({ index: 0, routes: [{ name: "Onboarding" }] });
+    await afterDebounce();
+
+    expect(await AsyncStorage.getItem("NAV_STATE")).toBeNull();
+  });
+
+  it("still saves an ordinary screen", async () => {
+    mockAuth.isAuthenticated = true;
+    await render(<Navigation />);
+
+    emitStateChange?.({ index: 0, routes: [{ name: "Observations" }] });
+    await afterDebounce();
+
+    expect(await AsyncStorage.getItem("NAV_STATE")).toBe(
+      JSON.stringify([{ name: "Observations" }]),
+    );
+  });
 });

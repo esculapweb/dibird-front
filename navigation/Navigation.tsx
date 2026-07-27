@@ -19,6 +19,7 @@ import {
   navigationRef,
 } from "../services/navigationRef";
 import { takeAuthReturn } from "../services/authReturn";
+import { clearOnboardingPending } from "../util/storageHelper";
 import type { MinimalRoute, NavState } from "../types";
 
 const NAV_STATE_KEY = "NAV_STATE";
@@ -191,6 +192,16 @@ const Navigation = () => {
         coldStart || from === target.name || AUTH_FUNNEL_SCREENS.has(from);
       if (!inFunnel) return;
 
+      // Онбординг для этого человека закончен, не начавшись. Он завёл аккаунт
+      // ради конкретной птицы, и сброс ниже всё равно снимет экран онбординга
+      // со стека; с непогашенным флагом тот всплыл бы на следующем холодном
+      // старте — поверх воронки, из которой он уже вышел. Прогонять его через
+      // «выберите страну» значит отобрать намерение, ради которого делались
+      // 1.1 и 1.2.
+      clearOnboardingPending().catch(
+        (e) => __DEV__ && console.warn("[NAV] failed to clear onboarding", e),
+      );
+
       navigationRef.current?.dispatch(
         CommonActions.reset({
           index: 1,
@@ -232,12 +243,21 @@ const Navigation = () => {
           if (!isAuthenticated) {
             lastGuestRouteRef.current = routes.at(-1) ?? null;
           }
-          if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-          saveTimeoutRef.current = setTimeout(() => {
-            AsyncStorage.setItem(NAV_STATE_KEY, JSON.stringify(routes)).catch(
-              (e) => __DEV__ && console.warn("[NAV] failed to save state", e),
-            );
-          }, 300);
+          // Онбординг не персистим: buildInitialState всегда ставит корнем
+          // "Main", и сохранённый [Onboarding] вернулся бы как [Main,
+          // Onboarding] — поток поверх дашборда, с которого «назад» уводит на
+          // недонастроенный аккаунт. Пока флаг не проставлен, экран и так
+          // окажется корнем стека (см. AppStack), восстанавливать нечего.
+          // Только персист: screen_view ниже онбординг слать обязан, иначе в
+          // воронке пропадёт весь шаг между sign_up и первым экраном.
+          if (routes.at(-1)?.name !== "Onboarding") {
+            if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+            saveTimeoutRef.current = setTimeout(() => {
+              AsyncStorage.setItem(NAV_STATE_KEY, JSON.stringify(routes)).catch(
+                (e) => __DEV__ && console.warn("[NAV] failed to save state", e),
+              );
+            }, 300);
+          }
         }
 
         const current = navigationRef.current?.getCurrentRoute()?.name;

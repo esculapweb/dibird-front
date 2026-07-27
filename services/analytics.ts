@@ -34,6 +34,13 @@ export type ShareType =
 export type AlertsEnabledSource = "settings" | "main_card";
 
 /**
+ * Шаги онбординга. Литеральный union, а не `number`: в Firebase параметр всё
+ * равно превращается в строку, и «шаг 5», которого нет в потоке, обнаружился
+ * бы только в отчёте через сутки.
+ */
+export type OnboardingStep = 1 | 2 | 3 | 4;
+
+/**
  * Имена событий и их параметры. Union нужен, потому что Firebase принимает
  * любую строку: опечатка в имени не падает, а тихо создаёт второе событие, и
  * обнаруживается через сутки в консоли, когда данные уже потеряны.
@@ -60,6 +67,24 @@ type EventParams = {
    * туда приходят и из дерева, и из поиска, и по ссылке.
    */
   deep_link_opened: { screen: string; authed: "yes" | "no" };
+  /**
+   * Показ шага онбординга, а не тап по «Далее»: отвал — это увиденный и
+   * брошенный шаг, и считать его надо по показам.
+   */
+  onboarding_step: { step: OnboardingStep };
+  onboarding_completed: undefined;
+  /**
+   * На каком шаге ушли. Без этого пара `onboarding_step`/`onboarding_completed`
+   * отвечает только на «сколько дошло», а вопрос к четырёхшаговому потоку —
+   * «где именно теряем».
+   */
+  onboarding_skipped: { step: OnboardingStep };
+  /**
+   * Страна выбрана в онбординге. Отдельно от user property `home_territory`:
+   * свойство показывает срез «сколько людей со страной сейчас», событие —
+   * прошёл ли конкретный человек именно этот шаг и когда.
+   */
+  onboarding_country_set: undefined;
   species_viewed: undefined;
   territory_viewed: undefined;
   share_tapped: { type: ShareType };
@@ -79,6 +104,14 @@ type EventParams = {
    */
   push_permission: { granted: "yes" | "no" };
   location_permission: { granted: "yes" | "no" };
+  /** Файл выбран и отправлен. Разница с `import_finished` = отвал в разборе. */
+  import_started: undefined;
+  /**
+   * `unmatched` — сколько латинских названий не нашлось в таксономии. Это
+   * метрика качества маппинга, а не поведения: растущее число означает, что
+   * догонять надо таксономию, а не воронку.
+   */
+  import_finished: { imported: number; unmatched: number };
 };
 
 export type AnalyticsEventName = keyof EventParams;

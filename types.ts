@@ -135,6 +135,29 @@ export interface GdprExport {
   expires_at: string;
 }
 
+/** У импорта нет `expired`: файл удаляется сразу, храниться нечему. */
+export type ObservationImportStatus =
+  | "idle"
+  | "pending"
+  | "processing"
+  | "completed"
+  | "failed";
+
+export interface ObservationImport {
+  id: number;
+  status: Exclude<ObservationImportStatus, "idle">;
+  source: "ebird";
+  make_public: boolean;
+  /** Строк в файле. */
+  total: number;
+  imported: number;
+  skipped: number;
+  /** Латинские названия, которых нет в таксономии; обрезан бэком. */
+  unmatched: string[];
+  created_at: string;
+  finished_at: string | null;
+}
+
 interface UserData {
   username: string;
   first_name: string;
@@ -1040,10 +1063,16 @@ export type WelcomeScreenNavigationProp = CompositeNavigationProp<
 >;
 
 export type AppStackParamList = CatalogParamList & {
+  // Объявляется в AppStack условно — только пока онбординг не пройден
+  // (см. store/onboarding-context.tsx). В типе он есть всегда: параметров у
+  // него нет, а условный ключ заставил бы каждое использование стека знать
+  // про состояние онбординга.
+  Onboarding: undefined;
   Main: undefined;
   Profile: undefined;
   Settings: undefined;
   AlertSettings: undefined;
+  Import: undefined;
   Stat: ScreenWithFilters | undefined;
   Checklist: ScreenWithFilters | undefined;
   Places: ScreenWithFilters | undefined;

@@ -29,13 +29,16 @@ import RatingsCompareScreen from "../screens/RatingsCompareScreen";
 import UserStatScreen from "../screens/UserStatScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import AlertSettingsScreen from "../screens/AlertSettingsScreen";
+import ImportScreen from "../screens/ImportScreen";
 import NotificationsScreen from "../screens/NotificationsScreen";
 import AchievementsScreen from "../screens/AchievementsScreen";
 import CommunityScreen from "../screens/CommunityScreen";
 import CommunityDetailScreen from "../screens/CommunityDetailScreen";
+import OnboardingScreen from "../screens/OnboardingScreen";
 
 import { useAuth, setOnLogout } from "../store/auth-context";
 import { useProfile } from "../store/profile-context";
+import { useOnboarding } from "../store/onboarding-context";
 import { clearAllListCaches } from "../hooks/repositories/listCacheRepository";
 import { clearReferenceData } from "../hooks/repositories/referenceRepository";
 import Avatar from "../components/Profile/Avatar";
@@ -211,6 +214,7 @@ const AppNavigator = () => {
   const { resetFilters, territory, date } = useFilters();
   const { language } = useLanguage();
   const queryClient = useQueryClient();
+  const { status: onboardingStatus } = useOnboarding();
 
   useEffect(() => {
     setOnLogout(async () => {
@@ -236,6 +240,12 @@ const AppNavigator = () => {
     enabled: !!territory,
   });
 
+  // Начальный маршрут стека зависит от того, пройден ли онбординг, а
+  // NavigationContainer читает его один раз: отрендерить навигатор с корнем
+  // `Main` и добавить онбординг вторым рендером уже нечем. Тот же приём, что в
+  // Navigation.tsx, где до готовности initialState рендерится null.
+  if (onboardingStatus === "loading") return null;
+
   return (
     <Stack.Navigator
       id={undefined}
@@ -251,6 +261,20 @@ const AppNavigator = () => {
         },
       }}
     >
+      {/* Объявлен первым — значит, он и есть корень стека, пока не пройден.
+          `complete()`/`skip()` убирают экран из навигатора, и стек падает на
+          `Main`: тот же условный рендер, которым Navigation переключает
+          AuthStack/AppStack. Жест «назад» выключен — уходить с него можно
+          только через «Пропустить», иначе на iOS свайп открыл бы дашборд
+          из-под незавершённого потока. */}
+      {onboardingStatus === "needed" && (
+        <Stack.Screen
+          name="Onboarding"
+          component={OnboardingScreen}
+          options={{ headerShown: false, gestureEnabled: false }}
+        />
+      )}
+
       <Stack.Screen
         name="Main"
         component={MainDrawer}
@@ -284,6 +308,12 @@ const AppNavigator = () => {
         name="AlertSettings"
         component={AlertSettingsScreen}
         options={{ title: t("alert_settings") }}
+      />
+
+      <Stack.Screen
+        name="Import"
+        component={ImportScreen}
+        options={{ title: t("import_data") }}
       />
 
       <Stack.Screen

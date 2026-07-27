@@ -20,6 +20,7 @@ import * as Notifications from "expo-notifications";
 import AuthContextProvider, { useAuth } from "./store/auth-context";
 import { ProfileProvider } from "./store/profile-context";
 import { AlertSettingsProvider } from "./store/alert-settings-context";
+import { OnboardingProvider } from "./store/onboarding-context";
 import { FiltersProvider } from "./store/filters-context";
 import { LocationProvider } from "./store/location-context";
 import { LanguageProvider } from "./store/language-context";
@@ -117,7 +118,12 @@ const AuthConsumerWrapper = ({ children }: { children: ReactNode }) => {
         isAuthenticated={isAuthenticated}
         isInitializing={isInitializing}
       >
-        {children}
+        <OnboardingProvider
+          isAuthenticated={isAuthenticated}
+          isInitializing={isInitializing}
+        >
+          {children}
+        </OnboardingProvider>
       </AlertSettingsProvider>
     </ProfileProvider>
   );
