@@ -10,7 +10,7 @@ import {
   getCachedListResponse,
 } from "./repositories/listCacheRepository";
 import { communityItemCacheTable } from "../services/db/schema";
-import { serveFromCache } from "../services/cacheFallback";
+import { cachedRead } from "../services/cacheFallback";
 
 const MAX_ENTRIES = 3000;
 
@@ -47,17 +47,21 @@ export const useItem = (
 
   const query = useQuery({
     queryKey: [type, id, language, params ?? null],
-    queryFn: async () => {
-      try {
-        const res = await api.get(`${URLS[type]}${id}/`, { params });
-        cacheListResponse(communityItemCacheTable, cacheKey, res.data, MAX_ENTRIES);
-        return res.data;
-      } catch (e) {
-        const cached = getCachedListResponse(communityItemCacheTable, cacheKey);
-        if (cached) return serveFromCache(cached, e, `useItem:${type}`);
-        throw e;
-      }
-    },
+    queryFn: () =>
+      cachedRead(
+        `useItem:${type}`,
+        () => getCachedListResponse(communityItemCacheTable, cacheKey) ?? null,
+        async () => {
+          const res = await api.get(`${URLS[type]}${id}/`, { params });
+          cacheListResponse(
+            communityItemCacheTable,
+            cacheKey,
+            res.data,
+            MAX_ENTRIES,
+          );
+          return res.data;
+        },
+      ),
     enabled: !!id,
     staleTime: 1000 * 60 * 60 * 24,
     gcTime: 1000 * 60 * 60 * 24,

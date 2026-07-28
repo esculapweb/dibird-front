@@ -3,7 +3,12 @@ jest.mock("../sync/networkStatus", () => ({ isConnected: jest.fn() }));
 import * as Sentry from "@sentry/react-native";
 
 import { isConnected } from "../sync/networkStatus";
-import { classifyFallback, serveFromCache, assertNotGone } from "../cacheFallback";
+import {
+  classifyFallback,
+  serveFromCache,
+  assertNotGone,
+  cachedRead,
+} from "../cacheFallback";
 import { AppError } from "../../types";
 
 const captureMessage = Sentry.captureMessage as jest.Mock;
@@ -77,6 +82,62 @@ describe("serveFromCache", () => {
       fallback_reason: "unreachable",
       http_status: "0",
     });
+  });
+});
+
+describe("cachedRead", () => {
+  it("skips the request entirely when offline and the answer is already local", async () => {
+    connected.mockReturnValue(false);
+    const request = jest.fn();
+
+    await expect(cachedRead("fetchBirdOfDay", () => "cached", request)).resolves.toBe(
+      "cached",
+    );
+    // Ради этого вся ветка и существует: офлайн-запрос не падает сразу, а
+    // висит до api.ts'ного `timeout: 10000`.
+    expect(request).not.toHaveBeenCalled();
+    expect(captureMessage).not.toHaveBeenCalled();
+  });
+
+  it("still tries the network when offline with nothing local — NetInfo can be wrong", async () => {
+    connected.mockReturnValue(false);
+    const request = jest.fn().mockResolvedValue("live");
+
+    await expect(cachedRead("fetchBirdOfDay", () => null, request)).resolves.toBe("live");
+    expect(request).toHaveBeenCalledTimes(1);
+  });
+
+  it("falls back to the cache when the request fails", async () => {
+    const boom = err({ status: 500 });
+    const request = jest.fn().mockRejectedValue(boom);
+
+    await expect(cachedRead("fetchBirdOfDay", () => "cached", request)).resolves.toBe(
+      "cached",
+    );
+    // Сеть была, ответ подменён кэшем — это уже повод для Sentry.
+    expect(captureMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it("rethrows when the request fails and there is nothing cached", async () => {
+    const boom = err({ status: 500 });
+    await expect(
+      cachedRead("fetchBirdOfDay", () => null, jest.fn().mockRejectedValue(boom)),
+    ).rejects.toBe(boom);
+  });
+
+  it("runs onRequestError before the cache read, so assertNotGone still wins", async () => {
+    const gone = err({ status: 404 });
+    const readCache = jest.fn(() => "cached");
+
+    await expect(
+      cachedRead(
+        "fetchTaxonDetail",
+        readCache,
+        jest.fn().mockRejectedValue(gone),
+        assertNotGone,
+      ),
+    ).rejects.toBe(gone);
+    expect(readCache).not.toHaveBeenCalled();
   });
 });
 

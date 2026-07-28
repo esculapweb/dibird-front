@@ -215,6 +215,30 @@ describe("fetchAbstract core mechanics (exercised via fetchChecklist)", () => {
     (listCacheRepository.getCachedListResponseByPrefix as jest.Mock).mockReturnValue(undefined);
     await expect(fetches.fetchChecklist({}, null, "", 1)).rejects.toBe(err);
   });
+
+  // Офлайн запрос не отваливается сразу — сокет висит до `timeout: 10000`
+  // из services/api.ts, и всё это время экран стоит на спиннере, хотя
+  // ответ уже лежит в кэше (см. коммент в fetchAbstract).
+  it("skips the doomed request entirely when offline and the answer is already cached", async () => {
+    (isConnected as jest.Mock).mockReturnValue(false);
+    (listCacheRepository.getCachedListResponse as jest.Mock).mockReturnValue({ results: [{ id: 9 }] });
+
+    await expect(fetches.fetchChecklist({}, null, "", 1)).resolves.toEqual({ results: [{ id: 9 }] });
+    expect(api.get).not.toHaveBeenCalled();
+  });
+
+  // Обратная сторона: NetInfo ошибается (reachability-проба не прошла, а
+  // наш API доступен), поэтому без данных на руках запрос всё равно уходит.
+  it("still tries the network when offline with nothing cached", async () => {
+    const err = networkError();
+    (isConnected as jest.Mock).mockReturnValue(false);
+    (api.get as jest.Mock).mockRejectedValue(err);
+    (listCacheRepository.getCachedListResponse as jest.Mock).mockReturnValue(undefined);
+    (listCacheRepository.getCachedListResponseByPrefix as jest.Mock).mockReturnValue(undefined);
+
+    await expect(fetches.fetchChecklist({}, null, "", 1)).rejects.toBe(err);
+    expect(api.get).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("fetchStat (resort + seen-split deriveFallback)", () => {

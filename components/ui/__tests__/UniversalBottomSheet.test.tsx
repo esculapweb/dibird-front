@@ -42,6 +42,37 @@ jest.mock("@gorhom/bottom-sheet", () => {
 import { createRef } from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import UniversalBottomSheet, { BottomSheetRef } from "../UniversalBottomSheet";
+import { navigationRef } from "../../../services/navigationRef";
+
+// Минимальный двойник NavigationContainerRef: шит подписывается на "state" и
+// сравнивает key текущего маршрута с тем, на котором его открыли.
+const stateListeners: (() => void)[] = [];
+let currentRouteKey = "Places-1";
+const mockUnsubscribe = jest.fn();
+
+const mountNavigation = () => {
+  (navigationRef as { current: unknown }).current = {
+    isReady: () => true,
+    getCurrentRoute: () => ({ key: currentRouteKey, name: currentRouteKey }),
+    addListener: (event: string, cb: () => void) => {
+      if (event === "state") stateListeners.push(cb);
+      // Отписка реального NavigationContainerRef снимает слушателя — двойник
+      // обязан вести себя так же, иначе тест не заметит утечку подписки.
+      return () => {
+        mockUnsubscribe();
+        const i = stateListeners.indexOf(cb);
+        if (i !== -1) stateListeners.splice(i, 1);
+      };
+    },
+  };
+};
+
+const navigateTo = async (key: string) => {
+  currentRouteKey = key;
+  await act(async () => {
+    stateListeners.forEach((cb) => cb());
+  });
+};
 
 const mockOnConfirm = jest.fn();
 const mockOnError = jest.fn();
@@ -67,10 +98,14 @@ beforeEach(() => {
   jest.clearAllMocks();
   jest.useFakeTimers();
   mockOnConfirm.mockResolvedValue(undefined);
+  stateListeners.length = 0;
+  currentRouteKey = "Places-1";
+  (navigationRef as { current: unknown }).current = null;
 });
 
 afterEach(() => {
   jest.useRealTimers();
+  (navigationRef as { current: unknown }).current = null;
 });
 
 describe("imperative handle", () => {
@@ -257,6 +292,81 @@ describe("content mode", () => {
 
     await fireEvent.press(screen.getByTestId("content-dismiss"));
     expect(mockInnerDismiss).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Шит один на всё приложение и живёт вне навигатора, поэтому сам по себе
+// уход с экрана его не закрывал: он оставался поверх следующего экрана и
+// съедал нажатия (реальный случай — «Location unavailable» из
+// PlaceEditorScreen, зависший над главным экраном после «назад»).
+describe("dismissal on route change", () => {
+  it("closes when navigation leaves the route the sheet was opened on", async () => {
+    mountNavigation();
+    const ref = await renderSheet();
+    await act(async () => {
+      ref.current?.present({
+        mode: "menu",
+        items: [{ label: "Only item", onPress: mockOnPress1 }],
+      });
+    });
+
+    await navigateTo("Main-0");
+
+    expect(mockInnerDismiss).toHaveBeenCalledTimes(1);
+    expect(mockUnsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  it("stays open when the same route merely updates its params", async () => {
+    mountNavigation();
+    const ref = await renderSheet();
+    await act(async () => {
+      ref.current?.present({
+        mode: "menu",
+        items: [{ label: "Only item", onPress: mockOnPress1 }],
+      });
+    });
+
+    await navigateTo("Places-1");
+
+    expect(mockInnerDismiss).not.toHaveBeenCalled();
+  });
+
+  it("still presents when navigation isn't mounted yet", async () => {
+    const ref = await renderSheet();
+    await act(async () => {
+      ref.current?.present({
+        mode: "menu",
+        items: [{ label: "Only item", onPress: mockOnPress1 }],
+      });
+    });
+
+    expect(mockInnerPresent).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("Only item")).toBeOnTheScreen();
+  });
+
+  it("drops the route watch once the sheet is dismissed for real", async () => {
+    mountNavigation();
+    const ref = await renderSheet();
+    await act(async () => {
+      ref.current?.present({
+        mode: "menu",
+        items: [{ label: "Only item", onPress: mockOnPress1 }],
+      });
+    });
+
+    // Первый onDismiss — эхо от re-present, подписка должна уцелеть.
+    await act(async () => {
+      capturedOnDismiss?.();
+    });
+    expect(mockUnsubscribe).not.toHaveBeenCalled();
+
+    await act(async () => {
+      capturedOnDismiss?.();
+    });
+    expect(mockUnsubscribe).toHaveBeenCalledTimes(1);
+
+    await navigateTo("Main-0");
+    expect(mockInnerDismiss).not.toHaveBeenCalled();
   });
 });
 

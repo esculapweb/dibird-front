@@ -63,6 +63,52 @@ export const serveFromCache = <T>(value: T, e: unknown, source: string): T => {
 };
 
 /**
+ * Общая форма всех читающих фетчеров: живой запрос, а на ошибке — кэш.
+ * Плюс к этому ветка «сети нет и ответ уже лежит локально» — тогда запрос
+ * не отправляется вовсе.
+ *
+ * Ветка нужна потому, что офлайн-запрос НЕ падает сразу: сокет висит до
+ * `timeout: 10000` из services/api.ts (замерено на Android-эмуляторе в
+ * airplane mode — запрос падал через 10.1 с, после чего чтение кэша
+ * занимало 11 мс). Всё это время экран стоит на спиннере, хотя показывать
+ * уже есть что.
+ *
+ * Только когда данные есть: если кэш пуст, запрос уходит в сеть как
+ * обычно. isConnected() опирается на NetInfo, а тот умеет ошибаться
+ * (reachability-проба не прошла, хотя наш API доступен) — потерять 10 с на
+ * таймаут дешевле, чем показать ошибку там, где данные реально можно было
+ * получить.
+ *
+ * @param readCache должен вернуть null, если показывать нечего (пустой
+ *   массив — это «нечего», а не «пустой ответ сервера»)
+ * @param onRequestError хук под assertNotGone: выполняется до чтения кэша,
+ *   чтобы 404/410 улетал наружу, а не подменялся кэшем
+ */
+export const cachedRead = async <T>(
+  source: string,
+  readCache: () => T | null,
+  request: () => Promise<T>,
+  onRequestError?: (e: unknown) => void,
+): Promise<T> => {
+  if (!isConnected()) {
+    const offline = readCache();
+    // e === undefined: до запроса дело не дошло, ошибки нет. classifyFallback
+    // без status и без сети даёт "offline", то есть в Sentry, как и при
+    // пойманной офлайн-ошибке, ничего не летит.
+    if (offline !== null) return serveFromCache(offline, undefined, source);
+  }
+
+  try {
+    return await request();
+  } catch (e) {
+    onRequestError?.(e);
+    const cached = readCache();
+    if (cached !== null) return serveFromCache(cached, e, source);
+    throw e;
+  }
+};
+
+/**
  * Пробрасывает 404/410 дальше вместо отдачи кэша: сущности на сервере
  * больше нет, и кэш будет показывать её бесконечно.
  *

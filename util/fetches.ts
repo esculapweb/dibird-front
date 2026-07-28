@@ -27,7 +27,7 @@ import * as diaryRepository from "../hooks/repositories/diaryRepository";
 import * as placeRepository from "../hooks/repositories/placeRepository";
 import * as notificationRepository from "../hooks/repositories/notificationRepository";
 import { isConnected } from "../services/sync/networkStatus";
-import { serveFromCache, assertNotGone } from "../services/cacheFallback";
+import { cachedRead, assertNotGone } from "../services/cacheFallback";
 import { runNotificationSync } from "../services/sync/notificationSync";
 import {
   speciesDropdownCacheTable,
@@ -156,36 +156,38 @@ export const pollObservationImportStatus =
     return res.data;
   };
 
-export const fetchTimezones = async () => {
-  try {
-    const res = await api.get<[string, string][]>("/api/timezones2/");
-    const items = res.data.map(([value, label]) => ({
-      value,
-      label,
-    }));
-    cacheTimezones(items);
-    return items;
-  } catch (e) {
-    const cached = getCachedTimezones();
-    if (cached.length > 0) return serveFromCache(cached, e, "fetchTimezones");
-    throw e;
-  }
-};
+export const fetchTimezones = () =>
+  cachedRead(
+    "fetchTimezones",
+    () => {
+      const cached = getCachedTimezones();
+      return cached.length > 0 ? cached : null;
+    },
+    async () => {
+      const res = await api.get<[string, string][]>("/api/timezones2/");
+      const items = res.data.map(([value, label]) => ({
+        value,
+        label,
+      }));
+      cacheTimezones(items);
+      return items;
+    },
+  );
 
-export const fetchPage = async (slug: string) => {
+export const fetchPage = (slug: string) => {
   const cacheKey = `page|${slug}|${i18n.language}`;
 
-  try {
-    const res = await api.get(`/api/page2/${slug}/`);
-    const content = res.data?.content;
-    cacheListResponse(staticPageCacheTable, cacheKey, content, MAX_ENTRIES);
-    return content;
-  } catch (e) {
-    assertNotGone(e);
-    const cached = getCachedListResponse<string>(staticPageCacheTable, cacheKey);
-    if (cached) return serveFromCache(cached, e, "fetchPage");
-    throw e;
-  }
+  return cachedRead(
+    "fetchPage",
+    () => getCachedListResponse<string>(staticPageCacheTable, cacheKey) ?? null,
+    async () => {
+      const res = await api.get(`/api/page2/${slug}/`);
+      const content = res.data?.content;
+      cacheListResponse(staticPageCacheTable, cacheKey, content, MAX_ENTRIES);
+      return content;
+    },
+    assertNotGone,
+  );
 };
 
 // Taxonomy catalog (order -> family -> genus -> species), backed by
@@ -243,43 +245,40 @@ export const fetchSpeciesCount = async (): Promise<number> => {
   return res.data.pagination.count;
 };
 
-export const fetchTraitFilters = async (): Promise<TraitFilterOptions> => {
+export const fetchTraitFilters = (): Promise<TraitFilterOptions> => {
   const cacheKey = `trait-filters|${i18n.language}`;
 
-  try {
-    const res = await api.get<TraitFilterOptions>("/api/trait-filters/");
-    cacheListResponse(taxonDetailCacheTable, cacheKey, res.data, MAX_ENTRIES);
-    return res.data;
-  } catch (e) {
-    const cached = getCachedListResponse<TraitFilterOptions>(
-      taxonDetailCacheTable,
-      cacheKey,
-    );
-    if (cached) return serveFromCache(cached, e, "fetchTraitFilters");
-    throw e;
-  }
+  return cachedRead(
+    "fetchTraitFilters",
+    () =>
+      getCachedListResponse<TraitFilterOptions>(taxonDetailCacheTable, cacheKey) ??
+      null,
+    async () => {
+      const res = await api.get<TraitFilterOptions>("/api/trait-filters/");
+      cacheListResponse(taxonDetailCacheTable, cacheKey, res.data, MAX_ENTRIES);
+      return res.data;
+    },
+  );
 };
 
-export const fetchTaxonDetail = async <
-  T extends TaxonGroupDetail | TaxonSpeciesDetail,
->(
+export const fetchTaxonDetail = <T extends TaxonGroupDetail | TaxonSpeciesDetail>(
   segment: string,
   rank: TaxonRank,
 ): Promise<T> => {
   const cacheKey = `taxon-detail|${segment}|${rank}|${i18n.language}`;
 
-  try {
-    const res = await api.get<T>(`/api/taxon/${segment}/`, {
-      params: { rank },
-    });
-    cacheListResponse(taxonDetailCacheTable, cacheKey, res.data, MAX_ENTRIES);
-    return res.data;
-  } catch (e) {
-    assertNotGone(e);
-    const cached = getCachedListResponse<T>(taxonDetailCacheTable, cacheKey);
-    if (cached) return serveFromCache(cached, e, "fetchTaxonDetail");
-    throw e;
-  }
+  return cachedRead(
+    "fetchTaxonDetail",
+    () => getCachedListResponse<T>(taxonDetailCacheTable, cacheKey) ?? null,
+    async () => {
+      const res = await api.get<T>(`/api/taxon/${segment}/`, {
+        params: { rank },
+      });
+      cacheListResponse(taxonDetailCacheTable, cacheKey, res.data, MAX_ENTRIES);
+      return res.data;
+    },
+    assertNotGone,
+  );
 };
 
 // Resolves a species' segment from its numeric taxon id — needed only when a
@@ -321,28 +320,27 @@ export const fetchTerritoryList = (
 // continents out: countries hang off sub-regions, so /api/territory/?region=
 // rejects a continent id outright (TerritoryFilterSet.region) — offering one
 // would just 400.
-export const fetchTerritoryRegions = async (): Promise<
-  TerritoryRegionOption[]
-> => {
+export const fetchTerritoryRegions = (): Promise<TerritoryRegionOption[]> => {
   const cacheKey = `territory-regions|${i18n.language}`;
 
-  try {
-    const res = await api.get<[number, { label: string }][]>(
-      "/api/region-list/",
-      { params: { has_territories: 1 } },
-    );
-    const items = res.data.map(([id, { label }]) => ({ id, label }));
-    cacheListResponse(territoryListCacheTable, cacheKey, items, MAX_ENTRIES);
-    return items;
-  } catch (e) {
-    assertNotGone(e);
-    const cached = getCachedListResponse<TerritoryRegionOption[]>(
-      territoryListCacheTable,
-      cacheKey,
-    );
-    if (cached) return serveFromCache(cached, e, "fetchTerritoryRegions");
-    throw e;
-  }
+  return cachedRead(
+    "fetchTerritoryRegions",
+    () =>
+      getCachedListResponse<TerritoryRegionOption[]>(
+        territoryListCacheTable,
+        cacheKey,
+      ) ?? null,
+    async () => {
+      const res = await api.get<[number, { label: string }][]>(
+        "/api/region-list/",
+        { params: { has_territories: 1 } },
+      );
+      const items = res.data.map(([id, { label }]) => ({ id, label }));
+      cacheListResponse(territoryListCacheTable, cacheKey, items, MAX_ENTRIES);
+      return items;
+    },
+    assertNotGone,
+  );
 };
 
 // Just the total for the catalogue card / shortcut — per_page=1 so the server
@@ -355,29 +353,30 @@ export const fetchTerritoryCount = async (): Promise<number> => {
   return res.data.pagination.count;
 };
 
-export const fetchTerritoryDetail = async (
+export const fetchTerritoryDetail = (
   segment: string,
 ): Promise<TerritoryDetail> => {
   const cacheKey = `territory-detail|${segment}|${i18n.language}`;
 
-  try {
-    const res = await api.get<TerritoryDetail>(`/api/territory/${segment}/`);
-    cacheListResponse(
-      territoryDetailCacheTable,
-      cacheKey,
-      res.data,
-      MAX_ENTRIES,
-    );
-    return res.data;
-  } catch (e) {
-    assertNotGone(e);
-    const cached = getCachedListResponse<TerritoryDetail>(
-      territoryDetailCacheTable,
-      cacheKey,
-    );
-    if (cached) return serveFromCache(cached, e, "fetchTerritoryDetail");
-    throw e;
-  }
+  return cachedRead(
+    "fetchTerritoryDetail",
+    () =>
+      getCachedListResponse<TerritoryDetail>(
+        territoryDetailCacheTable,
+        cacheKey,
+      ) ?? null,
+    async () => {
+      const res = await api.get<TerritoryDetail>(`/api/territory/${segment}/`);
+      cacheListResponse(
+        territoryDetailCacheTable,
+        cacheKey,
+        res.data,
+        MAX_ENTRIES,
+      );
+      return res.data;
+    },
+    assertNotGone,
+  );
 };
 
 // Строка дерева, как её отдаёт публичный /api/checklist/ (TreeViewSet на
@@ -421,7 +420,7 @@ const GROUP_LEVEL: Record<string, number> = { order: 0, family: 1, genus: 2 };
  * группе считается тем же проходом — на бэкенде его нет, а строке отряда и
  * семейства оно нужно.
  */
-export const fetchTerritoryTree = async (
+export const fetchTerritoryTree = (
   idAvibase: number,
 ): Promise<ChecklistItem[]> => {
   const cacheKey = `territory-tree|${idAvibase}|${i18n.language}`;
@@ -457,256 +456,254 @@ export const fetchTerritoryTree = async (
     return items;
   };
 
-  try {
-    const res = await api.get<TerritoryTreeRow[]>("/api/checklist/", {
-      params: { id: idAvibase },
-    });
-    const items = toItems(res.data);
-    cacheListResponse(territoryDetailCacheTable, cacheKey, items, MAX_ENTRIES);
-    return items;
-  } catch (e) {
-    const cached = getCachedListResponse<ChecklistItem[]>(
-      territoryDetailCacheTable,
-      cacheKey,
-    );
-    if (cached) return serveFromCache(cached, e, "fetchTerritoryTree");
-    throw e;
-  }
+  return cachedRead(
+    "fetchTerritoryTree",
+    () =>
+      getCachedListResponse<ChecklistItem[]>(
+        territoryDetailCacheTable,
+        cacheKey,
+      ) ?? null,
+    async () => {
+      const res = await api.get<TerritoryTreeRow[]>("/api/checklist/", {
+        params: { id: idAvibase },
+      });
+      const items = toItems(res.data);
+      cacheListResponse(territoryDetailCacheTable, cacheKey, items, MAX_ENTRIES);
+      return items;
+    },
+  );
 };
 
-export const fetchTerritoryCompare = async (
+export const fetchTerritoryCompare = (
   segment1: string,
   segment2: string,
 ): Promise<TerritoryCompareResponse> => {
   const cacheKey = `territory-compare|${segment1}|${segment2}|${i18n.language}`;
 
-  try {
-    const res = await api.get<TerritoryCompareResponse>(
-      "/api/territory-compare/",
-      { params: { segment1, segment2 } },
-    );
-    cacheListResponse(
-      territoryDetailCacheTable,
-      cacheKey,
-      res.data,
-      MAX_ENTRIES,
-    );
-    return res.data;
-  } catch (e) {
-    assertNotGone(e);
-    const cached = getCachedListResponse<TerritoryCompareResponse>(
-      territoryDetailCacheTable,
-      cacheKey,
-    );
-    if (cached) return serveFromCache(cached, e, "fetchTerritoryCompare");
-    throw e;
-  }
+  return cachedRead(
+    "fetchTerritoryCompare",
+    () =>
+      getCachedListResponse<TerritoryCompareResponse>(
+        territoryDetailCacheTable,
+        cacheKey,
+      ) ?? null,
+    async () => {
+      const res = await api.get<TerritoryCompareResponse>(
+        "/api/territory-compare/",
+        { params: { segment1, segment2 } },
+      );
+      cacheListResponse(
+        territoryDetailCacheTable,
+        cacheKey,
+        res.data,
+        MAX_ENTRIES,
+      );
+      return res.data;
+    },
+    assertNotGone,
+  );
 };
 
-export const fetchMyCountries = async (
+export const fetchMyCountries = (
   favOnly = false,
   order: string,
-): Promise<TerritoryDropdownItem[]> => {
-  try {
-    const params: { o: string; fav_only?: boolean } = {
-      o: order,
-    };
-    if (favOnly) params.fav_only = true;
-    const res = await api.get<CountryItem[]>("/myapi/territory2/", { params });
-    if (!favOnly) cacheCountries(res.data);
-    return res.data.map((item) => ({
-      value: item.territory_id,
-      label: item.name,
-      code: item.code,
-      icon: isoToFlagEmoji(item.code),
-      iconLabelRight: item.favourite ? ("flag" as const) : undefined,
-    }));
-  } catch (e) {
-    if (!favOnly) {
+): Promise<TerritoryDropdownItem[]> =>
+  cachedRead(
+    "fetchMyCountries",
+    () => {
+      // Кэшируется только полный список: у fav_only-выборки своего кэша нет.
+      if (favOnly) return null;
       const cached = getCachedCountries(order);
-      if (cached.length > 0) return serveFromCache(cached, e, "fetchMyCountries");
-    }
-    throw e;
-  }
-};
+      return cached.length > 0 ? cached : null;
+    },
+    async () => {
+      const params: { o: string; fav_only?: boolean } = {
+        o: order,
+      };
+      if (favOnly) params.fav_only = true;
+      const res = await api.get<CountryItem[]>("/myapi/territory2/", { params });
+      if (!favOnly) cacheCountries(res.data);
+      return res.data.map((item) => ({
+        value: item.territory_id,
+        label: item.name,
+        code: item.code,
+        icon: isoToFlagEmoji(item.code),
+        iconLabelRight: item.favourite ? ("flag" as const) : undefined,
+      }));
+    },
+  );
 
-export const fetchMyPlaces = async (
+export const fetchMyPlaces = (
   territory: number | null = null,
   coords: Coords | null = null,
   order: string,
 ): Promise<PlaceDropdownItem[]> => {
-  if (!territory) return [];
+  if (!territory) return Promise.resolve([]);
 
   const cacheKey = `places|${territory}|${order}`;
 
-  try {
-    const isDistanceSort = order === "distance" || order === "-distance";
-
-    const params: {
-      territory: number | null;
-      o: string;
-      lng?: number;
-      lat?: number;
-    } = {
-      territory,
-      o: order,
-    };
-
-    if (isDistanceSort && coords) {
-      const [lng, lat] = coords;
-      params.lng = lng;
-      params.lat = lat;
-    }
-
-    const res = await api.get<PlaceItemBase[]>("/myapi/place-dropdown2/", {
-      params,
-    });
-
-    const items = res.data.map((item) => ({
-      value: item.id,
-      label: item.name,
-      iconLabel: item.favourite ? ("star" as const) : undefined,
-      location: item.location,
-      distance: item.distance ?? undefined,
-      preview: item.preview ?? undefined,
-    }));
-    cacheListResponse(placesDropdownCacheTable, cacheKey, items, MAX_ENTRIES);
-    return placeRepository.applyDropdownOverlay(items, territory);
-  } catch (e) {
-    const cached = getCachedListResponse<PlaceDropdownItem[]>(
-      placesDropdownCacheTable,
-      cacheKey,
-    );
-    if (cached) {
-      return serveFromCache(
-        placeRepository.applyDropdownOverlay(cached, territory),
-        e,
-        "fetchMyPlaces",
+  return cachedRead(
+    "fetchMyPlaces",
+    () => {
+      const cached = getCachedListResponse<PlaceDropdownItem[]>(
+        placesDropdownCacheTable,
+        cacheKey,
       );
-    }
+      if (cached) return placeRepository.applyDropdownOverlay(cached, territory);
 
-    // Same territory, but cached under a different sort order — still useful
-    // offline (e.g. the user just switched sort with no connection): reuse it
-    // resorted client-side rather than surfacing an error.
-    const relaxed = getCachedListResponseByPrefix<PlaceDropdownItem[]>(
-      placesDropdownCacheTable,
-      `places|${territory}|`,
-    );
-    if (relaxed) {
-      return serveFromCache(
-        placeRepository.applyDropdownOverlay(
+      // Same territory, but cached under a different sort order — still useful
+      // offline (e.g. the user just switched sort with no connection): reuse it
+      // resorted client-side rather than surfacing an error.
+      const relaxed = getCachedListResponseByPrefix<PlaceDropdownItem[]>(
+        placesDropdownCacheTable,
+        `places|${territory}|`,
+      );
+      if (relaxed) {
+        return placeRepository.applyDropdownOverlay(
           resortPlaceItems(relaxed, order),
           territory,
-        ),
-        e,
-        "fetchMyPlaces",
-      );
-    }
+        );
+      }
 
-    // Nothing cached either: still worth showing a place created offline in
-    // this territory (better than an error screen hiding it), but if there's
-    // truly nothing — no cache, no pending place — keep surfacing the error
-    // like before rather than silently showing an empty picker.
-    const overlayOnly = placeRepository.applyDropdownOverlay([], territory);
-    if (overlayOnly.length > 0) {
-      return serveFromCache(overlayOnly, e, "fetchMyPlaces");
-    }
-    throw e;
-  }
+      // Nothing cached either: still worth showing a place created offline in
+      // this territory (better than an error screen hiding it), but if there's
+      // truly nothing — no cache, no pending place — keep surfacing the error
+      // like before rather than silently showing an empty picker.
+      const overlayOnly = placeRepository.applyDropdownOverlay([], territory);
+      return overlayOnly.length > 0 ? overlayOnly : null;
+    },
+    async () => {
+      const isDistanceSort = order === "distance" || order === "-distance";
+
+      const params: {
+        territory: number | null;
+        o: string;
+        lng?: number;
+        lat?: number;
+      } = {
+        territory,
+        o: order,
+      };
+
+      if (isDistanceSort && coords) {
+        const [lng, lat] = coords;
+        params.lng = lng;
+        params.lat = lat;
+      }
+
+      const res = await api.get<PlaceItemBase[]>("/myapi/place-dropdown2/", {
+        params,
+      });
+
+      const items = res.data.map((item) => ({
+        value: item.id,
+        label: item.name,
+        iconLabel: item.favourite ? ("star" as const) : undefined,
+        location: item.location,
+        distance: item.distance ?? undefined,
+        preview: item.preview ?? undefined,
+      }));
+      cacheListResponse(placesDropdownCacheTable, cacheKey, items, MAX_ENTRIES);
+      return placeRepository.applyDropdownOverlay(items, territory);
+    },
+  );
 };
 
-export const fetchSpecies = async (
+export const fetchSpecies = (
   territory: number | null = null,
   order: string,
   dateFilter?: DateFilter,
 ): Promise<SpeciesDropdownItem[]> => {
-  if (!territory) return [];
+  if (!territory) return Promise.resolve([]);
 
   // Order is kept last so a prefix match (territory + date filter, any order)
-  // can be done offline below without it — see the catch block.
+  // can be done offline below without it — see readCache.
   const cacheKey = `species|${territory}|${stableStringify(dateFilter ?? {})}|${order}`;
 
-  try {
-    const params = {
-      territory,
-      per_page: 2500,
-      o: order,
-      ...buildDateParams(dateFilter),
-    };
-    const res = await api.get<PaginatedResponse<SpeciesItem>>(
-      "/myapi/stat2/",
-      { params },
-    );
-
-    const items = res.data?.results.map((item) => ({
-      value: item.species_id,
-      label: item.sp_name,
-      name: item.sp_latin,
-      name_lang: item.sp_name_lang,
-      thumb: item.sp_thumb ?? undefined,
-      seen: item.seen,
-      segment: item.segment,
-      ioc_id: item.ioc_id,
-    }));
-    cacheListResponse(speciesDropdownCacheTable, cacheKey, items, MAX_ENTRIES);
-    return items;
-  } catch (e) {
-    const cached = getCachedListResponse<SpeciesDropdownItem[]>(
-      speciesDropdownCacheTable,
-      cacheKey,
-    );
-    if (cached) return serveFromCache(cached, e, "fetchSpecies");
-
-    // Same territory/date filter, but cached under a different sort order —
-    // still useful offline (e.g. the user just switched sort with no
-    // connection): reuse it resorted client-side rather than surfacing an error.
-    const relaxed = getCachedListResponseByPrefix<SpeciesDropdownItem[]>(
-      speciesDropdownCacheTable,
-      `species|${territory}|${stableStringify(dateFilter ?? {})}|`,
-    );
-    if (relaxed) {
-      return serveFromCache(
-        resortSpeciesDropdownItems(relaxed, order),
-        e,
-        "fetchSpecies",
+  return cachedRead(
+    "fetchSpecies",
+    () => {
+      const cached = getCachedListResponse<SpeciesDropdownItem[]>(
+        speciesDropdownCacheTable,
+        cacheKey,
       );
-    }
+      if (cached) return cached;
 
-    throw e;
-  }
+      // Same territory/date filter, but cached under a different sort order —
+      // still useful offline (e.g. the user just switched sort with no
+      // connection): reuse it resorted client-side rather than surfacing an error.
+      const relaxed = getCachedListResponseByPrefix<SpeciesDropdownItem[]>(
+        speciesDropdownCacheTable,
+        `species|${territory}|${stableStringify(dateFilter ?? {})}|`,
+      );
+      if (relaxed) return resortSpeciesDropdownItems(relaxed, order);
+
+      return null;
+    },
+    async () => {
+      const params = {
+        territory,
+        per_page: 2500,
+        o: order,
+        ...buildDateParams(dateFilter),
+      };
+      const res = await api.get<PaginatedResponse<SpeciesItem>>(
+        "/myapi/stat2/",
+        { params },
+      );
+
+      const items = res.data?.results.map((item) => ({
+        value: item.species_id,
+        label: item.sp_name,
+        name: item.sp_latin,
+        name_lang: item.sp_name_lang,
+        thumb: item.sp_thumb ?? undefined,
+        seen: item.seen,
+        segment: item.segment,
+        ioc_id: item.ioc_id,
+      }));
+      cacheListResponse(speciesDropdownCacheTable, cacheKey, items, MAX_ENTRIES);
+      return items;
+    },
+  );
 };
 
-export const fetchDiarySpeciesIds = async (diaryId: number) => {
+export const fetchDiarySpeciesIds = (diaryId: number) => {
   const cacheKey = `diary-species-ids|${diaryId}`;
 
-  try {
-    const params = {
-      diary: diaryId,
-    };
-    const res = await api.get("/myapi/diary-observation2/species-ids/", {
-      params,
-    });
-    cacheListResponse(diarySpeciesIdsCacheTable, cacheKey, res.data, MAX_ENTRIES);
-    return res.data;
-  } catch (e) {
-    const cached = getCachedListResponse(diarySpeciesIdsCacheTable, cacheKey);
-    if (cached) return serveFromCache(cached, e, "fetchDiarySpeciesIds");
-    throw e;
-  }
+  return cachedRead(
+    "fetchDiarySpeciesIds",
+    () => getCachedListResponse(diarySpeciesIdsCacheTable, cacheKey) ?? null,
+    async () => {
+      const params = {
+        diary: diaryId,
+      };
+      const res = await api.get("/myapi/diary-observation2/species-ids/", {
+        params,
+      });
+      cacheListResponse(
+        diarySpeciesIdsCacheTable,
+        cacheKey,
+        res.data,
+        MAX_ENTRIES,
+      );
+      return res.data;
+    },
+  );
 };
 
-export const fetchMapPreview = async (placeId: string | number | null) => {
+export const fetchMapPreview = (placeId: string | number | null) => {
   const cacheKey = `map-preview|${placeId}`;
 
-  try {
-    const res = await api.get(`/myapi/place2/${placeId}/map_preview/`);
-    cacheListResponse(mapPreviewCacheTable, cacheKey, res.data, MAX_ENTRIES);
-    return res.data;
-  } catch (e) {
-    const cached = getCachedListResponse(mapPreviewCacheTable, cacheKey);
-    if (cached) return serveFromCache(cached, e, "fetchMapPreview");
-    throw e;
-  }
+  return cachedRead(
+    "fetchMapPreview",
+    () => getCachedListResponse(mapPreviewCacheTable, cacheKey) ?? null,
+    async () => {
+      const res = await api.get(`/myapi/place2/${placeId}/map_preview/`);
+      cacheListResponse(mapPreviewCacheTable, cacheKey, res.data, MAX_ENTRIES);
+      return res.data;
+    },
+  );
 };
 
 export const fetchMyProfile = async () => {
@@ -756,88 +753,86 @@ export const deleteMyAvatar = async (): Promise<number | undefined> => {
 export const sendConfirmEmail = (key: string) =>
   api.post("/myapi/confirm/email/", { key });
 
-export const fetchUserProfile = async (profileId: number) => {
+export const fetchUserProfile = (profileId: number) => {
   const cacheKey = `user-profile|${profileId}`;
 
-  try {
-    const res = await api.get(`/myapi/user-profile/${profileId}/`);
-    cacheListResponse(userProfileCacheTable, cacheKey, res.data, MAX_ENTRIES);
-    return res.data;
-  } catch (e) {
-    assertNotGone(e);
-    const cached = getCachedListResponse(userProfileCacheTable, cacheKey);
-    if (cached) return serveFromCache(cached, e, "fetchUserProfile");
-    throw e;
-  }
+  return cachedRead(
+    "fetchUserProfile",
+    () => getCachedListResponse(userProfileCacheTable, cacheKey) ?? null,
+    async () => {
+      const res = await api.get(`/myapi/user-profile/${profileId}/`);
+      cacheListResponse(userProfileCacheTable, cacheKey, res.data, MAX_ENTRIES);
+      return res.data;
+    },
+    assertNotGone,
+  );
 };
 
-export const fetchMyActivity = async (filters: Filters) => {
+export const fetchMyActivity = (filters: Filters) => {
   const cacheKey = `activity|${filters?.territory}|${stableStringify(filters?.date ?? {})}|${!!filters?.new}`;
 
-  try {
-    const params = {
-      territory: filters?.territory,
-      ...buildDateParams(filters?.date),
-      ...(filters?.new && { new: true }),
-    };
+  return cachedRead(
+    "fetchMyActivity",
+    () =>
+      getCachedListResponse<ActivityResponse>(activityCacheTable, cacheKey) ??
+      null,
+    async () => {
+      const params = {
+        territory: filters?.territory,
+        ...buildDateParams(filters?.date),
+        ...(filters?.new && { new: true }),
+      };
 
-    const res = await api.get<ActivityResponse>(
-      "/myapi/observation2/activity/",
-      { params },
-    );
-    cacheListResponse(activityCacheTable, cacheKey, res.data, MAX_ENTRIES);
-    return res.data;
-  } catch (e) {
-    const cached = getCachedListResponse<ActivityResponse>(
-      activityCacheTable,
-      cacheKey,
-    );
-    if (cached) return serveFromCache(cached, e, "fetchMyActivity");
-    throw e;
-  }
+      const res = await api.get<ActivityResponse>(
+        "/myapi/observation2/activity/",
+        { params },
+      );
+      cacheListResponse(activityCacheTable, cacheKey, res.data, MAX_ENTRIES);
+      return res.data;
+    },
+  );
 };
 
-export const fetchMyDashboardStat = async (filters: Filters) => {
+export const fetchMyDashboardStat = (filters: Filters) => {
   const cacheKey = `dashboard-stat|${filters?.territory}|${stableStringify(filters?.date ?? {})}`;
 
-  try {
-    const params = {
-      territory: filters?.territory,
-      ...buildDateParams(filters?.date),
-    };
+  return cachedRead(
+    "fetchMyDashboardStat",
+    () => getCachedListResponse(dashboardStatCacheTable, cacheKey) ?? null,
+    async () => {
+      const params = {
+        territory: filters?.territory,
+        ...buildDateParams(filters?.date),
+      };
 
-    const res = await api.get("/myapi/dashboard-stats2/", { params });
-    cacheListResponse(dashboardStatCacheTable, cacheKey, res.data, MAX_ENTRIES);
-    return res.data;
-  } catch (e) {
-    const cached = getCachedListResponse(dashboardStatCacheTable, cacheKey);
-    if (cached) return serveFromCache(cached, e, "fetchMyDashboardStat");
-    throw e;
-  }
+      const res = await api.get("/myapi/dashboard-stats2/", { params });
+      cacheListResponse(dashboardStatCacheTable, cacheKey, res.data, MAX_ENTRIES);
+      return res.data;
+    },
+  );
 };
 
-export const fetchBirdOfDay = async (territory: number | null) => {
+export const fetchBirdOfDay = (territory: number | null) => {
   const cacheKey = `bird-of-day|${territory}|${i18n.language}`;
 
-  try {
-    const params = {
-      territory: territory,
-    };
+  return cachedRead(
+    "fetchBirdOfDay",
+    () =>
+      getCachedListResponse<BirdOfTheDayType>(birdOfDayCacheTable, cacheKey) ??
+      null,
+    async () => {
+      const params = {
+        territory: territory,
+      };
 
-    const res = await api.get<BirdOfTheDayType>(
-      "/myapi/bird-of-day2/today/",
-      { params },
-    );
-    cacheListResponse(birdOfDayCacheTable, cacheKey, res.data, MAX_ENTRIES);
-    return res.data;
-  } catch (e) {
-    const cached = getCachedListResponse<BirdOfTheDayType>(
-      birdOfDayCacheTable,
-      cacheKey,
-    );
-    if (cached) return serveFromCache(cached, e, "fetchBirdOfDay");
-    throw e;
-  }
+      const res = await api.get<BirdOfTheDayType>(
+        "/myapi/bird-of-day2/today/",
+        { params },
+      );
+      cacheListResponse(birdOfDayCacheTable, cacheKey, res.data, MAX_ENTRIES);
+      return res.data;
+    },
+  );
 };
 
 const buildListCacheKeyPrefix = (
@@ -877,7 +872,7 @@ interface FetchAbstractOptions<T> {
   deriveFallback?: () => T | null;
 }
 
-const fetchAbstract = async <T>(
+const fetchAbstract = <T>(
   fetchUrl: string,
   filters: Filters = {},
   order: string | null,
@@ -908,7 +903,33 @@ const fetchAbstract = async <T>(
     extraParams,
   );
 
-  try {
+  // Один cachedRead на все списочные фетчеры разом. assertNotGone ему
+  // намеренно НЕ передаётся: 404 на списочном эндпоинте означает
+  // «устаревший URL», а не «сущности больше нет», а часть списков
+  // фильтруется по id offline-first сущностей с temp id.
+  const readCache = (): T | null => {
+    const exactMatch = getCachedListResponse<T>(options.table, cacheKey);
+    if (exactMatch) return exactMatch;
+
+    // Same screen/filters/search/page, but cached under a different sort —
+    // still useful offline even if the order doesn't match what was requested.
+    const relaxedMatch = getCachedListResponseByPrefix<T>(
+      options.table,
+      buildListCacheKeyPrefix(fetchUrl, filters, search, page, extraParams),
+    );
+    if (relaxedMatch) {
+      return options.resort ? options.resort(relaxedMatch, order) : relaxedMatch;
+    }
+
+    const derived = options.deriveFallback?.() ?? null;
+    if (derived) {
+      return options.resort ? options.resort(derived, order) : derived;
+    }
+
+    return null;
+  };
+
+  return cachedRead(fetchUrl, readCache, async () => {
     const { date, ...restFilters } = filters;
 
     const apiFilters = {
@@ -929,39 +950,7 @@ const fetchAbstract = async <T>(
     const res = await api.get<T>(fetchUrl, { params });
     cacheListResponse(options.table, cacheKey, res.data, options.maxEntries);
     return res.data;
-  } catch (e) {
-    // Один serveFromCache здесь покрывает все списочные фетчеры разом.
-    // assertNotGone намеренно НЕ вызывается: 404 на списочном эндпоинте
-    // означает «устаревший URL», а не «сущности больше нет», а часть
-    // списков фильтруется по id offline-first сущностей с temp id.
-    const exactMatch = getCachedListResponse<T>(options.table, cacheKey);
-    if (exactMatch) return serveFromCache(exactMatch, e, fetchUrl);
-
-    // Same screen/filters/search/page, but cached under a different sort —
-    // still useful offline even if the order doesn't match what was requested.
-    const relaxedMatch = getCachedListResponseByPrefix<T>(
-      options.table,
-      buildListCacheKeyPrefix(fetchUrl, filters, search, page, extraParams),
-    );
-    if (relaxedMatch) {
-      return serveFromCache(
-        options.resort ? options.resort(relaxedMatch, order) : relaxedMatch,
-        e,
-        fetchUrl,
-      );
-    }
-
-    const derived = options.deriveFallback?.() ?? null;
-    if (derived) {
-      return serveFromCache(
-        options.resort ? options.resort(derived, order) : derived,
-        e,
-        fetchUrl,
-      );
-    }
-
-    throw e;
-  }
+  });
 };
 
 // Client-side re-sort used only as an offline fallback (see FetchAbstractOptions.resort
@@ -1769,35 +1758,40 @@ export const fetchRating = (
   );
 };
 
-export const fetchRatingCompareHeader = async (
+export const fetchRatingCompareHeader = (
   profile1: number,
   profile2: number,
   filters: Filters | null,
 ) => {
   const cacheKey = `ratingCompareHeader|${profile1}|${profile2}|${stableStringify((filters ?? {}) as Record<string, unknown>)}`;
 
-  try {
-    const { date, ...restFilters } = filters ?? {};
+  return cachedRead(
+    "fetchRatingCompareHeader",
+    () => getCachedListResponse(ratingCompareHeaderCacheTable, cacheKey) ?? null,
+    async () => {
+      const { date, ...restFilters } = filters ?? {};
 
-    const apiFilters = {
-      ...restFilters,
-      ...buildDateParams(date),
-    };
+      const apiFilters = {
+        ...restFilters,
+        ...buildDateParams(date),
+      };
 
-    const params = {
-      profile1,
-      profile2,
-      ...apiFilters,
-    };
-    const res = await api.get(`/myapi/rating-compare2-header/`, { params });
-    cacheListResponse(ratingCompareHeaderCacheTable, cacheKey, res.data, MAX_ENTRIES);
-    return res.data;
-  } catch (e) {
-    assertNotGone(e);
-    const cached = getCachedListResponse(ratingCompareHeaderCacheTable, cacheKey);
-    if (cached) return serveFromCache(cached, e, "fetchRatingCompareHeader");
-    throw e;
-  }
+      const params = {
+        profile1,
+        profile2,
+        ...apiFilters,
+      };
+      const res = await api.get(`/myapi/rating-compare2-header/`, { params });
+      cacheListResponse(
+        ratingCompareHeaderCacheTable,
+        cacheKey,
+        res.data,
+        MAX_ENTRIES,
+      );
+      return res.data;
+    },
+    assertNotGone,
+  );
 };
 
 export const fetchRatingCompare = (
@@ -1878,32 +1872,30 @@ export const fetchNotifications = async (page = 1) => {
 
 const UNREAD_COUNT_CACHE_KEY = "unread_count";
 
-export const fetchUnreadCount = async (): Promise<number> => {
-  try {
-    const res = await api.get("/myapi/notifications/unread-count/");
-    const count = res.data.count as number;
-    cacheListResponse(
-      notificationUnreadCountCacheTable,
-      UNREAD_COUNT_CACHE_KEY,
-      { count },
-      1,
-    );
-    return notificationRepository.applyPendingUnreadAdjustment(count);
-  } catch (e) {
-    const cached = getCachedListResponse<{ count: number }>(
-      notificationUnreadCountCacheTable,
-      UNREAD_COUNT_CACHE_KEY,
-    );
-    if (cached) {
-      return serveFromCache(
-        notificationRepository.applyPendingUnreadAdjustment(cached.count),
-        e,
-        "fetchUnreadCount",
+export const fetchUnreadCount = (): Promise<number> =>
+  cachedRead(
+    "fetchUnreadCount",
+    () => {
+      const cached = getCachedListResponse<{ count: number }>(
+        notificationUnreadCountCacheTable,
+        UNREAD_COUNT_CACHE_KEY,
       );
-    }
-    throw e;
-  }
-};
+      return cached
+        ? notificationRepository.applyPendingUnreadAdjustment(cached.count)
+        : null;
+    },
+    async () => {
+      const res = await api.get("/myapi/notifications/unread-count/");
+      const count = res.data.count as number;
+      cacheListResponse(
+        notificationUnreadCountCacheTable,
+        UNREAD_COUNT_CACHE_KEY,
+        { count },
+        1,
+      );
+      return notificationRepository.applyPendingUnreadAdjustment(count);
+    },
+  );
 
 export const markNotificationsRead = async (ids?: number[]): Promise<void> => {
   if (isConnected()) {

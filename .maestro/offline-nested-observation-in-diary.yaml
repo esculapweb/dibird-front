@@ -99,6 +99,11 @@ tags:
     timeout: 6000
 
 - back
+# Same second-row scroll as the Diaries tap further down — see the comment there.
+- scrollUntilVisible:
+    element:
+      id: "section-Diaries"
+    direction: DOWN
 - tapOn:
     id: "section-Diaries"
 - assertVisible:
@@ -146,6 +151,16 @@ tags:
 - assertVisible: ".*Observations.*"
 
 - back
+# Must scroll: the section tiles are a 3-wide grid (components/Main/Sections.tsx),
+# so Diaries opens the *second* row and sits below the fold on a phone-sized
+# screen — Observations/Places/Stat in the first row are the only ones a plain
+# tapOn reaches. Was a silent coin flip until MainScreen grew (new-species
+# chart, checklist card, bird of the day), which pushed row two off-screen for
+# good; scrollUntilVisible is a no-op when the tile is already in view.
+- scrollUntilVisible:
+    element:
+      id: "section-Diaries"
+    direction: DOWN
 - tapOn:
     id: "section-Diaries"
 # Found by its distinctive note text rather than a pending icon or list

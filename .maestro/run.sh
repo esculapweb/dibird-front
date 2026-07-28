@@ -23,6 +23,12 @@
 # `npm run e2e:android` are safe to run bare. An explicit flow path can still
 # be passed as a second argument (Android only, see below) to narrow further
 # to one specific flow.
+#
+# A bare Android run drives the flows one `maestro test` invocation at a time
+# (see the loop at the bottom) rather than handing Maestro the directory:
+# that's the only place airplane mode can be reset *between* flows, without
+# which one failure cascades into the next. iOS and explicit single-flow runs
+# still go through one plain invocation.
 set -e
 cd "$(dirname "$0")/.."
 
@@ -131,6 +137,25 @@ if [ "$PLATFORM" = "android" ]; then
   # test` process, still isn't covered by this alone.
   adb -s "$TARGET" shell cmd connectivity airplane-mode disable
 
+  # Serve the JS bundle over the adb tunnel instead of the host's LAN IP.
+  # In a dev-client build the bundle (and the Fast Refresh / HMR socket)
+  # lives on Metro, so `toggleAirplaneMode` cuts the app off from its own
+  # code, not just from the API: when the dropped HMR socket makes RN
+  # re-fetch the bundle, the reload dies on ENETUNREACH and the dev-client
+  # replaces the whole app with its "There was a problem loading the
+  # project" screen mid-flow — the offline flows' `when: visible: "Reload"`
+  # guards exist only to paper over that, and they lose the race whenever
+  # the error screen appears a beat later than the guard is evaluated.
+  # `adb reverse` makes the emulator's own loopback the Metro address, and
+  # loopback (unlike wifi/cellular) stays up in airplane mode, so reloads
+  # keep working while offline. Verified with `toybox nc` inside the
+  # emulator with airplane mode ON: 127.0.0.1:8081 answers 200, while
+  # 192.168.0.103:8081 and the API on :8000 both give "Network is
+  # unreachable" — i.e. only Metro moves off the radio, the offline test
+  # semantics (EXPO_PUBLIC_BASE_URL is a LAN address) are untouched.
+  # Paired with the localhost URL in common/android-bootstrap.yaml.
+  adb -s "$TARGET" reverse tcp:8081 tcp:8081 >/dev/null
+
   # Disable animations: every screen transition, and the explicit
   # waitForAnimationToEnd waits gating them throughout the flows, otherwise
   # ride out the real (short but nonzero) transition time on every single
@@ -150,9 +175,57 @@ else
   TARGET_PATH=".maestro"
 fi
 
-MAESTRO_CLI_NO_ANALYTICS=1 exec maestro test \
-  --device "$TARGET" \
-  --include-tags "$PLATFORM" \
-  --env TEST_EMAIL="$TEST_EMAIL" \
-  --env TEST_PASSWORD="$TEST_PASSWORD" \
-  "$TARGET_PATH"
+run_maestro() {
+  MAESTRO_CLI_NO_ANALYTICS=1 maestro test \
+    --device "$TARGET" \
+    --include-tags "$PLATFORM" \
+    --env TEST_EMAIL="$TEST_EMAIL" \
+    --env TEST_PASSWORD="$TEST_PASSWORD" \
+    "$1"
+}
+
+# One `maestro test` per flow instead of one for the whole directory, so a
+# failure can't cascade into the next flow. `toggleAirplaneMode` can only flip
+# the current state, never set it: a flow that dies mid-offline-cycle leaves
+# airplane mode ON, and then the *next* offline flow spends its own "go
+# offline" toggle turning it back off — it runs online, its pending-sync
+# assertions fail, and the report blames a flow that was never broken (seen
+# twice in a row: offline-nested-observation-in-diary failing took
+# offline-create-observation down with it). Forcing airplane mode off between
+# flows contains the damage to the flow that actually broke.
+#
+# Only for a whole-directory Android run: a single explicit flow path has
+# nothing to cascade into, and iOS has no airplane-mode toggle to begin with.
+if [ "$PLATFORM" != "android" ] || [ "$TARGET_PATH" != ".maestro" ]; then
+  exec_status=0
+  run_maestro "$TARGET_PATH" || exec_status=$?
+  exit $exec_status
+fi
+
+# Same tag filter as --include-tags, applied up front so the loop doesn't
+# start an app-launching run per iOS flow just to have Maestro skip it.
+FLOWS=$(grep -lE "^[[:space:]]*-[[:space:]]*$PLATFORM[[:space:]]*$" .maestro/*.yaml | sort)
+if [ -z "$FLOWS" ]; then
+  echo "No .maestro/*.yaml flows tagged '$PLATFORM' — nothing to run." >&2
+  exit 1
+fi
+
+FAILED=""
+for flow in $FLOWS; do
+  echo ""
+  echo "=== $(basename "$flow") ==="
+  adb -s "$TARGET" shell cmd connectivity airplane-mode disable || true
+  run_maestro "$flow" || FAILED="$FAILED $(basename "$flow")"
+done
+
+# The last flow's own crash can leave the device offline for whatever runs
+# next (a manual re-run, another script) — same reasoning as the pre-flow
+# reset above, and harmless when it's already off.
+adb -s "$TARGET" shell cmd connectivity airplane-mode disable || true
+
+echo ""
+if [ -n "$FAILED" ]; then
+  echo "FAILED flows:$FAILED" >&2
+  exit 1
+fi
+echo "All flows passed."

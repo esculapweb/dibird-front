@@ -53,9 +53,19 @@ tags:
 
 # Local-first create lands on the (temp-id) detail screen even offline —
 # used as a wait gate before `back`.
+#
+# Bigger budget than the observation/place flows' identical gate (6s):
+# this screen is a ListScreen, so nothing at all renders — header and
+# delete button included — until its observations query settles. That used
+# to mean a ~10s wait offline (the doomed request burned api.ts's full
+# `timeout: 10000` before the cache fallback ran); fetchAbstract now skips
+# the request outright when NetInfo says offline and locally-known data
+# exists, which brings first paint back down to "as fast as navigation".
+# Kept generous anyway — the screen still waits on a query, and a loaded
+# CI emulator is slower than this one.
 - extendedWaitUntil:
     visible: ".*Delete diary.*"
-    timeout: 6000
+    timeout: 25000
 - back
 - tapOn:
     text: "Diaries"

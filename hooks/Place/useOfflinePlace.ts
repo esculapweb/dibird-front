@@ -6,7 +6,7 @@ import { useApiError } from "../useApiError";
 import { useMutationWithTranslation } from "../useMutationWithTranslation";
 import { useLanguage } from "../../store/language-context";
 import { isConnected } from "../../services/sync/networkStatus";
-import { serveFromCache } from "../../services/cacheFallback";
+import { cachedRead } from "../../services/cacheFallback";
 import { runPlaceSync } from "../../services/sync/placeSync";
 import * as placeRepository from "../repositories/placeRepository";
 import { fetchDiaries } from "../../util/fetches";
@@ -48,36 +48,33 @@ export const usePlaceItem = (
     // language reads back the stale previous-language copy (staleTime is a
     // day). Mirrors useObservationItem / useItem / useDiaryItem.
     queryKey: ["Place", id, language, params ?? null],
-    queryFn: async () => {
+    queryFn: () => {
       if (id! < 0) {
         const local = placeRepository.getPlace(id!);
         if (!local) throw new Error("Place not found locally");
-        return placeRepository.withPendingObservationCount(local);
+        return Promise.resolve(placeRepository.withPendingObservationCount(local));
       }
 
-      try {
-        const res = await api.get(`${PLACE_URL}${id}/`, { params });
-        placeRepository.upsertFromServer(res.data);
-        // Even on a successful live fetch, an observation just created
-        // against this place may not have synced yet (its own sync is a
-        // separate queue) — fold it in so the count doesn't lag behind what
-        // the user just did. See placeRepository.withPendingObservationCount.
-        return placeRepository.withPendingObservationCount(res.data);
-      } catch (e) {
-        // Offline (or any request failure) fallback: the local snapshot may
-        // not reflect the currently active date filter (counts are
-        // date-scoped server-side) — showing the last-known unfiltered
-        // counts is still strictly better than an error screen.
-        const local = placeRepository.getPlace(id!);
-        if (local) {
-          return serveFromCache(
-            placeRepository.withPendingObservationCount(local),
-            e,
-            "useOfflinePlace",
-          );
-        }
-        throw e;
-      }
+      return cachedRead(
+        "useOfflinePlace",
+        () => {
+          // Offline (or any request failure) fallback: the local snapshot may
+          // not reflect the currently active date filter (counts are
+          // date-scoped server-side) — showing the last-known unfiltered
+          // counts is still strictly better than an error screen.
+          const local = placeRepository.getPlace(id!);
+          return local ? placeRepository.withPendingObservationCount(local) : null;
+        },
+        async () => {
+          const res = await api.get(`${PLACE_URL}${id}/`, { params });
+          placeRepository.upsertFromServer(res.data);
+          // Even on a successful live fetch, an observation just created
+          // against this place may not have synced yet (its own sync is a
+          // separate queue) — fold it in so the count doesn't lag behind what
+          // the user just did. See placeRepository.withPendingObservationCount.
+          return placeRepository.withPendingObservationCount(res.data);
+        },
+      );
     },
     enabled: !!id,
     staleTime: 1000 * 60 * 60 * 24,

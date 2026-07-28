@@ -24,6 +24,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
+import { navigationRef } from "../../services/navigationRef";
 import {
   SheetPayload,
   ConfirmSheetPayload,
@@ -46,6 +47,7 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const isRepresentingRef = useRef(false);
+  const unwatchRouteRef = useRef<(() => void) | null>(null);
 
   const confirm =
     payload?.mode === "confirm"
@@ -84,12 +86,47 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
   const isConfirmDisabled = !isMatch || isLoading;
   const confirmBg = confirm?.danger ? Colors.error600 : Colors.main100;
 
-  const present = useCallback((newPayload: SheetPayload) => {
-    isRepresentingRef.current = true;
-    setPayload(newPayload);
-    setInputValue("");
-    bottomSheetRef.current?.present();
+  const stopWatchingRoute = useCallback(() => {
+    unwatchRouteRef.current?.();
+    unwatchRouteRef.current = null;
   }, []);
+
+  const present = useCallback(
+    (newPayload: SheetPayload) => {
+      isRepresentingRef.current = true;
+      setPayload(newPayload);
+      setInputValue("");
+      bottomSheetRef.current?.present();
+
+      // Этот шит — один на всё приложение (services/bottomSheet.ts дёргает
+      // его через модульный ref) и живёт вне навигатора, поэтому уход с
+      // экрана его сам по себе не закрывает: он остаётся висеть поверх того,
+      // что оказалось под ним, и съедает нажатия. Ловилось на живом
+      // сценарии: PlaceEditorScreen на маунте зовёт locateMe(), при
+      // отклонённой геолокации тот сразу показывает «Location unavailable»
+      // (usePlaceLocation), пользователь жмёт «назад» — экран закрывается, а
+      // модалка остаётся над главным экраном.
+      //
+      // Подписываемся здесь, а не в useEffect на маунте: GlobalBottomSheet
+      // рендерится рядом с <Navigation />, и на его первом рендере
+      // navigationRef ещё пуст (контейнер до готовности initialState отдаёт
+      // null). К моменту показа шита экран, который его открыл, точно
+      // смонтирован.
+      stopWatchingRoute();
+      const nav = navigationRef.current;
+      if (!nav?.isReady()) return;
+
+      const openedOn = nav.getCurrentRoute()?.key;
+      unwatchRouteRef.current = nav.addListener("state", () => {
+        // Сравниваем key, а не name: смена параметров того же экрана — не
+        // повод закрывать шит, который этот экран и открыл.
+        if (navigationRef.current?.getCurrentRoute()?.key === openedOn) return;
+        stopWatchingRoute();
+        bottomSheetRef.current?.dismiss();
+      });
+    },
+    [stopWatchingRoute],
+  );
 
   const dismiss = useCallback(() => {
     bottomSheetRef.current?.dismiss();
@@ -97,13 +134,15 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
 
   const handleDismiss = useCallback(() => {
     if (isRepresentingRef.current) {
+      // Пере-показ: подписку уже переставил present(), гасить её нельзя.
       isRepresentingRef.current = false;
       return;
     }
+    stopWatchingRoute();
     setPayload(null);
     setInputValue("");
     setIsLoading(false);
-  }, []);
+  }, [stopWatchingRoute]);
 
   useImperativeHandle(ref, () => ({ present, dismiss }), [present, dismiss]);
 

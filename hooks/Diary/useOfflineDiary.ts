@@ -7,7 +7,7 @@ import { useMutationWithTranslation } from "../useMutationWithTranslation";
 import { useProfile } from "../../store/profile-context";
 import { useLanguage } from "../../store/language-context";
 import { isConnected } from "../../services/sync/networkStatus";
-import { serveFromCache } from "../../services/cacheFallback";
+import { cachedRead } from "../../services/cacheFallback";
 import { runDiarySync } from "../../services/sync/diarySync";
 import * as diaryRepository from "../repositories/diaryRepository";
 import { ownerFromProfile } from "../repositories/shared";
@@ -91,22 +91,22 @@ export const useDiaryItem = (
     // useObservationItem / useItem.
     queryKey: ["Diary", id, language],
     // Deliberately untyped (matches the generic useItem this replaces).
-    queryFn: async () => {
+    queryFn: () => {
       if (id! < 0) {
         const local = diaryRepository.getDiary(id!);
         if (!local) throw new Error("Diary not found locally");
-        return local;
+        return Promise.resolve(local);
       }
 
-      try {
-        const res = await api.get(`${DIARY_URL}${id}/`);
-        diaryRepository.upsertFromServer(res.data);
-        return res.data;
-      } catch (e) {
-        const local = diaryRepository.getDiary(id!);
-        if (local) return serveFromCache(local, e, "useOfflineDiary");
-        throw e;
-      }
+      return cachedRead(
+        "useOfflineDiary",
+        () => diaryRepository.getDiary(id!) ?? null,
+        async () => {
+          const res = await api.get(`${DIARY_URL}${id}/`);
+          diaryRepository.upsertFromServer(res.data);
+          return res.data;
+        },
+      );
     },
     enabled: !!id,
     staleTime: 1000 * 60 * 60 * 24,

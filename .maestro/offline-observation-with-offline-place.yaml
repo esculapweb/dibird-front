@@ -80,6 +80,23 @@ tags:
 
 - tapOn:
     id: "list-add-button"
+# Same one-shot retry as online-create-place.yaml — see the comment there for
+# the "tap COMPLETED, app didn't navigate" case this covers. The optional wait
+# in front is load-bearing: `when: notVisible` is evaluated right away, so
+# without it the retry fires while the editor is still opening and then fails
+# looking for a "+" button that is no longer on screen.
+- extendedWaitUntil:
+    visible:
+      id: "latitude-input"
+    timeout: 6000
+    optional: true
+- runFlow:
+    when:
+      notVisible:
+        id: "latitude-input"
+    commands:
+      - tapOn:
+          id: "list-add-button"
 - extendedWaitUntil:
     visible:
       id: "latitude-input"

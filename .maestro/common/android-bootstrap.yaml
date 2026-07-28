@@ -6,10 +6,18 @@
 # own top-level flow — still needs its own appId + `---` below, though:
 # `maestro test` refuses to load a runFlow-referenced file without one.
 #
-# HOST-SPECIFIC: the IP below must be the host machine's real LAN IP
-# (verify with `ifconfig`), not the emulator's 10.0.2.2 loopback alias —
-# the app's baked-in API base URL points at the LAN address, not
-# localhost. Update this if the host's IP changes.
+# Metro is reached over `localhost` — run.sh sets up `adb reverse tcp:8081
+# tcp:8081` before every Android run, so the emulator's loopback tunnels to
+# the host's Metro. This is deliberately NOT the host's LAN IP: loopback
+# survives `toggleAirplaneMode`, so a bundle re-fetch while offline still
+# works instead of dropping the app onto the dev-client's "problem loading
+# the project" error screen (see the long note in run.sh). Nothing else
+# moves to loopback — the app's baked-in API base URL
+# (EXPO_PUBLIC_BASE_URL in .env.development.local) is still the host's LAN
+# address, which is what airplane mode is meant to cut off. That URL, not
+# this file, is the one to update when the host's IP changes; 10.0.2.2 (the
+# emulator's host alias) is no use for either, it goes over the virtual
+# NIC and dies in airplane mode too.
 #
 # Connects via the same exp+dibird:// deep link Metro's own CLI opens when
 # you press `a` (shown in its terminal output as "Opening exp+dibird://...
@@ -29,7 +37,7 @@ appId: com.dibird.app
 ---
 - stopApp
 
-- openLink: "exp+dibird://expo-development-client/?url=http%3A%2F%2F192.168.0.103%3A8081"
+- openLink: "exp+dibird://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081"
 # Metro takes a few seconds to reconnect — wait out the connecting toast
 # instead of racing it with a plain waitForAnimationToEnd.
 - extendedWaitUntil:

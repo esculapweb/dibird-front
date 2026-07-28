@@ -7,7 +7,7 @@ import { useMutationWithTranslation } from "../useMutationWithTranslation";
 import { useProfile } from "../../store/profile-context";
 import { useLanguage } from "../../store/language-context";
 import { isConnected } from "../../services/sync/networkStatus";
-import { serveFromCache } from "../../services/cacheFallback";
+import { cachedRead } from "../../services/cacheFallback";
 import { track } from "../../services/analytics";
 import { markFirstObservationTracked } from "../../util/storageHelper";
 import { runObservationSync } from "../../services/sync/observationSync";
@@ -128,23 +128,23 @@ export const useObservationItem = (
     // Deliberately untyped (matches the generic useItem this replaces): the
     // real API response and ObservationItem drift in a few display-only fields
     // (e.g. diary_data) that aren't worth reconciling as part of this change.
-    queryFn: async () => {
+    queryFn: () => {
       // Temp ids from an unsynced offline create never exist server-side.
       if (id! < 0) {
         const local = observationRepository.getObservation(id!);
         if (!local) throw new Error("Observation not found locally");
-        return local;
+        return Promise.resolve(local);
       }
 
-      try {
-        const res = await api.get(`${OBSERVATION_URL}${id}/`);
-        observationRepository.upsertFromServer(res.data);
-        return res.data;
-      } catch (e) {
-        const local = observationRepository.getObservation(id!);
-        if (local) return serveFromCache(local, e, "useOfflineObservation");
-        throw e;
-      }
+      return cachedRead(
+        "useOfflineObservation",
+        () => observationRepository.getObservation(id!) ?? null,
+        async () => {
+          const res = await api.get(`${OBSERVATION_URL}${id}/`);
+          observationRepository.upsertFromServer(res.data);
+          return res.data;
+        },
+      );
     },
     enabled: !!id,
     staleTime: 1000 * 60 * 60 * 24,

@@ -44,6 +44,13 @@ npm run e2e:android      # Android: offline-/online-create-{diary,observation,pl
 npm run e2e:android -- .maestro/offline-create-place.yaml   # можно указать один флоу явно
 ```
 
+Android-батч гоняет флоу **по одному** (`maestro test` на каждый файл),
+сбрасывая airplane mode перед каждым: `toggleAirplaneMode` умеет только
+переключать текущее состояние, поэтому упавший в офлайн-фазе флоу раньше
+утаскивал за собой следующий — тот тратил свой «уйти в офлайн» на возврат
+в онлайн и падал на проверках pending-иконок. Итог печатается в конце
+списком (`FAILED flows: ...`), выход — ненулевой, если упал хоть один.
+
 Четыре Android-флоу и iOS-флоу выше — `offline-nested-observation-in-diary.yaml`,
 `offline-observation-with-offline-place.yaml`, `offline-alert-settings.yaml`,
 `online-create-place-location-denied.yaml`, и update/delete в
@@ -73,9 +80,14 @@ Android-устройства: сканирование идёт раньше, ч
 Требования к устройству:
 - iOS: booted-симулятор с установленным dev-client билдом (`com.dibird.app.dev`).
 - Android: запущенный emulator/device с установленным dev-client билдом
-  (`com.dibird.app`) **и** актуальным LAN IP хоста в
-  `.maestro/common/android-bootstrap.yaml` (`exp://<IP>:8081`) — при смене
-  сети/хоста надо обновить руками.
+  (`com.dibird.app`) и запущенным Metro. К Metro флоу подключаются через
+  `localhost:8081` — `run.sh` сам делает `adb reverse tcp:8081 tcp:8081`,
+  поэтому LAN IP хоста тут больше не прописан и при смене сети править
+  `.maestro/` не надо (LAN IP остаётся только в `EXPO_PUBLIC_BASE_URL`
+  из `.env.development.local` — это адрес API, и именно его должен
+  обрубать airplane mode). Loopback переживает `toggleAirplaneMode`, так
+  что перезагрузка бандла в офлайне больше не роняет приложение на экран
+  dev-client'а «There was a problem loading the project».
 
 Офлайн-синхронизация на iOS (Simulator не умеет переключать airplane
 mode на уровне ОС) и push всё ещё не автоматизированы; см. раздел 6.
