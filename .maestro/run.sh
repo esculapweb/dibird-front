@@ -165,6 +165,20 @@ if [ "$PLATFORM" = "android" ]; then
   adb -s "$TARGET" shell settings put global transition_animation_scale 0
   adb -s "$TARGET" shell settings put global animator_duration_scale 0
 
+  # Детерминированный старт: чистые данные тестового аккаунта на бэке +
+  # `pm clear` приложения. Не по умолчанию — сброс стоит лишнего логина в
+  # bootstrap, а при отладке одного флоу часто нужен как раз накопленный
+  # аккаунт. Включается `RESET=1 npm run e2e:android` или флагом `--reset`
+  # (см. RELEASE_CHECKLIST.md). Осмысленно перед полным батчем, где
+  # count-проверки соседних флоу иначе ломаются об мусор от прошлого падения.
+  if [ "$1" = "--reset" ]; then
+    RESET=1
+    shift
+  fi
+  if [ -n "$RESET" ] && [ "$RESET" != "0" ]; then
+    bash .maestro/reset-state.sh
+  fi
+
   TARGET_PATH="${1:-.maestro}"
 else
   TARGET=$(xcrun simctl list devices 2>/dev/null | grep -i booted | grep -oE '[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}' | head -1)

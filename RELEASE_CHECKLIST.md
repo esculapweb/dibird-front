@@ -42,7 +42,22 @@ npm run e2e:android      # Android: offline-/online-create-{diary,observation,pl
                          # offline-alert-settings.yaml,
                          # online-create-place-location-denied.yaml
 npm run e2e:android -- .maestro/offline-create-place.yaml   # можно указать один флоу явно
+npm run e2e:android -- --reset                              # то же, но со сбросом состояния (см. ниже)
 ```
+
+Перед полным батчем состояние стоит сбрасывать: флоу проверяют счётчики
+(«в дневнике 1 наблюдение», «мест стало больше»), а каждое падение
+оставляет за собой недосозданные записи — следующий прогон стартует с
+испорченного тестового аккаунта, и в отчёте появляются падения соседних
+флоу, к настоящей причине отношения не имеющие. Сброс — `bash
+.maestro/reset-state.sh` (или `--reset`/`RESET=1` у `npm run e2e:android`):
+чистит `Observation`/`Diary`/`Place` тестового аккаунта на локальном бэке
+(`docker compose exec web python manage.py shell` в `dibird_local`) и делает
+`adb shell pm clear com.dibird.app`. По умолчанию выключен — `pm clear`
+стоит лишнего логина в bootstrap, а при отладке одного флоу накопленный
+аккаунт часто как раз нужен. Онбординг после `pm clear` не всплывает:
+`isOnboardingPending()` без ключа `onboarding_pending` отдаёт false, а
+ставит его только регистрация.
 
 Android-батч гоняет флоу **по одному** (`maestro test` на каждый файл),
 сбрасывая airplane mode перед каждым: `toggleAirplaneMode` умеет только

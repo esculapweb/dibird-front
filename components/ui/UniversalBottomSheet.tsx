@@ -37,6 +37,15 @@ export interface BottomSheetRef {
   dismiss: () => void;
 }
 
+type RouteTree = { routes?: { key?: string; state?: RouteTree }[] };
+
+// getRootState() отдаёт только корневой навигатор: экраны вложенных
+// (drawer → native-stack) лежат в route.state, поэтому обходим дерево целиком.
+const hasRouteKey = (state: RouteTree | undefined, key: string): boolean =>
+  !!state?.routes?.some(
+    (route) => route.key === key || hasRouteKey(route.state, key),
+  );
+
 const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
   const { t } = useTranslation();
   const { height: screenHeight } = useWindowDimensions();
@@ -47,6 +56,7 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const isRepresentingRef = useRef(false);
+  const isOpenRef = useRef(false);
   const unwatchRouteRef = useRef<(() => void) | null>(null);
 
   const confirm =
@@ -93,7 +103,17 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
 
   const present = useCallback(
     (newPayload: SheetPayload) => {
-      isRepresentingRef.current = true;
+      // Эхо-onDismiss от stackBehavior="replace" прилетает только тогда, когда
+      // present() пришёл поверх уже открытого шита — там библиотека гасит
+      // замещаемый. Если шит был закрыт, гасить эхо нечему, и трактовать
+      // первый onDismiss как эхо нельзя: тогда настоящее закрытие остаётся
+      // незамеченным (payload не сброшен, подписка на маршрут жива), а
+      // наблюдатель следом добивает уже закрытый шит вторым dismiss() —
+      // после этого BottomSheetModal перестаёт открываться вовсе (ловилось в
+      // e2e: удаление наблюдения закрывало шит, уход экрана слал второй
+      // dismiss, и на следующем экране шит удаления дневника уже не всплывал).
+      isRepresentingRef.current = isOpenRef.current;
+      isOpenRef.current = true;
       setPayload(newPayload);
       setInputValue("");
       bottomSheetRef.current?.present();
@@ -117,10 +137,28 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
       if (!nav?.isReady()) return;
 
       const openedOn = nav.getCurrentRoute()?.key;
+      if (!openedOn) return;
+
       unwatchRouteRef.current = nav.addListener("state", () => {
-        // Сравниваем key, а не name: смена параметров того же экрана — не
-        // повод закрывать шит, который этот экран и открыл.
-        if (navigationRef.current?.getCurrentRoute()?.key === openedOn) return;
+        // Критерий — «экран-владелец исчез из стека», а не «фокус ушёл с
+        // него». Уход по фокусу закрывал бы шит и на переходе вглубь, и —
+        // хуже — при промахе захвата: если present() вызван, пока навигация
+        // ещё переходит, владельцем запишется предыдущий экран, и первое же
+        // событие state погасит только что открытый шит (симптом
+        // неотличим от «шит не открылся»). Проверка на наличие в дереве
+        // такой гонки не подвержена по построению: промахнувшийся владелец
+        // всё равно остаётся в стеке.
+        // Шит уже закрыт (подтверждение/отмена/свайп) — гасить его повторно
+        // нельзя: лишний dismiss() ломает BottomSheetModal, и следующий
+        // present() молча ничего не показывает.
+        if (!isOpenRef.current) {
+          stopWatchingRoute();
+          return;
+        }
+        const root = navigationRef.current?.getRootState() as
+          | RouteTree
+          | undefined;
+        if (!root || hasRouteKey(root, openedOn)) return;
         stopWatchingRoute();
         bottomSheetRef.current?.dismiss();
       });
@@ -129,8 +167,15 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
   );
 
   const dismiss = useCallback(() => {
+    // Гасим сами — наблюдателю тут уже нечего делать. Ждать onDismiss нельзя:
+    // он приходит по завершении анимации закрытия, а событие навигации
+    // (экран уходит сразу после подтверждения удаления) успевает раньше, и
+    // наблюдатель шлёт второй dismiss() по закрывающемуся шиту — после него
+    // BottomSheetModal больше не открывается.
+    isOpenRef.current = false;
+    stopWatchingRoute();
     bottomSheetRef.current?.dismiss();
-  }, []);
+  }, [stopWatchingRoute]);
 
   const handleDismiss = useCallback(() => {
     if (isRepresentingRef.current) {
@@ -138,6 +183,7 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
       isRepresentingRef.current = false;
       return;
     }
+    isOpenRef.current = false;
     stopWatchingRoute();
     setPayload(null);
     setInputValue("");

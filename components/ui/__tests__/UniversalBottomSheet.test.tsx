@@ -45,15 +45,21 @@ import UniversalBottomSheet, { BottomSheetRef } from "../UniversalBottomSheet";
 import { navigationRef } from "../../../services/navigationRef";
 
 // Минимальный двойник NavigationContainerRef: шит подписывается на "state" и
-// сравнивает key текущего маршрута с тем, на котором его открыли.
+// проверяет, остался ли открывший его экран в дереве навигации. Стек живёт во
+// вложенном навигаторе (как drawer → native-stack в приложении), чтобы обход
+// дерева проверялся, а не только корневой уровень.
+type MockRoute = { key: string; name: string; state?: { routes: MockRoute[] } };
 const stateListeners: (() => void)[] = [];
-let currentRouteKey = "Places-1";
+let routeStack: MockRoute[] = [];
 const mockUnsubscribe = jest.fn();
 
 const mountNavigation = () => {
   (navigationRef as { current: unknown }).current = {
     isReady: () => true,
-    getCurrentRoute: () => ({ key: currentRouteKey, name: currentRouteKey }),
+    getCurrentRoute: () => routeStack[routeStack.length - 1],
+    getRootState: () => ({
+      routes: [{ key: "Drawer-0", name: "Drawer", state: { routes: routeStack } }],
+    }),
     addListener: (event: string, cb: () => void) => {
       if (event === "state") stateListeners.push(cb);
       // Отписка реального NavigationContainerRef снимает слушателя — двойник
@@ -67,11 +73,20 @@ const mountNavigation = () => {
   };
 };
 
-const navigateTo = async (key: string) => {
-  currentRouteKey = key;
+const emitState = async () => {
   await act(async () => {
     stateListeners.forEach((cb) => cb());
   });
+};
+
+const push = async (key: string) => {
+  routeStack.push({ key, name: key });
+  await emitState();
+};
+
+const pop = async () => {
+  routeStack.pop();
+  await emitState();
 };
 
 const mockOnConfirm = jest.fn();
@@ -99,7 +114,10 @@ beforeEach(() => {
   jest.useFakeTimers();
   mockOnConfirm.mockResolvedValue(undefined);
   stateListeners.length = 0;
-  currentRouteKey = "Places-1";
+  routeStack = [
+    { key: "Main-0", name: "Main" },
+    { key: "Places-1", name: "Places" },
+  ];
   (navigationRef as { current: unknown }).current = null;
 });
 
@@ -300,35 +318,63 @@ describe("content mode", () => {
 // съедал нажатия (реальный случай — «Location unavailable» из
 // PlaceEditorScreen, зависший над главным экраном после «назад»).
 describe("dismissal on route change", () => {
-  it("closes when navigation leaves the route the sheet was opened on", async () => {
-    mountNavigation();
-    const ref = await renderSheet();
-    await act(async () => {
+  const presentMenu = async (ref: React.RefObject<BottomSheetRef | null>) =>
+    act(async () => {
       ref.current?.present({
         mode: "menu",
         items: [{ label: "Only item", onPress: mockOnPress1 }],
       });
     });
 
-    await navigateTo("Main-0");
+  it("closes once the route the sheet was opened on leaves the stack", async () => {
+    mountNavigation();
+    const ref = await renderSheet();
+    await presentMenu(ref);
+
+    await pop();
 
     expect(mockInnerDismiss).toHaveBeenCalledTimes(1);
     expect(mockUnsubscribe).toHaveBeenCalledTimes(1);
   });
 
+  it("stays open when navigation pushes a screen on top of the owner", async () => {
+    mountNavigation();
+    const ref = await renderSheet();
+    await presentMenu(ref);
+
+    await push("PlaceEditor-2");
+
+    expect(mockInnerDismiss).not.toHaveBeenCalled();
+  });
+
   it("stays open when the same route merely updates its params", async () => {
     mountNavigation();
     const ref = await renderSheet();
-    await act(async () => {
-      ref.current?.present({
-        mode: "menu",
-        items: [{ label: "Only item", onPress: mockOnPress1 }],
-      });
-    });
+    await presentMenu(ref);
 
-    await navigateTo("Places-1");
+    await emitState();
 
     expect(mockInnerDismiss).not.toHaveBeenCalled();
+  });
+
+  // Промах захвата: present() пришёлся на момент, когда навигация ещё
+  // переходила, и владельцем записался экран под текущим. Пока он в стеке —
+  // гасить нельзя, иначе первое же событие state убьёт только что открытый шит.
+  it("stays open when the captured owner is a lower screen of the stack", async () => {
+    mountNavigation();
+    routeStack = [{ key: "Main-0", name: "Main" }];
+    const ref = await renderSheet();
+    await presentMenu(ref);
+
+    await push("Places-1");
+    await push("PlaceEditor-2");
+
+    expect(mockInnerDismiss).not.toHaveBeenCalled();
+
+    // Но когда владелец всё-таки исчезает — шит гасится.
+    routeStack = [{ key: "Other-9", name: "Other" }];
+    await emitState();
+    expect(mockInnerDismiss).toHaveBeenCalledTimes(1);
   });
 
   it("still presents when navigation isn't mounted yet", async () => {
@@ -347,31 +393,93 @@ describe("dismissal on route change", () => {
   it("drops the route watch once the sheet is dismissed for real", async () => {
     mountNavigation();
     const ref = await renderSheet();
-    await act(async () => {
-      ref.current?.present({
-        mode: "menu",
-        items: [{ label: "Only item", onPress: mockOnPress1 }],
-      });
-    });
-
-    // Первый onDismiss — эхо от re-present, подписка должна уцелеть.
-    await act(async () => {
-      capturedOnDismiss?.();
-    });
-    expect(mockUnsubscribe).not.toHaveBeenCalled();
+    await presentMenu(ref);
 
     await act(async () => {
       capturedOnDismiss?.();
     });
     expect(mockUnsubscribe).toHaveBeenCalledTimes(1);
 
-    await navigateTo("Main-0");
+    await pop();
     expect(mockInnerDismiss).not.toHaveBeenCalled();
+  });
+
+  // Второй dismiss() по уже закрытому шиту ломает BottomSheetModal — после
+  // него present() молча ничего не показывает (ловилось в e2e: подтверждение
+  // удаления закрывало шит, уход экрана слал добивающий dismiss, и на
+  // следующем экране шит подтверждения уже не всплывал).
+  it("never dismisses a sheet that is already closed when its screen leaves", async () => {
+    mountNavigation();
+    const ref = await renderSheet();
+    await presentMenu(ref);
+
+    // Закрытие подтверждением: наш dismiss() + ответный onDismiss.
+    await act(async () => {
+      ref.current?.dismiss();
+      capturedOnDismiss?.();
+    });
+    expect(mockInnerDismiss).toHaveBeenCalledTimes(1);
+
+    await pop();
+    expect(mockInnerDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  // onDismiss приходит по концу анимации закрытия, а событие навигации —
+  // сразу: без снятия подписки в самом dismiss() наблюдатель успевает
+  // добить ещё закрывающийся шит (ловилось в e2e-логе: 126 мс между нашим
+  // dismiss и dismiss наблюдателя, onDismiss ещё не пришёл).
+  it("stops watching as soon as we dismiss, before onDismiss arrives", async () => {
+    mountNavigation();
+    const ref = await renderSheet();
+    await presentMenu(ref);
+
+    await act(async () => {
+      ref.current?.dismiss();
+    });
+    expect(mockUnsubscribe).toHaveBeenCalledTimes(1);
+
+    await pop();
+    expect(mockInnerDismiss).toHaveBeenCalledTimes(1);
   });
 });
 
 describe("handleDismiss guard against a spurious replace-echo", () => {
-  it("ignores the first onDismiss right after present(), but honors a later one", async () => {
+  // Эхо бывает только при present() поверх открытого шита: stackBehavior
+  // "replace" гасит замещаемый и стреляет его onDismiss уже после того, как
+  // новый показан. Гвард привязан именно к этому условию — иначе первое
+  // (настоящее) закрытие принималось бы за эхо, см. тест про добивающий
+  // dismiss выше.
+  it("ignores the onDismiss echo of a replaced sheet, but honors a genuine one", async () => {
+    const ref = await renderSheet();
+    await act(async () => {
+      ref.current?.present({
+        mode: "menu",
+        items: [{ label: "First item", onPress: mockOnPress1 }],
+      });
+    });
+
+    await act(async () => {
+      ref.current?.present({
+        mode: "menu",
+        items: [{ label: "Second item", onPress: mockOnPress2 }],
+      });
+    });
+    expect(screen.getByText("Second item")).toBeOnTheScreen();
+
+    // Эхо от замещённого шита — контент нового должен уцелеть.
+    await act(async () => {
+      capturedOnDismiss?.();
+    });
+    expect(screen.getByText("Second item")).toBeOnTheScreen();
+
+    // Настоящее закрытие (свайп) — контент должен очиститься.
+    await act(async () => {
+      capturedOnDismiss?.();
+    });
+    expect(screen.queryByText("Second item")).not.toBeOnTheScreen();
+  });
+
+  it("clears content on the first onDismiss when nothing was replaced", async () => {
     const ref = await renderSheet();
     await act(async () => {
       ref.current?.present({
@@ -381,15 +489,6 @@ describe("handleDismiss guard against a spurious replace-echo", () => {
     });
     expect(screen.getByText("Only item")).toBeOnTheScreen();
 
-    // Simulated echo from the library right after present() (stackBehavior
-    // "replace" firing onDismiss for the sheet being replaced) — content
-    // must survive.
-    await act(async () => {
-      capturedOnDismiss?.();
-    });
-    expect(screen.getByText("Only item")).toBeOnTheScreen();
-
-    // A genuine later dismiss (swipe-to-close) — content must clear.
     await act(async () => {
       capturedOnDismiss?.();
     });
