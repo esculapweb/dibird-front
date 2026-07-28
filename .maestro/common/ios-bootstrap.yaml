@@ -2,9 +2,9 @@
 # deep link android-bootstrap.yaml uses (Maestro's openLink isn't
 # platform-specific), instead of tapping the dev-launcher's on-screen
 # server list — see android-bootstrap.yaml for the full rationale on why
-# that tap-based connect was dropped there. Then dismiss the onboarding
-# tooltip and permanently disable the floating "Tools button" (it overlaps
-# app buttons later on). Lives under common/ so Maestro's directory scan
+# that tap-based connect was dropped there. Then check that the dev menu is
+# staying out of the way, which is all that is left of what this flow used to
+# do by hand — see the note further down. Lives under common/ so Maestro's scan
 # never picks it up as its own top-level flow — still needs its own appId
 # + `---` below, though: `maestro test` refuses to load a runFlow-
 # referenced file without one.
@@ -21,24 +21,31 @@ appId: com.dibird.app.dev
 - stopApp
 
 - openLink: "exp+dibird://expo-development-client/?url=http%3A%2F%2F192.168.0.103%3A8081"
+# iOS 26 can put an `Open in "DiBird (Dev)"?` system prompt in front of a
+# custom-scheme link, and it swallows every tap underneath it while it is up
+# — so dismiss it before anything else. Optional: it doesn't appear on every
+# launch, nor on OS versions that open the link straight away.
+- tapOn:
+    text: "Open"
+    optional: true
 - extendedWaitUntil:
     notVisible: ".*Connecting to the development server.*"
     timeout: 12000
 - waitForAnimationToEnd
-- tapOn:
-    text: "Continue"
-    optional: true
-- waitForAnimationToEnd
-- runFlow:
-    when:
-      visible: "Tools button"
-    commands:
-      - tapOn:
-          text: "Tools button"
-      - waitForAnimationToEnd
-      # The switch has no accessible text of its own — tap its known
-      # on-screen position instead of the (untappable) label.
-      - tapOn:
-          point: "85%,95%"
-      - tapOn:
-          text: "Close"
+# Nothing to dismiss here any more: plugins/withDevMenuDefaults.js ships the
+# dev menu's defaults with the build, so it no longer opens itself at launch,
+# no onboarding sheet greets a cleared install, and the floating gear isn't
+# drawn at all. This flow used to open that menu and flip the "Tools button"
+# switch off on every single run, since `launchApp: clearState` wipes the
+# UserDefaults it was stored in.
+#
+# The assertion stays as the guard for exactly that arrangement: the gear
+# sits on top of the header buttons underneath it (the observation editor's
+# save button in particular), where every tap opens the dev menu instead of
+# doing what the flow asked. A prebuild that lost the plugin would put it
+# back silently — this fails here instead, several screens before the
+# confusing part.
+- extendedWaitUntil:
+    notVisible:
+      id: "gearshape.fill"
+    timeout: 5000

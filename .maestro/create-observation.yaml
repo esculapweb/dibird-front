@@ -109,23 +109,13 @@ tags:
     timeout: 6000
 - tapOn:
     id: "option-row-0"
+# The floating dev-tools gear used to sit on top of the header's save
+# button on this screen size, so every tap here opened the "DiBird (Dev)"
+# menu instead of submitting. common/ios-bootstrap.yaml now disables that
+# gear and asserts it is gone before this flow gets here — no recovery
+# branch needed on either save.
 - tapOn:
     id: "observation-save-button"
-# The floating dev-tools trigger sits on top of the header's save button
-# on this screen size — every tap there opens the "DiBird (Dev)" menu
-# instead of submitting. Disable the trigger permanently, then dismiss.
-- runFlow:
-    when:
-      visible: "Reload"
-    commands:
-      # Switch has no accessible text of its own — tap its known
-      # on-screen position instead of the (untappable) label.
-      - tapOn:
-          point: "85%,95%"
-      - tapOn:
-          text: "Close"
-      - tapOn:
-          id: "observation-save-button"
 
 # A successful save lands on the new observation's detail screen. Assert
 # on the delete button specifically: it only renders when is_owner is
@@ -149,16 +139,6 @@ tags:
     text: ".*Public.*"
 - tapOn:
     id: "observation-save-button"
-- runFlow:
-    when:
-      visible: "Reload"
-    commands:
-      - tapOn:
-          point: "85%,95%"
-      - tapOn:
-          text: "Close"
-      - tapOn:
-          id: "observation-save-button"
 - assertVisible: ".*Private.*"
 
 # ---- DELETE, online ----

@@ -62,7 +62,7 @@ const SpeciesDetailScreen = () => {
   const navigation = useNavigation<CatalogNavigationProp>();
   const route = useRoute<CatalogRouteProp<"SpeciesDetail">>();
   const requireAuth = useRequireAuth();
-  const { profileLoading } = useProfile();
+  const { profile, profileLoading, error: profileError } = useProfile();
   const styles = stylesFn(Colors);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [activeSoundId, setActiveSoundId] = useState<number | null>(null);
@@ -144,13 +144,41 @@ const SpeciesDetailScreen = () => {
   // редактора в гостевом стеке нет.
   const pendingAction = route.params.pendingAction;
   useEffect(() => {
-    if (pendingAction !== "add_observation" || profileLoading || !data) return;
+    if (
+      pendingAction !== "add_observation" ||
+      profileLoading ||
+      // Ждём сам профиль, а не только снятый `profileLoading`: флаг гаснет,
+      // как только вернулся запрос синхронизации, а сам профиль приезжает
+      // рендером позже — он приходит из зеркала в SQLite через useLiveQuery,
+      // и её уведомление приходит уже после смены флага. В этот зазор
+      // `defaultTerritory` собирается вообще ни из чего (фильтры к тому
+      // моменту тоже ещё не перечитаны) и уезжает в редактор как null —
+      // а null здесь по контракту значит «страны нет и подставлять нечего»,
+      // то есть редактор открывался с пустой обязательной страной, без вида
+      // и с заблокированными списками. Проверял e2e-сценарий
+      // .maestro/guest-login-return.yaml.
+      //
+      // `profileError` — чтобы неудачная загрузка (офлайн сразу после
+      // логина) не подвесила возврат навсегда: тогда открываем с тем, что
+      // есть, как и раньше.
+      (!profile && !profileError) ||
+      !data
+    )
+      return;
 
     navigation.setParams({ pendingAction: undefined });
     requireAuth("add_observation", openObservationEditor);
     // openObservationEditor пересоздаётся каждый рендер — в зависимостях
     // держим то, от чего он на деле зависит.
-  }, [pendingAction, profileLoading, data, defaultTerritory, requireAuth]);
+  }, [
+    pendingAction,
+    profileLoading,
+    profile,
+    profileError,
+    data,
+    defaultTerritory,
+    requireAuth,
+  ]);
 
   useLayoutEffect(() => {
     navigation.setOptions({

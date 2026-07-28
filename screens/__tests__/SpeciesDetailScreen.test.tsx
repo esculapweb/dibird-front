@@ -84,7 +84,11 @@ import { TaxonSpeciesDetail } from "../../types";
 let mockRoute: ReturnType<typeof createRouteMock>;
 const mockNavigation = createNavigationMock();
 const mockUseQuery = useQuery as jest.Mock;
-const mockProfile = { profileLoading: false };
+const mockProfile: {
+  profile: { territory: number } | null;
+  profileLoading: boolean;
+  error: unknown;
+} = { profile: { territory: 4 }, profileLoading: false, error: null };
 
 const baseDetail: TaxonSpeciesDetail = {
   taxon_id: 1,
@@ -151,7 +155,9 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockRoute = createRouteMock("SpeciesDetail", { segment: "blue-tit" });
   (useDefaultTerritory as jest.Mock).mockReturnValue(4);
+  mockProfile.profile = { territory: 4 };
   mockProfile.profileLoading = false;
+  mockProfile.error = null;
   mockQueries();
 });
 
@@ -534,6 +540,40 @@ describe("resuming the action the guest signed up for", () => {
     await render(<SpeciesDetailScreen />);
 
     expect(mockNavigation.navigate).not.toHaveBeenCalled();
+  });
+
+  // `profileLoading` гаснет раньше, чем появляется сам профиль: он приезжает
+  // из зеркала в SQLite отдельным уведомлением. Открывшись в этот зазор,
+  // редактор получал defaultTerritory: null и вставал с пустой обязательной
+  // страной — ровно то, что ловит .maestro/guest-login-return.yaml.
+  it("waits for the profile itself, not just for the loading flag to drop", async () => {
+    withPendingAction();
+    mockProfile.profileLoading = false;
+    mockProfile.profile = null;
+    mockQueries({ detail: detailResult({ data: baseDetail }) });
+
+    await render(<SpeciesDetailScreen />);
+
+    expect(mockNavigation.navigate).not.toHaveBeenCalled();
+  });
+
+  // Но не навсегда: если профиль не загрузился (офлайн сразу после логина),
+  // ждать больше нечего — возврат важнее пустой страны, которую пользователь
+  // и так может выбрать сам.
+  it("gives up waiting when the profile failed to load", async () => {
+    withPendingAction();
+    mockProfile.profileLoading = false;
+    mockProfile.profile = null;
+    mockProfile.error = { message: "offline" };
+    mockQueries({ detail: detailResult({ data: baseDetail }) });
+
+    await render(<SpeciesDetailScreen />);
+
+    expect(mockNavigation.navigate).toHaveBeenCalledWith("ObservationEditor", {
+      defaultSpecies: baseDetail.taxon_id,
+      defaultTerritory: 4,
+      returnMode: "back",
+    });
   });
 
   it("waits for the species itself too", async () => {

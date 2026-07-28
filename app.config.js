@@ -178,6 +178,7 @@ export default {
       ],
       "./plugins/withLocationStrings",
       "./plugins/withModularHeaders",
+      "./plugins/withDevMenuDefaults",
       "@react-native-firebase/app",
       "expo-audio",
       "expo-font",

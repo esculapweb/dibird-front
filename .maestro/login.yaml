@@ -47,7 +47,10 @@ tags:
     id: "password-input"
 - setClipboard: "obviously-wrong-password-123"
 - pasteText
-- hideKeyboard
+# Tap a static label rather than hideKeyboard — see
+# common/ios-credential-entry.yaml for why.
+- tapOn:
+    text: "Welcome back"
 # id selector, not text: ".*Log In.*" ambiguously matches both the header
 # subtitle and the real submit button.
 - tapOn:

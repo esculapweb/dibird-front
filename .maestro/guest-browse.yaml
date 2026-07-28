@@ -97,6 +97,14 @@ tags:
 # (linking.ts). The custom scheme, not https://dibird.com: universal links are
 # associated with the production bundle id, not this dev-client build.
 - openLink: "dibird://species/osprey/"
+# iOS 26 puts an `Open in "DiBird (Dev)"?` system prompt in front of a
+# custom-scheme link handed to an app that is already in the foreground —
+# it doesn't appear for ios-bootstrap.yaml's exp+dibird:// link, which
+# `stopApp` precedes. Optional so the flow still runs on OS versions that
+# open the link straight away.
+- tapOn:
+    text: "Open"
+    optional: true
 - waitForAnimationToEnd
 - assertVisible:
     id: "species-scroll"
