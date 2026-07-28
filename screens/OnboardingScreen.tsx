@@ -8,6 +8,7 @@ import Layout from "../components/ui/Layout";
 import AnimatedLoadingButton from "../components/ui/AnimatedLoadingButton";
 import OnboardingValueStep from "../components/Onboarding/OnboardingValueStep";
 import OnboardingCountryStep from "../components/Onboarding/OnboardingCountryStep";
+import OnboardingLocationStep from "../components/Onboarding/OnboardingLocationStep";
 import OnboardingSpeciesStep from "../components/Onboarding/OnboardingSpeciesStep";
 import { useTheme, ThemeColors } from "../store/theme-context";
 import { useProfile } from "../store/profile-context";
@@ -19,11 +20,12 @@ import { toDateOnly } from "../util/helpers";
 import { setSession } from "../util/sessionStore";
 import { ObservationFormData, SpeciesDropdownItem } from "../types";
 
-const STEPS: OnboardingStep[] = [1, 2, 3, 4];
+const STEPS: OnboardingStep[] = [1, 2, 3, 4, 5];
 
 /**
- * Онбординг нового аккаунта: две страницы ценности, домашняя страна и первое
- * наблюдение. Показывается один раз за установку — решение принимает
+ * Онбординг нового аккаунта: две страницы ценности, домашняя страна,
+ * геолокация и первое наблюдение. Показывается один раз за установку —
+ * решение принимает
  * `store/onboarding-context.tsx`, экран объявлен в `AppStack` условно и
  * исчезает из навигатора, как только поток закончен.
  *
@@ -118,7 +120,7 @@ const OnboardingScreen = () => {
     );
   };
 
-  const isLast = step === 4;
+  const isLast = step === 5;
   const nextDisabled = (step === 3 && !territory) || savingCountry;
 
   const renderStep = () => {
@@ -146,6 +148,9 @@ const OnboardingScreen = () => {
       return (
         <OnboardingCountryStep value={territory} onChange={setTerritory} />
       );
+
+    if (step === 4)
+      return <OnboardingLocationStep testID="onboarding-step-4" />;
 
     if (created)
       return (
@@ -206,7 +211,7 @@ const OnboardingScreen = () => {
           ))}
         </View>
 
-        {/* На четвёртом шаге кнопка появляется только после созданной записи:
+        {/* На последнем шаге кнопка появляется только после созданной записи:
             до неё единственное осмысленное действие — выбрать птицу, и вторая
             кнопка рядом читалась бы как «можно и без этого». Исключение —
             упавшие списки видов: выбирать там не из чего, и без кнопки шаг

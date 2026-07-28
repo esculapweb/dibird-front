@@ -12,11 +12,20 @@ import { BirdSVG } from "../ui/Svgs";
 import { formatDateShort, normalizeDistance } from "../../util/helpers";
 import { fetchCommunityObservations } from "../../util/fetches";
 import { Filters, AppStackNavigationProp, ObservationItem } from "../../types";
-import { useLocation } from "../../store/location-context";
 import { useAlertSettings } from "../../store/alert-settings-context";
 
 const H_PAD = 16;
 const IMAGE_SIZE = 48;
+
+/**
+ * Территорию и радиус сервер берёт из настроек алертов сам — тем же способом,
+ * что и рассылка пушей (`ObservationFilterSet.filter_near` на бэке). Раньше
+ * их слали отсюда вместе со своим GPS-фиксом, и это давало сразу две беды:
+ * центр списка не совпадал с центром уведомлений, а без разрешения на
+ * геолокацию координат не было вовсе — бэк молча игнорировал радиус и отдавал
+ * редкости всего мира под подписью «250 км».
+ */
+const SCOPE_FILTERS: Filters = { near: "alerts" };
 
 interface NewSpeciesProps {
   filters: Filters;
@@ -27,22 +36,27 @@ const RareNearby: FC<NewSpeciesProps> = ({ filters }) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
-  const { locationCoords } = useLocation();
   const { settings } = useAlertSettings();
 
   const fetchDataWrapper = useCallback(
     (filters: Filters, sort: string | null, search: string, page: number) => {
-      return fetchCommunityObservations(
-        filters,
-        sort,
-        search,
-        page,
-        locationCoords,
-        3,
-      );
+      return fetchCommunityObservations(filters, sort, search, page, null, 3);
     },
-    [fetchCommunityObservations, locationCoords],
+    [],
   );
+
+  // Скоуп живёт на сервере, но меняется на клиенте — радиусом, «определить
+  // меня» и сменой страны. В фильтрах его больше нет, значит и в ключе
+  // react-query бы не осталось: список так и висел бы собранным по прежним
+  // настройкам, пока не протухнет.
+  const scopeKey = settings
+    ? [
+        settings.territory_data?.id ?? "",
+        settings.radius_km,
+        settings.location_lat ?? "",
+        settings.location_lon ?? "",
+      ].join(":")
+    : null;
 
   const {
     data: communityData,
@@ -52,9 +66,9 @@ const RareNearby: FC<NewSpeciesProps> = ({ filters }) => {
   } = useList({
     screenName: "RareNearby",
     fetchFunction: fetchDataWrapper,
-    filters: {territory: settings?.territory_data?.id, radius: settings?.radius_km},
+    filters: SCOPE_FILTERS,
     sort: "-date_time",
-    locationCoords,
+    queryKeyExtra: scopeKey,
     enabled: !!settings,
   });
 
@@ -135,12 +149,19 @@ const RareNearby: FC<NewSpeciesProps> = ({ filters }) => {
   // is around right now is worth reading either way. AlertsCard above says so
   // in those terms — "you won't be notified", never "alerts are off", which
   // next to a working list would read as the two being out of sync.
-  const scope = [
-    settings?.territory_data?.name,
-    settings?.radius_km ? normalizeDistance(settings.radius_km * 1000) : null,
-  ]
-    .filter(Boolean)
-    .join(", ");
+  //
+  // Подпись строится ровно из того, что сервер применил на самом деле, а не
+  // из того, что настроено: радиус без сохранённой точки применить не к чему,
+  // и называть такой список «в 250 км» — врать. Без точки и без страны
+  // фильтра нет вовсе, и единственное честное — позвать её указать (тап по
+  // подписи ведёт в настройки алертов).
+  const radiusLabel =
+    settings?.location_lat != null && settings?.location_lon != null
+      ? normalizeDistance(settings.radius_km * 1000)
+      : null;
+  const scope =
+    [settings?.territory_data?.name, radiusLabel].filter(Boolean).join(", ") ||
+    null;
 
   return (
     <>
@@ -152,7 +173,7 @@ const RareNearby: FC<NewSpeciesProps> = ({ filters }) => {
         >
           <Text style={styles.groupLabel}>{t("rare_nearby")}</Text>
           <Text style={styles.scope} numberOfLines={1}>
-            {scope || t("rare_nearby_by_alerts")}
+            {scope ?? t("rare_nearby_set_location")}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity

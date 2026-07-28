@@ -18,7 +18,6 @@ const SERVER_SETTINGS: AlertSettings = {
   language: "en",
   seen_mode: "year",
   watchlist_only: false,
-  include_local_observations: true,
   active_hours_utc: [[0, 23]],
   max_alerts_per_day: 5,
   is_enabled: true,

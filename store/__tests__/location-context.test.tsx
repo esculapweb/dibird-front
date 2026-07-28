@@ -29,6 +29,30 @@ it("starts with no location and no known permission status", async () => {
   expect(result.current.isRequesting).toBe(false);
 });
 
+// `permissionStatus` — состояние текущего рендера, и вызывающий, который
+// проверяет его сразу после `await requestLocation()`, видит значение ДО
+// запроса. Отсюда геттер: он читает ref, обновляемый в самом запросе.
+it("exposes the fresh permission status right after an awaited request", async () => {
+  (Location.getForegroundPermissionsAsync as jest.Mock).mockResolvedValue({
+    status: "undetermined",
+  });
+  (Location.requestForegroundPermissionsAsync as jest.Mock).mockResolvedValue({
+    status: "denied",
+  });
+
+  const { result } = await renderHook(() => useLocation(), {
+    wrapper: LocationProvider,
+  });
+
+  const statusAfterAwait = await act(async () => {
+    await result.current.requestLocation();
+    return result.current.getPermissionStatus();
+  });
+
+  expect(statusAfterAwait).toBe("denied");
+  expect(result.current.permissionStatus).toBe("denied");
+});
+
 describe("requestLocation", () => {
   it("skips the permission prompt and fetches the position directly when already granted", async () => {
     (Location.getForegroundPermissionsAsync as jest.Mock).mockResolvedValue({ status: "granted" });

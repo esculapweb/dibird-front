@@ -103,7 +103,8 @@ export default function AlertSettingsScreen() {
   // settings hook — expose error + refetch same pattern as useList in ListScreen
   const { settings, loading, error, refresh, save } =
     useAlertSettings();
-  const { requestLocation, isRequesting, permissionStatus } = useLocation();
+  const { requestLocation, isRequesting, permissionStatus, getPermissionStatus } =
+    useLocation();
 
   const [localRadius, setLocalRadius] = useState(250);
   const [localWindows, setLocalWindows] = useState<ActiveHourWindow[]>([]);
@@ -141,7 +142,10 @@ export default function AlertSettingsScreen() {
           },
           true,
         );
-      } else if (permissionStatus === "denied") {
+      } else if (getPermissionStatus() === "denied") {
+        // Не `permissionStatus`: он снят на текущем рендере, то есть до
+        // запроса — на первом отказе там ещё null, и подсказка приходила
+        // только со второго тапа.
         handleLocationUnavailable();
       }
     } catch (e) {

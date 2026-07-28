@@ -16,6 +16,9 @@ jest.mock("../../services/api", () => ({
 jest.mock("../../services/errors", () => ({
   logError: jest.fn(),
 }));
+jest.mock("../storageHelper", () => ({
+  markOnboardingPending: jest.fn(async () => {}),
+}));
 jest.mock("@react-native-google-signin/google-signin", () => ({
   GoogleSignin: {
     configure: jest.fn(),
@@ -44,6 +47,7 @@ import * as Sentry from "@sentry/react-native";
 import { logEvent } from "@react-native-firebase/analytics";
 import api, { saveTokens, clearTokens, getRefreshToken } from "../../services/api";
 import { logError } from "../../services/errors";
+import { markOnboardingPending } from "../storageHelper";
 import {
   Login,
   CreateUser,
@@ -53,6 +57,16 @@ import {
 } from "../auth";
 
 const apiPost = api.post as jest.Mock;
+const markPending = markOnboardingPending as jest.Mock;
+
+// Порядок «флаг → токены» проверяется по глобальному счётчику вызовов jest.
+// Смысл в том, что saveTokens сама переключает auth-контекст
+// (notifyTokenUpdate → authenticate), а OnboardingProvider читает флаг ровно
+// один раз по этому переходу: записанный позже флаг не успевает лечь на диск,
+// и новичок попадает сразу на дашборд.
+const flagCallOrder = () => markPending.mock.invocationCallOrder[0];
+const tokensCallOrder = () =>
+  (saveTokens as jest.Mock).mock.invocationCallOrder[0];
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -94,6 +108,9 @@ describe("CreateUser", () => {
       { withCredentials: false },
     );
     expect(logEvent).toHaveBeenCalledWith(expect.anything(), "sign_up", { method: "email" });
+    // Токена здесь ещё нет (нужно подтверждение почты), но флаг ставится сразу
+    // и переживает уход из приложения — вход вернётся через экран Login.
+    expect(markPending).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -253,6 +270,19 @@ describe("LoginWithGoogle", () => {
     expect(access).toBe("a");
   });
 
+  it("marks the onboarding flag before the tokens flip the auth context", async () => {
+    (GoogleSignin.signIn as jest.Mock).mockResolvedValueOnce({ data: { idToken: "idt" } });
+    (GoogleSignin.getTokens as jest.Mock).mockResolvedValueOnce({ accessToken: "at" });
+    apiPost.mockResolvedValueOnce({
+      data: { access: "a", refresh: "r", is_new_user: true },
+    });
+
+    await LoginWithGoogle();
+
+    expect(markPending).toHaveBeenCalledTimes(1);
+    expect(flagCallOrder()).toBeLessThan(tokensCallOrder());
+  });
+
   it("logs a login event (not sign_up) for a returning user", async () => {
     (GoogleSignin.signIn as jest.Mock).mockResolvedValueOnce({ data: { idToken: "idt" } });
     (GoogleSignin.getTokens as jest.Mock).mockResolvedValueOnce({ accessToken: "at" });
@@ -262,6 +292,20 @@ describe("LoginWithGoogle", () => {
 
     await LoginWithGoogle();
 
+    expect(logEvent).toHaveBeenCalledWith(expect.anything(), "login", { method: "google" });
+    expect(markPending).not.toHaveBeenCalled();
+  });
+
+  // Ключ в ответе отсутствует — ровно то, что бэк отдавал, пока переопределение
+  // get_response_data висело мёртвым хуком: ветеранский путь, онбординга нет.
+  it("treats a response without is_new_user as a returning user", async () => {
+    (GoogleSignin.signIn as jest.Mock).mockResolvedValueOnce({ data: { idToken: "idt" } });
+    (GoogleSignin.getTokens as jest.Mock).mockResolvedValueOnce({ accessToken: "at" });
+    apiPost.mockResolvedValueOnce({ data: { access: "a", refresh: "r" } });
+
+    await LoginWithGoogle();
+
+    expect(markPending).not.toHaveBeenCalled();
     expect(logEvent).toHaveBeenCalledWith(expect.anything(), "login", { method: "google" });
   });
 });
@@ -304,6 +348,21 @@ describe("LoginWithApple", () => {
     expect(access).toBe("a");
   });
 
+  it("marks the onboarding flag before the tokens flip the auth context", async () => {
+    (AppleAuthentication.signInAsync as jest.Mock).mockResolvedValueOnce({
+      identityToken: "idt",
+      fullName: null,
+    });
+    apiPost.mockResolvedValueOnce({
+      data: { access: "a", refresh: "r", is_new_user: true },
+    });
+
+    await LoginWithApple();
+
+    expect(markPending).toHaveBeenCalledTimes(1);
+    expect(flagCallOrder()).toBeLessThan(tokensCallOrder());
+  });
+
   it("logs a login event (not sign_up) for a returning user", async () => {
     (AppleAuthentication.signInAsync as jest.Mock).mockResolvedValueOnce({
       identityToken: "idt",
@@ -316,5 +375,6 @@ describe("LoginWithApple", () => {
     await LoginWithApple();
 
     expect(logEvent).toHaveBeenCalledWith(expect.anything(), "login", { method: "apple" });
+    expect(markPending).not.toHaveBeenCalled();
   });
 });

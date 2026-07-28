@@ -1,20 +1,23 @@
 jest.mock("../../services/analytics", () => ({ track: jest.fn() }));
 jest.mock("../../util/storageHelper", () => ({
   isOnboardingPending: jest.fn(),
+  markOnboardingPending: jest.fn(),
   clearOnboardingPending: jest.fn(),
 }));
 
 import { ReactNode } from "react";
-import { act, renderHook, waitFor } from "@testing-library/react-native";
+import { act, render, renderHook, waitFor } from "@testing-library/react-native";
 
 import { track } from "../../services/analytics";
 import {
   isOnboardingPending,
+  markOnboardingPending,
   clearOnboardingPending,
 } from "../../util/storageHelper";
 import { OnboardingProvider, useOnboarding } from "../onboarding-context";
 
 const mockIsPending = isOnboardingPending as jest.Mock;
+const mockMarkPending = markOnboardingPending as jest.Mock;
 const mockClearPending = clearOnboardingPending as jest.Mock;
 
 const wrapper =
@@ -31,6 +34,7 @@ const wrapper =
 beforeEach(() => {
   jest.clearAllMocks();
   mockIsPending.mockResolvedValue(true);
+  mockMarkPending.mockResolvedValue(undefined);
   mockClearPending.mockResolvedValue(undefined);
 });
 
@@ -77,6 +81,68 @@ describe("initial status", () => {
 
     expect(result.current.status).toBe("loading");
     expect(mockIsPending).not.toHaveBeenCalled();
+  });
+});
+
+// Регрессия: гость входит через Google. `Navigation` монтирует AppStack в том
+// же рендере, в котором isAuthenticated стал true, и корень стека выбирается по
+// статусу, увиденному в этом рендере. Пока переход в `loading` жил в эффекте,
+// стек успевал увидеть гостевой `done`, вставал корнем Main, и пришедший следом
+// `needed` уже никуда не переводил — новичок оставался на дашборде.
+describe("signing in from a guest session", () => {
+  it("never shows a resolved status in the render that mounts the stack", async () => {
+    const seen: string[] = [];
+    const Probe = () => {
+      const { status } = useOnboarding();
+      seen.push(status);
+      return null;
+    };
+
+    const { rerender } = await render(
+      <OnboardingProvider isAuthenticated={false} isInitializing={false}>
+        <Probe />
+      </OnboardingProvider>,
+    );
+
+    await waitFor(() => expect(seen.at(-1)).toBe("done"));
+    const beforeLogin = seen.length;
+
+    await rerender(
+      <OnboardingProvider isAuthenticated={true} isInitializing={false}>
+        <Probe />
+      </OnboardingProvider>,
+    );
+
+    // Первое, что видит стек после входа, — «ещё читаю с диска», а не «не нужен».
+    expect(seen[beforeLogin]).toBe("loading");
+    expect(seen.slice(beforeLogin)).not.toContain("done");
+    await waitFor(() => expect(seen.at(-1)).toBe("needed"));
+  });
+
+  it("still settles on done when the account has no pending flag", async () => {
+    mockIsPending.mockResolvedValue(false);
+
+    const seen: string[] = [];
+    const Probe = () => {
+      const { status } = useOnboarding();
+      seen.push(status);
+      return null;
+    };
+
+    const { rerender } = await render(
+      <OnboardingProvider isAuthenticated={false} isInitializing={false}>
+        <Probe />
+      </OnboardingProvider>,
+    );
+    await waitFor(() => expect(seen.at(-1)).toBe("done"));
+
+    await rerender(
+      <OnboardingProvider isAuthenticated={true} isInitializing={false}>
+        <Probe />
+      </OnboardingProvider>,
+    );
+
+    await waitFor(() => expect(seen.at(-1)).toBe("done"));
   });
 });
 
@@ -142,5 +208,46 @@ describe("finishing", () => {
     });
 
     await waitFor(() => expect(result.current.status).toBe("done"));
+  });
+});
+
+// Отладочная строка в Settings — единственный способ увидеть поток на
+// аккаунте, который его уже прошёл: настоящий флаг ставит только sign_up.
+describe("replaying it from the debug row", () => {
+  it("puts the screen back and marks the flag so a restart keeps it", async () => {
+    mockIsPending.mockResolvedValue(false);
+
+    const { result } = await renderHook(() => useOnboarding(), {
+      wrapper: wrapper({ isAuthenticated: true }),
+    });
+    await waitFor(() => expect(result.current.status).toBe("done"));
+
+    await act(async () => {
+      await result.current.restart();
+    });
+
+    expect(mockMarkPending).toHaveBeenCalledTimes(1);
+    expect(result.current.status).toBe("needed");
+    // Отладочный повтор не должен попадать в воронку как завершение/отвал.
+    expect(track).not.toHaveBeenCalled();
+  });
+
+  it("finishes the replayed flow the same way, clearing the flag", async () => {
+    mockIsPending.mockResolvedValue(false);
+
+    const { result } = await renderHook(() => useOnboarding(), {
+      wrapper: wrapper({ isAuthenticated: true }),
+    });
+    await waitFor(() => expect(result.current.status).toBe("done"));
+
+    await act(async () => {
+      await result.current.restart();
+    });
+    await act(async () => {
+      await result.current.complete();
+    });
+
+    expect(mockClearPending).toHaveBeenCalledTimes(1);
+    expect(result.current.status).toBe("done");
   });
 });

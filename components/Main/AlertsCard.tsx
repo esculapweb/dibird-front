@@ -7,6 +7,7 @@ import { useNavigation } from "@react-navigation/native";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { useAlertSettings } from "../../store/alert-settings-context";
 import { useLocation } from "../../store/location-context";
+import { useLocationUnavailable } from "../../hooks/useLocationUnavailable";
 import { requestPushPermission } from "../../hooks/usePushNotifications";
 import { track } from "../../services/analytics";
 import { AppStackNavigationProp } from "../../types";
@@ -16,15 +17,21 @@ const H_PAD = 16;
 /**
  * Алерты о редких птицах рядом — главное УТП приложения, и до сих пор
  * единственным способом узнать о них было самому дойти до бургер-меню и
- * настроек. Карточка показывается ровно тогда, когда они выключены.
+ * настроек. Карточка показывается в двух случаях: алерты выключены — или
+ * включены, но не знают, где пользователь.
+ *
+ * Второй случай долго был невидимым: `is_enabled` на бэке по умолчанию `true`,
+ * поэтому у нового аккаунта карточка не появлялась вовсе — а вместе с ней и
+ * единственный повод дать разрешения. Точки при этом нет, и «поблизости»
+ * означало «где угодно» (см. RareNearby).
  *
  * Текст — про то, что **не придёт уведомление**, а не «алерты выключены»: блок
  * «редкие рядом» прямо под карточкой продолжает работать и при выключенных
  * алертах (см. комментарий в RareNearby), и «выключено» рядом с работающим
  * списком читалось бы как рассинхрон.
  *
- * Здесь же просятся оба разрешения — это первый момент, когда у пользователя
- * есть повод их дать.
+ * Здесь же просятся оба разрешения — это первый момент вне онбординга, когда
+ * у пользователя есть повод их дать.
  */
 const AlertsCard = () => {
   const navigation = useNavigation<AppStackNavigationProp>();
@@ -32,12 +39,17 @@ const AlertsCard = () => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const { settings, save } = useAlertSettings();
-  const { requestLocation } = useLocation();
+  const { requestLocation, getPermissionStatus } = useLocation();
+  const handleLocationUnavailable = useLocationUnavailable(
+    t("location_unavailable_alert_hint"),
+  );
   const [enabling, setEnabling] = useState(false);
 
   // `settings` нет, пока они не загрузились или пользователь не залогинен —
   // мигать карточкой в это время нельзя.
-  if (!settings || settings.is_enabled) return null;
+  const needsEnable = !!settings && !settings.is_enabled;
+  const needsLocation = !!settings && settings.location_lat == null;
+  if (!settings || (!needsEnable && !needsLocation)) return null;
 
   const handleEnable = async () => {
     if (enabling) return;
@@ -49,14 +61,26 @@ const AlertsCard = () => {
 
       const result = await requestLocation();
       if (result) {
-        await save({
-          lat: Math.round(result.coords[1] * 100) / 100,
-          lon: Math.round(result.coords[0] * 100) / 100,
-        });
+        // sync: с ним бэк тут же резолвит страну по координатам и отдаёт её в
+        // ответе. Без него территория доезжает отложенной задачей, и подпись
+        // у списка «поблизости» осталась бы прежней до следующего запуска.
+        await save(
+          {
+            lat: Math.round(result.coords[1] * 100) / 100,
+            lon: Math.round(result.coords[0] * 100) / 100,
+          },
+          true,
+        );
+      } else if (getPermissionStatus() === "denied") {
+        // Отказ в системном диалоге второй раз не переспросить — дальше
+        // только настройки ОС, и сказать об этом должен кто-то один.
+        handleLocationUnavailable();
       }
 
-      track("alerts_enabled", { source: "main_card" });
-      await save({ is_enabled: true });
+      if (needsEnable) {
+        track("alerts_enabled", { source: "main_card" });
+        await save({ is_enabled: true });
+      }
     } finally {
       setEnabling(false);
     }
@@ -67,8 +91,12 @@ const AlertsCard = () => {
       <View style={styles.header}>
         <Ionicons name="notifications" size={22} color={Colors.main100} />
         <View style={styles.titles}>
-          <Text style={styles.title}>{t("alerts_card_title")}</Text>
-          <Text style={styles.subtitle}>{t("alerts_card_text")}</Text>
+          <Text style={styles.title}>
+            {needsEnable ? t("alerts_card_title") : t("alerts_card_where_title")}
+          </Text>
+          <Text style={styles.subtitle}>
+            {needsEnable ? t("alerts_card_text") : t("alerts_card_where_text")}
+          </Text>
         </View>
       </View>
 
@@ -80,7 +108,7 @@ const AlertsCard = () => {
           testID="alerts-card-enable"
         >
           <Text style={[styles.actionText, styles.actionTextPrimary]}>
-            {t("alerts_card_enable")}
+            {needsEnable ? t("alerts_card_enable") : t("alerts_card_locate")}
           </Text>
         </TouchableOpacity>
 

@@ -156,14 +156,16 @@ export const LoginWithGoogle = async () => {
 
     const { access, refresh, is_new_user } = result;
 
+    // Строго до `saveTokens`: та сама переключает auth-контекст изнутри
+    // (`notifyTokenUpdate` → `authenticate` в store/auth-context.tsx), а
+    // `OnboardingProvider` читает флаг по переходу `isAuthenticated` в true и
+    // второй попытки не делает. Записанный после — не успевал бы лечь на диск
+    // к моменту чтения, и новичок попадал бы сразу на дашборд.
+    if (is_new_user) await markOnboardingPending();
+
     await saveTokens({ access, refresh });
 
     const eventName = is_new_user ? "sign_up" : "login";
-
-    // Строго до того, как вызывающая сторона переключит auth-контекст:
-    // `OnboardingProvider` читает флаг по переходу `isAuthenticated` в true и
-    // второй попытки не делает.
-    if (is_new_user) await markOnboardingPending();
 
     track(eventName, { method: "google" });
 
@@ -213,11 +215,11 @@ export const LoginWithApple = async () => {
     },
   );
 
+  // См. комментарий в LoginWithGoogle: флаг обязан лечь на диск раньше, чем
+  // saveTokens переключит auth-контекст.
+  if (is_new_user) await markOnboardingPending();
   await saveTokens({ access, refresh });
   const eventName = is_new_user ? "sign_up" : "login";
-  // См. комментарий в LoginWithGoogle: флаг обязан быть на диске раньше, чем
-  // смонтируется OnboardingProvider.
-  if (is_new_user) await markOnboardingPending();
   track(eventName, { method: "apple" });
   return access;
 };

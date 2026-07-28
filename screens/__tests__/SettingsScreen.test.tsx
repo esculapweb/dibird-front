@@ -32,11 +32,12 @@ jest.mock("@react-navigation/native", () => ({
 }));
 jest.mock("../../store/profile-context", () => ({ useProfile: jest.fn() }));
 jest.mock("../../store/auth-context", () => ({ useAuth: jest.fn() }));
+jest.mock("../../store/onboarding-context", () => ({ useOnboarding: jest.fn() }));
 jest.mock("../../hooks/Profile/useExportProfile", () => ({ useExportProfile: jest.fn() }));
 jest.mock("../../hooks/useBiometricSetting", () => ({ useBiometricSetting: jest.fn() }));
 jest.mock("../../services/bio", () => ({ canUseBiometrics: jest.fn() }));
 jest.mock("../../util/openSupportEmail", () => ({ openSupportEmail: jest.fn() }));
-jest.mock("../../services/bottomSheet", () => ({ BottomSheet: { show: jest.fn() } }));
+jest.mock("../../services/bottomSheet", () => ({ BottomSheet: { show: jest.fn(), hide: jest.fn() } }));
 jest.mock("../../util/fetches", () => ({ deleteMyProfile: jest.fn() }));
 jest.mock("../../hooks/useApiError", () => ({ useApiError: () => ({ showErrorToast: mockShowErrorToast }) }));
 jest.mock("../../util/helpers", () => ({
@@ -50,6 +51,7 @@ import { Share, Platform, Alert } from "react-native";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { useProfile } from "../../store/profile-context";
 import { useAuth } from "../../store/auth-context";
+import { useOnboarding } from "../../store/onboarding-context";
 import { useExportProfile } from "../../hooks/Profile/useExportProfile";
 import { useBiometricSetting } from "../../hooks/useBiometricSetting";
 import { canUseBiometrics } from "../../services/bio";
@@ -67,7 +69,15 @@ const mockLogout = jest.fn();
 const mockToggleBiometric = jest.fn();
 const mockTriggerExport = jest.fn();
 const mockCleanup = jest.fn();
+const mockRestartOnboarding = jest.fn();
 const originalOS = Platform.OS;
+
+const mockOnboarding = (status = "done") => {
+  (useOnboarding as jest.Mock).mockReturnValue({
+    status,
+    restart: mockRestartOnboarding,
+  });
+};
 
 const mockProfileCtx = (overrides: Record<string, unknown> = {}) => {
   (useProfile as jest.Mock).mockReturnValue({
@@ -97,6 +107,7 @@ beforeEach(() => {
   });
   (canUseBiometrics as jest.Mock).mockResolvedValue(false);
   mockExport();
+  mockOnboarding();
   jest.spyOn(Alert, "alert").mockImplementation(() => {});
 });
 
@@ -151,6 +162,41 @@ describe("test push row", () => {
     await Promise.resolve();
     expect(logError).toHaveBeenCalled();
     expect(Alert.alert).toHaveBeenCalledWith("Error", "Could not send push");
+  });
+});
+
+describe("replay onboarding row", () => {
+  it("is hidden for a regular profile", async () => {
+    mockProfileCtx({ profile: { user: 42, user_data: {} } });
+    await render(<SettingsScreen />);
+    expect(screen.queryByText("Replay onboarding")).not.toBeOnTheScreen();
+  });
+
+  it.each([9386, 1])("puts the flow back for the debug profile (user %d)", async (userId) => {
+    mockProfileCtx({ profile: { user: userId, user_data: {} } });
+    await render(<SettingsScreen />);
+
+    await fireEvent.press(screen.getByText("Replay onboarding"));
+    expect(mockRestartOnboarding).toHaveBeenCalledTimes(1);
+  });
+
+  // restart() только возвращает экран в навигатор — маршрут добавляется перед
+  // текущим, а не поверх него, поэтому без этого перехода нажатие выглядело бы
+  // как «ничего не произошло».
+  it("navigates to the screen once the status has flipped", async () => {
+    mockProfileCtx({ profile: { user: 1, user_data: {} } });
+    mockOnboarding("needed");
+    await render(<SettingsScreen />);
+
+    expect(mockNavigation.navigate).toHaveBeenCalledWith("Onboarding");
+  });
+
+  it("leaves a regular profile alone even if the status says needed", async () => {
+    mockProfileCtx({ profile: { user: 42, user_data: {} } });
+    mockOnboarding("needed");
+    await render(<SettingsScreen />);
+
+    expect(mockNavigation.navigate).not.toHaveBeenCalled();
   });
 });
 
@@ -271,6 +317,23 @@ describe("delete profile", () => {
     expect(mockLogout).toHaveBeenCalledTimes(1);
   });
 
+  // Штатный dismiss() после onConfirm пришёлся бы на тик, в котором навигатор
+  // меняет AppStack на AuthStack, и анимация закрытия терялась — шторка
+  // оставалась поверх Welcome.
+  it("closes the sheet before tearing down the session", async () => {
+    (deleteMyProfile as jest.Mock).mockResolvedValue(204);
+    await render(<SettingsScreen />);
+    await fireEvent.press(screen.getByText("delete_profile"));
+
+    const { onConfirm } = (BottomSheet.show as jest.Mock).mock.calls[0][0];
+    await onConfirm();
+
+    expect(BottomSheet.hide).toHaveBeenCalledTimes(1);
+    expect((BottomSheet.hide as jest.Mock).mock.invocationCallOrder[0]).toBeLessThan(
+      mockLogout.mock.invocationCallOrder[0],
+    );
+  });
+
   it("does not log out when deletion doesn't return 204", async () => {
     (deleteMyProfile as jest.Mock).mockResolvedValue(200);
     await render(<SettingsScreen />);
@@ -279,6 +342,8 @@ describe("delete profile", () => {
     const { onConfirm } = (BottomSheet.show as jest.Mock).mock.calls[0][0];
     await onConfirm();
     expect(mockLogout).not.toHaveBeenCalled();
+    // Шторка остаётся открытой: ошибку показывать некуда, если её закрыть.
+    expect(BottomSheet.hide).not.toHaveBeenCalled();
   });
 
   it("routes deletion errors through showErrorToast with a field-aware extractor", async () => {

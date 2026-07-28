@@ -17,6 +17,7 @@ import Layout from "../components/ui/Layout";
 import { ThemeColors, useTheme } from "../store/theme-context";
 import { useProfile } from "../store/profile-context";
 import { useAuth } from "../store/auth-context";
+import { useOnboarding } from "../store/onboarding-context";
 import {
   AppDrawerNavigationProp,
   IconType,
@@ -163,7 +164,25 @@ const SettingsScreen = () => {
   const navigation = useNavigation<AppDrawerNavigationProp>();
   const { state: exportState, triggerExport, cleanup } = useExportProfile();
 
+  const { status: onboardingStatus, restart: restartOnboarding } =
+    useOnboarding();
+
   const userEmail = profile?.user_data?.email ?? "";
+
+  // Тот же гейт, что у «Send test push»: отладочные строки видны только на
+  // ревью-аккаунте и на первом.
+  const isDebugProfile =
+    profile?.user === APP_REVIEW_PROFILE_ID || profile?.user === 1;
+
+  // `restart()` только возвращает экран в навигатор, а объявлен он перед
+  // текущим маршрутом, не поверх него — само по себе это никуда не переводит.
+  // Уводить приходится отсюда и обязательно следующим рендером: `navigate` в
+  // том же обработчике улетел бы в стек, где экрана ещё нет, и был бы
+  // отброшен как необработанный.
+  useEffect(() => {
+    if (isDebugProfile && onboardingStatus === "needed")
+      navigation.navigate("Onboarding");
+  }, [isDebugProfile, onboardingStatus]);
 
   const {
     isEnabled: biometricEnabled,
@@ -178,7 +197,14 @@ const SettingsScreen = () => {
 
   const handleDeleteConfirmed = async () => {
     const status = await deleteMyProfile(userEmail);
-    if (status === 204) await logout();
+    if (status !== 204) return;
+    // Шторка закрывается до логаута, а не штатным `dismiss()` после
+    // `onConfirm`: тот пришёлся бы ровно на тик, в котором навигатор меняет
+    // AppStack на AuthStack, и анимация закрытия терялась — шторка оставалась
+    // висеть поверх Welcome. Хост шторки живёт выше навигатора (App.tsx) и
+    // логаут переживает, так что сама она не размонтируется.
+    BottomSheet.hide();
+    await logout();
   };
 
   const handleTestPush = async () => {
@@ -257,7 +283,7 @@ const SettingsScreen = () => {
           colors={Colors}
           styles={styles}
         />
-        {(profile?.user === APP_REVIEW_PROFILE_ID || profile?.user === 1) && (
+        {isDebugProfile && (
           <Row
             icon="notifications-outline"
             label="Send test push"
@@ -357,6 +383,21 @@ const SettingsScreen = () => {
           styles={styles}
         />
       </Section>
+
+      {/* Без i18n намеренно, как и «Send test push»: строка не попадает
+          обычному пользователю и переводить её незачем. */}
+      {isDebugProfile && (
+        <Section title="Debug" styles={styles} colors={Colors}>
+          <Row
+            icon="refresh-outline"
+            label="Replay onboarding"
+            onPress={restartOnboarding}
+            hideChevron
+            colors={Colors}
+            styles={styles}
+          />
+        </Section>
+      )}
 
       <Section
         title={t("settings_section_danger")}

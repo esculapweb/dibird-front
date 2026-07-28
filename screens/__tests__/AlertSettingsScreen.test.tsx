@@ -85,6 +85,7 @@ import AlertSettingsScreen from "../AlertSettingsScreen";
 const mockSave = jest.fn();
 const mockRefresh = jest.fn();
 const mockRequestLocation = jest.fn();
+const mockGetPermissionStatus = jest.fn();
 
 const SETTINGS: AlertSettings = {
   id: 1,
@@ -96,7 +97,6 @@ const SETTINGS: AlertSettings = {
   language: "en",
   seen_mode: "year",
   watchlist_only: false,
-  include_local_observations: true,
   active_hours_utc: [],
   max_alerts_per_day: 5,
   is_enabled: true,
@@ -119,6 +119,7 @@ const mockLocationContext = (overrides: Record<string, unknown> = {}) => {
     requestLocation: mockRequestLocation,
     isRequesting: false,
     permissionStatus: null,
+    getPermissionStatus: mockGetPermissionStatus,
     ...overrides,
   });
 };
@@ -220,17 +221,33 @@ describe("location permission handling", () => {
     expect(mockSave).toHaveBeenCalledWith({ lat: 48.86, lon: 2.35 }, true);
   });
 
-  it("requestLocation resolving null while denied shows the unavailable sheet too", async () => {
-    mockLocationContext({ permissionStatus: "denied" });
+  // Первый отказ: на рендере разрешение ещё «не спрашивали», статус «denied»
+  // появляется только в самом запросе. Читать его надо у провайдера
+  // (`getPermissionStatus`), а не из состояния этого рендера — иначе
+  // подсказка приходила лишь со второго тапа.
+  it("shows the unavailable sheet on the very first refusal", async () => {
     mockRequestLocation.mockResolvedValue(null);
-    // Force past the eager denied-check by calling handleRequestLocation's
-    // own requestLocation branch — permissionStatus is only known to be
-    // "denied" from the provider itself, matching the code's second
-    // (post-request) denied check.
+    mockGetPermissionStatus.mockReturnValue("denied");
+
     await render(<AlertSettingsScreen />);
     await fireEvent.press(screen.getByText("alert_locate_me"));
 
-    expect(BottomSheet.show).toHaveBeenCalled();
+    expect(mockRequestLocation).toHaveBeenCalledTimes(1);
+    expect(BottomSheet.show).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "location_unavailable" }),
+    );
+  });
+
+  // Фикс может не приехать и без отказа — GPS в помещении, таймаут. Гнать
+  // человека в системные настройки в этом случае не за чем.
+  it("stays quiet when the fix simply did not arrive", async () => {
+    mockRequestLocation.mockResolvedValue(null);
+    mockGetPermissionStatus.mockReturnValue("granted");
+
+    await render(<AlertSettingsScreen />);
+    await fireEvent.press(screen.getByText("alert_locate_me"));
+
+    expect(BottomSheet.show).not.toHaveBeenCalled();
   });
 });
 

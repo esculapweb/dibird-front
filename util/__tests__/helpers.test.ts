@@ -13,6 +13,7 @@ import {
   formatDayLabel,
   buildDateParams,
   roundCoords,
+  distanceKm,
 } from "../helpers";
 
 const FIXED_DATE = "2024-01-15T12:00:00.000Z";
@@ -206,6 +207,33 @@ describe("buildDateParams", () => {
     expect(buildDateParams({ type: "range", to: "2024-01-05" })).toEqual({
       date_time_max: "2024-01-06",
     });
+  });
+});
+
+describe("distanceKm", () => {
+  it("is zero for the same point", () => {
+    expect(distanceKm([27.12, 53.68], [27.12, 53.68])).toBe(0);
+  });
+
+  // Минск — Вильнюс, ~172 км по прямой.
+  it("measures a known pair within a percent", () => {
+    const d = distanceKm([27.5615, 53.9026], [25.2797, 54.6872]);
+    expect(d).toBeGreaterThan(170);
+    expect(d).toBeLessThan(174);
+  });
+
+  it("is symmetric", () => {
+    const a: [number, number] = [27.5615, 53.9026];
+    const b: [number, number] = [25.2797, 54.6872];
+    expect(distanceKm(a, b)).toBeCloseTo(distanceKm(b, a), 9);
+  });
+
+  // Долгота на широте 54° «короче» экваториальной почти вдвое — плоская
+  // разница градусов дала бы здесь заметно больше.
+  it("accounts for the meridians converging", () => {
+    const atEquator = distanceKm([0, 0], [1, 0]);
+    const atLat54 = distanceKm([0, 54], [1, 54]);
+    expect(atLat54).toBeLessThan(atEquator * 0.6);
   });
 });
 

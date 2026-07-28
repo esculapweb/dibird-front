@@ -16,7 +16,6 @@ export interface AlertSettings {
   language: string;
   seen_mode: "year" | "alltime";
   watchlist_only: boolean;
-  include_local_observations: boolean;
   active_hours_utc: ActiveHourWindow[];
   max_alerts_per_day: number;
   is_enabled: boolean;

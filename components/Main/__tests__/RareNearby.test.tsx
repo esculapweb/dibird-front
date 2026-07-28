@@ -20,14 +20,12 @@ jest.mock("../../ui/Svgs", () => {
 });
 jest.mock("../../../hooks/useList", () => ({ useList: jest.fn() }));
 jest.mock("../../../util/fetches", () => ({ fetchCommunityObservations: jest.fn() }));
-jest.mock("../../../store/location-context", () => ({ useLocation: jest.fn() }));
 jest.mock("../../../store/alert-settings-context", () => ({ useAlertSettings: jest.fn() }));
 
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { createNavigationMock } from "../../../screens/test-utils";
 import { useList } from "../../../hooks/useList";
 import { fetchCommunityObservations } from "../../../util/fetches";
-import { useLocation } from "../../../store/location-context";
 import { useAlertSettings } from "../../../store/alert-settings-context";
 import { formatDateShort, normalizeDistance } from "../../../util/helpers";
 import RareNearby from "../RareNearby";
@@ -36,7 +34,12 @@ import { Filters, ObservationItem } from "../../../types";
 
 const mockNavigation = createNavigationMock();
 
-const SETTINGS = { territory_data: { id: 5, name: "France" }, radius_km: 50 } as AlertSettings;
+const SETTINGS = {
+  territory_data: { id: 5, name: "France" },
+  radius_km: 50,
+  location_lat: 48.85,
+  location_lon: 2.35,
+} as AlertSettings;
 
 const observationItem = (overrides: Partial<ObservationItem> = {}): ObservationItem =>
   ({
@@ -58,40 +61,88 @@ const lastListCall = () => (useList as jest.Mock).mock.calls.at(-1)![0];
 
 beforeEach(() => {
   jest.clearAllMocks();
-  (useLocation as jest.Mock).mockReturnValue({ locationCoords: [2, 48] });
   (useAlertSettings as jest.Mock).mockReturnValue({ settings: SETTINGS });
   mockList([observationItem()]);
 });
 
-it("derives useList's filters from the alert settings territory/radius, enabled only with settings", async () => {
+// Территорию и радиус применяет сервер по настройкам алертов: свой GPS-фикс
+// давал другой центр, чем у пушей, а без разрешения координат не было вовсе —
+// и радиус на бэке молча не применялся.
+it("asks the server for the alert-settings scope, enabled only with settings", async () => {
   await render(<RareNearby filters={{}} />);
   const props = lastListCall();
   expect(props.screenName).toBe("RareNearby");
-  expect(props.filters).toEqual({ territory: 5, radius: 50 });
+  expect(props.filters).toEqual({ near: "alerts" });
   expect(props.sort).toBe("-date_time");
-  expect(props.locationCoords).toEqual([2, 48]);
+  expect(props.locationCoords).toBeUndefined();
   expect(props.enabled).toBe(true);
+});
+
+// Скоуп в фильтрах больше не виден, а меняется он на клиенте — без него в
+// ключе список остался бы собранным по прежнему радиусу.
+it("keys the query by the scope the settings describe", async () => {
+  await render(<RareNearby filters={{}} />);
+  expect(lastListCall().queryKeyExtra).toBe("5:50:48.85:2.35");
 });
 
 it("disables the list when there are no alert settings yet", async () => {
   (useAlertSettings as jest.Mock).mockReturnValue({ settings: null });
   await render(<RareNearby filters={{}} />);
-  expect(lastListCall().enabled).toBe(false);
+  const props = lastListCall();
+  expect(props.enabled).toBe(false);
+  expect(props.queryKeyExtra).toBeNull();
 });
 
-it("fetchFunction forwards locationCoords and a radius of 3 to fetchCommunityObservations", async () => {
+it("fetchFunction sends no coordinates and a radius of 3 to fetchCommunityObservations", async () => {
   await render(<RareNearby filters={{}} />);
   const fetchFunction = lastListCall().fetchFunction;
 
-  await fetchFunction({ territory: 5 }, "-date_time", "robin", 2);
+  await fetchFunction({ near: "alerts" }, "-date_time", "robin", 2);
   expect(fetchCommunityObservations).toHaveBeenCalledWith(
-    { territory: 5 },
+    { near: "alerts" },
     "-date_time",
     "robin",
     2,
-    [2, 48],
+    null,
     3,
   );
+});
+
+describe("scope label", () => {
+  it("names the country and the radius once a centre is stored", async () => {
+    await render(<RareNearby filters={{}} />);
+    expect(
+      screen.getByText(`France, ${normalizeDistance(50000)}`),
+    ).toBeOnTheScreen();
+  });
+
+  // Радиус без сохранённой точки применить не к чему — называть такой список
+  // «в 50 км» значит врать: сервер отдал всю страну.
+  it("drops the radius when there is no stored centre", async () => {
+    (useAlertSettings as jest.Mock).mockReturnValue({
+      settings: { ...SETTINGS, location_lat: null, location_lon: null },
+    });
+    await render(<RareNearby filters={{}} />);
+
+    expect(screen.getByText("France")).toBeOnTheScreen();
+    expect(
+      screen.queryByText(`France, ${normalizeDistance(50000)}`),
+    ).not.toBeOnTheScreen();
+  });
+
+  it("asks for a location when neither a centre nor a country is known", async () => {
+    (useAlertSettings as jest.Mock).mockReturnValue({
+      settings: {
+        ...SETTINGS,
+        location_lat: null,
+        location_lon: null,
+        territory_data: null,
+      },
+    });
+    await render(<RareNearby filters={{}} />);
+
+    expect(screen.getByText("rare_nearby_set_location")).toBeOnTheScreen();
+  });
 });
 
 describe("loading state", () => {

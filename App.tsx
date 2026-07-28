@@ -36,6 +36,8 @@ import { useLocation } from "./store/location-context";
 import { useLanguage } from "./store/language-context";
 import { useAlertSettings } from "./store/alert-settings-context";
 import type { AlertSettingsPatch } from "./services/alertSettings";
+import { distanceKm } from "./util/helpers";
+import type { Coords } from "./types";
 import { queryClient } from "./services/queryClient";
 import { restoreQueryCache, startPersistingQueryCache } from "./services/queryPersist";
 import { useObservationSync } from "./hooks/Observation/useObservationSync";
@@ -129,13 +131,18 @@ const AuthConsumerWrapper = ({ children }: { children: ReactNode }) => {
   );
 };
 
+// Насколько далеко должна уехать сохранённая точка, чтобы имело смысл заново
+// спрашивать у геокодера страну. Ближе она почти никогда не меняется, а
+// каждый лишний синхронный резолв — внешний запрос под рейт-лимитом.
+const TERRITORY_RESOLVE_KM = 50;
+
 const Root = () => {
   const { theme } = useTheme();
   const [splashFinished, setSplashFinished] = useState(false);
   const { isAuthenticated } = useAuth();
   const { locationCoords, requestLocation } = useLocation();
   const { language } = useLanguage();
-  const { save } = useAlertSettings();
+  const { save, settings } = useAlertSettings();
   const didAutoSave = useRef(false);
 
 
@@ -160,16 +167,37 @@ const Root = () => {
     requestLocation(undefined, { prompt: false });
   }, [isAuthenticated]);
 
+  // Ждём и настроек: по ним решается, просить ли синхронный резолв страны, а
+  // при `null` этого не определить.
   useEffect(() => {
-    if (!locationCoords || !language || !isAuthenticated) return;
+    if (!locationCoords || !language || !isAuthenticated || !settings) return;
     if (didAutoSave.current) return;
     didAutoSave.current = true;
-    save({
-      lat: Math.round(locationCoords[1] * 100) / 100,
-      lon: Math.round(locationCoords[0] * 100) / 100,
-      language,
-    } satisfies AlertSettingsPatch);
-  }, [locationCoords, language, isAuthenticated]);
+
+    const lat = Math.round(locationCoords[1] * 100) / 100;
+    const lon = Math.round(locationCoords[0] * 100) / 100;
+
+    // Территорию настройкам ставит только реверс-геокод координат, и в
+    // обычном PATCH бэк уносит его в отложенную задачу: ответ приходит со
+    // старой территорией, а подпись у «редкостей поблизости» обновилась бы
+    // лишь на следующем запуске. `sync` просим ровно там, где он что-то
+    // меняет: страны ещё нет либо точка уехала так далеко, что страна могла
+    // смениться. Звать его на каждый старт нельзя — это внешний запрос в
+    // геокодер, у которого свой рейт-лимит.
+    const known: Coords | null =
+      settings.location_lat != null && settings.location_lon != null
+        ? [settings.location_lon, settings.location_lat]
+        : null;
+    const needsTerritory =
+      !settings.territory_data?.id ||
+      !known ||
+      distanceKm(known, [lon, lat]) > TERRITORY_RESOLVE_KM;
+
+    save(
+      { lat, lon, language } satisfies AlertSettingsPatch,
+      needsTerritory,
+    );
+  }, [locationCoords, language, isAuthenticated, settings]);
 
   if (!splashFinished) {
     return (

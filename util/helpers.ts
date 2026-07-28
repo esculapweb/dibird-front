@@ -262,6 +262,30 @@ export const normalizeDistance = (distance: number): string =>
     ? `~${(distance / 1000).toFixed(1)} ${i18n.t("km")}`
     : `~${distance} ${i18n.t("m")}`;
 
+/**
+ * Расстояние между двумя точками по большому кругу, км. Обе — в порядке
+ * [lng, lat], как везде в `Coords`.
+ *
+ * Нужна для грубых решений «далеко ли уехали» (см. App.tsx: стоит ли просить
+ * бэк заново определить страну по координатам). Для показа расстояний
+ * пользователю берите значение от сервера — он считает по PostGIS.
+ */
+export const distanceKm = (a: Coords, b: Coords): number => {
+  const R = 6371;
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+
+  const dLat = toRad(b[1] - a[1]);
+  const dLng = toRad(b[0] - a[0]);
+  const lat1 = toRad(a[1]);
+  const lat2 = toRad(b[1]);
+
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+};
+
 // Buckets GPS coordinates to ~10m precision (4 decimals) so a fresh fix that
 // differs only by natural GPS jitter still produces the same query key —
 // used exclusively for cache/query-key identity, never for the actual

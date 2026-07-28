@@ -46,6 +46,15 @@ jest.mock("../../components/Onboarding/OnboardingCountryStep", () => {
     ),
   };
 });
+// Шаг геолокации сам ходит в разрешения и настройки алертов — у него свой
+// тест; экрану важно лишь, что шаг стоит между страной и первым наблюдением.
+jest.mock("../../components/Onboarding/OnboardingLocationStep", () => {
+  const { View } = require("react-native");
+  return {
+    __esModule: true,
+    default: ({ testID }: { testID?: string }) => <View testID={testID} />,
+  };
+});
 jest.mock("../../components/Onboarding/OnboardingSpeciesStep", () => {
   const { Text, TouchableOpacity } = require("react-native");
   return {
@@ -119,9 +128,15 @@ const goToCountry = async () => {
   await next();
 };
 
-const goToSpecies = async () => {
+/** …страна выбрана и подтверждена → шаг геолокации. */
+const goToLocation = async () => {
   await goToCountry();
   await fireEvent.press(screen.getByTestId("country-step"));
+  await next();
+};
+
+const goToSpecies = async () => {
+  await goToLocation();
   await next();
 };
 
@@ -140,6 +155,31 @@ describe("walking the flow", () => {
     expect(track).toHaveBeenCalledWith("onboarding_step", { step: 2 });
     expect(track).toHaveBeenCalledWith("onboarding_step", { step: 3 });
     expect(track).toHaveBeenCalledWith("onboarding_step", { step: 4 });
+    expect(track).toHaveBeenCalledWith("onboarding_step", { step: 5 });
+  });
+
+  // Разрешение просят после страны и до первой записи: раньше повода нет, а
+  // позже он утонул бы за выбором вида.
+  it("puts the location step between the country and the first observation", async () => {
+    await render(<OnboardingScreen />);
+    await goToLocation();
+
+    expect(screen.getByTestId("onboarding-step-4")).toBeOnTheScreen();
+    expect(screen.queryByTestId("species-step")).not.toBeOnTheScreen();
+  });
+
+  // Отказ от геолокации не должен запирать поток: «Далее» здесь активна
+  // всегда, единственный выход иначе — «Пропустить», который обрывает
+  // онбординг целиком.
+  it("moves on from the location step without granting anything", async () => {
+    await render(<OnboardingScreen />);
+    await goToLocation();
+
+    expect(screen.getByTestId("onboarding-next")).not.toBeDisabled();
+
+    await next();
+
+    expect(screen.getByTestId("species-step")).toBeOnTheScreen();
   });
 
   it("hands the chosen country to the species step", async () => {

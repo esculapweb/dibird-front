@@ -25,6 +25,15 @@ interface LocationContextType {
   locationCoords: Coords | null;
   locationAvailable: boolean;
   permissionStatus: string | null;
+  /**
+   * Тот же статус, но читаемый после `await requestLocation()`.
+   * `permissionStatus` — состояние, снятое на текущем рендере: обработчик,
+   * проверяющий его следом за запросом, видит значение до запроса, и на
+   * первом же отказе подсказка «откройте настройки» не показывалась. Для
+   * рендера по-прежнему берите `permissionStatus`, здесь — только для
+   * проверок после await.
+   */
+  getPermissionStatus: () => string | null;
   requestLocation: (
     accuracy?: Location.Accuracy,
     options?: LocationOptions,
@@ -39,8 +48,22 @@ const LocationContext = createContext<LocationContextType | null>(null);
 
 export const LocationProvider = ({ children }: { children: ReactNode }) => {
   const [locationCoords, setLocationCoords] = useState<Coords | null>(null);
-  const [permissionStatus, setPermissionStatus] = useState<string | null>(null);
+  const [permissionStatus, setPermissionStatusState] = useState<string | null>(
+    null,
+  );
   const [isRequesting, setIsRequesting] = useState(false);
+  // Ref и состояние держим в паре: состояние — для рендера, ref — для
+  // вызывающих, которым статус нужен сразу после await (см. комментарий у
+  // getPermissionStatus в типе контекста).
+  const permissionStatusRef = useRef<string | null>(null);
+  const setPermissionStatus = useCallback((status: string) => {
+    permissionStatusRef.current = status;
+    setPermissionStatusState(status);
+  }, []);
+  const getPermissionStatus = useCallback(
+    () => permissionStatusRef.current,
+    [],
+  );
   // Callers throughout the app share one native GPS request at a time (a
   // low-priority background fetch and an explicit high-accuracy "locate me"
   // can easily overlap). Rather than dropping the late caller's request on
@@ -110,7 +133,7 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setIsRequesting(false);
     }
-  }, []);
+  }, [setPermissionStatus]);
 
   const requestLocation = useCallback(async (
     desiredAccuracy: Location.Accuracy = Location.Accuracy.Balanced,
@@ -146,6 +169,7 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
         locationCoords,
         locationAvailable: !!locationCoords,
         permissionStatus,
+        getPermissionStatus,
         requestLocation,
         isRequesting
       }}
