@@ -1,0 +1,119 @@
+# Full "get me to MainScreen, signed in" preamble for both platforms:
+# connect to Metro (common/connect.yaml), sign in if no session was restored,
+# then unwind back to MainScreen if a warm relaunch reopened onto a leftover
+# screen.
+#
+# The login step is a fallback, not a test: the session lives in the
+# Keychain/SharedPreferences and survives relaunches, so most runs skip it
+# entirely with no typing. login.yaml is what actually tests logging in,
+# wrong-password path and all.
+#
+# Guest flows deliberately use common/connect.yaml instead — signing in is the
+# one thing they must not do.
+#
+# appId is inert here — see common/back.yaml.
+appId: ${APP_ID}
+---
+- runFlow: connect.yaml
+
+- runFlow:
+    when:
+      visible: ".*Continue with email.*"
+    file: credential-entry.yaml
+
+# onboarding.yaml starts the flow by hand ("Replay onboarding"), and that
+# writes the `onboarding_pending` flag to disk. A run that dies in the middle
+# leaves it set — and then AppStack makes Onboarding the *root* of the stack
+# for every flow after it, so none of them reach MainScreen at all and the
+# report blames flows that were never broken (the same cascade shape as
+# ensure-english.yaml below, but total). Close whatever is left of the flow:
+# "Skip" on the ordinary steps, "Done" on the success screen, which has no
+# skip button. Both clear the flag. Cheap when nothing is wrong — two
+# visibility checks that skip the whole block.
+- runFlow:
+    when:
+      visible:
+        id: "onboarding-skip"
+    commands:
+      - tapOn:
+          id: "onboarding-skip"
+      - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible:
+        id: "onboarding-success"
+    commands:
+      - tapOn:
+          id: "onboarding-next"
+      - waitForAnimationToEnd
+
+# A sheet left open by a previous run that died mid-flow comes back with the
+# restored screen, and it swallows the back gesture — on iOS there is no way
+# to unwind out from under it at all, since the header's back button is behind
+# the sheet. Dismiss it first if it's there; optional, because most runs have
+# nothing to dismiss.
+- tapOn:
+    id: "bottom-sheet-cancel-button"
+    optional: true
+
+# A warm relaunch can reopen on whatever screen was last open (React
+# Navigation restore), not necessarily MainScreen — pop back until the
+# MainScreen-only quick action appears. Bounded, not blind: `back` at the
+# stack root exits the app on Android, and iOS's BackButton simply isn't there
+# to tap. optional: true on the first wait so a cold start (JS thread not
+# painted yet) falls through to the unwind steps instead of hard-failing.
+#
+# 25s, not the 10s this used to allow: a cold start on a loaded emulator can
+# take longer than that, and then the unwind below runs against an app that
+# was already *on* MainScreen — three `back`s from the stack root walk out of
+# the app and onto the Android launcher, where nothing can recover. Seen in a
+# full batch on list-sort-persist.yaml (which relaunches a second time, so it
+# pays the cold start twice) while every single-launch flow passed. The cost
+# of the higher bound is paid only when something is genuinely stuck.
+- extendedWaitUntil:
+    visible:
+      id: "quick-action-observation"
+    timeout: 25000
+    optional: true
+- runFlow:
+    when:
+      notVisible:
+        id: "quick-action-observation"
+    commands:
+      - runFlow: back.yaml
+      - extendedWaitUntil:
+          visible:
+            id: "quick-action-observation"
+          timeout: 4000
+          optional: true
+- runFlow:
+    when:
+      notVisible:
+        id: "quick-action-observation"
+    commands:
+      - runFlow: back.yaml
+      - extendedWaitUntil:
+          visible:
+            id: "quick-action-observation"
+          timeout: 4000
+          optional: true
+- runFlow:
+    when:
+      notVisible:
+        id: "quick-action-observation"
+    commands:
+      - runFlow: back.yaml
+      - extendedWaitUntil:
+          visible:
+            id: "quick-action-observation"
+          timeout: 4000
+          optional: true
+- extendedWaitUntil:
+    visible:
+      id: "quick-action-observation"
+    timeout: 10000
+
+# Last, because it needs MainScreen to be up: undo a Russian interface left
+# behind by a language flow that died halfway. Every flow after such a failure
+# would otherwise look for English text that isn't there.
+- runFlow: ensure-english.yaml

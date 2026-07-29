@@ -1,0 +1,31 @@
+# Put the app back into English if something left it in Russian.
+#
+# The interface language is a persisted preference, so
+# settings-language-switch.yaml dying between its two switches doesn't just
+# fail itself — every flow after it in the batch then looks for English text
+# that isn't there any more, and the report blames flows that were never
+# broken (seen: taxonomy-tree-filters.yaml failing to find "Birds of the
+# world" right after the language flow failed on a slow backend).
+#
+# That flow already re-asserts English on its own way in, but that only helps
+# *it*; this is what protects everyone else. Cheap when nothing is wrong: one
+# `visible` check against MainScreen's Russian quick action, and the whole
+# block is skipped.
+#
+# appId is inert here — see back.yaml.
+appId: ${APP_ID}
+---
+- runFlow:
+    when:
+      visible: ".*Наблюдение.*"
+    commands:
+      - tapOn:
+          id: "burger-menu-button"
+      - waitForAnimationToEnd
+      - tapOn: "EN"
+      - waitForAnimationToEnd
+      # Swipe, not back: the drawer is not a screen on the stack — see
+      # settings-language-switch.yaml.
+      - swipe:
+          direction: LEFT
+      - waitForAnimationToEnd

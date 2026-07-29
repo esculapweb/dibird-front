@@ -68,6 +68,9 @@ jest.mock("../../services/navigationRef", () => ({
     },
   },
   flushPendingNavigation: jest.fn(),
+  // Навигатор в этом моке всегда готов, поэтому ожидание вырождается в сам
+  // dispatch — задержку до готовности проверяет services/__tests__/navigationRef.
+  dispatchWhenReady: (action: unknown) => mockDispatch(action),
 }));
 jest.mock("../../store/theme-context", () => ({
   useTheme: () => ({ theme: "light" }),

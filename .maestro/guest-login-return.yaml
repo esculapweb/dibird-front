@@ -45,7 +45,8 @@ tags:
 - tapOn: ".*Search a species by name.*"
 - setClipboard: "Osprey"
 - pasteText
-- hideKeyboard
+# pressKey rather than hideKeyboard — see guest-browse.yaml's Phase 2.
+- pressKey: Enter
 - extendedWaitUntil:
     visible: ".*Osprey.*"
     timeout: 10000

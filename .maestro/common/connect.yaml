@@ -1,0 +1,88 @@
+# "Get the dev-client attached to Metro and out of its own way", for both
+# platforms. Connect only — no login, nothing about which screen the app ends
+# up on; that is common/bootstrap.yaml's job, and the guest flows deliberately
+# want this half alone.
+#
+# Metro is reached over `localhost` on both platforms, for two different
+# reasons that happen to point at the same URL:
+#  - Android: run.sh sets up `adb reverse tcp:8081 tcp:8081` before every run,
+#    and loopback (unlike wifi) survives `toggleAirplaneMode` — so a bundle
+#    re-fetch while offline still works instead of dropping the app onto the
+#    dev-client's "problem loading the project" screen (long note in run.sh).
+#  - iOS: the Simulator shares the host's network stack, so 127.0.0.1 inside
+#    it already *is* this machine.
+# Either way nothing host-specific is left in .maestro/ — the app's baked-in
+# API base URL (EXPO_PUBLIC_BASE_URL in .env.development.local) is still the
+# host's LAN address, and that is the one to update when the network changes.
+# It is also the one airplane mode is meant to cut off, which is exactly why
+# Metro must not share it.
+#
+# Connects via the same exp+dibird:// deep link Metro's own CLI opens when you
+# press `a`/`i`, rather than tapping the dev-client's on-screen server list:
+# that tap was flaky (Maestro found the list item but the tap sometimes didn't
+# register, leaving the app on the chooser for the rest of the flow) and it
+# depended on whichever address discovery happened to show — LAN vs a VPN
+# tunnel IP, which has flipped mid-session before.
+#
+# stopApp first is load-bearing on both platforms: every caller does launchApp
+# before this, so without it the link lands on the already-running chooser via
+# onNewIntent — which doesn't act on it — instead of a cold launch.
+#
+# appId is inert here — see common/back.yaml.
+appId: ${APP_ID}
+---
+- stopApp
+
+- openLink: "exp+dibird://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081"
+# iOS 26 can put an `Open in "DiBird (Dev)"?` system prompt in front of a
+# custom-scheme link, and it swallows every tap underneath while it is up.
+# Optional: it doesn't appear on every launch, nor on Android at all.
+- tapOn:
+    text: "Open"
+    optional: true
+# Metro takes a few seconds to reconnect — wait out the connecting toast
+# instead of racing it with a plain waitForAnimationToEnd.
+- extendedWaitUntil:
+    notVisible: ".*Connecting to the development server.*"
+    timeout: 12000
+- waitForAnimationToEnd
+
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      # The dev-client's own onboarding tooltip, and its floating "Tools
+      # button" — both survive `clearState` and both sit on top of the app.
+      - tapOn:
+          text: "Continue"
+          optional: true
+      - waitForAnimationToEnd
+      - runFlow:
+          when:
+            visible: "Tools button"
+          commands:
+            - tapOn:
+                text: "Tools button"
+            - back
+
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      # Nothing to dismiss on iOS any more: plugins/withDevMenuDefaults.js
+      # ships the dev menu's defaults with the build, so it no longer opens
+      # itself at launch and the floating gear isn't drawn at all. This flow
+      # used to open that menu and flip the "Tools button" switch off on every
+      # single run, since `launchApp: clearState` wipes the UserDefaults it
+      # was stored in.
+      #
+      # The assertion stays as the guard for exactly that arrangement: the
+      # gear sits on top of the header buttons underneath it (the observation
+      # editor's save button in particular), where every tap opens the dev
+      # menu instead of doing what the flow asked. A prebuild that lost the
+      # plugin would put it back silently — this fails here instead, several
+      # screens before the confusing part.
+      - extendedWaitUntil:
+          notVisible:
+            id: "gearshape.fill"
+          timeout: 5000

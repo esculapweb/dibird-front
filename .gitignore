@@ -39,6 +39,7 @@ yarn-error.*
 
 # tests
 coverage/
+.maestro/.logs/
 
 # generated native folders
 /ios

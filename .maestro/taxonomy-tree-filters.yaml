@@ -1,0 +1,104 @@
+# The catalogue's own navigation: the taxonomic tree, the trait filters, and
+# the species comparison — the three entry points on the species root that no
+# flow touched before. guest-browse.yaml covers the search box and a species
+# page; everything a user does to *narrow down* the catalogue was untested.
+#
+# Reached from MainScreen's "Birds of the world" card rather than the drawer
+# item of the same name: DrawerItem taps are unreliable on Android (Maestro
+# reports COMPLETED and nothing navigates — see settings-language-switch.yaml).
+#
+# The filter sheet is driven entirely by its visible labels, not by the
+# testIDs it does carry: iOS collapses a gorhom sheet's contents into one
+# accessibility element, and only the pressables survive it — as buttons with
+# a label (same limitation list-sort-persist.yaml ran into). The rows here are
+# all pressables, so labels are enough. What the filter actually did is then
+# asserted *outside* the sheet, on the chips row, where testIDs work again.
+#
+# Body mass is the group it opens: its chips come from a static bucket list
+# (components/Taxonomy/taxonTraitConfig.ts), unlike habitat/migration/etc.,
+# whose contents come from the backend vocabulary and can legitimately be
+# empty on a given dataset.
+#
+# appId comes from run.sh (--env APP_ID).
+appId: ${APP_ID}
+tags:
+  - ios
+  - android
+---
+- launchApp
+
+- runFlow: common/bootstrap.yaml
+
+- scrollUntilVisible:
+    element: ".*Birds of the world.*"
+    direction: DOWN
+    timeout: 10000
+- tapOn: ".*Birds of the world.*"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Search a species by name.*"
+    timeout: 15000
+
+# ---- the tree: species root -> the orders/families view ----
+- tapOn: ".*By groups.*"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "items-list"
+    timeout: 15000
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible: ".*Search a species by name.*"
+    timeout: 10000
+
+# ---- trait filters ----
+- tapOn:
+    id: "filter-button"
+- extendedWaitUntil:
+    visible: ".*Apply.*"
+    timeout: 6000
+# Groups start collapsed — open Body mass, then pick one of its buckets.
+- tapOn: ".*Body mass.*"
+- waitForAnimationToEnd
+- tapOn: ".*over 1 kg.*"
+- tapOn: ".*Apply.*"
+- waitForAnimationToEnd
+
+# Outside the sheet again: the active filter shows up as a removable chip,
+# and the list under it is the server's filtered answer rather than the
+# unfiltered catalogue it was showing a moment ago.
+- extendedWaitUntil:
+    visible:
+      id: "remove-taxon-filter-mass"
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: "items-list"
+    timeout: 15000
+
+# Removing the chip puts the catalogue back — and leaves nothing behind for
+# the next flow, since the filter lives in screen state, not on disk.
+- tapOn:
+    id: "remove-taxon-filter-mass"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    notVisible:
+      id: "remove-taxon-filter-mass"
+    timeout: 6000
+
+# ---- species comparison ----
+- tapOn: ".*Compare species.*"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "compare-scroll"
+    timeout: 15000
+- assertVisible:
+    id: "compare-pick-a"
+- runFlow: common/back.yaml
+
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: "quick-action-observation"
+    timeout: 10000

@@ -25,16 +25,23 @@ const IconsHeader = ({
 
   const iconButtons: IconButtonConfig[] = [
     ...(Array.isArray(headerRightBeginning) ? headerRightBeginning : []),
+    // testID на обеих: это единственные кнопки шапки без текста (сортировка и
+    // фильтры — иконки Ionicons), и в Maestro иначе не за что зацепиться, кроме
+    // координат. Задаются здесь, а не у вызывающих: кнопки одни и те же на всех
+    // экранах со списками — см. .maestro/list-sort-persist.yaml и
+    // .maestro/taxonomy-tree-filters.yaml.
     {
       condition: !!onSortPress,
       onPress: onSortPress,
       icon: "swap-vertical",
+      testID: "sort-button",
     },
     {
       condition: !!onFilterPress,
       onPress: onFilterPress,
       icon: hasActiveFilters ? "options" : "options-outline",
       active: hasActiveFilters,
+      testID: "filter-button",
     },
     {
       condition: !!onSharePress,

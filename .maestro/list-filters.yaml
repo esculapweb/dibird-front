@@ -1,0 +1,93 @@
+# Filtering a list, and getting back out of it.
+#
+# The filter sheet (components/Filters/FilterSheetContent.tsx) is shared by
+# every list screen and had no device coverage: unit tests exercise the
+# controls, but not that the chosen filter reaches the query, changes what the
+# list fetches, and is reflected by the header badge — the badge in particular
+# is a separate count that has gone stale on its own before.
+#
+# Filters on sync status rather than on a real value: the flow shares one
+# account with every other flow here, and they all clean up after themselves,
+# so the list's contents — even whether it is empty — are not something to
+# assert against. "Unsynced only" is the one filter with a guaranteed answer
+# while online: nothing is pending, so the list must come back empty, and the
+# badge must agree. That holds whatever the account happens to contain.
+#
+# Driven by the sheet's visible labels. Maestro matches text selectors in
+# full, so "All" hits the Sync status option and not "All locations"/
+# "All species"/"All time".
+#
+# tags: android only. On iOS *nothing* inside this particular sheet reaches
+# the accessibility hierarchy — not the options, not even its Apply button —
+# while the taxonomy filter sheet right next door is fully addressable
+# (taxonomy-tree-filters.yaml drives it on both platforms). The difference
+# between them is the shared title block: this one is opened with a `title`,
+# which wraps the content in UniversalBottomSheet's own header container. It
+# is worth knowing that this is not only a testing problem — content that
+# Maestro cannot see through the accessibility tree is content VoiceOver
+# cannot read either. Flagged, not worked around here.
+#
+# Cleared through the sheet, not through the empty state's "Reset filters"
+# button: that one resets *every* filter, including the global country and
+# period the other flows depend on (ObservationEditor seeds its territory
+# from them).
+#
+# appId comes from run.sh (--env APP_ID).
+appId: ${APP_ID}
+tags:
+  - android
+---
+- launchApp
+
+- runFlow: common/bootstrap.yaml
+
+- tapOn:
+    id: "section-Observations"
+- extendedWaitUntil:
+    visible:
+      id: "list-header-badge-count"
+    timeout: 15000
+- copyTextFrom:
+    id: "list-header-badge-count"
+- evalScript: ${output.observationsBaselineBadge = maestro.copiedText}
+
+# ---- filter it down to nothing ----
+- tapOn:
+    id: "filter-button"
+- extendedWaitUntil:
+    visible: ".*Apply.*"
+    timeout: 6000
+- tapOn: "Unsynced only"
+- tapOn: ".*Apply.*"
+- waitForAnimationToEnd
+
+# The empty state, and the badge agreeing with it — not just one or the other.
+- extendedWaitUntil:
+    visible: ".*Nothing found.*"
+    timeout: 10000
+- assertVisible:
+    id: "list-header-badge-count"
+    text: "0"
+
+# ---- and back ----
+- tapOn:
+    id: "filter-button"
+- extendedWaitUntil:
+    visible: ".*Apply.*"
+    timeout: 6000
+- tapOn: "All"
+- tapOn: ".*Apply.*"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "list-header-badge-count"
+    timeout: 15000
+- assertVisible:
+    id: "list-header-badge-count"
+    text: ${output.observationsBaselineBadge}
+
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: "quick-action-observation"
+    timeout: 10000

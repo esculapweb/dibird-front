@@ -15,6 +15,7 @@ import {
 import linking from "../linking";
 import { navigationIntegration } from "../services/sentry";
 import {
+  dispatchWhenReady,
   flushPendingNavigation,
   navigationRef,
 } from "../services/navigationRef";
@@ -202,7 +203,10 @@ const Navigation = () => {
         (e) => __DEV__ && console.warn("[NAV] failed to clear onboarding", e),
       );
 
-      navigationRef.current?.dispatch(
+      // Не прямой dispatch: на входе в аккаунт навигатора может секунду не
+      // быть — `AppStack` рендерит null, пока перечитывается флаг онбординга,
+      // и reset терялся вместе с намерением (см. dispatchWhenReady).
+      dispatchWhenReady(
         CommonActions.reset({
           index: 1,
           routes: [

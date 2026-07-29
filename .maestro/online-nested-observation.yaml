@@ -1,0 +1,142 @@
+# An Observation created *inside* a Diary, online.
+#
+# offline-nested-observation-in-diary.yaml already covers the hard version of
+# this (both entities unsynced, negative temp ids, resolution on reconnect),
+# but the plain online path had no coverage on either platform — and it is the
+# one nearly every real user takes. What it proves that the offline flow
+# can't: the diary-scoped editor really files the observation under the diary
+# it was opened from (the new row shows up on that diary's own screen), and
+# the diary-scoped save returns to the diary rather than replacing onto the
+# observation's detail screen the way MainScreen's quick action does
+# (returnMode: "back", see DiaryDetailScreen's handleAdd).
+#
+# Create and delete net to zero: the flow shares one account with every other
+# flow, and the counters on MainScreen are asserted back to their starting
+# values at the end.
+#
+# appId comes from run.sh (--env APP_ID).
+appId: ${APP_ID}
+tags:
+  - ios
+  - android
+---
+- launchApp
+
+- runFlow: common/bootstrap.yaml
+
+- extendedWaitUntil:
+    visible:
+      id: "diaries-stat-value"
+    timeout: 20000
+- copyTextFrom:
+    id: "diaries-stat-value"
+- evalScript: ${output.diaryBaselineCount = maestro.copiedText}
+- copyTextFrom:
+    id: "observations-stat-value"
+- evalScript: ${output.observationBaselineCount = maestro.copiedText}
+
+# ---- CREATE the Diary ----
+- tapOn:
+    id: "quick-action-diary"
+# A distinctive note so this diary can be found by text later — list rows
+# carry no testID, and online there is no pending icon to grab either.
+- tapOn: ".*Add a note.*"
+- setClipboard: "Nested Online E2E Diary"
+- pasteText
+# Defocus without navigating — tapping a static label on the same form, the
+# same technique common/credential-entry.yaml uses.
+- tapOn: ".*Location.*"
+- tapOn:
+    id: "diary-save-button"
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - runFlow: common/back.yaml
+      - tapOn:
+          id: "diary-save-button"
+- extendedWaitUntil:
+    visible: ".*Delete diary.*"
+    timeout: 8000
+
+# ---- CREATE an Observation from inside that Diary ----
+# DiaryDetailScreen's own add action reuses ListScreen's list-add-button
+# testID and opens ObservationEditor pre-filled with this diary's id and
+# territory.
+- tapOn:
+    id: "list-add-button"
+- tapOn:
+    id: "species-dropdown-trigger"
+- extendedWaitUntil:
+    visible:
+      id: "option-row-0"
+    timeout: 6000
+# Remember which species the dropdown happened to offer (contents are
+# backend/seed-data dependent): it is how the new row is recognised on the
+# diary screen below, and how the observation is reopened for cleanup.
+- copyTextFrom:
+    id: "option-row-0"
+# Just the common name: the dropdown row reads "Common name, Scientific name"
+# (and on iOS the accessibility node keeps the trailing space), while the
+# observation row on the diary shows the common name alone.
+- evalScript: ${output.nestedSpecies = maestro.copiedText.split(",")[0]}
+- tapOn:
+    id: "option-row-0"
+- tapOn:
+    id: "observation-save-button"
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - runFlow: common/back.yaml
+      - tapOn:
+          id: "observation-save-button"
+
+# Back on the diary, not on the new observation's own detail screen.
+- extendedWaitUntil:
+    visible: ".*Delete diary.*"
+    timeout: 8000
+# And the observation is filed under this diary — the whole point of the flow.
+- extendedWaitUntil:
+    visible: ".*${output.nestedSpecies}.*"
+    timeout: 10000
+
+# ---- Cleanup: the Observation first (it references the diary), then the Diary ----
+- tapOn: ".*${output.nestedSpecies}.*"
+- extendedWaitUntil:
+    visible: ".*Delete observation.*"
+    timeout: 8000
+- tapOn:
+    id: "observation-delete-button"
+- extendedWaitUntil:
+    visible:
+      id: "bottom-sheet-confirm-button"
+    timeout: 4000
+- tapOn:
+    id: "bottom-sheet-confirm-button"
+
+# Delete returns to the diary this observation was opened from.
+- extendedWaitUntil:
+    visible: ".*Delete diary.*"
+    timeout: 8000
+- tapOn:
+    id: "diary-delete-button"
+- extendedWaitUntil:
+    visible:
+      id: "bottom-sheet-confirm-button"
+    timeout: 4000
+- tapOn:
+    id: "bottom-sheet-confirm-button"
+
+# Both counters back where they started — nothing of this flow's own is left
+# behind for the next one to trip over.
+- extendedWaitUntil:
+    visible:
+      id: "observations-stat-value"
+    timeout: 15000
+- assertVisible:
+    id: "observations-stat-value"
+    text: ${output.observationBaselineCount}
+- assertVisible:
+    id: "diaries-stat-value"
+    text: ${output.diaryBaselineCount}

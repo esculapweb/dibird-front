@@ -21,7 +21,7 @@
 - `npm run typecheck` — только проверка типов.
 - `npm run lint` — только eslint.
 - `npm test` — jest. `npm run test:watch` для разработки.
-- `npm run e2e` — Maestro e2e (`.maestro/run.sh`), `npm run e2e:ios` / `e2e:android`.
+- `npm run e2e` — Maestro e2e (`.maestro/run.sh`), `npm run e2e:ios` / `e2e:android`, `npm run e2e:parallel` — обе платформы одновременно (`.maestro/run-parallel.sh`, логи в `.maestro/.logs/`). Один флоу — аргументом: `npm run e2e:ios -- .maestro/login.yaml`. Аккаунт свой на каждую платформу (`IOS_EMAIL`/`ANDROID_EMAIL` в `.maestro/.env.local`) — именно это и позволяет гонять параллельно. Платформа флоу задаётся тегами в его шапке; состав и платформенные ограничения — в `RELEASE_CHECKLIST.md` §1.
 - `npm start` — Expo dev server. `npm run ios` / `npm run android` — нативная сборка.
 - `npm run i18n:extract` — извлечение строк локализации.
 

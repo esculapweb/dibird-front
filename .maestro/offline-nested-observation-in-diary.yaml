@@ -178,6 +178,17 @@ tags:
 - assertVisible: ".*Diaries.*"
 
 - back
+# Scroll back up before reading the counters: MainScreen keeps the scroll
+# position from the scrollUntilVisible above (it went down to the Diaries
+# tile), so on return the stat cards sit under the header — present in the
+# hierarchy, but not visible, which is what Maestro asserts on. The flow was
+# passing on this by accident until MainScreen grew tall enough for the
+# offset to survive the `back`.
+- scrollUntilVisible:
+    element:
+      id: "observations-stat-value"
+    direction: UP
+    timeout: 10000
 - assertVisible:
     id: "observations-stat-value"
     text: ${output.observationBaselineCount}

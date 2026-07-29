@@ -1,0 +1,114 @@
+# Switching the interface language from the drawer, and switching back.
+#
+# Worth a device test because the language is not just a string table here:
+# the backend localises its own responses, so `language` is part of the
+# React Query keys (see the rule in CLAUDE.md and hooks/useItem.ts). With
+# staleTime at a full day, a key that forgets the language serves the previous
+# language's payload for the rest of the day — invisible to every unit test,
+# and invisible on screen too until you look at server-provided text. That is
+# what the catalogue leg below is for: the species list is rendered from
+# `/api/taxon/` output, not from locales/*.json.
+#
+# EN -> RU -> EN rather than a one-way switch: the flow shares an account and
+# an installed app with every other flow in the batch, and leaving it in
+# Russian would leave every English text selector in them failing.
+#
+# appId comes from run.sh (--env APP_ID).
+appId: ${APP_ID}
+tags:
+  - ios
+  - android
+---
+- launchApp
+
+- runFlow: common/bootstrap.yaml
+
+# ---- EN -> RU ----
+- tapOn:
+    id: "burger-menu-button"
+- waitForAnimationToEnd
+# The switcher has no testID of its own; "EN"/"RU" are its two buttons and
+# nothing else on the drawer is a bare two-letter label (Maestro matches text
+# selectors in full, so "RU" cannot hit a longer string by accident).
+#
+# Start by *setting* English rather than assuming it: the language is a
+# persisted preference, so a previous run of this flow that died between the
+# two switches leaves the whole app in Russian — and then every English
+# selector here (and in the flows after it) fails for a reason that has
+# nothing to do with what they test. Tapping "EN" when English is already
+# active is a no-op.
+- tapOn: "EN"
+# extendedWaitUntil, not a bare assert: the drawer slides in, and a plain
+# assertVisible is evaluated the instant the animation starts — the item is
+# real but not yet where Maestro looks (caught on Android).
+- extendedWaitUntil:
+    visible: ".*Logout.*"
+    timeout: 6000
+- tapOn: "RU"
+- waitForAnimationToEnd
+# The same drawer item, now translated — proves the re-render reached mounted
+# screens rather than only new ones.
+- extendedWaitUntil:
+    visible: ".*Выйти.*"
+    timeout: 6000
+
+# ---- server-localised content follows the switch ----
+# Into the catalogue from MainScreen's own card, not from the drawer item of
+# the same name: DrawerItem taps are unreliable on Android (Maestro reports
+# COMPLETED, the drawer stays open and nothing navigates — the same symptom
+# that made common/connect.yaml stop tapping the dev-launcher's server list).
+# The card is a plain Pressable and behaves.
+- swipe:
+    direction: LEFT
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element: ".*Птицы мира.*"
+    direction: DOWN
+    timeout: 10000
+- tapOn: ".*Птицы мира.*"
+- waitForAnimationToEnd
+# The catalogue is one request for a list of 11k species against the local
+# backend, and under a full batch it has hit api.ts's 10s timeout — the screen
+# then shows its error state instead of the list, and with no list there is no
+# search box to assert on either. Retry once rather than fail on the backend
+# having a slow minute; in Russian, because that is what the app is in by now.
+- runFlow:
+    when:
+      visible: ".*Попробовать снова.*"
+    commands:
+      - tapOn: ".*Попробовать снова.*"
+      - waitForAnimationToEnd
+# Placeholder from locales/ru.json — the screen itself is in Russian.
+- extendedWaitUntil:
+    visible: ".*Найти вид по названию.*"
+    timeout: 20000
+# And the list under it comes from the server: with `language` missing from
+# the query key this stays the English catalogue for a day (staleTime), which
+# is exactly the regression this leg exists for. Asserted on a Russian species
+# name rather than a specific bird — the list is seed-data dependent, but it
+# is alphabetical in whichever language the server answered in, and Cyrillic
+# in the first row can only come from a Russian response.
+- extendedWaitUntil:
+    visible: ".*[А-Яа-я]+.*"
+    timeout: 15000
+
+# ---- RU -> EN, back to how the rest of the batch expects to find things ----
+- runFlow: common/back.yaml
+- tapOn:
+    id: "burger-menu-button"
+- waitForAnimationToEnd
+- tapOn: "EN"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*Logout.*"
+    timeout: 6000
+# Swipe, not back: the drawer isn't a screen on the stack, so there is nothing
+# for `back`/BackButton to pop — on iOS the tap simply finds no button and the
+# drawer stays open over MainScreen.
+- swipe:
+    direction: LEFT
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "quick-action-observation"
+    timeout: 10000

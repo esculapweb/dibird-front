@@ -1,4 +1,11 @@
-import { navigationRef, navigateFromNotification, flushPendingNavigation } from "../navigationRef";
+import { CommonActions } from "@react-navigation/native";
+
+import {
+  navigationRef,
+  navigateFromNotification,
+  flushPendingNavigation,
+  dispatchWhenReady,
+} from "../navigationRef";
 
 const mockDispatch = jest.fn();
 const mockIsReady = jest.fn();
@@ -55,6 +62,56 @@ describe("flushPendingNavigation", () => {
   it("does nothing when there's no pending navigation", () => {
     expect(() => flushPendingNavigation()).not.toThrow();
     expect(mockDispatch).not.toHaveBeenCalled();
+  });
+});
+
+describe("dispatchWhenReady", () => {
+  const reset = CommonActions.reset({
+    index: 1,
+    routes: [{ name: "Main" }, { name: "SpeciesDetail", params: { id: 5 } }],
+  });
+
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+
+  it("dispatches immediately when the navigator is ready", () => {
+    mockIsReady.mockReturnValue(true);
+    dispatchWhenReady(reset);
+
+    expect(mockDispatch).toHaveBeenCalledWith(reset);
+  });
+
+  // Регрессия: на входе в аккаунт AppStack секунду рендерит null (перечитывает
+  // флаг онбординга), и прямой dispatch терял возврат гостя на страницу птицы.
+  it("waits for a navigator that mounts a moment later", () => {
+    mockIsReady.mockReturnValue(false);
+    dispatchWhenReady(reset);
+    expect(mockDispatch).not.toHaveBeenCalled();
+
+    mockIsReady.mockReturnValue(true);
+    jest.advanceTimersByTime(100);
+
+    expect(mockDispatch).toHaveBeenCalledWith(reset);
+  });
+
+  it("gives up instead of retrying forever when no navigator ever appears", () => {
+    mockIsReady.mockReturnValue(false);
+    dispatchWhenReady(reset);
+
+    jest.advanceTimersByTime(10_000);
+
+    expect(mockDispatch).not.toHaveBeenCalled();
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  it("dispatches once, not on every remaining retry", () => {
+    mockIsReady.mockReturnValue(false);
+    dispatchWhenReady(reset);
+
+    mockIsReady.mockReturnValue(true);
+    jest.advanceTimersByTime(10_000);
+
+    expect(mockDispatch).toHaveBeenCalledTimes(1);
   });
 });
 

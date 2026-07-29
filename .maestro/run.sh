@@ -13,26 +13,41 @@
 # on Android; iOS Simulators have no radio stack for it to switch.
 #
 # Maestro itself always scans the whole .maestro/ directory regardless of
-# platform, and it contains flows for both (iOS: appId com.dibird.app.dev —
-# login.yaml/create-observation.yaml; Android: appId com.dibird.app — every
-# other flow). Rather than relying on the caller to always remember an
-# explicit flow path to avoid running the wrong platform's flows against the
-# wrong app, every flow file declares its own `tags: [ios]`/`tags:
-# [android]` in its config header — `--include-tags` below filters the
-# directory scan down to just this run's platform, so both `npm run e2e` and
-# `npm run e2e:android` are safe to run bare. An explicit flow path can still
-# be passed as a second argument (Android only, see below) to narrow further
-# to one specific flow.
+# platform, and it contains flows for both (iOS: appId com.dibird.app.dev;
+# Android: appId com.dibird.app; the offline-*.yaml flows are Android-only,
+# most of the rest carries both tags). Rather than relying on the caller to
+# always remember an explicit flow path to avoid running the wrong platform's
+# flows against the wrong app, every flow file declares its own `tags: [ios]`/
+# `tags: [android]` (or both) in its config header — `--include-tags` below
+# filters the directory scan down to just this run's platform, so `npm run
+# e2e:ios` and `npm run e2e:android` are both safe to run bare. An explicit
+# flow path can be passed as the next argument on either platform to narrow
+# further to one specific flow.
 #
 # A bare Android run drives the flows one `maestro test` invocation at a time
 # (see the loop at the bottom) rather than handing Maestro the directory:
 # that's the only place airplane mode can be reset *between* flows, without
 # which one failure cascades into the next. iOS and explicit single-flow runs
 # still go through one plain invocation.
+#
+# The two platforms sign in as two different accounts (IOS_EMAIL /
+# ANDROID_EMAIL in .env.local) so that both batches can run at the same time —
+# `npm run e2e:parallel` / .maestro/run-parallel.sh drives exactly that, and it
+# only works because no two runs share test data on the backend. See the
+# credentials block below.
 set -e
 cd "$(dirname "$0")/.."
 
-PLATFORM="${1:-ios}"
+# Платформа — только если её и правда назвали первым аргументом. Раньше сюда
+# попадал `${1:-ios}` целиком, и `npm run e2e -- .maestro/login.yaml` уезжал
+# платформой в `--include-tags`, отбирая ноль флоу.
+PLATFORM="ios"
+case "$1" in
+  ios | android)
+    PLATFORM="$1"
+    shift
+    ;;
+esac
 
 # A previous run that was interrupted while Maestro was blocked in a native
 # socket read (see the ADB-port note below) can survive the Ctrl-C / closed
@@ -41,7 +56,15 @@ PLATFORM="${1:-ios}"
 # outlives the run that caused it. Reap them before starting: nothing else in
 # this repo runs `maestro.cli.AppKt`, and two concurrent batches against the
 # same device would fight each other anyway.
-STALE_PIDS=$(pgrep -f "maestro\.cli\.AppKt" 2>/dev/null || true)
+#
+# E2E_NO_REAP is how run-parallel.sh opts out: the two platforms it starts are
+# `maestro.cli.AppKt` processes too, and this pgrep cannot tell them from a
+# leftover — whichever of the pair started second would kill the first. That
+# script does the reap once itself, before starting either.
+STALE_PIDS=""
+if [ -z "$E2E_NO_REAP" ]; then
+  STALE_PIDS=$(pgrep -f "maestro\.cli\.AppKt" 2>/dev/null || true)
+fi
 if [ -n "$STALE_PIDS" ]; then
   echo "Killing leftover Maestro process(es) from an earlier run: $(echo "$STALE_PIDS" | tr '\n' ' ')" >&2
   # shellcheck disable=SC2086
@@ -89,17 +112,37 @@ if [ -f "$ENV_FILE" ]; then
   # shellcheck source=/dev/null
   source "$ENV_FILE"
 else
-  echo "Missing $ENV_FILE — copy the TEST_EMAIL/TEST_PASSWORD template and fill in a real test account." >&2
+  echo "Missing $ENV_FILE — fill in IOS_EMAIL/IOS_PASSWORD and ANDROID_EMAIL/ANDROID_PASSWORD with real test accounts." >&2
   exit 1
 fi
 
+# Один аккаунт на платформу, не общий: iOS и Android гоняются одновременно
+# (run-parallel.sh), а флоу проверяют счётчики («мест стало больше», «в
+# дневнике 1 наблюдение») — с общим аккаунтом соседний прогон правил бы те же
+# цифры прямо между `copyTextFrom` и проверкой, и падения были бы
+# невоспроизводимыми. Разъезжается на бэке только владелец записей, так что
+# двух аккаунтов достаточно; больше ничего в изоляции не нуждается.
+#
+# Дальше по скрипту (и в --env) живут прежние имена TEST_EMAIL/TEST_PASSWORD:
+# флоу платформы не знают и знать не должны.
+if [ "$PLATFORM" = "android" ]; then
+  CRED_PREFIX="ANDROID"
+  TEST_EMAIL="$ANDROID_EMAIL"
+  TEST_PASSWORD="$ANDROID_PASSWORD"
+else
+  CRED_PREFIX="IOS"
+  TEST_EMAIL="$IOS_EMAIL"
+  TEST_PASSWORD="$IOS_PASSWORD"
+fi
 if [ -z "$TEST_EMAIL" ] || [ -z "$TEST_PASSWORD" ]; then
-  echo "TEST_EMAIL/TEST_PASSWORD are not set in $ENV_FILE." >&2
+  echo "${CRED_PREFIX}_EMAIL/${CRED_PREFIX}_PASSWORD are not set in $ENV_FILE." >&2
   exit 1
 fi
+# Экспорт ради reset-state.sh: он читает тот же .env.local, но выбор аккаунта
+# по платформе сделан здесь, и без этого сброс ушёл бы не в тот аккаунт.
+export TEST_EMAIL TEST_PASSWORD
 
 if [ "$PLATFORM" = "android" ]; then
-  shift
   # `adb` isn't on PATH in a plain shell unless the Android SDK's
   # platform-tools dir was added manually — try the usual install locations
   # (ANDROID_HOME/ANDROID_SDK_ROOT if already set, else Android Studio's
@@ -186,13 +229,29 @@ else
     echo "No booted iOS simulator found — open Simulator.app (or 'xcrun simctl boot <name>') first." >&2
     exit 1
   fi
-  TARGET_PATH=".maestro"
+  # Как и на Android: путь к одному флоу можно передать аргументом
+  # (`npm run e2e:ios -- .maestro/guest-browse.yaml`). Раньше iOS-ветка его
+  # игнорировала, и отладка одного флоу требовала звать `maestro test` руками,
+  # мимо подбора устройства и кредов.
+  TARGET_PATH="${1:-.maestro}"
+fi
+
+# Пакет отличается по платформам (iOS гоняется на dev-client билде), а флоу,
+# помеченные обоими тегами, объявляют `appId: ${APP_ID}` — Maestro
+# подставляет сюда значение из --env ещё до запуска приложения. Флоу, живущие
+# только на одной платформе, по-прежнему пишут свой appId буквально: там
+# подстановка ничего не даёт, а читать хуже.
+if [ "$PLATFORM" = "android" ]; then
+  APP_ID="com.dibird.app"
+else
+  APP_ID="com.dibird.app.dev"
 fi
 
 run_maestro() {
   MAESTRO_CLI_NO_ANALYTICS=1 maestro test \
     --device "$TARGET" \
     --include-tags "$PLATFORM" \
+    --env APP_ID="$APP_ID" \
     --env TEST_EMAIL="$TEST_EMAIL" \
     --env TEST_PASSWORD="$TEST_PASSWORD" \
     "$1"

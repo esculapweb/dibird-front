@@ -1,0 +1,85 @@
+# A shared species link opened by someone with no account and no history in
+# the app — the link arrives while the guest is still sitting on Welcome.
+#
+# guest-browse.yaml also opens dibird://species/osprey/, but only after
+# walking the guest through Welcome -> catalogue -> species by hand, so the
+# route it lands on is already on the stack. Here nothing is: linking.ts has
+# to build that screen from the URL alone, over the AuthStack, with no
+# session and no catalogue history behind it. That is the state a link from a
+# friend actually arrives in.
+#
+# What this deliberately does NOT do is stop the app first and let the link
+# cold-start it. On a dev-client build that cannot work: launched from a bare
+# custom-scheme intent, with no Metro URL to go with it, the dev client shows
+# its own server-picker instead of the app (verified — the flow sat on
+# "DEVELOPMENT SERVERS" until it timed out). Testing a genuinely cold link
+# needs a standalone build, so it stays a manual item like the rest of the
+# release checklist's store-build checks.
+#
+# Ends on the auth wall rather than at the species page alone: the point of
+# guest access is that it converts, and "the link opened" without "the link
+# offered an account" would pass while the funnel was broken.
+#
+# appId comes from run.sh (--env APP_ID).
+appId: ${APP_ID}
+tags:
+  - ios
+  - android
+---
+# Genuinely signed out. clearKeychain is iOS-only, and needed there: the
+# session token lives in the Keychain (expo-secure-store), which clearState
+# does not wipe. Android's clearState is a `pm clear` and takes the app's
+# EncryptedSharedPreferences with it, so there is nothing extra to do.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - clearKeychain
+- launchApp:
+    clearState: true
+
+- runFlow: common/connect.yaml
+
+# On Welcome, signed out, with nothing else on the stack — the starting state
+# the link has to work from.
+- extendedWaitUntil:
+    visible: ".*Continue with email.*"
+    timeout: 20000
+
+- openLink: "dibird://species/osprey/"
+# iOS 26 puts an `Open in "DiBird (Dev)"?` prompt in front of a custom-scheme
+# link handed to an app that is already in the foreground.
+- tapOn:
+    text: "Open"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "species-scroll"
+    timeout: 30000
+
+# It really is the linked bird, not just some species screen.
+- extendedWaitUntil:
+    visible: ".*Pandion haliaetus.*"
+    timeout: 15000
+
+# And the guest is offered an account where they'd need one, instead of
+# hitting a dead end. Asserted on the sheet's buttons, not its title — see
+# guest-browse.yaml for why a sheet's plain text never reaches iOS's
+# accessibility tree.
+- tapOn:
+    id: "add-observation-fab"
+- waitForAnimationToEnd
+- assertVisible:
+    id: "auth-option-email"
+- tapOn:
+    id: "auth-gate-cancel-button"
+- waitForAnimationToEnd
+- assertVisible:
+    id: "species-scroll"
+
+# Back out of a screen that was pushed by a link rather than navigated to:
+# there is no Main under it for a guest, so this lands on Welcome.
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible: ".*Continue with email.*"
+    timeout: 10000

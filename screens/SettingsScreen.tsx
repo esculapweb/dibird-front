@@ -153,6 +153,12 @@ const Section = ({ title, children, styles, colors }: SectionProps) => (
 );
 
 const APP_REVIEW_PROFILE_ID = 9386;
+// Аккаунты e2e — по одному на платформу, чтобы iOS- и Android-батчи можно было
+// гонять одновременно, не деля данные (см. `.maestro/run.sh`). Гейт нужен им
+// ради «Replay onboarding»: без него `.maestro/onboarding.yaml` нечем начать —
+// настоящий флаг ставит только регистрация.
+const TEST_IOS_PROFILE_ID = 8262;
+const TEST_ANDROID_PROFILE_ID = 8263;
 
 const SettingsScreen = () => {
   const { t } = useTranslation();
@@ -170,9 +176,14 @@ const SettingsScreen = () => {
   const userEmail = profile?.user_data?.email ?? "";
 
   // Тот же гейт, что у «Send test push»: отладочные строки видны только на
-  // ревью-аккаунте и на первом.
+  // ревью-аккаунте, на e2e-аккаунтах и на первом. Каждый id сравнивается
+  // отдельно — голая константа в цепочке `||` истинна всегда и открыла бы
+  // отладочные строки (и авто-переход в онбординг ниже) вообще всем.
   const isDebugProfile =
-    profile?.user === APP_REVIEW_PROFILE_ID || profile?.user === 1;
+    profile?.user === APP_REVIEW_PROFILE_ID ||
+    profile?.user === TEST_IOS_PROFILE_ID ||
+    profile?.user === TEST_ANDROID_PROFILE_ID ||
+    profile?.user === 1;
 
   // `restart()` только возвращает экран в навигатор, а объявлен он перед
   // текущим маршрутом, не поверх него — само по себе это никуда не переводит.

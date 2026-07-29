@@ -23,13 +23,19 @@ cd "$(dirname "$0")/.."
 APP_ID="${APP_ID:-com.dibird.app}"
 BACKEND_DIR="${BACKEND_DIR:-/Users/esculapweb/Py/dibird/docker/dibird_local}"
 
+# Аккаунт: run.sh уже выбрал его по платформе и экспортировал в TEST_EMAIL —
+# уважаем этот выбор. При запуске руками его нет, и берём Android-аккаунт:
+# чистится тут в том числе `pm clear`, то есть скрипт и так про Android.
+# Чужой аккаунт здесь опаснее отсутствующего — это `delete()` по чужим
+# наблюдениям, поэтому именно фолбэк, а не «первый попавшийся».
 ENV_FILE=".maestro/.env.local"
 if [ -f "$ENV_FILE" ]; then
   # shellcheck source=/dev/null
   source "$ENV_FILE"
 fi
+TEST_EMAIL="${TEST_EMAIL:-$ANDROID_EMAIL}"
 if [ -z "$TEST_EMAIL" ]; then
-  echo "TEST_EMAIL не задан — заполни $ENV_FILE (тот же файл, что читает run.sh)." >&2
+  echo "Аккаунт не определён — задай ANDROID_EMAIL в $ENV_FILE (тот же файл, что читает run.sh)." >&2
   exit 1
 fi
 

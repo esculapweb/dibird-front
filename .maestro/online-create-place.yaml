@@ -3,15 +3,34 @@
 # offline-create-place.yaml, mirrored exactly except it never touches
 # toggleAirplaneMode.
 #
-# appId is the single Android package for every build variant.
-# tags: android — see login.yaml.
-appId: com.dibird.app
+# Runs on both platforms; text selectors are `.*regex.*` throughout because
+# iOS merges icon+label elements into one accessibility node — see
+# online-create-observation.yaml.
+#
+# appId comes from run.sh (--env APP_ID): the iOS build is the dev client,
+# Android has one package for every variant.
+appId: ${APP_ID}
 tags:
+  - ios
   - android
 ---
-- launchApp:
-    permissions:
-      location: allow
+# The permission value is the one thing the two platforms genuinely spell
+# differently: Maestro passes it through to the OS, and iOS has no "allow" —
+# location is granted as `inuse` (while-in-use) or `always` there.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - launchApp:
+          permissions:
+            location: allow
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - launchApp:
+          permissions:
+            location: inuse
 
 # Pin the mock GPS fix to Paris, France — matches the test account's
 # default territory filter (the emulator's real default location
@@ -20,7 +39,7 @@ tags:
     latitude: 48.8566
     longitude: 2.3522
 
-- runFlow: common/android-bootstrap.yaml
+- runFlow: common/bootstrap.yaml
 
 - tapOn:
     id: "section-Places"
@@ -77,18 +96,26 @@ tags:
 # Dismiss the soft keyboard without navigating — see
 # offline-create-place.yaml's CREATE section for why plain `back` is
 # unreliable here.
-- tapOn:
-    text: "Latitude"
+- tapOn: ".*Latitude.*"
 - tapOn:
     id: "place-save-button"
 - runFlow:
     when:
       visible: "Reload"
     commands:
-      - back
+      - runFlow: common/back.yaml
       - tapOn:
           id: "place-save-button"
-- assertVisible: "Online Test Place"
+# Asserted on the detail screen's edit button, not on the name: the editor's
+# own name field reports its contents as text too, so a save that never went
+# through (e.g. the reverse geocode hadn't filled Country yet and the form
+# refused with "Country is required") still matched the name and the failure
+# only surfaced a step later, as a missing button with no explanation.
+- extendedWaitUntil:
+    visible:
+      id: "place-edit-button"
+    timeout: 10000
+- assertVisible: ".*Online Test Place.*"
 
 # ---- UPDATE, online ----
 - tapOn:
@@ -99,18 +126,21 @@ tags:
 - eraseText: 50
 - setClipboard: "Online Test Place Updated"
 - pasteText
-- tapOn:
-    text: "Latitude"
+- tapOn: ".*Latitude.*"
 - tapOn:
     id: "place-save-button"
 - runFlow:
     when:
       visible: "Reload"
     commands:
-      - back
+      - runFlow: common/back.yaml
       - tapOn:
           id: "place-save-button"
-- assertVisible: "Online Test Place Updated"
+- extendedWaitUntil:
+    visible:
+      id: "place-edit-button"
+    timeout: 10000
+- assertVisible: ".*Online Test Place Updated.*"
 
 # ---- DELETE, online ----
 - tapOn:

@@ -1,0 +1,66 @@
+# Logging out, and staying logged out across a relaunch.
+#
+# The counterpart to login.yaml, and the only flow that exercises the drawer's
+# Logout item at all. Two things are worth a device test here rather than a
+# unit test:
+#  - the confirmation sheet is the app-wide UniversalBottomSheet, whose
+#    dismiss/represent bookkeeping has been a repeated source of "the sheet
+#    silently stops opening" regressions;
+#  - the session token lives in the Keychain (expo-secure-store), which
+#    outlives both the process and `clearState` — so "did logout actually
+#    clear it" cannot be answered without relaunching, and a leak here would
+#    look fine right up until it let a signed-out person back in.
+#
+# Deliberately NOT starting from a cleared state: this flow wants the ordinary
+# signed-in session common/bootstrap.yaml leaves behind.
+#
+# It signs back in at the end. Not for its own sake — the assertions are done
+# by then — but so it hands the next flow in the batch the session every other
+# flow expects, instead of making it pay for a full login.
+#
+# appId comes from run.sh (--env APP_ID).
+appId: ${APP_ID}
+tags:
+  - ios
+  - android
+---
+- launchApp
+
+- runFlow: common/bootstrap.yaml
+
+- tapOn:
+    id: "burger-menu-button"
+- waitForAnimationToEnd
+- tapOn: ".*Logout.*"
+
+# The confirmation is UniversalBottomSheet's confirm mode, same testIDs as
+# every delete in the other flows.
+- extendedWaitUntil:
+    visible:
+      id: "bottom-sheet-confirm-button"
+    timeout: 4000
+- tapOn:
+    id: "bottom-sheet-confirm-button"
+
+# Landing on Welcome, not just "the drawer closed": Navigation swaps AppStack
+# for AuthStack on the auth transition, and Welcome is that stack's root.
+- extendedWaitUntil:
+    visible: ".*Continue with email.*"
+    timeout: 10000
+
+# And the token is really gone, not just forgotten by the running process.
+# No clearState here — that would wipe everything and prove nothing; the point
+# is that a plain relaunch, which normally restores the session from the
+# Keychain, now has nothing to restore.
+- launchApp
+- runFlow: common/connect.yaml
+- extendedWaitUntil:
+    visible: ".*Continue with email.*"
+    timeout: 15000
+
+# Hand the session back to the next flow in the batch.
+- runFlow: common/credential-entry.yaml
+- extendedWaitUntil:
+    visible:
+      id: "quick-action-observation"
+    timeout: 20000

@@ -17,7 +17,9 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "e2e": "bash .maestro/run.sh",
+    "e2e:ios": "bash .maestro/run.sh ios",
     "e2e:android": "bash .maestro/run.sh android",
+    "e2e:parallel": "bash .maestro/run-parallel.sh",
     "update:production": "NODE_ENV=production eas update --branch production --environment production",
     "update:preview": "NODE_ENV=preview eas update --branch preview --environment preview",
     "update:development": "eas update --branch development --environment development"

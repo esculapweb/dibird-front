@@ -44,7 +44,14 @@ tags:
 - tapOn: ".*Search a species by name.*"
 - setClipboard: "Osprey"
 - pasteText
-- hideKeyboard
+# pressKey, not hideKeyboard: on iOS 26 Maestro hides the keyboard by pressing
+# Return and then verifies it actually went away — and that verification is
+# what fails ("Couldn't hide the keyboard"), intermittently, on this screen.
+# Return alone does the same job without the flaky postcondition: SearchInput
+# has no onSubmitEditing, so it only drops focus. Same class of workaround as
+# common/ios-credential-entry.yaml's tap on a static label (there a plain
+# Return could not be used at all — that form submits on it).
+- pressKey: Enter
 # Search is debounced and served by the backend (`/api/taxon/?name=`), so the
 # list can't be there yet when pasteText returns — wait for the result rather
 # than asserting on whatever is on screen at that instant.

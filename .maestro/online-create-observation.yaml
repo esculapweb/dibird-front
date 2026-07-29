@@ -2,33 +2,38 @@
 # an Observation, entirely online — network-independent counterpart to
 # offline-create-observation.yaml, mirrored except it never touches
 # toggleAirplaneMode (create/update/delete round-trip the API directly
-# instead of queuing through the mutation-queue-then-sync path), and CREATE
-# additionally exercises components/ui/DateInput.tsx's real Android date
-# picker. No pending-icon dance either: an online create resolves to synced
-# fast enough that there's no reliable window to assert a pending icon, so
-# this flow treats the immediate presence of "Delete observation"
-# (is_owner-gated, only true for a real persisted record) as proof the
-# save round-tripped the server.
+# instead of queuing through the mutation-queue-then-sync path). No
+# pending-icon dance either: an online create resolves to synced fast enough
+# that there's no reliable window to assert a pending icon, so this flow
+# treats the immediate presence of "Delete observation" (is_owner-gated, only
+# true for a real persisted record) as proof the save round-tripped the
+# server.
 #
-# DateInput's Android picker is @react-native-community/datetimepicker's
-# native DatePickerDialog — a real Android Dialog outside the RN view tree,
-# not addressable by testID, and the one widget DateInput.test.tsx mocks
-# out entirely, so this flow is the only place it's exercised at all.
-# Needed a new `testID="observation-date-input"` on DateInput's own trigger
-# Pressable (components/ui/DateInput.tsx, optional prop, only wired up from
-# ObservationForm.tsx — DateRangeFilter.tsx's two DateInputs are untouched)
-# since the trigger had no accessible identifier before.
+# Runs on both platforms — this file replaces the iOS-only
+# create-observation.yaml, which had grown into a second copy of the same
+# scenario written with different selectors. Text selectors are all
+# `.*regex.*` for that reason: iOS merges an icon+label element into one
+# accessibility node (", Public, Visible to everyone"), where a literal
+# "Public" never matches, while the regex matches on both.
 #
-# appId is the single Android package for every build variant.
-# tags: android — see login.yaml.
-appId: com.dibird.app
+# No clearState: session reuse — see offline-create-observation.yaml.
+#
+# Country isn't picked manually: after login, profile-context's
+# initGlobalFilters sets the global territory filter to the profile's own
+# country, and ObservationEditorScreen seeds the form from it — if that
+# invariant ever breaks, the species dropdown (gated on territory) won't open
+# and this flow fails loudly right there.
+#
+# appId comes from run.sh (--env APP_ID): the iOS build is the dev client
+# (com.dibird.app.dev), Android has one package for every variant.
+appId: ${APP_ID}
 tags:
+  - ios
   - android
 ---
-# No clearState: session reuse — see offline-create-observation.yaml.
 - launchApp
 
-- runFlow: common/android-bootstrap.yaml
+- runFlow: common/bootstrap.yaml
 
 - extendedWaitUntil:
     visible:
@@ -41,6 +46,8 @@ tags:
 - evalScript: ${output.observationBaselineCount = maestro.copiedText}
 
 # ---- CREATE, online ----
+# From MainScreen's "+ Observation" quick action, not the Observations list —
+# the shortest real user path, and the one where territory arrives pre-filled.
 - tapOn:
     id: "quick-action-observation"
 - tapOn:
@@ -49,56 +56,88 @@ tags:
     visible:
       id: "option-row-0"
     timeout: 6000
+# Picks the first available species (dropdown contents are backend/seed-data
+# dependent) — this verifies the save round-trip, not a species.
 - tapOn:
     id: "option-row-0"
 
-# DateInput's Android picker is @react-native-community/datetimepicker's
-# native DatePickerDialog (a real Android Dialog outside the RN view tree,
-# not addressable by testID) — every unit test for DateInput mocks this
-# library entirely, so this is the only place the real widget gets
-# exercised at all. Day "1" is always in-range (maximumDate caps at today,
-# and the 1st of the current month is never in the future) and reliably
-# tappable without scrolling/month-navigation. \b1\b rules out matching the
-# "1" inside an unrelated "19"/"21"/etc. day-of-month if this flow happens
-# to run on the 1st itself (harmless no-op that day, not a failure).
+# The date picker is the one widget that is genuinely two different things,
+# not just two selector dialects, so it branches instead of being unified:
+# components/ui/DateInput.tsx renders @react-native-community/datetimepicker's
+# native DatePickerDialog on Android and its own inline spinner panel on iOS.
+# Every unit test for DateInput mocks the library out entirely, so this flow
+# is the only place either widget is exercised at all.
 - tapOn:
     id: "observation-date-input"
-- extendedWaitUntil:
-    visible: "1"
-    timeout: 4000
-- tapOn: "1"
-- tapOn: "OK"
-- assertVisible:
-    id: "observation-date-input"
-    text: ".*\\b1\\b.*"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      # A real Android Dialog outside the RN view tree, not addressable by
+      # testID. Day "1" is always in-range (maximumDate caps at today, and the
+      # 1st of the current month is never in the future) and reliably tappable
+      # without scrolling/month-navigation. \b1\b rules out matching the "1"
+      # inside an unrelated "19"/"21"/etc. day-of-month if this flow happens
+      # to run on the 1st itself (harmless no-op that day, not a failure).
+      - extendedWaitUntil:
+          visible: "1"
+          timeout: 4000
+      - tapOn: "1"
+      - tapOn: "OK"
+      - assertVisible:
+          id: "observation-date-input"
+          text: ".*\\b1\\b.*"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      # An inline panel with a spinner: the wheel itself can't be driven
+      # reliably from a flow, so this asserts the part that can break silently
+      # — the panel opens over the form and its own "Done" closes it again.
+      # Picking a specific date stays Android's job above.
+      - extendedWaitUntil:
+          visible: ".*Done.*"
+          timeout: 4000
+      - tapOn: ".*Done.*"
+      - extendedWaitUntil:
+          notVisible: ".*Done.*"
+          timeout: 4000
 
+# The floating dev-tools gear used to sit on top of the header's save button
+# on this screen, so every tap here opened the "DiBird (Dev)" menu instead of
+# submitting. common/connect.yaml asserts that gear is gone before this flow
+# gets here — no recovery branch needed on either save.
 - tapOn:
     id: "observation-save-button"
+# The dev-client's "problem loading the project" screen after an HMR socket
+# drop — Android only in practice, but harmless to check for on both.
 - runFlow:
     when:
       visible: "Reload"
     commands:
-      - back
+      - runFlow: common/back.yaml
       - tapOn:
           id: "observation-save-button"
+# A successful save lands on the new observation's detail screen. Asserted on
+# the delete button's label specifically: it only renders when is_owner is
+# true on a real persisted item, confirming the save reached the server.
 - assertVisible: ".*Delete observation.*"
 
 # ---- UPDATE, online ----
 - tapOn:
     id: "observation-edit-button"
 - waitForAnimationToEnd
-- tapOn:
-    text: "Public"
+- tapOn: ".*Public.*"
 - tapOn:
     id: "observation-save-button"
 - runFlow:
     when:
       visible: "Reload"
     commands:
-      - back
+      - runFlow: common/back.yaml
       - tapOn:
           id: "observation-save-button"
-- assertVisible: "Private"
+- assertVisible: ".*Private.*"
 
 # ---- DELETE, online ----
 - tapOn:
@@ -109,13 +148,12 @@ tags:
     timeout: 4000
 - tapOn:
     id: "bottom-sheet-confirm-button"
+# Delete's onSuccess is a plain goBack() — the editor was opened straight from
+# MainScreen's quick action (no list ever pushed, unlike the offline flow,
+# which navigates the list to work the pending-sync icon), so it lands
+# directly back on MainScreen. No extra back step here — one was tried on
+# Android and overshot past MainScreen, exiting the app entirely.
 - assertVisible: ".*Observations.*"
-
-# Delete's onSuccess is a plain goBack() — opened straight from
-# MainScreen's quick action (no list ever pushed, unlike the offline
-# flow, which navigates the list to work the pending-sync icon), so it
-# lands directly back on MainScreen. No extra `back` here — one was
-# tried and overshot past MainScreen, exiting the app entirely.
 - assertVisible:
     id: "observations-stat-value"
     text: ${output.observationBaselineCount}

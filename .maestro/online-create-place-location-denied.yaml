@@ -15,17 +15,36 @@
 # place-name-input asynchronously; erase before typing there for the same
 # reason every other Place flow does.
 #
-# appId is the single Android package for every build variant.
-# tags: android — see login.yaml.
-appId: com.dibird.app
+# Runs on both platforms; text selectors are `.*regex.*` throughout because
+# iOS merges icon+label elements into one accessibility node — see
+# online-create-observation.yaml.
+#
+# appId comes from run.sh (--env APP_ID): the iOS build is the dev client,
+# Android has one package for every variant.
+appId: ${APP_ID}
 tags:
+  - ios
   - android
 ---
-- launchApp:
-    permissions:
-      location: deny
+# The permission value is spelled differently per platform — Maestro hands it
+# straight to the OS, and iOS denies location as `never` (see
+# online-create-place.yaml for the granting half).
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - launchApp:
+          permissions:
+            location: deny
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - launchApp:
+          permissions:
+            location: never
 
-- runFlow: common/android-bootstrap.yaml
+- runFlow: common/bootstrap.yaml
 
 - tapOn:
     id: "section-Places"
@@ -57,8 +76,15 @@ tags:
 # locateMe() fires on mount, sees the denied permission, and shows this
 # bottom sheet instead of ever requesting a fix — dismiss it and confirm
 # the screen underneath is still fully usable, not blocked.
+#
+# Asserted on the sheet's "Open settings" button rather than its
+# "Location unavailable" title: iOS collapses the gorhom container's contents
+# into one accessibility element, so a plain <Text> inside a sheet never
+# reaches the hierarchy Maestro queries — only the pressables do, carrying
+# their own label (same reason guest-browse.yaml asserts on the auth sheet's
+# buttons). The button is specific to this sheet, so nothing is given up.
 - extendedWaitUntil:
-    visible: ".*Location unavailable.*"
+    visible: ".*Open settings.*"
     timeout: 8000
 - tapOn:
     id: "bottom-sheet-cancel-button"
@@ -88,15 +114,13 @@ tags:
 - eraseText: 50
 - setClipboard: "Denied-Location Test Place"
 - pasteText
-- tapOn:
-    text: "Latitude"
+- tapOn: ".*Latitude.*"
 
 # Territory has no reverse-geocode to auto-fill either — pick manually,
 # same technique offline-create-place.yaml uses.
 - tapOn:
     id: "dropdown-trigger-CountriesDropdown"
-- tapOn:
-    text: "Search..."
+- tapOn: ".*Search.*"
 - setClipboard: "France"
 - pasteText
 - extendedWaitUntil:
@@ -112,10 +136,10 @@ tags:
     when:
       visible: "Reload"
     commands:
-      - back
+      - runFlow: common/back.yaml
       - tapOn:
           id: "place-save-button"
-- assertVisible: "Denied-Location Test Place"
+- assertVisible: ".*Denied-Location Test Place.*"
 
 # ---- Cleanup ----
 - tapOn:

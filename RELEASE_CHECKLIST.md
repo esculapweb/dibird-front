@@ -35,15 +35,104 @@ npm run test           # весь текущий jest-набор, включая
 для ручного прогона перед релизом:
 
 ```bash
-npm run e2e             # iOS: login.yaml + create-observation.yaml (full create/update/delete)
-npm run e2e:android      # Android: offline-/online-create-{diary,observation,place}.yaml,
-                         # offline-nested-observation-in-diary.yaml,
-                         # offline-observation-with-offline-place.yaml,
-                         # offline-alert-settings.yaml,
-                         # online-create-place-location-denied.yaml
-npm run e2e:android -- .maestro/offline-create-place.yaml   # можно указать один флоу явно
-npm run e2e:android -- --reset                              # то же, но со сбросом состояния (см. ниже)
+npm run e2e:ios          # iOS-симулятор (то же, что `npm run e2e` без аргументов)
+npm run e2e:android      # Android-эмулятор
+npm run e2e:parallel     # обе платформы одновременно (см. ниже)
+npm run e2e:ios -- .maestro/guest-browse.yaml               # можно указать один флоу явно
+npm run e2e:android -- .maestro/offline-create-place.yaml   # на обеих платформах
+npm run e2e:parallel -- .maestro/onboarding.yaml            # один флоу сразу на обеих
+npm run e2e:android -- --reset                              # со сбросом состояния (см. ниже)
 ```
+
+Аккаунт у каждой платформы **свой**: `IOS_EMAIL`/`IOS_PASSWORD` и
+`ANDROID_EMAIL`/`ANDROID_PASSWORD` в `.maestro/.env.local` (gitignored),
+`run.sh` выбирает пару по платформе и отдаёт её в Maestro под прежними
+именами `TEST_EMAIL`/`TEST_PASSWORD` — сами флоу про платформу не знают.
+Общий аккаунт делал параллельный прогон бессмысленным: флоу проверяют
+счётчики («мест стало больше», «в дневнике 1 наблюдение»), и соседний
+прогон правил бы те же цифры прямо между `copyTextFrom` и проверкой.
+
+Смена аккаунта на устройстве (например, после правки `.env.local`) — это
+сброс локального состояния, потому что сессия переживает перезапуск.
+Android: `adb shell pm clear com.dibird.app` (его же делает
+`.maestro/reset-state.sh`). iOS: **переустановить приложение**
+
+```bash
+UDID=$(xcrun simctl list devices | grep -i booted | grep -oE '[0-9A-F-]{36}')
+APP=~/Library/Developer/Xcode/DerivedData/DiBirdDev-*/Build/Products/Debug-iphonesimulator/DiBirdDev.app
+xcrun simctl uninstall "$UDID" com.dibird.app.dev && xcrun simctl install "$UDID" $APP
+```
+
+Именно переустановить, а не удалять каталоги внутри data-контейнера:
+токен лежит в Keychain (expo-secure-store), то есть **вне** контейнера — от
+чистки каталогов приложение остаётся залогиненным старым аккаунтом. А
+`rm -rf` по `Library/` вдобавок оставляет за собой битый кэш ассетов:
+expo-asset создаёт на месте `Library/Caches/ExponentAsset-<md5>.ttf` пустой
+каталог и после этого валится `UnableToDownloadAssetException` на каждом
+запуске — иконочные шрифты не грузятся, все `Ionicons` рисуются нулевой
+ширины и пропадают из accessibility-дерева. Наружу это выглядит как падение
+`common/credential-entry.yaml` на `password-input-toggle-visibility`
+(«глаза» у поля пароля просто нет), и никакой перезапуск это не чинит.
+Uninstall/install состояние сбрасывает целиком, включая Keychain, и шрифты
+на первом же запуске скачиваются нормально. Только для dev-client: в
+релизной сборке ассеты вшиты в бандл и с Metro не качаются.
+
+`npm run e2e:parallel` (`.maestro/run-parallel.sh`) запускает обе половины
+в фоне, по логу на платформу в `.maestro/.logs/` (`tail -f` во время
+прогона), печатает оба лога целиком в конце и общий итог; выход ненулевой,
+если упала хоть одна. Metro один на двоих — обе платформы ходят на
+`localhost:8081` (iOS делит сетевой стек с хостом, Android — через `adb
+reverse` из `run.sh`). Reap залипших `maestro.cli.AppKt` от прошлых
+прогонов при этом делается один раз в самом `run-parallel.sh`, до старта
+обеих половин: изнутри `run.sh` он выключен (`E2E_NO_REAP`), потому что
+отличить залипший процесс от живого соседа он не может и запущенный вторым
+убивал бы первого.
+
+Там же чистится `~/Library/Logs/maestro`. Обе половины пишут отладочные логи
+в этот общий каталог и подчищают его на старте, поэтому стартовавшая второй
+успевала снести каталог первой — и та падала на собственном завершающем шаге
+(`NoSuchFileException` в `DebugLogStore.finalizeRun`), уже отчитавшись по
+всем своим флоу. Само по себе это был бы лишь мусор в выводе, но после
+исключения JVM не выходит (остаётся живой поток драйвера) и прогон висит
+бесконечно. Артефакты конкретного прогона — скриншоты и иерархии, на которые
+ссылается отчёт Maestro при падении, — лежат отдельно, в `~/.maestro/tests/`,
+и эта чистка их не трогает.
+
+Платформа флоу задаётся тегами в его шапке, `run.sh` фильтрует скан
+каталога по `--include-tags`. Состав на сегодня:
+
+| Флоу | iOS | Android |
+| --- | :-: | :-: |
+| `login`, `guest-browse`, `guest-login-return` | ✅ | — |
+| `logout`, `settings-language-switch` | ✅ | ✅ |
+| `onboarding` | ✅ | ✅ |
+| `guest-deeplink-no-session` | ✅ | ✅ |
+| `online-create-{observation,diary,place}` | ✅ | ✅ |
+| `online-create-place-location-denied` | ✅ | ✅ |
+| `online-nested-observation` | ✅ | ✅ |
+| `taxonomy-tree-filters` | ✅ | ✅ |
+| `list-sort-persist`, `list-filters` | — | ✅ |
+| `offline-*` (6 флоу) | — | ✅ |
+
+Почему не всё общее:
+
+- `offline-*` — `toggleAirplaneMode` есть только на Android (раздел 6);
+- `list-sort-persist` / `list-filters` — iOS схлопывает содержимое
+  gorhom-шторки в один accessibility-элемент, и внутренности шторок
+  сортировки и фильтров списка до Maestro не доходят. Шторка фильтров
+  каталога (`taxonomy-tree-filters`) при этом доступна: разница в общем
+  заголовке (`title` у `BottomSheet.showContent`). То же самое, что не
+  видит Maestro, не прочитает и VoiceOver — стоит посмотреть отдельно;
+- гостевые `guest-browse` / `guest-login-return` пока iOS-only просто
+  потому, что не переносились в этом батче, а не из-за платформы.
+
+Кроссплатформенные флоу объявляют `appId: ${APP_ID}` — `run.sh` передаёт
+`com.dibird.app.dev` для iOS и `com.dibird.app` для Android. Общие шаги
+лежат в `.maestro/common/`: `connect.yaml` (подключение к Metro),
+`bootstrap.yaml` (connect + логин при необходимости + возврат на
+MainScreen), `credential-entry.yaml`, `back.yaml` (`back` против
+`BackButton`). Ссылки внутри `common/` — по имени файла без префикса
+`common/`: Maestro резолвит `runFlow` относительно самого файла.
 
 Перед полным батчем состояние стоит сбрасывать: флоу проверяют счётчики
 («в дневнике 1 наблюдение», «мест стало больше»), а каждое падение
@@ -58,6 +147,17 @@ npm run e2e:android -- --reset                              # то же, но с
 аккаунт часто как раз нужен. Онбординг после `pm clear` не всплывает:
 `isOnboardingPending()` без ключа `onboarding_pending` отдаёт false, а
 ставит его только регистрация.
+
+Поэтому `onboarding.yaml` начинает поток отладочной строкой «Replay
+onboarding» в настройках — она спрятана за гейтом по id профиля в
+`screens/SettingsScreen.tsx`, где перечислены оба e2e-аккаунта. Флоу
+оставляет за собой одно наблюдение (шаг 5 — это и есть создание первой
+записи; вид выбирается из данных бэка, и удалять его отсюда нечем).
+Незавершённый прогон опаснее: `restart()` пишет флаг на диск, и после
+падения в середине `Onboarding` становится корнем стека для каждого
+следующего флоу — до MainScreen они бы не добрались вовсе. Гасит это
+`common/bootstrap.yaml`: на входе он закрывает оставшийся поток
+(«Пропустить», а на экране успеха — «Готово»).
 
 Android-батч гоняет флоу **по одному** (`maestro test` на каждый файл),
 сбрасывая airplane mode перед каждым: `toggleAirplaneMode` умеет только
@@ -96,9 +196,10 @@ Android-устройства: сканирование идёт раньше, ч
 - iOS: booted-симулятор с установленным dev-client билдом (`com.dibird.app.dev`).
 - Android: запущенный emulator/device с установленным dev-client билдом
   (`com.dibird.app`) и запущенным Metro. К Metro флоу подключаются через
-  `localhost:8081` — `run.sh` сам делает `adb reverse tcp:8081 tcp:8081`,
-  поэтому LAN IP хоста тут больше не прописан и при смене сети править
-  `.maestro/` не надо (LAN IP остаётся только в `EXPO_PUBLIC_BASE_URL`
+  `localhost:8081` на обеих платформах — на Android `run.sh` сам делает
+  `adb reverse tcp:8081 tcp:8081`, а Simulator делит сетевой стек с
+  хостом, — поэтому LAN IP хоста в `.maestro/` больше не прописан
+  нигде и при смене сети править флоу не надо (LAN IP остаётся только в `EXPO_PUBLIC_BASE_URL`
   из `.env.development.local` — это адрес API, и именно его должен
   обрубать airplane mode). Loopback переживает `toggleAirplaneMode`, так
   что перезагрузка бандла в офлайне больше не роняет приложение на экран
@@ -118,9 +219,24 @@ Logout/LoginWithGoogle/LoginWithApple — `services/authService.ts` — это
 Автоматизировано (`.maestro/login.yaml`, iOS, ручной прогон): email/
 password логин — сначала заведомо неверный пароль (проверяет, что
 попытка реально отправляется и отклоняется, а не просто исчезает
-Welcome-экран), затем настоящие креды → посадка на MainScreen.
-`create-observation.yaml` и Android-флоу переиспользуют уже сохранённую в
-Keychain/сессии авторизацию вместо повторного прогона логина.
+Welcome-экран), затем настоящие креды → посадка на MainScreen. Остальные
+флоу переиспользуют уже сохранённую в Keychain/сессии авторизацию вместо
+повторного прогона логина (`common/bootstrap.yaml` вводит креды, только
+если сессии нет).
+
+Логаут — `.maestro/logout.yaml` (обе платформы): бургер → «Logout» →
+подтверждение в шторке → посадка на Welcome, затем перезапуск приложения,
+который проверяет, что токен действительно стёрт из Keychain, а не забыт
+процессом. В конце флоу логинится обратно, чтобы следующему в батче
+досталась сессия.
+
+Онбординг по-прежнему не автоматизирован: флаг `onboarding_pending`
+ставит только регистрация, а вернуть поток на существующем аккаунте умеет
+лишь скрытая строка «Replay onboarding» в Settings — она под гейтом
+`profile.user === APP_REVIEW_PROFILE_ID || === 1`, а тестовый аккаунт
+(`TEST_EMAIL`) имеет `user = 8251`. Либо гонять этот флоу отдельными
+кредами ревью-аккаунта, либо оставлять ручным пунктом; расширять гейт
+ради теста не стали.
 
 Гостевая воронка — два флоу (iOS, ручной прогон):
 `guest-browse.yaml` — запуск без логина → каталог → поиск вида → страница
@@ -526,7 +642,8 @@ update/delete), которые вне гейта по инфраструктур
 справочный журнал (что покрыто, зачем, какие баги попутно нашлись), не
 как чек-лист задач.
 
-- Maestro (8 флоу): `login.yaml`/`create-observation.yaml` (iOS) и
+- Maestro (20 флоу на 2026-07-29; таблица состава — в разделе 1). Начиналось
+  с 8: `login.yaml`/`create-observation.yaml` (iOS) и
   `{offline,online}-create-{diary,observation,place}.yaml` (Android,
   полный create → update → delete цикл, офлайн-версии с реальным
   OS-level airplane mode). Потребовали добавить `testID` в несколько

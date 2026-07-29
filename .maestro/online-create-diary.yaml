@@ -3,15 +3,20 @@
 # offline-create-diary.yaml, mirrored exactly except it never touches
 # toggleAirplaneMode.
 #
-# appId is the single Android package for every build variant.
-# tags: android — see login.yaml.
-appId: com.dibird.app
+# Runs on both platforms; text selectors are `.*regex.*` throughout because
+# iOS merges icon+label elements into one accessibility node — see
+# online-create-observation.yaml.
+#
+# appId comes from run.sh (--env APP_ID): the iOS build is the dev client,
+# Android has one package for every variant.
+appId: ${APP_ID}
 tags:
+  - ios
   - android
 ---
 - launchApp
 
-- runFlow: common/android-bootstrap.yaml
+- runFlow: common/bootstrap.yaml
 
 - extendedWaitUntil:
     visible:
@@ -30,7 +35,7 @@ tags:
     when:
       visible: "Reload"
     commands:
-      - back
+      - runFlow: common/back.yaml
       - tapOn:
           id: "diary-save-button"
 - extendedWaitUntil:
@@ -41,18 +46,17 @@ tags:
 - tapOn:
     id: "diary-edit-button"
 - waitForAnimationToEnd
-- tapOn:
-    text: "Public"
+- tapOn: ".*Public.*"
 - tapOn:
     id: "diary-save-button"
 - runFlow:
     when:
       visible: "Reload"
     commands:
-      - back
+      - runFlow: common/back.yaml
       - tapOn:
           id: "diary-save-button"
-- assertVisible: "Private"
+- assertVisible: ".*Private.*"
 
 # ---- DELETE, online ----
 - tapOn:

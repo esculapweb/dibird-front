@@ -1,0 +1,34 @@
+# "Go back", written once for both platforms.
+#
+# Android has a system-level back gesture and Maestro's `back` command drives
+# it. iOS has no such thing, so there the only way back is the native-stack
+# header button — which is why every iOS flow taps id: "BackButton" (an
+# accessibility id react-native-screens gives that button; nothing in this repo
+# sets it).
+#
+# Exists so a flow tagged for both platforms doesn't have to spell that
+# difference out at each of its half-dozen back steps.
+#
+# appId is inert here: a runFlow target inherits the caller's app, but
+# `maestro test` refuses to load a file without a config section.
+appId: ${APP_ID}
+---
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      # optional: at a stack root there is no back button to tap, and the
+      # bounded unwind in common/bootstrap.yaml relies on that being a no-op
+      # rather than a failure. Nothing is lost by it: every caller asserts the
+      # screen it expects to land on right after, so a back that didn't happen
+      # still fails the flow — one step later, on the assertion that says what
+      # went wrong.
+      - tapOn:
+          id: "BackButton"
+          optional: true
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+- waitForAnimationToEnd
