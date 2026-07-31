@@ -12,6 +12,20 @@ export const resolveTaxonImage = (path?: string | null): string | null => {
   return `${Config.mediaUrl}/${path}`;
 };
 
+// The full-size photo route (/image_taxon/, an nginx proxy in front of Flickr)
+// is hotlink-protected: the site passes its Referer check, and there is no
+// Referer on a native image request, so the app has to identify itself with the
+// same X-APP-KEY the API sends (IsFromApp on the backend). The key goes to our
+// own host only — a taxon image path can also be an absolute third-party url.
+export const taxonImageSource = (
+  path?: string | null,
+): { uri: string; headers?: Record<string, string> } | null => {
+  const uri = resolveTaxonImage(path);
+  if (!uri) return null;
+  if (!uri.startsWith(Config.baseUrl)) return { uri };
+  return { uri, headers: { "X-APP-KEY": Config.appSecretKey } };
+};
+
 // List/tree rows carry `name` as a display string — "Osprey / Pandion
 // haliaetus" when the localized name differs from the scientific one, plain
 // Latin otherwise (see the backend's generate_name). This pulls out just the

@@ -34,6 +34,7 @@ import { isoToFlagEmoji } from "../util/helpers";
 import { buildSpeciesDetailUrl } from "../util/taxonShareLink";
 import {
   resolveTaxonImage,
+  taxonImageSource,
   iucnColors,
   countryStatusKey,
 } from "../util/taxonomy";
@@ -813,7 +814,8 @@ const SpeciesDetailScreen = () => {
       <PhotoViewerModal
         visible={viewerIndex !== null}
         photos={data.photos.map((photo) => ({
-          uri: resolveTaxonImage(photo.url) ?? "",
+          uri: "",
+          ...taxonImageSource(photo.url),
           credit: photo.ownername,
         }))}
         initialIndex={viewerIndex ?? 0}

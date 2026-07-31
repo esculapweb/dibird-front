@@ -1,5 +1,6 @@
 import {
   resolveTaxonImage,
+  taxonImageSource,
   latinPart,
   iucnColors,
   territoryStatusNote,
@@ -28,6 +29,26 @@ describe("resolveTaxonImage", () => {
     expect(resolveTaxonImage("taxon/1a/2e/27921210917.jpg")).toBe(
       "https://test.local/media/taxon/1a/2e/27921210917.jpg",
     );
+  });
+});
+
+describe("taxonImageSource", () => {
+  it("returns null when there is no image", () => {
+    expect(taxonImageSource(null)).toBeNull();
+    expect(taxonImageSource("")).toBeNull();
+  });
+
+  it("sends the app key to our own host (the /image_taxon/ proxy blocks the rest)", () => {
+    expect(taxonImageSource("/image_taxon/1_879_27921210917_c")).toEqual({
+      uri: "https://test.local/image_taxon/1_879_27921210917_c",
+      headers: { "X-APP-KEY": "test" },
+    });
+  });
+
+  it("never sends the app key to a third-party host", () => {
+    expect(taxonImageSource("https://live.staticflickr.com/1/2_c.jpg")).toEqual({
+      uri: "https://live.staticflickr.com/1/2_c.jpg",
+    });
   });
 });
 
