@@ -25,6 +25,7 @@ export const Config = {
   env,
   baseUrl,
   appSecretKey,
+  mediaBaseUrl,
   mediaUrl: `${mediaBaseUrl}/media`,
   mapTileUrl: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
   email: "admin@dibird.com",

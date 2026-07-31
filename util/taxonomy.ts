@@ -8,7 +8,7 @@ import { Config } from "../constants/config";
 export const resolveTaxonImage = (path?: string | null): string | null => {
   if (!path) return null;
   if (path.includes("://")) return path;
-  if (path.startsWith("/")) return `${Config.baseUrl}${path}`;
+  if (path.startsWith("/")) return `${Config.mediaBaseUrl}${path}`;
   return `${Config.mediaUrl}/${path}`;
 };
 
