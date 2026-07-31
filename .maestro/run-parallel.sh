@@ -1,26 +1,26 @@
 #!/bin/bash
-# Гоняет iOS- и Android-батчи одновременно: два `run.sh` в фоне, по логу на
-# платформу, общий итог в конце. Полный прогон — это ~15 флоу на каждой
-# стороне, и последовательно он занимает вдвое больше, чем нужно: симулятор и
-# эмулятор друг друга не ждут ничем, кроме нас.
+# Runs the iOS and Android batches at the same time: two `run.sh` in the
+# background, one log per platform, a combined verdict at the end. A full run
+# is ~15 flows on each side, and sequentially it takes twice as long as it has
+# to: the simulator and the emulator wait for nothing but us.
 #
-# Что делает параллельный прогон возможным (и почему это не «просто два
-# терминала»):
-#  - Разные аккаунты. run.sh берёт IOS_EMAIL/ANDROID_EMAIL из .env.local, и на
-#    бэке два прогона не пересекаются. С общим аккаунтом соседний прогон менял
-#    бы те же счётчики между `copyTextFrom` и проверкой — падения были бы
-#    невоспроизводимыми.
-#  - Один reap на двоих. run.sh при старте убивает залипшие `maestro.cli.AppKt`
-#    от прошлых прогонов (см. комментарий там), но отличить их от живого
-#    соседа он не может — запущенный вторым убил бы первого. Поэтому reap
-#    делается здесь, один раз, до старта обоих, а самим run.sh он выключается
-#    через E2E_NO_REAP.
-#  - Metro один. Обе платформы ходят на localhost:8081 (iOS — общий с хостом
-#    сетевой стек, Android — `adb reverse` из run.sh), и один dev-server
-#    спокойно раздаёт бандл двум клиентам.
+# What makes a parallel run possible (and why this is not "just two
+# terminals"):
+#  - Separate accounts. run.sh takes IOS_EMAIL/ANDROID_EMAIL from .env.local,
+#    so the two runs never meet on the backend. With a shared account the
+#    neighbouring run would be changing the same counters between
+#    `copyTextFrom` and the assertion — failures would be irreproducible.
+#  - One reap for both. On startup run.sh kills leftover `maestro.cli.AppKt`
+#    processes from earlier runs (see the comment there), but it cannot tell
+#    them from a live sibling — whichever started second would kill the first.
+#    So the reap is done here, once, before either starts, and run.sh itself
+#    has it turned off via E2E_NO_REAP.
+#  - One Metro. Both platforms talk to localhost:8081 (iOS shares the host's
+#    network stack, Android goes through `adb reverse` from run.sh), and a
+#    single dev server serves the bundle to two clients without trouble.
 #
-# Аргументы прокидываются в обе платформы как есть: `npm run e2e:parallel --
-# .maestro/onboarding.yaml` прогонит один флоу на обеих.
+# Arguments are passed through to both platforms as is: `npm run e2e:parallel
+# -- .maestro/onboarding.yaml` runs that one flow on both.
 set -e
 cd "$(dirname "$0")/.."
 
@@ -29,11 +29,11 @@ mkdir -p "$LOG_DIR"
 IOS_LOG="$LOG_DIR/ios.log"
 ANDROID_LOG="$LOG_DIR/android.log"
 
-# Тот самый reap, ради которого run.sh получил E2E_NO_REAP, — здесь он ещё
-# безопасен: своих процессов мы пока не запускали.
+# The very reap that E2E_NO_REAP was added to run.sh for — here it is still
+# safe: none of our own processes have been started yet.
 STALE_PIDS=$(pgrep -f "maestro\.cli\.AppKt" 2>/dev/null || true)
 if [ -n "$STALE_PIDS" ]; then
-  echo "Убиваю залипшие процессы Maestro от прошлых прогонов: $(echo "$STALE_PIDS" | tr '\n' ' ')" >&2
+  echo "Killing leftover Maestro process(es) from an earlier run: $(echo "$STALE_PIDS" | tr '\n' ' ')" >&2
   # shellcheck disable=SC2086
   kill $STALE_PIDS 2>/dev/null || true
   sleep 2
@@ -42,29 +42,31 @@ if [ -n "$STALE_PIDS" ]; then
   [ -n "$STILL" ] && kill -9 $STILL 2>/dev/null || true
 fi
 
-# Отладочные логи Maestro (не наши, из $LOG_DIR) складываются в общий
-# ~/Library/Logs/maestro, и при старте Maestro подчищает там старые каталоги,
-# оставляя последние несколько. Когда половины стартуют одновременно, вторая
-# успевает удалить каталог, который первая только что завела, — и та падает на
-# своём же завершающем шаге, уже напечатав результаты всех флоу:
+# Maestro's own debug logs (not ours from $LOG_DIR) all go into a shared
+# ~/Library/Logs/maestro, and on startup Maestro prunes the old directories
+# there, keeping the last few. When the two halves start at the same moment,
+# the second one manages to delete the directory the first has just created —
+# and the first then dies on its own final step, having already printed the
+# results of every flow:
 #
 #   Exception in thread "main" java.nio.file.NoSuchFileException:
 #     ~/Library/Logs/maestro/<timestamp>_<pid>
 #     at maestro.debuglog.DebugLogStore.finalizeRun
 #
-# Хуже, чем просто мусор в выводе: после этого исключения JVM не выходит
-# (живой не-daemon поток драйвера), прогон висит бесконечно, и `wait` ниже
-# никогда не вернётся. Чистим каталог сами и заранее — тогда ни одной из
-# половин нечего удалять на старте. Терять там нечего: это отладочные логи
-# прошлых прогонов, Maestro и сам их ротирует, а артефакты конкретного
-# прогона (скриншоты, иерархии) живут отдельно, в ~/.maestro/tests/.
+# Worse than mere noise in the output: after that exception the JVM never
+# exits (a live non-daemon driver thread), the run hangs forever, and the
+# `wait` below never returns. So the directory is cleared here, up front —
+# then neither half has anything to delete on startup. Nothing is lost by it:
+# these are debug logs of earlier runs, Maestro rotates them itself anyway, and
+# a specific run's artifacts (screenshots, hierarchies) live separately, in
+# ~/.maestro/tests/.
 rm -rf "$HOME/Library/Logs/maestro"
 
 IOS_PID=""
 ANDROID_PID=""
-# Без этого Ctrl-C убивает только сам скрипт: обе половины остаются в фоне,
-# держат устройства и следующий прогон встречает ровно тот залипший JVM, про
-# который написано выше.
+# Without this, Ctrl-C only kills the script itself: both halves stay in the
+# background, keep holding the devices, and the next run meets exactly the
+# stuck JVM described above.
 cleanup() {
   trap - INT TERM
   [ -n "$IOS_PID" ] && kill "$IOS_PID" 2>/dev/null || true
@@ -76,19 +78,21 @@ trap cleanup INT TERM
 
 echo "iOS     -> $IOS_LOG"
 echo "Android -> $ANDROID_LOG"
-echo "Живой вывод: tail -f $IOS_LOG $ANDROID_LOG"
+echo "Live output: tail -f $IOS_LOG $ANDROID_LOG"
 echo ""
 
-# Вывод не смешивается в терминале, а раскладывается по логам: Maestro рисует
-# прогресс ANSI-escape'ами поверх уже напечатанного, и два таких потока в один
-# tty дают нечитаемую кашу вместо отчёта. Логи целиком печатаются в конце.
+# The output is not mixed into the terminal but split across the logs: Maestro
+# draws its progress with ANSI escapes on top of what it already printed, and
+# two such streams into one tty give unreadable mush instead of a report. The
+# logs are printed in full at the end.
 E2E_NO_REAP=1 bash .maestro/run.sh ios "$@" >"$IOS_LOG" 2>&1 &
 IOS_PID=$!
 E2E_NO_REAP=1 bash .maestro/run.sh android "$@" >"$ANDROID_LOG" 2>&1 &
 ANDROID_PID=$!
 
-# `wait` возвращает код упавшей половины, а `set -e` на этом бы и вышел — не
-# дождавшись второй и не напечатав ни одного лога.
+# `wait` returns the exit code of the half that failed, and `set -e` would quit
+# right there — without waiting for the other one and without printing a single
+# log.
 IOS_STATUS=0
 wait "$IOS_PID" || IOS_STATUS=$?
 ANDROID_STATUS=0
@@ -103,7 +107,7 @@ echo "================ Android ($ANDROID_LOG) ================"
 cat "$ANDROID_LOG"
 
 echo ""
-echo "================ Итог ================"
+echo "================ Summary ================"
 [ "$IOS_STATUS" -eq 0 ] && echo "iOS:     OK" || echo "iOS:     FAILED (exit $IOS_STATUS)"
 [ "$ANDROID_STATUS" -eq 0 ] && echo "Android: OK" || echo "Android: FAILED (exit $ANDROID_STATUS)"
 

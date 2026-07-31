@@ -1,33 +1,35 @@
 #!/bin/bash
-# Детерминированный сброс перед e2e-прогоном: чистит данные тестового
-# аккаунта на локальном бэке и локальное состояние приложения на эмуляторе.
+# A deterministic reset before an e2e run: clears the test account's data on
+# the local backend and the app's local state on the emulator.
 #
-# Зачем: флоу проверяют счётчики («в дневнике 1 наблюдение», «мест стало
-# больше»), а каждое падение оставляет за собой недосозданные/лишние записи.
-# Следующий прогон стартует с испорченного аккаунта, ломаются count-проверки
-# в соседних флоу — и в отчёте появляются падения, к настоящей причине
-# отношения не имеющие. Сброс убирает этот источник ложных сигналов.
+# Why: the flows check counters ("1 observation in the diary", "one more
+# place"), and every failure leaves half-created or extra records behind. The
+# next run then starts from a spoiled account, the count assertions in
+# neighbouring flows break — and the report fills up with failures that have
+# nothing to do with the real cause. The reset removes that source of false
+# signals.
 #
-# НЕ вызывается из run.sh по умолчанию (`pm clear` стоит одного лишнего
-# логина в bootstrap): запускать руками или через `npm run e2e:android --
-# --reset` (см. RESET в run.sh).
+# NOT called from run.sh by default (`pm clear` costs one extra login in
+# bootstrap): run it by hand, or via `npm run e2e:android -- --reset` (see
+# RESET in run.sh).
 #
-# `pm clear` безопасен для bootstrap: сессия из SecureStore пропадёт, но
-# common/android-bootstrap.yaml умеет логиниться по email/паролю, а онбординг
-# после чистки не всплывёт — isOnboardingPending() (util/storageHelper.ts)
-# при отсутствии ключа onboarding_pending возвращает false, а ставит его
-# только регистрация.
+# `pm clear` is safe for bootstrap: the SecureStore session is gone, but
+# common/android-bootstrap.yaml can sign in by email/password, and onboarding
+# does not pop up after the wipe — isOnboardingPending() (util/storageHelper.ts)
+# returns false when the onboarding_pending key is missing, and only sign-up
+# ever sets it.
 set -e
 cd "$(dirname "$0")/.."
 
 APP_ID="${APP_ID:-com.dibird.app}"
 BACKEND_DIR="${BACKEND_DIR:-/Users/esculapweb/Py/dibird/docker/dibird_local}"
 
-# Аккаунт: run.sh уже выбрал его по платформе и экспортировал в TEST_EMAIL —
-# уважаем этот выбор. При запуске руками его нет, и берём Android-аккаунт:
-# чистится тут в том числе `pm clear`, то есть скрипт и так про Android.
-# Чужой аккаунт здесь опаснее отсутствующего — это `delete()` по чужим
-# наблюдениям, поэтому именно фолбэк, а не «первый попавшийся».
+# The account: run.sh has already picked it per platform and exported it into
+# TEST_EMAIL — that choice is respected here. On a manual run there is none, and
+# the Android account is used: what this clears includes `pm clear`, so the
+# script is about Android anyway. The wrong account is more dangerous here than
+# no account at all — this is a `delete()` over someone's observations — hence a
+# deliberate fallback rather than "whichever comes first".
 ENV_FILE=".maestro/.env.local"
 if [ -f "$ENV_FILE" ]; then
   # shellcheck source=/dev/null
@@ -35,15 +37,15 @@ if [ -f "$ENV_FILE" ]; then
 fi
 TEST_EMAIL="${TEST_EMAIL:-$ANDROID_EMAIL}"
 if [ -z "$TEST_EMAIL" ]; then
-  echo "Аккаунт не определён — задай ANDROID_EMAIL в $ENV_FILE (тот же файл, что читает run.sh)." >&2
+  echo "No account resolved — set ANDROID_EMAIL in $ENV_FILE (the same file run.sh reads)." >&2
   exit 1
 fi
 
-# --- 1. Данные тестового аккаунта на бэке -----------------------------------
-# Observation удаляем первым: он ссылается на Diary/Place, и хотя каскад бы
-# отработал сам, явный порядок делает вывод счётчиков честным.
+# --- 1. The test account's data on the backend ------------------------------
+# Observation goes first: it references Diary/Place, and although the cascade
+# would handle it by itself, the explicit order makes the printed counts honest.
 if [ -d "$BACKEND_DIR" ]; then
-  echo "Сброс данных аккаунта $TEST_EMAIL на локальном бэке…"
+  echo "Resetting $TEST_EMAIL's data on the local backend…"
   (cd "$BACKEND_DIR" && docker compose exec -T \
     -e TEST_EMAIL="$TEST_EMAIL" web python manage.py shell) <<'PY'
 import os
@@ -55,17 +57,17 @@ by_user = {"profile__user__email__iexact": email}
 
 for model in (Observation, Diary, Place):
     deleted, _ = model.objects.filter(**by_user).delete()
-    print(f"{model.__name__}: удалено {deleted}")
+    print(f"{model.__name__}: deleted {deleted}")
 
 for model in (Observation, Diary, Place):
-    print(f"{model.__name__}: осталось {model.objects.filter(**by_user).count()}")
+    print(f"{model.__name__}: left {model.objects.filter(**by_user).count()}")
 PY
 else
-  echo "Каталог бэкенда $BACKEND_DIR не найден — пропускаю очистку данных." >&2
+  echo "Backend directory $BACKEND_DIR not found — skipping the data cleanup." >&2
 fi
 
-# --- 2. Локальное состояние приложения --------------------------------------
-# adb на PATH может не быть — те же кандидаты, что и в run.sh.
+# --- 2. The app's local state -----------------------------------------------
+# adb may not be on PATH — the same candidates as in run.sh.
 if ! command -v adb >/dev/null 2>&1; then
   for candidate in "$ANDROID_HOME" "$ANDROID_SDK_ROOT" "$HOME/Library/Android/sdk" "$HOME/Android/Sdk"; do
     if [ -n "$candidate" ] && [ -x "$candidate/platform-tools/adb" ]; then
@@ -75,17 +77,17 @@ if ! command -v adb >/dev/null 2>&1; then
   done
 fi
 if ! command -v adb >/dev/null 2>&1; then
-  echo "adb не найден — локальное состояние приложения не очищено." >&2
+  echo "adb not found — the app's local state was not cleared." >&2
   exit 1
 fi
 
 TARGET=$(adb devices 2>/dev/null | grep -E "^(emulator-[0-9]+|[A-Za-z0-9]+)\s+device$" | head -1 | cut -f1)
 if [ -z "$TARGET" ]; then
-  echo "Нет запущенного Android-эмулятора/устройства — локальное состояние не очищено." >&2
+  echo "No running Android emulator/device — the app's local state was not cleared." >&2
   exit 1
 fi
 
-echo "Очистка данных $APP_ID на $TARGET (SQLite-зеркало, AsyncStorage, SecureStore)…"
+echo "Clearing $APP_ID data on $TARGET (SQLite mirror, AsyncStorage, SecureStore)…"
 adb -s "$TARGET" shell pm clear "$APP_ID"
 
-echo "Готово: аккаунт и приложение в исходном состоянии."
+echo "Done: the account and the app are back to their initial state."

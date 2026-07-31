@@ -1,8 +1,8 @@
 # Device-level test: creating a Place after explicitly denying location
 # permission — covers the manual-entry fallback called out in
-# RELEASE_CHECKLIST.md §4 ("Разрешение геолокации: явно отклонить
-# permission... и убедиться, что ручной ввод координат/выбор на карте
-# всё ещё работает, а не блокирует экран целиком"), which every other
+# RELEASE_CHECKLIST.md §4 (deny the location permission outright, then
+# confirm that entering coordinates by hand / picking them on the map still
+# works instead of the screen being blocked altogether), which every other
 # Place flow sidesteps by granting location up front.
 #
 # usePlaceLocation's locateMe() checks permissionStatus === "denied" and
@@ -49,13 +49,13 @@ tags:
 - tapOn:
     id: "section-Places"
 
-# `permissions: location: deny` в launchApp ставит отказ, но НЕ помечает его
-# как окончательный: на приложении, которое ещё ни разу не спрашивало (свежая
-# установка или `pm clear` из reset-state.sh), Android всё равно показывает
-# системный диалог — он перекрывает список, и badge-счётчик ниже не находится.
-# Отказать в нём руками — ровно то состояние, которое этот флоу и проверяет.
-# Флоу переживал это только за счёт того, что отказ уже был записан прошлым
-# прогоном; со сброшенным состоянием падал на первом же шаге.
+# `permissions: location: deny` in launchApp records the denial but does NOT
+# mark it as final: on an app that has never asked before (a fresh install, or
+# `pm clear` from reset-state.sh) Android still shows the system dialog — it
+# covers the list, and the badge count below is then not found. Denying it by
+# hand is exactly the state this flow is about. The flow only survived without
+# this because the denial had already been written by an earlier run; with
+# state reset it failed on its very first step.
 - runFlow:
     when:
       visible: "Don.t allow"

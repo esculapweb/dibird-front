@@ -38,9 +38,10 @@
 set -e
 cd "$(dirname "$0")/.."
 
-# Платформа — только если её и правда назвали первым аргументом. Раньше сюда
-# попадал `${1:-ios}` целиком, и `npm run e2e -- .maestro/login.yaml` уезжал
-# платформой в `--include-tags`, отбирая ноль флоу.
+# The platform, but only if it really was named as the first argument. This
+# used to take `${1:-ios}` as a whole, and then `npm run e2e --
+# .maestro/login.yaml` travelled into `--include-tags` as the platform,
+# selecting zero flows.
 PLATFORM="ios"
 case "$1" in
   ios | android)
@@ -116,15 +117,16 @@ else
   exit 1
 fi
 
-# Один аккаунт на платформу, не общий: iOS и Android гоняются одновременно
-# (run-parallel.sh), а флоу проверяют счётчики («мест стало больше», «в
-# дневнике 1 наблюдение») — с общим аккаунтом соседний прогон правил бы те же
-# цифры прямо между `copyTextFrom` и проверкой, и падения были бы
-# невоспроизводимыми. Разъезжается на бэке только владелец записей, так что
-# двух аккаунтов достаточно; больше ничего в изоляции не нуждается.
+# One account per platform, not a shared one: iOS and Android run at the same
+# time (run-parallel.sh), and the flows check counters ("one more place", "1
+# observation in the diary") — with a shared account the neighbouring run would
+# be changing those very numbers between `copyTextFrom` and the assertion, and
+# failures would be irreproducible. What the two runs diverge on backend-side is
+# only the records' owner, so two accounts are enough; nothing else needs
+# isolating.
 #
-# Дальше по скрипту (и в --env) живут прежние имена TEST_EMAIL/TEST_PASSWORD:
-# флоу платформы не знают и знать не должны.
+# From here on (and in --env) the old names TEST_EMAIL/TEST_PASSWORD are kept:
+# the flows don't know which platform they are on, and they shouldn't.
 if [ "$PLATFORM" = "android" ]; then
   CRED_PREFIX="ANDROID"
   TEST_EMAIL="$ANDROID_EMAIL"
@@ -138,8 +140,9 @@ if [ -z "$TEST_EMAIL" ] || [ -z "$TEST_PASSWORD" ]; then
   echo "${CRED_PREFIX}_EMAIL/${CRED_PREFIX}_PASSWORD are not set in $ENV_FILE." >&2
   exit 1
 fi
-# Экспорт ради reset-state.sh: он читает тот же .env.local, но выбор аккаунта
-# по платформе сделан здесь, и без этого сброс ушёл бы не в тот аккаунт.
+# Exported for reset-state.sh: it reads the same .env.local, but the per-platform
+# account choice is made here, and without this the reset would hit the wrong
+# account.
 export TEST_EMAIL TEST_PASSWORD
 
 if [ "$PLATFORM" = "android" ]; then
@@ -208,12 +211,13 @@ if [ "$PLATFORM" = "android" ]; then
   adb -s "$TARGET" shell settings put global transition_animation_scale 0
   adb -s "$TARGET" shell settings put global animator_duration_scale 0
 
-  # Детерминированный старт: чистые данные тестового аккаунта на бэке +
-  # `pm clear` приложения. Не по умолчанию — сброс стоит лишнего логина в
-  # bootstrap, а при отладке одного флоу часто нужен как раз накопленный
-  # аккаунт. Включается `RESET=1 npm run e2e:android` или флагом `--reset`
-  # (см. RELEASE_CHECKLIST.md). Осмысленно перед полным батчем, где
-  # count-проверки соседних флоу иначе ломаются об мусор от прошлого падения.
+  # A deterministic start: clean test-account data on the backend plus a
+  # `pm clear` of the app. Not the default — the reset costs an extra login in
+  # bootstrap, and when debugging a single flow the accumulated account is
+  # often exactly what's wanted. Enabled with `RESET=1 npm run e2e:android` or
+  # the `--reset` flag (see RELEASE_CHECKLIST.md). Worth it before a full
+  # batch, where the neighbouring flows' count assertions otherwise break on
+  # leftovers from an earlier failure.
   if [ "$1" = "--reset" ]; then
     RESET=1
     shift
@@ -229,18 +233,18 @@ else
     echo "No booted iOS simulator found — open Simulator.app (or 'xcrun simctl boot <name>') first." >&2
     exit 1
   fi
-  # Как и на Android: путь к одному флоу можно передать аргументом
-  # (`npm run e2e:ios -- .maestro/guest-browse.yaml`). Раньше iOS-ветка его
-  # игнорировала, и отладка одного флоу требовала звать `maestro test` руками,
-  # мимо подбора устройства и кредов.
+  # Same as on Android: a path to a single flow can be passed as an argument
+  # (`npm run e2e:ios -- .maestro/guest-browse.yaml`). The iOS branch used to
+  # ignore it, and debugging one flow meant calling `maestro test` by hand,
+  # bypassing the device pick and the credentials.
   TARGET_PATH="${1:-.maestro}"
 fi
 
-# Пакет отличается по платформам (iOS гоняется на dev-client билде), а флоу,
-# помеченные обоими тегами, объявляют `appId: ${APP_ID}` — Maestro
-# подставляет сюда значение из --env ещё до запуска приложения. Флоу, живущие
-# только на одной платформе, по-прежнему пишут свой appId буквально: там
-# подстановка ничего не даёт, а читать хуже.
+# The package differs per platform (iOS runs on the dev-client build), and
+# flows tagged for both declare `appId: ${APP_ID}` — Maestro substitutes the
+# --env value here before the app is even launched. Flows that live on one
+# platform only still spell their appId out literally: substitution buys
+# nothing there and reads worse.
 if [ "$PLATFORM" = "android" ]; then
   APP_ID="com.dibird.app"
 else

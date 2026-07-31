@@ -1,43 +1,48 @@
-# Онбординг нового аккаунта целиком: «Пропустить» на первом шаге, затем полный
-# проход — две страницы ценности, страна, геолокация, первое наблюдение — и
-# проверка, что после этого поток не возвращается.
+# The whole new-account onboarding: "Skip" on the first step, then a full pass
+# — two value pages, country, location, first observation — and a check that
+# the flow does not come back afterwards.
 #
-# Устройство тут не роскошь: почти всё, что может сломаться в онбординге,
-# ломается именно на стыке навигатора и статуса потока, а не внутри экрана.
-# `AppStack` объявляет `Onboarding` первым и рендерит `null`, пока статус
-# `loading`, — то есть от значения флага зависит корень стека, который
-# `NavigationContainer` читает один раз (см. комментарии в
-# `store/onboarding-context.tsx` и `navigation/AppStack.tsx`). Юнит-тесты
-# проверяют контекст, но не то, что `complete()` действительно убирает экран из
-# смонтированного навигатора и высаживает человека туда, откуда он пришёл.
+# A device is not a luxury here: almost everything that can break in
+# onboarding breaks at the seam between the navigator and the flow's status,
+# not inside a screen. `AppStack` declares `Onboarding` first and renders
+# `null` while the status is `loading` — i.e. the flag's value decides the root
+# of the stack, which `NavigationContainer` reads exactly once (see the
+# comments in `store/onboarding-context.tsx` and `navigation/AppStack.tsx`).
+# Unit tests cover the context, but not that `complete()` really removes the
+# screen from a mounted navigator and drops the person back where they came
+# from.
 #
-# Начать поток на аккаунте, который его уже прошёл, можно только отладочной
-# строкой «Replay onboarding» в настройках: настоящий флаг
-# (`onboarding_pending`) ставят три точки `sign_up` в `util/auth.ts` и больше
-# никто. Строка спрятана за гейтом по id профиля в `screens/SettingsScreen.tsx`
-# — оба e2e-аккаунта (IOS_EMAIL/ANDROID_EMAIL) в нём перечислены, и на чужом
-# аккаунте этот флоу честно упадёт на первом же шаге.
+# Starting the flow on an account that has already been through it is only
+# possible via the debug "Replay onboarding" row in settings: the real flag
+# (`onboarding_pending`) is set by the three `sign_up` call sites in
+# `util/auth.ts` and by nothing else. That row is gated on the profile id in
+# `screens/SettingsScreen.tsx` — both e2e accounts (IOS_EMAIL/ANDROID_EMAIL)
+# are listed there, and on any other account this flow fails honestly on its
+# very first step.
 #
-# Флоу оставляет на аккаунте одно наблюдение: шаг 5 — это и есть создание
-# первой записи, и удалять её отсюда нечем (вид выбирается из данных бэка, его
-# имени флоу не знает). Соседние флоу берут собственный baseline перед своими
-# проверками, так что лишняя запись им не мешает; накопленное убирает
+# The flow leaves one observation on the account: step 5 *is* the creation of
+# that first record, and there is nothing here to delete it with (the species
+# is picked from backend data, so the flow doesn't know its name). Neighbouring
+# flows take their own baseline before their checks, so the extra record
+# doesn't bother them; what accumulates is cleared by
 # `.maestro/reset-state.sh`.
 #
-# Незавершённый прогон опасен для всего батча: `restart()` пишет флаг на диск, и
-# после падения в середине онбординг стал бы корнем стека для каждого
-# следующего флоу — до MainScreen они бы просто не добрались. Страхует не этот
-# файл, а `common/bootstrap.yaml`: он гасит оставшийся поток на входе.
+# An unfinished run is dangerous for the whole batch: `restart()` writes the
+# flag to disk, so after a failure halfway through, onboarding would become the
+# root of the stack for every flow after it — they would never reach MainScreen
+# at all. The safety net is not this file but `common/bootstrap.yaml`: it
+# closes whatever is left of the flow on entry.
 #
-# appId приходит из run.sh (--env APP_ID).
+# appId comes from run.sh (--env APP_ID).
 appId: ${APP_ID}
 tags:
   - ios
   - android
 ---
-# Гео выдаём заранее — шаг 4 просит его сам, и системный диалог поверх экрана
-# перехватил бы тапы. Значение платформы пишутся по-разному: Maestro отдаёт его
-# в ОС как есть, а у iOS нет «allow» (см. online-create-place.yaml).
+# Location is granted up front — step 4 asks for it itself, and the system
+# dialog on top of the screen would swallow taps. The permission value is
+# spelled differently per platform: Maestro hands it to the OS as is, and iOS
+# has no "allow" (see online-create-place.yaml).
 - runFlow:
     when:
       platform: Android
@@ -53,20 +58,20 @@ tags:
           permissions:
             location: inuse
 
-# Тот же Париж, что в online-create-place.yaml: совпадает со страной профиля
-# тестового аккаунта (дефолтная точка эмулятора резолвится в Беларусь).
+# The same Paris as in online-create-place.yaml: it matches the test account's
+# profile country (the emulator's default point resolves to Belarus).
 - setLocation:
     latitude: 48.8566
     longitude: 2.3522
 
 - runFlow: common/bootstrap.yaml
 
-# ---- в настройки ----
-# Через drawer, а не диплинком `dibird://my/settings`: это единственный путь к
-# экрану у живого человека. Селектор — регуляркой, потому что iOS склеивает
-# иконку с подписью в один accessibility-элемент (см.
-# online-create-observation.yaml); в drawer'е «Settings» больше ни во что не
-# попадает.
+# ---- into settings ----
+# Through the drawer rather than the `dibird://my/settings` deep link: that is
+# the only path to the screen a real person has. The selector is a regex
+# because iOS merges the icon and the label into one accessibility element
+# (see online-create-observation.yaml); "Settings" matches nothing else in the
+# drawer.
 - tapOn:
     id: "burger-menu-button"
 - waitForAnimationToEnd
@@ -75,11 +80,12 @@ tags:
     visible: ".*Replay onboarding.*"
     timeout: 10000
 
-# ---- «Пропустить» на первом шаге ----
-# Отдельной ногой, а не вместо полного прохода: `skip()` и `complete()` — два
-# разных выхода из потока, и оба обязаны убрать экран из навигатора. Ошибка
-# ровно здесь и была бы самой дорогой: человек, нажавший «Пропустить», застрял
-# бы в онбординге, из которого выхода уже нет (жест «назад» на нём выключен).
+# ---- "Skip" on the first step ----
+# A leg of its own, not a replacement for the full pass: `skip()` and
+# `complete()` are two different ways out of the flow, and both must remove the
+# screen from the navigator. A bug exactly here would be the most expensive
+# one: someone who tapped "Skip" would be stuck in an onboarding that has no
+# way out (the back gesture is disabled on it).
 - tapOn: ".*Replay onboarding.*"
 - extendedWaitUntil:
     visible:
@@ -87,12 +93,12 @@ tags:
     timeout: 10000
 - tapOn:
     id: "onboarding-skip"
-# Вернулись ровно туда, откуда пришли, — на настройки, а не на дашборд.
+# Landed back exactly where we came from — settings, not the dashboard.
 - extendedWaitUntil:
     visible: ".*Replay onboarding.*"
     timeout: 10000
 
-# ---- полный проход ----
+# ---- full pass ----
 - tapOn: ".*Replay onboarding.*"
 - extendedWaitUntil:
     visible:
@@ -108,12 +114,13 @@ tags:
 - tapOn:
     id: "onboarding-next"
 
-# Шаг 3, страна. Страна у аккаунта уже проставлена (бэк ставит её по IP при
-# регистрации), поэтому дропдаун не трогаем: выбор в нём переписал бы профиль,
-# а от него зависят и остальные флоу (территория едет в глобальный фильтр и
-# оттуда — в species-дропдаун редактора). Проверяем цифру под дропдауном: она
-# приходит с `/api/stat/` по выбранной территории, то есть подтверждает, что
-# шаг действительно персонализирован, а не просто отрисовал заголовок.
+# Step 3, country. The account already has a country (the backend sets it by IP
+# at sign-up), so the dropdown is left alone: picking in it would rewrite the
+# profile, and the other flows depend on that (the territory travels into the
+# global filter and from there into the editor's species dropdown). What is
+# checked instead is the number under the dropdown: it comes from `/api/stat/`
+# for the selected territory, which proves the step is genuinely personalized
+# and not just rendering a title.
 - extendedWaitUntil:
     visible:
       id: "onboarding-country-result"
@@ -121,10 +128,11 @@ tags:
 - tapOn:
     id: "onboarding-next"
 
-# Шаг 4, геолокация. Разрешение уже выдано в launchApp, но «Разрешить» просит
-# ещё и пуши — этот системный диалог остаётся, и Maestro его закрывает.
-# optional: на iOS-симуляторе он не всегда доходит, а на результат шага не
-# влияет (`granted` ставится по координатам, не по пушам).
+# Step 4, location. The permission is already granted in launchApp, but "Allow"
+# also asks for push notifications — that system dialog is still there, and
+# Maestro dismisses it. optional: on the iOS simulator it doesn't always show
+# up, and it has no effect on the step's outcome (`granted` is set from the
+# coordinates, not from pushes).
 - extendedWaitUntil:
     visible:
       id: "onboarding-step-4"
@@ -134,31 +142,33 @@ tags:
 - tapOn:
     text: "Allow"
     optional: true
-# Заголовок шага меняется на «You're on the map» только после того, как
-# координаты доехали до `save(..., sync: true)` и бэк ответил, — то есть это
-# проверка круга «запросили → получили фикс → записали в настройки алертов»,
-# а не факта тапа.
+# The step's title only changes to "You're on the map" once the coordinates
+# have reached `save(..., sync: true)` and the backend has answered — so this
+# checks the whole round trip "requested → got a fix → written into the alert
+# settings", not the fact of a tap.
 - extendedWaitUntil:
     visible: ".*on the map.*"
     timeout: 20000
 - tapOn:
     id: "onboarding-next"
 
-# Шаг 5, первое наблюдение. Ждём именно дропдаун поиска: он рендерится, как
-# только оба запроса шага отработали, и есть в обоих вариантах вёрстки — и с
-# плиткой видов, и без неё. Пока идёт загрузка, на экране только спиннер, и без
-# этого ожидания ветки ниже разошлись бы по пустому экрану.
+# Step 5, the first observation. What is waited for is the search dropdown: it
+# renders as soon as both of the step's requests are done, and it exists in
+# both layout variants — with the species tiles and without them. While
+# loading, the screen is only a spinner, and without this wait the branches
+# below would fan out over an empty screen.
 - extendedWaitUntil:
     visible:
       id: "dropdown-trigger-SpeciesDropdown"
     timeout: 25000
 
-# Плитка собирается из недавних наблюдений сообщества в стране и появляется
-# только от трёх видов (MIN_CARDS) — на локальном бэке её обычно нет, на живых
-# данных она есть. Порядок веток не случаен: «нет плитки → поиск» проверяется
-# первым, пока на экране ещё сам шаг. Обратный порядок гонялся бы сам с собой —
-# после тапа по карточке плитка исчезает вместе с шагом, и вторая ветка
-# «плитки нет» сработала бы уже на экране успеха.
+# The tiles are built from the community's recent observations in the country
+# and only appear from three species up (MIN_CARDS) — on a local backend they
+# are usually missing, on live data they are there. The order of the branches
+# is not accidental: "no tiles → search" is checked first, while the step
+# itself is still on screen. The reverse order would race itself — after a tap
+# on a card the tiles disappear together with the step, and the second "no
+# tiles" branch would fire on the success screen instead.
 - runFlow:
     when:
       notVisible:
@@ -170,8 +180,9 @@ tags:
           visible:
             id: "option-row-0"
           timeout: 15000
-      # Первый вид в списке: набор зависит от чек-листа страны, флоу проверяет
-      # создание записи, а не конкретную птицу.
+      # The first species in the list: the set depends on the country's
+      # checklist, and the flow checks that a record is created, not which bird
+      # it is.
       - tapOn:
           id: "option-row-0"
 - runFlow:
@@ -182,8 +193,8 @@ tags:
       - tapOn:
           id: "onboarding-species-\\d+"
 
-# Экран успеха — доказательство, что наблюдение действительно создано:
-# `setCreated` вызывается из `onSuccess` мутации, а не по тапу.
+# The success screen is the proof that the observation really was created:
+# `setCreated` is called from the mutation's `onSuccess`, not on tap.
 - extendedWaitUntil:
     visible:
       id: "onboarding-success"
@@ -191,17 +202,18 @@ tags:
 - tapOn:
     id: "onboarding-next"
 
-# `complete()` убирает экран из навигатора — и стек падает обратно на
-# настройки, с которых поток и запускали.
+# `complete()` removes the screen from the navigator — and the stack falls back
+# to the settings the flow was started from.
 - extendedWaitUntil:
     visible: ".*Replay onboarding.*"
     timeout: 10000
 
-# ---- флаг действительно погашен ----
-# Не «статус в памяти», а запись на диске: `complete()` чистит
-# `onboarding_pending`, и перезапуск — единственный способ это увидеть. Настоящая
-# проверка тут — что bootstrap вообще дошёл до MainScreen: с непогашенным флагом
-# `Onboarding` снова стал бы корнем стека, и дашборда в нём просто нет.
+# ---- the flag really is cleared ----
+# Not "the status in memory" but the record on disk: `complete()` clears
+# `onboarding_pending`, and a relaunch is the only way to see that. The real
+# check here is that bootstrap reached MainScreen at all: with the flag still
+# set, `Onboarding` would be the root of the stack again, and there is simply
+# no dashboard in it.
 - launchApp
 - runFlow: common/bootstrap.yaml
 - assertNotVisible:
