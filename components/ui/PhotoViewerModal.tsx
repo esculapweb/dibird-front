@@ -25,14 +25,11 @@ const DOUBLE_TAP_SCALE = 2.5;
 
 export interface PhotoViewerItem {
   uri: string;
-  // Set when the host needs them to serve the image (see taxonImageSource).
-  headers?: Record<string, string>;
   credit?: string | null;
 }
 
 interface ZoomableImageProps {
   uri: string;
-  headers?: Record<string, string>;
   width: number;
   height: number;
   active: boolean;
@@ -42,7 +39,6 @@ interface ZoomableImageProps {
 
 const ZoomableImage = ({
   uri,
-  headers,
   width,
   height,
   active,
@@ -124,7 +120,7 @@ const ZoomableImage = ({
     <GestureDetector gesture={composedGesture}>
       <Animated.View style={[{ width, height }, styles.imageWrap, animatedStyle]}>
         <Image
-          source={{ uri, headers }}
+          source={{ uri }}
           style={{ width, height }}
           contentFit="contain"
           cachePolicy="disk"
@@ -196,7 +192,6 @@ const PhotoViewerModal = ({
           renderItem={({ item, index }) => (
             <ZoomableImage
               uri={item.uri}
-              headers={item.headers}
               width={width}
               height={height}
               active={index === currentIndex}
