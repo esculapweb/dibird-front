@@ -118,10 +118,10 @@ const MainScreen = () => {
   const isNewUser =
     !!dataStats && dataStats.observations === 0 && dataStats.diaries === 0;
 
-  // Размер лайфлиста — свойство, по которому режутся все отчёты об удержании.
-  // Считаем его только по неотфильтрованному дашборду: с выбранной страной или
-  // периодом `seen` — это срез, и пользователь с 300 видами уехал бы в корзину
-  // «1-10» просто потому, что смотрел один месяц.
+  // The size of the life list is the property every retention report is sliced
+  // by. It is counted from the unfiltered dashboard only: with a country or a
+  // period selected `seen` is a slice, and a user with 300 species would land in
+  // the "1-10" bucket just because they were looking at a single month.
   const hasFilters = !!filters?.territory || !!filters?.date;
   useEffect(() => {
     if (!dataStats || hasFilters) return;
@@ -209,8 +209,8 @@ const MainScreen = () => {
           isLoading={isLoadingDataStat}
         />
 
-        {/* Над списком «редкие рядом», а не под ним: карточка объясняет, что
-            по этим же птицам не придёт уведомление. */}
+        {/* Above the "rare nearby" list rather than below it: the card explains
+            that no notification will arrive about these very birds. */}
         <AlertsCard />
 
         <RareNearby filters={filters} />

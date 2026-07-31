@@ -11,18 +11,19 @@ import { requestPushPermission } from "../../hooks/usePushNotifications";
 import { track } from "../../services/analytics";
 
 /**
- * Шаг «где вы наблюдаете»: единственное место в потоке, где у приложения есть
- * внятный повод попросить геолокацию — и до его появления такого места не было
- * вовсе. Карточка алертов на главной показывалась только при выключенных
- * алертах, а на бэке они включены по умолчанию, так что новичок не встречал
- * ни одного запроса разрешений и получал «редкости поблизости» со всего мира.
+ * The "where do you watch" step: the only place in the flow where the app has a
+ * sensible reason to ask for location — and before it appeared there was no such
+ * place at all. The alerts card on the main screen only showed up with alerts
+ * off, and on the backend they are on by default, so a newcomer never met a
+ * single permission request and got "rarities nearby" from all over the world.
  *
- * Просим оба разрешения сразу: шаг именно про оповещения о редкостях рядом, а
- * без пушей они не доедут, без координат — не про «рядом». Порядок как в
- * `AlertsCard`: сначала пуши, потом гео.
+ * Both permissions are asked for at once: the step is precisely about alerts on
+ * rarities nearby, and without push they do not arrive, without coordinates they
+ * are not about "nearby". The order is the same as in `AlertsCard`: push first,
+ * then location.
  *
- * Отказ ничего не ломает и никуда не запирает: «Далее» в футере активна
- * всегда, скоуп останется страной из профиля.
+ * A refusal breaks nothing and locks nobody in: "Next" in the footer is always
+ * enabled, the scope stays the country from the profile.
  */
 const OnboardingLocationStep = ({ testID }: { testID?: string }) => {
   const { t } = useTranslation();
@@ -36,8 +37,8 @@ const OnboardingLocationStep = ({ testID }: { testID?: string }) => {
 
   const [requesting, setRequesting] = useState(false);
   const [granted, setGranted] = useState(false);
-  // Не `requesting`: состояние обновится только следующим рендером, а два
-  // тапа подряд приходят в один и тот же — и оба видели бы `false`.
+  // Not `requesting`: the state only updates on the next render, and two taps in
+  // a row land in the same one — both would see `false`.
   const inFlight = useRef(false);
 
   const handleAllow = async () => {
@@ -53,9 +54,10 @@ const OnboardingLocationStep = ({ testID }: { testID?: string }) => {
         return;
       }
 
-      // sync: бэк тут же резолвит страну по координатам и отдаёт её в ответе.
-      // Без него территория доезжает отложенной задачей — и первый же экран
-      // после онбординга показал бы «поблизости» без страны.
+      // sync: the backend resolves the country from the coordinates right away
+      // and returns it in the response. Without it the territory arrives via a
+      // deferred task — and the very first screen after onboarding would show
+      // "nearby" with no country.
       await save(
         {
           lat: Math.round(result.coords[1] * 100) / 100,

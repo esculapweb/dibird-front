@@ -13,14 +13,16 @@ import { ObservationImport, ObservationImportStatus, AppError } from "../../type
 const POLL_INTERVAL_MS = 5000;
 
 /**
- * Импорт выгрузки eBird. Структура — та же, что у
- * [useExportProfile](../Profile/useExportProfile.ts): запрос стартует задачу на
- * бэке и отдаёт 202, дальше опрашиваем `status/` до терминального состояния.
+ * Importing an eBird export. The structure is the same as in
+ * [useExportProfile](../Profile/useExportProfile.ts): the request starts a task
+ * on the backend and returns 202, after which `status/` is polled until a
+ * terminal state.
  *
- * Отличие одно, но существенное: по завершении надо не просто показать отчёт, а
- * сбросить локальное зеркало. Записи созданы на сервере в обход очереди синка,
- * и SQLite-кэш списков о них не знает — без сброса лайфлист и статистика
- * остались бы доимпортными до ближайшего истечения кэша.
+ * There is one difference, but an essential one: on completion the local mirror
+ * has to be reset, not just a report shown. The records were created on the
+ * server bypassing the sync queue, and the SQLite cache of the lists knows
+ * nothing about them — without a reset the life list and the statistics would
+ * stay pre-import until the cache expires.
  */
 export const useImportObservations = () => {
   const [state, setState] = useState<ObservationImportStatus>("idle");
@@ -36,15 +38,15 @@ export const useImportObservations = () => {
   }, []);
 
   const refreshAfterImport = useCallback(() => {
-    // Сначала диск, потом react-query: инвалидация тут же запускает рефетчи, и
-    // те должны записать свежие ответы в уже пустой кэш, а не в тот, который
-    // мы вот-вот очистим.
+    // Disk first, react-query second: invalidation starts refetches right away,
+    // and those must write fresh responses into an already empty cache, not into
+    // the one we are about to clear.
     clearAllListCaches();
 
     for (const key of INVALIDATION_MAP.Observation.add) {
-      // refetchType: "all" по той же причине, что в observationSync: экраны,
-      // с которых импорт не запускали, размонтированы, а `useList` не
-      // рефетчит на маунте — иначе они так и открылись бы доимпортными.
+      // refetchType: "all" for the same reason as in observationSync: the screens
+      // the import was not started from are unmounted, and `useList` does not
+      // refetch on mount — otherwise they would open pre-import.
       queryClient.invalidateQueries({ queryKey: key, refetchType: "all" });
     }
   }, [queryClient]);
@@ -86,8 +88,9 @@ export const useImportObservations = () => {
         startPolling();
       } catch (e) {
         const error = e as AppError;
-        // 429 — импорт уже идёт (например, экран переоткрыли после
-        // сворачивания). Подключаемся к нему, а не сообщаем об ошибке.
+        // 429 — an import is already running (the screen was reopened after
+        // being backgrounded, for example). Attach to it instead of reporting an
+        // error.
         if (error?.response?.status === 429) {
           startPolling();
         } else {

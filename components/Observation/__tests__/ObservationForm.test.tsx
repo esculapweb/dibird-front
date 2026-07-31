@@ -276,10 +276,10 @@ describe("species-still-valid effect", () => {
     expect(mockSetSpeciesValue).not.toHaveBeenCalled();
   });
 
-  // useEditorForm ищет подпись к `defaultSpecies` в кэше дропдауна один раз,
-  // на монтировании: у только что заведённого аккаунта кэша ещё нет, и поле
-  // выглядело пустым при заполненном значении — «выберите вид» над уже
-  // выбранным видом.
+  // useEditorForm looks up the label for `defaultSpecies` in the dropdown cache
+  // once, on mount: a freshly created account has no cache yet, so the field
+  // looked empty while holding a value — "pick a species" above an already
+  // picked species.
   it("labels a prefilled species once the dropdown's results arrive", async () => {
     queriesByType.SpeciesDropdown = { data: [{ value: 9, label: "Robin" }] };
     await render(<ObservationForm {...baseProps()} speciesValue={9} />);

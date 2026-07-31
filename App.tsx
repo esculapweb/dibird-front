@@ -131,9 +131,9 @@ const AuthConsumerWrapper = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// Насколько далеко должна уехать сохранённая точка, чтобы имело смысл заново
-// спрашивать у геокодера страну. Ближе она почти никогда не меняется, а
-// каждый лишний синхронный резолв — внешний запрос под рейт-лимитом.
+// How far the stored point has to move before it is worth asking the geocoder
+// for the country again. Closer than that it almost never changes, and every
+// extra synchronous resolve is an external request under a rate limit.
 const TERRITORY_RESOLVE_KM = 50;
 
 const Root = () => {
@@ -153,12 +153,12 @@ const Root = () => {
   useNotificationSync(isAuthenticated);
   useSpeciesImagePrefetch(isAuthenticated);
 
-  // Молча: вход в аккаунт — не повод для системного диалога о геопозиции. У
-  // тех, кто разрешение уже дал, ничего не меняется (диалога и так не было), а
-  // у новой установки он всплывёт там, где в нём появляется смысл — на карточке
-  // алертов, в редакторе места, при сортировке по расстоянию. Координаты нужны
-  // эффекту ниже (lat/lon в настройках алертов), но сами по себе поводом не
-  // являются.
+  // Silently: signing in is no reason for a system dialog about location. For
+  // those who already granted the permission nothing changes (there was no
+  // dialog anyway), and on a fresh install it pops up where it starts to make
+  // sense — on the alerts card, in the place editor, when sorting by distance.
+  // The coordinates are needed by the effect below (lat/lon in the alert
+  // settings), but on their own they are not a reason.
   useEffect(() => {
     if (!isAuthenticated) {
       didAutoSave.current = false;
@@ -167,8 +167,8 @@ const Root = () => {
     requestLocation(undefined, { prompt: false });
   }, [isAuthenticated]);
 
-  // Ждём и настроек: по ним решается, просить ли синхронный резолв страны, а
-  // при `null` этого не определить.
+  // The settings are awaited too: they decide whether to ask for a synchronous
+  // country resolve, and with `null` that cannot be told.
   useEffect(() => {
     if (!locationCoords || !language || !isAuthenticated || !settings) return;
     if (didAutoSave.current) return;
@@ -177,13 +177,14 @@ const Root = () => {
     const lat = Math.round(locationCoords[1] * 100) / 100;
     const lon = Math.round(locationCoords[0] * 100) / 100;
 
-    // Территорию настройкам ставит только реверс-геокод координат, и в
-    // обычном PATCH бэк уносит его в отложенную задачу: ответ приходит со
-    // старой территорией, а подпись у «редкостей поблизости» обновилась бы
-    // лишь на следующем запуске. `sync` просим ровно там, где он что-то
-    // меняет: страны ещё нет либо точка уехала так далеко, что страна могла
-    // смениться. Звать его на каждый старт нельзя — это внешний запрос в
-    // геокодер, у которого свой рейт-лимит.
+    // Only a reverse geocode of the coordinates sets the territory on the
+    // settings, and in a plain PATCH the backend defers it to a background
+    // task: the response comes back with the old territory, and the label of
+    // "rare nearby" would only refresh on the next launch. `sync` is asked for
+    // exactly where it changes something: there is no country yet, or the point
+    // moved far enough that the country could have changed. Calling it on every
+    // start is not an option — it is an external request to a geocoder with its
+    // own rate limit.
     const known: Coords | null =
       settings.location_lat != null && settings.location_lon != null
         ? [settings.location_lon, settings.location_lat]

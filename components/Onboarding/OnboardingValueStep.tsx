@@ -4,9 +4,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 
 /**
- * Экран ценности: иконка, заголовок, две строки текста. Реальных скриншотов
- * приложения в репозитории нет, поэтому пока иконка — когда появятся ассеты
- * для ASO, она меняется на картинку без правки потока.
+ * The value screen: an icon, a heading, two lines of text. There are no real
+ * screenshots of the app in the repository, hence an icon for now — once ASO
+ * assets appear it becomes an image without touching the flow.
  */
 const OnboardingValueStep = ({
   icon,

@@ -27,23 +27,24 @@ import {
 } from "../../types";
 
 const CARD_IMAGE = 56;
-/** Сколько уникальных видов показываем плиткой. */
+/** How many unique species the tiles show. */
 const MAX_CARDS = 9;
 /**
- * Ниже этого порога плитка не собирается и шаг сразу показывает поиск: две
- * карточки на месте обещанного «выберите из списка» выглядят поломкой, а не
- * подсказкой. Такое бывает в странах, где сообщества у приложения ещё нет.
+ * Below this threshold the tiles are not assembled and the step goes straight to
+ * the search: two cards in place of the promised "pick from the list" look like
+ * a breakage rather than a hint. That happens in countries where the app has no
+ * community yet.
  */
 const MIN_CARDS = 3;
-/** Наблюдений на запрос: их приходится брать с запасом — виды повторяются. */
+/** Observations per request: they have to be taken with a margin — species repeat. */
 const PER_PAGE = 40;
 
 /**
- * Первый успех: тап по птице создаёт наблюдение и лайфлист перестаёт быть
- * пустым. Список — кого реально отмечали в этой стране последними
- * (`fetchCommunityObservations`, тот же вызов, что в `RareNearby`, только без
- * радиуса и настроек алертов). Данных о частоте видов в регионе на бэке нет,
- * а обычные птицы всплывают в таком списке сами.
+ * The first success: tapping a bird creates an observation and the life list
+ * stops being empty. The list is who was actually recorded in this country most
+ * recently (`fetchCommunityObservations`, the same call as in `RareNearby`, only
+ * without the radius and the alert settings). The backend has no data on species
+ * frequency in a region, and common birds surface in such a list on their own.
  */
 const OnboardingSpeciesStep = ({
   territory,
@@ -55,10 +56,10 @@ const OnboardingSpeciesStep = ({
   onPick: (species: SpeciesDropdownItem) => void;
   isCreating: boolean;
   /**
-   * Оба списка живут только в сети, а у нового аккаунта кэша ещё нет. Экран
-   * обязан узнать о провале: до созданной записи кнопки «Далее» на шаге нет, и
-   * без этого единственным выходом остаётся «Пропустить» — отказ сети попадал
-   * бы в `onboarding_skipped` наравне с отказом человека.
+   * Both lists live online only, and a new account has no cache yet. The screen
+   * has to learn about a failure: until a record is created there is no "Next"
+   * button on the step, and without this the only way out is "Skip" — a network
+   * failure would land in `onboarding_skipped` next to a human's refusal.
    */
   onLoadError?: (failed: boolean) => void;
 }) => {
@@ -71,8 +72,9 @@ const OnboardingSpeciesStep = ({
   const { data, isLoading, isError } = useQuery<
     PaginatedResponse<ObservationItem>
   >({
-    // Язык в ключе: сервер локализует названия видов, а staleTime здесь
-    // длинный — без него смена языка отдала бы прошлую версию.
+    // The language is in the key: the server localises species names, and the
+    // staleTime here is long — without it a language switch would return the
+    // previous version.
     queryKey: ["OnboardingNearbySpecies", territory, language],
     queryFn: () =>
       fetchCommunityObservations(
@@ -109,16 +111,18 @@ const OnboardingSpeciesStep = ({
     return result;
   }, [data]);
 
-  // Полный список видов страны — и фолбэк вместо плитки, и «выбрать другой
-  // вид» рядом с ней. Грузится только когда территория уже выбрана.
+  // The full species list of the country — both the fallback instead of the tiles
+  // and the "pick another species" next to them. Loaded only once a territory is
+  // selected.
   //
-  // `date` здесь не для фильтрации, а ради общего кэша с редактором
-  // (`ObservationForm`): форма ключа и аргументы `fetchSpecies` обязаны
-  // совпадать с тамошними, иначе новичок скачивает 2500 видов дважды — на этом
-  // шаге и при первом открытии редактора. Набор опций от даты не зависит
-  // (`Stat2ViewSet` строит список из чек-листа территории, дата задевает только
-  // аннотацию `seen`), а `seen` у нового аккаунта всё равно нулевой, так что
-  // скоуп «этот год» из глобальных фильтров здесь ничего не меняет.
+  // `date` is here not for filtering but for a shared cache with the editor
+  // (`ObservationForm`): the shape of the key and the arguments of `fetchSpecies`
+  // must match the ones over there, otherwise a newcomer downloads 2500 species
+  // twice — on this step and when first opening the editor. The set of options
+  // does not depend on the date (`Stat2ViewSet` builds the list from the
+  // territory checklist, the date only touches the `seen` annotation), and `seen`
+  // is zero for a new account anyway, so the "this year" scope from the global
+  // filters changes nothing here.
   const { query: speciesQuery, sort, onSortChange } = useDropdownQuery<SpeciesDropdownItem>({
     type: "SpeciesDropdown",
     queryFn: (order) => fetchSpecies(territory, order, date),
@@ -132,8 +136,9 @@ const OnboardingSpeciesStep = ({
   };
 
   const showCards = cards.length >= MIN_CARDS;
-  // Плитка — не обязательный источник: если её нет, но поиск по стране жив,
-  // шаг работоспособен. Тупик наступает, только когда упали оба запроса.
+  // The tiles are not a required source: if they are missing but the country
+  // search is alive, the step still works. It is a dead end only when both
+  // requests failed.
   const loadFailed = isError && speciesQuery.isError;
 
   useEffect(() => {
@@ -172,9 +177,9 @@ const OnboardingSpeciesStep = ({
               key={species.value}
               style={styles.card}
               activeOpacity={0.8}
-              // Пока создаётся запись, соседние карточки заблокированы: два
-              // тапа подряд завели бы два наблюдения, а шаг после первого
-              // всё равно уходит на экран успеха.
+              // While a record is being created the neighbouring cards are
+              // locked: two taps in a row would create two observations, and
+              // after the first one the step moves to the success screen anyway.
               disabled={isCreating}
               onPress={() => onPick(species)}
               testID={`onboarding-species-${species.value}`}

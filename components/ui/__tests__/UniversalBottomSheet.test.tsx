@@ -44,10 +44,10 @@ import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import UniversalBottomSheet, { BottomSheetRef } from "../UniversalBottomSheet";
 import { navigationRef } from "../../../services/navigationRef";
 
-// Минимальный двойник NavigationContainerRef: шит подписывается на "state" и
-// проверяет, остался ли открывший его экран в дереве навигации. Стек живёт во
-// вложенном навигаторе (как drawer → native-stack в приложении), чтобы обход
-// дерева проверялся, а не только корневой уровень.
+// A minimal NavigationContainerRef double: the sheet subscribes to "state" and
+// checks whether the screen that opened it is still in the navigation tree. The
+// stack lives in a nested navigator (like drawer → native-stack in the app) so
+// that walking the tree is exercised, not only the root level.
 type MockRoute = { key: string; name: string; state?: { routes: MockRoute[] } };
 const stateListeners: (() => void)[] = [];
 let routeStack: MockRoute[] = [];
@@ -62,8 +62,9 @@ const mountNavigation = () => {
     }),
     addListener: (event: string, cb: () => void) => {
       if (event === "state") stateListeners.push(cb);
-      // Отписка реального NavigationContainerRef снимает слушателя — двойник
-      // обязан вести себя так же, иначе тест не заметит утечку подписки.
+      // Unsubscribing from a real NavigationContainerRef removes the listener —
+      // the double has to behave the same way, otherwise the test would not
+      // notice a leaked subscription.
       return () => {
         mockUnsubscribe();
         const i = stateListeners.indexOf(cb);
@@ -313,10 +314,10 @@ describe("content mode", () => {
   });
 });
 
-// Шит один на всё приложение и живёт вне навигатора, поэтому сам по себе
-// уход с экрана его не закрывал: он оставался поверх следующего экрана и
-// съедал нажатия (реальный случай — «Location unavailable» из
-// PlaceEditorScreen, зависший над главным экраном после «назад»).
+// The sheet is a single one for the whole app and lives outside the navigator,
+// so leaving a screen did not close it by itself: it stayed on top of the next
+// screen and swallowed taps (a real case — "Location unavailable" from
+// PlaceEditorScreen, stuck above the main screen).
 describe("dismissal on route change", () => {
   const presentMenu = async (ref: React.RefObject<BottomSheetRef | null>) =>
     act(async () => {
@@ -357,9 +358,10 @@ describe("dismissal on route change", () => {
     expect(mockInnerDismiss).not.toHaveBeenCalled();
   });
 
-  // Промах захвата: present() пришёлся на момент, когда навигация ещё
-  // переходила, и владельцем записался экран под текущим. Пока он в стеке —
-  // гасить нельзя, иначе первое же событие state убьёт только что открытый шит.
+  // A capture miss: present() landed while navigation was still in transit, and
+  // the screen below the current one was recorded as the owner. While it is in
+  // the stack it must not be dismissed, otherwise the very first state event
+  // would kill the sheet that just opened.
   it("stays open when the captured owner is a lower screen of the stack", async () => {
     mountNavigation();
     routeStack = [{ key: "Main-0", name: "Main" }];
@@ -371,7 +373,7 @@ describe("dismissal on route change", () => {
 
     expect(mockInnerDismiss).not.toHaveBeenCalled();
 
-    // Но когда владелец всё-таки исчезает — шит гасится.
+    // But once the owner does disappear — the sheet is dismissed.
     routeStack = [{ key: "Other-9", name: "Other" }];
     await emitState();
     expect(mockInnerDismiss).toHaveBeenCalledTimes(1);
@@ -404,16 +406,16 @@ describe("dismissal on route change", () => {
     expect(mockInnerDismiss).not.toHaveBeenCalled();
   });
 
-  // Второй dismiss() по уже закрытому шиту ломает BottomSheetModal — после
-  // него present() молча ничего не показывает (ловилось в e2e: подтверждение
-  // удаления закрывало шит, уход экрана слал добивающий dismiss, и на
-  // следующем экране шит подтверждения уже не всплывал).
+  // A second dismiss() on an already closed sheet breaks BottomSheetModal —
+  // after it present() silently shows nothing (caught in e2e: confirming a
+  // deletion closed the sheet, leaving the screen sent a finishing dismiss, and
+  // on the next screen the confirmation sheet no longer came up).
   it("never dismisses a sheet that is already closed when its screen leaves", async () => {
     mountNavigation();
     const ref = await renderSheet();
     await presentMenu(ref);
 
-    // Закрытие подтверждением: наш dismiss() + ответный onDismiss.
+    // Closing by confirmation: our dismiss() plus the onDismiss in response.
     await act(async () => {
       ref.current?.dismiss();
       capturedOnDismiss?.();
@@ -424,10 +426,11 @@ describe("dismissal on route change", () => {
     expect(mockInnerDismiss).toHaveBeenCalledTimes(1);
   });
 
-  // onDismiss приходит по концу анимации закрытия, а событие навигации —
-  // сразу: без снятия подписки в самом dismiss() наблюдатель успевает
-  // добить ещё закрывающийся шит (ловилось в e2e-логе: 126 мс между нашим
-  // dismiss и dismiss наблюдателя, onDismiss ещё не пришёл).
+  // onDismiss arrives at the end of the closing animation, the navigation event
+  // right away: without dropping the subscription inside dismiss() itself the
+  // watcher manages to finish off a sheet that is still closing (caught in an
+  // e2e log: 126 ms between our dismiss and the watcher's, with onDismiss not
+  // yet arrived).
   it("stops watching as soon as we dismiss, before onDismiss arrives", async () => {
     mountNavigation();
     const ref = await renderSheet();
@@ -444,11 +447,11 @@ describe("dismissal on route change", () => {
 });
 
 describe("handleDismiss guard against a spurious replace-echo", () => {
-  // Эхо бывает только при present() поверх открытого шита: stackBehavior
-  // "replace" гасит замещаемый и стреляет его onDismiss уже после того, как
-  // новый показан. Гвард привязан именно к этому условию — иначе первое
-  // (настоящее) закрытие принималось бы за эхо, см. тест про добивающий
-  // dismiss выше.
+  // The echo only happens on a present() over an open sheet: stackBehavior
+  // "replace" dismisses the replaced one and fires its onDismiss after the new
+  // one is already shown. The guard is tied to exactly that condition —
+  // otherwise the first (genuine) close would be taken for an echo, see the test
+  // about the finishing dismiss above.
   it("ignores the onDismiss echo of a replaced sheet, but honors a genuine one", async () => {
     const ref = await renderSheet();
     await act(async () => {
@@ -466,13 +469,13 @@ describe("handleDismiss guard against a spurious replace-echo", () => {
     });
     expect(screen.getByText("Second item")).toBeOnTheScreen();
 
-    // Эхо от замещённого шита — контент нового должен уцелеть.
+    // The echo of the replaced sheet — the content of the new one must survive.
     await act(async () => {
       capturedOnDismiss?.();
     });
     expect(screen.getByText("Second item")).toBeOnTheScreen();
 
-    // Настоящее закрытие (свайп) — контент должен очиститься.
+    // A genuine close (swipe) — the content must be cleared.
     await act(async () => {
       capturedOnDismiss?.();
     });

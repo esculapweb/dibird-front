@@ -9,9 +9,9 @@ jest.mock("../../services/bottomSheet", () => ({
   BottomSheet: { showContent: jest.fn() },
 }));
 jest.mock("../../services/analytics", () => ({ track: jest.fn() }));
-// Заглушка, а не настоящая шторка: содержимое проверяется в
-// components/Auth/__tests__/AuthGateSheet.test.tsx, а здесь важны только
-// колбэки, которые хук в неё передаёт (и не тянуть сюда theme-context).
+// A stub rather than the real sheet: its contents are checked in
+// components/Auth/__tests__/AuthGateSheet.test.tsx, and here only the callbacks
+// the hook passes into it matter (and theme-context is kept out of here).
 jest.mock("../../components/Auth/AuthGateSheet", () => ({
   __esModule: true,
   default: () => null,
@@ -42,7 +42,7 @@ const gate = async (isAuthenticated: boolean) => {
 
 const dismiss = jest.fn();
 
-// Пропсы, с которыми хук отрисовал шторку.
+// The props the hook rendered the sheet with.
 const sheetProps = () => {
   const element = mockShowContent.mock.calls[0][0].renderContent(
     dismiss,
@@ -86,9 +86,10 @@ describe("guest", () => {
     expect(mockShowContent).toHaveBeenCalledTimes(1);
   });
 
-  // Логин пересоздаёт навигатор: не запомнив экран здесь, вернуть на него
-  // потом будет неоткуда — к моменту входа гость может стоять уже на Login.
-  // Вместе с экраном едет и само действие — за ним гость и регистрировался.
+  // Login recreates the navigator: without remembering the screen here there
+  // would be nowhere to return to afterwards — by the time of the sign-in the
+  // guest may already be standing on Login. The action travels along with the
+  // screen — that is what the guest signed up for.
   it("remembers the screen the wall was hit on, and what was left undone", async () => {
     (await gate(false))("add_observation", jest.fn());
 
@@ -98,8 +99,8 @@ describe("guest", () => {
     });
   });
 
-  // Что именно упёрлось в стену — это и есть отчёт «за чем гость приходит»,
-  // поэтому действие уезжает параметром, а не теряется.
+  // What exactly hit the wall is the report on "what guests come for", so the
+  // action travels as a parameter instead of being lost.
   it("reports which action hit the wall", async () => {
     (await gate(false))("add_observation", jest.fn());
 
@@ -108,8 +109,9 @@ describe("guest", () => {
     });
   });
 
-  // Регрессия: единственной кнопкой была «Sign Up» на экран регистрации, и
-  // тот, у кого аккаунт уже есть, искал вход в переключателе внизу формы.
+  // A regression: the only button used to be "Sign Up" leading to the signup
+  // screen, and someone who already had an account had to look for sign-in in
+  // the switcher at the bottom of the form.
   it("sends the reader to login, not signup, on the email option", async () => {
     (await gate(false))("add_observation", jest.fn());
 
@@ -119,8 +121,8 @@ describe("guest", () => {
     expect(mockNavigation.navigate).not.toHaveBeenCalledWith("Signup");
   });
 
-  // Шторка живёт в портале вне навигатора: уехать на другой экран, оставив
-  // её висеть поверх, — заметный баг, а не мелочь.
+  // The sheet lives in a portal outside the navigator: navigating to another
+  // screen while leaving it hanging on top is a visible bug, not a trifle.
   it("closes the sheet before navigating away", async () => {
     (await gate(false))("add_observation", jest.fn());
 
@@ -132,7 +134,7 @@ describe("guest", () => {
     expect(dismiss).toHaveBeenCalledTimes(2);
   });
 
-  // Отказ — это отказ: действие не должно выполниться «на всякий случай».
+  // A refusal is a refusal: the action must not run "just in case".
   it("still does not run the action if the sheet is dismissed", async () => {
     const run = jest.fn();
 

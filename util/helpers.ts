@@ -263,12 +263,13 @@ export const normalizeDistance = (distance: number): string =>
     : `~${distance} ${i18n.t("m")}`;
 
 /**
- * Расстояние между двумя точками по большому кругу, км. Обе — в порядке
- * [lng, lat], как везде в `Coords`.
+ * The great-circle distance between two points, in km. Both are in [lng, lat]
+ * order, as everywhere in `Coords`.
  *
- * Нужна для грубых решений «далеко ли уехали» (см. App.tsx: стоит ли просить
- * бэк заново определить страну по координатам). Для показа расстояний
- * пользователю берите значение от сервера — он считает по PostGIS.
+ * Needed for rough decisions of "have we moved far" (see App.tsx: whether it is
+ * worth asking the backend to resolve the country from the coordinates again). To
+ * show distances to the user take the value from the server — it computes them
+ * with PostGIS.
  */
 export const distanceKm = (a: Coords, b: Coords): number => {
   const R = 6371;

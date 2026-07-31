@@ -221,10 +221,10 @@ describe("location permission handling", () => {
     expect(mockSave).toHaveBeenCalledWith({ lat: 48.86, lon: 2.35 }, true);
   });
 
-  // Первый отказ: на рендере разрешение ещё «не спрашивали», статус «denied»
-  // появляется только в самом запросе. Читать его надо у провайдера
-  // (`getPermissionStatus`), а не из состояния этого рендера — иначе
-  // подсказка приходила лишь со второго тапа.
+  // The first refusal: on the render the permission is still "never asked", the
+  // "denied" status only appears in the request itself. It has to be read from the
+  // provider (`getPermissionStatus`) rather than from the state of this render —
+  // otherwise the hint only arrived on the second tap.
   it("shows the unavailable sheet on the very first refusal", async () => {
     mockRequestLocation.mockResolvedValue(null);
     mockGetPermissionStatus.mockReturnValue("denied");
@@ -238,8 +238,8 @@ describe("location permission handling", () => {
     );
   });
 
-  // Фикс может не приехать и без отказа — GPS в помещении, таймаут. Гнать
-  // человека в системные настройки в этом случае не за чем.
+  // A fix may fail to arrive without any refusal — GPS indoors, a timeout. There
+  // is no point pushing the user into the system settings in that case.
   it("stays quiet when the fix simply did not arrive", async () => {
     mockRequestLocation.mockResolvedValue(null);
     mockGetPermissionStatus.mockReturnValue("granted");
@@ -288,8 +288,8 @@ describe("time windows", () => {
   });
 });
 
-// Включение алертов — единственный момент на этом экране, когда пуши реально
-// нужны, поэтому системный диалог просится здесь, а не по входу в аккаунт.
+// Turning the alerts on is the only moment on this screen when push is really
+// needed, so the system dialog is asked for here rather than on signing in.
 describe("enabling alerts", () => {
   beforeEach(() => {
     mockSettingsContext({ settings: { ...SETTINGS, is_enabled: false } });
@@ -307,8 +307,8 @@ describe("enabling alerts", () => {
     expect(mockSave).toHaveBeenCalledWith({ is_enabled: true });
   });
 
-  // Отказ не отменяет включение: настройки останутся, и уведомления поедут,
-  // как только разрешение выдадут в системных настройках.
+  // A refusal does not cancel the enable: the settings stay, and notifications
+  // will flow as soon as the permission is granted in the system settings.
   it("saves the setting even when permission was refused", async () => {
     (requestPushPermission as jest.Mock).mockResolvedValue(false);
 

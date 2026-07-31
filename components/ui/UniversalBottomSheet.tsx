@@ -39,8 +39,8 @@ export interface BottomSheetRef {
 
 type RouteTree = { routes?: { key?: string; state?: RouteTree }[] };
 
-// getRootState() отдаёт только корневой навигатор: экраны вложенных
-// (drawer → native-stack) лежат в route.state, поэтому обходим дерево целиком.
+// getRootState() returns the root navigator only: the screens of nested ones
+// (drawer → native-stack) live in route.state, so the whole tree is walked.
 const hasRouteKey = (state: RouteTree | undefined, key: string): boolean =>
   !!state?.routes?.some(
     (route) => route.key === key || hasRouteKey(route.state, key),
@@ -103,35 +103,36 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
 
   const present = useCallback(
     (newPayload: SheetPayload) => {
-      // Эхо-onDismiss от stackBehavior="replace" прилетает только тогда, когда
-      // present() пришёл поверх уже открытого шита — там библиотека гасит
-      // замещаемый. Если шит был закрыт, гасить эхо нечему, и трактовать
-      // первый onDismiss как эхо нельзя: тогда настоящее закрытие остаётся
-      // незамеченным (payload не сброшен, подписка на маршрут жива), а
-      // наблюдатель следом добивает уже закрытый шит вторым dismiss() —
-      // после этого BottomSheetModal перестаёт открываться вовсе (ловилось в
-      // e2e: удаление наблюдения закрывало шит, уход экрана слал второй
-      // dismiss, и на следующем экране шит удаления дневника уже не всплывал).
+      // The echo onDismiss from stackBehavior="replace" only arrives when
+      // present() came on top of an already open sheet — there the library
+      // dismisses the replaced one. If the sheet was closed there is no echo to
+      // absorb, and treating the first onDismiss as an echo is not allowed: the
+      // real close then goes unnoticed (payload not reset, the route
+      // subscription alive), and the watcher follows up with a second dismiss()
+      // on an already closed sheet — after that BottomSheetModal stops opening
+      // at all (caught in e2e: deleting an observation closed the sheet, leaving
+      // the screen sent a second dismiss, and on the next screen the diary
+      // deletion sheet no longer came up).
       isRepresentingRef.current = isOpenRef.current;
       isOpenRef.current = true;
       setPayload(newPayload);
       setInputValue("");
       bottomSheetRef.current?.present();
 
-      // Этот шит — один на всё приложение (services/bottomSheet.ts дёргает
-      // его через модульный ref) и живёт вне навигатора, поэтому уход с
-      // экрана его сам по себе не закрывает: он остаётся висеть поверх того,
-      // что оказалось под ним, и съедает нажатия. Ловилось на живом
-      // сценарии: PlaceEditorScreen на маунте зовёт locateMe(), при
-      // отклонённой геолокации тот сразу показывает «Location unavailable»
-      // (usePlaceLocation), пользователь жмёт «назад» — экран закрывается, а
-      // модалка остаётся над главным экраном.
+      // This sheet is a single one for the whole app (services/bottomSheet.ts
+      // drives it through a module-level ref) and lives outside the navigator,
+      // so leaving a screen does not close it by itself: it stays on top of
+      // whatever ends up underneath and swallows taps. Caught in a real
+      // scenario: PlaceEditorScreen calls locateMe() on mount, with location
+      // declined it immediately shows "Location unavailable"
+      // (usePlaceLocation), the user presses "back" — the screen closes and the
+      // modal stays above the main screen.
       //
-      // Подписываемся здесь, а не в useEffect на маунте: GlobalBottomSheet
-      // рендерится рядом с <Navigation />, и на его первом рендере
-      // navigationRef ещё пуст (контейнер до готовности initialState отдаёт
-      // null). К моменту показа шита экран, который его открыл, точно
-      // смонтирован.
+      // The subscription is set up here rather than in a mount useEffect:
+      // GlobalBottomSheet renders next to <Navigation />, and on its first
+      // render navigationRef is still empty (the container returns null until
+      // initialState is ready). By the time the sheet is shown, the screen that
+      // opened it is certainly mounted.
       stopWatchingRoute();
       const nav = navigationRef.current;
       if (!nav?.isReady()) return;
@@ -140,17 +141,17 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
       if (!openedOn) return;
 
       unwatchRouteRef.current = nav.addListener("state", () => {
-        // Критерий — «экран-владелец исчез из стека», а не «фокус ушёл с
-        // него». Уход по фокусу закрывал бы шит и на переходе вглубь, и —
-        // хуже — при промахе захвата: если present() вызван, пока навигация
-        // ещё переходит, владельцем запишется предыдущий экран, и первое же
-        // событие state погасит только что открытый шит (симптом
-        // неотличим от «шит не открылся»). Проверка на наличие в дереве
-        // такой гонки не подвержена по построению: промахнувшийся владелец
-        // всё равно остаётся в стеке.
-        // Шит уже закрыт (подтверждение/отмена/свайп) — гасить его повторно
-        // нельзя: лишний dismiss() ломает BottomSheetModal, и следующий
-        // present() молча ничего не показывает.
+        // The criterion is "the owner screen disappeared from the stack", not
+        // "focus left it". Closing on focus would dismiss the sheet on a deeper
+        // navigation too and — worse — on a capture miss: if present() is called
+        // while navigation is still in transit, the previous screen is recorded
+        // as the owner, and the very first state event would dismiss the sheet
+        // that just opened (the symptom is indistinguishable from "the sheet did
+        // not open"). Checking presence in the tree is not subject to that race
+        // by construction: a mis-captured owner stays in the stack anyway.
+        // The sheet is already closed (confirm/cancel/swipe) — dismissing it
+        // again is not allowed: a spurious dismiss() breaks BottomSheetModal,
+        // and the next present() silently shows nothing.
         if (!isOpenRef.current) {
           stopWatchingRoute();
           return;
@@ -167,11 +168,12 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
   );
 
   const dismiss = useCallback(() => {
-    // Гасим сами — наблюдателю тут уже нечего делать. Ждать onDismiss нельзя:
-    // он приходит по завершении анимации закрытия, а событие навигации
-    // (экран уходит сразу после подтверждения удаления) успевает раньше, и
-    // наблюдатель шлёт второй dismiss() по закрывающемуся шиту — после него
-    // BottomSheetModal больше не открывается.
+    // Dismiss it ourselves — there is nothing left for the watcher to do here.
+    // Waiting for onDismiss is not an option: it arrives when the closing
+    // animation finishes, while the navigation event (the screen leaves right
+    // after the deletion is confirmed) gets there earlier, and the watcher sends
+    // a second dismiss() on a closing sheet — after that BottomSheetModal never
+    // opens again.
     isOpenRef.current = false;
     stopWatchingRoute();
     bottomSheetRef.current?.dismiss();
@@ -179,7 +181,8 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
 
   const handleDismiss = useCallback(() => {
     if (isRepresentingRef.current) {
-      // Пере-показ: подписку уже переставил present(), гасить её нельзя.
+      // A re-present: present() has already moved the subscription, it must not
+      // be dropped.
       isRepresentingRef.current = false;
       return;
     }

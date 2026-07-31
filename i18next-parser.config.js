@@ -1,27 +1,29 @@
-// Извлечение ключей локализации. Команда — `npm run i18n:extract`.
+// Extraction of the localisation keys. The command is `npm run i18n:extract`.
 //
-// ВАЖНО: экстрактор здесь только ДОБАВЛЯЕТ ключи, никогда не удаляет
-// (`keepRemoved`) и не ведёт архив (`createOldCatalogs`). Это не осторожность,
-// а исправление трёх разных способов, которыми настройки по умолчанию портили
-// `locales/*.json` (см. CLAUDE.md, раздел про i18n):
+// IMPORTANT: the extractor here only ADDS keys, it never removes them
+// (`keepRemoved`) and keeps no archive (`createOldCatalogs`). This is not
+// caution but a fix for three different ways in which the default settings used
+// to corrupt `locales/*.json` (see CLAUDE.md, the i18n section):
 //
-// 1. Экстрактор видит только литеральные `t("...")`. Ключ, собираемый в
-//    рантайме (`t(RANK_TITLE_KEY[rank])`, ключ из ответа бэка), для него не
-//    существует, и с `keepRemoved: false` он молча уезжал в архив — то есть
-//    пропадал из приложения. Комментарии-списки под такими ключами это
-//    смягчали, но держались на том, что о них не забудут.
-// 2. Архивный `*_old.json` вливался обратно поверх живого перевода: на каждом
-//    прогоне парсер делает mergeHashes(архив → новый каталог), и для ключа,
-//    существующего в обоих, побеждает архивное значение. Так `no_species_found`
-//    в `en.json` превращался в пустую строку — а пустая строка это валидный
-//    перевод, она бьёт фолбэк, и в UI оставалось пусто.
-// 3. Архивный ключ вида `<живой_ключ>_<что-то>` воскресал целиком: разделитель
-//    контекста в i18next — тот же `_`, поэтому мёртвый `found_today` при живом
-//    `found` опознавался как «found в контексте today» и возвращался в каталог.
+// 1. The extractor only sees literal `t("...")`. A key assembled at runtime
+//    (`t(RANK_TITLE_KEY[rank])`, a key from a backend response) does not exist
+//    for it, and with `keepRemoved: false` it silently moved to the archive —
+//    that is, disappeared from the app. Comment lists under such keys softened
+//    that, but relied on nobody forgetting about them.
+// 2. The archived `*_old.json` was merged back over the live translation: on
+//    every run the parser does mergeHashes(archive → new catalogue), and for a
+//    key present in both the archived value wins. That is how `no_species_found`
+//    in `en.json` turned into an empty string — and an empty string is a valid
+//    translation, it beats the fallback, leaving the UI blank.
+// 3. An archived key shaped like `<live_key>_<something>` came back whole: the
+//    context separator in i18next is the same `_`, so a dead `found_today` next
+//    to a live `found` was recognised as "found in the today context" and
+//    returned to the catalogue.
 //
-// Цена решения: неиспользуемые ключи теперь накапливаются, а не исчезают сами.
-// Это осознанный размен — потерять живой перевод хуже, чем нести лишний. Найти
-// накопившееся: `npm run i18n:unused` (ничего не меняет, только печатает).
+// The price of the solution: unused keys now accumulate instead of disappearing
+// on their own. It is a deliberate trade-off — losing a live translation is
+// worse than carrying a spare one. To find what has accumulated:
+// `npm run i18n:unused` (changes nothing, only prints).
 module.exports = {
   locales: ['en', 'ru'],
   output: 'locales/$LOCALE.json',
@@ -34,10 +36,11 @@ module.exports = {
     'store/**/*.{js,ts,jsx,tsx}',
     'util/**/*.{js,ts,jsx,tsx}'
   ],
-  // Ничего не удалять из каталога — причины 1 и 3 выше.
+  // Never remove anything from the catalogue — reasons 1 and 3 above.
   keepRemoved: true,
-  // Не заводить `locales/*_old.json` — причины 2 и 3 выше. Файлы удалены из
-  // репозитория; без этого флага следующий прогон создал бы их заново.
+  // Do not create `locales/*_old.json` — reasons 2 and 3 above. The files are
+  // deleted from the repository; without this flag the next run would recreate
+  // them.
   createOldCatalogs: false,
   sort: true,
   verbose: true,

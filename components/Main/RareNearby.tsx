@@ -18,12 +18,13 @@ const H_PAD = 16;
 const IMAGE_SIZE = 48;
 
 /**
- * Территорию и радиус сервер берёт из настроек алертов сам — тем же способом,
- * что и рассылка пушей (`ObservationFilterSet.filter_near` на бэке). Раньше
- * их слали отсюда вместе со своим GPS-фиксом, и это давало сразу две беды:
- * центр списка не совпадал с центром уведомлений, а без разрешения на
- * геолокацию координат не было вовсе — бэк молча игнорировал радиус и отдавал
- * редкости всего мира под подписью «250 км».
+ * The server takes the territory and the radius from the alert settings itself —
+ * the same way the push mailout does (`ObservationFilterSet.filter_near` on the
+ * backend). They used to be sent from here together with our own GPS fix, and
+ * that caused two problems at once: the centre of the list did not match the
+ * centre of the notifications, and without location permission there were no
+ * coordinates at all — the backend silently ignored the radius and returned
+ * rarities from all over the world under a "250 km" label.
  */
 const SCOPE_FILTERS: Filters = { near: "alerts" };
 
@@ -45,10 +46,10 @@ const RareNearby: FC<NewSpeciesProps> = ({ filters }) => {
     [],
   );
 
-  // Скоуп живёт на сервере, но меняется на клиенте — радиусом, «определить
-  // меня» и сменой страны. В фильтрах его больше нет, значит и в ключе
-  // react-query бы не осталось: список так и висел бы собранным по прежним
-  // настройкам, пока не протухнет.
+  // The scope lives on the server but changes on the client — via the radius,
+  // "locate me" and switching country. It is no longer in the filters, so it
+  // would not be in the react-query key either: the list would stay assembled
+  // from the previous settings until it goes stale.
   const scopeKey = settings
     ? [
         settings.territory_data?.id ?? "",
@@ -150,11 +151,11 @@ const RareNearby: FC<NewSpeciesProps> = ({ filters }) => {
   // in those terms — "you won't be notified", never "alerts are off", which
   // next to a working list would read as the two being out of sync.
   //
-  // Подпись строится ровно из того, что сервер применил на самом деле, а не
-  // из того, что настроено: радиус без сохранённой точки применить не к чему,
-  // и называть такой список «в 250 км» — врать. Без точки и без страны
-  // фильтра нет вовсе, и единственное честное — позвать её указать (тап по
-  // подписи ведёт в настройки алертов).
+  // The label is built from exactly what the server actually applied, not from
+  // what is configured: a radius with no stored point has nothing to apply to,
+  // and calling such a list "within 250 km" is a lie. With neither a point nor a
+  // country there is no filter at all, and the only honest thing is to invite the
+  // user to set one (tapping the label opens the alert settings).
   const radiusLabel =
     settings?.location_lat != null && settings?.location_lon != null
       ? normalizeDistance(settings.radius_km * 1000)

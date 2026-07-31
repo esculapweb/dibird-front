@@ -3,8 +3,8 @@ jest.mock("expo-audio", () => ({
   setAudioModeAsync: (mode: unknown) => mockSetAudioModeAsync(mode),
 }));
 
-// Модуль держит флаг «уже настроено» на верхнем уровне — сбрасываем реестр,
-// чтобы каждый кейс начинался с ненастроенной сессии.
+// The module keeps an "already configured" flag at the top level — the registry
+// is reset so that every case starts from an unconfigured session.
 const freshEnsureAudioMode = () => {
   jest.resetModules();
   return require("../audioMode").ensureAudioMode as () => void;
@@ -15,7 +15,7 @@ beforeEach(() => {
   mockSetAudioModeAsync.mockResolvedValue(undefined);
 });
 
-it("разрешает звук в беззвучном режиме и не претендует на фон", () => {
+it("allows sound in silent mode and lays no claim to the background", () => {
   freshEnsureAudioMode()();
 
   expect(mockSetAudioModeAsync).toHaveBeenCalledWith({
@@ -25,7 +25,7 @@ it("разрешает звук в беззвучном режиме и не п�
   });
 });
 
-it("настраивает сессию один раз, а не на каждое воспроизведение", () => {
+it("configures the session once, not on every playback", () => {
   const ensureAudioMode = freshEnsureAudioMode();
 
   ensureAudioMode();
@@ -35,13 +35,13 @@ it("настраивает сессию один раз, а не на каждо
   expect(mockSetAudioModeAsync).toHaveBeenCalledTimes(1);
 });
 
-it("пробует снова, если настроить сессию не удалось", async () => {
+it("tries again when the session could not be configured", async () => {
   const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
   mockSetAudioModeAsync.mockRejectedValueOnce(new Error("session busy"));
   const ensureAudioMode = freshEnsureAudioMode();
 
   ensureAudioMode();
-  // Отказ приходит промисом — до его обработки флаг ещё стоит.
+  // The refusal arrives as a promise — until it is handled the flag is still set.
   await Promise.resolve();
   ensureAudioMode();
 

@@ -30,12 +30,12 @@ const WelcomeScreen = () => {
 
   const handleGuestBrowse = () => {
     track("guest_browse_started", { source: "welcome" });
-    // Плоский список видов, а не дерево отрядов: у новичка нет вопроса
-    // «в каком отряде», у него есть птица, которую он хочет найти по имени.
+    // A flat species list rather than the tree of orders: a newcomer has no
+    // question of "which order", they have a bird they want to find by name.
     stackNav?.navigate("Taxonomy", { rank: 5, title: t("species_catalog") });
   };
 
-  // Вершина воронки: сколько установок вообще дошло до первого экрана.
+  // The top of the funnel: how many installs reached the first screen at all.
   useEffect(() => {
     track("welcome_viewed");
   }, []);
@@ -58,8 +58,8 @@ const WelcomeScreen = () => {
         <View style={styles.buttons}>
           <AuthOptions onEmailPress={() => stackNav?.navigate("Login")} />
 
-          {/* Каталог не требует аккаунта: до регистрации пользователю нечего
-              было посмотреть, и установка отваливалась на стене логина. */}
+          {/* The catalogue needs no account: before signing up the user had
+              nothing to look at, and installs dropped off at the login wall. */}
           <TouchableOpacity
             style={styles.guestButton}
             onPress={handleGuestBrowse}
@@ -109,8 +109,8 @@ const stylesFn = (Colors: ThemeColors, insets: EdgeInsets) =>
     buttons: {
       gap: 12,
     },
-    // Без рамки и фона: это выход из воронки регистрации, он не должен
-    // конкурировать за внимание с кнопками входа над ним.
+    // No border and no background: this is an exit from the signup funnel, it
+    // must not compete for attention with the sign-in buttons above it.
     guestButton: {
       flexDirection: "row",
       alignItems: "center",

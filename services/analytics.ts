@@ -7,13 +7,13 @@ import {
 
 import { logError } from "./errors";
 
-/** Как пользователь входит/регистрируется. */
+/** How the user signs in / signs up. */
 export type AuthMethod = "email" | "google" | "apple";
 
-/** Что гость попытался сделать до того, как упёрся в шторку регистрации. */
+/** What the guest tried to do before hitting the signup sheet. */
 export type GatedAction = "add_observation";
 
-/** Что именно шарят. */
+/** What exactly is being shared. */
 export type ShareType =
   | "species"
   | "taxon_group"
@@ -30,93 +30,98 @@ export type ShareType =
   | "user_stat"
   | "app";
 
-/** Откуда включили алерты — точка входа, а не сам факт включения. */
+/** Where the alerts were enabled from — the entry point, not the fact of enabling. */
 export type AlertsEnabledSource = "settings" | "main_card";
 
 /**
- * Шаги онбординга. Литеральный union, а не `number`: в Firebase параметр всё
- * равно превращается в строку, и «шаг 5», которого нет в потоке, обнаружился
- * бы только в отчёте через сутки.
+ * The onboarding steps. A literal union rather than `number`: in Firebase the
+ * parameter turns into a string anyway, and a "step 5" that does not exist in the
+ * flow would only be discovered in a report a day later.
  */
 export type OnboardingStep = 1 | 2 | 3 | 4 | 5;
 
 /**
- * Имена событий и их параметры. Union нужен, потому что Firebase принимает
- * любую строку: опечатка в имени не падает, а тихо создаёт второе событие, и
- * обнаруживается через сутки в консоли, когда данные уже потеряны.
+ * The event names and their parameters. A union is needed because Firebase
+ * accepts any string: a typo in a name does not fail, it quietly creates a second
+ * event and is discovered a day later in the console, when the data is already
+ * lost.
  *
- * `login`, `sign_up` и `screen_view` — стандартные события Firebase, у них
- * готовые отчёты и воронки. Имена и параметр `method` менять нельзя.
+ * `login`, `sign_up` and `screen_view` are standard Firebase events, they have
+ * ready-made reports and funnels. Their names and the `method` parameter must not
+ * be changed.
  */
 type EventParams = {
   login: { method: AuthMethod };
   sign_up: { method: AuthMethod };
   screen_view: { screen_name: string; screen_class: string };
-  /** Первый экран приложения у незалогиненного — вершина воронки. */
+  /** The first screen of the app for a signed-out user — the top of the funnel. */
   welcome_viewed: undefined;
-  /** Тап по кнопке входа. Разница с `login` = отвал в провайдере. */
+  /** A tap on a sign-in button. The difference from `login` = a drop-off in the provider. */
   auth_started: { method: AuthMethod };
-  /** Гость пошёл в каталог вместо регистрации. */
+  /** The guest went to the catalogue instead of signing up. */
   guest_browse_started: { source: "welcome" | "drawer" | "deep_link" };
-  /** Гостю показали шторку «создайте аккаунт». */
+  /** The guest was shown the "create an account" sheet. */
   auth_wall_shown: { action: GatedAction };
   /**
-   * Ссылка снаружи открылась в приложении. Отвечает на вопрос «приводит ли
-   * шеринг трафик» напрямую, поэтому у `species_viewed`/`territory_viewed`
-   * своего параметра «откуда» нет: определить его на самом экране нечем —
-   * туда приходят и из дерева, и из поиска, и по ссылке.
+   * An external link opened in the app. It answers the question "does sharing
+   * bring traffic" directly, which is why `species_viewed`/`territory_viewed`
+   * have no "where from" parameter of their own: there is nothing to determine it
+   * with on the screen itself — people arrive there from the tree, from the
+   * search and via a link.
    */
   deep_link_opened: { screen: string; authed: "yes" | "no" };
   /**
-   * Показ шага онбординга, а не тап по «Далее»: отвал — это увиденный и
-   * брошенный шаг, и считать его надо по показам.
+   * A view of an onboarding step rather than a tap on "Next": a drop-off is a
+   * step that was seen and abandoned, and it has to be counted by views.
    */
   onboarding_step: { step: OnboardingStep };
   onboarding_completed: undefined;
   /**
-   * На каком шаге ушли. Без этого пара `onboarding_step`/`onboarding_completed`
-   * отвечает только на «сколько дошло», а вопрос к пятишаговому потоку —
-   * «где именно теряем».
+   * Which step they left on. Without it the `onboarding_step`/
+   * `onboarding_completed` pair only answers "how many made it", while the
+   * question about a five-step flow is "where exactly are we losing them".
    */
   onboarding_skipped: { step: OnboardingStep };
   /**
-   * Координаты доехали до настроек алертов прямо из онбординга. Отдельно от
-   * `location_permission`: то событие про ответ в системном диалоге, это —
-   * про то, что скоуп «поблизости» у человека в итоге настроен (разрешение
-   * могли выдать раньше, в прошлой установке).
+   * The coordinates reached the alert settings straight from the onboarding.
+   * Separate from `location_permission`: that event is about the answer in the
+   * system dialog, this one is about the "nearby" scope ending up configured for
+   * the person (the permission could have been granted earlier, in a previous
+   * installation).
    */
   onboarding_location_set: undefined;
   /**
-   * Страна выбрана в онбординге. Отдельно от user property `home_territory`:
-   * свойство показывает срез «сколько людей со страной сейчас», событие —
-   * прошёл ли конкретный человек именно этот шаг и когда.
+   * The country was picked during onboarding. Separate from the `home_territory`
+   * user property: the property shows the slice "how many people have a country
+   * right now", the event shows whether a particular person passed this very step
+   * and when.
    */
   onboarding_country_set: undefined;
   species_viewed: undefined;
   territory_viewed: undefined;
   share_tapped: { type: ShareType };
   observation_created: undefined;
-  /** Ключевая точка активации; шлётся один раз за установку. */
+  /** The key activation point; sent once per installation. */
   first_observation_created: undefined;
   /**
-   * Алерты о редких птицах включили. Главное УТП и вход в retention-петли,
-   * поэтому событие несёт точку входа: карточка на главной и экран настроек
-   * отвечают на разные вопросы — «заметил ли кто-нибудь подсказку» и «дошёл ли
-   * кто-нибудь до настроек сам».
+   * The rare-bird alerts were turned on. The main selling point and the entry to
+   * the retention loops, so the event carries the entry point: the card on the
+   * main screen and the settings screen answer different questions — "did anyone
+   * notice the hint" and "did anyone reach the settings on their own".
    */
   alerts_enabled: { source: AlertsEnabledSource };
   /**
-   * Ответ на системный диалог. Шлётся только когда его реально показали:
-   * событие на уже известном статусе считало бы каждый запуск за новый ответ.
+   * The answer to the system dialog. Sent only when it was really shown: an event
+   * on an already known status would count every launch as a new answer.
    */
   push_permission: { granted: "yes" | "no" };
   location_permission: { granted: "yes" | "no" };
-  /** Файл выбран и отправлен. Разница с `import_finished` = отвал в разборе. */
+  /** The file was picked and sent. The difference from `import_finished` = a drop-off in the parsing. */
   import_started: undefined;
   /**
-   * `unmatched` — сколько латинских названий не нашлось в таксономии. Это
-   * метрика качества маппинга, а не поведения: растущее число означает, что
-   * догонять надо таксономию, а не воронку.
+   * `unmatched` — how many Latin names were not found in the taxonomy. This is a
+   * metric of the mapping quality rather than of behaviour: a growing number means
+   * it is the taxonomy that needs catching up, not the funnel.
    */
   import_finished: { imported: number; unmatched: number };
 };
@@ -124,21 +129,21 @@ type EventParams = {
 export type AnalyticsEventName = keyof EventParams;
 
 /**
- * Свойства пользователя, по которым режутся все отчёты. Firebase хранит их
- * строками, поэтому числа заранее раскладываем по корзинам — «сколько именно
- * видов» ни в одном отчёте не спросить, а «0 / 1-10 / 11-100 / 100+» отвечает
- * на вопрос «дошёл ли до ценности».
+ * The user properties every report is sliced by. Firebase stores them as strings,
+ * so numbers are bucketed in advance — "how many species exactly" can be asked in
+ * no report, while "0 / 1-10 / 11-100 / 100+" answers the question "did they reach
+ * the value".
  */
 export type UserProps = {
   guest_or_registered: "guest" | "registered";
   ui_language: string;
-  /** Id страны из профиля или "none" — выбрал ли пользователь её вообще. */
+  /** The country id from the profile or "none" — whether the user picked one at all. */
   home_territory: string;
   /**
-   * Три значения, а не два: «ещё не спрашивали» — это не то же самое, что
-   * «отказал». Схлопни их в "no", и доля отказов в любом отчёте окажется
-   * завышена ровно на тех, до кого диалог просто не дошёл, — а с переносом
-   * запроса в контекст таких стало большинство.
+   * Three values rather than two: "never asked" is not the same as "refused".
+   * Collapse them into "no" and the refusal rate in any report will be inflated by
+   * exactly those the dialog simply never reached — and after moving the request
+   * into context those became the majority.
    */
   has_push_token: "yes" | "no" | "not_asked";
   lifelist_bucket: "0" | "1-10" | "11-100" | "100+";
@@ -151,16 +156,17 @@ export const lifelistBucket = (count: number): UserProps["lifelist_bucket"] => {
   return "100+";
 };
 
-// Аналитика не имеет права ломать сценарий, в который встроена: logEvent
-// возвращает промис, и необработанный reject посреди логина уронил бы вход.
-// Поэтому всё гасится здесь и уходит в общий logError.
+// Analytics has no right to break the scenario it is embedded in: logEvent
+// returns a promise, and an unhandled reject in the middle of a login would take
+// the sign-in down. So everything is swallowed here and goes to the shared
+// logError.
 const swallow = (tag: string) => (e: unknown) => logError(e, tag);
 
-// Firebase типизирует logEvent набором перегрузок: у зарезервированных имён
-// (`login`, `sign_up`, `screen_view`) свои сигнатуры, а `CustomEventName<K>`
-// их, наоборот, запрещает — обобщённый параметр не подходит ни под одну.
-// Наш union строже любой из них, поэтому имя отдаём как строку здесь, в
-// единственной точке, а не в каждом вызывающем экране.
+// Firebase types logEvent with a set of overloads: the reserved names (`login`,
+// `sign_up`, `screen_view`) have signatures of their own, while
+// `CustomEventName<K>` forbids them — a generic parameter fits none of them. Our
+// union is stricter than any of them, so the name is passed as a string here, in
+// a single place, rather than in every calling screen.
 const send = logEvent as (
   analytics: ReturnType<typeof getAnalytics>,
   name: string,
@@ -168,8 +174,8 @@ const send = logEvent as (
 ) => Promise<void>;
 
 /**
- * Единственная точка отправки событий. У события без параметров второй
- * аргумент не принимается, у события с параметрами — обязателен.
+ * The single point where events are sent. An event without parameters does not
+ * accept a second argument, an event with parameters requires it.
  */
 export const track = <K extends AnalyticsEventName>(
   name: K,
@@ -194,7 +200,7 @@ export const setUserProps = (props: Partial<UserProps>): void => {
   }
 };
 
-/** `null` — разлогин: дальнейшие события не должны липнуть к прошлому id. */
+/** `null` is a sign-out: further events must not stick to the previous id. */
 export const setAnalyticsUserId = (userId: string | null): void => {
   try {
     setUserId(getAnalytics(), userId).catch(swallow("analytics:userId"));

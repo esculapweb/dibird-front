@@ -180,9 +180,9 @@ describe("replay onboarding row", () => {
     expect(mockRestartOnboarding).toHaveBeenCalledTimes(1);
   });
 
-  // restart() только возвращает экран в навигатор — маршрут добавляется перед
-  // текущим, а не поверх него, поэтому без этого перехода нажатие выглядело бы
-  // как «ничего не произошло».
+  // restart() only returns the screen into the navigator — the route is added
+  // before the current one rather than on top of it, so without this navigation
+  // the tap would look like "nothing happened".
   it("navigates to the screen once the status has flipped", async () => {
     mockProfileCtx({ profile: { user: 1, user_data: {} } });
     mockOnboarding("needed");
@@ -317,9 +317,9 @@ describe("delete profile", () => {
     expect(mockLogout).toHaveBeenCalledTimes(1);
   });
 
-  // Штатный dismiss() после onConfirm пришёлся бы на тик, в котором навигатор
-  // меняет AppStack на AuthStack, и анимация закрытия терялась — шторка
-  // оставалась поверх Welcome.
+  // A regular dismiss() after onConfirm would land on the tick in which the
+  // navigator swaps AppStack for AuthStack, and the closing animation got lost —
+  // the sheet stayed above Welcome.
   it("closes the sheet before tearing down the session", async () => {
     (deleteMyProfile as jest.Mock).mockResolvedValue(204);
     await render(<SettingsScreen />);
@@ -342,7 +342,7 @@ describe("delete profile", () => {
     const { onConfirm } = (BottomSheet.show as jest.Mock).mock.calls[0][0];
     await onConfirm();
     expect(mockLogout).not.toHaveBeenCalled();
-    // Шторка остаётся открытой: ошибку показывать некуда, если её закрыть.
+    // The sheet stays open: there would be nowhere to show the error if it closed.
     expect(BottomSheet.hide).not.toHaveBeenCalled();
   });
 

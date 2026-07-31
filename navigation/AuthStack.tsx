@@ -34,8 +34,8 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const navigation = props.navigation;
-  // Каталожные экраны лежат в стеке над drawer'ом, поэтому переход — через
-  // родителя, как это делает WelcomeScreen со своими Login/Terms/Privacy.
+  // The catalogue screens sit in the stack above the drawer, so navigation goes
+  // through the parent, the way WelcomeScreen does with its Login/Terms/Privacy.
   const stackNav = navigation.getParent<AuthStackNavigationProp>();
 
   return (
@@ -52,8 +52,8 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
             <Ionicons name="home-outline" color={color} size={size} />
           )}
         />
-        {/* Справочник доступен без аккаунта — те же два пункта, что в
-            бургер-меню залогиненного (см. AppStack). */}
+        {/* The reference is available without an account — the same two items
+            as in the burger menu of a signed-in user (see AppStack). */}
         <DrawerItem
           label={t("species_catalog")}
           labelStyle={{ color: Colors.textMain }}

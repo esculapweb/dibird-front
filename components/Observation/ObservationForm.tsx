@@ -142,15 +142,15 @@ const ObservationForm = ({
       setSpeciesValue(null);
       return;
     }
-    // Подпись к уже проставленному виду. useEditorForm ищет её в кэше
-    // react-query один раз, на монтировании, — а у только что заведённого
-    // аккаунта кэша дропдауна ещё нет, и поле с `defaultSpecies` (со
-    // страницы вида, из статистики) выглядело пустым при заполненном
-    // значении. Список приехал — берём подпись из него.
+    // The label for an already set species. useEditorForm looks it up in the
+    // react-query cache once, on mount — and a freshly created account has no
+    // dropdown cache yet, so a field with `defaultSpecies` (from a species page,
+    // from the statistics) looked empty while holding a value. The list has
+    // arrived — take the label from it.
     if (!speciesData) setSpeciesData(found);
-    // Зависимости курируются: speciesData нарочно не здесь — эффект и так
-    // отрабатывает на приход списка, а от собственной записи перезапускаться
-    // ему незачем.
+    // Dependencies are curated: speciesData is deliberately not here — the effect
+    // already runs when the list arrives, and re-running because of its own write
+    // is pointless.
   }, [querySpecies.data]);
 
   const DiaryBanner = () => (

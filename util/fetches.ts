@@ -134,8 +134,8 @@ export const startObservationImport = async (
 ): Promise<ObservationImport> => {
   const formData = new FormData();
 
-  // Та же форма, что у аватара (`patchAvatar`): RN-овский FormData принимает
-  // объект-файл, которого нет в вебовском типе Blob.
+  // The same shape as for the avatar (`patchAvatar`): RN's FormData accepts a file
+  // object that does not exist in the web Blob type.
   formData.append("file", {
     uri: file.uri,
     name: file.name,
@@ -379,18 +379,19 @@ export const fetchTerritoryDetail = (
   );
 };
 
-// Строка дерева, как её отдаёт публичный /api/checklist/ (TreeViewSet на
-// бэкенде). Имена полей у него свои — это ответ сайта, не приложения.
+// A row of the tree as the public /api/checklist/ returns it (TreeViewSet on the
+// backend). Its field names are its own — this is the site's response, not the
+// app's.
 interface TerritoryTreeRow {
   depth: number;
   d_name: string;
   d_name_lang: string;
   d_segment: string;
   thumb: string | null;
-  // Категория МСОП ("LC", "VU", …).
+  // The IUCN category ("LC", "VU", …).
   d_status: string | null;
-  // Статус пребывания на территории (свободный текст Avibase) — у /myapi/
-  // это поле зовётся occurrence. Есть только у видов.
+  // The occurrence status on the territory (free-form text from Avibase) — in
+  // /myapi/ this field is called occurrence. Present on species only.
   status?: string | null;
 }
 
@@ -401,24 +402,25 @@ const TREE_DEPTH_TYPE: Record<number, ChecklistItem["type"]> = {
   5: "species",
 };
 
-// Насколько глубоко вложена группа — тем же порядком, что у поиска в
+// How deep a group is nested — in the same order as the search in
 // components/Territory/TerritoryChecklist.tsx.
 const GROUP_LEVEL: Record<string, number> = { order: 0, family: 1, genus: 2 };
 
 /**
- * Птицы страны для каталога — с публичной ручки `/api/checklist/`, а не с
- * личной `/myapi/checklist2/`.
+ * The birds of a country for the catalogue — from the public `/api/checklist/`
+ * endpoint rather than the personal `/myapi/checklist2/`.
  *
- * Две причины. Первая: страница страны открыта гостю, а `/myapi/` требует
- * аккаунт. Вторая: `checklist2` ради этой страницы считал `seen`
- * Exists-подзапросом на каждую из ~1000-2000 строк, и результат никуда не
- * шёл — личный слой на странице страны выключен (`ChecklistCard.personal`).
+ * Two reasons. The first: the country page is open to a guest, while `/myapi/`
+ * requires an account. The second: for the sake of this page `checklist2` computed
+ * `seen` with an Exists subquery on each of the ~1000-2000 rows, and the result
+ * went nowhere — the personal layer on the country page is off
+ * (`ChecklistCard.personal`).
  *
- * Ключ здесь — `id_avibase`, а не наш `Territory.pk`: у публичной ручки своя
- * система идентификаторов. Ответ приходит одной страницей в таксономическом
- * порядке (родитель всегда раньше своих потомков), поэтому число видов в
- * группе считается тем же проходом — на бэкенде его нет, а строке отряда и
- * семейства оно нужно.
+ * The key here is `id_avibase` rather than our `Territory.pk`: the public endpoint
+ * has an identifier system of its own. The response arrives as a single page in
+ * taxonomic order (a parent always precedes its descendants), so the number of
+ * species in a group is counted in the same pass — the backend does not have it,
+ * and the order and family rows need it.
  */
 export const fetchTerritoryTree = (
   idAvibase: number,
@@ -430,8 +432,8 @@ export const fetchTerritoryTree = (
       latin: row.d_name,
       name_lang: row.d_name_lang,
       segment: row.d_segment,
-      // Личного слоя на странице страны нет, но поле обязательное у
-      // ChecklistItem — `personal={false}` его всё равно не читает.
+      // There is no personal layer on the country page, but the field is required
+      // by ChecklistItem — `personal={false}` does not read it anyway.
       seen: false,
       status: row.d_status ?? null,
       occurrence: row.status ?? null,
@@ -439,8 +441,8 @@ export const fetchTerritoryTree = (
       type: TREE_DEPTH_TYPE[row.depth] ?? "species",
     }));
 
-    // Стек открытых групп по рангам: вид засчитывается всем группам над ним,
-    // а новая группа закрывает все группы своего ранга и глубже.
+    // A stack of open groups by rank: a species is counted towards every group
+    // above it, and a new group closes all groups of its own rank and deeper.
     const open: ChecklistItem[] = [];
     for (const item of items) {
       if (item.type === "species") {
@@ -511,7 +513,7 @@ export const fetchMyCountries = (
   cachedRead(
     "fetchMyCountries",
     () => {
-      // Кэшируется только полный список: у fav_only-выборки своего кэша нет.
+      // Only the full list is cached: the fav_only selection has no cache of its own.
       if (favOnly) return null;
       const cached = getCachedCountries(order);
       return cached.length > 0 ? cached : null;
@@ -903,10 +905,10 @@ const fetchAbstract = <T>(
     extraParams,
   );
 
-  // Один cachedRead на все списочные фетчеры разом. assertNotGone ему
-  // намеренно НЕ передаётся: 404 на списочном эндпоинте означает
-  // «устаревший URL», а не «сущности больше нет», а часть списков
-  // фильтруется по id offline-first сущностей с temp id.
+  // A single cachedRead for all the list fetchers at once. assertNotGone is
+  // deliberately NOT passed to it: a 404 on a list endpoint means "an outdated
+  // URL" rather than "the entity is gone", and some of the lists are filtered by
+  // the id of offline-first entities with a temp id.
   const readCache = (): T | null => {
     const exactMatch = getCachedListResponse<T>(options.table, cacheKey);
     if (exactMatch) return exactMatch;

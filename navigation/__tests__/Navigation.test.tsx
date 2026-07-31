@@ -60,16 +60,17 @@ jest.mock("../../services/sentry", () => ({
 jest.mock("../../services/navigationRef", () => ({
   navigationRef: {
     current: {
-      // Через обёртку: фабрика мока выполняется раньше, чем инициализируется
-      // сама jest.fn() ниже, и прямая ссылка захватила бы undefined.
+      // Through a wrapper: the mock factory runs before the jest.fn() below is
+      // initialised, and a direct reference would capture undefined.
       dispatch: (...args: unknown[]) => mockDispatch(...args),
       getCurrentRoute: () => undefined,
       isReady: () => true,
     },
   },
   flushPendingNavigation: jest.fn(),
-  // Навигатор в этом моке всегда готов, поэтому ожидание вырождается в сам
-  // dispatch — задержку до готовности проверяет services/__tests__/navigationRef.
+  // The navigator in this mock is always ready, so the wait degenerates into the
+  // dispatch itself — the delay until readiness is checked by
+  // services/__tests__/navigationRef.
   dispatchWhenReady: (action: unknown) => mockDispatch(action),
 }));
 jest.mock("../../store/theme-context", () => ({
@@ -189,10 +190,10 @@ describe("Navigation state restore", () => {
   });
 });
 
-// Логин пересоздаёт навигатор с нуля: без возврата гость, заведший аккаунт со
-// страницы птицы, оказывался на MainScreen.
+// Login recreates the navigator from scratch: without the return a guest who
+// created an account from a bird page ended up on MainScreen.
 describe("returning the guest after sign-in", () => {
-  // Гость на экране `screen`, затем логинится.
+  // The guest is on `screen`, then signs in.
   const signInFrom = async (screen: string, params?: object) => {
     const { rerender } = await render(<Navigation />);
     emitStateChange?.({ index: 0, routes: [{ name: screen, params }] });
@@ -212,8 +213,8 @@ describe("returning the guest after sign-in", () => {
 
     await signInFrom("SpeciesDetail", { segment: "osprey" });
 
-    // Main под ним, а не вместо него: «назад» должно вести туда же, куда
-    // ведёт у обычного пользователя.
+    // Main underneath it, not instead of it: "back" must lead where it leads for
+    // an ordinary user.
     expect(resetPayload()).toEqual({
       index: 1,
       routes: [
@@ -223,8 +224,9 @@ describe("returning the guest after sign-in", () => {
     });
   });
 
-  // Вход по почте уводит на экран Login, и к моменту логина исходного экрана
-  // в стеке уже нет — намерение обязано пережить этот промежуточный шаг.
+  // Signing in by email leads to the Login screen, and by the time of the login
+  // the original screen is no longer in the stack — the intent must survive this
+  // intermediate step.
   it("survives the detour through the Login screen", async () => {
     setAuthReturn({ name: "SpeciesDetail", params: { segment: "osprey" } });
 
@@ -233,8 +235,8 @@ describe("returning the guest after sign-in", () => {
     expect(resetPayload()?.routes.at(-1)?.name).toBe("SpeciesDetail");
   });
 
-  // Отменил шторку, ушёл гулять, залогинился с Welcome — телепорт на давнюю
-  // страницу птицы был бы сюрпризом, а не удобством.
+  // Dismissed the sheet, went for a walk, signed in from Welcome — a teleport to
+  // a long-past bird page would be a surprise, not a convenience.
   it("drops a stale intent when the sign-in happened elsewhere", async () => {
     setAuthReturn({ name: "SpeciesDetail", params: { segment: "osprey" } });
 
@@ -249,8 +251,8 @@ describe("returning the guest after sign-in", () => {
     expect(mockDispatch).not.toHaveBeenCalled();
   });
 
-  // Экран, которого в AppStack нет, React Navigation при reset выбросит —
-  // отсеиваем такие сразу, на записи намерения.
+  // A screen AppStack does not have is dropped by React Navigation on reset —
+  // such screens are filtered out right away, when the intent is stored.
   it("ignores a screen that only the guest stack has", async () => {
     setAuthReturn({ name: "Signup" });
 
@@ -259,10 +261,11 @@ describe("returning the guest after sign-in", () => {
     expect(mockDispatch).not.toHaveBeenCalled();
   });
 
-  // Регистрация по почте уводит из приложения (CheckEmail → почтовый клиент →
-  // деп-линк confirm-email), и возврат приходит холодным стартом: по гостевому
-  // стеку этот процесс не ходил, `lastGuestRouteRef` пуст. Гард «не выходя из
-  // воронки» здесь неприменим — его роль играет суточный TTL намерения.
+  // Email signup leads out of the app (CheckEmail → mail client → confirm-email
+  // deep link), and the return comes as a cold start: this process never walked
+  // the guest stack, `lastGuestRouteRef` is empty. The "without leaving the
+  // funnel" guard does not apply here — its role is played by the one-day TTL of
+  // the intent.
   it("restores an intent that survived a process restart, with no guest route seen", async () => {
     await takeAuthReturn();
     await AsyncStorage.setItem(
@@ -305,9 +308,10 @@ describe("returning the guest after sign-in", () => {
     expect(mockDispatch).not.toHaveBeenCalled();
   });
 
-  // Гость, заведший аккаунт ради конкретной птицы, уже активирован. Сброс выше
-  // и так снимает онбординг со стека, но с непогашенным флагом тот всплыл бы на
-  // следующем холодном старте — поверх воронки, из которой человек уже вышел.
+  // A guest who created an account for a particular bird is already activated.
+  // The reset above removes onboarding from the stack anyway, but with the flag
+  // left unset it would come up on the next cold start — on top of a funnel the
+  // person has already left.
   it("counts the onboarding as done when it returns the guest", async () => {
     await AsyncStorage.setItem("onboarding_pending", "true");
     setAuthReturn({ name: "SpeciesDetail", params: { segment: "osprey" } });
@@ -328,11 +332,11 @@ describe("returning the guest after sign-in", () => {
   });
 });
 
-// buildInitialState всегда ставит корнем "Main": сохранённый [Onboarding]
-// вернулся бы как [Main, Onboarding] — незавершённый поток поверх дашборда, с
-// которого «назад» уводит на недонастроенный аккаунт.
+// buildInitialState always makes "Main" the root: a saved [Onboarding] would
+// come back as [Main, Onboarding] — an unfinished flow on top of the dashboard,
+// from which "back" leads to a half-configured account.
 describe("persisting the stack", () => {
-  // Сохранение отложено на 300 мс (см. saveTimeoutRef).
+  // Saving is deferred by 300 ms (see saveTimeoutRef).
   const afterDebounce = () => new Promise((resolve) => setTimeout(resolve, 400));
 
   it("skips the onboarding screen", async () => {

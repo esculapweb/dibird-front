@@ -12,8 +12,8 @@ const DAY = 24 * 60 * 60 * 1000;
 beforeEach(async () => {
   jest.restoreAllMocks();
   await AsyncStorage.clear();
-  // Модульная переменная переживает импорт между тестами — гасим её, чтобы
-  // тесты диска проверяли именно диск.
+  // The module variable survives the import between tests — it is drained so that
+  // the disk tests check the disk itself.
   await takeAuthReturn();
 });
 
@@ -25,11 +25,11 @@ describe("setAuthReturn", () => {
       name: "SpeciesDetail",
       params: { segment: "osprey" },
     });
-    // Забрали — значит забыли: второй вход не должен никуда телепортировать.
+    // Taken means forgotten: a second sign-in must not teleport anywhere.
     expect(await takeAuthReturn()).toBeNull();
   });
 
-  // В AppStack таких экранов нет, восстанавливать нечего.
+  // AppStack has no such screens, there is nothing to restore.
   it("drops a screen that is not part of the catalogue", async () => {
     await setAuthReturn({ name: "ObservationEditor" });
 
@@ -45,13 +45,13 @@ describe("setAuthReturn", () => {
   });
 });
 
-// Регистрация по почте уводит из приложения (CheckEmail → почтовый клиент →
-// деп-линк confirm-email), и процесс к моменту возврата уже убит: без диска
-// возврат не работал именно на самом длинном пути.
+// Email signup leads out of the app (CheckEmail → mail client → confirm-email
+// deep link), and by the time of the return the process is already killed:
+// without the disk the return did not work on exactly the longest path.
 describe("surviving a process restart", () => {
-  // Перезапуск = в памяти пусто, на диске что-то есть. `beforeEach` уже
-  // осушил модульную переменную, поэтому достаточно засеять хранилище напрямую
-  // — так тест и проверяет именно дисковый путь, а не тот же кэш в памяти.
+  // A restart = nothing in memory, something on disk. `beforeEach` has already
+  // drained the module variable, so seeding the storage directly is enough — that
+  // way the test checks the disk path rather than the same in-memory cache.
   const seed = (stored: Record<string, unknown>) =>
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
 
@@ -121,8 +121,9 @@ describe("surviving a process restart", () => {
   });
 });
 
-// Тёплый путь (Apple/Google прямо в шторке) обслуживается модульной
-// переменной: приложение не покидается, и ждать диска там незачем.
+// The warm path (Apple/Google right in the sheet) is served by the module
+// variable: the app is never left, and there is no point waiting for the disk
+// there.
 describe("when the disk is unavailable", () => {
   it("still returns the intent from memory", async () => {
     jest

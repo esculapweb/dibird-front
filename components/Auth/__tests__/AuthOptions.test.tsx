@@ -52,9 +52,10 @@ const renderOptions = () =>
     />,
   );
 
-// Шторка «нужен аккаунт» висит в портале вне навигатора: после входа она бы
-// осталась поверх уже залогиненного приложения, поэтому успех обязан дойти
-// до вызывающего. Welcome тот же колбэк не передаёт — ему закрывать нечего.
+// The "account required" sheet hangs in a portal outside the navigator: after a
+// sign-in it would stay on top of an already logged-in app, so success has to
+// reach the caller. Welcome does not pass the same callback — it has nothing to
+// close.
 describe("onAuthenticated", () => {
   it("fires after a successful Google sign-in", async () => {
     (LoginWithGoogle as jest.Mock).mockResolvedValue("access-token");
@@ -86,8 +87,8 @@ describe("onAuthenticated", () => {
     expect(mockShowErrorToast).not.toHaveBeenCalled();
   });
 
-  // null — это «Play Services недоступны», тост уже показан: закрывать
-  // шторку тут значило бы спрятать единственный оставшийся способ войти.
+  // null means "Play Services unavailable" and the toast is already shown:
+  // closing the sheet here would hide the only remaining way to sign in.
   it("stays silent when Google resolves null", async () => {
     (LoginWithGoogle as jest.Mock).mockResolvedValue(null);
     await renderOptions();
@@ -128,9 +129,10 @@ describe("Apple button visibility", () => {
   });
 });
 
-// `auth_started` отвечает на вопрос «сколько людей нажало кнопку, но до
-// аккаунта не дошло»: без него отвал в самом провайдере (отменённый системный
-// диалог, недоступные Play Services) неотличим от «не нажимал».
+// `auth_started` answers the question "how many people tapped the button but
+// never got an account": without it a drop-off inside the provider (a cancelled
+// system dialog, unavailable Play Services) is indistinguishable from "never
+// tapped".
 describe("auth_started", () => {
   it("fires on the Google tap", async () => {
     (LoginWithGoogle as jest.Mock).mockResolvedValue("access-token");
@@ -159,8 +161,9 @@ describe("auth_started", () => {
     expect(track).toHaveBeenCalledWith("auth_started", { method: "google" });
   });
 
-  // Кнопка «по почте» только открывает форму — сама попытка входа происходит
-  // на экране Login, и событие шлётся оттуда (AuthContent), после валидации.
+  // The "with email" button only opens the form — the sign-in attempt itself
+  // happens on the Login screen, and the event is sent from there (AuthContent),
+  // after validation.
   it("does not fire on the email button, which only opens the form", async () => {
     await renderOptions();
 

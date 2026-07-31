@@ -163,7 +163,7 @@ const TerritoryDetailScreen = () => {
     }
   }, [data?.redirect, navigation]);
 
-  // Вторая половина справочника — см. species_viewed на странице вида.
+  // The second half of the reference — see species_viewed on the species page.
   useEffect(() => {
     track("territory_viewed");
   }, [segment]);
@@ -329,8 +329,8 @@ const TerritoryDetailScreen = () => {
         />
       </>
     ) : view === "tree" ? (
-      // Дерево ключуется id Avibase, плоский список — нашим Territory.pk:
-      // это две разные ручки (см. fetchTerritoryTree и /api/taxon/).
+      // The tree is keyed by the Avibase id, the flat list by our Territory.pk:
+      // these are two different endpoints (see fetchTerritoryTree and /api/taxon/).
       <TerritoryChecklist
         idAvibase={data.id_avibase}
         listHeader={viewSwitch}

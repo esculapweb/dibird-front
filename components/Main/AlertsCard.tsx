@@ -15,23 +15,23 @@ import { AppStackNavigationProp } from "../../types";
 const H_PAD = 16;
 
 /**
- * Алерты о редких птицах рядом — главное УТП приложения, и до сих пор
- * единственным способом узнать о них было самому дойти до бургер-меню и
- * настроек. Карточка показывается в двух случаях: алерты выключены — или
- * включены, но не знают, где пользователь.
+ * Alerts about rare birds nearby are the app's main selling point, and until now
+ * the only way to learn about them was to find the burger menu and the settings
+ * yourself. The card shows up in two cases: alerts are off — or they are on but
+ * do not know where the user is.
  *
- * Второй случай долго был невидимым: `is_enabled` на бэке по умолчанию `true`,
- * поэтому у нового аккаунта карточка не появлялась вовсе — а вместе с ней и
- * единственный повод дать разрешения. Точки при этом нет, и «поблизости»
- * означало «где угодно» (см. RareNearby).
+ * The second case stayed invisible for a long time: `is_enabled` defaults to
+ * `true` on the backend, so a new account never saw the card — and with it the
+ * only reason to grant the permissions. There is no location either, so
+ * "nearby" meant "anywhere" (see RareNearby).
  *
- * Текст — про то, что **не придёт уведомление**, а не «алерты выключены»: блок
- * «редкие рядом» прямо под карточкой продолжает работать и при выключенных
- * алертах (см. комментарий в RareNearby), и «выключено» рядом с работающим
- * списком читалось бы как рассинхрон.
+ * The copy is about **no notification arriving**, not about "alerts are off":
+ * the "rare nearby" block right below the card keeps working with alerts off
+ * (see the comment in RareNearby), and "off" next to a working list would read
+ * as the two being out of sync.
  *
- * Здесь же просятся оба разрешения — это первый момент вне онбординга, когда
- * у пользователя есть повод их дать.
+ * Both permissions are asked for here as well — this is the first moment outside
+ * onboarding where the user has a reason to grant them.
  */
 const AlertsCard = () => {
   const navigation = useNavigation<AppStackNavigationProp>();
@@ -45,8 +45,8 @@ const AlertsCard = () => {
   );
   const [enabling, setEnabling] = useState(false);
 
-  // `settings` нет, пока они не загрузились или пользователь не залогинен —
-  // мигать карточкой в это время нельзя.
+  // `settings` is absent until they have loaded or while the user is signed out —
+  // flashing the card in the meantime is not an option.
   const needsEnable = !!settings && !settings.is_enabled;
   const needsLocation = !!settings && settings.location_lat == null;
   if (!settings || (!needsEnable && !needsLocation)) return null;
@@ -55,15 +55,17 @@ const AlertsCard = () => {
     if (enabling) return;
     setEnabling(true);
     try {
-      // Пуши первыми: без них алерты не доедут вовсе, а геопозиция лишь уточняет
-      // радиус — она у настроек может быть уже проставлена страной профиля.
+      // Push first: without it alerts do not arrive at all, while the location
+      // only refines the radius — the settings may already have it from the
+      // profile country.
       await requestPushPermission();
 
       const result = await requestLocation();
       if (result) {
-        // sync: с ним бэк тут же резолвит страну по координатам и отдаёт её в
-        // ответе. Без него территория доезжает отложенной задачей, и подпись
-        // у списка «поблизости» осталась бы прежней до следующего запуска.
+        // sync: with it the backend resolves the country from the coordinates
+        // right away and returns it in the response. Without it the territory
+        // arrives via a deferred task, and the label of the "nearby" list would
+        // stay as it was until the next launch.
         await save(
           {
             lat: Math.round(result.coords[1] * 100) / 100,
@@ -72,8 +74,8 @@ const AlertsCard = () => {
           true,
         );
       } else if (getPermissionStatus() === "denied") {
-        // Отказ в системном диалоге второй раз не переспросить — дальше
-        // только настройки ОС, и сказать об этом должен кто-то один.
+        // A refusal in the system dialog cannot be asked a second time — from
+        // here on it is OS settings only, and exactly one place should say so.
         handleLocationUnavailable();
       }
 

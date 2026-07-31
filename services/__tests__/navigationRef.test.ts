@@ -81,8 +81,9 @@ describe("dispatchWhenReady", () => {
     expect(mockDispatch).toHaveBeenCalledWith(reset);
   });
 
-  // Регрессия: на входе в аккаунт AppStack секунду рендерит null (перечитывает
-  // флаг онбординга), и прямой dispatch терял возврат гостя на страницу птицы.
+  // A regression: on signing in AppStack renders null for a second (it re-reads
+  // the onboarding flag), and a direct dispatch lost the guest's return to the
+  // bird page.
   it("waits for a navigator that mounts a moment later", () => {
     mockIsReady.mockReturnValue(false);
     dispatchWhenReady(reset);

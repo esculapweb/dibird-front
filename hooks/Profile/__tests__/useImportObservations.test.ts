@@ -80,8 +80,8 @@ describe("starting an import", () => {
     expect(track).toHaveBeenCalledWith("import_started");
   });
 
-  // 429 значит «импорт уже идёт»: экран переоткрыли, пока задача работает.
-  // Подключиться к ней правильнее, чем показать ошибку.
+  // A 429 means "an import is already running": the screen was reopened while
+  // the task is working. Attaching to it is more correct than showing an error.
   it("attaches to a running import instead of failing on a 429", async () => {
     mockStart.mockRejectedValue({ response: { status: 429 } });
 
@@ -123,8 +123,9 @@ describe("polling", () => {
     expect(result.current.state).toBe("processing");
   });
 
-  // Записи созданы на сервере в обход очереди синка, и локальный SQLite о них
-  // не знает: без сброса лайфлист и статистика остались бы доимпортными.
+  // The records were created on the server bypassing the sync queue, and the
+  // local SQLite knows nothing about them: without a reset the life list and the
+  // statistics would stay pre-import.
   it("drops the offline mirror and refetches once the import completes", async () => {
     const done = importRequest({
       status: "completed",

@@ -42,8 +42,8 @@ describe("analytics", () => {
       expect(mockLogEvent).toHaveBeenCalledWith({}, "welcome_viewed", undefined);
     });
 
-    // Имена стандартных событий Firebase менять нельзя — на них завязаны
-    // готовые отчёты и воронки в консоли.
+    // The names of the standard Firebase events must not be changed — ready-made
+    // reports and funnels in the console are tied to them.
     it.each(["login", "sign_up"] as const)(
       "keeps the standard Firebase name for %s",
       (name) => {
@@ -57,13 +57,13 @@ describe("analytics", () => {
 
     it("swallows a rejected logEvent instead of failing the caller", async () => {
       mockLogEvent.mockRejectedValue(new Error("network"));
-      // logError печатает в DEV — это и есть проверяемое поведение, но в
-      // прогоне оно выглядит как предупреждение из ниоткуда.
+      // logError prints in DEV — that is the very behaviour under test, but in a
+      // run it looks like a warning out of nowhere.
       const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
 
       expect(() => track("observation_created")).not.toThrow();
-      // Промис отклоняется на следующем тике — без .catch() внутри track это
-      // был бы unhandled rejection посреди сценария логина.
+      // The promise is rejected on the next tick — without a .catch() inside track
+      // this would be an unhandled rejection in the middle of a login scenario.
       await Promise.resolve();
 
       expect(warn).toHaveBeenCalled();

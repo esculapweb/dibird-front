@@ -8,21 +8,21 @@ import { ThemeColors, useTheme } from "../../store/theme-context";
 
 interface AuthGateSheetProps {
   dismiss: () => void;
-  // Переходы на Login/Terms/Privacy — снаружи: шторка живёт в портале вне
-  // навигатора и о стеке ничего не знает.
+  // Navigation to Login/Terms/Privacy happens outside: the sheet lives in a
+  // portal outside the navigator and knows nothing about the stack.
   onEmailPress: () => void;
   onOpenDocument: (screen: "Terms" | "Privacy") => void;
 }
 
 /**
- * Содержимое шторки «нужен аккаунт» (см. hooks/useRequireAuth). Мягкий
- * upsell, а не стена: гость дошёл сюда, уже посмотрев каталог, и вход
- * происходит прямо здесь — без выхода со страницы птицы.
+ * Contents of the "account required" sheet (see hooks/useRequireAuth). A soft
+ * upsell rather than a wall: the guest got here having already browsed the
+ * catalogue, and signing in happens right here — without leaving the bird page.
  *
- * Всё внутри одного BottomSheetView намеренно: при `enableDynamicSizing`
- * высоту шторки задаёт последний измеренный узел, и второй такой узел рядом
- * схлопнул бы её до своей высоты — та же причина, что описана в шапке
- * TaxonFilterSheet.
+ * Everything inside a single BottomSheetView on purpose: with
+ * `enableDynamicSizing` the height of the sheet is set by the last measured
+ * node, and a second such node next to it would collapse the sheet to its own
+ * height — the same reason described in the header of TaxonFilterSheet.
  */
 const AuthGateSheet = ({
   dismiss,

@@ -83,10 +83,11 @@ export const setLastLoggedInUserId = async (userId: number): Promise<void> => {
   }
 };
 
-// Активация: первое созданное наблюдение. Событие должно уйти ровно один раз,
-// иначе «доля дошедших до первого наблюдения» превратится в «сколько всего
-// наблюдений создали». Как и LAST_USER_KEY, флаг переживает логаут — иначе
-// повторный вход того же человека выглядел бы новой активацией.
+// Activation: the first observation created. The event must go out exactly once,
+// otherwise "the share of people who reached their first observation" turns into
+// "how many observations were created in total". Like LAST_USER_KEY, the flag
+// survives a logout — otherwise the same person signing in again would look like a
+// new activation.
 const FIRST_OBSERVATION_KEY = "first_observation_tracked";
 
 export const markFirstObservationTracked = async (): Promise<boolean> => {
@@ -101,17 +102,18 @@ export const markFirstObservationTracked = async (): Promise<boolean> => {
 };
 
 /**
- * Флаг «регистрация только что произошла», ставится в трёх точках `sign_up`
- * (util/auth.ts). Гейт намеренно устроен от него, а не от «онбординг уже
- * видели»: по отсутствию второго от новичка неотличим ветеран, который
- * переустановил приложение и вошёл в старый аккаунт, — ему открывался бы
- * корнем стека «выберите страну → отметьте свой первый вид». Здесь же
- * отсутствие ключа означает «не показывать», и все существующие установки
- * иммунны по построению, без бэкфилла.
+ * The "a signup has just happened" flag, set at the three `sign_up` points
+ * (util/auth.ts). The gate is deliberately built on it rather than on "the
+ * onboarding has already been seen": by the absence of the latter a veteran who
+ * reinstalled the app and signed into an old account is indistinguishable from a
+ * newcomer — they would get "pick a country → record your first species" as the
+ * root of the stack. Here the absence of the key means "do not show", and all
+ * existing installations are immune by construction, without a backfill.
  *
- * Как и два ключа выше, флаг не попадает в allowlist `AsyncStorage.multiRemove`
- * в `Logout()`: регистрация по почте уводит из приложения на подтверждение и
- * возвращается через экран `Login`, флаг обязан этот путь пережить.
+ * Like the two keys above, the flag is not in the allowlist of
+ * `AsyncStorage.multiRemove` in `Logout()`: an email signup leads out of the app
+ * for confirmation and comes back through the `Login` screen, and the flag has to
+ * survive that path.
  */
 const ONBOARDING_KEY = "onboarding_pending";
 
@@ -120,8 +122,8 @@ export const isOnboardingPending = async (): Promise<boolean> => {
     return !!(await AsyncStorage.getItem(ONBOARDING_KEY));
   } catch (e) {
     if (__DEV__) console.warn(`Failed to load ${ONBOARDING_KEY}`, e);
-    // Диск не читается — лучше не показать онбординг, чем показать его тому,
-    // кто им не адресован: повторный поток раздражает сильнее пропущенного.
+    // The disk cannot be read — better not to show the onboarding than to show it
+    // to someone it is not meant for: a repeated flow annoys more than a missed one.
     return false;
   }
 };

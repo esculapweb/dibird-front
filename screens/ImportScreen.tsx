@@ -22,11 +22,12 @@ const EBIRD_DOWNLOAD_URL = "https://ebird.org/downloadMyData";
 
 
 /**
- * Импорт лайфлиста из eBird — switching-фича: люди не уходят от конкурента не
- * потому, что там лучше, а потому что там десять лет их данных.
+ * Importing a life list from eBird — a switching feature: people stay with a
+ * competitor not because it is better there, but because ten years of their data
+ * are there.
  *
- * Разбор идёт на бэке в celery, поэтому экран — это выбор файла плюс поллинг
- * статуса (`useImportObservations`, структура повторяет
+ * The parsing happens on the backend in celery, so the screen is a file picker
+ * plus polling of the status (`useImportObservations`, the structure repeats
  * [useExportProfile](../hooks/Profile/useExportProfile.ts)).
  */
 const ImportScreen = () => {
@@ -39,12 +40,12 @@ const ImportScreen = () => {
 
   const running = state === "pending" || state === "processing";
 
-  // Уже переведённые строки, а не ключи: i18next-parser разбирает только
-  // литеральные вызовы, а на переменной вместо ключа (как и на шаблонной
-  // строке) заводит пустой ключ `"": ""` — тот победил бы фолбэк и оставил бы
-  // строку в UI пустой, ровно то, что запрещает CLAUDE.md. По той же причине
-  // здесь нельзя написать пример такого вызова даже в комментарии: парсер
-  // вычитывает ключи и из них.
+  // Already translated strings rather than keys: i18next-parser only parses
+  // literal calls, and with a variable instead of a key (as with a template
+  // string) it creates an empty key `"": ""` — that one would beat the fallback
+  // and leave the string blank in the UI, exactly what CLAUDE.md forbids. For the
+  // same reason an example of such a call must not be written here even in a
+  // comment: the parser reads keys out of those too.
   const steps = [
     t("import_how_step_1"),
     t("import_how_step_2"),
@@ -54,9 +55,9 @@ const ImportScreen = () => {
   const handlePick = async () => {
     try {
       const picked = await DocumentPicker.getDocumentAsync({
-        // На Android часть файловых менеджеров отдаёт CSV как */* или
-        // application/octet-stream, поэтому тип не сужаем до text/csv —
-        // расширение всё равно проверяет бэк.
+        // On Android some file managers hand a CSV over as */* or
+        // application/octet-stream, so the type is not narrowed down to text/csv —
+        // the extension is checked by the backend anyway.
         type: ["text/csv", "text/comma-separated-values", "*/*"],
         copyToCacheDirectory: true,
       });
@@ -115,8 +116,8 @@ const ImportScreen = () => {
     <View style={styles.center} testID="import-progress">
       <ActivityIndicator size="large" color={Colors.main100} />
       <Text style={styles.centerTitle}>{t("import_in_progress_title")}</Text>
-      {/* Уйти со экрана можно: задача живёт на бэке, а поллинг подхватится
-          обратно по 429 при следующем заходе. */}
+      {/* Leaving the screen is fine: the task lives on the backend, and the
+          polling picks it back up via a 429 on the next visit. */}
       <Text style={styles.centerText}>{t("import_in_progress_text")}</Text>
     </View>
   );

@@ -119,13 +119,13 @@ const reportToSentry = (error: AxiosError): void => {
   }
 
   if (status === 0) {
-    // Без сети каждый запрос порождал бы отдельное событие — за один
-    // офлайн-запуск это десятки warning'ов, в которых теряются настоящие
-    // 5xx. Оставляем только breadcrumb. Если же сеть есть, а ответа нет
-    // (таймаут, DNS, сервер лёг) — это реальный сигнал, он остаётся.
-    // Оговорка: до первого события NetInfo isConnected() отдаёт true (см.
-    // services/sync/networkStatus.ts), так что самый первый запрос
-    // холодного старта в офлайне всё ещё даст warning.
+    // Without a network every request would spawn a separate event — dozens of
+    // warnings over a single offline launch, in which the real 5xx get lost.
+    // Only a breadcrumb is left. If there is a network but no response (a
+    // timeout, DNS, a server that went down) — that is a real signal and it
+    // stays. A caveat: until the first NetInfo event isConnected() returns true
+    // (see services/sync/networkStatus.ts), so the very first request of a cold
+    // start while offline still produces a warning.
     if (!isConnected()) {
       Sentry.addBreadcrumb({
         category: "api",
@@ -148,8 +148,8 @@ const reportToSentry = (error: AxiosError): void => {
   }
 
   const warnStatuses: Record<number, string> = {
-    403: "Forbidden — возможно проблема с правами",
-    404: "Not Found — возможно устаревший endpoint",
+    403: "Forbidden — possibly a permissions problem",
+    404: "Not Found — possibly an outdated endpoint",
     429: "Rate limit exceeded",
   };
 
@@ -221,17 +221,19 @@ api.interceptors.response.use(
       }
       originalRequest._retry = true;
 
-      // Гость: аккаунта нет, обновлять нечего. Без этой ветки каждый 401 у
-      // незалогиненного (например, личная ручка, задетая по ошибке из
-      // каталога) шёл в refreshAccessToken, тот падал на «No refresh token»
-      // без HTTP-ответа, и мы отправляли в Sentry событие, которое ничего не
-      // значит. Разлогинивать тут тоже нечего — logout не вызывается.
+      // A guest: there is no account, nothing to refresh. Without this branch
+      // every 401 of a signed-out user (a personal endpoint touched by mistake
+      // from the catalogue, for example) went into refreshAccessToken, which
+      // failed on "No refresh token" with no HTTP response, and we sent an event
+      // to Sentry that means nothing. There is nothing to sign out here either —
+      // logout is not called.
       if (!(await getRefreshToken())) {
         return Promise.reject(createTranslatedError(error));
       }
 
-      // Если токен уже обновился без нас (другой запрос успел отрефрешить) —
-      // просто ретраим с актуальным токеном, НЕ трогая refresh.
+      // If the token has already been refreshed without us (another request
+      // managed to refresh it) — simply retry with the current token, WITHOUT
+      // touching refresh.
       const latestAccess = await getAccessToken();
       if (latestAccess && latestAccess !== originalRequest._tokenUsed) {
         originalRequest.headers!.Authorization = `Bearer ${latestAccess}`;

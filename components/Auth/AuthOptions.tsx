@@ -11,20 +11,20 @@ import { track } from "../../services/analytics";
 import { AppError } from "../../types";
 
 interface AuthOptionsProps {
-  // Куда ведёт «войти по почте» — экран Login, но пушит его вызывающий: из
-  // шторки надо сначала её закрыть.
+  // Where "sign in with email" leads — the Login screen, but the caller pushes
+  // it: from the sheet it has to be dismissed first.
   onEmailPress: () => void;
-  // Вызывается после успешного входа через Apple/Google. Экрану Welcome это
-  // не нужно (навигатор сам переключится на AppStack), а шторке нужно: она
-  // висит в портале вне навигатора и после логина осталась бы на экране.
+  // Called after a successful Apple/Google sign-in. The Welcome screen does not
+  // need it (the navigator switches to AppStack by itself), the sheet does: it
+  // hangs in a portal outside the navigator and would stay on screen after login.
   onAuthenticated?: () => void;
 }
 
 /**
- * Три способа войти — Apple, Google, почта. Общий блок для WelcomeScreen и
- * шторки «нужен аккаунт» (useRequireAuth): раньше он был только на Welcome, и
- * гость, упёршийся в стену на странице птицы, до Apple/Google дотянуться уже
- * не мог — Welcome лежит под всем каталожным стеком.
+ * Three ways to sign in — Apple, Google, email. A shared block for WelcomeScreen
+ * and the "account required" sheet (useRequireAuth): it used to live on Welcome
+ * only, and a guest who hit the wall on a bird page could no longer reach
+ * Apple/Google — Welcome sits underneath the whole catalogue stack.
  */
 const AuthOptions = ({ onEmailPress, onAuthenticated }: AuthOptionsProps) => {
   const { t } = useTranslation();
@@ -41,10 +41,10 @@ const AuthOptions = ({ onEmailPress, onAuthenticated }: AuthOptionsProps) => {
     }
   }, []);
 
-  // `auth_started` шлётся здесь, а не в util/auth.ts: там известен только
-  // результат (`login`/`sign_up`), и разницу между этими двумя событиями —
-  // отвал в самом провайдере, отмену системного диалога, недоступные Play
-  // Services — видно только отсюда.
+  // `auth_started` is sent here rather than in util/auth.ts: there only the
+  // outcome is known (`login`/`sign_up`), and the difference between those two
+  // events — a drop-off inside the provider itself, a cancelled system dialog,
+  // unavailable Play Services — is visible from here only.
   const handleGoogle = async () => {
     if (googleLoginInProgress) return;
     setGoogleLoginInProgress(true);

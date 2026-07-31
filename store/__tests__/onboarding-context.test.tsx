@@ -47,9 +47,10 @@ describe("initial status", () => {
     await waitFor(() => expect(result.current.status).toBe("needed"));
   });
 
-  // Гейт устроен от «регистрация только что была», а не от «онбординг уже
-  // видели»: по отсутствию второго флага от новичка неотличим ветеран, который
-  // переустановил приложение и вошёл в старый аккаунт.
+  // The gate is built on "the signup has just happened" rather than on "the
+  // onboarding has already been seen": by the absence of the second flag a
+  // veteran who reinstalled the app and signed into an old account is
+  // indistinguishable from a newcomer.
   it("leaves an account without the flag alone", async () => {
     mockIsPending.mockResolvedValue(false);
 
@@ -60,9 +61,10 @@ describe("initial status", () => {
     await waitFor(() => expect(result.current.status).toBe("done"));
   });
 
-  // У гостя онбординга нет: страну писать некуда, наблюдение создавать нечем.
-  // Важно, что это именно "done", а не "loading" — на "loading" AppStack
-  // рендерит null, и переход в аккаунт завис бы на пустом экране.
+  // A guest has no onboarding: there is nowhere to write the country and nothing
+  // to create an observation with. It matters that this is "done" and not
+  // "loading" — on "loading" AppStack renders null, and signing in would hang on
+  // an empty screen.
   it("resolves to done for a guest without touching the flag", async () => {
     const { result } = await renderHook(() => useOnboarding(), {
       wrapper: wrapper({ isAuthenticated: false }),
@@ -72,8 +74,8 @@ describe("initial status", () => {
     expect(mockIsPending).not.toHaveBeenCalled();
   });
 
-  // Пока восстанавливается токен, isAuthenticated ещё false — решение по нему
-  // было бы принято по неготовым данным.
+  // While the token is being restored isAuthenticated is still false — a decision
+  // based on it would be made on data that is not ready.
   it("waits for auth to settle before deciding", async () => {
     const { result } = await renderHook(() => useOnboarding(), {
       wrapper: wrapper({ isAuthenticated: false, isInitializing: true }),
@@ -84,11 +86,12 @@ describe("initial status", () => {
   });
 });
 
-// Регрессия: гость входит через Google. `Navigation` монтирует AppStack в том
-// же рендере, в котором isAuthenticated стал true, и корень стека выбирается по
-// статусу, увиденному в этом рендере. Пока переход в `loading` жил в эффекте,
-// стек успевал увидеть гостевой `done`, вставал корнем Main, и пришедший следом
-// `needed` уже никуда не переводил — новичок оставался на дашборде.
+// A regression: a guest signs in through Google. `Navigation` mounts AppStack in
+// the same render in which isAuthenticated became true, and the root of the stack
+// is chosen by the status seen in that render. While the transition to `loading`
+// lived in an effect, the stack managed to see the guest `done`, came up with
+// Main as the root, and the `needed` that arrived next no longer navigated
+// anywhere — the newcomer stayed on the dashboard.
 describe("signing in from a guest session", () => {
   it("never shows a resolved status in the render that mounts the stack", async () => {
     const seen: string[] = [];
@@ -113,7 +116,8 @@ describe("signing in from a guest session", () => {
       </OnboardingProvider>,
     );
 
-    // Первое, что видит стек после входа, — «ещё читаю с диска», а не «не нужен».
+    // The first thing the stack sees after the sign-in is "still reading from
+    // disk", not "not needed".
     expect(seen[beforeLogin]).toBe("loading");
     expect(seen.slice(beforeLogin)).not.toContain("done");
     await waitFor(() => expect(seen.at(-1)).toBe("needed"));
@@ -177,9 +181,10 @@ describe("finishing", () => {
     expect(result.current.status).toBe("done");
   });
 
-  // Порядок важен: экран снимается с навигатора сменой статуса, и если
-  // процесс убьют между снятием флага и переключением, лучше не показать
-  // онбординг ещё раз, чем показать его поверх уже созданного наблюдения.
+  // The order matters: the screen is removed from the navigator by the change of
+  // status, and if the process is killed between clearing the flag and the
+  // switch, it is better not to show the onboarding again than to show it on top
+  // of an already created observation.
   it("clears the flag before it lets the screen go", async () => {
     let releaseWrite = () => {};
     mockClearPending.mockReturnValue(
@@ -211,8 +216,8 @@ describe("finishing", () => {
   });
 });
 
-// Отладочная строка в Settings — единственный способ увидеть поток на
-// аккаунте, который его уже прошёл: настоящий флаг ставит только sign_up.
+// The debug row in Settings is the only way to see the flow on an account that
+// has already passed it: the real flag is only set by sign_up.
 describe("replaying it from the debug row", () => {
   it("puts the screen back and marks the flag so a restart keeps it", async () => {
     mockIsPending.mockResolvedValue(false);
@@ -228,7 +233,7 @@ describe("replaying it from the debug row", () => {
 
     expect(mockMarkPending).toHaveBeenCalledTimes(1);
     expect(result.current.status).toBe("needed");
-    // Отладочный повтор не должен попадать в воронку как завершение/отвал.
+    // A debug replay must not land in the funnel as a completion or a drop-off.
     expect(track).not.toHaveBeenCalled();
   });
 

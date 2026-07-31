@@ -29,9 +29,9 @@ it("starts with no location and no known permission status", async () => {
   expect(result.current.isRequesting).toBe(false);
 });
 
-// `permissionStatus` — состояние текущего рендера, и вызывающий, который
-// проверяет его сразу после `await requestLocation()`, видит значение ДО
-// запроса. Отсюда геттер: он читает ref, обновляемый в самом запросе.
+// `permissionStatus` is the state of the current render, and a caller checking
+// it right after `await requestLocation()` sees the value from BEFORE the
+// request. Hence the getter: it reads a ref updated inside the request itself.
 it("exposes the fresh permission status right after an awaited request", async () => {
   (Location.getForegroundPermissionsAsync as jest.Mock).mockResolvedValue({
     status: "undetermined",
@@ -190,8 +190,8 @@ describe("requestLocation", () => {
   });
 });
 
-// Вход в аккаунт — не повод показывать системный диалог о геопозиции, поэтому
-// фоновым потребителям (App.tsx) нужен режим «возьми, если уже разрешено».
+// Signing in is no reason to show a system dialog about location, so background
+// consumers (App.tsx) need a "take it if it is already allowed" mode.
 describe("prompt: false", () => {
   it("returns nothing instead of prompting when permission was never asked for", async () => {
     (Location.getForegroundPermissionsAsync as jest.Mock).mockResolvedValue({
@@ -212,7 +212,8 @@ describe("prompt: false", () => {
     expect(returned).toBeNull();
   });
 
-  // У того, кто разрешение уже дал, ничего не меняется — диалога и так не было.
+  // For someone who has already granted the permission nothing changes — there
+  // was no dialog anyway.
   it("still fetches the position when permission is already granted", async () => {
     (Location.getForegroundPermissionsAsync as jest.Mock).mockResolvedValue({
       status: "granted",
@@ -231,8 +232,8 @@ describe("prompt: false", () => {
     expect(result.current.locationCoords).toEqual([2.35, 48.85]);
   });
 
-  // Молчаливый запрос не должен отвечать за того, кто сам нажал «я здесь»:
-  // иначе диалог, который человек попросил, не появится вовсе.
+  // A silent request must not answer on behalf of someone who tapped "I am here"
+  // themselves: otherwise the dialog the person asked for never appears at all.
   it("does not let an in-flight silent request answer for a prompting one", async () => {
     let releasePermissions: (v: { status: string }) => void = () => {};
     (Location.getForegroundPermissionsAsync as jest.Mock).mockReturnValueOnce(
@@ -274,8 +275,8 @@ describe("prompt: false", () => {
   });
 });
 
-// Событие меряет ответ на диалог. Ставить его на уже известном статусе значило
-// бы считать каждый запуск приложения за новый ответ пользователя.
+// The event measures the answer to the dialog. Sending it on an already known
+// status would count every launch of the app as a new answer from the user.
 describe("location_permission", () => {
   it("fires when the dialog was actually shown and accepted", async () => {
     (Location.getForegroundPermissionsAsync as jest.Mock).mockResolvedValue({

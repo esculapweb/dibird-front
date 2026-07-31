@@ -1,6 +1,6 @@
-// Плитка собирается настоящим useQuery — как в BirdOfTheDay.test.tsx, здесь
-// реальный QueryClient, а не мок react-query: `data`/`isError` читаются прямо
-// в рендере, и tracked-queries из v5 дерево не подмораживают.
+// The tiles are assembled by a real useQuery — as in BirdOfTheDay.test.tsx, a
+// real QueryClient is used here rather than a react-query mock: `data`/`isError`
+// are read right in the render, and v5 tracked queries do not freeze the tree.
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
   initReactI18next: { type: "3rdParty", init: () => {} },
@@ -26,8 +26,8 @@ jest.mock("../../ui/Svgs", () => {
   const { View } = require("react-native");
   return { BirdSVG: () => <View testID="species-thumb-placeholder" /> };
 });
-// Дропдаун со шторкой и сортировками — отдельная история; здесь важно лишь
-// то, что шаг отдаёт ему выбранный id и получает обратно полный элемент.
+// The dropdown with its sheet and sortings is a separate story; all that matters
+// here is that the step hands it the selected id and gets the full item back.
 jest.mock("../../ui/DropdownInput", () => {
   const { Text, TouchableOpacity } = require("react-native");
   return {
@@ -91,7 +91,7 @@ const wrapper = ({ children }: { children: ReactNode }) => (
   <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
 );
 
-/** Наблюдение сообщества в том виде, в каком шаг читает из него вид. */
+/** A community observation in the shape the step reads the species from. */
 const obs = (id: number, name: string, thumb: string | null = null) => ({
   id: id * 100,
   species_data: {
@@ -153,7 +153,7 @@ describe("the species tiles", () => {
     );
   });
 
-  // Виды в ленте повторяются — на то список и берётся с запасом.
+  // Species repeat in the feed — that is why the list is taken with a margin.
   it("keeps only the first sighting of each species", async () => {
     mockFetchCommunity.mockResolvedValue({
       results: [
@@ -195,8 +195,9 @@ describe("the species tiles", () => {
   });
 });
 
-// Так выглядит страна, где сообщества у приложения ещё нет: две карточки на
-// месте обещанного «выберите из списка» читаются как поломка, а не подсказка.
+// This is what a country where the app has no community yet looks like: two
+// cards in place of the promised "pick from the list" read as a breakage rather
+// than a hint.
 describe("a country without a community", () => {
   it("drops the tiles and offers the search instead", async () => {
     mockFetchCommunity.mockResolvedValue({
@@ -229,10 +230,11 @@ describe("a country without a community", () => {
   });
 });
 
-// Форма ключа и аргументы обязаны совпадать с ObservationForm: набор опций от
-// даты не зависит (бэк применяет её только к аннотации `seen`), поэтому оба
-// экрана должны попадать в одну запись кэша — иначе новичок скачивает 2500
-// видов дважды, на этом шаге и при первом открытии редактора.
+// The shape of the key and the arguments must match ObservationForm: the set of
+// options does not depend on the date (the backend applies it to the `seen`
+// annotation only), so both screens have to land in the same cache entry —
+// otherwise a newcomer downloads 2500 species twice, on this step and when first
+// opening the editor.
 describe("sharing the species cache with the editor", () => {
   it("keys the query the way the observation editor does", async () => {
     await renderStep();
@@ -250,8 +252,9 @@ describe("sharing the species cache with the editor", () => {
     expect(fetchSpecies).toHaveBeenCalledWith(7, "name", { type: "this_year" });
   });
 
-  // Тот же гард, что в редакторе: фильтры читаются с диска, и до их готовности
-  // запрос ушёл бы с другой датой — то есть мимо общего кэша.
+  // The same guard as in the editor: the filters are read from disk, and before
+  // they are ready the request would go out with a different date — that is, past
+  // the shared cache.
   it("waits for the filters to load", async () => {
     mockDate = undefined;
 
@@ -262,8 +265,8 @@ describe("sharing the species cache with the editor", () => {
 });
 
 describe("when the lists cannot be loaded", () => {
-  // Плитка — не обязательный источник: пока поиск по стране жив, шаг работает,
-  // и объявлять тупик рано.
+  // The tiles are not a required source: while the country search is alive the
+  // step works, and it is too early to declare a dead end.
   it("stays usable while the search still works", async () => {
     mockFetchCommunity.mockRejectedValue(new Error("offline"));
 
@@ -276,9 +279,9 @@ describe("when the lists cannot be loaded", () => {
     expect(mockOnLoadError).not.toHaveBeenCalledWith(true);
   });
 
-  // Оба запроса упали — выбирать не из чего. Экран обязан узнать об этом:
-  // иначе единственным выходом остаётся «Пропустить», и отказ сети попадает в
-  // воронку наравне с отказом человека.
+  // Both requests failed — there is nothing to pick from. The screen has to learn
+  // about it: otherwise the only way out is "Skip", and a network failure lands
+  // in the funnel next to a human's refusal.
   it("reports the dead end when both requests failed", async () => {
     mockFetchCommunity.mockRejectedValue(new Error("offline"));
     mockDropdownQuery.query = { data: undefined, isError: true };

@@ -183,9 +183,10 @@ export const ProfileProvider = ({
         setAnalyticsUserId(profile.user.toString());
         setUserProps({
           guest_or_registered: "registered",
-          // Firebase уже режет отчёты по стране устройства — эта строка про
-          // другое: выбрал ли пользователь домашнюю страну сам. «none» — это
-          // непройденная персонализация, а не «страна неизвестна».
+          // Firebase already slices the reports by device country — this line is
+          // about something else: whether the user picked a home country
+          // themselves. "none" is personalisation not completed, not "the country
+          // is unknown".
           home_territory: profile.territory
             ? String(profile.territory)
             : "none",

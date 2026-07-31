@@ -153,10 +153,10 @@ const Section = ({ title, children, styles, colors }: SectionProps) => (
 );
 
 const APP_REVIEW_PROFILE_ID = 9386;
-// Аккаунты e2e — по одному на платформу, чтобы iOS- и Android-батчи можно было
-// гонять одновременно, не деля данные (см. `.maestro/run.sh`). Гейт нужен им
-// ради «Replay onboarding»: без него `.maestro/onboarding.yaml` нечем начать —
-// настоящий флаг ставит только регистрация.
+// The e2e accounts — one per platform, so that the iOS and Android batches can
+// be run at the same time without sharing data (see `.maestro/run.sh`). They need
+// the gate for "Replay onboarding": without it there is nothing to start
+// `.maestro/onboarding.yaml` with — the real flag is only set by a signup.
 const TEST_IOS_PROFILE_ID = 8262;
 const TEST_ANDROID_PROFILE_ID = 8263;
 
@@ -175,21 +175,22 @@ const SettingsScreen = () => {
 
   const userEmail = profile?.user_data?.email ?? "";
 
-  // Тот же гейт, что у «Send test push»: отладочные строки видны только на
-  // ревью-аккаунте, на e2e-аккаунтах и на первом. Каждый id сравнивается
-  // отдельно — голая константа в цепочке `||` истинна всегда и открыла бы
-  // отладочные строки (и авто-переход в онбординг ниже) вообще всем.
+  // The same gate as for "Send test push": the debug strings are visible only on
+  // the review account, on the e2e accounts and on the first one. Every id is
+  // compared separately — a bare constant in a `||` chain is always truthy and
+  // would open the debug strings (and the auto-jump into onboarding below) to
+  // absolutely everyone.
   const isDebugProfile =
     profile?.user === APP_REVIEW_PROFILE_ID ||
     profile?.user === TEST_IOS_PROFILE_ID ||
     profile?.user === TEST_ANDROID_PROFILE_ID ||
     profile?.user === 1;
 
-  // `restart()` только возвращает экран в навигатор, а объявлен он перед
-  // текущим маршрутом, не поверх него — само по себе это никуда не переводит.
-  // Уводить приходится отсюда и обязательно следующим рендером: `navigate` в
-  // том же обработчике улетел бы в стек, где экрана ещё нет, и был бы
-  // отброшен как необработанный.
+  // `restart()` only returns the screen into the navigator, and it is declared
+  // before the current route rather than on top of it — on its own that navigates
+  // nowhere. The navigation has to happen from here and necessarily on the next
+  // render: a `navigate` in the same handler would fly into a stack that does not
+  // have the screen yet and would be dropped as unhandled.
   useEffect(() => {
     if (isDebugProfile && onboardingStatus === "needed")
       navigation.navigate("Onboarding");
@@ -209,11 +210,12 @@ const SettingsScreen = () => {
   const handleDeleteConfirmed = async () => {
     const status = await deleteMyProfile(userEmail);
     if (status !== 204) return;
-    // Шторка закрывается до логаута, а не штатным `dismiss()` после
-    // `onConfirm`: тот пришёлся бы ровно на тик, в котором навигатор меняет
-    // AppStack на AuthStack, и анимация закрытия терялась — шторка оставалась
-    // висеть поверх Welcome. Хост шторки живёт выше навигатора (App.tsx) и
-    // логаут переживает, так что сама она не размонтируется.
+    // The sheet is closed before the logout rather than by the regular
+    // `dismiss()` after `onConfirm`: that one would land exactly on the tick in
+    // which the navigator swaps AppStack for AuthStack, and the closing animation
+    // got lost — the sheet stayed hanging above Welcome. The host of the sheet
+    // lives above the navigator (App.tsx) and survives the logout, so the sheet
+    // itself does not unmount.
     BottomSheet.hide();
     await logout();
   };
@@ -395,8 +397,8 @@ const SettingsScreen = () => {
         />
       </Section>
 
-      {/* Без i18n намеренно, как и «Send test push»: строка не попадает
-          обычному пользователю и переводить её незачем. */}
+      {/* Deliberately without i18n, like "Send test push": the string never
+          reaches an ordinary user and there is no point translating it. */}
       {isDebugProfile && (
         <Section title="Debug" styles={styles} colors={Colors}>
           <Row

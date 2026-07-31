@@ -26,9 +26,9 @@ jest.mock("@expo/vector-icons", () => {
     Ionicons: ({ name }: { name: string }) => <Text>{`icon-${name}`}</Text>,
   };
 });
-// Оба шага с данными — отдельно тестируемые компоненты со своими запросами;
-// задача экрана — провести по ним и собрать наблюдение из того, что они
-// отдали, поэтому здесь они сведены к кнопке и к дампу пропсов.
+// Both data steps are separately tested components with their own requests; the
+// screen's job is to walk through them and assemble an observation out of what
+// they returned, so here they are reduced to a button and a dump of the props.
 jest.mock("../../components/Onboarding/OnboardingCountryStep", () => {
   const { Text, TouchableOpacity } = require("react-native");
   return {
@@ -46,8 +46,9 @@ jest.mock("../../components/Onboarding/OnboardingCountryStep", () => {
     ),
   };
 });
-// Шаг геолокации сам ходит в разрешения и настройки алертов — у него свой
-// тест; экрану важно лишь, что шаг стоит между страной и первым наблюдением.
+// The location step goes to the permissions and the alert settings itself — it
+// has its own test; all that matters to the screen is that the step sits between
+// the country and the first observation.
 jest.mock("../../components/Onboarding/OnboardingLocationStep", () => {
   const { View } = require("react-native");
   return {
@@ -122,13 +123,13 @@ beforeEach(() => {
 
 const next = async () => fireEvent.press(screen.getByTestId("onboarding-next"));
 
-/** Два экрана ценности → страна. */
+/** Two value screens → the country. */
 const goToCountry = async () => {
   await next();
   await next();
 };
 
-/** …страна выбрана и подтверждена → шаг геолокации. */
+/** …the country is picked and confirmed → the location step. */
 const goToLocation = async () => {
   await goToCountry();
   await fireEvent.press(screen.getByTestId("country-step"));
@@ -158,8 +159,8 @@ describe("walking the flow", () => {
     expect(track).toHaveBeenCalledWith("onboarding_step", { step: 5 });
   });
 
-  // Разрешение просят после страны и до первой записи: раньше повода нет, а
-  // позже он утонул бы за выбором вида.
+  // The permission is asked for after the country and before the first record:
+  // there is no reason earlier, and later it would drown behind picking a species.
   it("puts the location step between the country and the first observation", async () => {
     await render(<OnboardingScreen />);
     await goToLocation();
@@ -168,9 +169,8 @@ describe("walking the flow", () => {
     expect(screen.queryByTestId("species-step")).not.toBeOnTheScreen();
   });
 
-  // Отказ от геолокации не должен запирать поток: «Далее» здесь активна
-  // всегда, единственный выход иначе — «Пропустить», который обрывает
-  // онбординг целиком.
+  // A refused location must not lock the flow: "Next" here is always enabled, the
+  // only way out otherwise is "Skip", which cuts the onboarding short entirely.
   it("moves on from the location step without granting anything", async () => {
     await render(<OnboardingScreen />);
     await goToLocation();
@@ -191,8 +191,8 @@ describe("walking the flow", () => {
 });
 
 describe("the country step", () => {
-  // Бэк мог проставить страну сам (по IP при регистрации) — тогда шаг
-  // подтверждается одним тапом, без похода в дропдаун.
+  // The backend may have set the country itself (by IP at signup) — then the step
+  // is confirmed with a single tap, without going into the dropdown.
   it("starts from the country the profile already has", async () => {
     mockProfile = { territory: 3 };
     await render(<OnboardingScreen />);
@@ -201,9 +201,9 @@ describe("the country step", () => {
     expect(screen.getByText("country:3")).toBeOnTheScreen();
   });
 
-  // Кнопка обязана быть выключенной по-настоящему, а не только полупрозрачной:
-  // раньше её гасила обёртка с opacity, нажатие проходило и молча упиралось в
-  // гард внутри обработчика.
+  // The button has to be disabled for real, not merely half-transparent: it used
+  // to be dimmed by a wrapper with opacity, the press went through and silently
+  // hit a guard inside the handler.
   it("refuses to move on without a country", async () => {
     await render(<OnboardingScreen />);
     await goToCountry();
@@ -224,9 +224,9 @@ describe("the country step", () => {
     expect(track).toHaveBeenCalledWith("onboarding_country_set");
   });
 
-  // Патч уходит через очередь синка и падать не обязан, но если упал —
-  // территория всё равно есть в локальном состоянии, и запирать на ней поток
-  // не за что.
+  // The patch goes through the sync queue and need not fail, but if it did — the
+  // territory is in the local state anyway, and there is nothing to lock the flow
+  // for.
   it("moves on even when saving the profile failed", async () => {
     mockUpdateProfile.mockRejectedValue(new Error("offline"));
 
@@ -255,8 +255,8 @@ describe("the first observation", () => {
       }),
     );
     expect(vars.payload.date_time).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    // speciesData нужен synthesize, чтобы запись отрисовалась подписанной,
-    // пока она ещё в очереди синка.
+    // speciesData is what synthesize needs so that the record is drawn labelled
+    // while it is still in the sync queue.
     expect(vars.speciesData).toEqual(
       expect.objectContaining({ value: 42, label: "Great Tit" }),
     );
@@ -273,9 +273,9 @@ describe("the first observation", () => {
     expect(screen.getByTestId("onboarding-next")).toBeOnTheScreen();
   });
 
-  // До созданной записи «Далее» на последнем шаге нет: единственное
-  // осмысленное действие — выбрать птицу, и кнопка рядом читалась бы как
-  // «можно и без этого».
+  // Until a record has been created there is no "Next" on the last step: the only
+  // meaningful action is to pick a bird, and a button next to it would read as
+  // "this can be skipped".
   it("offers no button until a species has been picked", async () => {
     await render(<OnboardingScreen />);
     await goToSpecies();
@@ -294,8 +294,8 @@ describe("the first observation", () => {
     expect(mockComplete).toHaveBeenCalledTimes(1);
   });
 
-  // Наблюдение уже создано: `onboarding_skipped` с этого экрана означал бы в
-  // отчёте отвал ровно на тех, кто дошёл до конца.
+  // The observation is already created: an `onboarding_skipped` from this screen
+  // would report a drop-off on exactly those who made it to the end.
   it("drops the skip link once the record exists", async () => {
     mockMutate.mockImplementation((_vars, opts) => opts.onSuccess?.());
 
@@ -308,9 +308,9 @@ describe("the first observation", () => {
     expect(screen.queryByTestId("onboarding-skip")).not.toBeOnTheScreen();
   });
 
-  // Оба списка видов живут только в сети, а у нового аккаунта кэша ещё нет.
-  // Без кнопки выйти отсюда можно было бы только «Пропустить», и отказ сети
-  // попадал бы в воронку наравне с отказом человека.
+  // Both species lists live online only, and a new account has no cache yet.
+  // Without the button the only way out of here would be "Skip", and a network
+  // failure would land in the funnel next to a human's refusal.
   it("offers a way out when the species lists failed to load", async () => {
     mockSpeciesLoadFailed = true;
 
@@ -325,8 +325,8 @@ describe("the first observation", () => {
     expect(mockSkip).not.toHaveBeenCalled();
   });
 
-  // Тост показывает useMutationWithTranslation; поток остаётся на шаге, чтобы
-  // можно было выбрать другую птицу.
+  // The toast is shown by useMutationWithTranslation; the flow stays on the step
+  // so that another bird can be picked.
   it("stays on the step when the record could not be created", async () => {
     mockMutate.mockImplementation((_vars, opts) =>
       opts.onError?.(new Error("boom")),

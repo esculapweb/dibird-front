@@ -80,8 +80,8 @@ const stylesFn = (Colors: ThemeColors) =>
       top: 0,
       bottom: 0,
       width: 28,
-      // Симулируем fade через opacity overlay цвета фона
-      // Используем borderRadius чтобы не срезать ячейки
+      // Fake the fade with an opacity overlay in the background colour
+      // borderRadius is used so the cells do not get clipped
       backgroundColor: Colors.primary100,
       opacity: 0.6,
       borderTopRightRadius: 4,

@@ -59,11 +59,11 @@ import {
 const apiPost = api.post as jest.Mock;
 const markPending = markOnboardingPending as jest.Mock;
 
-// Порядок «флаг → токены» проверяется по глобальному счётчику вызовов jest.
-// Смысл в том, что saveTokens сама переключает auth-контекст
-// (notifyTokenUpdate → authenticate), а OnboardingProvider читает флаг ровно
-// один раз по этому переходу: записанный позже флаг не успевает лечь на диск,
-// и новичок попадает сразу на дашборд.
+// The "flag → tokens" order is checked by jest's global invocation counter. The
+// point is that saveTokens itself switches the auth context (notifyTokenUpdate →
+// authenticate), and OnboardingProvider reads the flag exactly once on that
+// transition: a flag written later does not make it to disk in time, and the
+// newcomer lands straight on the dashboard.
 const flagCallOrder = () => markPending.mock.invocationCallOrder[0];
 const tokensCallOrder = () =>
   (saveTokens as jest.Mock).mock.invocationCallOrder[0];
@@ -108,8 +108,9 @@ describe("CreateUser", () => {
       { withCredentials: false },
     );
     expect(logEvent).toHaveBeenCalledWith(expect.anything(), "sign_up", { method: "email" });
-    // Токена здесь ещё нет (нужно подтверждение почты), но флаг ставится сразу
-    // и переживает уход из приложения — вход вернётся через экран Login.
+    // There is no token here yet (the email has to be confirmed), but the flag is
+    // set right away and survives leaving the app — the sign-in comes back through
+    // the Login screen.
     expect(markPending).toHaveBeenCalledTimes(1);
   });
 });
@@ -296,8 +297,9 @@ describe("LoginWithGoogle", () => {
     expect(markPending).not.toHaveBeenCalled();
   });
 
-  // Ключ в ответе отсутствует — ровно то, что бэк отдавал, пока переопределение
-  // get_response_data висело мёртвым хуком: ветеранский путь, онбординга нет.
+  // The key is missing from the response — exactly what the backend returned while
+  // the get_response_data override hung as a dead hook: the veteran path, no
+  // onboarding.
   it("treats a response without is_new_user as a returning user", async () => {
     (GoogleSignin.signIn as jest.Mock).mockResolvedValueOnce({ data: { idToken: "idt" } });
     (GoogleSignin.getTokens as jest.Mock).mockResolvedValueOnce({ accessToken: "at" });

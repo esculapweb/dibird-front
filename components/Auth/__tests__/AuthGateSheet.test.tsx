@@ -53,8 +53,8 @@ it("explains what the account is for and offers every way in", async () => {
   expect(mockAuthOptionsCapture).toHaveBeenCalled();
 });
 
-// Вход через Apple/Google уходит на бэкенд с `?agree_terms=1` — ссылки на
-// документы должны быть здесь же, а не только на Welcome.
+// Apple/Google sign-in goes to the backend with `?agree_terms=1` — links to the
+// documents have to be right here, not only on Welcome.
 it("shows the terms agreement with working links", async () => {
   await renderSheet();
 

@@ -1,13 +1,13 @@
 import { TerritoryData } from "../types";
 import api from "./api";
 
-/** Формат активных окон: пары [start_hour, end_hour], часы UTC 0-23 */
+/** The format of the active windows: [start_hour, end_hour] pairs, UTC hours 0-23 */
 export type ActiveHourWindow = [number, number];
 
 export interface AlertSettings {
   id: number;
 
-  // Локация — read-only плоские поля (бэк отдаёт их через SerializerMethodField)
+  // Location — read-only flat fields (the backend returns them via SerializerMethodField)
   location_lat: number | null;
   location_lon: number | null;
   territory_data: TerritoryData;
@@ -23,9 +23,9 @@ export interface AlertSettings {
 }
 
 /**
- * Payload для PUT / PATCH.
- * Координаты передаются как write-only поля lat/lon,
- * а не как location_lat/location_lon (те read-only на бэке).
+ * Payload for PUT / PATCH.
+ * The coordinates are passed as the write-only fields lat/lon,
+ * not as location_lat/location_lon (those are read-only on the backend).
  */
 export type AlertSettingsPatch = Partial<
   Omit<AlertSettings, "id" | "updated_at" | "location_lat" | "location_lon"> & {
@@ -36,12 +36,12 @@ export type AlertSettingsPatch = Partial<
 
 const BASE = "/myapi/alert-settings/me/";
 
-/** Получить настройки текущего пользователя (GET /myapi/alert-settings/me/) */
+/** Get the settings of the current user (GET /myapi/alert-settings/me/) */
 export const getAlertSettings = () => api.get<AlertSettings>(BASE);
 
 /**
- * Частичное обновление (PATCH /myapi/alert-settings/me/).
- * Предпочтительный метод: отправляем только изменившиеся поля.
+ * Partial update (PATCH /myapi/alert-settings/me/).
+ * The preferred method: only the changed fields are sent.
  */
 export const updateAlertSettings = (data: AlertSettingsPatch, sync = false) =>
   api.patch<AlertSettings>(`${BASE}${sync ? "?sync=1" : ""}`, data);

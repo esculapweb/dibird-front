@@ -99,7 +99,7 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
           )}
         />
 
-        {/* Каталог видов — справочник, а не «мои данные» */}
+        {/* Species catalogue — a reference, not "my data" */}
         <DrawerItem
           label={t("species_catalog")}
           labelStyle={{ color: Colors.textMain }}
@@ -115,7 +115,7 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
           )}
         />
 
-        {/* Птицы по странам — вторая половина справочника, рядом с каталогом */}
+        {/* Birds by country — the second half of the reference, next to the catalogue */}
         <DrawerItem
           label={t("birds_by_country")}
           labelStyle={{ color: Colors.textMain }}
@@ -128,7 +128,7 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
           )}
         />
 
-        {/* Профиль — переход через Stack */}
+        {/* Profile — navigated through the Stack */}
         <DrawerItem
           label={t("profile")}
           labelStyle={{ color: Colors.textMain }}
@@ -141,7 +141,7 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
           )}
         />
 
-        {/* Cообщество — переход через Stack */}
+        {/* Community — navigated through the Stack */}
         <DrawerItem
           label={t("community")}
           labelStyle={{ color: Colors.textMain }}
@@ -156,7 +156,7 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
 
         
 
-        {/* Настройки — переход через Stack */}
+        {/* Settings — navigated through the Stack */}
         <DrawerItem
           label={t("settings")}
           labelStyle={{ color: Colors.textMain }}
@@ -240,10 +240,11 @@ const AppNavigator = () => {
     enabled: !!territory,
   });
 
-  // Начальный маршрут стека зависит от того, пройден ли онбординг, а
-  // NavigationContainer читает его один раз: отрендерить навигатор с корнем
-  // `Main` и добавить онбординг вторым рендером уже нечем. Тот же приём, что в
-  // Navigation.tsx, где до готовности initialState рендерится null.
+  // The initial route of the stack depends on whether onboarding has been done,
+  // and NavigationContainer reads it once: there is no way to render the
+  // navigator with `Main` as the root and add onboarding on a second render. The
+  // same trick as in Navigation.tsx, which renders null until initialState is
+  // ready.
   if (onboardingStatus === "loading") return null;
 
   return (
@@ -261,12 +262,12 @@ const AppNavigator = () => {
         },
       }}
     >
-      {/* Объявлен первым — значит, он и есть корень стека, пока не пройден.
-          `complete()`/`skip()` убирают экран из навигатора, и стек падает на
-          `Main`: тот же условный рендер, которым Navigation переключает
-          AuthStack/AppStack. Жест «назад» выключен — уходить с него можно
-          только через «Пропустить», иначе на iOS свайп открыл бы дашборд
-          из-под незавершённого потока. */}
+      {/* Declared first — meaning it is the root of the stack until it is
+          passed. `complete()`/`skip()` remove the screen from the navigator, and
+          the stack falls back to `Main`: the same conditional render with which
+          Navigation switches AuthStack/AppStack. The "back" gesture is off — it
+          can only be left via "Skip", otherwise on iOS a swipe would open the
+          dashboard from under an unfinished flow. */}
       {onboardingStatus === "needed" && (
         <Stack.Screen
           name="Onboarding"

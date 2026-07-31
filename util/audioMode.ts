@@ -1,14 +1,15 @@
 import { setAudioModeAsync } from "expo-audio";
 
-// expo-audio трогает AVAudioSession только внутри setAudioModeAsync: без вызова
-// категория остаётся системной (soloAmbient), то есть запись молчит при
-// включённом беззвучном режиме — а ползунок при этом едет, и выглядит это как
-// сломанное приложение, а не как выключенный звук.
+// expo-audio touches AVAudioSession only inside setAudioModeAsync: without a call
+// the category stays the system one (soloAmbient), that is, a recording stays
+// silent while the silent switch is on — and the slider moves meanwhile, which
+// looks like a broken app rather than muted sound.
 //
-// Живёт отдельным модулем, а не внутри TaxonSoundRow: вызывать это на старте
-// приложения нельзя (expo-audio намеренно не попадает в стартовый бандл, см.
-// constants/catalogScreens.ts), значит зовём с первого воспроизведения — и
-// флаг «уже настроено» должен переживать перемонтирование ряда.
+// It lives as a separate module rather than inside TaxonSoundRow: this must not
+// be called at app start (expo-audio is deliberately kept out of the start
+// bundle, see constants/catalogScreens.ts), so it is called from the first
+// playback — and the "already configured" flag has to survive the row being
+// remounted.
 let configured = false;
 
 export const ensureAudioMode = () => {
@@ -17,16 +18,16 @@ export const ensureAudioMode = () => {
 
   setAudioModeAsync({
     playsInSilentMode: true,
-    // Согласовано с `enableBackgroundPlayback: false` в app.config.js: на iOS
-    // фоновое воспроизведение без UIBackgroundModes: audio всё равно не
-    // работает, а заявлять неиспользуемый background mode — повод для отказа.
+    // Agreed with `enableBackgroundPlayback: false` in app.config.js: on iOS
+    // background playback does not work without UIBackgroundModes: audio anyway,
+    // and declaring an unused background mode is grounds for a rejection.
     shouldPlayInBackground: false,
-    // Запись птицы слушают, а не подмешивают: чужая музыка должна встать на
-    // паузу, иначе не разобрать ни то, ни другое.
+    // A bird recording is listened to, not mixed in: someone else's music must
+    // pause, otherwise neither can be made out.
     interruptionMode: "doNotMix",
   }).catch((e) => {
-    // Не смогли выставить режим — запись всё равно проиграется, просто на
-    // системных условиях; пробуем снова на следующем воспроизведении.
+    // We could not set the mode — the recording will play anyway, just on the
+    // system's terms; we try again on the next playback.
     configured = false;
     if (__DEV__) console.warn("[ensureAudioMode]", e);
   });

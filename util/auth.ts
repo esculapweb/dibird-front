@@ -48,9 +48,10 @@ export const CreateUser = async (
     password2: password,
     agree_terms: true,
   });
-  // Токена здесь ещё нет: почту надо подтвердить, и в приложение человек
-  // вернётся через экран `Login`. Флаг лежит в AsyncStorage и этот путь
-  // переживает — иначе онбординг достался бы только Apple/Google.
+  // There is no token here yet: the email has to be confirmed, and the person
+  // comes back to the app through the `Login` screen. The flag lies in
+  // AsyncStorage and survives this path — otherwise the onboarding would only
+  // reach Apple/Google users.
   await markOnboardingPending();
   track("sign_up", { method: "email" });
   return data;
@@ -156,11 +157,11 @@ export const LoginWithGoogle = async () => {
 
     const { access, refresh, is_new_user } = result;
 
-    // Строго до `saveTokens`: та сама переключает auth-контекст изнутри
-    // (`notifyTokenUpdate` → `authenticate` в store/auth-context.tsx), а
-    // `OnboardingProvider` читает флаг по переходу `isAuthenticated` в true и
-    // второй попытки не делает. Записанный после — не успевал бы лечь на диск
-    // к моменту чтения, и новичок попадал бы сразу на дашборд.
+    // Strictly before `saveTokens`: that one switches the auth context from the
+    // inside (`notifyTokenUpdate` → `authenticate` in store/auth-context.tsx), and
+    // `OnboardingProvider` reads the flag on `isAuthenticated` turning true and
+    // makes no second attempt. Written afterwards, it would not reach the disk by
+    // the time of the read, and the newcomer would land straight on the dashboard.
     if (is_new_user) await markOnboardingPending();
 
     await saveTokens({ access, refresh });
@@ -215,8 +216,8 @@ export const LoginWithApple = async () => {
     },
   );
 
-  // См. комментарий в LoginWithGoogle: флаг обязан лечь на диск раньше, чем
-  // saveTokens переключит auth-контекст.
+  // See the comment in LoginWithGoogle: the flag has to reach the disk before
+  // saveTokens switches the auth context.
   if (is_new_user) await markOnboardingPending();
   await saveTokens({ access, refresh });
   const eventName = is_new_user ? "sign_up" : "login";

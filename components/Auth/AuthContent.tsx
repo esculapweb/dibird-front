@@ -114,9 +114,9 @@ const AuthContent = ({
       return;
     }
 
-    // После валидации, а не по тапу: событие меряет пару «попытка → login/
-    // sign_up», и опечатка в почте, до сервера не дошедшая, испортила бы эту
-    // пару, выглядя как неудачный вход.
+    // After validation rather than on tap: the event measures the "attempt →
+    // login/sign_up" pair, and a typo in the email that never reached the server
+    // would spoil that pair by looking like a failed sign-in.
     track("auth_started", { method: "email" });
 
     try {

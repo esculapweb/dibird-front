@@ -215,7 +215,7 @@ describe("distanceKm", () => {
     expect(distanceKm([27.12, 53.68], [27.12, 53.68])).toBe(0);
   });
 
-  // Минск — Вильнюс, ~172 км по прямой.
+  // Minsk — Vilnius, ~172 km as the crow flies.
   it("measures a known pair within a percent", () => {
     const d = distanceKm([27.5615, 53.9026], [25.2797, 54.6872]);
     expect(d).toBeGreaterThan(170);
@@ -228,8 +228,8 @@ describe("distanceKm", () => {
     expect(distanceKm(a, b)).toBeCloseTo(distanceKm(b, a), 9);
   });
 
-  // Долгота на широте 54° «короче» экваториальной почти вдвое — плоская
-  // разница градусов дала бы здесь заметно больше.
+  // A degree of longitude at latitude 54° is almost twice "shorter" than at the
+  // equator — a flat difference of degrees would give noticeably more here.
   it("accounts for the meridians converging", () => {
     const atEquator = distanceKm([0, 0], [1, 0]);
     const atLat54 = distanceKm([0, 54], [1, 54]);

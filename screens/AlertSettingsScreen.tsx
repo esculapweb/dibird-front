@@ -115,10 +115,10 @@ export default function AlertSettingsScreen() {
     setLocalWindows(settings.active_hours_utc);
   }, [settings?.radius_km, settings?.active_hours_utc]);
 
-  // Включение алертов — единственный момент на этом экране, когда пуши
-  // действительно понадобились, поэтому системный диалог просится здесь.
-  // Отказ не отменяет включение: настройки останутся, и уведомления поедут,
-  // как только разрешение выдадут в системных настройках.
+  // Turning the alerts on is the only moment on this screen when push is really
+  // needed, so the system dialog is asked for here. A refusal does not cancel the
+  // enable: the settings stay, and notifications will flow as soon as the
+  // permission is granted in the system settings.
   const handleToggleEnabled = async (enabled: boolean) => {
     if (enabled) {
       await requestPushPermission();
@@ -143,9 +143,9 @@ export default function AlertSettingsScreen() {
           true,
         );
       } else if (getPermissionStatus() === "denied") {
-        // Не `permissionStatus`: он снят на текущем рендере, то есть до
-        // запроса — на первом отказе там ещё null, и подсказка приходила
-        // только со второго тапа.
+        // Not `permissionStatus`: it was captured on the current render, that
+        // is, before the request — on the first refusal it is still null there,
+        // and the hint only arrived on the second tap.
         handleLocationUnavailable();
       }
     } catch (e) {

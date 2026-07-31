@@ -17,7 +17,7 @@ interface AnimatedLoadingButtonProps {
   onPress: () => void;
   loading: boolean;
   success?: boolean;
-  /** Выключена не из-за запроса, а по состоянию формы: спиннер не показываем. */
+  /** Disabled by the form state rather than by a request: no spinner then. */
   disabled?: boolean;
   children: ReactNode;
   testID?: string;

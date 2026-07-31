@@ -14,8 +14,8 @@ import { AppError } from "../../types";
 const captureMessage = Sentry.captureMessage as jest.Mock;
 const connected = isConnected as jest.Mock;
 
-// Ошибки, доезжающие до фолбэков, — это AppError из createTranslatedError:
-// status есть только когда сервер реально ответил.
+// The errors that reach the fallbacks are AppError from createTranslatedError:
+// status is only there when the server actually replied.
 const err = (fields: Partial<AppError>): AppError =>
   Object.assign(new Error("boom"), { code: "UNKNOWN" }, fields) as AppError;
 
@@ -32,7 +32,8 @@ describe("classifyFallback", () => {
   });
 
   it("treats a missing status as unreachable while the connection is up", () => {
-    // Сеть есть, а ответа нет: таймаут, DNS, лежащий сервер — это уже сигнал.
+    // There is a network but no answer: a timeout, DNS, a dead server — that is
+    // already a signal.
     expect(classifyFallback(err({ isTimeout: true }))).toBe("unreachable");
     expect(classifyFallback(err({ status: 0 }))).toBe("unreachable");
   });
@@ -93,8 +94,8 @@ describe("cachedRead", () => {
     await expect(cachedRead("fetchBirdOfDay", () => "cached", request)).resolves.toBe(
       "cached",
     );
-    // Ради этого вся ветка и существует: офлайн-запрос не падает сразу, а
-    // висит до api.ts'ного `timeout: 10000`.
+    // This is what the whole branch exists for: an offline request does not fail
+    // right away but hangs until the `timeout: 10000` in api.ts.
     expect(request).not.toHaveBeenCalled();
     expect(captureMessage).not.toHaveBeenCalled();
   });
@@ -114,7 +115,8 @@ describe("cachedRead", () => {
     await expect(cachedRead("fetchBirdOfDay", () => "cached", request)).resolves.toBe(
       "cached",
     );
-    // Сеть была, ответ подменён кэшем — это уже повод для Sentry.
+    // There was a network and the response was replaced by the cache — that is
+    // already a reason for Sentry.
     expect(captureMessage).toHaveBeenCalledTimes(1);
   });
 

@@ -9,22 +9,23 @@ import { track, type GatedAction } from "../services/analytics";
 import type { AuthStackNavigationProp } from "../types";
 
 /**
- * Оборачивает действие, которому нужен аккаунт. У залогиненного вызывает его
- * как есть, у гостя показывает шторку «создайте аккаунт, чтобы сохранить».
+ * Wraps an action that needs an account. For a signed-in user it calls it as is,
+ * for a guest it shows the "create an account to save this" sheet.
  *
- * Мягкий upsell, а не стена: гость попадает сюда, уже посмотрев каталог, и
- * шторка объясняет, что именно он получит, — в отличие от экрана логина на
- * старте, где предлагать ещё нечего.
+ * A soft upsell rather than a wall: the guest gets here having already browsed
+ * the catalogue, and the sheet explains what exactly they get — unlike a login
+ * screen at the very start, where there is nothing to offer yet.
  *
- * Войти можно прямо из шторки — Apple/Google/почта (AuthOptions, тот же блок,
- * что на Welcome). Раньше единственным действием была кнопка «Sign Up» на
- * экран регистрации: у кого аккаунт уже есть, тот искал вход в переключателе
- * внизу чужой формы, а до Apple/Google из воронки было не добраться вовсе —
- * Welcome лежит под всем каталожным стеком, и «назад» из Signup возвращает на
- * страницу птицы, а не к кнопкам входа.
+ * Signing in is possible right from the sheet — Apple/Google/email (AuthOptions,
+ * the same block as on Welcome). The only action used to be a "Sign Up" button
+ * leading to the signup screen: whoever already had an account looked for the
+ * sign-in in the switcher at the bottom of someone else's form, and Apple/Google
+ * could not be reached from the funnel at all — Welcome sits underneath the whole
+ * catalogue stack, and "back" from Signup returns to the bird page rather than to
+ * the sign-in buttons.
  *
- * Типизация навигации — `AuthStackNavigationProp`: переходы выполняются
- * только когда гость, а гость всегда в `AuthStack`.
+ * The navigation typing is `AuthStackNavigationProp`: navigation only happens for
+ * a guest, and a guest is always in `AuthStack`.
  */
 export const useRequireAuth = () => {
   const { isAuthenticated } = useAuth();
@@ -40,28 +41,31 @@ export const useRequireAuth = () => {
 
       track("auth_wall_shown", { action });
 
-      // Логин пересоздаёт навигатор, и без этого гость после регистрации
-      // оказывался на MainScreen вместо птицы, ради которой регистрировался.
-      // Ставится здесь, а не в момент входа: путь может пройти через экран
-      // Login, к тому времени исходного экрана в стеке уже не будет.
+      // Login recreates the navigator, and without this a guest ended up on
+      // MainScreen after signing up instead of the bird they signed up for. Set
+      // here rather than at the moment of the sign-in: the path may go through
+      // the Login screen, and by then the original screen is no longer in the
+      // stack.
       //
-      // `pendingAction` — само прерванное действие. Возвращается оно
-      // параметром экрана, а не отдельным маршрутом поверх: `run` — замыкание
-      // гостевого экрана, пережить пересоздание навигатора оно не может, а
-      // «снимок» его аргументов был бы снят до логина. Экран доиграет
-      // действие сам, уже с профилем на руках.
+      // `pendingAction` is the interrupted action itself. It comes back as a
+      // screen parameter rather than as a separate route on top: `run` is a
+      // closure of the guest screen and cannot survive the navigator being
+      // recreated, while a "snapshot" of its arguments would have been taken
+      // before the login. The screen replays the action itself, now with a
+      // profile in hand.
       //
-      // Промис не ждём: намерение сразу лежит в модульной переменной, а запись
-      // на диск нужна только для пути, который уводит из приложения (почта), —
-      // он не может закончиться раньше, чем эта запись.
+      // The promise is not awaited: the intent is in a module variable right
+      // away, and the write to disk is only needed for the path that leaves the
+      // app (email) — that one cannot finish sooner than this write.
       setAuthReturn({
         name: route.name,
         params: { ...route.params, pendingAction: action },
       });
 
-      // Без `title`: общая шапка шторки — отдельный BottomSheetView, а при
-      // динамической высоте второй измеряемый узел ломает размер (см.
-      // TaxonomyScreen и шапку AuthGateSheet). Заголовок рисует сам контент.
+      // No `title`: the shared sheet header is a separate BottomSheetView, and
+      // with dynamic height a second measured node breaks the size (see
+      // TaxonomyScreen and the header of AuthGateSheet). The content draws the
+      // heading itself.
       BottomSheet.showContent({
         renderContent: (dismiss: () => void) => (
           <AuthGateSheet

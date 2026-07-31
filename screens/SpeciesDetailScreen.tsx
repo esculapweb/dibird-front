@@ -125,42 +125,43 @@ const SpeciesDetailScreen = () => {
     );
   };
 
-  // Гость нажал «добавить наблюдение», завёл аккаунт в шторке и вернулся сюда
-  // (services/authReturn) — доигрываем то, за чем он приходил, вместо того
-  // чтобы заставлять жать ту же кнопку второй раз.
+  // The guest tapped "add observation", created an account in the sheet and came
+  // back here (services/authReturn) — we replay what they came for instead of
+  // making them press the same button a second time.
   //
-  // Ждём и данные вида, и профиль: `defaultTerritory` собирается из фильтров
-  // и страны профиля, а сразу после логина их ещё нет — редактор открылся бы
-  // с пустой обязательной страной. По той же причине действие доигрывается
-  // здесь, а не подставляется маршрутом при логине: тогда снимок аргументов
-  // был бы снят ещё гостевой, до того как появился профиль.
+  // Both the species data and the profile are awaited: `defaultTerritory` is
+  // assembled from the filters and the profile country, and right after the login
+  // they are not there yet — the editor would open with an empty required
+  // country. For the same reason the action is replayed here rather than
+  // substituted by a route at login time: the snapshot of the arguments would
+  // then have been taken while still a guest, before the profile appeared.
   //
-  // Параметр гасится сразу: он живёт в маршруте, и без сброса редактор
-  // открывался бы снова на каждый возврат на этот экран.
+  // The parameter is cleared right away: it lives in the route, and without a
+  // reset the editor would open again on every return to this screen.
   //
-  // Через requireAuth, а не напрямую: аккаунт к этому моменту уже есть и
-  // проверка проходит насквозь, но если параметр каким-то образом достался
-  // гостю, он увидит ту же шторку, а не молчаливый переход в никуда —
-  // редактора в гостевом стеке нет.
+  // Through requireAuth rather than directly: by now the account exists and the
+  // check passes straight through, but if the parameter somehow reached a guest,
+  // they will see the same sheet rather than a silent navigation to nowhere —
+  // there is no editor in the guest stack.
   const pendingAction = route.params.pendingAction;
   useEffect(() => {
     if (
       pendingAction !== "add_observation" ||
       profileLoading ||
-      // Ждём сам профиль, а не только снятый `profileLoading`: флаг гаснет,
-      // как только вернулся запрос синхронизации, а сам профиль приезжает
-      // рендером позже — он приходит из зеркала в SQLite через useLiveQuery,
-      // и её уведомление приходит уже после смены флага. В этот зазор
-      // `defaultTerritory` собирается вообще ни из чего (фильтры к тому
-      // моменту тоже ещё не перечитаны) и уезжает в редактор как null —
-      // а null здесь по контракту значит «страны нет и подставлять нечего»,
-      // то есть редактор открывался с пустой обязательной страной, без вида
-      // и с заблокированными списками. Проверял e2e-сценарий
+      // The profile itself is awaited, not just a cleared `profileLoading`: the
+      // flag goes off as soon as the sync request comes back, while the profile
+      // itself arrives a render later — it comes from the mirror in SQLite via
+      // useLiveQuery, whose notification arrives after the flag has changed. In
+      // that gap `defaultTerritory` is assembled from nothing at all (the filters
+      // have not been re-read by then either) and goes into the editor as null —
+      // and null here means, by contract, "there is no country and nothing to
+      // substitute", that is, the editor opened with an empty required country,
+      // without a species and with the lists locked. Caught by the e2e scenario
       // .maestro/guest-login-return.yaml.
       //
-      // `profileError` — чтобы неудачная загрузка (офлайн сразу после
-      // логина) не подвесила возврат навсегда: тогда открываем с тем, что
-      // есть, как и раньше.
+      // `profileError` is there so that a failed load (offline right after the
+      // login) does not hang the return forever: then we open with whatever is
+      // available, as before.
       (!profile && !profileError) ||
       !data
     )
@@ -168,8 +169,8 @@ const SpeciesDetailScreen = () => {
 
     navigation.setParams({ pendingAction: undefined });
     requireAuth("add_observation", openObservationEditor);
-    // openObservationEditor пересоздаётся каждый рендер — в зависимостях
-    // держим то, от чего он на деле зависит.
+    // openObservationEditor is recreated on every render — the dependencies keep
+    // what it actually depends on.
   }, [
     pendingAction,
     profileLoading,
@@ -218,9 +219,10 @@ const SpeciesDetailScreen = () => {
     }
   }, [data?.redirect, navigation]);
 
-  // Ключевая страница каталога: по ней меряется, доходит ли гость от списка до
-  // вида — то есть увидел ли он вообще ценность до регистрации. Один раз на
-  // вид, а не на каждый ререндер, поэтому в зависимостях segment.
+  // The key page of the catalogue: it measures whether a guest gets from the list
+  // to a species — that is, whether they saw any value at all before signing up.
+  // Once per species rather than on every re-render, hence segment in the
+  // dependencies.
   useEffect(() => {
     if (segment) track("species_viewed");
   }, [segment]);
@@ -284,10 +286,11 @@ const SpeciesDetailScreen = () => {
   const goToSpecies = (targetSegment: string) =>
     navigation.push("SpeciesDetail", { segment: targetSegment });
 
-  // Единственный переход отсюда за пределы справочника: редактор наблюдений
-  // живёт только в AppStack, поэтому у гостя вместо него шторка регистрации.
-  // Типы это и обеспечивают — CatalogNavigationProp про ObservationEditor не
-  // знает, отсюда каст внутри уже проверенной на аккаунт ветки.
+  // The only navigation from here beyond the reference: the observation editor
+  // lives in AppStack only, so a guest gets the signup sheet instead. The types
+  // are what enforces that — CatalogNavigationProp knows nothing about
+  // ObservationEditor, hence the cast inside a branch already checked for an
+  // account.
   const handleAddObservation = () => {
     requireAuth("add_observation", openObservationEditor);
   };

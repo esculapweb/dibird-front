@@ -52,8 +52,8 @@ jest.mock("../../hooks/useContentWidth", () => ({ useContentWidth: () => 400 }))
 jest.mock("../../hooks/useDefaultTerritory", () => ({
   useDefaultTerritory: jest.fn(),
 }));
-// Только флаг загрузки — сам контекст тянет services/queryClient, а
-// @tanstack/react-query здесь заглушён одним useQuery.
+// The loading flag only — the context itself pulls in services/queryClient, and
+// @tanstack/react-query is stubbed here down to a single useQuery.
 jest.mock("../../store/profile-context", () => ({
   useProfile: () => mockProfile,
 }));
@@ -494,8 +494,9 @@ it("opens the observation editor prefilled with this species when the add-observ
   });
 });
 
-// Гость нажал FAB, завёл аккаунт в шторке и вернулся сюда: заставлять его
-// жать ту же кнопку второй раз — терять его ровно там, где он согласился.
+// The guest tapped the FAB, created an account in the sheet and came back here:
+// making them press the same button a second time means losing them exactly
+// where they agreed.
 describe("resuming the action the guest signed up for", () => {
   const withPendingAction = () => {
     mockRoute = createRouteMock("SpeciesDetail", {
@@ -517,8 +518,8 @@ describe("resuming the action the guest signed up for", () => {
     });
   });
 
-  // Параметр живёт в маршруте: не погасив его, редактор открывался бы заново
-  // каждый раз, когда пользователь возвращается на этот экран.
+  // The parameter lives in the route: without clearing it the editor would open
+  // anew every time the user returns to this screen.
   it("clears the parameter so it fires exactly once", async () => {
     withPendingAction();
     mockQueries({ detail: detailResult({ data: baseDetail }) });
@@ -530,9 +531,9 @@ describe("resuming the action the guest signed up for", () => {
     });
   });
 
-  // defaultTerritory собирается из фильтров и страны профиля, а сразу после
-  // логина их ещё нет — поспешив, редактор открылся бы с пустой обязательной
-  // страной.
+  // defaultTerritory is assembled from the filters and the profile country, and
+  // right after the login they are not there yet — in a hurry the editor would
+  // open with an empty required country.
   it("waits for the profile before opening anything", async () => {
     withPendingAction();
     mockProfile.profileLoading = true;
@@ -543,10 +544,10 @@ describe("resuming the action the guest signed up for", () => {
     expect(mockNavigation.navigate).not.toHaveBeenCalled();
   });
 
-  // `profileLoading` гаснет раньше, чем появляется сам профиль: он приезжает
-  // из зеркала в SQLite отдельным уведомлением. Открывшись в этот зазор,
-  // редактор получал defaultTerritory: null и вставал с пустой обязательной
-  // страной — ровно то, что ловит .maestro/guest-login-return.yaml.
+  // `profileLoading` goes off before the profile itself appears: it arrives from
+  // the mirror in SQLite as a separate notification. Opening in that gap, the
+  // editor got defaultTerritory: null and came up with an empty required country
+  // — exactly what .maestro/guest-login-return.yaml catches.
   it("waits for the profile itself, not just for the loading flag to drop", async () => {
     withPendingAction();
     mockProfile.profileLoading = false;
@@ -558,9 +559,9 @@ describe("resuming the action the guest signed up for", () => {
     expect(mockNavigation.navigate).not.toHaveBeenCalled();
   });
 
-  // Но не навсегда: если профиль не загрузился (офлайн сразу после логина),
-  // ждать больше нечего — возврат важнее пустой страны, которую пользователь
-  // и так может выбрать сам.
+  // But not forever: if the profile failed to load (offline right after the
+  // login) there is nothing left to wait for — the return matters more than an
+  // empty country, which the user can pick themselves anyway.
   it("gives up waiting when the profile failed to load", async () => {
     withPendingAction();
     mockProfile.profileLoading = false;

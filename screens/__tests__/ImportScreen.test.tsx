@@ -102,8 +102,9 @@ describe("picking a file", () => {
 });
 
 describe("while the import runs", () => {
-  // Кнопка убрана намеренно: задача живёт на бэке, второй запрос упёрся бы в
-  // 429, а поллинг подхватится сам при следующем заходе на экран.
+  // The button is removed on purpose: the task lives on the backend, a second
+  // request would hit a 429, and the polling picks it up by itself on the next
+  // visit to the screen.
   it.each(["pending", "processing"] as const)(
     "shows progress and no action button — %s",
     async (state) => {
@@ -131,8 +132,8 @@ describe("the report", () => {
     ).toBeOnTheScreen();
   });
 
-  // Список нераспознанных — единственный способ для человека понять, потерял
-  // ли он что-то важное или это устаревшие синонимы.
+  // The list of unrecognised names is the only way for a person to tell whether
+  // they lost something important or these are outdated synonyms.
   it("lists the names that were not recognised", async () => {
     mockImportHook.state = "completed";
     mockImportHook.result = RESULT({ unmatched: ["Carduelis chloris"] });

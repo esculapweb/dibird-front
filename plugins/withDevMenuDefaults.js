@@ -4,34 +4,34 @@ const {
   withInfoPlist,
 } = require("@expo/config-plugins");
 
-// Стартовые настройки меню разработчика (expo-dev-menu) для dev-client'а.
+// The initial settings of the developer menu (expo-dev-menu) for the dev client.
 //
-// По умолчанию dev-client открывает своё меню при каждом запуске и рисует
-// поверх приложения плавающую шестерёнку. Шестерёнка перекрывает кнопки в
-// правом верхнем углу — в редакторе наблюдения это кнопка сохранения, и тап
-// по ней открывал меню вместо отправки формы. e2e-сценариям приходилось
-// разбирать это руками на каждом флоу: `launchApp: clearState` стирает
-// UserDefaults / SharedPreferences, где меню хранит своё состояние, так что
-// выключенная в прошлый раз шестерёнка возвращалась снова.
+// By default the dev client opens its menu on every launch and draws a floating
+// gear on top of the app. The gear covers the buttons in the top right corner —
+// in the observation editor that is the save button, and a tap on it opened the
+// menu instead of submitting the form. The e2e scenarios had to sort this out by
+// hand in every flow: `launchApp: clearState` wipes UserDefaults /
+// SharedPreferences, where the menu keeps its state, so a gear switched off last
+// time came back again.
 //
-// Ключи читаются нативным кодом как *значения по умолчанию* — из Info.plist
-// на iOS (`DevMenuPreferences.setup`) и из <meta-data> манифеста на Android
-// (`DevMenuDefaultPreferences.metaDataBool`). Ручное переключение тумблера в
-// самом меню по-прежнему главнее: это дефолт, а не запрет.
+// The keys are read by the native code as *default values* — from Info.plist on
+// iOS (`DevMenuPreferences.setup`) and from the manifest <meta-data> on Android
+// (`DevMenuDefaultPreferences.metaDataBool`). Toggling the switch in the menu
+// itself still wins: this is a default, not a ban.
 //
-// Имена ключей одни и те же на обеих платформах, поэтому и задаются здесь
-// одним списком — разъехавшись, они дали бы разное поведение iOS и Android
-// при молчаливом отсутствии ошибки.
+// The key names are the same on both platforms, which is why they are set here
+// as a single list — drifting apart, they would give different behaviour on iOS
+// and Android while silently producing no error.
 //
-// В preview/production сборках expo-dev-menu нет вовсе, там ключи просто
-// лежат мёртвым грузом — отдельного ветвления по варианту не требуют.
+// In preview/production builds there is no expo-dev-menu at all, there the keys
+// simply lie around as dead weight — they need no separate branching by variant.
 const DEV_MENU_DEFAULTS = {
-  // Плавающая шестерёнка («Tools button»).
+  // The floating gear ("Tools button").
   EXDevMenuShowFloatingActionButton: false,
-  // Открывать ли меню на старте. Одного этого флага мало: обе платформы
-  // показывают меню при `showsAtLaunch || !isOnboardingFinished`, поэтому
-  // онбординг тоже приходится помечать пройденным — иначе меню всё равно
-  // встретит каждый чистый запуск, просто уже своим приветственным экраном.
+  // Whether to open the menu on start. This flag alone is not enough: both
+  // platforms show the menu on `showsAtLaunch || !isOnboardingFinished`, so the
+  // onboarding has to be marked as finished too — otherwise the menu would still
+  // meet every clean launch, just with its welcome screen this time.
   EXDevMenuShowsAtLaunch: false,
   EXDevMenuIsOnboardingFinished: true,
 };
@@ -48,9 +48,9 @@ module.exports = function withDevMenuDefaults(config) {
     );
 
     for (const [name, value] of Object.entries(DEV_MENU_DEFAULTS)) {
-      // Строкой, а не булевым: в XML всё равно уедет текст, а "true"/"false"
-      // aapt разбирает обратно в boolean — именно его ждёт getBoolean() на
-      // той стороне.
+      // As a string, not a boolean: it goes into the XML as text anyway, and
+      // "true"/"false" is parsed back into a boolean by aapt — which is exactly
+      // what getBoolean() expects on the other side.
       AndroidConfig.Manifest.addMetaDataItemToMainApplication(
         mainApplication,
         name,

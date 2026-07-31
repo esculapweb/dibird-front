@@ -27,8 +27,8 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [language, setLanguage] = useState("en");
   const [isReady, setIsReady] = useState(false);
 
-  // Язык интерфейса — не язык устройства: у не-EN рынков это как раз то
-  // измерение, ради которого план и различает рынки в отчётах.
+  // The interface language is not the device language: on non-EN markets this is
+  // exactly the dimension the plan distinguishes markets by in the reports.
   useEffect(() => {
     if (!isReady) return;
     setUserProps({ ui_language: language });

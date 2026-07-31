@@ -65,9 +65,10 @@ beforeEach(() => {
   mockList([observationItem()]);
 });
 
-// Территорию и радиус применяет сервер по настройкам алертов: свой GPS-фикс
-// давал другой центр, чем у пушей, а без разрешения координат не было вовсе —
-// и радиус на бэке молча не применялся.
+// The server applies the territory and the radius from the alert settings: our
+// own GPS fix gave a different centre than the pushes did, and without the
+// permission there were no coordinates at all — so the backend silently skipped
+// the radius.
 it("asks the server for the alert-settings scope, enabled only with settings", async () => {
   await render(<RareNearby filters={{}} />);
   const props = lastListCall();
@@ -78,8 +79,8 @@ it("asks the server for the alert-settings scope, enabled only with settings", a
   expect(props.enabled).toBe(true);
 });
 
-// Скоуп в фильтрах больше не виден, а меняется он на клиенте — без него в
-// ключе список остался бы собранным по прежнему радиусу.
+// The scope is no longer visible in the filters, and it changes on the client —
+// without it in the key the list would stay assembled from the previous radius.
 it("keys the query by the scope the settings describe", async () => {
   await render(<RareNearby filters={{}} />);
   expect(lastListCall().queryKeyExtra).toBe("5:50:48.85:2.35");
@@ -116,8 +117,8 @@ describe("scope label", () => {
     ).toBeOnTheScreen();
   });
 
-  // Радиус без сохранённой точки применить не к чему — называть такой список
-  // «в 50 км» значит врать: сервер отдал всю страну.
+  // A radius with no stored point has nothing to apply to — calling such a list
+  // "within 50 km" is a lie: the server returned the whole country.
   it("drops the radius when there is no stored centre", async () => {
     (useAlertSettings as jest.Mock).mockReturnValue({
       settings: { ...SETTINGS, location_lat: null, location_lon: null },

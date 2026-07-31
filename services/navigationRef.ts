@@ -35,30 +35,30 @@ export function flushPendingNavigation() {
 }
 
 /**
- * Каждые 100 мс, до двух секунд. Ожидание тут — это одно чтение AsyncStorage
- * плюс рендер, то есть десятки миллисекунд; потолок стоит на случай, когда
- * навигатора не будет вовсе, чтобы действие не висело в таймерах до конца
- * сессии.
+ * Every 100 ms, up to two seconds. The wait here is one AsyncStorage read plus a
+ * render, that is, tens of milliseconds; the ceiling is there for the case when
+ * there will be no navigator at all, so that the action does not hang in timers
+ * until the end of the session.
  */
 const READY_RETRY_MS = 100;
 const READY_MAX_ATTEMPTS = 20;
 
 /**
- * Отправить действие, дождавшись навигатора.
+ * Dispatch an action once the navigator is there.
  *
- * Навигатор бывает не смонтирован уже ПОСЛЕ того, как контейнер однажды стал
- * готов: `AppStack` рендерит `null`, пока `OnboardingProvider` перечитывает
- * свой флаг (см. navigation/AppStack.tsx), а перечитывает он его ровно на
- * входе в аккаунт. Действие, отправленное в этот зазор, пропадает — в dev с
- * красным «The 'navigation' object hasn't been initialized yet», в проде
- * молча. Ловилось на `.maestro/guest-login-return.yaml`: гость входил из
- * шторки на странице птицы, `reset` из services/authReturn улетал в никуда, и
- * вместо птицы человек оставался на дашборде — то есть ломалось ровно то,
- * ради чего authReturn и написан.
+ * The navigator can be unmounted even AFTER the container has once become ready:
+ * `AppStack` renders `null` while `OnboardingProvider` re-reads its flag (see
+ * navigation/AppStack.tsx), and it re-reads it exactly on signing in. An action
+ * dispatched into that gap disappears — in dev with a red "The 'navigation'
+ * object hasn't been initialized yet", in production silently. Caught by
+ * `.maestro/guest-login-return.yaml`: the guest signed in from the sheet on a bird
+ * page, the `reset` from services/authReturn flew off into nowhere, and instead of
+ * the bird the person stayed on the dashboard — that is, exactly what authReturn
+ * is written for was broken.
  *
- * `flushPendingNavigation` эту дыру не закрывает: он висит на `onReady`
- * контейнера, а тот к этому моменту уже отработал на гостевом стеке и второй
- * раз не позовётся.
+ * `flushPendingNavigation` does not close this hole: it hangs on the container's
+ * `onReady`, and by that moment that one has already fired on the guest stack and
+ * will not be called a second time.
  */
 export function dispatchWhenReady(
   action: NavigationAction,

@@ -25,10 +25,10 @@ import type { MinimalRoute, NavState } from "../types";
 
 const NAV_STATE_KEY = "NAV_STATE";
 
-// Экраны логина/регистрации. Нужны, чтобы отличить «гость вошёл, не выходя из
-// воронки» от «гость передумал, ушёл гулять и залогинился через час совсем в
-// другом месте»: во втором случае возвращать его на давнюю страницу птицы —
-// телепорт, а не удобство.
+// The login/signup screens. Needed to tell "the guest signed in without leaving
+// the funnel" from "the guest changed their mind, went for a walk and signed in
+// an hour later somewhere else entirely": in the second case returning them to a
+// long-past bird page is a teleport, not a convenience.
 const AUTH_FUNNEL_SCREENS = new Set([
   "Login",
   "Signup",
@@ -78,13 +78,14 @@ const buildInitialState = (
     params: r.params,
   }));
 
-  // Корень берётся из фактической аутентификации, а не угадывается по составу
-  // сохранённого стека. Раньше "Welcome" ставился, только если в стеке был
-  // Login/Signup/CheckEmail/ConfirmEmail, иначе — "Main"; но каталожные экраны
-  // (catalogScreens) общие для обоих навигаторов, и гость, закрывший
-  // приложение на Taxonomy, получал корнем "Main", которого в AuthStack нет.
-  // React Navigation такой роут выбрасывает — гость оставался на каталоге
-  // один: ни кнопки «назад», ни бургера, до Welcome и регистрации не добраться.
+  // The root comes from the actual authentication rather than being guessed from
+  // the contents of the saved stack. "Welcome" used to be set only if the stack
+  // contained Login/Signup/CheckEmail/ConfirmEmail, otherwise "Main"; but the
+  // catalogue screens (catalogScreens) are shared by both navigators, and a guest
+  // who closed the app on Taxonomy got "Main" as the root, which AuthStack does
+  // not have. React Navigation drops such a route — the guest was left alone on
+  // the catalogue: no "back" button, no burger, no way to reach Welcome and the
+  // signup.
   const root = isAuthenticated ? "Main" : "Welcome";
 
   const allRoutes = [{ name: root }, ...innerRoutes];
@@ -100,8 +101,8 @@ const Navigation = () => {
   const { isAuthenticated, isInitializing } = useAuth();
   const routeNameRef = useRef<string | undefined>(undefined);
   const prevAuthRef = useRef<boolean | null>(null);
-  // Последний экран, на котором гостя застали до логина. Обновляется только
-  // пока `!isAuthenticated`, поэтому переключение навигатора его не затирает.
+  // The last screen the guest was caught on before the login. Updated only while
+  // `!isAuthenticated`, so switching the navigator does not overwrite it.
   const lastGuestRouteRef = useRef<MinimalRoute | null>(null);
 
   const [initialState, setInitialState] = useState<
@@ -111,11 +112,11 @@ const Navigation = () => {
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    // Ждём восстановления токена (SecureStore + возможная биометрия): пока оно
-    // идёт, isAuthenticated ещё false, и построенный по нему корень был бы
-    // «гостевым» у залогиненного. NavigationContainer читает initialState один
-    // раз при монтировании, вторая попытка уже ничего не исправит — поэтому
-    // до готовности auth рендерим null (см. ранний return ниже), а не гадаем.
+    // Wait for the token to be restored (SecureStore plus possibly biometrics):
+    // while that runs isAuthenticated is still false, and a root built from it
+    // would be the "guest" one for a signed-in user. NavigationContainer reads
+    // initialState once on mount, a second attempt fixes nothing — so until auth
+    // is ready null is rendered (see the early return below) instead of guessing.
     if (isInitializing) return;
 
     const restore = async () => {
@@ -143,8 +144,9 @@ const Navigation = () => {
     };
 
     restore();
-    // isAuthenticated намеренно не в зависимостях: восстановление — разовое,
-    // при смене логина стек сбрасывается эффектом ниже, а не перечитывается.
+    // isAuthenticated is deliberately not in the dependencies: restoring is a
+    // one-off, and on a change of login the stack is reset by the effect below
+    // rather than re-read.
   }, [isInitializing]);
 
   useEffect(() => {
@@ -154,11 +156,11 @@ const Navigation = () => {
   }, []);
 
   useEffect(() => {
-    // Тот же ранний выход, что и в восстановлении: до готовности auth
-    // isAuthenticated ещё false, и первый же его переход в true (просто
-    // прочитали токен из SecureStore) выглядел бы как логин — стек сносился
-    // бы на каждом запуске залогиненного, вдобавок наперегонки с чтением
-    // выше. Стартовое значение фиксируем уже разрешённым.
+    // The same early exit as in the restore: until auth is ready isAuthenticated
+    // is still false, and its very first flip to true (the token was simply read
+    // from SecureStore) would look like a login — the stack would be wiped on
+    // every launch of a signed-in user, and racing the read above at that. The
+    // initial value is captured already resolved.
     if (isInitializing) return;
 
     if (prevAuthRef.current === null) {
@@ -170,42 +172,43 @@ const Navigation = () => {
     prevAuthRef.current = isAuthenticated;
     AsyncStorage.removeItem(NAV_STATE_KEY);
 
-    // Забираем всегда, даже на логауте: намерение не должно пережить
-    // ситуацию, ради которой ставилось. Асинхронно, потому что намерение
-    // переживает и перезапуск процесса (см. services/authReturn.ts).
+    // Always taken, even on a logout: the intent must not outlive the situation
+    // it was set for. Asynchronously, because the intent also survives a process
+    // restart (see services/authReturn.ts).
     takeAuthReturn().then((target) => {
       if (!isAuthenticated || !target) return;
 
-      // Гость вошёл со страницы справочника (шторка useRequireAuth). Навигатор
-      // к этому моменту уже переключился на AppStack и стоит на MainScreen —
-      // возвращаем экран, с которого всё начиналось, поверх Main, чтобы «назад»
-      // вело туда же, куда вело бы у обычного пользователя.
+      // The guest signed in from a reference page (the useRequireAuth sheet). By
+      // now the navigator has already switched to AppStack and stands on
+      // MainScreen — we put the screen it all started from back on top of Main,
+      // so that "back" leads where it would for an ordinary user.
       //
-      // Гард нужен, чтобы не телепортировать того, кто передумал, ушёл гулять и
-      // залогинился через час совсем в другом месте. Но работает он только на
-      // тёплом пути: если приложение перезапустилось (регистрация по почте
-      // уводит в почтовый клиент, ссылка возвращает холодным стартом), гость по
-      // этому стеку не ходил и `lastGuestRouteRef` пуст. Там роль «не выходя из
-      // воронки» играет суточный TTL самого намерения.
+      // The guard is there so as not to teleport someone who changed their mind,
+      // went for a walk and signed in an hour later somewhere else entirely. But
+      // it only works on the warm path: if the app restarted (email signup takes
+      // the user to a mail client, the link brings them back on a cold start), the
+      // guest never walked this stack and `lastGuestRouteRef` is empty. There the
+      // "without leaving the funnel" role is played by the one-day TTL of the
+      // intent itself.
       const from = lastGuestRouteRef.current?.name;
       const coldStart = from === undefined;
       const inFunnel =
         coldStart || from === target.name || AUTH_FUNNEL_SCREENS.has(from);
       if (!inFunnel) return;
 
-      // Онбординг для этого человека закончен, не начавшись. Он завёл аккаунт
-      // ради конкретной птицы, и сброс ниже всё равно снимет экран онбординга
-      // со стека; с непогашенным флагом тот всплыл бы на следующем холодном
-      // старте — поверх воронки, из которой он уже вышел. Прогонять его через
-      // «выберите страну» значит отобрать намерение, ради которого делались
-      // 1.1 и 1.2.
+      // Onboarding is over for this person before it began. They created an
+      // account for a particular bird, and the reset below removes the onboarding
+      // screen from the stack anyway; with the flag left unset it would come up on
+      // the next cold start — on top of a funnel they have already left. Running
+      // them through "pick a country" would mean taking away the very intent 1.1
+      // and 1.2 were made for.
       clearOnboardingPending().catch(
         (e) => __DEV__ && console.warn("[NAV] failed to clear onboarding", e),
       );
 
-      // Не прямой dispatch: на входе в аккаунт навигатора может секунду не
-      // быть — `AppStack` рендерит null, пока перечитывается флаг онбординга,
-      // и reset терялся вместе с намерением (см. dispatchWhenReady).
+      // Not a direct dispatch: on signing in the navigator may be missing for a
+      // second — `AppStack` renders null while the onboarding flag is re-read, and
+      // the reset used to be lost together with the intent (see dispatchWhenReady).
       dispatchWhenReady(
         CommonActions.reset({
           index: 1,
@@ -247,13 +250,14 @@ const Navigation = () => {
           if (!isAuthenticated) {
             lastGuestRouteRef.current = routes.at(-1) ?? null;
           }
-          // Онбординг не персистим: buildInitialState всегда ставит корнем
-          // "Main", и сохранённый [Onboarding] вернулся бы как [Main,
-          // Onboarding] — поток поверх дашборда, с которого «назад» уводит на
-          // недонастроенный аккаунт. Пока флаг не проставлен, экран и так
-          // окажется корнем стека (см. AppStack), восстанавливать нечего.
-          // Только персист: screen_view ниже онбординг слать обязан, иначе в
-          // воронке пропадёт весь шаг между sign_up и первым экраном.
+          // Onboarding is not persisted: buildInitialState always makes "Main"
+          // the root, and a saved [Onboarding] would come back as [Main,
+          // Onboarding] — a flow on top of the dashboard, from which "back" leads
+          // to a half-configured account. While the flag is unset the screen ends
+          // up as the root of the stack anyway (see AppStack), there is nothing to
+          // restore. Persistence only: the screen_view below must be sent for
+          // onboarding, otherwise the whole step between sign_up and the first
+          // screen would vanish from the funnel.
           if (routes.at(-1)?.name !== "Onboarding") {
             if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
             saveTimeoutRef.current = setTimeout(() => {

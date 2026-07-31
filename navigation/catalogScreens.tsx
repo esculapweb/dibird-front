@@ -11,13 +11,13 @@ import TerritoryCompareScreen from "../screens/TerritoryCompareScreen";
 import type { CatalogParamList } from "../types";
 
 /**
- * Регистрация экранов справочника. Один список на два стека: `AppStack` и
- * гостевой `AuthStack` — см. `CatalogParamList`. Дублировать эти семь
- * регистраций нельзя: разъехавшийся `options` означал бы, что у гостя и у
- * залогиненного один и тот же экран называется по-разному.
+ * Registration of the catalogue screens. One list for two stacks: `AppStack` and
+ * the guest `AuthStack` — see `CatalogParamList`. Duplicating these seven
+ * registrations is not an option: `options` drifting apart would mean the same
+ * screen is named differently for a guest and for a signed-in user.
  *
- * Возвращает фрагмент, а не компонент: `Stack.Navigator` принимает в children
- * только собственные `Screen`/`Group`, обёртка сломала бы навигатор.
+ * Returns a fragment rather than a component: `Stack.Navigator` accepts only its
+ * own `Screen`/`Group` as children, a wrapper would break the navigator.
  */
 export const catalogScreens = <P extends CatalogParamList>(
   Stack: ReturnType<typeof createNativeStackNavigator<P>>,

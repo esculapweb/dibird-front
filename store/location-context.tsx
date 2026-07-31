@@ -12,11 +12,11 @@ import { Coords } from "../types";
 
 interface LocationOptions {
   /**
-   * Показывать ли системный диалог, если разрешения ещё не спрашивали.
-   * `false` — «возьми координаты, если они и так доступны, и промолчи»: нужен
-   * фоновым потребителям (App.tsx), которым координаты полезны, но которые не
-   * являются поводом спросить. Диалог должен всплывать там, где пользователь
-   * сам попросил что-то, чему нужна геопозиция.
+   * Whether to show the system dialog if the permission has not been asked for
+   * yet. `false` means "take the coordinates if they are available anyway, and
+   * stay quiet": needed by background consumers (App.tsx) for which the
+   * coordinates are useful but which are no reason to ask. The dialog should pop
+   * up where the user themselves asked for something that needs the location.
    */
   prompt?: boolean;
 }
@@ -26,12 +26,12 @@ interface LocationContextType {
   locationAvailable: boolean;
   permissionStatus: string | null;
   /**
-   * Тот же статус, но читаемый после `await requestLocation()`.
-   * `permissionStatus` — состояние, снятое на текущем рендере: обработчик,
-   * проверяющий его следом за запросом, видит значение до запроса, и на
-   * первом же отказе подсказка «откройте настройки» не показывалась. Для
-   * рендера по-прежнему берите `permissionStatus`, здесь — только для
-   * проверок после await.
+   * The same status, but readable after `await requestLocation()`.
+   * `permissionStatus` is the state captured on the current render: a handler
+   * checking it right after the request sees the value from before the request,
+   * and on the very first refusal the "open the settings" hint was not shown. For
+   * rendering keep using `permissionStatus`, this one is only for checks after an
+   * await.
    */
   getPermissionStatus: () => string | null;
   requestLocation: (
@@ -52,9 +52,9 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
     null,
   );
   const [isRequesting, setIsRequesting] = useState(false);
-  // Ref и состояние держим в паре: состояние — для рендера, ref — для
-  // вызывающих, которым статус нужен сразу после await (см. комментарий у
-  // getPermissionStatus в типе контекста).
+  // The ref and the state are kept as a pair: the state for rendering, the ref for
+  // callers that need the status right after an await (see the comment on
+  // getPermissionStatus in the context type).
   const permissionStatusRef = useRef<string | null>(null);
   const setPermissionStatus = useCallback((status: string) => {
     permissionStatusRef.current = status;
@@ -105,9 +105,9 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
 
         const { status } = await Location.requestForegroundPermissionsAsync();
         setPermissionStatus(status);
-        // Только здесь: это единственная ветка, где диалог действительно
-        // показали. Событие на уже известном статусе считало бы каждый запуск
-        // приложения за новый ответ пользователя.
+        // Only here: this is the only branch where the dialog was actually shown.
+        // An event on an already known status would count every launch of the app
+        // as a new answer from the user.
         track("location_permission", {
           granted: status === "granted" ? "yes" : "no",
         });

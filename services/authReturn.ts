@@ -4,25 +4,25 @@ import { CATALOG_SCREEN_NAMES } from "../constants/catalogScreens";
 import type { MinimalRoute } from "../types";
 
 /**
- * Куда вернуть гостя после того, как он завёл аккаунт прямо со страницы
- * справочника (шторка `useRequireAuth`).
+ * Where to return the guest after they created an account straight from a
+ * reference page (the `useRequireAuth` sheet).
  *
- * Логин переключает `Navigation` с `AuthStack` на `AppStack` — навигатор
- * пересоздаётся с нуля, и без этого пользователь оказывался на MainScreen, а
- * не на птице, ради которой регистрировался. Не параметр навигации: путь может
- * пройти через экран Login (вход по почте), и промежуточный экран не должен
- * ничего про это знать.
+ * The login switches `Navigation` from `AuthStack` to `AppStack` — the navigator
+ * is recreated from scratch, and without this the user ended up on MainScreen
+ * rather than on the bird they signed up for. Not a navigation parameter: the
+ * path may go through the Login screen (signing in by email), and an intermediate
+ * screen must know nothing about this.
  *
- * Хранится только имя экрана и его параметры — состояние на момент, когда
- * гость упёрся в стену.
+ * Only the screen name and its parameters are stored — the state at the moment the
+ * guest hit the wall.
  *
- * **Почему это ещё и в AsyncStorage.** Регистрация по почте уводит из
- * приложения: `CheckEmail` → почтовый клиент → ссылка из письма → деп-линк
- * `accounts/confirm-email/:key` → `ConfirmEmail` → `Login`. К моменту возврата
- * процесс, скорее всего, уже убит, и модульная переменная вместе с ним, —
- * то есть именно на самом длинном пути возврат и не работал. Вход через
- * Apple/Google приложение не покидает, там хватает и переменной, поэтому она
- * остаётся синхронным кэшем: горячий путь не ждёт диска.
+ * **Why this is also in AsyncStorage.** Email signup leads out of the app:
+ * `CheckEmail` → mail client → the link from the letter → the deep link
+ * `accounts/confirm-email/:key` → `ConfirmEmail` → `Login`. By the time of the
+ * return the process has most likely been killed, and the module variable along
+ * with it — that is, the return did not work on exactly the longest path. An
+ * Apple/Google sign-in never leaves the app, the variable is enough there, so it
+ * stays a synchronous cache: the hot path does not wait for the disk.
  */
 let pendingReturn: MinimalRoute | null = null;
 
@@ -31,9 +31,9 @@ const CARRY_OVER = new Set<string>(CATALOG_SCREEN_NAMES);
 const STORAGE_KEY = "auth_return";
 
 /**
- * Сутки. Достаточно на самый медленный путь (письмо могут открыть вечером), но
- * не настолько много, чтобы через неделю выкинуть человека на птицу, о которой
- * он уже забыл: неожиданный переход хуже отсутствующего.
+ * A day. Enough for the slowest path (the letter may be opened in the evening),
+ * but not so much as to throw a person a week later onto a bird they have already
+ * forgotten about: an unexpected jump is worse than a missing one.
  */
 const TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -46,8 +46,8 @@ const isStoredReturn = (raw: unknown): raw is StoredReturn =>
   typeof (raw as StoredReturn).savedAt === "number";
 
 /**
- * Запомнить экран. Экраны не из справочника игнорируются: в `AppStack` их
- * нет, восстанавливать нечего.
+ * Remember the screen. Screens outside the reference are ignored: `AppStack` does
+ * not have them, there is nothing to restore.
  */
 export const setAuthReturn = async (route: MinimalRoute | null): Promise<void> => {
   const next = route && CARRY_OVER.has(route.name) ? route : null;
@@ -63,15 +63,15 @@ export const setAuthReturn = async (route: MinimalRoute | null): Promise<void> =
       JSON.stringify({ ...next, savedAt: Date.now() } satisfies StoredReturn),
     );
   } catch (e) {
-    // Не критично: тёплый путь (Apple/Google в шторке) обслуживается
-    // переменной выше и без диска.
+    // Not critical: the warm path (Apple/Google in the sheet) is served by the
+    // variable above, without the disk.
     if (__DEV__) console.warn(`Failed to save ${STORAGE_KEY}`, e);
   }
 };
 
 /**
- * Забрать и забыть. Вызывается на любой смене аутентификации, в том числе на
- * логауте, — чтобы намерение не пережило ситуацию, для которой ставилось.
+ * Take it and forget it. Called on any change of authentication, including a
+ * logout — so that the intent does not outlive the situation it was set for.
  */
 export const takeAuthReturn = async (): Promise<MinimalRoute | null> => {
   const inMemory = pendingReturn;

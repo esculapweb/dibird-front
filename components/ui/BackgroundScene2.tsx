@@ -62,9 +62,9 @@ const BackgroundScene2 = () => {
         height={H}
         viewBox={`0 0 ${W} ${H}`}
       >
-        {/* Звёзды — равномерно по всей высоте до холмов */}
+        {/* Stars — evenly spread over the whole height down to the hills */}
         {[
-          // верхняя зона (как было)
+          // upper zone (as before)
           [0.08, 0.06],
           [0.18, 0.04],
           [0.3, 0.09],
@@ -73,7 +73,7 @@ const BackgroundScene2 = () => {
           [0.65, 0.02],
           [0.75, 0.08],
           [0.88, 0.05],
-          // средняя зона
+          // middle zone
           [0.12, 0.18],
           [0.35, 0.22],
           [0.6, 0.16],
@@ -86,7 +86,7 @@ const BackgroundScene2 = () => {
           [0.15, 0.42],
           [0.45, 0.4],
           [0.68, 0.45],
-          // ближе к холмам (мельче и тусклее)
+          // closer to the hills (smaller and dimmer)
           [0.22, 0.52],
           [0.58, 0.55],
           [0.85, 0.5],
@@ -96,17 +96,17 @@ const BackgroundScene2 = () => {
             key={i}
             cx={W * fx}
             cy={H * fy}
-            r={fy > 0.45 ? 0.6 : 0.9 + (i % 3) * 0.3} // мельче к горизонту
+            r={fy > 0.45 ? 0.6 : 0.9 + (i % 3) * 0.3} // smaller towards the horizon
             fill={Colors.star}
             opacity={
               fy > 0.45
-                ? 0.2 + (i % 3) * 0.08 // тусклее к горизонту
+                ? 0.2 + (i % 3) * 0.08 // dimmer towards the horizon
                 : 0.5 + (i % 4) * 0.12
             }
           />
         ))}
 
-        {/* Холмы — три слоя глубины */}
+        {/* Hills — three depth layers */}
         <Path
           d={hillsFar}
           fill={Colors.main100}
@@ -123,7 +123,7 @@ const BackgroundScene2 = () => {
           opacity={isDark ? 0.09 : 0.11}
         />
 
-        {/* Птицы */}
+        {/* Birds */}
         <Path
           d={`M${W * 0.04} ${H * 0.18} Q${W * 0.07} ${H * 0.15} ${W * 0.1} ${H * 0.18} Q${W * 0.13} ${H * 0.15} ${W * 0.16} ${H * 0.18}`}
           stroke={Colors.main100}
@@ -156,7 +156,7 @@ const BackgroundScene2 = () => {
           opacity={isDark ? 0.2 : 0.15}
           strokeLinecap="round"
         />
-        {/* средний ярус — мельче и тусклее */}
+        {/* middle tier — smaller and dimmer */}
         <Path
           d={`M${W * 0.6} ${H * 0.38} Q${W * 0.62} ${H * 0.36} ${W * 0.64} ${H * 0.38} Q${W * 0.66} ${H * 0.36} ${W * 0.68} ${H * 0.38}`}
           stroke={Colors.main100}
@@ -174,7 +174,7 @@ const BackgroundScene2 = () => {
           strokeLinecap="round"
         />
 
-        {/* совсем далёкие — у горизонта */}
+        {/* the far ones — near the horizon */}
         <Path
           d={`M${W * 0.5} ${H * 0.58} Q${W * 0.515} ${H * 0.565} ${W * 0.53} ${H * 0.58} Q${W * 0.545} ${H * 0.565} ${W * 0.56} ${H * 0.58}`}
           stroke={Colors.main100}

@@ -1,17 +1,18 @@
 #!/usr/bin/env node
-// Печатает ключи локализации, которых экстрактор не нашёл в коде. Ничего не
-// меняет — удаление остаётся ручным решением.
+// Prints the localisation keys the extractor did not find in the code. Changes
+// nothing — deleting them stays a manual decision.
 //
-// Зачем отдельная команда: `i18next-parser.config.js` намеренно не удаляет
-// ключи (там же расписано, чем это кончалось), поэтому мёртвые ключи больше не
-// исчезают сами. Здесь они видны, но решение принимает человек.
+// Why a separate command: `i18next-parser.config.js` deliberately never removes
+// keys (what that used to end in is described there), so dead keys no longer
+// disappear on their own. Here they are visible, but the decision is made by a
+// human.
 //
-// Считает тем же парсером и тем же конфигом, что и `npm run i18n:extract`,
-// а не собственным grep'ом: парсер видит `t()` в том числе в комментариях, и
-// именно так в этом проекте объявлены ключи, собираемые в рантайме
-// (`// t("country_status_endemic")` — см. CLAUDE.md). Самодельный поиск по
-// вызовам их бы не увидел и объявил мёртвыми — ровно та ошибка, из-за которой
-// переводы и терялись.
+// It counts with the same parser and the same config as `npm run i18n:extract`
+// rather than with a grep of its own: the parser sees `t()` in comments too, and
+// that is exactly how the runtime-assembled keys are declared in this project
+// (`// t("country_status_endemic")` — see CLAUDE.md). A homemade search over the
+// calls would not see them and would declare them dead — precisely the mistake
+// that used to lose the translations.
 
 const { execFileSync } = require("child_process");
 const fs = require("fs");
@@ -24,8 +25,9 @@ const base = require(path.join(root, "i18next-parser.config.js"));
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "i18n-unused-"));
 const configPath = path.join(tmp, "config.js");
 
-// Тот же конфиг, но со снятыми защитами и выводом в сторону: нам нужен именно
-// «чистый» результат извлечения, чтобы сравнить с ним рабочий каталог.
+// The same config, but with the protections off and the output aside: what is
+// needed here is exactly the "clean" result of the extraction, to compare the
+// working catalogue against it.
 fs.writeFileSync(
   configPath,
   `module.exports = ${JSON.stringify(
@@ -55,7 +57,7 @@ try {
     const freshPath = path.join(tmp, `${locale}.json`);
 
     if (!fs.existsSync(freshPath)) {
-      console.error(`Экстрактор не создал ${freshPath} — проверьте конфиг.`);
+      console.error(`The extractor did not create ${freshPath} — check the config.`);
       process.exitCode = 1;
       continue;
     }
@@ -67,16 +69,16 @@ try {
     const unused = live.filter((key) => !found.has(key));
     total += unused.length;
 
-    console.log(`\n${locale}: ${unused.length} ключей не найдено в коде`);
+    console.log(`\n${locale}: ${unused.length} keys not found in the code`);
     unused.forEach((key) => console.log(`  ${key}`));
   }
 
-  if (total === 0) console.log("\nЛишних ключей нет.");
+  if (total === 0) console.log("\nNo spare keys.");
   else
     console.log(
-      "\nПрежде чем удалять: ключ мог собираться в рантайме. Тогда он не мёртв —\n" +
-        "ему не хватает комментария-списка `// t(\"...\")` рядом с местом, где он\n" +
-        "резолвится (см. CLAUDE.md).",
+      "\nBefore deleting: a key may be assembled at runtime. Then it is not dead —\n" +
+        "it is missing a comment list `// t(\"...\")` next to the place where it is\n" +
+        "resolved (see CLAUDE.md).",
     );
 } finally {
   fs.rmSync(tmp, { recursive: true, force: true });

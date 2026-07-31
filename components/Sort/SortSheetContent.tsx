@@ -48,11 +48,11 @@ const SortSheetContent = ({
       contentContainerStyle={styles.scrollContent}
       keyboardShouldPersistTaps="handled"
     >
-      {/* testID включает у RadioGroup `sort-option-N` и, у выбранного,
-          `sort-option-N-checked`. Нужен для e2e: сохранение выбранной
-          сортировки между запусками (useSavedSort) иначе не проверить —
-          на пустом списке переставлять нечего, а сама метка выбора
-          в иерархию без этого не попадает. См.
+      {/* testID makes RadioGroup expose `sort-option-N` and, on the selected
+          one, `sort-option-N-checked`. Needed for e2e: persisting the chosen
+          sorting between launches (useSavedSort) cannot be verified otherwise —
+          there is nothing to reorder in an empty list, and the selection mark
+          itself does not reach the hierarchy without this. See
           .maestro/list-sort-persist.yaml. */}
       <RadioGroup
         testID="sort"

@@ -110,8 +110,9 @@ const TaxonSoundRow = ({ sound, isActive, onPlay }: TaxonSoundRowProps) => {
             {sound.recorder}
             {sound.country ? `, ${sound.country}` : ""}
           </Text>
-          {/* Отдельной строкой, а не хвостом к meta: при `numberOfLines={1}`
-              длинное имя записавшего обрезало бы как раз атрибуцию. */}
+          {/* On its own line rather than appended to meta: with
+              `numberOfLines={1}` a long recordist name would cut off exactly
+              the attribution. */}
           <Text style={styles.credits} numberOfLines={1}>
             <Text
               style={styles.link}

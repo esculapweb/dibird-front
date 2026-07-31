@@ -279,10 +279,10 @@ const linking = (
     const taxonRoute = matchTaxonPath(normalizedPath);
     if (taxonRoute) {
       const root = isAuthenticated ? "Main" : "Welcome";
-      // Единственное место, где точно известно, что пользователь пришёл по
-      // ссылке снаружи, — на самом экране это уже неотличимо от перехода из
-      // дерева. `authed` показывает, сколько ссылок приходит на людей без
-      // аккаунта: до гостевого режима они все уезжали на сайт.
+      // The only place where it is known for sure that the user came from an
+      // external link — on the screen itself it is already indistinguishable from
+      // navigating in from the tree. `authed` shows how many links reach people
+      // without an account: before the guest mode they all went off to the site.
       track("deep_link_opened", {
         screen: taxonRoute.name,
         authed: isAuthenticated ? "yes" : "no",

@@ -7,8 +7,8 @@ import { CompositeNavigationProp, RouteProp } from "@react-navigation/native";
 import { AxiosResponse } from "axios";
 import { QueryObserverResult } from "@tanstack/react-query";
 import type { Feature, Geometry, GeoJsonProperties } from "geojson";
-// Только тип: services/analytics тянет за собой services/errors, который
-// импортирует отсюда, — на рантайме этот импорт стирается и цикла нет.
+// Type only: services/analytics pulls in services/errors, which imports from
+// here — at runtime this import is erased and there is no cycle.
 import type { GatedAction } from "./services/analytics";
 
 export type IconType = ComponentProps<typeof Ionicons>["name"];
@@ -135,7 +135,7 @@ export interface GdprExport {
   expires_at: string;
 }
 
-/** У импорта нет `expired`: файл удаляется сразу, храниться нечему. */
+/** The import has no `expired`: the file is deleted right away, there is nothing to store. */
 export type ObservationImportStatus =
   | "idle"
   | "pending"
@@ -148,11 +148,11 @@ export interface ObservationImport {
   status: Exclude<ObservationImportStatus, "idle">;
   source: "ebird";
   make_public: boolean;
-  /** Строк в файле. */
+  /** Rows in the file. */
   total: number;
   imported: number;
   skipped: number;
-  /** Латинские названия, которых нет в таксономии; обрезан бэком. */
+  /** Latin names missing from the taxonomy; truncated by the backend. */
   unmatched: string[];
   created_at: string;
   finished_at: string | null;
@@ -272,9 +272,9 @@ export interface Filters {
   user_id?: number | null;
   year?: number | null;
   radius?: number | null;
-  // Пресет скоупа, который целиком считает сервер: `alerts` — территория и
-  // радиус вокруг точки из настроек оповещений. Координаты с ним не шлём,
-  // центр у бэка уже есть (см. components/Main/RareNearby.tsx).
+  // A scope preset computed entirely by the server: `alerts` is the territory and
+  // the radius around the point from the alert settings. Coordinates are not sent
+  // with it, the backend already has the centre (see components/Main/RareNearby.tsx).
   near?: "alerts" | null;
   // Client-only: never sent to the server (see util/fetches.ts's
   // fetchObservations/fetchDiaries/fetchPlaces) — filters the list down to
@@ -497,8 +497,8 @@ export interface TaxonSound {
   type: string;
   recorder: string;
   country: string;
-  // Nullable на бэке (`Xeno.license`): у части записей лицензия ещё не
-  // подтянута командой `xeno --license`.
+  // Nullable on the backend (`Xeno.license`): for some recordings the licence has
+  // not been pulled in yet by the `xeno --license` command.
   license: string | null;
   sound?: string;
 }
@@ -1044,7 +1044,7 @@ export type NavState = {
   index?: number;
 };
 
-// Auth стек (все экраны, включая те что раньше были в Drawer)
+// The Auth stack (all screens, including those that used to be in the Drawer)
 export type AuthStackParamList = CatalogParamList & {
   Welcome: undefined;
   Login: { emailConfirmed?: boolean; prefillEmail?: string } | undefined;
@@ -1069,10 +1069,10 @@ export type WelcomeScreenNavigationProp = CompositeNavigationProp<
 >;
 
 export type AppStackParamList = CatalogParamList & {
-  // Объявляется в AppStack условно — только пока онбординг не пройден
-  // (см. store/onboarding-context.tsx). В типе он есть всегда: параметров у
-  // него нет, а условный ключ заставил бы каждое использование стека знать
-  // про состояние онбординга.
+  // Declared in AppStack conditionally — only while the onboarding has not been
+  // passed (see store/onboarding-context.tsx). In the type it is always there: it
+  // has no parameters, and a conditional key would force every use of the stack to
+  // know about the onboarding state.
   Onboarding: undefined;
   Main: undefined;
   Profile: undefined;
@@ -1123,27 +1123,27 @@ export type AppStackParamList = CatalogParamList & {
 };
 
 /**
- * Экраны справочника: каталог видов и территории. Вынесены из
- * `AppStackParamList` в отдельную группу, потому что они не показывают личных
- * данных и потому регистрируются в обоих стеках — залогиненном (`AppStack`) и
- * гостевом (`AuthStack`). Ни один из них не читает профиль, так что одна и та
- * же реализация работает и без аккаунта.
+ * The reference screens: the species catalogue and the territories. Moved out of
+ * `AppStackParamList` into a separate group because they show no personal data and
+ * are therefore registered in both stacks — the signed-in one (`AppStack`) and the
+ * guest one (`AuthStack`). None of them reads the profile, so the same
+ * implementation works without an account too.
  *
- * Навигация внутри группы типизируется `CatalogNavigationProp`: он не знает
- * про `ObservationEditor` и прочие личные экраны, и это осознанно — в гостевом
- * стеке таких роутов нет, и переход в них должен ловиться компилятором, а не
- * падать в рантайме. Единственный такой переход — «добавить наблюдение» на
- * странице вида, он идёт через `useRequireAuth`.
+ * Navigation inside the group is typed with `CatalogNavigationProp`: it knows
+ * nothing about `ObservationEditor` and the other personal screens, and that is
+ * deliberate — the guest stack has no such routes, and navigating to them must be
+ * caught by the compiler rather than crash at runtime. The only such navigation is
+ * "add an observation" on the species page, and it goes through `useRequireAuth`.
  */
 export type CatalogParamList = {
   // Seeds the open tab when the link was shared from a particular one
   // (linking.ts / taxonShareLink.ts), same as the catalogue's initialSort etc.
   SpeciesDetail: ({ segment: string } | { id: number }) & {
     initialTab?: SpeciesDetailTab;
-    // Действие, до которого гость не дошёл без аккаунта: после логина
-    // services/authReturn возвращает его на этот экран с этим параметром, и
-    // экран доигрывает начатое (hooks/useRequireAuth). Экран сам сбрасывает
-    // параметр, иначе действие повторялось бы на каждый возврат сюда.
+    // The action the guest did not get to without an account: after the login
+    // services/authReturn brings them back to this screen with this parameter, and
+    // the screen replays what was started (hooks/useRequireAuth). The screen clears
+    // the parameter itself, otherwise the action would repeat on every return here.
     pendingAction?: GatedAction;
   };
   Taxonomy: {
@@ -1218,7 +1218,7 @@ export type ScreenWithFiltersParamList = {
     : AppStackParamList[K];
 };
 
-// Drawer используется только как контейнер с меню, экран внутри один
+// The Drawer is used only as a container with a menu, there is a single screen inside
 export type AppDrawerParamList = {
   MainScreen: undefined;
 };
@@ -1233,10 +1233,10 @@ export type AppStackNavigationProp =
 export type AuthStackNavigationProp =
   NativeStackNavigationProp<AuthStackParamList>;
 
-// Навигация внутри справочника. Умышленно уже, чем AppStackNavigationProp:
-// эти экраны живут и в гостевом стеке, где личных роутов нет, и попытка уйти
-// в них должна быть ошибкой компиляции, а не падением у пользователя без
-// аккаунта. См. CatalogParamList.
+// Navigation inside the reference. Deliberately narrower than
+// AppStackNavigationProp: these screens also live in the guest stack, which has no
+// personal routes, and an attempt to navigate to them must be a compilation error
+// rather than a crash for a user without an account. See CatalogParamList.
 export type CatalogNavigationProp =
   NativeStackNavigationProp<CatalogParamList>;
 
@@ -1245,7 +1245,7 @@ export type CatalogRouteProp<T extends keyof CatalogParamList> = RouteProp<
   T
 >;
 
-// Drawer нужен только для openDrawer/closeDrawer на главном экране
+// The Drawer is only needed for openDrawer/closeDrawer on the main screen
 export type AppDrawerNavigationProp = CompositeNavigationProp<
   DrawerNavigationProp<AppDrawerParamList>,
   NativeStackNavigationProp<AppStackParamList>

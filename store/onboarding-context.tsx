@@ -16,29 +16,30 @@ import {
 } from "../util/storageHelper";
 
 /**
- * `loading` — флаг ещё читается с диска. Различать его и `done` обязательно:
- * `AppStack` объявляет экран онбординга первым, то есть initial route стека
- * зависит от этого значения, а `NavigationContainer` читает начальный маршрут
- * один раз. Отрендерить навигатор с `Main` и добавить онбординг вторым рендером
- * уже нечем — человек так и останется на дашборде.
+ * `loading` means the flag is still being read from disk. Telling it apart from
+ * `done` is mandatory: `AppStack` declares the onboarding screen first, that is,
+ * the initial route of the stack depends on this value, and `NavigationContainer`
+ * reads the initial route once. There is no way to render the navigator with
+ * `Main` and add the onboarding on a second render — the person would simply stay
+ * on the dashboard.
  */
 export type OnboardingStatus = "loading" | "needed" | "done";
 
 interface OnboardingContextType {
   status: OnboardingStatus;
-  /** Прошёл до конца. */
+  /** Went all the way through. */
   complete: () => Promise<void>;
-  /** Нажал «Пропустить»; шаг нужен, чтобы видеть, где именно теряем. */
+  /** Tapped "Skip"; the step is there to see where exactly we are losing them. */
   skip: (step: OnboardingStep) => Promise<void>;
   /**
-   * Отладка: вернуть поток на аккаунте, который его уже прошёл. Настоящий флаг
-   * ставится только на `sign_up`, поэтому иначе онбординг не посмотреть, не
-   * заводя новый аккаунт. Вызывается из скрытой строки в `SettingsScreen` —
-   * там же, где «Send test push», и под тем же гейтом по id профиля.
+   * Debug: bring the flow back on an account that has already passed it. The real
+   * flag is only set on `sign_up`, so otherwise the onboarding cannot be looked at
+   * without creating a new account. Called from a hidden row in `SettingsScreen` —
+   * the same place as "Send test push", and under the same gate by profile id.
    *
-   * Статус меняется без аналитики, но сам экран при монтировании шлёт
-   * `onboarding_step` — прогоны отладчиков попадают в воронку, поэтому гейт
-   * по id важен.
+   * The status changes without analytics, but the screen itself sends
+   * `onboarding_step` on mount — debug runs land in the funnel, which is why the
+   * gate by id matters.
    */
   restart: () => Promise<void>;
 }
@@ -57,37 +58,40 @@ export const OnboardingProvider = ({
   const [status, setStatus] = useState<OnboardingStatus>("loading");
   const prevAuthRef = useRef(isAuthenticated);
 
-  // Сброс в `loading` делается прямо в рендере, а не в эффекте ниже: на входе
-  // в аккаунт `Navigation` монтирует `AppStack` в том же рендере, в котором
-  // `isAuthenticated` стал true, а эффекты выполняются уже после. Увидев
-  // оставшийся от гостя `done`, стек успевал встать корнем `Main`, и
-  // выставленный следом `needed` только добавлял экран в навигатор, никуда не
-  // переходя: новичок оставался на дашборде с непогашенным флагом (онбординг
-  // всплывал лишь при следующем холодном старте). Ставим `loading` до того,
-  // как стек отрендерится, — он подождёт `null`, как и на холодном старте.
+  // The reset to `loading` is done right in the render rather than in the effect
+  // below: on signing in `Navigation` mounts `AppStack` in the same render in
+  // which `isAuthenticated` became true, while effects run afterwards. Seeing the
+  // `done` left over from the guest, the stack managed to come up with `Main` as
+  // the root, and the `needed` set right after only added the screen to the
+  // navigator without navigating anywhere: the newcomer stayed on the dashboard
+  // with the flag unset (the onboarding only came up on the next cold start). We
+  // set `loading` before the stack renders — it will wait on `null`, just as on a
+  // cold start.
   if (isAuthenticated !== prevAuthRef.current) {
     prevAuthRef.current = isAuthenticated;
     if (isAuthenticated && status !== "loading") setStatus("loading");
   }
 
   useEffect(() => {
-    // Тот же ранний выход, что в profile/alert-settings-контекстах: пока
-    // восстанавливается токен, `isAuthenticated` ещё false, и решение о
-    // «гостю онбординг не нужен» было бы принято по неготовым данным.
+    // The same early exit as in the profile/alert-settings contexts: while the
+    // token is being restored `isAuthenticated` is still false, and the decision
+    // that "a guest needs no onboarding" would be made on data that is not ready.
     if (isInitializing) return;
 
     if (!isAuthenticated) {
-      // У гостя онбординга нет: страну писать некуда, наблюдение создавать
-      // нечем. Не `loading` — иначе `AppStack` (он монтируется в тот же
-      // рендер, что и переход в аккаунт) завис бы на пустом экране.
+      // A guest has no onboarding: there is nowhere to write the country and
+      // nothing to create an observation with. Not `loading` — otherwise
+      // `AppStack` (it mounts in the same render as the sign-in) would hang on an
+      // empty screen.
       setStatus("done");
       return;
     }
 
     let cancelled = false;
-    // Флаг ставят три точки `sign_up` в `util/auth.ts`, и только они. Гейт от
-    // «не видел онбординг» был бы гейтом от отсутствия ключа, то есть накрыл
-    // бы и ветерана, вошедшего в старый аккаунт после переустановки.
+    // The flag is set by the three `sign_up` points in `util/auth.ts`, and only by
+    // them. A gate on "has not seen the onboarding" would be a gate on a missing
+    // key, that is, it would also cover a veteran who signed into an old account
+    // after a reinstall.
     isOnboardingPending().then((pending) => {
       if (cancelled) return;
       setStatus(pending ? "needed" : "done");
@@ -99,9 +103,10 @@ export const OnboardingProvider = ({
   }, [isAuthenticated, isInitializing]);
 
   const finish = useCallback(async () => {
-    // Флаг снимается первым: экран убирается из навигатора сменой статуса, и
-    // если процесс убьют между двумя операциями, лучше не показать онбординг
-    // ещё раз, чем показать его поверх уже созданного наблюдения.
+    // The flag is cleared first: the screen is removed from the navigator by the
+    // change of status, and if the process is killed between the two operations,
+    // it is better not to show the onboarding again than to show it on top of an
+    // already created observation.
     await clearOnboardingPending();
     setStatus("done");
   }, []);
@@ -120,8 +125,9 @@ export const OnboardingProvider = ({
   );
 
   const restart = useCallback(async () => {
-    // Флаг ставится, а не только статус: без него онбординг исчез бы при
-    // ближайшем перезапуске — эффект выше перечитывает диск на каждом входе.
+    // The flag is set, not only the status: without it the onboarding would
+    // disappear on the next restart — the effect above re-reads the disk on every
+    // sign-in.
     await markOnboardingPending();
     setStatus("needed");
   }, []);

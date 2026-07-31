@@ -260,9 +260,10 @@ describe("usePushNotifications", () => {
   });
 });
 
-// Разрешение на пуши больше не просится по факту входа в аккаунт: диалог,
-// ни к чему не привязанный, легче отклонить, а доля с пушами — вход во все
-// retention-петли. Хук только подхватывает уже выданное разрешение.
+// Push permission is no longer requested just because someone signed in: a
+// dialog tied to nothing is easier to dismiss, and the share of users with push
+// is the entry to every retention loop. The hook only picks up a permission
+// that has already been granted.
 describe("usePushNotifications does not prompt", () => {
   it("reads the status instead of requesting it", async () => {
     await renderHook(() => usePushNotifications(true));
@@ -282,8 +283,8 @@ describe("usePushNotifications does not prompt", () => {
     expect(getExpoPushTokenAsync).not.toHaveBeenCalled();
   });
 
-  // Три значения, а не два: слитые в "no", «не спрашивали» завысило бы долю
-  // отказов ровно на тех, до кого диалог не дошёл.
+  // Three values rather than two: merged into "no", "never asked" would inflate
+  // the refusal rate by exactly those the dialog never reached.
   it.each([
     ["granted", "yes"],
     ["denied", "no"],
@@ -337,8 +338,8 @@ describe("requestPushPermission", () => {
     expect(granted).toBe(false);
   });
 
-  // Токен, который не доехал из-за сети, — не отказ пользователя: вызывающий
-  // (карточка алертов) обязан всё равно включить алерты.
+  // A token that did not make it because of the network is not a user refusal:
+  // the caller (the alerts card) must turn the alerts on regardless.
   it("still reports success when the token could not be delivered", async () => {
     (registerPushToken as jest.Mock).mockRejectedValue({ isNetworkError: true });
 

@@ -118,7 +118,7 @@ it("starts playback and claims the player when play is tapped", async () => {
 
   expect(mockPlayer.play).toHaveBeenCalledTimes(1);
   expect(mockOnPlay).toHaveBeenCalledTimes(1);
-  // Без этого iOS глушит запись переключателем «беззвучно» — см. util/audioMode.
+  // Without this iOS mutes the recording via the silent switch — see util/audioMode.
   expect(mockEnsureAudioMode).toHaveBeenCalledTimes(1);
 });
 

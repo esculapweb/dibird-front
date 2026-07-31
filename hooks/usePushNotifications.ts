@@ -89,16 +89,17 @@ const registerToken = async (
 };
 
 /**
- * Показать системный диалог о пушах и зарегистрировать токен.
+ * Show the system push dialog and register the token.
  *
- * Вызывается **только** из точек, где пользователь сам попросил то, ради чего
- * нужны уведомления (карточка алертов на главной, свитч в настройках алертов).
- * Раньше диалог всплывал сразу после логина, ни к чему не привязанный, —
- * отказать в такой момент проще, чем согласиться, а доля с пушами это вход во
- * все retention-петли.
+ * Called **only** from the points where the user themselves asked for the thing
+ * notifications are needed for (the alerts card on the main screen, the switch
+ * in the alert settings). The dialog used to pop up right after the login, tied
+ * to nothing — refusing at such a moment is easier than agreeing, and the share
+ * of users with push is the entry to every retention loop.
  *
- * Возвращает, выдано ли разрешение. Повторный вызов после отказа безвреден:
- * система второй диалог не покажет и вернёт прежний статус.
+ * Returns whether the permission was granted. Calling it again after a refusal
+ * is harmless: the system does not show a second dialog and returns the
+ * previous status.
  */
 export const requestPushPermission = async (): Promise<boolean> => {
   if (!Device.isDevice) return false;
@@ -130,18 +131,18 @@ export const usePushNotifications = (isAuthenticated: boolean) => {
         return null;
       }
 
-      // getPermissionsAsync, не request: этот хук монтируется по факту входа в
-      // аккаунт, а вход — не повод показывать системный диалог (см.
-      // requestPushPermission). Здесь только подхватывается разрешение,
-      // выданное раньше, чтобы токен доехал до бэкенда после переустановки,
-      // смены токена или отзыва разрешения в настройках ОС.
+      // getPermissionsAsync, not request: this hook mounts as a consequence of
+      // signing in, and signing in is no reason to show a system dialog (see
+      // requestPushPermission). All that happens here is picking up a permission
+      // granted earlier, so that the token reaches the backend after a reinstall,
+      // a token change or a permission revoked in the OS settings.
       const { status } = (await Notifications.getPermissionsAsync()) as {
         status: PermissionStatus;
       };
 
-      // Доля с пушами — вход в retention-петли, поэтому свойство ставится и
-      // на отказе; «ещё не спрашивали» при этом остаётся отдельным значением,
-      // иначе оно смешалось бы с отказавшими.
+      // The share of users with push is the entry to the retention loops, so the
+      // property is set on a refusal too; "never asked" stays a separate value at
+      // that, otherwise it would blend in with those who refused.
       setUserProps({
         has_push_token:
           status === "granted"

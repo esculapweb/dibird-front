@@ -48,8 +48,9 @@ const TimeInput = ({
   const [androidPickerOpen, setAndroidPickerOpen] = useState(false);
   const [iosOpen, setIosOpen] = useState(false);
 
-  // tempDate — локальное состояние пикера, не связано с value извне.
-  // Это предотвращает баг когда обновление value снаружи сбивает позицию спиннера.
+  // tempDate is the picker's local state, unrelated to `value` from outside.
+  // This prevents a bug where an outside update of value knocks the spinner off
+  // position.
   const [tempDate, setTempDate] = useState(() => timeStringToDate(value));
 
   const scaleAnim = useRef(new Animated.Value(1)).current;

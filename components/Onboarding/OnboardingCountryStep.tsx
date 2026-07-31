@@ -12,10 +12,11 @@ import { StaleTime } from "../../constants/staleTime";
 import { DashboardStat } from "../../types";
 
 /**
- * Выбор домашней страны. Ключевая часть — не сам дропдаун, а цифра под ним:
- * «0 из 812» превращает пустой аккаунт в понятную цель, а без страны в профиле
- * половина дашборда (`ChecklistHero`, `NewSpecies`, `BirdOfTheDay`) и
- * species-dropdown в редакторе остаются пустыми.
+ * Picking the home country. The key part is not the dropdown itself but the
+ * number under it: "0 of 812" turns an empty account into a clear goal, while
+ * without a country in the profile half of the dashboard (`ChecklistHero`,
+ * `NewSpecies`, `BirdOfTheDay`) and the species dropdown in the editor stay
+ * empty.
  */
 const OnboardingCountryStep = ({
   value,
@@ -29,8 +30,9 @@ const OnboardingCountryStep = ({
   const styles = stylesFn(Colors);
   const { language } = useLanguage();
 
-  // Тот же вызов, что в MainScreen и ObservationForm — форма ключа обязана
-  // совпадать, чтобы список стран брался из общего кэша, а не грузился заново.
+  // The same call as in MainScreen and ObservationForm — the shape of the key
+  // has to match so that the country list comes from the shared cache instead of
+  // being fetched again.
   const { query: countriesQuery, sort, onSortChange } = useDropdownQuery({
     type: "CountriesDropdown",
     queryFn: (order) => fetchMyCountries(false, order),
@@ -38,7 +40,8 @@ const OnboardingCountryStep = ({
   });
 
   const { data: stat } = useQuery<DashboardStat>({
-    // Без даты: «сколько видов в стране всего» — это не срез по периоду.
+    // No date: "how many species the country has in total" is not a slice of a
+    // period.
     queryKey: ["DashboardStat", value, null, null, null, null],
     queryFn: () => fetchMyDashboardStat({ territory: value }),
     enabled: !!value,
@@ -66,8 +69,8 @@ const OnboardingCountryStep = ({
         />
       </View>
 
-      {/* Появляется только когда цифры действительно есть: «0 из 0» на месте
-          обещанной персонализации хуже, чем её отсутствие. */}
+      {/* Shows up only once there really are numbers: "0 of 0" in place of the
+          promised personalisation is worse than none at all. */}
       {!!value && !!stat?.total && (
         <View style={styles.result} testID="onboarding-country-result">
           <Text style={styles.resultNum}>

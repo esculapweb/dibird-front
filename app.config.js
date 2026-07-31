@@ -132,9 +132,9 @@ export default {
           android: {
             enableMinifyInReleaseBuilds: true,
             enableShrinkResourcesInReleaseBuilds: true,
-            // Expo 56 по умолчанию даёт 35; Play перестаёт принимать апдейты
-            // ниже 36 с конца августа 2026. Поднято заранее — требует прогона
-            // на Android 16 (разрешения, уведомления, выбор файла).
+            // Expo 56 defaults to 35; Play stops accepting updates below 36
+            // from the end of August 2026. Raised ahead of time — needs a run
+            // on Android 16 (permissions, notifications, file picker).
             compileSdkVersion: 36,
             targetSdkVersion: 36,
           },
@@ -186,13 +186,13 @@ export default {
       "./plugins/withDevMenuDefaults",
       "@react-native-firebase/app",
       [
-        // Плагин применяется автолинкингом и без этой записи — она нужна
-        // только чтобы отключить лишнее. Пикер берёт исключительно фото из
-        // галереи (components/Profile/Avatar.tsx, launchImageLibraryAsync), но
-        // по умолчанию тянет за собой RECORD_AUDIO и CAMERA (для съёмки видео)
-        // плюс их дефолтные purpose strings в Info.plist. `false` не просто не
-        // добавляет разрешение, а блокирует его — в том числе от других
-        // плагинов, поэтому RECORD_AUDIO не вернётся через expo-audio.
+        // The plugin is applied by autolinking even without this entry — it is
+        // here only to switch the extras off. The picker takes photos from the
+        // gallery only (components/Profile/Avatar.tsx, launchImageLibraryAsync),
+        // yet by default it drags in RECORD_AUDIO and CAMERA (for video capture)
+        // plus their default purpose strings in Info.plist. `false` does not
+        // merely skip the permission, it blocks it — including from other
+        // plugins, so RECORD_AUDIO will not come back via expo-audio.
         "expo-image-picker",
         {
           microphonePermission: false,
@@ -202,19 +202,20 @@ export default {
       [
         "expo-audio",
         {
-          // Записи только проигрываются (components/Taxonomy/TaxonSoundRow.tsx),
-          // ничего не записывается. С дефолтными опциями плагин кладёт в
-          // манифест RECORD_AUDIO, а в Info.plist — NSMicrophoneUsageDescription
-          // со своей заготовкой «Allow DiBird to access your microphone»:
-          // разрешение, которого приложение не использует, и purpose string,
-          // который ничего не объясняет ревьюеру.
+          // Recordings are only played back
+          // (components/Taxonomy/TaxonSoundRow.tsx), nothing is recorded. With
+          // the default options the plugin puts RECORD_AUDIO into the manifest
+          // and NSMicrophoneUsageDescription into Info.plist with its own
+          // boilerplate "Allow DiBird to access your microphone": a permission
+          // the app does not use, and a purpose string that explains nothing to
+          // the reviewer.
           microphonePermission: false,
           recordAudioAndroid: false,
-          // Фонового воспроизведения нет. Иначе плагин добавляет
-          // FOREGROUND_SERVICE + FOREGROUND_SERVICE_MEDIA_PLAYBACK со своим
-          // сервисом (Play требует за них отдельную декларацию) и
-          // UIBackgroundModes: audio (Apple 2.5.4 — заявленный, но
-          // неиспользуемый background mode).
+          // There is no background playback. Otherwise the plugin adds
+          // FOREGROUND_SERVICE + FOREGROUND_SERVICE_MEDIA_PLAYBACK with its own
+          // service (Play requires a separate declaration for those) and
+          // UIBackgroundModes: audio (Apple 2.5.4 — a declared but unused
+          // background mode).
           enableBackgroundPlayback: false,
         },
       ],

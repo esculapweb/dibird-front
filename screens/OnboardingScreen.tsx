@@ -23,15 +23,14 @@ import { ObservationFormData, SpeciesDropdownItem } from "../types";
 const STEPS: OnboardingStep[] = [1, 2, 3, 4, 5];
 
 /**
- * Онбординг нового аккаунта: две страницы ценности, домашняя страна,
- * геолокация и первое наблюдение. Показывается один раз за установку —
- * решение принимает
- * `store/onboarding-context.tsx`, экран объявлен в `AppStack` условно и
- * исчезает из навигатора, как только поток закончен.
+ * Onboarding of a new account: two value pages, the home country, location and
+ * the first observation. Shown once per installation — the decision is made by
+ * `store/onboarding-context.tsx`, the screen is declared in `AppStack`
+ * conditionally and disappears from the navigator as soon as the flow is over.
  *
- * Без него новый аккаунт попадает сразу на `MainScreen`, где каждый виджет при
- * нуле записей прячет сам себя, а без страны в профиле пусты ещё и
- * `ChecklistHero`/`NewSpecies`/species-dropdown редактора.
+ * Without it a new account lands straight on `MainScreen`, where every widget
+ * hides itself when there are zero records, and without a country in the profile
+ * `ChecklistHero`/`NewSpecies`/the editor's species dropdown are empty as well.
  */
 const OnboardingScreen = () => {
   const { t } = useTranslation();
@@ -47,13 +46,13 @@ const OnboardingScreen = () => {
   const [territory, setTerritory] = useState<number | null>(null);
   const [created, setCreated] = useState<SpeciesDropdownItem | null>(null);
   const [savingCountry, setSavingCountry] = useState(false);
-  // Списки видов на шаге 4 не загрузились. Единственное назначение — вернуть
-  // кнопку «Готово», иначе выйти из шага можно только «Пропустить».
+  // The species lists on step 4 failed to load. Its only purpose is to bring the
+  // "Done" button back, otherwise the step can only be left via "Skip".
   const [speciesLoadFailed, setSpeciesLoadFailed] = useState(false);
 
-  // Бэк мог проставить страну сам (по IP при регистрации) — тогда шаг
-  // подтверждается одним тапом. Только начальное значение: собственный выбор
-  // пользователя переписывать нельзя, поэтому без `profile` в зависимостях.
+  // The backend may have set the country itself (by IP at signup) — then the step
+  // is confirmed with a single tap. The initial value only: the user's own choice
+  // must not be overwritten, hence no `profile` in the dependencies.
   useEffect(() => {
     if (territory === null && profile?.territory) {
       setTerritory(profile.territory);
@@ -77,9 +76,10 @@ const OnboardingScreen = () => {
     if (!territory || savingCountry) return;
     setSavingCountry(true);
     try {
-      // Локальный патч + очередь синка: шаг проходится и без сети, страна
-      // доедет позже. Ошибку глушить нельзя, но и запирать поток из-за неё
-      // тоже — дальше по шагам территория берётся из локального состояния.
+      // A local patch plus the sync queue: the step can be passed offline too,
+      // the country will arrive later. The error must not be swallowed, but
+      // locking the flow because of it is no good either — further along the
+      // steps the territory is taken from the local state.
       await updateProfile({ territory });
       track("onboarding_country_set");
     } catch (e) {
@@ -109,13 +109,13 @@ const OnboardingScreen = () => {
       { payload, speciesData: species },
       {
         onSuccess: () => {
-          // Как в редакторе: следующая запись откроется предзаполненной.
+          // As in the editor: the next record will open prefilled.
           setSession("lastDate", payload.date_time);
           setSession("lastTerritory", territory);
           setCreated(species);
         },
-        // Тост показывает useMutationWithTranslation; поток остаётся на шаге,
-        // чтобы можно было выбрать другую птицу.
+        // The toast is shown by useMutationWithTranslation; the flow stays on the
+        // step so that another bird can be picked.
       },
     );
   };
@@ -184,10 +184,11 @@ const OnboardingScreen = () => {
   return (
     <Layout>
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        {/* «Пропустить» есть на каждом шаге: онбординг — не платный доступ, а
-            подсказка, и запирать в нём нельзя. Кроме экрана успеха: наблюдение
-            там уже создано, и `onboarding_skipped` с него означал бы в отчёте
-            отвал ровно на тех, кто дошёл до конца. Выход оттуда — «Готово». */}
+        {/* "Skip" is on every step: onboarding is not paid access but a hint,
+            and locking people inside it is not allowed. Except for the success
+            screen: the observation there is already created, and an
+            `onboarding_skipped` from it would report a drop-off on exactly those
+            who made it to the end. The way out of there is "Done". */}
         {!created && (
           <TouchableOpacity
             onPress={handleSkip}
@@ -211,11 +212,11 @@ const OnboardingScreen = () => {
           ))}
         </View>
 
-        {/* На последнем шаге кнопка появляется только после созданной записи:
-            до неё единственное осмысленное действие — выбрать птицу, и вторая
-            кнопка рядом читалась бы как «можно и без этого». Исключение —
-            упавшие списки видов: выбирать там не из чего, и без кнопки шаг
-            становится тупиком. */}
+        {/* On the last step the button only appears once a record has been
+            created: before that the single meaningful action is to pick a bird,
+            and a second button next to it would read as "this can be skipped".
+            The exception is failed species lists: there is nothing to pick there,
+            and without the button the step becomes a dead end. */}
         {(!isLast || created || speciesLoadFailed) && (
           <AnimatedLoadingButton
             onPress={isLast ? complete : step === 3 ? handleCountryNext : goNext}

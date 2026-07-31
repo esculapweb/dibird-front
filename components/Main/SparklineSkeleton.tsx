@@ -24,7 +24,7 @@ export const SparklineSkeleton = () => {
         />
       </View>
 
-      {/* бары */}
+      {/* bars */}
       <View style={styles.bars}>
         {Array.from({ length: BAR_COUNT }).map((_, i) => {
           const h = 8 + Math.sin(i * 0.8) * 18 + 14;

@@ -1,23 +1,24 @@
-// Лицензия записи приходит из xeno-canto как есть — в поле `lic` их API лежит
-// протокол-относительный URL вида `//creativecommons.org/licenses/by-nc-sa/4.0/`
-// (бэк только пересылает его, см. `parsers/management/commands/xeno.py`).
-// Показывать пользователю такую строку нельзя, а не показывать вовсе —
-// нарушение самих CC-лицензий: они требуют указать не только автора, но и
-// лицензию со ссылкой на неё.
+// The licence of a recording comes from xeno-canto as is — the `lic` field of
+// their API holds a protocol-relative URL like
+// `//creativecommons.org/licenses/by-nc-sa/4.0/` (the backend only forwards it,
+// see `parsers/management/commands/xeno.py`). Such a string must not be shown to
+// the user, and not showing it at all violates the CC licences themselves: they
+// require naming not only the author but also the licence, with a link to it.
 //
-// Значение бывает и пустым (`license__isnull` — записи, для которых команда
-// `xeno --license` ещё не отработала или API не отдал поле), и нераспознанным:
-// в таком случае отдаём его как есть без ссылки, но не прячем.
+// The value is sometimes empty (`license__isnull` — recordings for which the
+// `xeno --license` command has not run yet, or the API did not return the field)
+// and sometimes unrecognised: in that case we return it as is without a link, but
+// do not hide it.
 
 export interface SoundLicense {
-  /** Короткая метка для UI: `CC BY-NC-SA 4.0`, `CC0 1.0`. */
+  /** A short label for the UI: `CC BY-NC-SA 4.0`, `CC0 1.0`. */
   label: string;
-  /** Ссылка на текст лицензии; null, если строку не удалось разобрать. */
+  /** A link to the text of the licence; null if the string could not be parsed. */
   url: string | null;
 }
 
-// `//creativecommons.org/...` — валидный URL только внутри страницы; в
-// Linking.openURL такой уедет без схемы и не откроется.
+// `//creativecommons.org/...` is a valid URL only inside a page; in
+// Linking.openURL it would go without a scheme and would not open.
 const withScheme = (raw: string) =>
   raw.startsWith("//") ? `https:${raw}` : raw.replace(/^http:/, "https:");
 
@@ -47,12 +48,12 @@ export const parseSoundLicense = (
     return { label, url: withScheme(value) };
   }
 
-  // Не CC-ссылка: в базе встречаются и готовые метки (`CC BY`). Ссылку даём
-  // только если это вообще ссылка, иначе openURL упадёт на «CC BY».
+  // Not a CC link: the database also holds ready-made labels (`CC BY`). A link is
+  // given only if it is a link at all, otherwise openURL would fail on "CC BY".
   const isUrl = /^(https?:)?\/\//i.test(value);
   return { label: value, url: isUrl ? withScheme(value) : null };
 };
 
-/** Страница записи на xeno-canto — источник, который требует указать CC BY. */
+/** The recording's page on xeno-canto — the source that requires a CC BY credit. */
 export const xenoCantoUrl = (xenoId: number) =>
   `https://xeno-canto.org/${xenoId}`;

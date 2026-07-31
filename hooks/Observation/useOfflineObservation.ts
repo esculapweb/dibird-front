@@ -232,8 +232,8 @@ export const useCreateObservation = () => {
       runObservationSync(); // in case connectivity just flickered back
       return item;
     },
-    // Считаем создание, а не успешную отправку: оффлайн-запись — такое же
-    // наблюдение для пользователя, она просто ещё в очереди синка.
+    // Creation is counted rather than a successful upload: an offline record is
+    // the same observation to the user, it is simply still in the sync queue.
     onSuccess: async () => {
       track("observation_created");
       if (await markFirstObservationTracked()) {

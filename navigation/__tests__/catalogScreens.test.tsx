@@ -1,5 +1,5 @@
-// Экраны справочника тянут за собой expo-audio, maplibre и прочую нативную
-// периферию — здесь важны только их имена, поэтому все семь заглушены.
+// The catalogue screens drag in expo-audio, maplibre and other native
+// periphery — only their names matter here, so all seven are stubbed out.
 jest.mock("../../screens/SpeciesDetailScreen", () => () => null);
 jest.mock("../../screens/TaxonomyScreen", () => () => null);
 jest.mock("../../screens/TaxonGroupDetailScreen", () => () => null);
@@ -16,7 +16,7 @@ import { catalogScreens } from "../catalogScreens";
 import { CATALOG_SCREEN_NAMES } from "../../constants/catalogScreens";
 import type { CatalogParamList } from "../../types";
 
-// Ни один Screen не рендерится — из фрагмента читаются только пропсы.
+// No Screen is rendered — only the props are read out of the fragment.
 const Stack = { Screen: () => null } as unknown as ReturnType<
   typeof createNativeStackNavigator<CatalogParamList>
 >;
@@ -28,10 +28,11 @@ const registeredNames = () => {
     .map((child) => (child as ReactElement<{ name: string }>).props.name);
 };
 
-// CATALOG_SCREEN_NAMES живёт отдельно от регистраций (иначе его импорт тянул
-// бы за собой все экраны), поэтому единственное, что держит два списка
-// вместе, — эта проверка. Разъехались они — гость после логина не вернётся на
-// экран, которого в списке нет, и молча окажется на MainScreen.
+// CATALOG_SCREEN_NAMES lives separately from the registrations (otherwise
+// importing it would drag in all the screens), so this check is the only thing
+// keeping the two lists together. Once they drift apart, a guest will not be
+// returned after a login to a screen missing from the list and will silently end
+// up on MainScreen.
 it("CATALOG_SCREEN_NAMES matches the screens actually registered", () => {
   expect(registeredNames().sort()).toEqual([...CATALOG_SCREEN_NAMES].sort());
 });

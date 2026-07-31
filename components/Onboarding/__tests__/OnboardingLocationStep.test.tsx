@@ -51,16 +51,18 @@ beforeEach(() => {
   mockRequestPushPermission.mockResolvedValue(true);
 });
 
-// Шаг именно про оповещения о редкостях рядом: без пушей они не доедут, без
-// координат — не про «рядом». Порядок как в AlertsCard: сначала пуши.
+// The step is precisely about alerts on rarities nearby: without push they do
+// not arrive, without coordinates they are not about "nearby". The order is the
+// same as in AlertsCard: push first.
 it("asks for both permissions and stores the coordinates", async () => {
   await render(<OnboardingLocationStep />);
   await allow();
 
   expect(mockRequestPushPermission).toHaveBeenCalledTimes(1);
   expect(mockRequestLocation).toHaveBeenCalledTimes(1);
-  // sync: без него страну по координатам резолвит отложенная задача, и первый
-  // же экран после онбординга показал бы «поблизости» без страны.
+  // sync: without it a deferred task resolves the country from the coordinates,
+  // and the very first screen after onboarding would show "nearby" with no
+  // country.
   expect(mockSave).toHaveBeenCalledWith({ lat: 48.85, lon: 2.35 }, true);
   expect(track).toHaveBeenCalledWith("onboarding_location_set");
 });
@@ -87,9 +89,9 @@ it("points at the OS settings when the permission was refused", async () => {
   expect(screen.getByTestId("onboarding-location-allow")).toBeOnTheScreen();
 });
 
-// Фикс может не приехать и без отказа — GPS в помещении, таймаут. Гнать
-// человека в системные настройки в этом случае не за чем: кнопка остаётся,
-// и её можно нажать ещё раз.
+// A fix may fail to arrive without any refusal — GPS indoors, a timeout. There
+// is no point pushing the user into the system settings in that case: the button
+// stays and can be tapped again.
 it("keeps the button and stays quiet when the fix simply did not arrive", async () => {
   mockRequestLocation.mockResolvedValue(null);
   mockGetPermissionStatus.mockReturnValue("granted");
@@ -101,8 +103,8 @@ it("keeps the button and stays quiet when the fix simply did not arrive", async 
   expect(screen.getByTestId("onboarding-location-allow")).toBeOnTheScreen();
 });
 
-// Кнопка гасится по-настоящему, а не только визуально: системный диалог
-// поверх второго запроса — это два подряд, и второй ОС уже не покажет.
+// The button is locked for real, not just visually: a system dialog on top of a
+// second request means two in a row, and the OS will not show the second one.
 it("locks the button while the request is in flight", async () => {
   let resolveLocation: (v: unknown) => void = () => {};
   mockRequestLocation.mockReturnValue(

@@ -52,7 +52,8 @@ let mockSettings: {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  // Точка уже есть: карточку в этих тестах поднимает выключенность алертов.
+  // The location is already there: in these tests the card is raised by alerts
+  // being off.
   mockSettings = { is_enabled: false, location_lat: 48.85 };
   mockSave.mockResolvedValue(true);
   mockRequestLocation.mockResolvedValue(null);
@@ -74,9 +75,9 @@ describe("visibility", () => {
     expect(screen.queryByTestId("alerts-card")).not.toBeOnTheScreen();
   });
 
-  // Главный случай новичка: на бэке алерты включены по умолчанию, поэтому по
-  // одному `is_enabled` карточка не показывалась никогда — а точки нет, и
-  // «поблизости» означает «где угодно».
+  // The main newcomer case: alerts are on by default on the backend, so the card
+  // never showed up on `is_enabled` alone — and there is no location, so
+  // "nearby" means "anywhere".
   it("shows up with alerts on but no location, asking where to look", async () => {
     mockSettings = { is_enabled: true, location_lat: null };
     await render(<AlertsCard />);
@@ -86,8 +87,8 @@ describe("visibility", () => {
     expect(screen.getByText("alerts_card_locate")).toBeOnTheScreen();
   });
 
-  // Пока настройки не приехали (или пользователь не залогинен), состояние
-  // неизвестно — мигать карточкой в это время нельзя.
+  // Until the settings have arrived (or while the user is signed out) the state
+  // is unknown — flashing the card in the meantime is not an option.
   it("stays away while the settings are unknown", async () => {
     mockSettings = null;
     await render(<AlertsCard />);
@@ -118,8 +119,8 @@ describe("turning alerts on", () => {
     await render(<AlertsCard />);
     await fireEvent.press(screen.getByTestId("alerts-card-enable"));
 
-    // sync: без него страну по координатам резолвит отложенная задача, и
-    // подпись у «редкостей поблизости» осталась бы прежней до перезапуска.
+    // sync: without it a deferred task resolves the country from the coordinates,
+    // and the label of "rare nearby" would stay as it was until a restart.
     expect(mockSave).toHaveBeenCalledWith({ lat: 48.85, lon: 2.35 }, true);
     expect(mockSave).toHaveBeenCalledWith({ is_enabled: true });
   });
@@ -134,9 +135,9 @@ describe("turning alerts on", () => {
     expect(mockLocationUnavailable).toHaveBeenCalledTimes(1);
   });
 
-  // Карточку в этом случае держит только отсутствие точки: трогать
-  // `is_enabled`, который и так true, значило бы записать в отчёт включение,
-  // которого не было.
+  // In this case only the missing location keeps the card up: touching
+  // `is_enabled`, which is true anyway, would record an enable that never
+  // happened.
   it("only stores the coordinates when alerts are already on", async () => {
     mockSettings = { is_enabled: true, location_lat: null };
     mockRequestLocation.mockResolvedValue({
@@ -152,8 +153,9 @@ describe("turning alerts on", () => {
     expect(track).not.toHaveBeenCalled();
   });
 
-  // Отказ в геопозиции не должен отменять включение: у настроек уже может быть
-  // страна из профиля, а радиус — величина, которую задают и вручную.
+  // A refused location must not cancel the enable: the settings may already have
+  // a country from the profile, and the radius is something people also set by
+  // hand.
   it("still turns alerts on when the location request came back empty", async () => {
     mockRequestLocation.mockResolvedValue(null);
 
@@ -164,8 +166,8 @@ describe("turning alerts on", () => {
     expect(mockSave).toHaveBeenCalledWith({ is_enabled: true });
   });
 
-  // Отказ в пушах тоже: настройки останутся, и уведомления поедут, как только
-  // разрешение выдадут в системных настройках.
+  // A refused push permission likewise: the settings stay, and notifications will
+  // flow as soon as the permission is granted in the system settings.
   it("still turns alerts on when push permission was refused", async () => {
     mockRequestPushPermission.mockResolvedValue(false);
 

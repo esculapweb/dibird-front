@@ -1,12 +1,12 @@
 /**
- * Экраны справочника — те, что зарегистрированы в обоих стеках сразу
- * (`navigation/catalogScreens.tsx`, тип `CatalogParamList`).
+ * The catalogue screens — the ones registered in both stacks at once
+ * (`navigation/catalogScreens.tsx`, type `CatalogParamList`).
  *
- * Отдельный модуль без импортов: `navigation/catalogScreens.tsx` тянет за
- * собой все семь экранов со всей их периферией (expo-audio, maplibre и
- * прочее), а потребителям списка — `services/authReturn.ts` — нужны только
- * имена. За тем, что список не разъехался с регистрациями, следит
- * `navigation/__tests__/catalogScreens.test.tsx`.
+ * A separate module with no imports: `navigation/catalogScreens.tsx` drags in
+ * all seven screens with all their periphery (expo-audio, maplibre and the
+ * rest), while the consumers of the list — `services/authReturn.ts` — only need
+ * the names. That the list has not drifted apart from the registrations is
+ * watched by `navigation/__tests__/catalogScreens.test.tsx`.
  */
 export const CATALOG_SCREEN_NAMES = [
   "SpeciesDetail",

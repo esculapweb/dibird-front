@@ -1,4 +1,4 @@
-// Реальный QueryClient по той же причине, что в OnboardingSpeciesStep.test.tsx.
+// A real QueryClient for the same reason as in OnboardingSpeciesStep.test.tsx.
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
   initReactI18next: { type: "3rdParty", init: () => {} },
@@ -89,8 +89,8 @@ it("passes the chosen country up", async () => {
   expect(mockOnChange).toHaveBeenCalledWith(7);
 });
 
-// Цифра под дропдауном и есть смысл шага: «12 из 812» превращает пустой
-// аккаунт в понятную цель.
+// The number under the dropdown is the whole point of the step: "12 of 812"
+// turns an empty account into a clear goal.
 it("shows how much of the country is already covered", async () => {
   await renderStep(7);
 
@@ -108,8 +108,8 @@ it("asks for nothing until a country is chosen", async () => {
   expect(screen.queryByTestId("onboarding-country-result")).not.toBeOnTheScreen();
 });
 
-// «0 из 0» на месте обещанной персонализации хуже, чем её отсутствие: так
-// выглядит страна, по которой у бэка ещё нет чек-листа.
+// "0 of 0" in place of the promised personalisation is worse than none at all:
+// that is what a country the backend has no checklist for looks like.
 it("hides the counter when the country has no species total", async () => {
   mockStat.mockResolvedValue({ seen: 0, total: 0 });
 
