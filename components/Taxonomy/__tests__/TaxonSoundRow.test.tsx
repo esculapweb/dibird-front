@@ -40,7 +40,13 @@ jest.mock("expo-audio", () => ({
   useAudioPlayerStatus: () => mockStatus,
 }));
 
+const mockEnsureAudioMode = jest.fn();
+jest.mock("../../../util/audioMode", () => ({
+  ensureAudioMode: () => mockEnsureAudioMode(),
+}));
+
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
+import { Linking } from "react-native";
 import TaxonSoundRow from "../TaxonSoundRow";
 import { TaxonSound } from "../../../types";
 
@@ -112,6 +118,17 @@ it("starts playback and claims the player when play is tapped", async () => {
 
   expect(mockPlayer.play).toHaveBeenCalledTimes(1);
   expect(mockOnPlay).toHaveBeenCalledTimes(1);
+  // Без этого iOS глушит запись переключателем «беззвучно» — см. util/audioMode.
+  expect(mockEnsureAudioMode).toHaveBeenCalledTimes(1);
+});
+
+it("does not touch the audio session when playback is only being paused", async () => {
+  mockStatus = { playing: true, didJustFinish: false, currentTime: 10, duration: 100 };
+
+  await renderRow({ isActive: true });
+  await fireEvent.press(screen.getByText("icon-pause-circle"));
+
+  expect(mockEnsureAudioMode).not.toHaveBeenCalled();
 });
 
 it("shows a scrub bar with elapsed and total time once it owns the player", async () => {
@@ -214,4 +231,40 @@ it("cannot be scrubbed while it is a live stream", async () => {
   await renderRow({ isActive: true });
 
   expect(sliderProps().disabled).toBe(true);
+});
+
+// Attribution: the recordings are CC-licensed, so author, source and licence
+// all have to be on screen — and the last two have to be reachable.
+it("credits the source recording and its licence", async () => {
+  await renderRow();
+
+  expect(screen.getByText("XC363809")).toBeOnTheScreen();
+  expect(screen.getByText("CC BY-NC-SA 4.0")).toBeOnTheScreen();
+});
+
+it("opens the xeno-canto page of the recording, not its download route", async () => {
+  const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+
+  await renderRow();
+  await fireEvent.press(screen.getByTestId(`sound-source-${SOUND.xeno_id}`));
+
+  expect(openURL).toHaveBeenCalledWith("https://xeno-canto.org/363809");
+});
+
+it("opens the licence text itself", async () => {
+  const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+
+  await renderRow();
+  await fireEvent.press(screen.getByTestId(`sound-license-${SOUND.xeno_id}`));
+
+  expect(openURL).toHaveBeenCalledWith(
+    "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+  );
+});
+
+it("still credits the source when the licence is missing from the backend", async () => {
+  await renderRow({ sound: { ...SOUND, license: null } });
+
+  expect(screen.getByText("XC363809")).toBeOnTheScreen();
+  expect(screen.queryByTestId(`sound-license-${SOUND.xeno_id}`)).toBeNull();
 });

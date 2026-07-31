@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { View, Text, StyleSheet, Pressable } from "react-native";
+import { View, Text, StyleSheet, Pressable, Linking } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
 import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
@@ -7,6 +7,8 @@ import { useTranslation } from "react-i18next";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { soundTypeParts } from "../../util/soundType";
+import { ensureAudioMode } from "../../util/audioMode";
+import { parseSoundLicense, xenoCantoUrl } from "../../util/soundLicense";
 import { TaxonSound } from "../../types";
 
 interface TaxonSoundRowProps {
@@ -38,6 +40,14 @@ const TaxonSoundRow = ({ sound, isActive, onPlay }: TaxonSoundRowProps) => {
       .join(", ");
     return label.charAt(0).toUpperCase() + label.slice(1);
   }, [sound.type, t]);
+  // Recordings are CC-licensed, and every one of those licences asks for the
+  // same three things: author, source and the licence itself. Author is the
+  // meta line below, source is the XC link, licence is this label — dropping
+  // any of them makes the playback itself non-compliant.
+  const license = useMemo(
+    () => parseSoundLicense(sound.license),
+    [sound.license],
+  );
   // Only a subset of recordings are mirrored locally (sound.sound); the rest
   // stream directly from Xeno-canto's public, unauthenticated download route.
   const uri = sound.sound ?? `https://xeno-canto.org/${sound.xeno_id}/download`;
@@ -77,6 +87,7 @@ const TaxonSoundRow = ({ sound, isActive, onPlay }: TaxonSoundRowProps) => {
       player.pause();
       return;
     }
+    ensureAudioMode();
     player.play();
     onPlay();
   };
@@ -98,6 +109,31 @@ const TaxonSoundRow = ({ sound, isActive, onPlay }: TaxonSoundRowProps) => {
           <Text style={styles.meta} numberOfLines={1}>
             {sound.recorder}
             {sound.country ? `, ${sound.country}` : ""}
+          </Text>
+          {/* Отдельной строкой, а не хвостом к meta: при `numberOfLines={1}`
+              длинное имя записавшего обрезало бы как раз атрибуцию. */}
+          <Text style={styles.credits} numberOfLines={1}>
+            <Text
+              style={styles.link}
+              onPress={() => Linking.openURL(xenoCantoUrl(sound.xeno_id))}
+              testID={`sound-source-${sound.xeno_id}`}
+            >
+              {`XC${sound.xeno_id}`}
+            </Text>
+            {license ? " · " : ""}
+            {license ? (
+              <Text
+                style={license.url ? styles.link : undefined}
+                onPress={
+                  license.url
+                    ? () => Linking.openURL(license.url as string)
+                    : undefined
+                }
+                testID={`sound-license-${sound.xeno_id}`}
+              >
+                {license.label}
+              </Text>
+            ) : null}
           </Text>
         </View>
       </View>
@@ -151,6 +187,12 @@ const stylesFn = (Colors: ThemeColors) =>
       color: Colors.textSecondary,
       marginTop: 1,
     },
+    credits: {
+      fontSize: 11,
+      color: Colors.textSecondary,
+      marginTop: 1,
+    },
+    link: { textDecorationLine: "underline" },
     player: {
       flexDirection: "row",
       alignItems: "center",

@@ -70,7 +70,7 @@ export default {
     name: variant.name,
     slug: "dibird",
     owner: "esculapweb",
-    version: "26.07.1",
+    version: "26.07.2",
     orientation: "portrait",
     scheme: "dibird",
     userInterfaceStyle: "automatic",
@@ -132,6 +132,11 @@ export default {
           android: {
             enableMinifyInReleaseBuilds: true,
             enableShrinkResourcesInReleaseBuilds: true,
+            // Expo 56 по умолчанию даёт 35; Play перестаёт принимать апдейты
+            // ниже 36 с конца августа 2026. Поднято заранее — требует прогона
+            // на Android 16 (разрешения, уведомления, выбор файла).
+            compileSdkVersion: 36,
+            targetSdkVersion: 36,
           },
         },
       ],
@@ -180,7 +185,39 @@ export default {
       "./plugins/withModularHeaders",
       "./plugins/withDevMenuDefaults",
       "@react-native-firebase/app",
-      "expo-audio",
+      [
+        // Плагин применяется автолинкингом и без этой записи — она нужна
+        // только чтобы отключить лишнее. Пикер берёт исключительно фото из
+        // галереи (components/Profile/Avatar.tsx, launchImageLibraryAsync), но
+        // по умолчанию тянет за собой RECORD_AUDIO и CAMERA (для съёмки видео)
+        // плюс их дефолтные purpose strings в Info.plist. `false` не просто не
+        // добавляет разрешение, а блокирует его — в том числе от других
+        // плагинов, поэтому RECORD_AUDIO не вернётся через expo-audio.
+        "expo-image-picker",
+        {
+          microphonePermission: false,
+          cameraPermission: false,
+        },
+      ],
+      [
+        "expo-audio",
+        {
+          // Записи только проигрываются (components/Taxonomy/TaxonSoundRow.tsx),
+          // ничего не записывается. С дефолтными опциями плагин кладёт в
+          // манифест RECORD_AUDIO, а в Info.plist — NSMicrophoneUsageDescription
+          // со своей заготовкой «Allow DiBird to access your microphone»:
+          // разрешение, которого приложение не использует, и purpose string,
+          // который ничего не объясняет ревьюеру.
+          microphonePermission: false,
+          recordAudioAndroid: false,
+          // Фонового воспроизведения нет. Иначе плагин добавляет
+          // FOREGROUND_SERVICE + FOREGROUND_SERVICE_MEDIA_PLAYBACK со своим
+          // сервисом (Play требует за них отдельную декларацию) и
+          // UIBackgroundModes: audio (Apple 2.5.4 — заявленный, но
+          // неиспользуемый background mode).
+          enableBackgroundPlayback: false,
+        },
+      ],
       "expo-font",
       "expo-image",
       "expo-sharing",

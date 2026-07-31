@@ -62,6 +62,7 @@ jest.mock("@expo/vector-icons", () => {
   return { Ionicons: View };
 });
 jest.mock("expo-audio", () => ({
+  setAudioModeAsync: jest.fn().mockResolvedValue(undefined),
   useAudioPlayer: () => ({ play: jest.fn(), pause: jest.fn(), seekTo: jest.fn() }),
   useAudioPlayerStatus: () => ({ playing: false, didJustFinish: false }),
 }));

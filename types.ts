@@ -497,7 +497,9 @@ export interface TaxonSound {
   type: string;
   recorder: string;
   country: string;
-  license: string;
+  // Nullable на бэке (`Xeno.license`): у части записей лицензия ещё не
+  // подтянута командой `xeno --license`.
+  license: string | null;
   sound?: string;
 }
 
