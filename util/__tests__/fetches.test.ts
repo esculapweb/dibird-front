@@ -1023,3 +1023,236 @@ describe("GDPR export flow", () => {
     expect(result).toEqual({ uri: "file:///docs/dibird_export.zip" });
   });
 });
+
+describe("observation CSV import", () => {
+  // RN's FormData takes a { uri, name, type } file object that no web Blob
+  // type describes; assert on what actually got appended rather than on the
+  // opaque FormData instance.
+  const appendedForm = () => {
+    const form = (api.post as jest.Mock).mock.calls[0][1] as FormData;
+    return Object.fromEntries(form.entries());
+  };
+
+  it("uploads the file as multipart and reports back the job", async () => {
+    (api.post as jest.Mock).mockResolvedValue({ data: { id: 7, status: "queued" } });
+
+    const result = await fetches.startObservationImport(
+      { uri: "file:///tmp/list.csv", name: "list.csv" },
+      true,
+    );
+
+    expect(result).toEqual({ id: 7, status: "queued" });
+    expect((api.post as jest.Mock).mock.calls[0][0]).toBe(
+      "/myapi/observation-import/",
+    );
+    expect((api.post as jest.Mock).mock.calls[0][2]).toEqual({
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    // jsdom's FormData stringifies the RN file object into "[object Object]",
+    // so only its presence is observable here — the { uri, name, type } shape
+    // itself is a runtime concern, not something this environment can check.
+    expect(Object.keys(appendedForm())).toEqual(["file", "make_public"]);
+    expect(appendedForm().make_public).toBe("true");
+  });
+
+  it("sends make_public as a string flag when the import stays private", async () => {
+    (api.post as jest.Mock).mockResolvedValue({ data: { id: 7 } });
+
+    await fetches.startObservationImport(
+      { uri: "file:///tmp/list.csv", name: "list.csv" },
+      false,
+    );
+
+    expect(appendedForm().make_public).toBe("false");
+  });
+
+  it("polls the job status", async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: { id: 7, status: "running" } });
+
+    const result = await fetches.pollObservationImportStatus();
+
+    expect(result).toEqual({ id: 7, status: "running" });
+    expect(api.get).toHaveBeenCalledWith("/myapi/observation-import/status/");
+  });
+});
+
+describe("taxonomy catalogue", () => {
+  const emptyPage = {
+    pagination: { count: 0, per_page: 100, current: 1, final: 1, next: null, previous: null },
+    results: [],
+  };
+
+  const paramsOfLastGet = () => {
+    const calls = (api.get as jest.Mock).mock.calls;
+    return calls[calls.length - 1][1].params;
+  };
+
+  describe("fetchTaxonList", () => {
+    it("binds the rank up front and defaults the order to name", async () => {
+      (api.get as jest.Mock).mockResolvedValue({ data: emptyPage });
+
+      await fetches.fetchTaxonList(4)({}, null, "", 1);
+
+      expect((api.get as jest.Mock).mock.calls[0][0]).toBe("/api/taxon/");
+      expect(paramsOfLastGet()).toMatchObject({ rank: 4, o: "name" });
+    });
+
+    it("passes the caller's order through when there is one", async () => {
+      (api.get as jest.Mock).mockResolvedValue({ data: emptyPage });
+
+      await fetches.fetchTaxonList(5)({}, "-name", "", 1);
+
+      expect(paramsOfLastGet()).toMatchObject({ o: "-name" });
+    });
+
+    it("scopes the request to a parent when drilling into its children", async () => {
+      (api.get as jest.Mock).mockResolvedValue({ data: emptyPage });
+
+      await fetches.fetchTaxonList(5, { segment: "corvidae", rank: 4 })({}, null, "", 1);
+
+      expect(paramsOfLastGet()).toMatchObject({
+        rank: 5,
+        parent: "corvidae",
+        parent_rank: 4,
+      });
+    });
+
+    it("asks for extinct species only when the flag is on", async () => {
+      (api.get as jest.Mock).mockResolvedValue({ data: emptyPage });
+
+      await fetches.fetchTaxonList(5, null, true)({}, null, "", 1);
+      expect(paramsOfLastGet()).toMatchObject({ extinct: true });
+
+      await fetches.fetchTaxonList(5, null, false)({}, null, "", 1);
+      expect(paramsOfLastGet().extinct).toBeUndefined();
+    });
+  });
+
+  // Trait filters ride in extraParams (they change what is being asked for,
+  // so they belong in the cache key) and the multi-selects travel joined.
+  describe("trait filters", () => {
+    const withTraits = async (traits: Parameters<typeof fetches.fetchTaxonList>[3]) => {
+      (api.get as jest.Mock).mockResolvedValue({ data: emptyPage });
+      await fetches.fetchTaxonList(5, null, false, traits)({}, null, "", 1);
+      return paramsOfLastGet();
+    };
+
+    it("joins multi-selects with commas and keeps scalars as they are", async () => {
+      const params = await withTraits({
+        habitat: ["forest", "wetland"],
+        mass_min: 20,
+      });
+
+      expect(params).toMatchObject({ habitat: "forest,wetland", mass_min: 20 });
+    });
+
+    it("drops nulls and empty selections instead of sending them", async () => {
+      const params = await withTraits({
+        habitat: [],
+        mass_min: null,
+        trophic_level: ["carnivore"],
+      });
+
+      expect(params.habitat).toBeUndefined();
+      expect(params.mass_min).toBeUndefined();
+      expect(params).toMatchObject({ trophic_level: "carnivore" });
+    });
+
+    it("sends nothing extra when there are no traits at all", async () => {
+      const params = await withTraits(null);
+
+      expect(params).toMatchObject({ rank: 5 });
+      expect(params.habitat).toBeUndefined();
+    });
+  });
+
+  describe("fetchSpeciesCount", () => {
+    it("asks for a single row and returns just the total", async () => {
+      (api.get as jest.Mock).mockResolvedValue({
+        data: { pagination: { count: 11250 }, results: [] },
+      });
+
+      const result = await fetches.fetchSpeciesCount();
+
+      expect(result).toBe(11250);
+      expect(paramsOfLastGet()).toEqual({ rank: 5, per_page: 1 });
+    });
+  });
+
+  describe("fetchTraitFilters", () => {
+    it("caches a live response", async () => {
+      (api.get as jest.Mock).mockResolvedValue({ data: { habitat: ["forest"] } });
+
+      const result = await fetches.fetchTraitFilters();
+
+      expect(result).toEqual({ habitat: ["forest"] });
+      expect(listCacheRepository.cacheListResponse).toHaveBeenCalled();
+    });
+
+    it("falls back to the cache when the request fails", async () => {
+      (api.get as jest.Mock).mockRejectedValue(new Error("boom"));
+      (listCacheRepository.getCachedListResponse as jest.Mock).mockReturnValue({
+        habitat: ["cached"],
+      });
+
+      await expect(fetches.fetchTraitFilters()).resolves.toEqual({
+        habitat: ["cached"],
+      });
+    });
+
+    it("rethrows when there is nothing cached", async () => {
+      const err = new Error("boom");
+      (api.get as jest.Mock).mockRejectedValue(err);
+      (listCacheRepository.getCachedListResponse as jest.Mock).mockReturnValue(undefined);
+
+      await expect(fetches.fetchTraitFilters()).rejects.toBe(err);
+    });
+  });
+
+  describe("fetchTaxonDetail", () => {
+    it("requests the segment at the given rank and caches it", async () => {
+      (api.get as jest.Mock).mockResolvedValue({ data: { segment: "corvidae" } });
+
+      const result = await fetches.fetchTaxonDetail("corvidae", 4);
+
+      expect(result).toEqual({ segment: "corvidae" });
+      expect((api.get as jest.Mock).mock.calls[0][0]).toBe("/api/taxon/corvidae/");
+      expect(paramsOfLastGet()).toEqual({ rank: 4 });
+      expect(listCacheRepository.cacheListResponse).toHaveBeenCalled();
+    });
+
+    it("falls back to the cached detail when the request fails", async () => {
+      (api.get as jest.Mock).mockRejectedValue(new Error("boom"));
+      (listCacheRepository.getCachedListResponse as jest.Mock).mockReturnValue({
+        segment: "cached",
+      });
+
+      await expect(fetches.fetchTaxonDetail("corvidae", 4)).resolves.toEqual({
+        segment: "cached",
+      });
+    });
+  });
+
+  // Push notifications carry a numeric species id, not a segment; every
+  // in-app link already has the segment and skips this round trip.
+  describe("fetchTaxonSegmentById", () => {
+    it("resolves the segment of the matching species", async () => {
+      (api.get as jest.Mock).mockResolvedValue({
+        data: { pagination: { count: 1 }, results: [{ segment: "corvus-corax" }] },
+      });
+
+      await expect(fetches.fetchTaxonSegmentById(123)).resolves.toBe("corvus-corax");
+      expect(paramsOfLastGet()).toEqual({ rank: 5, taxon_id: 123, per_page: 1 });
+    });
+
+    it("fails loudly when the id matches nothing", async () => {
+      (api.get as jest.Mock).mockResolvedValue({
+        data: { pagination: { count: 0 }, results: [] },
+      });
+
+      await expect(fetches.fetchTaxonSegmentById(123)).rejects.toThrow(
+        "Species not found for id 123",
+      );
+    });
+  });
+});

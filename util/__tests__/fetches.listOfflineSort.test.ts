@@ -351,3 +351,87 @@ describe("resortRatingCompareItems", () => {
     ]);
   });
 });
+
+const pagination = (count: number) => ({
+  count,
+  per_page: 100,
+  current: 1,
+  final: 1,
+  next: null,
+  previous: null,
+});
+
+// The three fetchers below wire the resort helpers above into fetchAbstract.
+// Tested separately from the helpers themselves because the wiring is what
+// broke originally — a helper that works is useless if the fetcher never
+// hands the cached page to it.
+describe("fetchRating offline sort fallback", () => {
+  it("resorts a differently-ordered cache entry when offline", async () => {
+    listCacheRepository.getCachedListResponseByPrefix.mockReturnValue({
+      pagination: pagination(2),
+      results: [
+        rating({ profile_id: 1, seen_qty: 5 }),
+        rating({ profile_id: 2, seen_qty: 20 }),
+      ],
+    });
+
+    const result = await fetches.fetchRating({}, "-observations");
+
+    expect(result.results.map((r) => r.profile_id)).toEqual([2, 1]);
+  });
+});
+
+describe("fetchRatingCompare offline sort fallback", () => {
+  it("resorts a differently-ordered cache entry when offline", async () => {
+    listCacheRepository.getCachedListResponseByPrefix.mockReturnValue({
+      pagination: pagination(2),
+      results: [
+        ratingCompare({ name_lang: "Wren", taxon_id: 200 }),
+        ratingCompare({ name_lang: "Albatross", taxon_id: 10 }),
+      ],
+    });
+
+    const result = await fetches.fetchRatingCompare({}, "ioc_id");
+
+    expect(result.results.map((r) => r.name_lang)).toEqual([
+      "Albatross",
+      "Wren",
+    ]);
+  });
+});
+
+describe("fetchCommunityObservations offline sort fallback", () => {
+  it("resorts a differently-ordered cache entry when offline", async () => {
+    listCacheRepository.getCachedListResponseByPrefix.mockReturnValue({
+      pagination: pagination(2),
+      results: [
+        observation({
+          id: 1,
+          species_data: { id: 1, name: "", name_lang: "Wren", segment: "", thumb: null },
+        }),
+        observation({
+          id: 2,
+          species_data: { id: 2, name: "", name_lang: "Albatross", segment: "", thumb: null },
+        }),
+      ],
+    });
+
+    const result = await fetches.fetchCommunityObservations({}, "species_name");
+
+    expect(result.results.map((o) => o.species_data.name_lang)).toEqual([
+      "Albatross",
+      "Wren",
+    ]);
+  });
+
+  // Coords are deliberately kept out of the cache key (a fix for lists going
+  // blank offline under a slightly different GPS fix), so they must still
+  // reach the request itself.
+  it("sends coords as request-only params", async () => {
+    api.get.mockResolvedValue({ data: { pagination: pagination(0), results: [] } });
+
+    await fetches.fetchCommunityObservations({}, "species_name", "", 1, [10, 20]);
+
+    expect(api.get.mock.calls[0][1].params).toMatchObject({ lng: 10, lat: 20 });
+  });
+});

@@ -663,3 +663,130 @@ describe("clearAllLocal", () => {
     expect(pendingCreateMutations()).toHaveLength(0);
   });
 });
+
+describe("makeClientRequestId", () => {
+  // Separate id space from observationRepository's, but the same contract:
+  // the server dedupes creates on it, so two calls must never collide.
+  it("hands out a distinct id every time", () => {
+    const ids = new Set(
+      Array.from({ length: 50 }, () => diaryRepository.makeClientRequestId()),
+    );
+
+    expect(ids.size).toBe(50);
+  });
+});
+
+describe("removeLocal", () => {
+  it("drops the mirror row outright", () => {
+    const created = diaryRepository.createLocal(
+      diaryPayload(),
+      {},
+      PROFILE,
+      "req-1",
+    );
+
+    diaryRepository.removeLocal(created.id);
+
+    expect(rawDiaryRow(created.id)).toBeUndefined();
+  });
+});
+
+describe("cacheKnownSnapshot on a clean row", () => {
+  // The counterpart of the no-op case above: with nothing pending locally,
+  // the snapshot is what lets fetchDiaryObservations' offline fallback tell
+  // "genuinely zero observations" from "never cached".
+  it("stores the server snapshot as a synced row", () => {
+    const created = diaryRepository.createLocal(
+      diaryPayload(),
+      {},
+      PROFILE,
+      "req-1",
+    );
+    diaryRepository.removeLocal(created.id);
+
+    diaryRepository.cacheKnownSnapshot({ ...created, id: 900, name: "From list" });
+
+    const row = rawDiaryRow(900);
+    expect(row?.op).toBeNull();
+    expect(row?.status).toBe("synced");
+    expect((row?.data as { name: string | null }).name).toBe("From list");
+  });
+
+  it("refreshes an already-synced snapshot", () => {
+    const created = diaryRepository.createLocal(
+      diaryPayload(),
+      {},
+      PROFILE,
+      "req-1",
+    );
+    diaryRepository.removeLocal(created.id);
+    diaryRepository.cacheKnownSnapshot({ ...created, id: 900, name: "First" });
+
+    diaryRepository.cacheKnownSnapshot({ ...created, id: 900, name: "Second" });
+
+    expect((rawDiaryRow(900)?.data as { name: string | null }).name).toBe("Second");
+  });
+});
+
+describe("getDiary", () => {
+  it("marks a locally created diary as pending", () => {
+    const created = diaryRepository.createLocal(
+      diaryPayload(),
+      {},
+      PROFILE,
+      "req-1",
+    );
+
+    expect(diaryRepository.getDiary(created.id)?._pendingSync).toBe("pending");
+  });
+
+  it("leaves a synced diary without any sync markers", () => {
+    const created = diaryRepository.createLocal(
+      diaryPayload(),
+      {},
+      PROFILE,
+      "req-1",
+    );
+    diaryRepository.removeLocal(created.id);
+    diaryRepository.cacheKnownSnapshot({ ...created, id: 900 });
+
+    const diary = diaryRepository.getDiary(900);
+
+    expect(diary?._pendingSync).toBeUndefined();
+    expect(diary?._syncError).toBeUndefined();
+  });
+
+  it("returns null for a diary that isn't mirrored locally", () => {
+    expect(diaryRepository.getDiary(-999)).toBeNull();
+  });
+});
+
+describe("getOverlay for a delete that failed to sync", () => {
+  // Same rule as observationRepository: a failed delete comes back with an
+  // error badge instead of vanishing, while a pending one stays hidden.
+  it("keeps the diary visible as a patch instead of hiding it", () => {
+    const created = diaryRepository.createLocal(
+      diaryPayload(),
+      {},
+      PROFILE,
+      "req-1",
+    );
+    diaryRepository.removeLocal(created.id);
+    diaryRepository.cacheKnownSnapshot({ ...created, id: 900 });
+    diaryRepository.deleteLocal(900);
+    const claimed = diaryRepository.claimNextMutation()!;
+    diaryRepository.requeueFailedMutation(
+      claimed.payload as never,
+      claimed.createdAt,
+      claimed.attempts,
+      900,
+      "server said no",
+    );
+
+    const { deletedIds, patchesById } = diaryRepository.getOverlay();
+
+    expect(deletedIds.has(900)).toBe(false);
+    expect(patchesById.get(900)?._pendingSync).toBe("error");
+    expect(patchesById.get(900)?._syncError).toBe("server said no");
+  });
+});

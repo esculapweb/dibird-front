@@ -78,18 +78,33 @@ jest.mock("@react-native-firebase/analytics", () => ({
   getAnalytics: jest.fn(() => ({})),
   setUserId: jest.fn(async () => {}),
 }));
+jest.mock("../../services/analytics", () => ({
+  setAnalyticsUserId: jest.fn(),
+  setUserProps: jest.fn(),
+}));
 
-import { AppState } from "react-native";
-import { render, waitFor } from "@testing-library/react-native";
+import { AppState, Text } from "react-native";
+import { act, render, screen, waitFor } from "@testing-library/react-native";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
-import { ProfileProvider } from "../profile-context";
+import {
+  ProfileProvider,
+  registerOnProfileSaved,
+  useProfile,
+} from "../profile-context";
+import { setAnalyticsUserId, setUserProps } from "../../services/analytics";
+import { logError } from "../../services/errors";
+import { AppError } from "../../types";
 import { runProfileSync } from "../../services/sync/profileSync";
 import { runAvatarSync } from "../../services/sync/avatarSync";
 import * as profileRepository from "../../hooks/repositories/profileRepository";
 import * as observationRepository from "../../hooks/repositories/observationRepository";
 import * as diaryRepository from "../../hooks/repositories/diaryRepository";
 import * as placeRepository from "../../hooks/repositories/placeRepository";
-import { getLastLoggedInUserId, setLastLoggedInUserId } from "../../util/storageHelper";
+import {
+  getLastLoggedInUserId,
+  initGlobalFilters,
+  setLastLoggedInUserId,
+} from "../../util/storageHelper";
 import { queryClient } from "../../services/queryClient";
 import { clearPersistedQueryCache } from "../../services/queryPersist";
 
@@ -101,9 +116,33 @@ const networkStatusMock = require("../../services/sync/networkStatus") as {
 let appStateListeners: Array<(state: string) => void> = [];
 const emitAppState = (state: string) => appStateListeners.forEach((l) => l(state));
 
+// The provider runs two live queries per render, in a fixed order: the
+// profile row first, the failed-mutation queue second. Feeding them by call
+// parity is what lets a test set up one without the other.
+const mockLiveQueries = ({
+  profileRows = [] as unknown[],
+  mutationRows = [] as unknown[],
+  updatedAt = 0,
+} = {}) => {
+  let call = 0;
+  (useLiveQuery as jest.Mock).mockImplementation(() =>
+    call++ % 2 === 0
+      ? { data: profileRows, updatedAt }
+      : { data: mutationRows, updatedAt: 0 },
+  );
+};
+
 beforeEach(() => {
   jest.clearAllMocks();
   jest.useFakeTimers();
+  // clearAllMocks leaves implementations in place, so without this a test
+  // that stubs a loaded profile, a pending sync or a rejected one would leak
+  // it into the ones that follow.
+  mockLiveQueries();
+  (profileRepository.rowToProfile as jest.Mock).mockReturnValue(null);
+  (runProfileSync as jest.Mock).mockResolvedValue(undefined);
+  (runAvatarSync as jest.Mock).mockResolvedValue(undefined);
+  (getLastLoggedInUserId as jest.Mock).mockResolvedValue(null);
   networkStatusMock.__resetReconnectListeners();
   appStateListeners = [];
   jest.spyOn(AppState, "addEventListener").mockImplementation((_event, cb) => {
@@ -126,6 +165,31 @@ const renderProvider = () =>
       <></>
     </ProfileProvider>,
   );
+
+let ctx: ReturnType<typeof useProfile> | null = null;
+
+const Probe = () => {
+  ctx = useProfile();
+  return (
+    <Text>
+      {`loading:${ctx.profileLoading} error:${ctx.error?.message ?? "none"} failed:${ctx.failedEdit?.message ?? "none"}`}
+    </Text>
+  );
+};
+
+const renderWithProbe = (
+  props: Partial<React.ComponentProps<typeof ProfileProvider>> = {},
+) => {
+  ctx = null;
+  return render(
+    <ProfileProvider isAuthenticated isInitializing={false} {...props}>
+      <Probe />
+    </ProfileProvider>,
+  );
+};
+
+const probeText = () =>
+  screen.getByText(/loading:/).props.children as string;
 
 it("runs both profile and avatar sync together on reconnect", async () => {
   await renderProvider();
@@ -238,5 +302,234 @@ describe("account switch detection", () => {
     expect(placeRepository.clearAllLocal).not.toHaveBeenCalled();
     expect(queryClient.clear).not.toHaveBeenCalled();
     expect(clearPersistedQueryCache).not.toHaveBeenCalled();
+  });
+});
+
+describe("useProfile", () => {
+  it("refuses to be used outside the provider", async () => {
+    const Orphan = () => {
+      useProfile();
+      return null;
+    };
+    // React logs the thrown render error on its own; silence it so the
+    // expected failure doesn't look like a broken test run.
+    const spy = jest.spyOn(console, "error").mockImplementation(() => {});
+
+    await expect(render(<Orphan />)).rejects.toThrow(
+      "useProfile must be used within ProfileProvider",
+    );
+
+    spy.mockRestore();
+  });
+
+  it("reports loading while an authenticated session has no profile row yet", async () => {
+    // runProfileSync never settles, so initialLoadAttempted stays false and
+    // the loading flag is the one the UI would actually see on a cold start.
+    (runProfileSync as jest.Mock).mockReturnValue(new Promise(() => {}));
+
+    await renderWithProbe();
+
+    expect(probeText()).toContain("loading:true");
+  });
+
+  it("stops reporting loading once the refresh has been attempted", async () => {
+    await renderWithProbe();
+
+    await waitFor(() => expect(probeText()).toContain("loading:false"));
+  });
+
+  it("reports no loading for a guest", async () => {
+    await renderWithProbe({ isAuthenticated: false });
+
+    expect(probeText()).toContain("loading:false");
+  });
+});
+
+describe("refreshProfile", () => {
+  it("surfaces a failed refresh instead of throwing", async () => {
+    const failure = Object.assign(new Error("network down"), {
+      code: "network",
+    }) as AppError;
+    (runProfileSync as jest.Mock).mockRejectedValueOnce(failure);
+
+    await renderWithProbe();
+
+    await waitFor(() => expect(probeText()).toContain("error:network down"));
+    expect(logError).toHaveBeenCalledWith(failure, "Failed to refresh profile");
+  });
+
+  it("clears a previous error on the next refresh", async () => {
+    (runProfileSync as jest.Mock).mockRejectedValueOnce(
+      Object.assign(new Error("network down"), { code: "network" }),
+    );
+    await renderWithProbe();
+    await waitFor(() => expect(probeText()).toContain("error:network down"));
+
+    await act(async () => {
+      await ctx!.refreshProfile();
+    });
+
+    expect(probeText()).toContain("error:none");
+  });
+});
+
+describe("updateProfile", () => {
+  it("writes the patch locally before pushing it", async () => {
+    await renderWithProbe();
+    (runProfileSync as jest.Mock).mockClear();
+
+    await act(async () => {
+      await ctx!.updateProfile({ territory: 7 });
+    });
+
+    expect(profileRepository.applyLocalPatch).toHaveBeenCalledWith({
+      territory: 7,
+    });
+    expect(runProfileSync).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("a failed edit in the queue", () => {
+  const FAILED_MUTATION = {
+    id: 42,
+    lastError: "server said no",
+    createdAt: 1700000000,
+  };
+
+  it("is exposed with its message", async () => {
+    mockLiveQueries({ mutationRows: [FAILED_MUTATION] });
+
+    await renderWithProbe();
+
+    expect(probeText()).toContain("failed:server said no");
+    expect(ctx!.failedEdit?.createdAt).toBe(1700000000);
+  });
+
+  it("re-runs both syncs when retried", async () => {
+    mockLiveQueries({ mutationRows: [FAILED_MUTATION] });
+    await renderWithProbe();
+    (runProfileSync as jest.Mock).mockClear();
+    (runAvatarSync as jest.Mock).mockClear();
+
+    await act(async () => {
+      await ctx!.retryFailedEdit();
+    });
+
+    expect(profileRepository.retryMutation).toHaveBeenCalledWith(42);
+    expect(runProfileSync).toHaveBeenCalledTimes(1);
+    expect(runAvatarSync).toHaveBeenCalledTimes(1);
+  });
+
+  it("drops the queued mutation when discarded", async () => {
+    mockLiveQueries({ mutationRows: [FAILED_MUTATION] });
+    await renderWithProbe();
+
+    await act(async () => {
+      ctx!.discardFailedEdit();
+    });
+
+    expect(profileRepository.discardMutation).toHaveBeenCalledWith(42);
+  });
+
+  it("leaves retry and discard as no-ops when the queue is empty", async () => {
+    await renderWithProbe();
+    (runProfileSync as jest.Mock).mockClear();
+
+    await act(async () => {
+      await ctx!.retryFailedEdit();
+      ctx!.discardFailedEdit();
+    });
+
+    expect(profileRepository.retryMutation).not.toHaveBeenCalled();
+    expect(profileRepository.discardMutation).not.toHaveBeenCalled();
+    expect(runProfileSync).not.toHaveBeenCalled();
+  });
+});
+
+describe("sign-out", () => {
+  it("wipes the profile and falls back to guest analytics", async () => {
+    await renderWithProbe({ isAuthenticated: false });
+
+    expect(profileRepository.clearProfile).toHaveBeenCalledTimes(1);
+    expect(setAnalyticsUserId).toHaveBeenCalledWith(null);
+    expect(setUserProps).toHaveBeenCalledWith({ guest_or_registered: "guest" });
+    expect(runProfileSync).not.toHaveBeenCalled();
+  });
+
+  it("does nothing at all while auth is still initializing", async () => {
+    await renderWithProbe({ isAuthenticated: false, isInitializing: true });
+
+    expect(profileRepository.clearProfile).not.toHaveBeenCalled();
+    expect(runProfileSync).not.toHaveBeenCalled();
+    expect(setAnalyticsUserId).not.toHaveBeenCalled();
+  });
+});
+
+describe("analytics for a loaded profile", () => {
+  const loadedProfile = (territory: number | null) => {
+    mockLiveQueries({ profileRows: [{}], updatedAt: Date.now() });
+    (profileRepository.rowToProfile as jest.Mock).mockReturnValue({
+      user: 99,
+      territory,
+    });
+  };
+
+  it("identifies the user and records the home territory", async () => {
+    loadedProfile(12);
+
+    await renderWithProbe();
+
+    await waitFor(() => expect(setAnalyticsUserId).toHaveBeenCalledWith("99"));
+    expect(setUserProps).toHaveBeenCalledWith({
+      guest_or_registered: "registered",
+      home_territory: "12",
+    });
+  });
+
+  // "none" means the user never picked a home country — not that it is
+  // unknown; see the comment on the effect in profile-context.tsx.
+  it("records 'none' when no home territory was ever picked", async () => {
+    loadedProfile(null);
+
+    await renderWithProbe();
+
+    await waitFor(() =>
+      expect(setUserProps).toHaveBeenCalledWith({
+        guest_or_registered: "registered",
+        home_territory: "none",
+      }),
+    );
+  });
+});
+
+describe("registerOnProfileSaved", () => {
+  it("hands the territory to every subscriber once the profile lands", async () => {
+    const subscriber = jest.fn();
+    const unsubscribe = registerOnProfileSaved(subscriber);
+    mockLiveQueries({ profileRows: [{}], updatedAt: Date.now() });
+    (profileRepository.rowToProfile as jest.Mock).mockReturnValue({
+      user: 99,
+      territory: 5,
+    });
+
+    await renderWithProbe();
+
+    await waitFor(() => expect(subscriber).toHaveBeenCalledWith(5));
+    unsubscribe();
+  });
+
+  it("stops calling a subscriber that unsubscribed", async () => {
+    const subscriber = jest.fn();
+    registerOnProfileSaved(subscriber)();
+    mockLiveQueries({ profileRows: [{}], updatedAt: Date.now() });
+    (profileRepository.rowToProfile as jest.Mock).mockReturnValue({
+      user: 99,
+      territory: 5,
+    });
+
+    await renderWithProbe();
+
+    await waitFor(() => expect(initGlobalFilters).toHaveBeenCalledWith(5));
+    expect(subscriber).not.toHaveBeenCalled();
   });
 });

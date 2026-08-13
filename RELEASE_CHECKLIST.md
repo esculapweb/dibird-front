@@ -616,10 +616,10 @@ OS-level `toggleAirplaneMode`, полный цикл create → update → delet
 для деталей по батчам 7–11.
 
 Подтверждено, что остаётся легитимно исключённым: `components/ui/
-{BackgroundScene*,CustomSplash}.tsx`'s декоративные соседи (сам
-`BackgroundScene.tsx`/`BackgroundScene3.tsx` — чистая SVG-геометрия;
-`BackgroundScene2.tsx` — минимальный `useState` для `onLayout`, но без
-интерактивности), 4 `*Skeleton.tsx`-файла в `components/Main/`
+{BackgroundScene2,CustomSplash}.tsx`'s декоративные соседи
+(`BackgroundScene2.tsx` — минимальный `useState` для `onLayout`, но без
+интерактивности; неиспользуемые `BackgroundScene.tsx`/`BackgroundScene3.tsx`
+удалены), 4 `*Skeleton.tsx`-файла в `components/Main/`
 (`BirdOfTheDaySceleton`/`ChecklistHeroSkeleton`/`SparklineSkeleton`/
 `StatsSkeleton` — чисто статичная разметка), `services/sentry.ts`
 (конфиг-объект + один `!__DEV__`-тернарник, не более),

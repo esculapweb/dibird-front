@@ -75,7 +75,8 @@ jest.mock("../../components/Diary/DiaryForm", () => {
   };
 });
 
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { act, fireEvent, render, screen } from "@testing-library/react-native";
+import Toast from "react-native-toast-message";
 import {
   useCreateDiary,
   useUpdateDiary,
@@ -96,20 +97,24 @@ const mockCreateMutate = jest.fn();
 const mockUpdateMutate = jest.fn();
 const mockSetErrors = jest.fn();
 const mockValidateForm = jest.fn();
+const mockSetFormData = jest.fn();
+const mockSetTerritoryValue = jest.fn();
+const mockSetPlaceValue = jest.fn();
+const mockSetPlaceData = jest.fn();
 
 const mockEditorForm = (overrides: Record<string, unknown> = {}) => {
   (useEditorForm as jest.Mock).mockReturnValue({
     itemWithParsedDate: undefined,
     formData: { date_time: "2026-01-01" },
-    setFormData: jest.fn(),
+    setFormData: mockSetFormData,
     errors: {},
     setErrors: mockSetErrors,
     territoryValue: 5,
-    setTerritoryValue: jest.fn(),
+    setTerritoryValue: mockSetTerritoryValue,
     placeValue: null,
-    setPlaceValue: jest.fn(),
+    setPlaceValue: mockSetPlaceValue,
     placeData: null,
-    setPlaceData: jest.fn(),
+    setPlaceData: mockSetPlaceData,
     validateForm: mockValidateForm,
     ...overrides,
   });
@@ -277,4 +282,109 @@ it("shows a loading overlay instead of the form while a mutation is pending", as
   await render(<DiaryEditorScreen />);
   expect(screen.getByTestId("loading-overlay")).toBeOnTheScreen();
   expect(screen.queryByTestId("add-new-place")).not.toBeOnTheScreen();
+});
+
+describe("the place returned from PlaceEditor", () => {
+  const placeCreated = async (territoryOfNewPlace: number | null) => {
+    await render(<DiaryEditorScreen />);
+    await fireEvent.press(screen.getByTestId("add-new-place"));
+    const onPlaceCreated = (setTypedNavigationCallback as jest.Mock).mock.calls[0][1];
+
+    await act(async () => {
+      onPlaceCreated(77, territoryOfNewPlace, {
+        id: 77,
+        name: "New Place",
+        preview: null,
+        location: null,
+      });
+    });
+  };
+
+  it("selects the new place in the form", async () => {
+    await placeCreated(5);
+
+    expect(mockSetPlaceValue).toHaveBeenCalledWith(77);
+    expect(mockSetPlaceData).toHaveBeenCalledWith(
+      expect.objectContaining({ value: 77, label: "New Place" }),
+    );
+  });
+
+  // A null preview/location on the wire means "none"; the dropdown option
+  // type wants them absent instead.
+  it("normalises a missing preview and location to undefined", async () => {
+    await placeCreated(5);
+
+    const option = mockSetPlaceData.mock.calls[0][0];
+    expect(option.preview).toBeUndefined();
+    expect(option.location).toBeUndefined();
+  });
+
+  it("keeps the country as it was when the new place sits in the same one", async () => {
+    await placeCreated(5);
+
+    expect(mockSetTerritoryValue).not.toHaveBeenCalled();
+    expect(Toast.show).not.toHaveBeenCalled();
+    expect(mockSetFormData.mock.calls.at(-1)![0]({ place: null })).toEqual({
+      place: 77,
+    });
+  });
+
+  // Saving a place in another country silently moves the diary there too, so
+  // the change is called out rather than left to be discovered.
+  it("follows the new place's country and says so", async () => {
+    await placeCreated(9);
+
+    expect(mockSetTerritoryValue).toHaveBeenCalledWith(9);
+    expect(mockSetFormData.mock.calls.at(-1)![0]({ place: null, territory: 5 })).toEqual({
+      place: 77,
+      territory: 9,
+    });
+    expect(Toast.show).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "info", text1: "country_changed" }),
+    );
+  });
+
+  it("does not chase a country the new place does not have", async () => {
+    await placeCreated(null);
+
+    expect(mockSetTerritoryValue).not.toHaveBeenCalled();
+    expect(Toast.show).not.toHaveBeenCalled();
+  });
+});
+
+describe("a failure with no response at all (offline/timeout)", () => {
+  it("falls back to a toast instead of looking for a field to blame", async () => {
+    await render(<DiaryEditorScreen />);
+    await pressSave();
+
+    const { onError } = mockCreateMutate.mock.calls[0][1];
+    await act(async () => {
+      onError({ isNetworkError: true });
+    });
+
+    expect(mockShowErrorToast).toHaveBeenCalledWith(
+      expect.anything(),
+      "DiaryEditorScreen:handleMutateError",
+      expect.any(Function),
+    );
+    expect(mockSetErrors).not.toHaveBeenCalledWith(expect.any(Function));
+  });
+
+  it("routes an update failure through the same handler", async () => {
+    mockRoute = createRouteMock("DiaryEditor", { diary: { id: 5 } });
+    mockEditorForm({ itemWithParsedDate: { id: 5 } });
+    await render(<DiaryEditorScreen />);
+    await pressSave();
+
+    const { onError } = mockUpdateMutate.mock.calls[0][1];
+    await act(async () => {
+      onError({ isNetworkError: true });
+    });
+
+    expect(mockShowErrorToast).toHaveBeenCalledWith(
+      expect.anything(),
+      "DiaryEditorScreen:handleMutateError",
+      expect.any(Function),
+    );
+  });
 });

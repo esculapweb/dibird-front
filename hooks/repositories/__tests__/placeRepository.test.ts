@@ -423,3 +423,115 @@ describe("clearAllLocal", () => {
     expect(mutations()).toHaveLength(0);
   });
 });
+
+describe("makeClientRequestId", () => {
+  // Separate id space from the other repositories', same idempotency-key
+  // contract: two calls must never collide.
+  it("hands out a distinct id every time", () => {
+    const ids = new Set(
+      Array.from({ length: 50 }, () => placeRepository.makeClientRequestId()),
+    );
+
+    expect(ids.size).toBe(50);
+  });
+});
+
+describe("removeLocal", () => {
+  it("drops the mirror row outright", () => {
+    placeRepository.upsertFromServer(serverPlace({ id: 555 }));
+
+    placeRepository.removeLocal(555);
+
+    expect(rawRow(555)).toBeUndefined();
+  });
+});
+
+describe("requeuePendingMutation", () => {
+  // A network failure must not burn an attempt or jump the queue.
+  it("puts a claimed mutation back with its ordering and attempts intact", () => {
+    placeRepository.createLocal(placePayload(), "req-1");
+    const claimed = placeRepository.claimNextMutation()!;
+    expect(mutations()).toHaveLength(0);
+
+    placeRepository.requeuePendingMutation(
+      claimed.payload as never,
+      claimed.createdAt,
+      3,
+    );
+
+    const [requeued] = mutations();
+    expect(requeued.status).toBe("pending");
+    expect(requeued.attempts).toBe(3);
+    expect(requeued.createdAt).toBe(claimed.createdAt);
+  });
+});
+
+describe("getOverlay for a delete that failed to sync", () => {
+  it("keeps the place visible as a patch instead of hiding it", () => {
+    placeRepository.upsertFromServer(serverPlace({ id: 555 }));
+    placeRepository.deleteLocal(555);
+    const claimed = placeRepository.claimNextMutation()!;
+    placeRepository.requeueFailedMutation(
+      claimed.payload as never,
+      claimed.createdAt,
+      claimed.attempts,
+      555,
+      "server said no",
+    );
+
+    const { deletedIds, patchesById } = placeRepository.getOverlay();
+
+    expect(deletedIds.has(555)).toBe(false);
+    expect(patchesById.get(555)?._pendingSync).toBe("error");
+  });
+});
+
+describe("applyOverlay merging into a server page", () => {
+  const pageOf = (results: PlaceItem[], count: number) => ({
+    results,
+    pagination: { count, per_page: 20, current: 1, final: 1, next: null, previous: null },
+  });
+
+  it("hides locally deleted places and subtracts them from the total", () => {
+    placeRepository.upsertFromServer(serverPlace({ id: 555 }));
+    placeRepository.deleteLocal(555);
+
+    const result = placeRepository.applyOverlay(
+      pageOf([serverPlace({ id: 555 })], 10) as never,
+      1,
+    );
+
+    expect(result.results).toHaveLength(0);
+    expect(result.pagination.count).toBe(9);
+  });
+
+  it("swaps a server row for its locally patched version", () => {
+    placeRepository.upsertFromServer(serverPlace({ id: 555 }));
+    placeRepository.updateLocal(555, { favourite: true }, null);
+
+    const result = placeRepository.applyOverlay(
+      pageOf([serverPlace({ id: 555, favourite: false })], 1) as never,
+      1,
+    );
+
+    expect(result.results[0].favourite).toBe(true);
+    expect(result.results[0]._pendingSync).toBe("pending");
+  });
+
+  it("folds the pending observation count into a server row on the way through", () => {
+    placeRepository.upsertFromServer(serverPlace({ id: 555 }));
+    observationRepository.createLocal(
+      observationPayload({ place: 555, species: 100 }),
+      {},
+      PROFILE,
+      "obs-1",
+    );
+
+    const result = placeRepository.applyOverlay(
+      pageOf([serverPlace({ id: 555, observation_count: 4 })], 1) as never,
+      1,
+    );
+
+    expect(result.results[0].observation_count).toBe(5);
+  });
+});

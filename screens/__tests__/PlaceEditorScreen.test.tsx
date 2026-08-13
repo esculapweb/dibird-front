@@ -77,6 +77,18 @@ jest.mock("../../components/Place/PlaceForm", () => {
           <Text>place-form</Text>
         </TouchableOpacity>
         <TouchableOpacity
+          testID="coords-change-invalid"
+          onPress={() => onCoordsChange(["abc", ""], { fromManual: true })}
+        >
+          <Text>bad coords</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          testID="fill-long-name"
+          onPress={() => setFormData((prev) => ({ ...prev, name: "x".repeat(255) }))}
+        >
+          <Text>fill long name</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
           testID="fill-name"
           onPress={() => setFormData((prev) => ({ ...prev, name: "Test Place" }))}
         >
@@ -332,4 +344,187 @@ it("marks the save button disabled while locating or while a mutation is pending
   const headerRight = (mockNavigation.setOptions as jest.Mock).mock.calls.at(-1)![0].headerRight;
   await render(headerRight());
   expect(screen.getByText("save-disabled")).toBeOnTheScreen();
+});
+
+describe("more save validation", () => {
+  it("blocks save on a name past the 254-character limit", async () => {
+    await render(<PlaceEditorScreen />);
+    await fireEvent.press(screen.getByTestId("fill-long-name"));
+    await fireEvent.press(screen.getByTestId("fill-territory"));
+
+    await pressSave();
+
+    expect(mockCreateMutate).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["not a number", "abc", "2.35"],
+    ["a latitude past the pole", "91", "2.35"],
+    ["a latitude below the pole", "-91", "2.35"],
+    ["a longitude past the antimeridian", "48.86", "181"],
+    ["a longitude below the antimeridian", "48.86", "-181"],
+  ])("blocks save on %s", async (_label, latText, lngText) => {
+    mockLocation({ latText, lngText });
+    await render(<PlaceEditorScreen />);
+    await fillNameAndTerritory();
+
+    await pressSave();
+
+    expect(mockCreateMutate).not.toHaveBeenCalled();
+  });
+
+  it("saves once name, territory and coordinates are all valid", async () => {
+    await render(<PlaceEditorScreen />);
+    await fillNameAndTerritory();
+
+    await pressSave();
+
+    expect(mockCreateMutate).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("manual coordinates that cannot be parsed", () => {
+  // Unparseable input is echoed back rather than swallowed, so the user can
+  // see and fix what they typed; only the empty field gets an error.
+  it("keeps the raw text and flags the empty field", async () => {
+    await render(<PlaceEditorScreen />);
+
+    await fireEvent.press(screen.getByTestId("coords-change-invalid"));
+
+    expect(mockSetLatText).toHaveBeenCalledWith("");
+    expect(mockSetLngText).toHaveBeenCalledWith("abc");
+    expect(mockUpdateCoords).not.toHaveBeenCalled();
+  });
+});
+
+describe("server errors that are not per-field", () => {
+  const failSave = async (error: unknown) => {
+    await render(<PlaceEditorScreen />);
+    await fillNameAndTerritory();
+    await pressSave();
+    const { onError } = mockCreateMutate.mock.calls[0][1];
+    await act(async () => {
+      onError(error);
+    });
+  };
+
+  it("falls back to a toast when the payload matches no known field", async () => {
+    await failSave({ response: { data: { non_field_errors: ["Nope"] } } });
+
+    expect(mockShowErrorToast).toHaveBeenCalledWith(
+      expect.anything(),
+      "PlaceEditorScreen:handleMutateError",
+      expect.any(Function),
+    );
+  });
+
+  it("falls back to a toast when the failure carries no response at all", async () => {
+    await failSave({ isNetworkError: true });
+
+    expect(mockShowErrorToast).toHaveBeenCalledWith(
+      expect.anything(),
+      "PlaceEditorScreen:handleMutateError",
+      expect.any(Function),
+    );
+  });
+
+  it("routes an update failure through the same handler", async () => {
+    mockRoute = createRouteMock("PlaceEditor", {
+      place: { id: 1, name: "Existing", territory: 5 },
+    });
+    await render(<PlaceEditorScreen />);
+    await pressSave();
+
+    const { onError } = mockUpdateMutate.mock.calls[0][1];
+    await act(async () => {
+      onError({ isNetworkError: true });
+    });
+
+    expect(mockShowErrorToast).toHaveBeenCalledWith(
+      expect.anything(),
+      "PlaceEditorScreen:handleMutateError",
+      expect.any(Function),
+    );
+  });
+});
+
+describe("while the save is in flight", () => {
+  it("covers the screen with the loading overlay on create", async () => {
+    (useCreatePlace as jest.Mock).mockReturnValue({
+      mutate: mockCreateMutate,
+      isPending: true,
+    });
+
+    await render(<PlaceEditorScreen />);
+
+    expect(screen.queryByTestId("map")).not.toBeOnTheScreen();
+  });
+
+  it("covers the screen with the loading overlay on update", async () => {
+    mockRoute = createRouteMock("PlaceEditor", {
+      place: { id: 1, name: "Existing", territory: 5 },
+    });
+    (useUpdatePlace as jest.Mock).mockReturnValue({
+      mutate: mockUpdateMutate,
+      isPending: true,
+    });
+
+    await render(<PlaceEditorScreen />);
+
+    expect(screen.queryByTestId("map")).not.toBeOnTheScreen();
+  });
+});
+
+// services/errors.ts's toUIError calls the extractor unconditionally whenever
+// one is passed, so the extractor itself must survive an error that never got
+// a response — the same crash already fixed in ObservationEditorScreen and
+// DiaryEditorScreen. The routing tests above can't catch it: they assert that
+// showErrorToast was called, and the mock never runs what it was handed.
+describe("the error message handed to the toast", () => {
+  const extractedFrom = async (error: unknown, isEdit = false) => {
+    if (isEdit) {
+      mockRoute = createRouteMock("PlaceEditor", {
+        place: { id: 1, name: "Existing", territory: 5 },
+      });
+    }
+    let extracted: { title: string; message: string } | undefined;
+    mockShowErrorToast.mockImplementationOnce(
+      (e: unknown, _tag: string, extractor?: (err: unknown) => typeof extracted) => {
+        extracted = extractor?.(e);
+      },
+    );
+
+    await render(<PlaceEditorScreen />);
+    if (!isEdit) await fillNameAndTerritory();
+    await pressSave();
+
+    const mutate = isEdit ? mockUpdateMutate : mockCreateMutate;
+    const { onError } = mutate.mock.calls[0][1];
+    await act(async () => {
+      onError(error);
+    });
+    return extracted;
+  };
+
+  it("falls back to the create message when the failure carries no response", async () => {
+    expect(await extractedFrom({ isNetworkError: true })).toEqual({
+      title: "create_failed",
+      message: "could_not_create_place",
+    });
+  });
+
+  it("falls back to the update message in edit mode", async () => {
+    expect(await extractedFrom({ isNetworkError: true }, true)).toEqual({
+      title: "update_failed",
+      message: "could_not_update_place",
+    });
+  });
+
+  it("uses what the server actually said when it replied", async () => {
+    expect(
+      await extractedFrom({
+        response: { data: { non_field_errors: ["Nope"], other: ["Also nope"] } },
+      }),
+    ).toEqual({ title: "create_failed", message: "Nope\nAlso nope" });
+  });
 });

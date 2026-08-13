@@ -322,3 +322,75 @@ describe("rowToProfile", () => {
     expect(profile.pendingAvatarOp).toBe("upload");
   });
 });
+
+describe("rowToProfile on a sparse row", () => {
+  // The server sends null for fields it has nothing for, but the UI binds
+  // these straight into text inputs — so the mapper normalises them to empty
+  // strings rather than letting a null reach the form.
+  it("normalises missing optional fields to empty strings and nulls", () => {
+    profileRepository.upsertProfileFromServer({
+      ...SERVER_PROFILE,
+      avatar: null as unknown as string,
+      avatar_thumbnail: null as unknown as string,
+      registration_ip: null as unknown as string,
+      timezone: null as unknown as string,
+      territory: null,
+    });
+
+    const profile = profileRepository.rowToProfile(rawRow()!);
+
+    expect(profile.avatar).toBe("");
+    expect(profile.avatar_thumbnail).toBe("");
+    expect(profile.registration_ip).toBe("");
+    expect(profile.timezone).toBe("");
+    expect(profile.territory).toBeNull();
+    expect(profile.pendingAvatarUri).toBeNull();
+    expect(profile.pendingAvatarOp).toBeNull();
+  });
+});
+
+describe("applyLocalPatch field by field", () => {
+  const patchAndRead = (patch: Parameters<typeof profileRepository.applyLocalPatch>[0]) => {
+    profileRepository.upsertProfileFromServer(SERVER_PROFILE);
+    profileRepository.applyLocalPatch(patch);
+    return rawRow()!;
+  };
+
+  it("writes every editable field it is given", () => {
+    const row = patchAndRead({
+      first_name: "Janet",
+      last_name: "Roe",
+      username: "jroe",
+      territory: 9,
+      timezone: "UTC",
+      private: true,
+      private_diary: true,
+    });
+
+    expect(row.firstName).toBe("Janet");
+    expect(row.lastName).toBe("Roe");
+    expect(row.username).toBe("jroe");
+    expect(row.territory).toBe(9);
+    expect(row.timezone).toBe("UTC");
+    expect(row.private).toBe(true);
+    expect(row.privateDiary).toBe(true);
+    expect(row.status).toBe("pending");
+  });
+
+  it("leaves fields the patch does not mention untouched", () => {
+    const row = patchAndRead({ first_name: "Janet" });
+
+    expect(row.firstName).toBe("Janet");
+    expect(row.lastName).toBe("Doe");
+    expect(row.username).toBe("jdoe");
+    expect(row.territory).toBe(5);
+  });
+
+  // "No home country" is a real choice in the profile form, so clearing the
+  // territory has to survive the patch instead of being read as "unchanged".
+  it("clears the territory when the patch explicitly nulls it", () => {
+    const row = patchAndRead({ territory: null });
+
+    expect(row.territory).toBeNull();
+  });
+});

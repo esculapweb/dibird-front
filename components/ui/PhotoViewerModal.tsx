@@ -63,8 +63,13 @@ const ZoomableImage = ({
     runOnJS(onZoomChange)(false);
   };
 
+  // Drop the zoom of a photo the user paged away from. This has to read the
+  // shared value rather than the `zoomed` prop: both props are derived from
+  // the same `index === currentIndex`, so `zoomed` is always false whenever
+  // `active` is — the condition could never hold and the reset never ran,
+  // leaving a photo still magnified when the user paged back to it.
   useEffect(() => {
-    if (!active && zoomed) reset();
+    if (!active && savedScale.value > 1) reset();
   }, [active]);
 
   const pinchGesture = Gesture.Pinch()
@@ -118,7 +123,10 @@ const ZoomableImage = ({
 
   return (
     <GestureDetector gesture={composedGesture}>
-      <Animated.View style={[{ width, height }, styles.imageWrap, animatedStyle]}>
+      <Animated.View
+        testID="photo-viewer-image"
+        style={[{ width, height }, styles.imageWrap, animatedStyle]}
+      >
         <Image
           source={{ uri }}
           style={{ width, height }}
@@ -184,9 +192,11 @@ const PhotoViewerModal = ({
           size={30}
           tintColor="#fff"
           style={styles.closeButton}
+          testID="photo-viewer-close"
         />
 
         <FlatList
+          testID="photo-viewer-list"
           data={photos}
           keyExtractor={(item, i) => `${item.uri}-${i}`}
           renderItem={({ item, index }) => (

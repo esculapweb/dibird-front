@@ -193,7 +193,14 @@ const PlaceEditorScreen = () => {
     (err) => ({
       title: isEditMode ? t("update_failed") : t("create_failed"),
       message:
-        Object.values(err?.response?.data).flat().join("\n") ||
+        // err.response is undefined for any response-less failure (offline,
+        // timeout, unreachable backend) — Object.values(undefined) throws, so
+        // this only ever ran the happy path where the server actually replied
+        // (see the matching fix in ObservationEditorScreen for the original
+        // report of this crash).
+        (err?.response?.data
+          ? Object.values(err.response.data).flat().join("\n")
+          : "") ||
         (isEditMode
           ? t("could_not_update_place")
           : t("could_not_create_place")),

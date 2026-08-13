@@ -104,16 +104,33 @@ jest.mock("../../components/Observation/ObservationForm", () => {
   const { TouchableOpacity, Text } = require("react-native");
   return {
     __esModule: true,
-    default: ({ onAddNewPlace }: { onAddNewPlace: () => void }) => (
-      <TouchableOpacity testID="add-new-place" onPress={onAddNewPlace}>
-        <Text>add place</Text>
-      </TouchableOpacity>
+    default: ({
+      onAddNewPlace,
+      onEditDiary,
+      existingSpecies,
+    }: {
+      onAddNewPlace: () => void;
+      onEditDiary: () => void;
+      existingSpecies: Set<string | number>;
+    }) => (
+      <>
+        <TouchableOpacity testID="add-new-place" onPress={onAddNewPlace}>
+          <Text>add place</Text>
+        </TouchableOpacity>
+        <TouchableOpacity testID="edit-diary" onPress={onEditDiary}>
+          <Text>edit diary</Text>
+        </TouchableOpacity>
+        <Text testID="existing-species">
+          {[...existingSpecies].sort().join(",")}
+        </Text>
+      </>
     ),
   };
 });
 
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
-import { useQueryClient } from "@tanstack/react-query";
+import Toast from "react-native-toast-message";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   useCreateObservation,
   useUpdateObservation,
@@ -123,6 +140,7 @@ import { setSession } from "../../util/sessionStore";
 import { setTypedNavigationCallback } from "../../util/navigationCallbacks";
 import { useEditorForm } from "../../hooks/useEditorForm";
 import { useDefaultTerritory } from "../../hooks/useDefaultTerritory";
+import * as observationRepository from "../../hooks/repositories/observationRepository";
 import { createNavigationMock, createRouteMock } from "../test-utils";
 import ObservationEditorScreen from "../ObservationEditorScreen";
 
@@ -429,4 +447,181 @@ it("marks the save button disabled and ignores taps while a mutation is already 
   expect(screen.getByText("save-disabled")).toBeOnTheScreen();
   await fireEvent.press(screen.getByTestId("observation-save-button"));
   expect(mockCreateMutate).not.toHaveBeenCalled();
+});
+
+describe("the place returned from PlaceEditor", () => {
+  const placeCreated = async (
+    territoryOfNewPlace: number | null,
+    placeData: Record<string, unknown> = {},
+  ) => {
+    await render(<ObservationEditorScreen />);
+    await fireEvent.press(screen.getByTestId("add-new-place"));
+    const onPlaceCreated = (setTypedNavigationCallback as jest.Mock).mock.calls[0][1];
+
+    await act(async () => {
+      onPlaceCreated(77, territoryOfNewPlace, {
+        id: 77,
+        name: "New Place",
+        preview: null,
+        location: null,
+        ...placeData,
+      });
+    });
+  };
+
+  it("selects the new place in the form", async () => {
+    await placeCreated(5);
+
+    expect(mockSetPlaceValue).toHaveBeenCalledWith(77);
+    expect(mockSetPlaceData).toHaveBeenCalledWith(
+      expect.objectContaining({ value: 77, label: "New Place" }),
+    );
+  });
+
+  // A null preview/location on the wire means "none"; the dropdown option type
+  // wants them absent instead, so they are normalised on the way in.
+  it("normalises a missing preview and location to undefined", async () => {
+    await placeCreated(5);
+
+    const option = mockSetPlaceData.mock.calls[0][0];
+    expect(option.preview).toBeUndefined();
+    expect(option.location).toBeUndefined();
+  });
+
+  it("keeps the country as it was when the new place sits in the same one", async () => {
+    await placeCreated(5);
+
+    expect(mockSetTerritoryValue).not.toHaveBeenCalled();
+    expect(Toast.show).not.toHaveBeenCalled();
+    expect(mockSetFormData.mock.calls.at(-1)![0]({ place: null })).toEqual({
+      place: 77,
+    });
+  });
+
+  // Saving a place in another country silently moves the observation there
+  // too, so the change is called out rather than left to be discovered.
+  it("follows the new place's country and says so", async () => {
+    await placeCreated(9);
+
+    expect(mockSetTerritoryValue).toHaveBeenCalledWith(9);
+    expect(mockSetFormData.mock.calls.at(-1)![0]({ place: null, territory: 5 })).toEqual({
+      place: 77,
+      territory: 9,
+    });
+    expect(Toast.show).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "info", text1: "country_changed" }),
+    );
+  });
+
+  it("does not chase a country the new place does not have", async () => {
+    await placeCreated(null);
+
+    expect(mockSetTerritoryValue).not.toHaveBeenCalled();
+    expect(Toast.show).not.toHaveBeenCalled();
+  });
+});
+
+describe("editing the parent diary", () => {
+  it("opens the diary the observation belongs to", async () => {
+    mockRoute = createRouteMock("ObservationEditor", { diaryId: 11 });
+    await render(<ObservationEditorScreen />);
+
+    await fireEvent.press(screen.getByTestId("edit-diary"));
+
+    expect(mockNavigation.navigate).toHaveBeenCalledWith("DiaryDetail", {
+      diaryId: 11,
+    });
+  });
+
+  it("does nothing outside diary mode", async () => {
+    await render(<ObservationEditorScreen />);
+
+    await fireEvent.press(screen.getByTestId("edit-diary"));
+
+    expect(mockNavigation.navigate).not.toHaveBeenCalled();
+  });
+});
+
+// The species already in this diary are greyed out in the picker. The server
+// list alone is not enough: a species added offline must be excluded too,
+// otherwise it stays pickable again until it syncs.
+describe("species already used in the diary", () => {
+  it("combines the server list with locally pending ones", async () => {
+    mockRoute = createRouteMock("ObservationEditor", { diaryId: 11 });
+    (useQuery as jest.Mock).mockReturnValue({ data: [100, 200] });
+    (observationRepository.getPendingSpeciesForDiary as jest.Mock).mockReturnValue(
+      new Set([300]),
+    );
+
+    await render(<ObservationEditorScreen />);
+
+    expect(screen.getByTestId("existing-species").props.children).toBe(
+      "100,200,300",
+    );
+  });
+
+  // Editing an existing observation must not grey out its own species —
+  // otherwise the row being edited looks unavailable to itself.
+  it("leaves the edited observation's own species pickable", async () => {
+    mockRoute = createRouteMock("ObservationEditor", {
+      diaryId: 11,
+      observation: { id: 5 },
+    });
+    mockEditorForm({ itemWithParsedDate: { id: 5, species: 100 } });
+    (useQuery as jest.Mock).mockReturnValue({ data: [100, 200] });
+    (observationRepository.getPendingSpeciesForDiary as jest.Mock).mockReturnValue(
+      new Set(),
+    );
+
+    await render(<ObservationEditorScreen />);
+
+    expect(screen.getByTestId("existing-species").props.children).toBe("200");
+  });
+
+  it("stays empty outside diary mode", async () => {
+    (useQuery as jest.Mock).mockReturnValue({ data: undefined });
+
+    await render(<ObservationEditorScreen />);
+
+    expect(screen.getByTestId("existing-species").props.children).toBe("");
+    expect(observationRepository.getPendingSpeciesForDiary).not.toHaveBeenCalled();
+  });
+});
+
+// A diary observation inherits date/place/country from its diary, so only the
+// per-observation fields travel in the payload.
+describe("the payload built in diary mode", () => {
+  it("sends only the diary-scoped fields", async () => {
+    mockRoute = createRouteMock("ObservationEditor", { diaryId: 11 });
+    mockEditorForm({
+      formData: {
+        species: 42,
+        diary: 11,
+        time: "08:00",
+        quantity: 3,
+        notes: "Singing",
+        location_private: false,
+        date_time: "2026-01-01",
+        territory: 5,
+        place: 77,
+      },
+    });
+    await render(<ObservationEditorScreen />);
+
+    await pressSave();
+
+    expect(mockCreateMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: {
+          species: 42,
+          diary: 11,
+          time: "08:00",
+          quantity: 3,
+          notes: "Singing",
+          location_private: false,
+        },
+      }),
+      expect.anything(),
+    );
+  });
 });

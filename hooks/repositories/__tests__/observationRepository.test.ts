@@ -479,3 +479,220 @@ describe("clearAllLocal", () => {
     expect(mutations()).toHaveLength(0);
   });
 });
+
+describe("makeClientRequestId", () => {
+  // Idempotency key for create: the server dedupes on it, so two calls must
+  // never collide.
+  it("hands out a distinct id every time", () => {
+    const ids = new Set(
+      Array.from({ length: 50 }, () => observationRepository.makeClientRequestId()),
+    );
+
+    expect(ids.size).toBe(50);
+  });
+});
+
+describe("removeLocal", () => {
+  it("drops the mirror row outright", () => {
+    observationRepository.upsertFromServer(serverObservation({ id: 555 }));
+
+    observationRepository.removeLocal(555);
+
+    expect(rawRow(555)).toBeUndefined();
+  });
+});
+
+describe("getFailedMutationFor", () => {
+  it("finds the failed mutation belonging to one local row", () => {
+    const created = observationRepository.createLocal(
+      observationPayload(),
+      {},
+      PROFILE,
+      "req-1",
+    );
+    const claimed = observationRepository.claimNextMutation()!;
+    observationRepository.requeueFailedMutation(
+      claimed.payload as never,
+      claimed.createdAt,
+      claimed.attempts,
+      created.id,
+      "server said no",
+    );
+
+    const failed = observationRepository.getFailedMutationFor(created.id);
+
+    expect(failed?.lastError).toBe("server said no");
+  });
+
+  it("returns null for a row with nothing failed against it", () => {
+    observationRepository.createLocal(observationPayload(), {}, PROFILE, "req-1");
+
+    expect(observationRepository.getFailedMutationFor(-999)).toBeNull();
+  });
+});
+
+describe("requeuePendingMutation", () => {
+  // A network failure must not burn an attempt or jump the queue: the row
+  // goes back with its original createdAt and attempt count.
+  it("puts a claimed mutation back with its ordering and attempts intact", () => {
+    observationRepository.createLocal(observationPayload(), {}, PROFILE, "req-1");
+    const claimed = observationRepository.claimNextMutation()!;
+    expect(mutations()).toHaveLength(0);
+
+    observationRepository.requeuePendingMutation(
+      claimed.payload as never,
+      claimed.createdAt,
+      3,
+    );
+
+    const [requeued] = mutations();
+    expect(requeued.status).toBe("pending");
+    expect(requeued.attempts).toBe(3);
+    expect(requeued.createdAt).toBe(claimed.createdAt);
+  });
+});
+
+describe("getOverlay for a delete that failed to sync", () => {
+  // A failed delete is shown back in the list with an error badge rather than
+  // silently disappearing — unlike a still-pending one, which is hidden.
+  it("keeps the row visible as a patch instead of hiding it", () => {
+    observationRepository.upsertFromServer(serverObservation({ id: 555 }));
+    observationRepository.deleteLocal(555);
+    const claimed = observationRepository.claimNextMutation()!;
+    observationRepository.requeueFailedMutation(
+      claimed.payload as never,
+      claimed.createdAt,
+      claimed.attempts,
+      555,
+      "server said no",
+    );
+
+    const { deletedIds, patchesById } = observationRepository.getOverlay();
+
+    expect(deletedIds.has(555)).toBe(false);
+    expect(patchesById.get(555)?._pendingSync).toBe("error");
+    expect(patchesById.get(555)?._syncError).toBe("server said no");
+  });
+});
+
+describe("applyOverlay merging into a server page", () => {
+  const pageOf = (results: ObservationItem[], count: number) => ({
+    results,
+    pagination: { count, per_page: 20, current: 1, final: 1, next: null, previous: null },
+  });
+
+  it("returns the response untouched when there is nothing local to merge", () => {
+    const response = pageOf([serverObservation({ id: 555 })], 1);
+
+    const result = observationRepository.applyOverlay(response as never, 1);
+
+    expect(result).toBe(response);
+  });
+
+  it("hides locally deleted rows and subtracts them from the total", () => {
+    observationRepository.upsertFromServer(serverObservation({ id: 555 }));
+    observationRepository.deleteLocal(555);
+
+    const result = observationRepository.applyOverlay(
+      pageOf([serverObservation({ id: 555 })], 10) as never,
+      1,
+    );
+
+    expect(result.results).toHaveLength(0);
+    expect(result.pagination.count).toBe(9);
+  });
+
+  it("swaps a server row for its locally patched version", () => {
+    observationRepository.upsertFromServer(serverObservation({ id: 555 }));
+    observationRepository.updateLocal(
+      555,
+      observationPayload({ notes: "Patched" }),
+      null,
+      {},
+      PROFILE,
+    );
+
+    const result = observationRepository.applyOverlay(
+      pageOf([serverObservation({ id: 555, notes: "From server" })], 1) as never,
+      1,
+    );
+
+    expect(result.results[0].notes).toBe("Patched");
+    expect(result.results[0]._pendingSync).toBe("pending");
+  });
+
+  it("does not prepend a pending create the server already returned", () => {
+    const created = observationRepository.createLocal(
+      observationPayload(),
+      {},
+      PROFILE,
+      "req-1",
+    );
+
+    const result = observationRepository.applyOverlay(
+      pageOf([serverObservation({ id: created.id })], 1) as never,
+      1,
+    );
+
+    expect(result.results).toHaveLength(1);
+    expect(result.pagination.count).toBe(1);
+  });
+});
+
+describe("applyDiaryOverlay short-circuits", () => {
+  const pageOf = (count: number) => ({
+    results: [],
+    pagination: { count, per_page: 20, current: 1, final: 1, next: null, previous: null },
+  });
+
+  it("leaves the response alone when the list is not diary-scoped", () => {
+    observationRepository.createLocal(
+      observationPayload({ diary: 7 }),
+      {},
+      PROFILE,
+      "req-1",
+    );
+    const response = pageOf(0);
+
+    expect(observationRepository.applyDiaryOverlay(response as never, null, 1)).toBe(
+      response,
+    );
+  });
+
+  it("leaves the response alone when nothing local belongs to this diary", () => {
+    observationRepository.createLocal(
+      observationPayload({ diary: 8 }),
+      {},
+      PROFILE,
+      "req-1",
+    );
+    const response = pageOf(0);
+
+    expect(observationRepository.applyDiaryOverlay(response as never, 7, 1)).toBe(
+      response,
+    );
+  });
+
+  it("reshapes a patched row of this diary into a DiaryObservationItem", () => {
+    observationRepository.upsertFromServer(serverObservation({ id: 555, diary: 7 }));
+    observationRepository.updateLocal(
+      555,
+      observationPayload({ diary: 7, notes: "Patched" }),
+      null,
+      {},
+      PROFILE,
+    );
+
+    const result = observationRepository.applyDiaryOverlay(
+      {
+        results: [{ id: 555, notes: "From server" }],
+        pagination: { count: 1, per_page: 20, current: 1, final: 1, next: null, previous: null },
+      } as never,
+      7,
+      1,
+    );
+
+    expect(result.results[0].notes).toBe("Patched");
+    expect(result.results[0]).not.toHaveProperty("territory");
+  });
+});
