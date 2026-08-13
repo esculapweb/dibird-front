@@ -1,0 +1,17 @@
+# Only the actions used by the workflow are watched here. npm is deliberately
+# left out: the versions of the react-native / expo-* packages are dictated by
+# the Expo SDK, they are bumped together by `npx expo install --check` on an SDK
+# upgrade, and a bot raising them one by one would be proposing knowingly
+# unsupported combinations.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    # Action bumps come in a handful a year; one pull request for all of them is
+    # easier to look through than four separate ones.
+    groups:
+      actions:
+        patterns:
+          - "*"

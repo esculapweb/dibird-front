@@ -42,4 +42,22 @@ module.exports = {
     "!index.ts",
     "!App.tsx",
   ],
+  // A floor, not a target: measured at 91.81 / 84.73 / 88.87 / 92.97 when this
+  // was set, and each number is rounded down with a point of slack so that
+  // ordinary churn does not turn CI red. It only applies to a run with
+  // `--coverage` (CI, `npm run test:coverage`) — a plain `npm test` collects
+  // nothing and is not affected.
+  //
+  // The point is to catch code added without tests: without a floor the number
+  // drifts down unnoticed, one uncovered branch at a time. Raise the numbers
+  // when the real coverage has moved up for good; lowering them is a decision to
+  // be made deliberately, not a way to get a build green.
+  coverageThreshold: {
+    global: {
+      statements: 90,
+      branches: 83,
+      functions: 87,
+      lines: 91,
+    },
+  },
 };

@@ -22,6 +22,12 @@ on:
   # pushing it to master.
   workflow_dispatch:
 
+# The job only reads the code: it publishes nothing, comments on nothing and
+# touches no releases. Spelling that out here caps GITHUB_TOKEN regardless of
+# what the repository default is set to.
+permissions:
+  contents: read
+
 # A new push to an open pull request cancels the previous run: while the PR is
 # open, only the result for the latest commit matters. No cancelling on master —
 # that run is the record of whether master itself is green.
@@ -58,11 +64,39 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # An empty value in a catalogue beats the i18next fallback and renders as
+      # a blank label — nothing else in the pipeline sees that. Runs in a second,
+      # before the tests. `npm run i18n:unused` is deliberately not here: it only
+      # prints, and deciding a key is dead stays a human's call (see CLAUDE.md).
+      - name: Locale catalogues
+        run: npm run i18n:empty
+
+      # Dependency versions against the Expo SDK, plus the app config and the
+      # native project setup — 21 checks, about three seconds. Nothing else in
+      # the pipeline notices a package that is a minor off what the SDK expects;
+      # it surfaces at build or, worse, at runtime on a device.
+      #
+      # --yes because expo-doctor is not a dependency of the project: npx fetches
+      # it on the fly and would otherwise stop at an install prompt on a runner
+      # with no TTY. The flip side is that the version is not pinned — a new
+      # release can add a check and turn CI red with nothing changed here.
+      #
+      # It does not need .env: the only variable app.config.js reads
+      # (EXPO_PUBLIC_ENV) falls back to "production", and the run passes with the
+      # env files hidden away entirely.
+      - name: expo-doctor
+        run: npx --yes expo-doctor
+
       # test:ci = jest --forceExit. Repository tests leave native
       # better-sqlite3 handles open across the whole worker process (documented
       # in hooks/repositories/testDb.ts) — locally jest force-exits on its own
       # after printing a warning, but inside a CI container this left the step
       # hanging forever (Bitbucket showed "In progress" with no further output)
       # instead of exiting.
-      - name: Test
-        run: npm run test:ci
+      #
+      # --coverage on top of it enforces coverageThreshold from jest.config.js:
+      # the floor has to fail in a pull request, not after the merge. It is added
+      # here rather than through `npm run test:coverage` because that script has
+      # no --forceExit, and the step would hang.
+      - name: Test + coverage
+        run: npm run test:ci -- --coverage

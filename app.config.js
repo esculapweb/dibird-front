@@ -223,6 +223,7 @@ export default {
       "expo-image",
       "expo-sharing",
       "expo-sqlite",
+      "expo-asset"
     ],
     extra: {
       eas: {
