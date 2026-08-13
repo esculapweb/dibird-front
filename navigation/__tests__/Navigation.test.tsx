@@ -8,6 +8,7 @@ jest.mock("@react-native-async-storage/async-storage", () =>
 );
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Linking } from "react-native";
 import { render, waitFor } from "@testing-library/react-native";
 import type { InitialState } from "@react-navigation/native";
 
@@ -88,6 +89,9 @@ jest.mock("../../store/auth-context", () => ({
 beforeEach(async () => {
   await AsyncStorage.clear();
   jest.clearAllMocks();
+  // An ordinary launch: no link. Re-set per test, since the two link cases
+  // below replace the implementation and clearAllMocks does not restore it.
+  jest.spyOn(Linking, "getInitialURL").mockResolvedValue(null);
   lastInitialState = undefined;
   containerRenders = 0;
   emitStateChange = undefined;
@@ -187,6 +191,92 @@ describe("Navigation state restore", () => {
 
     expect(await findByText("auth-stack")).toBeTruthy();
     expect(lastInitialState).toBeUndefined();
+  });
+
+  // NavigationContainer prefers `initialState` over the state it resolves from
+  // the launch URL, so handing it the saved stack swallowed every cold-start
+  // deep and universal link. What the link then opens is checked end to end in
+  // coldStartRouting.test.tsx; here it is only that the stack gets out of the
+  // way. See navigation/Navigation.tsx (getLaunchUrl).
+  it("gives up the saved stack when the app was launched from a link", async () => {
+    mockAuth.isAuthenticated = true;
+    await seedSavedStack([{ name: "ObservationDetail", params: { id: 7 } }]);
+    jest
+      .spyOn(Linking, "getInitialURL")
+      .mockResolvedValue("https://dibird.com/species/mandarin-duck/");
+
+    const { findByText } = await render(<Navigation />);
+
+    expect(await findByText("app-stack")).toBeTruthy();
+    expect(lastInitialState).toBeUndefined();
+  });
+
+  // The launch intent outlives the process on Android: relaunching from the
+  // launcher or from Recents can hand back a link followed days ago, and
+  // following it again would throw away the session for a screen the person has
+  // long left.
+  it("ignores a launch URL the previous launch was already routed by", async () => {
+    mockAuth.isAuthenticated = true;
+    await seedSavedStack([{ name: "ObservationDetail", params: { id: 7 } }]);
+    const url = "https://dibird.com/species/mandarin-duck/";
+    jest.spyOn(Linking, "getInitialURL").mockResolvedValue(url);
+    await AsyncStorage.setItem("LAUNCH_URL", url);
+
+    await render(<Navigation />);
+
+    await waitFor(() => expect(lastInitialState).toBeDefined());
+    expect(lastInitialState?.routes.at(-1)?.name).toBe("ObservationDetail");
+  });
+
+  it("records the launch URL so the next launch can tell it is stale", async () => {
+    mockAuth.isAuthenticated = true;
+    jest
+      .spyOn(Linking, "getInitialURL")
+      .mockResolvedValue("https://dibird.com/species/mandarin-duck/");
+
+    await render(<Navigation />);
+
+    await waitFor(async () =>
+      expect(await AsyncStorage.getItem("LAUNCH_URL")).toBe(
+        "https://dibird.com/species/mandarin-duck/",
+      ),
+    );
+  });
+
+  it("still follows a link that differs from the recorded one", async () => {
+    mockAuth.isAuthenticated = true;
+    await seedSavedStack([{ name: "ObservationDetail", params: { id: 7 } }]);
+    await AsyncStorage.setItem("LAUNCH_URL", "https://dibird.com/species/osprey/");
+    jest
+      .spyOn(Linking, "getInitialURL")
+      .mockResolvedValue("https://dibird.com/species/mandarin-duck/");
+
+    const { findByText } = await render(<Navigation />);
+
+    expect(await findByText("app-stack")).toBeTruthy();
+    expect(lastInitialState).toBeUndefined();
+  });
+
+  // getInitialURL can hang on Android (facebook/react-native#25675). Waiting on
+  // it forever would mean no navigator at all — the saved stack is the better
+  // answer past that point, and it is what React Navigation itself falls back to.
+  it("restores the saved stack anyway when the launch URL never resolves", async () => {
+    mockAuth.isAuthenticated = true;
+    await seedSavedStack([{ name: "ObservationDetail", params: { id: 7 } }]);
+    jest
+      .spyOn(Linking, "getInitialURL")
+      .mockReturnValue(new Promise<string | null>(() => {}));
+
+    await render(<Navigation />);
+
+    await waitFor(() => expect(lastInitialState).toBeDefined());
+    expect(lastInitialState).toEqual({
+      index: 1,
+      routes: [
+        { name: "Main" },
+        { name: "ObservationDetail", params: { id: 7 } },
+      ],
+    });
   });
 });
 

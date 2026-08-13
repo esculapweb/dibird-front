@@ -9,7 +9,9 @@ import {
   toUIError,
   showError,
   logError,
+  reportWarning,
 } from "../errors";
+import * as Sentry from "@sentry/react-native";
 import { AppError } from "../../types";
 
 const axiosError = (overrides: Partial<AxiosError> = {}): AxiosError =>
@@ -230,5 +232,52 @@ describe("logError", () => {
     } finally {
       (global as { __DEV__?: boolean }).__DEV__ = original;
     }
+  });
+});
+
+// The reason this exists: logError is __DEV__-only, so everything caught in a
+// background path (a push token that never reached the backend) used to vanish
+// in production builds.
+describe("reportWarning", () => {
+  let warnSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    warnSpy.mockRestore();
+  });
+
+  it("sends an Error to Sentry as a warning, tagged with its context", () => {
+    const e = new Error("no token");
+    reportWarning(e, "getExpoPushTokenError", { attempt: 2 });
+
+    expect(Sentry.captureException).toHaveBeenCalledWith(
+      e,
+      expect.objectContaining({
+        level: "warning",
+        tags: { context: "getExpoPushTokenError" },
+        extra: expect.objectContaining({ attempt: 2 }),
+      }),
+    );
+  });
+
+  // A native module can reject with anything; captureException on a plain object
+  // produces an event whose title says nothing.
+  it("falls back to a message for a non-Error", () => {
+    reportWarning({ code: "ERR_NOTIF" }, "getPermissionsAsync");
+
+    expect(Sentry.captureException).not.toHaveBeenCalled();
+    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+      expect.stringContaining("getPermissionsAsync"),
+      expect.objectContaining({ level: "warning" }),
+    );
+  });
+
+  it("still logs to the console in dev", () => {
+    reportWarning(new Error("boom"), "MyTag");
+
+    expect(warnSpy).toHaveBeenCalledWith("[MyTag]", expect.anything());
   });
 });

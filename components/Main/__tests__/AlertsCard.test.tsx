@@ -29,11 +29,18 @@ jest.mock("../../../hooks/useLocationUnavailable", () => ({
 jest.mock("../../../hooks/usePushNotifications", () => ({
   requestPushPermission: jest.fn(),
 }));
+jest.mock("../../../hooks/usePushPermissionStatus", () => ({
+  usePushPermissionStatus: () => ({
+    status: mockPushStatus,
+    request: mockRequestPush,
+  }),
+}));
 jest.mock("../../../services/analytics", () => ({ track: jest.fn() }));
 
 import { fireEvent, render, screen } from "@testing-library/react-native";
 
 import { createNavigationMock } from "../../../screens/test-utils";
+import type { PushPermissionStatus } from "../../../hooks/usePushPermissionStatus";
 import { requestPushPermission } from "../../../hooks/usePushNotifications";
 import { track } from "../../../services/analytics";
 import AlertsCard from "../AlertsCard";
@@ -43,18 +50,21 @@ const mockSave = jest.fn();
 const mockRequestLocation = jest.fn();
 const mockGetPermissionStatus = jest.fn();
 const mockLocationUnavailable = jest.fn();
+const mockRequestPush = jest.fn();
 const mockRequestPushPermission = requestPushPermission as jest.Mock;
 
 let mockSettings: {
   is_enabled: boolean;
   location_lat: number | null;
 } | null = null;
+let mockPushStatus: PushPermissionStatus | null = "granted";
 
 beforeEach(() => {
   jest.clearAllMocks();
   // The location is already there: in these tests the card is raised by alerts
   // being off.
   mockSettings = { is_enabled: false, location_lat: 48.85 };
+  mockPushStatus = "granted";
   mockSave.mockResolvedValue(true);
   mockRequestLocation.mockResolvedValue(null);
   mockGetPermissionStatus.mockReturnValue("granted");
@@ -95,6 +105,68 @@ describe("visibility", () => {
 
     expect(screen.queryByTestId("alerts-card")).not.toBeOnTheScreen();
   });
+
+  // The dead end this variant exists for: after a reinstall the OS permission is
+  // gone while the session is not, and with the alerts on the card was the one
+  // thing that could have asked for it — and it did not show up.
+  it("shows up with alerts on but the notifications blocked by the OS", async () => {
+    mockSettings = { is_enabled: true, location_lat: 48.85 };
+    mockPushStatus = "denied";
+    await render(<AlertsCard />);
+
+    expect(screen.getByText("alerts_card_blocked_title")).toBeOnTheScreen();
+    expect(screen.getByText("open_settings")).toBeOnTheScreen();
+  });
+
+  it("offers to grant a permission that was never asked for", async () => {
+    mockSettings = { is_enabled: true, location_lat: 48.85 };
+    mockPushStatus = "undetermined";
+    await render(<AlertsCard />);
+
+    expect(screen.getByText("alerts_card_blocked_title")).toBeOnTheScreen();
+    expect(screen.getByText("alerts_card_allow")).toBeOnTheScreen();
+  });
+
+  // Null is "not read yet" and "a simulator, where push cannot work at all" —
+  // neither is a reason to announce that the notifications are blocked.
+  it("stays away while the permission status is unknown", async () => {
+    mockSettings = { is_enabled: true, location_lat: 48.85 };
+    mockPushStatus = null;
+    await render(<AlertsCard />);
+
+    expect(screen.queryByTestId("alerts-card")).not.toBeOnTheScreen();
+  });
+
+  // Alerts off comes first: its own button asks for the permission anyway.
+  it("keeps the enable copy when the alerts are off as well", async () => {
+    mockPushStatus = "denied";
+    await render(<AlertsCard />);
+
+    expect(screen.getByText("alerts_card_title")).toBeOnTheScreen();
+  });
+});
+
+describe("blocked notifications", () => {
+  beforeEach(() => {
+    mockSettings = { is_enabled: true, location_lat: 48.85 };
+  });
+
+  // Whether that ends in a dialog or in the system settings is the hook's call
+  // (see usePushPermissionStatus) — the same button lives in the alert settings.
+  it.each(["undetermined", "denied"] as const)(
+    "hands a %s permission over to the hook",
+    async (status) => {
+      mockPushStatus = status;
+      await render(<AlertsCard />);
+
+      await fireEvent.press(screen.getByTestId("alerts-card-enable"));
+
+      expect(mockRequestPush).toHaveBeenCalledTimes(1);
+      // Nothing to save: the alerts are on already, it is the OS that says no.
+      expect(mockSave).not.toHaveBeenCalled();
+      expect(mockRequestPushPermission).not.toHaveBeenCalled();
+    },
+  );
 });
 
 describe("turning alerts on", () => {

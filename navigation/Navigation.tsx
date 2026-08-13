@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useState, useEffect, useRef } from "react";
+import { Linking } from "react-native";
 import { InitialState, CommonActions } from "@react-navigation/native";
 import { NavigationContainer } from "@react-navigation/native";
 
@@ -24,6 +25,67 @@ import { clearOnboardingPending } from "../util/storageHelper";
 import type { MinimalRoute, NavState } from "../types";
 
 const NAV_STATE_KEY = "NAV_STATE";
+const LAUNCH_URL_KEY = "LAUNCH_URL";
+
+/**
+ * How long the launch URL is waited for before the saved stack is restored
+ * anyway. `Linking.getInitialURL()` can hang on Android
+ * (facebook/react-native#25675) — React Navigation races it against 150 ms for
+ * exactly that reason (see useLinking.native), so waiting longer than its own
+ * resolution buys nothing: past that point it has already given up on the link
+ * too.
+ */
+const INITIAL_URL_TIMEOUT_MS = 150;
+
+/**
+ * The URL the app was cold-launched with, or null.
+ *
+ * Read here and not left to React Navigation because of how NavigationContainer
+ * combines the two: `initialState` wins over the state resolved from the link
+ * ("If this is provided, deep link or URLs won't be handled on the initial
+ * render" — its own docs). Handing it the restored stack therefore swallowed
+ * every cold-start deep and universal link: the app opened on whatever screen
+ * the previous session had ended on. When there is a link, the saved stack is
+ * skipped and the container is left to resolve it.
+ */
+const getLaunchUrl = async (): Promise<string | null> => {
+  try {
+    return await Promise.race([
+      Linking.getInitialURL(),
+      new Promise<null>((resolve) =>
+        setTimeout(() => resolve(null), INITIAL_URL_TIMEOUT_MS),
+      ),
+    ]);
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * The URL this launch should actually be routed by — the launch URL, unless it
+ * is the one the previous launch was already routed by.
+ *
+ * On Android the launch intent outlives the process: relaunching from the
+ * launcher or from Recents can hand `getInitialURL()` a link that was followed
+ * days ago, and following it again would throw away the saved stack for a screen
+ * the person has long left. React Navigation is exposed to the same thing and
+ * does not guard, but it also does not restore a stack, so there it costs
+ * nothing — here it costs the whole session.
+ *
+ * The cost of the guard is the opposite case: the same link tapped for real on
+ * two consecutive cold starts, where the second tap restores the stack instead.
+ * That one is close to harmless — a stack saved from a session that started on
+ * exactly this link ends up at that same screen anyway.
+ */
+const takeLaunchUrl = async (): Promise<string | null> => {
+  const url = await getLaunchUrl();
+  if (!url) return null;
+
+  if (url === (await AsyncStorage.getItem(LAUNCH_URL_KEY))) return null;
+
+  await AsyncStorage.setItem(LAUNCH_URL_KEY, url);
+  return url;
+};
 
 // The login/signup screens. Needed to tell "the guest signed in without leaving
 // the funnel" from "the guest changed their mind, went for a walk and signed in
@@ -121,6 +183,15 @@ const Navigation = () => {
 
     const restore = async () => {
       try {
+        // A cold start from a link is not a returning session: the person asked
+        // for one particular screen, and the saved stack would silently win over
+        // it (see getLaunchUrl). `null` hands the container an absent
+        // initialState, which is what makes it resolve the link itself.
+        if (await takeLaunchUrl()) {
+          setInitialState(null);
+          return;
+        }
+
         const saved = await AsyncStorage.getItem(NAV_STATE_KEY);
 
         if (!saved) {

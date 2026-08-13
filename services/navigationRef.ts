@@ -9,29 +9,38 @@ import type { AppStackParamList } from "../types";
 export const navigationRef =
   createRef<NavigationContainerRef<AppStackParamList>>();
 
-let pendingNavigation: (() => void) | null = null;
+let pendingNavigation: NavigationAction | null = null;
 
+/**
+ * Go to the screen a tapped push points at.
+ *
+ * Two waits, because a push tap arrives at any point of the launch. On a cold
+ * start there is no navigator at all yet — the splash is still up, the auth
+ * token is being read — and the action is parked until `onReady`
+ * (`flushPendingNavigation`), with no deadline: an app init that includes
+ * migrations and a cache restore easily outlives any retry ceiling. Once there
+ * is a container, the dispatch still goes through `dispatchWhenReady`, because
+ * "ready" is not the end of it either — the navigator disappears for a moment
+ * whenever `AppStack` re-reads the onboarding flag.
+ */
 export function navigateFromNotification<K extends keyof AppStackParamList>(
   screen: K,
   params: AppStackParamList[K],
 ): void {
-  const go = () =>
-    navigationRef.current?.dispatch(
-      CommonActions.navigate(screen as string, params),
-    );
+  const action = CommonActions.navigate(screen as string, params);
 
   if (navigationRef.current?.isReady()) {
-    go();
-  } else {
-    pendingNavigation = go;
+    dispatchWhenReady(action);
+    return;
   }
+
+  pendingNavigation = action;
 }
 
 export function flushPendingNavigation() {
-  if (pendingNavigation) {
-    pendingNavigation?.();
-    pendingNavigation = null;
-  }
+  const action = pendingNavigation;
+  pendingNavigation = null;
+  if (action) dispatchWhenReady(action);
 }
 
 /**

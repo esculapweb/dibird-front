@@ -9,7 +9,8 @@ import NotificationCard from "../components/Notification/NotificationCard";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import Layout from "../components/ui/Layout";
 import { fetchNotifications, markNotificationsRead } from "../util/fetches";
-import { AppNotification } from "../types";
+import { AppNotification, isNotificationPayload } from "../types";
+import { routeNotification } from "../util/notificationRoute";
 import { UNREAD_COUNT_KEY } from "../hooks/useUnreadCount";
 import { AppStackNavigationProp } from "../types";
 import { useTheme, ThemeColors } from "../store/theme-context";
@@ -62,32 +63,19 @@ export default function NotificationsScreen() {
         queryClient.invalidateQueries({ queryKey: UNREAD_COUNT_KEY });
       }
 
-      const { screen, obsId, speciesId, achievementId, highlightObsIds } =
-        item.data;
-      switch (screen) {
-        case "Community":
-          navigation.navigate("Community", {
-            highlightObsIds: highlightObsIds,
-          });
-          break;
-        case "CommunityDetail":
-          navigation.navigate("CommunityDetail", {
-            observationId: obsId as number,
-          });
-          break;
-        case "SpeciesDetail":
-          if (speciesId)
-            navigation.navigate("SpeciesDetail", { id: speciesId });
-          break;
-        case "Achievements":
-          navigation.navigate("Achievements", { highlightId: achievementId });
-          break;
-        case "Checklist":
-          navigation.navigate("Checklist");
-          break;
-        default:
-          break;
-      }
+      // The same payload that arrives as a push, routed by the same switch —
+      // this screen used to hold a copy of it, and the copies drifted (see
+      // util/notificationRoute).
+      if (!isNotificationPayload(item.data)) return;
+      // `navigate` is a set of per-screen overloads and rejects a screen that is
+      // still generic at the call site. Widening it loses nothing: the
+      // screen/params pairing is already checked inside routeNotification, and
+      // against this very stack (see NotificationNavigate).
+      const navigate = navigation.navigate as (
+        screen: string,
+        params?: object,
+      ) => void;
+      routeNotification(item.data, (screen, params) => navigate(screen, params));
     },
     [navigation, queryClient],
   );

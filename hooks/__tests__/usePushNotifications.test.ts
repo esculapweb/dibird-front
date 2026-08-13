@@ -24,6 +24,7 @@ jest.mock("../../services/navigationRef", () => ({
 }));
 jest.mock("../../services/errors", () => ({
   logError: jest.fn(),
+  reportWarning: jest.fn(),
 }));
 jest.mock("../../services/analytics", () => ({
   setUserProps: jest.fn(),
@@ -47,17 +48,18 @@ jest.mock("../../services/sync/networkStatus", () => {
   };
 });
 
+import { AppState } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
-import { renderHook } from "@testing-library/react-native";
+import { act, renderHook } from "@testing-library/react-native";
 import { registerPushToken, markNotificationsRead } from "../../util/fetches";
+import { reportWarning } from "../../services/errors";
 import { navigateFromNotification } from "../../services/navigationRef";
 import { UNREAD_COUNT_KEY } from "../useUnreadCount";
 import { setUserProps, track } from "../../services/analytics";
 import {
   usePushNotifications,
-  handleNotificationNavigation,
   requestPushPermission,
 } from "../usePushNotifications";
 
@@ -76,9 +78,29 @@ const invalidateQueries = jest.fn();
 
 const flush = () => new Promise((resolve) => setImmediate(resolve));
 
+// AppState.addEventListener never fires on its own in a jest environment, so
+// the foreground is simulated by hand — same stand-in as in syncHooks.test.tsx.
+let appStateListeners: Array<(state: string) => void> = [];
+const emitForeground = async () => {
+  await act(async () => {
+    appStateListeners.forEach((l) => l("background"));
+    appStateListeners.forEach((l) => l("active"));
+  });
+  await flush();
+};
+
 beforeEach(() => {
   jest.clearAllMocks();
   networkStatusMock.__resetReconnectListeners();
+  appStateListeners = [];
+  jest.spyOn(AppState, "addEventListener").mockImplementation((_event, cb) => {
+    appStateListeners.push(cb as (state: string) => void);
+    return {
+      remove: jest.fn(() => {
+        appStateListeners = appStateListeners.filter((l) => l !== cb);
+      }),
+    } as ReturnType<typeof AppState.addEventListener>;
+  });
   (useQueryClient as jest.Mock).mockReturnValue({ invalidateQueries });
   (Device as { isDevice: boolean }).isDevice = true;
   requestPermissionsAsync.mockResolvedValue({ status: "granted" });
@@ -89,28 +111,6 @@ beforeEach(() => {
   addNotificationReceivedListener.mockReturnValue({ remove: jest.fn() });
   addNotificationResponseReceivedListener.mockReturnValue({ remove: jest.fn() });
   (Notifications.getLastNotificationResponse as jest.Mock).mockReturnValue(null);
-});
-
-describe("handleNotificationNavigation", () => {
-  it("routes Community with highlightObsIds", () => {
-    handleNotificationNavigation({ screen: "Community", highlightObsIds: [1, 2] });
-    expect(navigateFromNotification).toHaveBeenCalledWith("Community", { highlightObsIds: [1, 2] });
-  });
-
-  it("routes SpeciesDetail with the species id", () => {
-    handleNotificationNavigation({ screen: "SpeciesDetail", speciesId: 42 });
-    expect(navigateFromNotification).toHaveBeenCalledWith("SpeciesDetail", { id: 42 });
-  });
-
-  it("routes Achievements with the highlight id", () => {
-    handleNotificationNavigation({ screen: "Achievements", achievementId: "a1" });
-    expect(navigateFromNotification).toHaveBeenCalledWith("Achievements", { highlightId: "a1" });
-  });
-
-  it("routes Checklist with no params", () => {
-    handleNotificationNavigation({ screen: "Checklist" });
-    expect(navigateFromNotification).toHaveBeenCalledWith("Checklist", undefined);
-  });
 });
 
 describe("usePushNotifications", () => {
@@ -168,6 +168,85 @@ describe("usePushNotifications", () => {
     networkStatusMock.__emitReconnect();
     await flush();
     expect(registerPushToken).toHaveBeenCalledTimes(2);
+  });
+
+  // A reinstall resets the OS permission while the session survives in the
+  // Keychain, so the app comes up signed in with push silently dead. Read only
+  // at the cold start, the status granted in the system settings a minute later
+  // reached nobody until the next launch.
+  it("registers the token when the permission was granted while the app sat in the background", async () => {
+    getPermissionsAsync.mockResolvedValue({ status: "undetermined" });
+
+    await renderHook(() => usePushNotifications(true));
+    await flush();
+    expect(registerPushToken).not.toHaveBeenCalled();
+
+    getPermissionsAsync.mockResolvedValue({ status: "granted" });
+    await emitForeground();
+
+    expect(registerPushToken).toHaveBeenCalledWith("expo-token");
+    expect(setUserProps).toHaveBeenLastCalledWith({ has_push_token: "yes" });
+  });
+
+  it("does not re-register on a foreground that changed nothing", async () => {
+    await renderHook(() => usePushNotifications(true));
+    await flush();
+    expect(registerPushToken).toHaveBeenCalledTimes(1);
+
+    await emitForeground();
+
+    expect(registerPushToken).toHaveBeenCalledTimes(1);
+  });
+
+  it("stops re-reading the permission after unmount", async () => {
+    const { unmount } = await renderHook(() => usePushNotifications(true));
+    await flush();
+
+    await unmount();
+    await emitForeground();
+
+    expect(getPermissionsAsync).toHaveBeenCalledTimes(1);
+  });
+
+  // The token fetch is a network call to Expo's servers of its own. Left to
+  // throw, it took down whoever awaited the registration and logged nothing.
+  it("survives a failed token fetch without touching the backend", async () => {
+    getExpoPushTokenAsync.mockRejectedValue(
+      Object.assign(new Error("no token"), { code: "ERR_NOTIF_DEVICE_ID" }),
+    );
+
+    await renderHook(() => usePushNotifications(true));
+    await flush();
+
+    expect(registerPushToken).not.toHaveBeenCalled();
+    // logError is __DEV__-only, so a silent push would stay silent in Sentry too.
+    expect(reportWarning).toHaveBeenCalled();
+
+    // A device-side failure is permanent — a reconnect must not spin on it.
+    networkStatusMock.__emitReconnect();
+    await flush();
+    expect(getExpoPushTokenAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it("retries the token fetch on reconnect when it failed on the network", async () => {
+    getExpoPushTokenAsync
+      .mockRejectedValueOnce(
+        Object.assign(new Error("offline"), {
+          code: "ERR_NOTIFICATIONS_NETWORK_ERROR",
+        }),
+      )
+      .mockResolvedValueOnce({ data: "expo-token" });
+
+    await renderHook(() => usePushNotifications(true));
+    await flush();
+    expect(registerPushToken).not.toHaveBeenCalled();
+    // Offline at a cold start is normal — an event per launch would bury the rest.
+    expect(reportWarning).not.toHaveBeenCalled();
+
+    networkStatusMock.__emitReconnect();
+    await flush();
+
+    expect(registerPushToken).toHaveBeenCalledWith("expo-token");
   });
 
   it("invalidates the unread-count and notifications queries when a notification is received", async () => {
@@ -228,6 +307,29 @@ describe("usePushNotifications", () => {
     expect(Notifications.clearLastNotificationResponse).toHaveBeenCalled();
     expect(navigateFromNotification).toHaveBeenCalledWith("Checklist", undefined);
     expect(markNotificationsRead).toHaveBeenCalledWith([9]);
+  });
+
+  // Both calls throw an UnavailabilityError when the native module does not
+  // implement them. Uncaught, that aborted the effect before the two listeners
+  // were registered — and then no push tap worked at all, not just the
+  // cold-start one.
+  it("still registers the tap listeners when the cold-start lookup throws", async () => {
+    (Notifications.getLastNotificationResponse as jest.Mock).mockImplementation(
+      () => {
+        throw new Error("ExpoNotifications.getLastNotificationResponse is not available");
+      },
+    );
+
+    await renderHook(() => usePushNotifications(true));
+    await flush();
+
+    expect(reportWarning).toHaveBeenCalled();
+    expect(addNotificationResponseReceivedListener).toHaveBeenCalled();
+
+    const onResponse = addNotificationResponseReceivedListener.mock.calls[0][0] as (r: unknown) => void;
+    onResponse({ notification: { request: { content: { data: { screen: "Checklist" } } } } });
+
+    expect(navigateFromNotification).toHaveBeenCalledWith("Checklist", undefined);
   });
 
   it("does nothing extra when there is no last notification response", async () => {

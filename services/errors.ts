@@ -1,5 +1,6 @@
 import { AxiosError } from "axios";
 import Toast from "react-native-toast-message";
+import * as Sentry from "@sentry/react-native";
 
 import i18n from "./i18n";
 import { AppError, ErrorExtractor, UIError } from "../types";
@@ -117,6 +118,44 @@ export const showError = (e: unknown, extractor?: ErrorExtractor): void => {
   const error = e as AppError;
   const { title, message } = toUIError(error, extractor);
   Toast.show({ type: "error", text1: title, text2: message || undefined });
+};
+
+/**
+ * A failure the user cannot be told about and cannot act on, but which must not
+ * disappear either — a push token that never reached the backend, a permission
+ * that could not be read.
+ *
+ * `logError` alone is not enough for those: it is `__DEV__`-only by design, and a
+ * console is no help in a build someone is holding in their hands. This is the
+ * one sanctioned door to Sentry outside `services/api.ts` — what the convention
+ * rules out is `Sentry.captureException` scattered over call sites, not the
+ * reporting itself.
+ *
+ * Nothing HTTP belongs here: an API call that failed is already reported by the
+ * interceptor in `services/api.ts`, and a second event would only split one
+ * problem in two.
+ */
+export const reportWarning = (
+  e: unknown,
+  tag: string,
+  extra?: Record<string, unknown>,
+): void => {
+  logError(e, tag);
+
+  const error = e as AppError;
+  const context = {
+    level: "warning" as const,
+    tags: { context: tag },
+    extra: { ...extra, code: error?.code },
+  };
+
+  // A non-Error thrown from a native module would become an "Object captured as
+  // exception" event with no message worth reading.
+  if (e instanceof Error) {
+    Sentry.captureException(e, context);
+  } else {
+    Sentry.captureMessage(`${tag}: ${String(e)}`, context);
+  }
 };
 
 export const logError = (e: unknown, tag = "useApiError"): void => {

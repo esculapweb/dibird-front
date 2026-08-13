@@ -1265,19 +1265,33 @@ export type AuthStackRouteProp<T extends keyof AuthStackParamList> = RouteProp<
   T
 >;
 
-export type NotificationScreen = keyof Pick<
-  AppStackParamList,
-  "Notifications" | "Community" | "SpeciesDetail" | "Achievements"
->;
-
 export type NotificationPayload = (
   | { screen: "Community"; highlightObsIds: number[] }
+  // A single find opens its card, several open the feed with them highlighted.
+  | { screen: "CommunityDetail"; obsId: number }
   | { screen: "SpeciesDetail"; speciesId: number }
   | { screen: "Achievements"; achievementId?: string }
   | { screen: "Notifications" }
   | { screen: "Checklist" }
 ) & { id?: number };
 
+/**
+ * The screens a notification can point at.
+ *
+ * Derived from the payload rather than listed by hand — the hand-written list it
+ * replaces had gone stale (no `Checklist`, no `CommunityDetail`) while nothing
+ * used it. Its point now is the constraint it carries: util/notificationRoute
+ * indexes `AppStackParamList` with it, so a payload naming a screen the stack
+ * does not have stops compiling. Before that, such a payload was a tap that
+ * silently did nothing — which is exactly how `CommunityDetail` went unnoticed.
+ */
+export type NotificationScreen = NotificationPayload["screen"];
+
+/**
+ * Note what this does *not* check: only `screen`, and only that it is a string.
+ * The payload comes from the backend, so every other field is a claim rather
+ * than a fact — see util/notificationRoute, which re-checks the ids it needs.
+ */
 export function isNotificationPayload(
   data: unknown,
 ): data is NotificationPayload {

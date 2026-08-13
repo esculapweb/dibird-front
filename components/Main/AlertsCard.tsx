@@ -9,6 +9,7 @@ import { useAlertSettings } from "../../store/alert-settings-context";
 import { useLocation } from "../../store/location-context";
 import { useLocationUnavailable } from "../../hooks/useLocationUnavailable";
 import { requestPushPermission } from "../../hooks/usePushNotifications";
+import { usePushPermissionStatus } from "../../hooks/usePushPermissionStatus";
 import { track } from "../../services/analytics";
 import { AppStackNavigationProp } from "../../types";
 
@@ -17,8 +18,17 @@ const H_PAD = 16;
 /**
  * Alerts about rare birds nearby are the app's main selling point, and until now
  * the only way to learn about them was to find the burger menu and the settings
- * yourself. The card shows up in two cases: alerts are off — or they are on but
- * do not know where the user is.
+ * yourself. The card shows up in three cases: alerts are off — they are on but
+ * the OS is blocking the notifications — or they are on but do not know where
+ * the user is.
+ *
+ * The third case has no other way out at all. The permission is only ever asked
+ * for from the onboarding and from turning the alerts *on*, and both are behind
+ * someone whose alerts are already on: the onboarding runs on sign-up only, and
+ * the switch is not going to be flipped twice. Meanwhile the OS drops the
+ * permission on every reinstall — while the session survives in the Keychain, so
+ * the app comes up signed in with nothing looking out of place. Push then stayed
+ * dead until a logout/login, which re-fetches the Expo token on its way out.
  *
  * The second case stayed invisible for a long time: `is_enabled` defaults to
  * `true` on the backend, so a new account never saw the card — and with it the
@@ -40,6 +50,8 @@ const AlertsCard = () => {
   const styles = stylesFn(Colors);
   const { settings, save } = useAlertSettings();
   const { requestLocation, getPermissionStatus } = useLocation();
+  const { status: pushStatus, request: requestPush } =
+    usePushPermissionStatus();
   const handleLocationUnavailable = useLocationUnavailable(
     t("location_unavailable_alert_hint"),
   );
@@ -48,8 +60,32 @@ const AlertsCard = () => {
   // `settings` is absent until they have loaded or while the user is signed out —
   // flashing the card in the meantime is not an option.
   const needsEnable = !!settings && !settings.is_enabled;
+  // `pushStatus` is null while it is being read and on a simulator; neither is a
+  // reason to announce that the notifications are blocked.
+  const needsPush =
+    !!settings &&
+    settings.is_enabled &&
+    pushStatus != null &&
+    pushStatus !== "granted";
   const needsLocation = !!settings && settings.location_lat == null;
-  if (!settings || (!needsEnable && !needsLocation)) return null;
+  if (!settings || (!needsEnable && !needsPush && !needsLocation)) return null;
+
+  // The order is the one from `handleEnable`: without the permission nothing
+  // arrives at all, while the location only refines the radius.
+  const variant = needsEnable ? "enable" : needsPush ? "push" : "location";
+
+  // Nothing to save here: the settings are on already, it is the OS that says no.
+  // Whether that means a dialog or a trip to the system settings is the hook's
+  // call — the alert settings screen offers the same thing.
+  const handlePush = async () => {
+    if (enabling) return;
+    setEnabling(true);
+    try {
+      await requestPush();
+    } finally {
+      setEnabling(false);
+    }
+  };
 
   const handleEnable = async () => {
     if (enabling) return;
@@ -88,29 +124,54 @@ const AlertsCard = () => {
     }
   };
 
+  // Spelled out per variant rather than assembled from keys: i18next-parser only
+  // sees literal t() calls, and a key it cannot see is a key `npm run i18n:unused`
+  // reports as dead.
+  const copy =
+    variant === "enable"
+      ? {
+          title: t("alerts_card_title"),
+          text: t("alerts_card_text"),
+          action: t("alerts_card_enable"),
+        }
+      : variant === "push"
+        ? {
+            title: t("alerts_card_blocked_title"),
+            text: t("alerts_card_blocked_text"),
+            action:
+              pushStatus === "denied"
+                ? t("open_settings")
+                : t("alerts_card_allow"),
+          }
+        : {
+            title: t("alerts_card_where_title"),
+            text: t("alerts_card_where_text"),
+            action: t("alerts_card_locate"),
+          };
+
   return (
     <View style={styles.card} testID="alerts-card">
       <View style={styles.header}>
-        <Ionicons name="notifications" size={22} color={Colors.main100} />
+        <Ionicons
+          name={variant === "push" ? "notifications-off" : "notifications"}
+          size={22}
+          color={Colors.main100}
+        />
         <View style={styles.titles}>
-          <Text style={styles.title}>
-            {needsEnable ? t("alerts_card_title") : t("alerts_card_where_title")}
-          </Text>
-          <Text style={styles.subtitle}>
-            {needsEnable ? t("alerts_card_text") : t("alerts_card_where_text")}
-          </Text>
+          <Text style={styles.title}>{copy.title}</Text>
+          <Text style={styles.subtitle}>{copy.text}</Text>
         </View>
       </View>
 
       <View style={styles.actions}>
         <TouchableOpacity
           style={[styles.action, styles.actionPrimary]}
-          onPress={handleEnable}
+          onPress={variant === "push" ? handlePush : handleEnable}
           disabled={enabling}
           testID="alerts-card-enable"
         >
           <Text style={[styles.actionText, styles.actionTextPrimary]}>
-            {needsEnable ? t("alerts_card_enable") : t("alerts_card_locate")}
+            {copy.action}
           </Text>
         </TouchableOpacity>
 

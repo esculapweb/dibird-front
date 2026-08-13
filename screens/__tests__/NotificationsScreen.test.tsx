@@ -144,7 +144,10 @@ describe("tap routing", () => {
     [{ screen: "CommunityDetail", obsId: 5 }, ["CommunityDetail", { observationId: 5 }]],
     [{ screen: "SpeciesDetail", speciesId: 7 }, ["SpeciesDetail", { id: 7 }]],
     [{ screen: "Achievements", achievementId: "a1" }, ["Achievements", { highlightId: "a1" }]],
-    [{ screen: "Checklist" }, ["Checklist"]],
+    // The params are passed explicitly, not left off, since the routing moved
+    // to the shared util/notificationRoute — same navigation either way.
+    [{ screen: "Checklist" }, ["Checklist", undefined]],
+    [{ screen: "Notifications" }, ["Notifications", undefined]],
   ];
 
   it.each(cases)("routes %o to navigate(%p)", async (data, expectedArgs) => {

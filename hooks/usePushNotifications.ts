@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { AppState } from "react-native";
 import "react-native-gesture-handler";
 import "react-native-reanimated";
 import { QueryClient, useQueryClient } from "@tanstack/react-query";
@@ -10,31 +11,11 @@ import "../services/i18n";
 import { registerPushToken, markNotificationsRead } from "../util/fetches";
 import { UNREAD_COUNT_KEY } from "../hooks/useUnreadCount";
 import { navigateFromNotification } from "../services/navigationRef";
+import { routeNotification } from "../util/notificationRoute";
 import { setUserProps, track } from "../services/analytics";
-import { logError } from "../services/errors";
+import { logError, reportWarning } from "../services/errors";
 import { subscribeToReconnect } from "../services/sync/networkStatus";
 import { isNotificationPayload, NotificationPayload, AppError } from "../types";
-
-export const handleNotificationNavigation = (raw: NotificationPayload) => {
-  switch (raw.screen) {
-    case "Community":
-      navigateFromNotification("Community", {
-        highlightObsIds: raw.highlightObsIds,
-      });
-      break;
-    case "SpeciesDetail":
-      navigateFromNotification("SpeciesDetail", { id: raw.speciesId });
-      break;
-    case "Achievements":
-      navigateFromNotification("Achievements", {
-        highlightId: raw.achievementId,
-      });
-      break;
-    case "Checklist":
-      navigateFromNotification("Checklist", undefined);
-      break;
-  }
-};
 
 // Tapping a push should mark its underlying notification read, same as
 // tapping it in the in-app list (NotificationsScreen.handlePress) — otherwise
@@ -51,10 +32,20 @@ const handleNotificationTap = (
       })
       .catch((e) => logError(e as AppError, "markNotificationsRead from push tap"));
   }
-  handleNotificationNavigation(raw);
+  // Shared with the in-app list so the two cannot lead to different screens —
+  // see util/notificationRoute.
+  routeNotification(raw, navigateFromNotification);
 };
 
 type PermissionStatus = "granted" | "denied" | "undetermined";
+
+// The codes expo-notifications gives a token fetch that failed on its way to
+// Expo's servers rather than on the device — the same class of failure as a
+// refused POST below, and worth the same retry.
+const RETRYABLE_TOKEN_ERRORS = [
+  "ERR_NOTIFICATIONS_NETWORK_ERROR",
+  "ERR_NOTIFICATIONS_SERVER_ERROR",
+];
 
 // Fetch the token and register it with the backend. Split out of the effect so
 // that both paths — "permission was already granted on a previous run" and
@@ -62,15 +53,35 @@ type PermissionStatus = "granted" | "denied" | "undetermined";
 const registerToken = async (
   onNeedsRetry: (unsubscribe: () => void) => void,
 ): Promise<void> => {
-  const token = await Notifications.getExpoPushTokenAsync({
-    projectId: Constants.expoConfig?.extra?.eas?.projectId,
-  });
-
   const attemptRegister = async (): Promise<boolean> => {
+    let token: string;
+
+    // getExpoPushTokenAsync is a network call of its own (Expo binds the token
+    // to the device's current APNs/FCM one on its servers), and it used to be
+    // the single step outside a try/catch here: a failure took down whoever was
+    // awaiting it — in AlertSettingsScreen the switch never reached save() —
+    // and left the registration to the next cold start with nothing logged.
     try {
-      await registerPushToken(token.data);
+      const expoToken = await Notifications.getExpoPushTokenAsync({
+        projectId: Constants.expoConfig?.extra?.eas?.projectId,
+      });
+      token = expoToken.data;
+    } catch (e) {
+      const code = (e as { code?: string }).code;
+      const retryable = RETRYABLE_TOKEN_ERRORS.includes(code ?? "");
+      // Only what the reconnect will not pick up on its own is worth an event:
+      // being offline at a cold start is normal and would drown the rest.
+      if (retryable) logError(e, "getExpoPushTokenError");
+      else reportWarning(e, "getExpoPushTokenError");
+      return !retryable;
+    }
+
+    try {
+      await registerPushToken(token);
       return true;
     } catch (e) {
+      // logError only: an API call that failed is already in Sentry from the
+      // interceptor in services/api.ts.
       const error = e as AppError;
       logError(error, "registerPushTokenError API ERROR");
       return !(error.isNetworkError || error.isTimeout);
@@ -104,9 +115,18 @@ const registerToken = async (
 export const requestPushPermission = async (): Promise<boolean> => {
   if (!Device.isDevice) return false;
 
-  const { status } = (await Notifications.requestPermissionsAsync()) as {
-    status: PermissionStatus;
-  };
+  let status: PermissionStatus;
+  // Every caller awaits this from an event handler with no catch of its own —
+  // a rejection here would abort the rest of the handler (the alerts stay off,
+  // the location is never asked for) over a dialog that did not open.
+  try {
+    ({ status } = (await Notifications.requestPermissionsAsync()) as {
+      status: PermissionStatus;
+    });
+  } catch (e) {
+    reportWarning(e, "requestPermissionsAsync");
+    return false;
+  }
 
   setUserProps({ has_push_token: status === "granted" ? "yes" : "no" });
   track("push_permission", { granted: status === "granted" ? "yes" : "no" });
@@ -126,6 +146,10 @@ export const usePushNotifications = (isAuthenticated: boolean) => {
   useEffect(() => {
     if (!isAuthenticated) return;
 
+    // Remembered between the runs of `register` below: a foreground that changed
+    // nothing then costs one native call and no request.
+    let lastStatus: PermissionStatus | null = null;
+
     async function register() {
       if (!Device.isDevice) {
         return null;
@@ -139,6 +163,9 @@ export const usePushNotifications = (isAuthenticated: boolean) => {
       const { status } = (await Notifications.getPermissionsAsync()) as {
         status: PermissionStatus;
       };
+
+      if (status === lastStatus) return;
+      lastStatus = status;
 
       // The share of users with push is the entry to the retention loops, so the
       // property is set on a refusal too; "never asked" stays a separate value at
@@ -155,19 +182,50 @@ export const usePushNotifications = (isAuthenticated: boolean) => {
       if (status !== "granted") return;
 
       await registerToken((unsubscribe) => {
+        // A previous run may have left a retry of its own pending.
+        unsubscribeReconnectRef.current?.();
         unsubscribeReconnectRef.current = unsubscribe;
       });
     }
-    register();
+
+    const runRegister = () =>
+      register().catch((e) => reportWarning(e, "usePushNotifications register"));
+
+    runRegister();
+
+    // The permission is granted outside the app as readily as inside it — in the
+    // system settings, or by a reinstall, which resets it while the session
+    // survives in the Keychain. Read only at the cold start, it left the token
+    // unregistered until the next one: Expo goes on pushing to the APNs token of
+    // the install that is gone, and the backend drops the row on the first
+    // DeviceNotRegistered that comes back.
+    let prevAppState = AppState.currentState;
+    const appStateSub = AppState.addEventListener("change", (state) => {
+      const wasBackground =
+        prevAppState === "background" || prevAppState === "inactive";
+      prevAppState = state;
+
+      if (state === "active" && wasBackground) runRegister();
+    });
 
     // addNotificationResponseReceivedListener isn't guaranteed to fire for
     // the tap that cold-launched the app (process wasn't alive yet to
     // subscribe in time), so that case must be recovered separately here.
-    const lastResponse = Notifications.getLastNotificationResponse();
-    if (lastResponse) {
-      Notifications.clearLastNotificationResponse();
-      const raw = lastResponse.notification.request.content.data;
-      if (isNotificationPayload(raw)) handleNotificationTap(raw, queryClient);
+    //
+    // In a try/catch because both calls throw an UnavailabilityError when the
+    // native module does not implement them (Expo Go, an older runtime under a
+    // newer JS bundle after an OTA). Uncaught, that took the rest of the effect
+    // with it — the two listeners below were never registered, and push taps
+    // stopped working entirely, not just the cold-start one.
+    try {
+      const lastResponse = Notifications.getLastNotificationResponse();
+      if (lastResponse) {
+        Notifications.clearLastNotificationResponse();
+        const raw = lastResponse.notification.request.content.data;
+        if (isNotificationPayload(raw)) handleNotificationTap(raw, queryClient);
+      }
+    } catch (e) {
+      reportWarning(e, "getLastNotificationResponse");
     }
 
     const receivedSub = Notifications.addNotificationReceivedListener(() => {
@@ -184,6 +242,7 @@ export const usePushNotifications = (isAuthenticated: boolean) => {
     );
 
     return () => {
+      appStateSub.remove();
       receivedSub.remove();
       responseSub.remove();
       unsubscribeReconnectRef.current?.();

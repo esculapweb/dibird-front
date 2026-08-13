@@ -39,12 +39,18 @@ it("queues the navigation instead of dispatching when the navigator isn't ready 
 });
 
 describe("flushPendingNavigation", () => {
+  // Called from the container's onReady, i.e. always with a navigator in place.
+  const flushAsOnReady = () => {
+    mockIsReady.mockReturnValue(true);
+    flushPendingNavigation();
+  };
+
   it("dispatches a previously queued navigation", () => {
     mockIsReady.mockReturnValue(false);
     navigateFromNotification("SpeciesDetail", { id: 5 });
     expect(mockDispatch).not.toHaveBeenCalled();
 
-    flushPendingNavigation();
+    flushAsOnReady();
     expect(mockDispatch).toHaveBeenCalledWith(
       expect.objectContaining({ type: "NAVIGATE", payload: { name: "SpeciesDetail", params: { id: 5 } } }),
     );
@@ -54,7 +60,7 @@ describe("flushPendingNavigation", () => {
     mockIsReady.mockReturnValue(false);
     navigateFromNotification("SpeciesDetail", { id: 5 });
 
-    flushPendingNavigation();
+    flushAsOnReady();
     flushPendingNavigation();
     expect(mockDispatch).toHaveBeenCalledTimes(1);
   });
@@ -63,7 +69,45 @@ describe("flushPendingNavigation", () => {
     expect(() => flushPendingNavigation()).not.toThrow();
     expect(mockDispatch).not.toHaveBeenCalled();
   });
+
+  // The cold start has no deadline of its own: the splash waits for the DB
+  // migrations and the query-cache restore, so seconds can pass between the tap
+  // being handled and a navigator existing. The queue must not expire — only the
+  // retry after onReady is bounded.
+  it("keeps the tap queued however long the launch takes", () => {
+    jest.useFakeTimers();
+    mockIsReady.mockReturnValue(false);
+    navigateFromNotification("SpeciesDetail", { id: 5 });
+
+    jest.advanceTimersByTime(30_000);
+    expect(mockDispatch).not.toHaveBeenCalled();
+
+    flushAsOnReady();
+    expect(mockDispatch).toHaveBeenCalledTimes(1);
+    jest.useRealTimers();
+  });
+
+  // onReady fires the moment the container has a navigator — but AppStack
+  // renders null again while it re-reads the onboarding flag, and a straight
+  // dispatch into that gap disappeared (the same hole dispatchWhenReady was
+  // written for, see its doc comment).
+  it("waits out a navigator that vanishes right after onReady", () => {
+    jest.useFakeTimers();
+    mockIsReady.mockReturnValue(false);
+    navigateFromNotification("SpeciesDetail", { id: 5 });
+
+    // Ready when onReady fires, gone by the time the flush runs.
+    flushPendingNavigation();
+    expect(mockDispatch).not.toHaveBeenCalled();
+
+    mockIsReady.mockReturnValue(true);
+    jest.advanceTimersByTime(100);
+
+    expect(mockDispatch).toHaveBeenCalledTimes(1);
+    jest.useRealTimers();
+  });
 });
+
 
 describe("dispatchWhenReady", () => {
   const reset = CommonActions.reset({
@@ -121,6 +165,7 @@ it("a newer queued navigation overwrites an older unflushed one", () => {
   navigateFromNotification("SpeciesDetail", { id: 5 });
   navigateFromNotification("Achievements", undefined);
 
+  mockIsReady.mockReturnValue(true);
   flushPendingNavigation();
   expect(mockDispatch).toHaveBeenCalledTimes(1);
   expect(mockDispatch).toHaveBeenCalledWith(

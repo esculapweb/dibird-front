@@ -22,6 +22,7 @@ import { useLocationUnavailable } from "../hooks/useLocationUnavailable";
 import RadiusRow from "../components/ui/RadiusRow";
 import { useAlertSettings } from "../store/alert-settings-context";
 import { requestPushPermission } from "../hooks/usePushNotifications";
+import { usePushPermissionStatus } from "../hooks/usePushPermissionStatus";
 import { track } from "../services/analytics";
 import type {
   AlertSettingsPatch,
@@ -105,6 +106,7 @@ export default function AlertSettingsScreen() {
     useAlertSettings();
   const { requestLocation, isRequesting, permissionStatus, getPermissionStatus } =
     useLocation();
+  const { status: pushStatus, request: requestPush } = usePushPermissionStatus();
 
   const [localRadius, setLocalRadius] = useState(250);
   const [localWindows, setLocalWindows] = useState<ActiveHourWindow[]>([]);
@@ -171,6 +173,11 @@ export default function AlertSettingsScreen() {
   }
   if (loading || !settings) return <LoadingOverlay />;
 
+  // `pushStatus` is null while it is being read and on a simulator; neither is a
+  // reason to announce that the notifications are blocked.
+  const pushBlocked =
+    settings.is_enabled && pushStatus != null && pushStatus !== "granted";
+
   const coordLabel =
     settings.location_lat != null && settings.location_lon != null
       ? `${settings.location_lat.toFixed(2)}, ${settings.location_lon.toFixed(2)}`
@@ -226,6 +233,40 @@ export default function AlertSettingsScreen() {
           styles={styles}
           testID="alert-enabled-switch"
         />
+
+        {/* The switch alone was a lie the moment the OS stopped letting the
+            notifications through: it kept saying "on" over a system that had
+            been dropping every one of them, most often since a reinstall — which
+            resets the permission while the session lives on in the Keychain. */}
+        {pushBlocked && (
+          <>
+            <Divider styles={styles} />
+            <View style={styles.row} testID="alert-push-blocked">
+              <Ionicons
+                name="warning-outline"
+                size={18}
+                color={Colors.main100}
+              />
+              <View style={styles.rowText}>
+                <Text style={styles.rowLabel}>{t("alert_push_blocked")}</Text>
+                <Text style={styles.rowDesc}>
+                  {t("alert_push_blocked_desc")}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={requestPush}
+                style={styles.btn}
+                testID="alert-push-blocked-action"
+              >
+                <Text style={styles.btnText}>
+                  {pushStatus === "denied"
+                    ? t("open_settings")
+                    : t("alerts_card_allow")}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
       </Section>
 
       <Section title={t("alert_section_location")} styles={styles}>

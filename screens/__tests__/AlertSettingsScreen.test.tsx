@@ -71,6 +71,12 @@ jest.mock("../../store/location-context", () => ({
 jest.mock("../../hooks/usePushNotifications", () => ({
   requestPushPermission: jest.fn(),
 }));
+jest.mock("../../hooks/usePushPermissionStatus", () => ({
+  usePushPermissionStatus: () => ({
+    status: mockPushStatus,
+    request: mockRequestPush,
+  }),
+}));
 jest.mock("../../services/analytics", () => ({ track: jest.fn() }));
 
 import { fireEvent, render, screen } from "@testing-library/react-native";
@@ -79,6 +85,7 @@ import { useAlertSettings } from "../../store/alert-settings-context";
 import { useLocation } from "../../store/location-context";
 import { AlertSettings } from "../../services/alertSettings";
 import { requestPushPermission } from "../../hooks/usePushNotifications";
+import type { PushPermissionStatus } from "../../hooks/usePushPermissionStatus";
 import { track } from "../../services/analytics";
 import AlertSettingsScreen from "../AlertSettingsScreen";
 
@@ -86,6 +93,9 @@ const mockSave = jest.fn();
 const mockRefresh = jest.fn();
 const mockRequestLocation = jest.fn();
 const mockGetPermissionStatus = jest.fn();
+const mockRequestPush = jest.fn();
+
+let mockPushStatus: PushPermissionStatus | null = "granted";
 
 const SETTINGS: AlertSettings = {
   id: 1,
@@ -127,8 +137,52 @@ const mockLocationContext = (overrides: Record<string, unknown> = {}) => {
 beforeEach(() => {
   jest.clearAllMocks();
   mockSave.mockResolvedValue(true);
+  mockPushStatus = "granted";
   mockSettingsContext();
   mockLocationContext();
+});
+
+// The switch says "on" off the backend's `is_enabled`, which knows nothing about
+// the OS: after a reinstall (the permission is reset, the session is not) the
+// screen was showing alerts as working while every notification was being
+// dropped. Reaching the permission from here is the point — the row is the only
+// thing on this screen that can.
+describe("notifications blocked by the OS", () => {
+  it("stays hidden while the permission is granted", async () => {
+    await render(<AlertSettingsScreen />);
+
+    expect(screen.queryByTestId("alert-push-blocked")).not.toBeOnTheScreen();
+  });
+
+  it("stays hidden while the alerts themselves are off", async () => {
+    mockPushStatus = "denied";
+    mockSettingsContext({ settings: { ...SETTINGS, is_enabled: false } });
+    await render(<AlertSettingsScreen />);
+
+    expect(screen.queryByTestId("alert-push-blocked")).not.toBeOnTheScreen();
+  });
+
+  // Null is "not read yet" and "a simulator, where push cannot work at all".
+  it("stays hidden while the status is unknown", async () => {
+    mockPushStatus = null;
+    await render(<AlertSettingsScreen />);
+
+    expect(screen.queryByTestId("alert-push-blocked")).not.toBeOnTheScreen();
+  });
+
+  it.each([
+    ["denied", "open_settings"],
+    ["undetermined", "alerts_card_allow"],
+  ] as const)("offers %s the %s action", async (status, label) => {
+    mockPushStatus = status;
+    await render(<AlertSettingsScreen />);
+
+    expect(screen.getByTestId("alert-push-blocked")).toBeOnTheScreen();
+    expect(screen.getByText(label)).toBeOnTheScreen();
+
+    await fireEvent.press(screen.getByTestId("alert-push-blocked-action"));
+    expect(mockRequestPush).toHaveBeenCalledTimes(1);
+  });
 });
 
 it("shows a loading overlay while settings haven't loaded yet", async () => {
