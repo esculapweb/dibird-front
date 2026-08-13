@@ -15,19 +15,23 @@ npm run test           # весь текущий jest-набор, включая
                         # drizzle)
 ```
 
-`npm run check` и `npm run test` (в CI — `npm run test:ci` = `jest
---forceExit`, см. ниже почему) гоняются автоматически в
-`bitbucket-pipelines.yml` на каждый push в master; ручной прогон перед
+`npm run check` (в CI разбит на `npm run typecheck` + `npm run lint`,
+чтобы в сводке прогона было видно упавший гейт) и `npm run test` (в CI —
+`npm run test:ci` = `jest --forceExit`, см. ниже почему) гоняются
+автоматически в GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml))
+на каждый pull request в master, на сам master и по кнопке
+(`workflow_dispatch` — ручной прогон с любой ветки); ручной прогон перед
 релизом остаётся дополнительной подстраховкой, а не единственной линией
-защиты.
+защиты. Мерж красного PR при этом технически не блокируется: branch
+protection на private-репозитории требует GitHub Pro.
 
 `--forceExit` нужен только в CI: repository-тесты держат нативные
 `better-sqlite3`-хендлы открытыми на весь воркер-процесс (см. коммент в
 `hooks/repositories/testDb.ts`) — локально jest сам форсированно
 завершается после предупреждения и команда всё равно выходит за секунды,
-но под контейнером Bitbucket Pipelines шаг без `--forceExit` зависал
-бесконечно ("In progress" без дальнейшего вывода), несмотря на то что все
-тесты уже прошли зелёными.
+но под CI-контейнером шаг без `--forceExit` зависал бесконечно
+("In progress" без дальнейшего вывода), несмотря на то что все тесты уже
+прошли зелёными.
 
 `npm run e2e` / `npm run e2e:android` пока **не входят** в автоматический
 гейт (нет CI-раннера с эмулятором/симулятором и собранным dev-client
@@ -549,12 +553,13 @@ OS-level `toggleAirplaneMode`, полный цикл create → update → delet
 - `PlaceEditorScreen`, созданный офлайн и связанный с Observation (не с
   Diary — этот случай уже покрыт, см. раздел 3) — не по инфраструктурной
   причине, просто не влезло в этот батч (см. раздел 3).
-- CI для e2e (`npm run e2e` / `npm run e2e:android` в Bitbucket Pipelines)
-  — не сделано: нет CI-раннера с эмулятором/симулятором и собранным
+- CI для e2e (`npm run e2e` / `npm run e2e:android` в GitHub Actions) —
+  не сделано: нет CI-раннера с эмулятором/симулятором и собранным
   dev-client билдом. `npm run check` + `npm run test:ci` теперь гоняются
-  автоматически в `bitbucket-pipelines.yml` на каждый push в master (см.
-  раздел 1) — ручной прогон перед релизом остаётся дополнительной
-  подстраховкой, а не единственной линией защиты.
+  автоматически в [.github/workflows/ci.yml](.github/workflows/ci.yml) на
+  каждый PR в master и на сам master (см. раздел 1) — ручной прогон перед
+  релизом остаётся дополнительной подстраховкой, а не единственной линией
+  защиты.
 
 ### Известные баги, найденные тестами, но сознательно не исправленные
 

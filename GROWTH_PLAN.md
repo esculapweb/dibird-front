@@ -30,7 +30,7 @@
 | Push-инфраструктура + типы уведомлений (`notable_obs`, `watchlist_activity`, `achievement`, `checklist`) | [hooks/usePushNotifications.ts](hooks/usePushNotifications.ts), `myapi/models.py:451` | retention-петли |
 | Celery + Redis на бэке | `app/requirements/base.txt` | дайджесты, отложенные джобы |
 | Deep links + `applinks:dibird.com`, публичный веб-сайт | [linking.ts](linking.ts), [app.config.js](app.config.js), `/Users/esculapweb/Py/dibird/app/web/` | web-to-app, шеринг |
-| Сильный релизный гейт (tsc/eslint/jest/Maestro в CI) | [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md), [bitbucket-pipelines.yml](bitbucket-pipelines.yml) | качество = рейтинги |
+| Сильный релизный гейт (tsc/eslint/jest/Maestro в CI) | [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md), [.github/workflows/ci.yml](.github/workflows/ci.yml) | качество = рейтинги |
 
 **Дыры (тоже проверено):**
 

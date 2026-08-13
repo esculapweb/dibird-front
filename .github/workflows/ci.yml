@@ -1,0 +1,68 @@
+# Migrated from bitbucket-pipelines.yml. GitHub's free plan gives 2000 Linux
+# minutes a month on a private repository and one run takes about five minutes,
+# so pull requests are gated too — on Bitbucket (50 minutes a month) only master
+# was checked, and a red master was found after the fact instead of before the
+# merge.
+#
+# "A PR run restarts on every push to the source branch" is handled by the
+# concurrency block below, not by dropping the gate.
+#
+# Caveat about blocking a merge: branch protection and rulesets on a private
+# repository require GitHub Pro, so a red check is visible in the PR but does
+# not technically prevent merging.
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  # Manual run from any branch (usually a feature branch before the PR is
+  # opened). Bitbucket had no equivalent — there a branch was checked only by
+  # pushing it to master.
+  workflow_dispatch:
+
+# A new push to an open pull request cancels the previous run: while the PR is
+# open, only the result for the latest commit matters. No cancelling on master —
+# that run is the record of whether master itself is green.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    name: Check + Test
+    runs-on: ubuntu-latest
+    # A normal run fits in five minutes. Twenty is the ceiling for a hung test:
+    # a stuck job burns free-plan minutes just like a working one.
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      # Node 20 mirrors the `node:20` image the Bitbucket pipeline ran on. The
+      # repository pins no version of its own (no .nvmrc, no `engines` field),
+      # so this line is the only place to bump it.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # `npm run check` is tsc + eslint; split into two steps so the run summary
+      # shows which gate failed without opening the log.
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      # test:ci = jest --forceExit. Repository tests leave native
+      # better-sqlite3 handles open across the whole worker process (documented
+      # in hooks/repositories/testDb.ts) — locally jest force-exits on its own
+      # after printing a warning, but inside a CI container this left the step
+      # hanging forever (Bitbucket showed "In progress" with no further output)
+      # instead of exiting.
+      - name: Test
+        run: npm run test:ci
