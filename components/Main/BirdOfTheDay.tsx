@@ -60,21 +60,25 @@ const BirdOfTheDay = ({ filters }: { filters: Filters }) => {
           label: t("add_observation"),
           icon: "add-circle-outline" as const,
           onPress: () => {
+            // Close first, navigate second: navigating can take the screen that
+            // owns the sheet out of the stack, and the sheet's own route watcher
+            // closes it on that — a hide() coming after would land on an already
+            // closed sheet.
+            BottomSheet.hide();
             navigation.navigate("ObservationEditor", {
               defaultTerritory: filters?.territory ?? null,
               defaultPlace: filters?.place ?? null,
               defaultSpecies: data?.taxon_id,
               returnMode: "back",
             });
-            BottomSheet.hide();
           },
         },
         {
           label: t("species_details"),
           icon: "information-circle-outline" as const,
           onPress: () => {
-            speciesDetails(data.sp_segment);
             BottomSheet.hide();
+            speciesDetails(data.sp_segment);
           },
         },
       ],

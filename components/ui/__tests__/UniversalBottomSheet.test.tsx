@@ -17,14 +17,16 @@ jest.mock("@expo/vector-icons", () => {
 const mockInnerPresent = jest.fn();
 const mockInnerDismiss = jest.fn();
 let capturedOnDismiss: (() => void) | undefined;
+let capturedOnChange: ((index: number) => void) | undefined;
 
 jest.mock("@gorhom/bottom-sheet", () => {
   const React = require("react");
   const { View, TextInput } = require("react-native");
   return {
     __esModule: true,
-    BottomSheetModal: React.forwardRef((props: { children?: React.ReactNode; onDismiss?: () => void }, ref: React.Ref<unknown>) => {
+    BottomSheetModal: React.forwardRef((props: { children?: React.ReactNode; onDismiss?: () => void; onChange?: (index: number) => void }, ref: React.Ref<unknown>) => {
       capturedOnDismiss = props.onDismiss;
+      capturedOnChange = props.onChange;
       React.useImperativeHandle(ref, () => ({
         present: mockInnerPresent,
         dismiss: mockInnerDismiss,
@@ -139,9 +141,61 @@ describe("imperative handle", () => {
   it("dismiss() forwards to the inner sheet's dismiss()", async () => {
     const ref = await renderSheet();
     await act(async () => {
+      ref.current?.present({ mode: "menu", items: [{ label: "A", onPress: mockOnPress1 }] });
+    });
+    await act(async () => {
       ref.current?.dismiss();
     });
     expect(mockInnerDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  // BottomSheetModal answers a dismiss on a closed sheet by unmounting its node
+  // and its portal, and the next present() then shows nothing — for every sheet
+  // in the app, since this one is global. BottomSheet.hide() is called from
+  // places that cannot know whether anything is open, so the guard belongs here.
+  it("swallows dismiss() while nothing is open", async () => {
+    const ref = await renderSheet();
+    await act(async () => {
+      ref.current?.dismiss();
+    });
+    expect(mockInnerDismiss).not.toHaveBeenCalled();
+  });
+
+  it("swallows a second dismiss() after the sheet was already closed", async () => {
+    const ref = await renderSheet();
+    await act(async () => {
+      ref.current?.present({ mode: "menu", items: [{ label: "A", onPress: mockOnPress1 }] });
+    });
+    await act(async () => {
+      ref.current?.dismiss();
+      capturedOnDismiss?.();
+      ref.current?.dismiss();
+    });
+    expect(mockInnerDismiss).toHaveBeenCalledTimes(1);
+
+    // And the sheet still works afterwards.
+    await act(async () => {
+      ref.current?.present({ mode: "menu", items: [{ label: "B", onPress: mockOnPress2 }] });
+    });
+    expect(mockInnerPresent).toHaveBeenCalledTimes(2);
+    expect(screen.getByText("B")).toBeOnTheScreen();
+  });
+
+  // A pan down or a tap on the backdrop closes the sheet without going through
+  // dismiss(): index -1 is the only notice of it that arrives before onDismiss.
+  it("treats the library's index -1 as closed", async () => {
+    const ref = await renderSheet();
+    await act(async () => {
+      ref.current?.present({ mode: "menu", items: [{ label: "A", onPress: mockOnPress1 }] });
+    });
+    await act(async () => {
+      capturedOnChange?.(-1);
+    });
+
+    await act(async () => {
+      ref.current?.dismiss();
+    });
+    expect(mockInnerDismiss).not.toHaveBeenCalled();
   });
 });
 
@@ -446,13 +500,15 @@ describe("dismissal on route change", () => {
   });
 });
 
-describe("handleDismiss guard against a spurious replace-echo", () => {
-  // The echo only happens on a present() over an open sheet: stackBehavior
-  // "replace" dismisses the replaced one and fires its onDismiss after the new
-  // one is already shown. The guard is tied to exactly that condition —
-  // otherwise the first (genuine) close would be taken for an echo, see the test
-  // about the finishing dismiss above.
-  it("ignores the onDismiss echo of a replaced sheet, but honors a genuine one", async () => {
+// There is exactly one BottomSheetModal in the app, and presenting over it does
+// not dismiss anything: stackBehavior="replace" only ever dismisses *other*
+// modals in the provider's queue, while the open one early-exits there
+// ("already presented and at the top") and is merely re-snapped. So no onDismiss
+// echo follows a re-present, and treating the first one as an echo swallowed the
+// next genuine close instead — which is what left the app with no working sheet
+// at all (see the pop() test below).
+describe("re-present over an open sheet", () => {
+  it("swaps the content and honors the first onDismiss after it", async () => {
     const ref = await renderSheet();
     await act(async () => {
       ref.current?.present({
@@ -468,18 +524,43 @@ describe("handleDismiss guard against a spurious replace-echo", () => {
       });
     });
     expect(screen.getByText("Second item")).toBeOnTheScreen();
+    expect(mockInnerDismiss).not.toHaveBeenCalled();
 
-    // The echo of the replaced sheet — the content of the new one must survive.
-    await act(async () => {
-      capturedOnDismiss?.();
-    });
-    expect(screen.getByText("Second item")).toBeOnTheScreen();
-
-    // A genuine close (swipe) — the content must be cleared.
+    // The close of the second sheet is genuine — the content must be cleared.
     await act(async () => {
       capturedOnDismiss?.();
     });
     expect(screen.queryByText("Second item")).not.toBeOnTheScreen();
+  });
+
+  // The full chain of the app-wide breakage: re-present, close for real, leave
+  // the screen. With the close taken for an echo the sheet stayed "open" on the
+  // books, so leaving sent a dismiss() to an already closed sheet — after which
+  // nothing opened anywhere until a restart.
+  it("leaves nothing behind for the route watcher to dismiss", async () => {
+    mountNavigation();
+    const ref = await renderSheet();
+    await act(async () => {
+      ref.current?.present({ mode: "menu", items: [{ label: "First", onPress: mockOnPress1 }] });
+    });
+    await act(async () => {
+      ref.current?.present({ mode: "menu", items: [{ label: "Second", onPress: mockOnPress2 }] });
+    });
+
+    // Closed by the user (a swipe): index -1, then onDismiss.
+    await act(async () => {
+      capturedOnChange?.(-1);
+      capturedOnDismiss?.();
+    });
+
+    await pop();
+    expect(mockInnerDismiss).not.toHaveBeenCalled();
+
+    // The next screen's sheet still comes up.
+    await act(async () => {
+      ref.current?.present({ mode: "menu", items: [{ label: "Third", onPress: mockOnPress1 }] });
+    });
+    expect(screen.getByText("Third")).toBeOnTheScreen();
   });
 
   it("clears content on the first onDismiss when nothing was replaced", async () => {
