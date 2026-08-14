@@ -71,21 +71,28 @@ jobs:
       - name: Locale catalogues
         run: npm run i18n:empty
 
-      # Dependency versions against the Expo SDK, plus the app config and the
-      # native project setup — 21 checks, about three seconds. Nothing else in
-      # the pipeline notices a package that is a minor off what the SDK expects;
-      # it surfaces at build or, worse, at runtime on a device.
+      # expo-doctor is disabled for now. It checked dependency versions against
+      # the Expo SDK plus the app config and the native project setup — 21
+      # checks, about three seconds — and nothing else in the pipeline notices a
+      # package that is a patch off what the SDK expects.
       #
-      # --yes because expo-doctor is not a dependency of the project: npx fetches
-      # it on the fly and would otherwise stop at an install prompt on a runner
-      # with no TTY. The flip side is that the version is not pinned — a new
-      # release can add a check and turn CI red with nothing changed here.
+      # The catch is the one the old comment warned about: neither the tool nor
+      # the versions it compares against are pinned. Expo keeps publishing SDK 56
+      # patch releases, so "10 packages out of date" turns the gate red on a
+      # commit that changed no dependency at all, and the only way to green it is
+      # `npx expo install --check` on someone's machine. A gate that fails on
+      # somebody else's release is noise, not a signal.
       #
-      # It does not need .env: the only variable app.config.js reads
-      # (EXPO_PUBLIC_ENV) falls back to "production", and the run passes with the
-      # env files hidden away entirely.
-      - name: expo-doctor
-        run: npx --yes expo-doctor
+      # Run it by hand before a build or an SDK bump instead, and put the step
+      # back once the versions are worth enforcing again:
+      #
+      # - name: expo-doctor
+      #   run: npx --yes expo-doctor
+      #
+      # (--yes is needed there: expo-doctor is not a dependency of the project,
+      # npx fetches it on the fly and would otherwise stop at an install prompt
+      # on a runner with no TTY. It does not need .env — the only variable
+      # app.config.js reads, EXPO_PUBLIC_ENV, falls back to "production".)
 
       # test:ci = jest --forceExit. Repository tests leave native
       # better-sqlite3 handles open across the whole worker process (documented
