@@ -55,7 +55,6 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
   const [payload, setPayload] = useState<SheetPayload | null>(null);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const isRepresentingRef = useRef(false);
   const isOpenRef = useRef(false);
   const unwatchRouteRef = useRef<(() => void) | null>(null);
 
@@ -103,17 +102,9 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
 
   const present = useCallback(
     (newPayload: SheetPayload) => {
-      // The echo onDismiss from stackBehavior="replace" only arrives when
-      // present() came on top of an already open sheet — there the library
-      // dismisses the replaced one. If the sheet was closed there is no echo to
-      // absorb, and treating the first onDismiss as an echo is not allowed: the
-      // real close then goes unnoticed (payload not reset, the route
-      // subscription alive), and the watcher follows up with a second dismiss()
-      // on an already closed sheet — after that BottomSheetModal stops opening
-      // at all (caught in e2e: deleting an observation closed the sheet, leaving
-      // the screen sent a second dismiss, and on the next screen the diary
-      // deletion sheet no longer came up).
-      isRepresentingRef.current = isOpenRef.current;
+      // Optimistically, without waiting for the library's own onChange: a
+      // dismiss() arriving in the same tick has to find the sheet open, or it
+      // would be dropped by the guard below and leave the sheet hanging.
       isOpenRef.current = true;
       setPayload(newPayload);
       setInputValue("");
@@ -168,6 +159,18 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
   );
 
   const dismiss = useCallback(() => {
+    // A dismiss() on a sheet that is not open must never reach the library.
+    // BottomSheetModal answers that one by unmounting the node and the portal
+    // under its key (handleDismiss → unmount → unmountSheet/unmountPortal),
+    // which races the portal the next present() registers under the very same
+    // key — and past that point present() shows nothing at all. The sheet is a
+    // single global one, so that is every sheet in the app dead until restart.
+    // Callers cannot keep track themselves: BottomSheet.hide() fires from
+    // places that do not know whether anything is open (SettingsScreen before
+    // the logout, the menu rows in StatScreen/BirdOfTheDay that navigate
+    // first), and the route watcher below can get there ahead of them.
+    if (!isOpenRef.current) return;
+
     // Dismiss it ourselves — there is nothing left for the watcher to do here.
     // Waiting for onDismiss is not an option: it arrives when the closing
     // animation finishes, while the navigation event (the screen leaves right
@@ -179,13 +182,25 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
     bottomSheetRef.current?.dismiss();
   }, [stopWatchingRoute]);
 
+  // The sheet also closes without us — a pan down, a tap on the backdrop — and
+  // index -1 is the library saying so, ahead of onDismiss. Keeping the flag
+  // honest from its own events rather than from our calls alone is what stops a
+  // later dismiss() from reaching a sheet that is already closed.
+  const handleChange = useCallback((index: number) => {
+    isOpenRef.current = index >= 0;
+  }, []);
+
+  // Every onDismiss that gets here is a real close. This used to absorb the
+  // first one after a present() over an open sheet, taking it for the echo of
+  // stackBehavior="replace" — but that echo cannot happen with a single
+  // BottomSheetModal in the tree (GlobalBottomSheet is the only one): "replace"
+  // dismisses *other* modals in the provider's queue, and presenting over the
+  // open one early-exits there ("already presented and at the top") and merely
+  // re-snaps it. So the guard had no echo to absorb and swallowed the next
+  // genuine close instead: isOpenRef stayed true on a closed sheet, the route
+  // subscription stayed alive, and leaving the screen sent exactly the fatal
+  // second dismiss() described above.
   const handleDismiss = useCallback(() => {
-    if (isRepresentingRef.current) {
-      // A re-present: present() has already moved the subscription, it must not
-      // be dropped.
-      isRepresentingRef.current = false;
-      return;
-    }
     isOpenRef.current = false;
     stopWatchingRoute();
     setPayload(null);
@@ -219,6 +234,7 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
       android_keyboardInputMode="adjustResize"
+      onChange={handleChange}
       onDismiss={handleDismiss}
       backdropComponent={(props) => (
         <BottomSheetBackdrop

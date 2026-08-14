@@ -257,21 +257,25 @@ const StatScreen = () => {
             label: t("view_species_observations"),
             icon: "binoculars" as const,
             onPress: () => {
-              handleShowObservations(item as SpeciesItem);
+              // Close first, navigate second: navigating can take the screen
+              // that owns the sheet out of the stack, and the sheet's own route
+              // watcher closes it on that — a hide() coming after would land on
+              // an already closed sheet.
               BottomSheet.hide();
+              handleShowObservations(item as SpeciesItem);
             },
           }
         : {
             label: t("add_observation"),
             icon: "add-circle-outline" as const,
             onPress: () => {
+              BottomSheet.hide();
               navigation.navigate("ObservationEditor", {
                 defaultTerritory: currentFilters?.territory ?? undefined,
                 defaultPlace: currentFilters?.place ?? null,
                 defaultSpecies: item.species_id,
                 returnMode: "back",
               });
-              BottomSheet.hide();
             },
           };
 
@@ -282,8 +286,8 @@ const StatScreen = () => {
             label: t("species_details"),
             icon: "information-circle-outline" as const,
             onPress: () => {
-              speciesDetails(item.segment);
               BottomSheet.hide();
+              speciesDetails(item.segment);
             },
           },
         ],
