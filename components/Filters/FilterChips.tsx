@@ -22,13 +22,17 @@ const FilterChips = ({
   hints,
   allowed,
 }: FilterChipsProps) => {
-  if (!filters || typeof filters !== "object") return null;
-
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const effectiveTerritory =
     filters?.territory ?? extraFilters?.territory ?? null;
   const { getFilterLabel } = useFilterLabels(effectiveTerritory, hints);
+
+  // After the hooks, never before them: bailing out first made the number of
+  // hooks depend on a prop, so a mounted chip row handed a null `filters`
+  // would crash React on the hook-order mismatch rather than just render
+  // nothing.
+  if (!filters || typeof filters !== "object") return null;
 
   const activeFilters = (Object.entries(filters) as [AllFiltersKey, unknown][]).filter(
     ([key, value]) =>

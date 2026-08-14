@@ -3,6 +3,7 @@ import {
   useCallback,
   useLayoutEffect,
   useMemo,
+  useRef,
   ReactNode,
 } from "react";
 import {
@@ -240,32 +241,63 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
     onSortChange?.(sort);
   }, [sort]);
 
+  const openFilterSheet = () =>
+    BottomSheet.showContent({
+      title: t("filters"),
+      onReset: handleClearFilters,
+      renderContent: (dismiss: () => void) => (
+        <FilterSheetContent
+          filters={filters}
+          allowed={allowedFilters}
+          setFilters={handleFiltersApplied}
+          extraTerritory={extraFilters?.territory}
+          dismiss={dismiss}
+          showSearch={showSearch}
+          initialSearch={search}
+          onSearchChange={setSearch}
+        />
+      ),
+    });
+
+  const openSortSheet = () =>
+    BottomSheet.showContent({
+      title: t("sort_by"),
+      renderContent: (dismiss: () => void) => (
+        <SortSheetContent
+          screen={screenName}
+          options={sortOptions}
+          sort={sort}
+          setSort={setSort}
+          locationAvailable={locationAvailable}
+          onLocationUnavailable={onLocationUnavailable}
+          dismiss={dismiss}
+        />
+      ),
+    });
+
+  // The header reaches the navigator through setOptions, and it used to be
+  // rebuilt on every single render — every dependency list below that named an
+  // unmemoised callback (handleClearFilters is a fresh function each render)
+  // saw a change each time. A button replaced under the finger swallows the
+  // tap, which is what "the sort sheet just doesn't open" looked like.
+  //
+  // The two openers can't be memoised — they close over filters/search/sort and
+  // would go stale the moment the effect stopped re-running — so they live in
+  // refs, refreshed on each render, behind the stable callbacks the header and
+  // onOpenFilterModal actually receive. Assigning during render rather than in
+  // an effect keeps a press that lands before the effect flushes from opening
+  // the sheet on the previous render's values.
+  const openFilterSheetRef = useRef(openFilterSheet);
+  const openSortSheetRef = useRef(openSortSheet);
+  openFilterSheetRef.current = openFilterSheet;
+  openSortSheetRef.current = openSortSheet;
+
+  const handleFilterPress = useCallback(() => openFilterSheetRef.current(), []);
+  const handleSortPress = useCallback(() => openSortSheetRef.current(), []);
+
   useEffect(() => {
-    onOpenFilterModal?.(() =>
-      BottomSheet.showContent({
-        title: t("filters"),
-        onReset: handleClearFilters,
-        renderContent: (dismiss) => (
-          <FilterSheetContent
-            filters={filters}
-            allowed={allowedFilters}
-            setFilters={handleFiltersApplied}
-            extraTerritory={extraFilters?.territory}
-            dismiss={dismiss}
-            showSearch={showSearch}
-            initialSearch={search}
-            onSearchChange={setSearch}
-          />
-        ),
-      }),
-    );
-  }, [
-    filters,
-    allowedFilters,
-    handleFiltersApplied,
-    handleClearFilters,
-    extraFilters,
-  ]);
+    onOpenFilterModal?.(handleFilterPress);
+  }, [onOpenFilterModal, handleFilterPress]);
 
   const badgeCount = () => {
     if (!data?.pages[0]) return;
@@ -280,43 +312,8 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
         <IconsHeader
           key={`header-icons-${iconCount}`}
           hasActiveFilters={hasActiveFilters}
-          onSortPress={
-            allowSort
-              ? () =>
-                  BottomSheet.showContent({
-                    title: t("sort_by"),
-                    renderContent: (dismiss: () => void) => (
-                      <SortSheetContent
-                        screen={screenName}
-                        options={sortOptions}
-                        sort={sort}
-                        setSort={setSort}
-                        locationAvailable={locationAvailable}
-                        onLocationUnavailable={onLocationUnavailable}
-                        dismiss={dismiss}
-                      />
-                    ),
-                  })
-              : undefined
-          }
-          onFilterPress={() =>
-            BottomSheet.showContent({
-              title: t("filters"),
-              onReset: handleClearFilters,
-              renderContent: (dismiss: () => void) => (
-                <FilterSheetContent
-                  filters={filters}
-                  allowed={allowedFilters}
-                  setFilters={handleFiltersApplied}
-                  showSearch={showSearch}
-                  initialSearch={search}
-                  onSearchChange={setSearch}
-                  extraTerritory={extraFilters?.territory}
-                  dismiss={dismiss}
-                />
-              ),
-            })
-          }
+          onSortPress={allowSort ? handleSortPress : undefined}
+          onFilterPress={handleFilterPress}
           onSharePress={handleSharePress}
           headerRightBeginning={headerRightBeginning}
           headerRightEnd={headerRightEnd}
@@ -327,12 +324,12 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
     navigation,
     hasActiveFilters,
     allowSort,
+    iconCount,
     handleSharePress,
     headerRightBeginning,
     headerRightEnd,
-    sort,
-    locationAvailable,
-    handleClearFilters,
+    handleFilterPress,
+    handleSortPress,
   ]);
 
   useLayoutEffect(() => {

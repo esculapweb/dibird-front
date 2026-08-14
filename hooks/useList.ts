@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery } from "@tanstack/react-query";
 import { useLanguage } from "../store/language-context";
 import { stableStringify, roundCoords } from "../util/helpers";
 import { subscribeToReconnect } from "../services/sync/networkStatus";
@@ -90,7 +90,15 @@ export const useList = <T>({
         ? pagination.current + 1
         : undefined;
     },
-    placeholderData: (previousData) => previousData,
+    // keepPreviousData rather than an equivalent inline arrow: react-query
+    // reuses the previous placeholder only when the identity of this option
+    // matches the previous render's, and an inline one misses that check every
+    // render, re-deriving the placeholder and re-walking every loaded page
+    // through structural sharing each time. Harmless here in the end (plain
+    // objects do get deduped back to the same reference, so nothing notifies),
+    // but useDropdownQuery's mapped Map did not — see the render-loop comment
+    // there.
+    placeholderData: keepPreviousData,
     staleTime: staleTime ?? 1000 * 60,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,

@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { useQuery, UseQueryResult } from "@tanstack/react-query";
+import { useCallback, useEffect, useRef } from "react";
+import { keepPreviousData, useQuery, UseQueryResult } from "@tanstack/react-query";
 
 import { useSavedSort } from "./useSavedSort";
 import { sortOptionsList } from "../util/sortOptionsList";
@@ -83,6 +83,28 @@ export function useDropdownQuery<T extends DropdownItem = DropdownItem>({
     }
   }, [locationAvailable]);
 
+  // Both `select` and `placeholderData` must keep a stable identity across
+  // renders: react-query reuses the previous placeholder (and skips re-running
+  // `select` on top of it) only when the *identity* of these two options
+  // matches the previous render's. Inline arrows miss that check every single
+  // render, and `select` hands back a fresh Map — which structural sharing
+  // cannot dedupe the way it dedupes a plain array — so `data` came out with a
+  // new reference every time, the observer notified, the component re-rendered,
+  // and round it went. The loop only ever closed while a query sat on
+  // placeholder data indefinitely: a new query key it has no data for, disabled
+  // so nothing ever resolves it. That is exactly what removing the country chip
+  // does to the places/species dropdowns behind FilterChips (they key off the
+  // territory and are `enabled: !!territory`) — it pegged the JS thread at tens
+  // of thousands of renders a second and froze the whole app, not just the
+  // screen. Pinned by screens/__tests__/ListScreenFilterLoop.test.tsx — the
+  // loop needs the whole tree (real filters-context, real FilterChips) to
+  // close, so it cannot be reproduced from this hook alone.
+  const select = useCallback(
+    (data: DropdownItem[]) =>
+      new Map(data.map((i) => [i.value, i?.name_lang ?? i.label])),
+    [],
+  );
+
   const query = useQuery<
     DropdownItem[],
     AppError,
@@ -95,10 +117,8 @@ export function useDropdownQuery<T extends DropdownItem = DropdownItem>({
     gcTime: 1000 * 60 * 60 * 24,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
-    placeholderData: (previousData) => previousData,
-    select: mapResult
-      ? (data) => new Map(data.map((i) => [i.value, i?.name_lang ?? i.label]))
-      : undefined,
+    placeholderData: keepPreviousData,
+    select: mapResult ? select : undefined,
   });
 
   // "distance"/"-distance" can't be reproduced offline (no stored device

@@ -305,6 +305,61 @@ describe("header actions", () => {
     );
   });
 
+  // The header used to be handed to setOptions again on every render (its
+  // dependency list named handleClearFilters, a fresh function each time), so
+  // a tap could land on a button that had just been replaced — the icons
+  // looked dead. These two pin the fix: the header stays put, and the openers
+  // behind it still see the current state.
+  it("does not hand the navigator a new header on a render that changes nothing about it", async () => {
+    // mockFilters' shared jest.fn()s are stable, which the real
+    // useSyncedFilters' callbacks are not — it builds fresh ones every render,
+    // and that is exactly what the header effect must not key off. Reproduced
+    // here with mockImplementation so the returned callbacks differ per call.
+    (useSyncedFilters as jest.Mock).mockImplementation(() => ({
+      filters: {},
+      filtersLoaded: true,
+      hasActiveFilters: false,
+      removeFilter: mockRemoveFilter,
+      filterHints: {},
+      sort: null,
+      setSort: mockSetSort,
+      sortOptions: [],
+      sortReady: true,
+      search: "",
+      setSearch: () => {},
+      debouncedSearch: "",
+      isSearchActive: false,
+      handleFiltersApplied: () => {},
+      handleClearFilters: () => {},
+      handleClearFiltersSearch: mockHandleClearFiltersSearch,
+    }));
+
+    const view = await render(<ListScreen {...defaultProps()} />);
+    const headerCount = () =>
+      (mockNavigation.setOptions as jest.Mock).mock.calls.filter(
+        (call) => call[0].headerRight,
+      ).length;
+    const before = headerCount();
+
+    await view.rerender(<ListScreen {...defaultProps()} />);
+
+    expect(headerCount()).toBe(before);
+  });
+
+  it("opens the filter sheet with the filters current at press time, not the ones the header was built with", async () => {
+    const view = await render(<ListScreen {...defaultProps()} />);
+    await renderHeaderRight();
+
+    mockFilters({ filters: { territory: 7 } });
+    await view.rerender(<ListScreen {...defaultProps()} />);
+
+    // Deliberately pressing the header rendered before the change — that is
+    // the one the navigator is still holding.
+    await fireEvent.press(screen.getByTestId("filter-btn"));
+    const sheet = (BottomSheet.showContent as jest.Mock).mock.calls.at(-1)![0];
+    expect(sheet.renderContent(jest.fn()).props.filters).toEqual({ territory: 7 });
+  });
+
   it("share button only renders when handleSharePress is provided", async () => {
     await render(<ListScreen {...defaultProps()} />);
     await renderHeaderRight();
