@@ -1,4 +1,4 @@
-import { and, asc, eq, isNotNull } from "drizzle-orm";
+import { and, asc, eq, isNotNull, or, sql } from "drizzle-orm";
 
 import { db } from "../../services/db/client";
 import { diaryTable, mutationQueueTable } from "../../services/db/schema";
@@ -83,10 +83,26 @@ export const resolveDiaryId = (
   return local.id;
 };
 
+// A server response is not always the full detail shape: the create/list
+// endpoint (Diary2Serializer) is a strict *subset* of the detail one
+// (Diary2SingleSerializer) — it carries no is_owner/owner/user_data/created_at/
+// updated_at. Writing such a response verbatim over a locally synthesized
+// record dropped exactly those fields, and DiaryDetailScreen gates edit/delete/
+// add-observation on `is_owner` — so the moment an offline create synced, the
+// owner saw their own diary as somebody else's (blank author, no actions) until
+// the next detail GET, which offline never comes. Merging keeps the server
+// authoritative for every field it actually sends while preserving the
+// detail-only ones the local row already knows — which is what DiaryRecord
+// being the superset of both shapes is for (see its comment above).
+const mergedWithLocal = (id: number, item: DiaryItem) => {
+  const existing = db.select().from(diaryTable).where(eq(diaryTable.id, id)).all()[0];
+  return { ...(existing?.data as DiaryRecord | undefined), ...item };
+};
+
 export const upsertFromServer = (item: DiaryItem) => {
   const row = {
     id: item.id,
-    data: item,
+    data: mergedWithLocal(item.id, item),
     op: null,
     status: "synced" as const,
     lastError: null,
@@ -346,9 +362,16 @@ export const deleteLocal = (id: number): void => {
 // temp id) and writes the canonical row under the real server id.
 export const replaceLocalWithServer = (localId: number, serverItem: DiaryItem) => {
   db.transaction((tx) => {
+    // Merged over the local record for the reason spelled out on
+    // mergedWithLocal — a create response has no is_owner/owner/user_data.
+    // Both rows get the same merged item: the real-id row is the one the
+    // detail screen reads once it graduates from the temp id.
+    const existing = tx.select().from(diaryTable).where(eq(diaryTable.id, localId)).all()[0];
+    const data = { ...(existing?.data as DiaryRecord | undefined), ...serverItem };
+
     const aliasRow = {
       id: localId,
-      data: serverItem,
+      data,
       op: null,
       status: "synced" as const,
       lastError: null,
@@ -361,7 +384,7 @@ export const replaceLocalWithServer = (localId: number, serverItem: DiaryItem) =
 
     const realRow = {
       id: serverItem.id,
-      data: serverItem,
+      data,
       op: null,
       status: "synced" as const,
       lastError: null,
@@ -374,8 +397,17 @@ export const replaceLocalWithServer = (localId: number, serverItem: DiaryItem) =
   });
 };
 
+// Deletes the alias row too, not just the row whose primary key is `id`: once a
+// create has synced, the same diary lives under both its temp id and its real
+// one (see replaceLocalWithServer), and matching on the primary key alone left
+// the temp-id alias behind forever after a delete — an ever-growing pile of
+// rows for diaries that no longer exist anywhere.
 export const removeLocal = (id: number) => {
-  db.delete(diaryTable).where(eq(diaryTable.id, id)).run();
+  db.delete(diaryTable)
+    .where(
+      or(eq(diaryTable.id, id), sql`json_extract(${diaryTable.data}, '$.id') = ${id}`),
+    )
+    .run();
 };
 
 // Same atomic claim-and-remove pattern as observationRepository.ts's

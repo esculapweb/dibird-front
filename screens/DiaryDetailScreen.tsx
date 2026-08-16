@@ -227,12 +227,17 @@ const DiaryDetailScreen = () => {
                   {isoToFlagEmoji(diary?.territory_data?.code)}{" "}
                   {diary?.territory_data?.name}
                 </Text>
-                {(diary.is_owner || diary.location_private) && (
+                {/* The place *name* is the owner's alone to see — a visitor
+                    never gets it, not even for a public location (the owner's
+                    own view is PlacePreviewRow above). So this line exists only
+                    to explain a location that is there but withheld, and a
+                    public one deliberately renders nothing at all. The
+                    `diary.is_owner` tests this block used to carry were dead
+                    anyway: it is entirely inside `!diary.is_owner`. */}
+                {diary.location_private && (
                   <Text style={styles.placeName} numberOfLines={2}>
                     {diary?.place_data?.name
-                      ? diary.is_owner
-                        ? diary.place_data.name
-                        : t("approximate_area")
+                      ? t("approximate_area")
                       : t("location_not_specified")}
                   </Text>
                 )}

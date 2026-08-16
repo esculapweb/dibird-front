@@ -1,4 +1,4 @@
-import { and, asc, eq, isNotNull } from "drizzle-orm";
+import { and, asc, eq, isNotNull, or, sql } from "drizzle-orm";
 
 import { db } from "../../services/db/client";
 import { mutationQueueTable, observationTable } from "../../services/db/schema";
@@ -79,10 +79,27 @@ export const getObservation = (id: number): ObservationItem | null => {
   return rows[0] ? rowToItem(rows[0]) : null;
 };
 
+// A server response is not always the full detail shape: Observation2Serializer
+// drops `owner` for every action but `retrieve`, so a create/list response is a
+// subset of what the detail screen was showing a moment earlier. Writing it
+// verbatim over a locally synthesized record blanked the author block until the
+// next detail GET (offline, never). Merging keeps the server authoritative for
+// every field it actually sends and preserves the detail-only ones the local
+// row already knows. Mirrors diaryRepository's mergedWithLocal, where the same
+// asymmetry also costs `is_owner` and hides the edit/delete actions.
+const mergedWithLocal = (id: number, item: ObservationItem) => {
+  const existing = db
+    .select()
+    .from(observationTable)
+    .where(eq(observationTable.id, id))
+    .all()[0];
+  return { ...(existing?.data as ObservationItem | undefined), ...item };
+};
+
 export const upsertFromServer = (item: ObservationItem) => {
   const row = {
     id: item.id,
-    data: item,
+    data: mergedWithLocal(item.id, item),
     op: null,
     status: "synced" as const,
     lastError: null,
@@ -351,9 +368,20 @@ export const deleteLocal = (id: number): void => {
 // under the real server id.
 export const replaceLocalWithServer = (localId: number, serverItem: ObservationItem) => {
   db.transaction((tx) => {
+    // Merged over the local record for the reason spelled out on
+    // mergedWithLocal — a create response carries no `owner`. Both rows get the
+    // same merged item: the real-id row is the one the detail screen reads once
+    // it graduates from the temp id.
+    const existing = tx
+      .select()
+      .from(observationTable)
+      .where(eq(observationTable.id, localId))
+      .all()[0];
+    const data = { ...(existing?.data as ObservationItem | undefined), ...serverItem };
+
     const aliasRow = {
       id: localId,
-      data: serverItem,
+      data,
       op: null,
       status: "synced" as const,
       lastError: null,
@@ -366,7 +394,7 @@ export const replaceLocalWithServer = (localId: number, serverItem: ObservationI
 
     const realRow = {
       id: serverItem.id,
-      data: serverItem,
+      data,
       op: null,
       status: "synced" as const,
       lastError: null,
@@ -379,8 +407,20 @@ export const replaceLocalWithServer = (localId: number, serverItem: ObservationI
   });
 };
 
+// Deletes the alias row too, not just the row whose primary key is `id`: once a
+// create has synced, the same observation lives under both its temp id and its
+// real one (see replaceLocalWithServer), and matching on the primary key alone
+// left the temp-id alias behind forever after a delete — an ever-growing pile
+// of rows for observations that no longer exist anywhere.
 export const removeLocal = (id: number) => {
-  db.delete(observationTable).where(eq(observationTable.id, id)).run();
+  db.delete(observationTable)
+    .where(
+      or(
+        eq(observationTable.id, id),
+        sql`json_extract(${observationTable.data}, '$.id') = ${id}`,
+      ),
+    )
+    .run();
 };
 
 // Atomically dequeues the single oldest pending mutation (select+delete in one

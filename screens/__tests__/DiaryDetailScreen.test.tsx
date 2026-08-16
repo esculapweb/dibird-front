@@ -341,6 +341,11 @@ describe("listHeader", () => {
   // Regression: a non-owner viewing a private-location diary must see the
   // "approximate area" label, never the real place name; a public location
   // shows no place name at all. (The owner sees the place preview instead.)
+  //
+  // The public case is a deliberate rule, not an oversight, and this test is
+  // what guards it: the place name belongs to the owner alone, and publishing
+  // a location does not hand it over — the map below stays the only thing a
+  // visitor gets. Do not "fix" it into showing place_data.name.
   describe("place name (non-owner)", () => {
     const renderHeader = async (data: Record<string, unknown>) => {
       mockDiaryItem({ data: { ...DIARY, is_owner: false, ...data } });
