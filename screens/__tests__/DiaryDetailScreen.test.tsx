@@ -22,6 +22,7 @@ jest.mock("../../hooks/Diary/useOfflineDiary", () => ({
   useDiaryItem: jest.fn(),
   useUpdateDiary: jest.fn(),
   useDeleteDiary: jest.fn(),
+  invalidateDiaryCaches: jest.fn(),
 }));
 jest.mock("../../hooks/repositories/diaryRepository", () => ({
   getFailedMutationFor: jest.fn(),
@@ -86,6 +87,7 @@ import {
   useDiaryItem,
   useUpdateDiary,
   useDeleteDiary,
+  invalidateDiaryCaches,
 } from "../../hooks/Diary/useOfflineDiary";
 import * as diaryRepository from "../../hooks/repositories/diaryRepository";
 import { runDiarySync } from "../../services/sync/diarySync";
@@ -277,6 +279,36 @@ describe("listHeader", () => {
     await render(<DiaryDetailScreen />);
     await render(latestProps().listHeader());
     expect(screen.getByText("Network error")).toBeOnTheScreen();
+  });
+
+  // The Diaries list has to be refreshed too, not just this diary — see the
+  // matching pair of tests in ObservationDetailScreen.test.tsx for the bug
+  // this locks down.
+  describe("acting on that failed edit", () => {
+    const withFailedMutation = async () => {
+      (diaryRepository.getFailedMutationFor as jest.Mock).mockReturnValue({ id: 9 });
+      mockDiaryItem({ data: { ...DIARY, _syncError: "Network error" } });
+      await render(<DiaryDetailScreen />);
+      await render(latestProps().listHeader());
+    };
+
+    it("refreshes the lists after a discard", async () => {
+      await withFailedMutation();
+
+      await fireEvent.press(screen.getByText("discard_changes"));
+
+      expect(diaryRepository.discardMutation).toHaveBeenCalledWith(9, 1);
+      expect(invalidateDiaryCaches).toHaveBeenCalledTimes(1);
+    });
+
+    it("refreshes the lists after a retry", async () => {
+      await withFailedMutation();
+
+      await fireEvent.press(screen.getByText("try_again"));
+
+      expect(diaryRepository.retryMutation).toHaveBeenCalledWith(9, 1);
+      expect(invalidateDiaryCaches).toHaveBeenCalledTimes(1);
+    });
   });
 
   it("shows the owner's own place preview when is_owner is true", async () => {

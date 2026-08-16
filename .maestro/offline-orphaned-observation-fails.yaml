@@ -1,0 +1,206 @@
+# Device-level offline test: an Observation whose parent Diary was thrown away
+# before either of them ever synced must fail loudly, not vanish.
+#
+# The path: a Diary created offline is a temp-negative-id draft, and deleting
+# one of those removes the row *and* its queue entry outright rather than
+# queueing a delete (diaryRepository.deleteLocal's isUnsyncedDraft branch) —
+# there is nothing on the server to delete. Any Observation nested inside it
+# is left pointing at a diary id that will never exist. On reconnect
+# observationSync's resolveDiaryId returns undefined and the mutation is
+# failed on the spot with "Parent diary could not be synced" instead of being
+# POSTed with a garbage id or retried forever.
+#
+# services/sync/__tests__/observationSync.test.ts already asserts that
+# decision. What had no coverage at all is what the *user* is left with, and
+# that is the part worth a device test: the orphan has to stay on screen with
+# an error badge and an actionable banner. A record that silently disappeared
+# on reconnect would look identical to a successful sync from the outside.
+#
+# This is also the only automated exercise of FailedEditBanner's retry/discard
+# outside unit tests, and the only one that reaches it through a genuinely
+# failed mutation rather than a mocked one — no fake backend needed, since the
+# failure is decided client-side.
+#
+# appId is the single Android package for every build variant.
+# tags: android — toggleAirplaneMode is a real OS-level radio toggle with no
+# iOS Simulator equivalent; see offline-create-observation.yaml.
+appId: com.dibird.app
+tags:
+  - android
+---
+# No clearState: session reuse — see offline-create-observation.yaml. Both
+# entities this flow creates are gone by the end (the diary by deletion, the
+# observation by discarding its failed mutation), so it nets to zero without
+# either of them ever reaching the server.
+- launchApp
+
+- runFlow: common/android-bootstrap.yaml
+
+- extendedWaitUntil:
+    visible:
+      id: "diaries-stat-value"
+    timeout: 20000
+- copyTextFrom:
+    id: "diaries-stat-value"
+- evalScript: ${output.diaryBaselineCount = maestro.copiedText}
+- copyTextFrom:
+    id: "observations-stat-value"
+- evalScript: ${output.observationBaselineCount = maestro.copiedText}
+
+# ---- CREATE the parent Diary, offline ----
+- toggleAirplaneMode
+
+- tapOn:
+    id: "quick-action-diary"
+- tapOn: ".*Add a note.*"
+- setClipboard: "Orphan E2E Diary"
+- pasteText
+# Defocus without navigating — see common/credential-entry.yaml.
+- tapOn: ".*Location.*"
+- tapOn:
+    id: "diary-save-button"
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - back
+      - tapOn:
+          id: "diary-save-button"
+
+# DiaryDetailScreen is a ListScreen and paints nothing until its observations
+# query settles — hence the wide budget, same as offline-create-diary.yaml.
+- extendedWaitUntil:
+    visible: ".*Delete diary.*"
+    timeout: 25000
+
+# ---- CREATE an Observation inside that still-unsynced Diary ----
+# The diary-scoped add button pre-fills the editor with this diary's id, so
+# payload.data.diary carries its temp negative id.
+- tapOn:
+    id: "list-add-button"
+- tapOn:
+    id: "species-dropdown-trigger"
+- extendedWaitUntil:
+    visible:
+      id: "option-row-0"
+    timeout: 6000
+- tapOn:
+    id: "option-row-0"
+- tapOn:
+    id: "observation-save-button"
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - back
+      - tapOn:
+          id: "observation-save-button"
+
+# A diary-scoped save returns to the diary it was opened from (returnMode
+# "back"), unlike the quick-action path which replaces onto the new record.
+- extendedWaitUntil:
+    visible: ".*Delete diary.*"
+    timeout: 8000
+
+# ---- ORPHAN IT: delete the parent while both are still local drafts ----
+# No delete mutation is queued for an unsynced draft, so nothing will ever
+# tell the server about this diary — and nothing will ever give the child a
+# real diary id.
+- tapOn:
+    id: "diary-delete-button"
+- extendedWaitUntil:
+    visible:
+      id: "bottom-sheet-confirm-button"
+    timeout: 4000
+- tapOn:
+    id: "bottom-sheet-confirm-button"
+# This detail screen was reached by `replace` from the quick action, so its
+# goBack lands on MainScreen rather than on a list.
+- extendedWaitUntil:
+    visible:
+      id: "quick-action-observation"
+    timeout: 10000
+
+# ---- RECONNECT: the child must fail, not disappear and not go through ----
+# The failure is decided locally (resolveDiaryId comes back undefined), so no
+# request is made and no backoff is waited out.
+- toggleAirplaneMode
+- waitForAnimationToEnd:
+    timeout: 8000
+
+# Must scroll: the whole section grid now sits below the fold, first row
+# included — not just its second row as offline-nested-observation-in-diary.yaml
+# still assumes. scrollUntilVisible is a no-op when the tile is already in view.
+- scrollUntilVisible:
+    element:
+      id: "section-Observations"
+    direction: DOWN
+- tapOn:
+    id: "section-Observations"
+# The error badge, not the pending one: a create left in status "error" still
+# rides the overlay onto page 1 (observationRepository.getOverlay), so it is
+# both visible and reachable.
+- extendedWaitUntil:
+    visible:
+      id: "observation-sync-error-icon"
+    timeout: 20000
+
+- tapOn:
+    id: "observation-sync-error-icon"
+
+# The banner, with the reason the sync engine recorded. That string is raw
+# English from observationSync.ts rather than an i18n key — it is written into
+# the mutation row's lastError, not translated at render time.
+- extendedWaitUntil:
+    visible: "This edit didn't save"
+    timeout: 10000
+- assertVisible: ".*Parent diary could not be synced.*"
+
+# ---- DISCARD: the offered way out actually removes it ----
+- tapOn: "Discard"
+- waitForAnimationToEnd
+
+# Discarding drops the row the screen was showing, so what it renders next
+# (an error overlay for a record that no longer resolves) is beside the point
+# — unwind to MainScreen instead of asserting on it. Bounded and guarded, the
+# same idiom common/bootstrap.yaml uses, so an extra `back` never walks out of
+# the app.
+- runFlow:
+    when:
+      notVisible:
+        id: "quick-action-observation"
+    commands:
+      - back
+      - waitForAnimationToEnd
+- runFlow:
+    when:
+      notVisible:
+        id: "quick-action-observation"
+    commands:
+      - back
+      - waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "quick-action-observation"
+    timeout: 10000
+
+# Same scroll as above.
+- scrollUntilVisible:
+    element:
+      id: "section-Observations"
+    direction: DOWN
+- tapOn:
+    id: "section-Observations"
+- assertNotVisible:
+    id: "observation-sync-error-icon"
+- back
+
+# Neither entity ever reached the server, so both counters must read exactly
+# what they did at the start — proof that "cleaned up locally" did not quietly
+# mean "deleted something real".
+- assertVisible:
+    id: "observations-stat-value"
+    text: ${output.observationBaselineCount}
+- assertVisible:
+    id: "diaries-stat-value"
+    text: ${output.diaryBaselineCount}

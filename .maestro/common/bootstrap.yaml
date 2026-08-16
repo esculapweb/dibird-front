@@ -16,6 +16,26 @@ appId: ${APP_ID}
 ---
 - runFlow: connect.yaml
 
+# A run that died on the Login form — or a session left there by hand — puts
+# the app inside AuthStack but *past* its root, and the sign-in guard below
+# recognises only Welcome, by its "Continue with email" button. Nothing then
+# signs in, and the bounded unwind further down presses back three times from
+# an AuthStack screen: Login -> Welcome -> out of the app, onto the launcher,
+# where no later step can recover. That cascade cost a whole batch on
+# 2026-08-15. One back turns Login into Welcome and the guard below takes it
+# from there. Cheap when nothing is wrong — a single visibility check.
+#
+# Only Login is handled: it is the one leftover seen in practice, and it is
+# the screen every flow passes through. The other AuthStack screens (Signup,
+# CheckEmail, ConfirmEmail) would need the same treatment if a flow ever
+# starts dying on them.
+- runFlow:
+    when:
+      visible:
+        id: "login-submit-button"
+    commands:
+      - runFlow: back.yaml
+
 - runFlow:
     when:
       visible: ".*Continue with email.*"

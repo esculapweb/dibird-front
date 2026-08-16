@@ -41,6 +41,7 @@ jest.mock("../../hooks/Observation/useOfflineObservation", () => ({
   useObservationItem: jest.fn(),
   useUpdateObservation: jest.fn(),
   useDeleteObservation: jest.fn(),
+  invalidateObservationCaches: jest.fn(),
 }));
 jest.mock("../../hooks/repositories/observationRepository", () => ({
   getFailedMutationFor: jest.fn(),
@@ -116,6 +117,7 @@ import {
   useObservationItem,
   useUpdateObservation,
   useDeleteObservation,
+  invalidateObservationCaches,
 } from "../../hooks/Observation/useOfflineObservation";
 import * as observationRepository from "../../hooks/repositories/observationRepository";
 import { runObservationSync } from "../../services/sync/observationSync";
@@ -230,6 +232,36 @@ it("shows FailedEditBanner only with a sync error and a matching failed mutation
   expect(screen.getByText("Network error")).toBeOnTheScreen();
   await fireEvent.press(screen.getByText("discard_changes"));
   expect(observationRepository.discardMutation).toHaveBeenCalledWith(9, 1);
+});
+
+// Dropping or retrying a stuck mutation changes the lists too, so both have
+// to invalidate the shared caches — refetch() alone reloads only this screen,
+// and the discarded record used to stay in the Observations list (with its
+// warning badge) right through a relaunch, because that list result is
+// persisted. See .maestro/offline-orphaned-observation-fails.yaml.
+describe("a failed edit acted on from the banner", () => {
+  const withFailedMutation = async () => {
+    (observationRepository.getFailedMutationFor as jest.Mock).mockReturnValue({ id: 9 });
+    mockItem({ data: { ...OBSERVATION, _syncError: "Network error" } });
+    await render(<ObservationDetailScreen />);
+  };
+
+  it("refreshes the lists after a discard, not just this screen", async () => {
+    await withFailedMutation();
+
+    await fireEvent.press(screen.getByText("discard_changes"));
+
+    expect(invalidateObservationCaches).toHaveBeenCalledTimes(1);
+  });
+
+  it("refreshes the lists after a retry as well", async () => {
+    await withFailedMutation();
+
+    await fireEvent.press(screen.getByText("try_again"));
+
+    expect(observationRepository.retryMutation).toHaveBeenCalledWith(9, 1);
+    expect(invalidateObservationCaches).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("owner-only header actions", () => {

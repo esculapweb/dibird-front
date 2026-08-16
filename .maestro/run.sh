@@ -251,14 +251,39 @@ else
   APP_ID="com.dibird.app.dev"
 fi
 
+# On Android, keep the app's own log for a flow that fails. Maestro's report
+# says which step went red; it cannot say why, and the answer is usually already
+# printed by the app — the login that looked like a hang was an
+# `[AUTH API ERROR] {"code": "TIMEOUT"}` in logcat, and finding that by hand cost
+# an afternoon. Cleared before each flow so the dump belongs to that flow alone,
+# and written only on failure so a green batch leaves nothing behind.
 run_maestro() {
+  local flow="$1"
+  local status=0
+
+  if [ "$PLATFORM" = "android" ]; then
+    adb -s "$TARGET" logcat -c >/dev/null 2>&1 || true
+  fi
+
   MAESTRO_CLI_NO_ANALYTICS=1 maestro test \
     --device "$TARGET" \
     --include-tags "$PLATFORM" \
     --env APP_ID="$APP_ID" \
     --env TEST_EMAIL="$TEST_EMAIL" \
     --env TEST_PASSWORD="$TEST_PASSWORD" \
-    "$1"
+    "$flow" || status=$?
+
+  if [ "$status" -ne 0 ] && [ "$PLATFORM" = "android" ]; then
+    mkdir -p .maestro/.logs
+    local log=".maestro/.logs/$(basename "$flow" .yaml).logcat"
+    # ReactNativeJS carries the app's own console output; AndroidRuntime and
+    # ExpoModules catch the crashes that never reach it.
+    adb -s "$TARGET" logcat -d 2>/dev/null \
+      | grep -E "ReactNativeJS|AndroidRuntime|ExpoModules" > "$log" || true
+    echo "App log: $log ($(wc -l < "$log" | tr -d ' ') lines)" >&2
+  fi
+
+  return $status
 }
 
 # One `maestro test` per flow instead of one for the whole directory, so a

@@ -30,7 +30,12 @@ const OBSERVATION_URL = "/myapi/observation2/";
 // equivalent (hooks/Diary/useOfflineDiary.ts); Place/Community still use the
 // generic (online-only) hooks unchanged.
 
-const invalidateObservationCaches = (queryClient: ReturnType<typeof useQueryClient>) => {
+// Exported for ObservationDetailScreen's failed-edit banner: discarding or
+// retrying a stuck mutation changes the list exactly as much as an ordinary
+// create/update/delete does, and it used to invalidate nothing at all.
+export const invalidateObservationCaches = (
+  queryClient: ReturnType<typeof useQueryClient>,
+) => {
   // ["Observation"] (no id) is included here with exact:false, which prefix-matches
   // ["Observation", anyId] too, so a single shared list covers add/update/delete.
   // refetchType: "all" so this also refreshes the Observations list even if it

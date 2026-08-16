@@ -1,0 +1,189 @@
+# Device-level offline test: a record created offline must survive a logout
+# and a re-login by the same account.
+#
+# The branch under test is store/profile-context.tsx's account-switch check.
+# On every profile load it compares the freshly loaded profile.user against
+# lastLoggedInUserId (deliberately kept out of Logout()'s AsyncStorage wipe,
+# see util/storageHelper.ts) and, when the two differ, clears the local
+# observation/diary/place mirrors *and* the React Query cache. Getting that
+# comparison wrong in the "same person signs back in" direction destroys
+# unsynced work silently — which is exactly what a forced logout (a 401
+# routed through auth-context's logout) must never do.
+#
+# The decision itself is unit-tested (store/__tests__/profile-context.test.tsx,
+# "account switch detection"). What a unit test cannot show is that the row is
+# really still in sqlite afterwards and still drains through the mutation
+# queue. This flow asserts that against server truth: the diaries counter has
+# to end up exactly one above the baseline captured before the offline create,
+# which can only happen if the record outlived the logout and then synced.
+#
+# A Diary rather than an Observation because DiaryForm's note field sits
+# directly on the form, while ObservationForm keeps notes inside a collapsed
+# "Details" section — and the note is the only handle on the record once it
+# has synced and lost its pending icon (list rows carry no testID).
+#
+# The mirror case — a *different* account signing in wipes everything — is
+# deliberately not here: it needs a third set of credentials, and the two in
+# .maestro/.env.local are one per platform precisely so the platforms can run
+# in parallel without fighting over the same data.
+#
+# Like logout.yaml, this signs back in before it finishes; not for its own
+# sake (the assertions are done by then) but so the next flow in the batch
+# inherits the session every other flow expects.
+#
+# appId is the single Android package for every build variant.
+# tags: android — toggleAirplaneMode is a real OS-level radio toggle with no
+# iOS Simulator equivalent; see offline-create-observation.yaml.
+appId: com.dibird.app
+tags:
+  - android
+---
+# No clearState: session reuse — see offline-create-observation.yaml. The
+# local mutation-queue db isn't reset between flows either, so this flow's own
+# create->delete cycle must net to zero on its own.
+- launchApp
+
+- runFlow: common/android-bootstrap.yaml
+
+- extendedWaitUntil:
+    visible:
+      id: "diaries-stat-value"
+    timeout: 20000
+
+# Server truth before anything local exists. Both the "+1 after relogin" proof
+# below and the "back to baseline" cleanup check hang off this number.
+- copyTextFrom:
+    id: "diaries-stat-value"
+# maestro.copiedText is clipboard-backed, not a dedicated result slot — stash
+# it in `output` before the setClipboard further down clobbers it.
+- evalScript: ${output.diaryBaselineCount = maestro.copiedText}
+- evalScript: ${output.diaryExpectedCount = Number(output.diaryBaselineCount) + 1}
+
+# ---- CREATE offline ----
+- toggleAirplaneMode
+
+- tapOn:
+    id: "quick-action-diary"
+# A distinctive note, so this diary can be found by text after it syncs and
+# its pending icon is gone.
+- tapOn: ".*Add a note.*"
+- setClipboard: "Relogin E2E Diary"
+- pasteText
+# Defocus without navigating, by tapping a static label on the same form —
+# the technique common/credential-entry.yaml uses.
+- tapOn: ".*Location.*"
+- tapOn:
+    id: "diary-save-button"
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - back
+      - tapOn:
+          id: "diary-save-button"
+
+# Local-first create lands on the (temp-id) detail screen even offline. The
+# generous budget is DiaryDetailScreen's, not the network's — it is a
+# ListScreen and paints nothing at all until its observations query settles
+# (see offline-create-diary.yaml's note on the same gate).
+- extendedWaitUntil:
+    visible: ".*Delete diary.*"
+    timeout: 25000
+- back
+
+# Tapping the stat card's own "Diaries" label navigates to the list, which
+# keeps this off the section grid further down the screen (that one needs a
+# scroll — see offline-nested-observation-in-diary.yaml).
+- tapOn: "Diaries"
+- assertVisible:
+    id: "diary-sync-pending-icon"
+- back
+
+# ---- LOG OUT while the record is still unsynced ----
+# Offline on purpose. Reconnecting first would drain the queue and leave
+# nothing but an ordinary synced record to carry across the logout, which is
+# not the case that loses data. Logout()'s POST to /api-auth/logout/ fails
+# here and is swallowed (util/auth.ts) — the tokens are cleared either way.
+- tapOn:
+    id: "burger-menu-button"
+- waitForAnimationToEnd
+- tapOn: ".*Logout.*"
+- extendedWaitUntil:
+    visible:
+      id: "bottom-sheet-confirm-button"
+    timeout: 4000
+- tapOn:
+    id: "bottom-sheet-confirm-button"
+# Landing on Welcome means Navigation really swapped AppStack for AuthStack,
+# not just that the drawer closed.
+- extendedWaitUntil:
+    visible: ".*Continue with email.*"
+    timeout: 20000
+
+# ---- SIGN BACK IN as the same account ----
+# Needs the network back: this is a real login round-trip, and the only one in
+# the suite. Every other offline flow comes back online and then checks local
+# UI only, which is why this is the only flow that ever noticed the next bit.
+- toggleAirplaneMode
+
+# The relaunch is not decoration. On this emulator an airplane-mode cycle leaves
+# the app's HTTP stack unable to reach the API for the rest of the process's
+# life: the login POST dies on the 10s timeout in services/api.ts, and it does
+# so 21s after the reconnect and 60s after it alike, on the second attempt as
+# well as the first — while the device itself is fine (a raw HTTP GET to the API
+# from adb shell answers 200 instantly). Restarting the app clears it every
+# time. Proven not to be about logout: the same logout -> login with the network
+# never touched is green in one process.
+#
+# An emulator artefact, not a product bug: checked on a real Android phone on
+# real cellular, where the app keeps talking to the API straight after airplane
+# mode goes off. So there is nothing to fix in the app, and this relaunch is
+# permanent rather than a patch waiting to be removed — without it the flow goes
+# red for a reason that has nothing to do with what it tests. What is under test
+# is unchanged and if anything stricter: the unsynced diary has to survive a
+# logout, a re-login, and now a process restart as well.
+- runFlow: common/connect.yaml
+- extendedWaitUntil:
+    visible: ".*Continue with email.*"
+    timeout: 30000
+
+- runFlow: common/credential-entry.yaml
+- extendedWaitUntil:
+    visible:
+      id: "quick-action-observation"
+    timeout: 25000
+
+# The whole point of the flow. Reaching baseline+1 means the queued create
+# was still on disk after the logout, was not wiped as a foreign account's
+# leftovers, and reached the server. A wipe would leave this at the baseline
+# forever. Polled, not asserted once: the diary POST and the DashboardStat
+# refetch it invalidates both have to land first.
+- extendedWaitUntil:
+    visible:
+      id: "diaries-stat-value"
+      text: ${output.diaryExpectedCount}
+    timeout: 30000
+
+# ---- CLEAN UP: find it by its note and delete it ----
+- tapOn: "Diaries"
+- tapOn: "Relogin E2E Diary"
+- extendedWaitUntil:
+    visible: ".*Delete diary.*"
+    timeout: 25000
+- tapOn:
+    id: "diary-delete-button"
+- extendedWaitUntil:
+    visible:
+      id: "bottom-sheet-confirm-button"
+    timeout: 4000
+- tapOn:
+    id: "bottom-sheet-confirm-button"
+# Delete's onSuccess goes back to the list this detail was opened from.
+- assertVisible: ".*Diaries.*"
+
+- back
+- extendedWaitUntil:
+    visible:
+      id: "diaries-stat-value"
+      text: ${output.diaryBaselineCount}
+    timeout: 20000

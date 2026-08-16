@@ -23,9 +23,11 @@ import {
   useObservationItem,
   useUpdateObservation,
   useDeleteObservation,
+  invalidateObservationCaches,
 } from "../hooks/Observation/useOfflineObservation";
 import * as observationRepository from "../hooks/repositories/observationRepository";
 import { runObservationSync } from "../services/sync/observationSync";
+import { queryClient } from "../services/queryClient";
 import FailedEditBanner from "../components/Profile/FailedEditBanner";
 import { BirdSVG } from "../components/ui/Svgs";
 import { formatTimeString } from "../util/timeHelpers";
@@ -84,9 +86,17 @@ const ObservationDetailScreen = () => {
     ? observationRepository.getFailedMutationFor(observationId)
     : null;
 
+  // Both handlers change what the *lists* should show, not just this screen:
+  // discard drops the record outright, retry flips its badge from error back
+  // to pending. refetch() alone only reloads this one item, so without the
+  // invalidation a discarded record stayed in the Observations list with its
+  // warning badge — and survived a relaunch, since the list result is
+  // persisted (services/queryPersist.ts). Only a manual pull-to-refresh
+  // cleared it. Found by .maestro/offline-orphaned-observation-fails.yaml.
   const handleRetrySync = useCallback(async () => {
     if (!failedMutation) return;
     observationRepository.retryMutation(failedMutation.id, observationId);
+    invalidateObservationCaches(queryClient);
     await runObservationSync();
     await refetch();
   }, [failedMutation, observationId, refetch]);
@@ -94,6 +104,7 @@ const ObservationDetailScreen = () => {
   const handleDiscardSync = useCallback(() => {
     if (!failedMutation) return;
     observationRepository.discardMutation(failedMutation.id, observationId);
+    invalidateObservationCaches(queryClient);
     refetch();
   }, [failedMutation, observationId, refetch]);
 

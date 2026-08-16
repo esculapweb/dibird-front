@@ -27,7 +27,11 @@ const DIARY_URL = "/myapi/diary2/";
 // hooks/Observation/useOfflineObservation.ts. Place/Community keep using the
 // generic (online-only) hooks unchanged.
 
-const invalidateDiaryCaches = (queryClient: ReturnType<typeof useQueryClient>) => {
+// Exported for DiaryDetailScreen's failed-edit banner — see the matching
+// comment on useOfflineObservation.ts's invalidateObservationCaches.
+export const invalidateDiaryCaches = (
+  queryClient: ReturnType<typeof useQueryClient>,
+) => {
   INVALIDATION_MAP.Diary.update.forEach((key) =>
     queryClient.invalidateQueries({ queryKey: key, exact: false, refetchType: "all" }),
   );

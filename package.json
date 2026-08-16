@@ -21,6 +21,9 @@
     "e2e:ios": "bash .maestro/run.sh ios",
     "e2e:android": "bash .maestro/run.sh android",
     "e2e:parallel": "bash .maestro/run-parallel.sh",
+    "e2e:scratch": "bash .maestro/scratch.sh",
+    "e2e:ids": "node scripts/e2e-ids.js",
+    "e2e:lint": "node scripts/e2e-lint.js",
     "update:production": "NODE_ENV=production eas update --branch production --environment production",
     "update:preview": "NODE_ENV=preview eas update --branch preview --environment preview",
     "update:development": "eas update --branch development --environment development"
