@@ -108,7 +108,17 @@ tags:
 - swipe:
     direction: LEFT
 - waitForAnimationToEnd
-- extendedWaitUntil:
-    visible:
+# Scroll back up before asserting: MainScreen keeps the scroll position from
+# the scrollUntilVisible above (it went down to the catalogue card), and the
+# quick actions sit near the very top — present in the hierarchy on return,
+# but off-screen, which is exactly what Maestro reports as not visible. Same
+# trap as in offline-nested-observation-in-diary.yaml. scrollUntilVisible is a
+# no-op when the button is already in view, so it costs nothing when the
+# offset did not survive the `back`.
+- scrollUntilVisible:
+    element:
       id: "quick-action-observation"
+    direction: UP
     timeout: 10000
+- assertVisible:
+    id: "quick-action-observation"

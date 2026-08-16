@@ -98,7 +98,17 @@ tags:
 - runFlow: common/back.yaml
 
 - runFlow: common/back.yaml
-- extendedWaitUntil:
-    visible:
+# Scroll back up before asserting: MainScreen keeps the scroll position from
+# the scrollUntilVisible at the top of this flow (it went down to the
+# catalogue card), and the quick actions sit near the very top — present in
+# the hierarchy on return, but off-screen, which is what Maestro reports as
+# not visible. Same trap as in settings-language-switch.yaml and
+# offline-nested-observation-in-diary.yaml; this flow was passing on it by
+# luck. scrollUntilVisible is a no-op when the button is already in view.
+- scrollUntilVisible:
+    element:
       id: "quick-action-observation"
+    direction: UP
     timeout: 10000
+- assertVisible:
+    id: "quick-action-observation"
