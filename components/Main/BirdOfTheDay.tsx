@@ -226,6 +226,7 @@ const stylesFn = (Colors: ThemeColors) =>
 // t("hint_endemic")
 // t("hint_threatened")
 // t("hint_seasonal")
+// t("hint_checklist")
 
 // t("never_seen")
 // t("seen_outside_window")

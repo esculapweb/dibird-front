@@ -221,6 +221,7 @@
   "groups": "Groups",
   "guest_browse_catalog": "Browse the birds of the world",
   "habitat": "Habitat",
+  "hint_checklist": "Found in this territory",
   "hint_endemic": "Endemic to this territory",
   "hint_never_seen": "You haven't spotted this species yet",
   "hint_seasonal": "In season right now",
