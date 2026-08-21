@@ -1,8 +1,17 @@
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
+);
+
 jest.mock("./util/helpers", () => ({
   langBaseUrl: () => "https://dibird.com",
 }));
 
+jest.mock("./services/authReturn", () => ({
+  setAuthReturn: jest.fn(),
+}));
+
 import linking from "./linking";
+import { setAuthReturn } from "./services/authReturn";
 import { getStateFromPath } from "@react-navigation/native";
 
 type State = ReturnType<typeof getStateFromPath>;
@@ -262,6 +271,57 @@ describe("deep links from the QA page resolve to the right screen", () => {
     expect(routeNames(stateFor("my/observation/328145/", false))).toEqual([
       "Welcome",
     ]);
+  });
+
+  // The bounce above is where a shared link used to die: the guest signed up
+  // and landed on the dashboard, with nothing left of the diary they were sent.
+  // What the link asked for is handed to services/authReturn, which puts it
+  // back on top of Main once the navigator has been recreated (Navigation.tsx).
+  describe("what the guest was sent, remembered across the sign-in", () => {
+    beforeEach(() => {
+      (setAuthReturn as jest.Mock).mockClear();
+    });
+
+    it.each([
+      ["my/diary/15014/", "DiaryDetail", { diaryId: "15014" }],
+      ["my/community/328637/", "CommunityDetail", { observationId: "328637" }],
+      ["ru/my/diary/15014/", "DiaryDetail", { diaryId: "15014" }],
+      ["users/stat/2/", "UserStat", { profileId: "2" }],
+    ])("%s -> %s", (path, screen, params) => {
+      stateFor(path, false);
+
+      expect(setAuthReturn).toHaveBeenCalledWith(
+        expect.objectContaining({ name: screen, params }),
+        { fromLink: true },
+      );
+    });
+
+    it("keeps the filters the link carried", () => {
+      stateFor("my/diary/15004/?species=20415&o=-date_time", false);
+
+      expect(setAuthReturn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: "DiaryDetail",
+          params: expect.objectContaining({
+            diaryId: "15004",
+            species: "20415",
+          }),
+        }),
+        { fromLink: true },
+      );
+    });
+
+    it("remembers nothing for a link that resolves to no screen", () => {
+      stateFor("my/test-push/", false);
+
+      expect(setAuthReturn).not.toHaveBeenCalled();
+    });
+
+    it("remembers nothing for a signed-in user", () => {
+      stateFor("my/diary/15014/", true);
+
+      expect(setAuthReturn).not.toHaveBeenCalled();
+    });
   });
 
   // The taxonomy links carry state beyond the screen name: catalogue lists

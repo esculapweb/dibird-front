@@ -37,6 +37,43 @@ describe("setAuthReturn", () => {
     expect(await AsyncStorage.getItem(STORAGE_KEY)).toBeNull();
   });
 
+  // A shared link to a page only an account can open (linking.ts). The mark
+  // travels with the intent: Navigation skips the "signed in without leaving the
+  // funnel" guard for it, because the link itself is the funnel.
+  it("marks an intent that came from a link", async () => {
+    await setAuthReturn({ name: "DiaryDetail", params: { diaryId: "15014" } }, {
+      fromLink: true,
+    });
+
+    expect(await takeAuthReturn()).toEqual({
+      name: "DiaryDetail",
+      params: { diaryId: "15014" },
+      fromLink: true,
+    });
+  });
+
+  it("leaves an ordinary intent unmarked", async () => {
+    await setAuthReturn({ name: "SpeciesDetail", params: { segment: "osprey" } });
+
+    expect(await takeAuthReturn()).not.toHaveProperty("fromLink");
+  });
+
+  it("keeps the mark across a process restart", async () => {
+    await setAuthReturn({ name: "DiaryDetail", params: { diaryId: "15014" } }, {
+      fromLink: true,
+    });
+    // A restart: the module variable is gone, only the disk is left.
+    const stored = await AsyncStorage.getItem(STORAGE_KEY);
+    await AsyncStorage.clear();
+    await takeAuthReturn();
+    await AsyncStorage.setItem(STORAGE_KEY, stored as string);
+
+    expect(await takeAuthReturn()).toMatchObject({
+      name: "DiaryDetail",
+      fromLink: true,
+    });
+  });
+
   it("clears a previously stored intent when called with null", async () => {
     await setAuthReturn({ name: "SpeciesDetail", params: { segment: "osprey" } });
     await setAuthReturn(null);
