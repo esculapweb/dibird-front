@@ -70,6 +70,13 @@ const SUPPORTED: Array<{ path: string; authed?: boolean; screen: string }> = [
   { path: "extinct/?name=dodo", screen: "Taxonomy" },
   { path: "order/", screen: "Taxonomy" },
   { path: "order/?name=owls&o=ioc_id", screen: "Taxonomy" },
+  // Claimed as App Links by app.config.js and sitemapped by the site, but
+  // unroutable until 22.08 — the app opened onto whatever screen it had been
+  // left on. The app itself never produces these (taxonListSharePath shares
+  // orders and species only), so they arrive from the website only.
+  { path: "family/", screen: "Taxonomy" },
+  { path: "genus/", screen: "Taxonomy" },
+  { path: "genus/?name=aix&o=ioc_id", screen: "Taxonomy" },
   { path: "extinct/", screen: "Taxonomy" },
   { path: "order/ducks-and-relatives/", screen: "TaxonGroupDetail" },
   { path: "order/ducks-and-relatives/?o=ioc_id", screen: "TaxonGroupDetail" },
@@ -165,6 +172,8 @@ const SUPPORTED: Array<{ path: string; authed?: boolean; screen: string }> = [
   },
   { path: "ru/species/?name=zhuravl", screen: "Taxonomy" },
   { path: "ru/order/", screen: "Taxonomy" },
+  { path: "ru/family/", screen: "Taxonomy" },
+  { path: "ru/genus/", screen: "Taxonomy" },
   { path: "ru/extinct/", screen: "Taxonomy" },
   { path: "ru/order/zhuravleobraznye/", screen: "TaxonGroupDetail" },
   {
@@ -231,6 +240,25 @@ describe("deep links from the QA page resolve to the right screen", () => {
 
   it.each(UNSUPPORTED)("does not route %s", (path) => {
     expect(stateFor(path)).toBeFalsy();
+  });
+
+  // The four taxon list paths all land on Taxonomy, so asserting the screen
+  // says nothing about which list you got — the rank is the whole payload.
+  // `/family/` and `/genus/` are the reason this exists: they were claimed as
+  // App Links without a route behind them.
+  it.each([
+    ["order/", 2],
+    ["family/", 3],
+    ["genus/", 4],
+    ["species/", 5],
+    ["ru/family/", 3],
+    ["ru/genus/", 4],
+  ])("%s opens the list at rank %i", (path, rank) => {
+    const state = stateFor(path);
+    const last = state?.routes?.[state.routes.length - 1];
+
+    expect(last?.name).toBe("Taxonomy");
+    expect(last?.params).toEqual(expect.objectContaining({ rank }));
   });
 
   // The catalogue needs no account — navigation/catalogScreens.tsx registers

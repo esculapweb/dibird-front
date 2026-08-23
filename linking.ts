@@ -40,7 +40,8 @@ const withBasicFilters = (path: string) => ({
 
 export const DEEP_LINK_PREFIXES = ["dibird://", "https://dibird.com"];
 
-// Web paths for the taxon detail pages, keyed by rank (order/family/genus).
+// Web paths for the taxon group pages, keyed by rank. Serves both the lists
+// (/order, /family, /genus) and the detail pages (/order/<slug> etc.).
 const GROUP_RANK_BY_PATH: Record<string, 2 | 3 | 4> = {
   order: 2,
   family: 3,
@@ -129,8 +130,8 @@ const matchTerritoryPath = (
 };
 
 // Maps a (locale-stripped) web path to the in-app route + params. Covers the
-// catalogue lists (all species, extinct, orders), the detail pages
-// (species/genus/family/order) and the countries half (see
+// catalogue lists (all species, extinct, orders/families/genera), the detail
+// pages (species/genus/family/order) and the countries half (see
 // matchTerritoryPath). Returns null for anything else.
 const matchTaxonPath = (normalizedPath: string): TaxonRoute | null => {
   const [rawPath, query = ""] = normalizedPath.split("?");
@@ -144,7 +145,7 @@ const matchTaxonPath = (normalizedPath: string): TaxonRoute | null => {
   const territoryRoute = matchTerritoryPath(segments, params, sort, search);
   if (territoryRoute) return territoryRoute;
 
-  // Lists (no slug): /species, /extinct, /order
+  // Lists (no slug): /species, /extinct, /order, /family, /genus
   if (segments.length === 1) {
     const [head] = segments;
     if (head === "species")
@@ -168,11 +169,19 @@ const matchTaxonPath = (normalizedPath: string): TaxonRoute | null => {
           ...(search && { initialSearch: search }),
         },
       };
-    if (head === "order")
+    // /order, /family, /genus — the same screen at three ranks. Families and
+    // genera are here because app.config.js claims `/family/` and `/genus/` as
+    // App Links and the site has both pages in its sitemap: without a route
+    // the link opened the app onto whatever screen it had been left on, which
+    // is worse than not claiming the path at all. The app never *produces*
+    // such a link (taxonListSharePath only shares orders and species), so
+    // these arrive from the website only.
+    const listRank = GROUP_RANK_BY_PATH[head];
+    if (listRank)
       return {
         name: "Taxonomy",
         params: {
-          rank: 2,
+          rank: listRank,
           ...(sort && { initialSort: sort }),
           ...(search && { initialSearch: search }),
         },
