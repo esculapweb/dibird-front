@@ -1,7 +1,9 @@
 import { getStateFromPath } from "@react-navigation/native";
 import { AppStackParamList, AuthStackParamList } from "./types";
-import { LinkingOptions } from "@react-navigation/native";
+import { LinkingOptions, PathConfigMap } from "@react-navigation/native";
 import { track } from "./services/analytics";
+import { setAuthReturn } from "./services/authReturn";
+import type { MinimalRoute } from "./types";
 import {
   COMPARE_TABS,
   parseEnumParam,
@@ -38,7 +40,8 @@ const withBasicFilters = (path: string) => ({
 
 export const DEEP_LINK_PREFIXES = ["dibird://", "https://dibird.com"];
 
-// Web paths for the taxon detail pages, keyed by rank (order/family/genus).
+// Web paths for the taxon group pages, keyed by rank. Serves both the lists
+// (/order, /family, /genus) and the detail pages (/order/<slug> etc.).
 const GROUP_RANK_BY_PATH: Record<string, 2 | 3 | 4> = {
   order: 2,
   family: 3,
@@ -127,8 +130,8 @@ const matchTerritoryPath = (
 };
 
 // Maps a (locale-stripped) web path to the in-app route + params. Covers the
-// catalogue lists (all species, extinct, orders), the detail pages
-// (species/genus/family/order) and the countries half (see
+// catalogue lists (all species, extinct, orders/families/genera), the detail
+// pages (species/genus/family/order) and the countries half (see
 // matchTerritoryPath). Returns null for anything else.
 const matchTaxonPath = (normalizedPath: string): TaxonRoute | null => {
   const [rawPath, query = ""] = normalizedPath.split("?");
@@ -142,7 +145,7 @@ const matchTaxonPath = (normalizedPath: string): TaxonRoute | null => {
   const territoryRoute = matchTerritoryPath(segments, params, sort, search);
   if (territoryRoute) return territoryRoute;
 
-  // Lists (no slug): /species, /extinct, /order
+  // Lists (no slug): /species, /extinct, /order, /family, /genus
   if (segments.length === 1) {
     const [head] = segments;
     if (head === "species")
@@ -166,11 +169,19 @@ const matchTaxonPath = (normalizedPath: string): TaxonRoute | null => {
           ...(search && { initialSearch: search }),
         },
       };
-    if (head === "order")
+    // /order, /family, /genus — the same screen at three ranks. Families and
+    // genera are here because app.config.js claims `/family/` and `/genus/` as
+    // App Links and the site has both pages in its sitemap: without a route
+    // the link opened the app onto whatever screen it had been left on, which
+    // is worse than not claiming the path at all. The app never *produces*
+    // such a link (taxonListSharePath only shares orders and species), so
+    // these arrive from the website only.
+    const listRank = GROUP_RANK_BY_PATH[head];
+    if (listRank)
       return {
         name: "Taxonomy",
         params: {
-          rank: 2,
+          rank: listRank,
           ...(sort && { initialSort: sort }),
           ...(search && { initialSearch: search }),
         },
@@ -199,44 +210,67 @@ const matchTaxonPath = (normalizedPath: string): TaxonRoute | null => {
   return null;
 };
 
+// Exported for constants/__tests__/deepLinkScreens.test.ts: the list of screens
+// a shared link can reach lives in constants/deepLinkScreens.ts, and the two
+// must not drift apart.
+export const AUTHED_SCREENS: PathConfigMap<AppStackParamList> = {
+  Main: {
+    screens: {
+      MainScreen: "my",
+    },
+  },
+  Profile: "my/profile",
+  Settings: "my/settings",
+  Stat: withFilters("my/stat"),
+  Checklist: withFilters("my/checklist"),
+  Places: withBasicFilters("my/place"),
+  PlaceDetail: "my/place/:placeId",
+  Observations: withFilters("my/observation"),
+  ObservationDetail: "my/observation/:observationId",
+  CommunityDetail: "my/community/:observationId",
+  Diaries: withFilters("my/diary"),
+  DiaryDetail: "my/diary/:diaryId",
+  Rating: withFilters("users"),
+  RatingsCompare: withFilters("users/compare/:profile1/:profile2"),
+  UserStat: withFilters("users/stat/:profileId"),
+  Privacy: "privacy",
+  Terms: "terms",
+};
+
+const GUEST_SCREENS: PathConfigMap<AuthStackParamList> = {
+  Welcome: { screens: { WelcomeMain: "welcome" } },
+  ConfirmEmail: "accounts/confirm-email/:key",
+  Login: "accounts/login",
+  Signup: "accounts/signup",
+  Privacy: "privacy",
+  Terms: "terms",
+};
+
+/**
+ * The screen a protected link asks for, resolved against the signed-in config.
+ *
+ * A guest gets sent to Welcome instead (that stack simply has no such screen),
+ * and without this the link died there: after signing up the person landed on
+ * the dashboard, with nothing left of what they had been sent. Resolving it
+ * against `AUTHED_SCREENS` is what makes the target a real AppStack screen —
+ * the one `services/authReturn` can restore once the navigator is recreated.
+ */
+const protectedLinkTarget = (normalizedPath: string): MinimalRoute | null => {
+  const state = getStateFromPath(normalizedPath, { screens: AUTHED_SCREENS });
+  const route = state?.routes?.[state.routes.length - 1];
+
+  if (!route) return null;
+
+  return { name: route.name, params: route.params };
+};
+
 const linking = (
   isAuthenticated: boolean,
 ): LinkingOptions<AppStackParamList | AuthStackParamList> => ({
   prefixes: DEEP_LINK_PREFIXES,
 
   config: {
-    screens: isAuthenticated
-      ? {
-          Main: {
-            screens: {
-              MainScreen: "my",
-            },
-          },
-          Profile: "my/profile",
-          Settings: "my/settings",
-          Stat: withFilters("my/stat"),
-          Checklist: withFilters("my/checklist"),
-          Places: withBasicFilters("my/place"),
-          PlaceDetail: "my/place/:placeId",
-          Observations: withFilters("my/observation"),
-          ObservationDetail: "my/observation/:observationId",
-          CommunityDetail: "my/community/:observationId",
-          Diaries: withFilters("my/diary"),
-          DiaryDetail: "my/diary/:diaryId",
-          Rating: withFilters("users"),
-          RatingsCompare: withFilters("users/compare/:profile1/:profile2"),
-          UserStat: withFilters("users/stat/:profileId"),
-          Privacy: "privacy",
-          Terms: "terms",
-        }
-      : {
-          Welcome: { screens: { WelcomeMain: "welcome" } },
-          ConfirmEmail: "accounts/confirm-email/:key",
-          Login: "accounts/login",
-          Signup: "accounts/signup",
-          Privacy: "privacy",
-          Terms: "terms",
-        },
+    screens: isAuthenticated ? AUTHED_SCREENS : GUEST_SCREENS,
   },
 
   getStateFromPath(
@@ -261,9 +295,24 @@ const linking = (
       };
     }
 
-    const isProtected = normalizedPath.startsWith("/my");
+    // `/users` counts as protected next to `/my`: the rating and someone's
+    // statistics are shared from the app just like a diary is, and the guest
+    // stack has no screen for them either. Without it those links resolved to
+    // nothing at all — the app opened wherever it had been left, which reads
+    // as a broken link rather than as "sign in to see this".
+    const isProtected = ["/my", "/users"].some((prefix) =>
+      normalizedPath.startsWith(prefix),
+    );
 
     if (!isAuthenticated && isProtected) {
+      // What the link was for outlives the bounce to Welcome: after signing in
+      // `services/authReturn` puts this screen back on top of Main, so a shared
+      // diary opens instead of the dashboard. Not awaited — the intent is in a
+      // module variable straight away, and the sign-in cannot finish sooner
+      // than the write to disk that backs the cold path.
+      const target = protectedLinkTarget(normalizedPath);
+      if (target) setAuthReturn(target, { fromLink: true });
+
       return {
         routes: [{ name: "Welcome" }],
       };

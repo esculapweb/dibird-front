@@ -21,9 +21,11 @@ import {
   useDiaryItem,
   useUpdateDiary,
   useDeleteDiary,
+  invalidateDiaryCaches,
 } from "../hooks/Diary/useOfflineDiary";
 import * as diaryRepository from "../hooks/repositories/diaryRepository";
 import { runDiarySync } from "../services/sync/diarySync";
+import { queryClient } from "../services/queryClient";
 import PlacePreviewRow from "../components/Place/PlacePreviewRow";
 import Section from "../components/ui/Section";
 import PrivacyToggle from "../components/ui/PrivacyToggle";
@@ -88,9 +90,14 @@ const DiaryDetailScreen = () => {
     ? diaryRepository.getFailedMutationFor(diaryId)
     : null;
 
+  // Same reasoning as ObservationDetailScreen's pair of handlers: refetch()
+  // reloads this diary alone, while discard/retry also change what the
+  // Diaries list must show — and that list result is persisted, so a stale
+  // entry outlived a relaunch.
   const handleRetrySync = useCallback(async () => {
     if (!failedMutation) return;
     diaryRepository.retryMutation(failedMutation.id, diaryId);
+    invalidateDiaryCaches(queryClient);
     await runDiarySync();
     await refetch();
   }, [failedMutation, diaryId, refetch]);
@@ -98,6 +105,7 @@ const DiaryDetailScreen = () => {
   const handleDiscardSync = useCallback(() => {
     if (!failedMutation) return;
     diaryRepository.discardMutation(failedMutation.id, diaryId);
+    invalidateDiaryCaches(queryClient);
     refetch();
   }, [failedMutation, diaryId, refetch]);
 
@@ -219,12 +227,18 @@ const DiaryDetailScreen = () => {
                   {isoToFlagEmoji(diary?.territory_data?.code)}{" "}
                   {diary?.territory_data?.name}
                 </Text>
-                {(diary.is_owner || diary.location_private) && (
+                {/* The place *name* is the owner's alone to see — a visitor
+                    never gets it, not even for a public location (the owner's
+                    own view is PlacePreviewRow above). The server enforces
+                    that now (PlaceSimpleSerializer.get_name sends null), so
+                    this line only explains a location that is there but
+                    withheld, and a public one deliberately renders nothing at
+                    all. The `diary.is_owner` tests this block used to carry
+                    were dead anyway: it is entirely inside `!diary.is_owner`. */}
+                {diary.location_private && (
                   <Text style={styles.placeName} numberOfLines={2}>
-                    {diary?.place_data?.name
-                      ? diary.is_owner
-                        ? diary.place_data.name
-                        : t("approximate_area")
+                    {diary?.place_data
+                      ? (diary.place_data.name ?? t("approximate_area"))
                       : t("location_not_specified")}
                   </Text>
                 )}

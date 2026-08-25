@@ -2,6 +2,7 @@ import { useMemo, memo } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 import { Image } from "expo-image";
 
 import ProfileAvatar from "../Profile/ProfileAvatar";
@@ -22,8 +23,14 @@ const useStyles = (Colors: ThemeColors) =>
 const CommunityCard = memo(
   ({ item, index, highlightObsIds }: { item: ObservationItem; index: number; highlightObsIds?: number[] }) => {
     const { Colors } = useTheme();
+    const { t } = useTranslation();
     const styles = useStyles(Colors);
     const navigation = useNavigation<AppStackNavigationProp>();
+
+    // The feed carries both sources. An eBird row names its own author in
+    // `external_username`; a dibird one has a real profile behind it.
+    const sourceName = item.external_source ?? t("source_dibird");
+    const authorName = item.external_username ?? item.owner?.username ?? null;
 
     const dateText = formatDateLong(item.date_time);
     const territoryFlag = item.territory_data
@@ -36,7 +43,7 @@ const CommunityCard = memo(
 
     return (
       <Pressable
-        style={({ pressed }) => [styles.card, pressed && styles.pressedCard, highlightObsIds?.includes(item.id) && styles.hightlighted]}
+        style={({ pressed }) => [styles.card, pressed && styles.pressedCard, highlightObsIds?.includes(item.id) && styles.highlighted]}
         onPress={handlePress}
       >
         <View style={styles.row}>
@@ -72,9 +79,18 @@ const CommunityCard = memo(
               </View>
             </View>
 
-            <Text style={styles.latin} numberOfLines={1}>
-              {item.species_data?.name}
-            </Text>
+            <View style={styles.latinRow}>
+              <Text style={styles.latin} numberOfLines={1}>
+                {item.species_data?.name}
+              </Text>
+
+              {item.rare && (
+                <View style={styles.rareBadge}>
+                  <Ionicons name="star" size={10} color={Colors.main100} />
+                  <Text style={styles.rareBadgeText}>{t("rare")}</Text>
+                </View>
+              )}
+            </View>
 
             <View style={styles.metaRow}>
               <View style={styles.metaLeft}>
@@ -115,9 +131,15 @@ const CommunityCard = memo(
               username={item?.external_source ?? "dibird"}
               size={22}
             />
-            <Text style={styles.sourceName}>{item?.external_source}</Text>
-            <Text style={styles.sourceName}>·</Text>
-            <Text style={styles.authorName}>{item?.external_username}</Text>
+            <Text style={styles.sourceName}>{sourceName}</Text>
+            {authorName && (
+              <>
+                <Text style={styles.sourceName}>·</Text>
+                <Text style={styles.authorName} numberOfLines={1}>
+                  {authorName}
+                </Text>
+              </>
+            )}
           </View>
           {item?.distance && (
             <View style={styles.rightRow}>
@@ -226,17 +248,42 @@ const stylesFn = (Colors: ThemeColors) =>
     rightTop: {
       flexDirection: "row",
       alignItems: "center",
+      gap: 6,
+    },
+
+    rareBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 2,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 8,
+      backgroundColor: Colors.main300,
+    },
+
+    rareBadgeText: {
+      fontSize: 10,
+      fontWeight: "600",
+      color: Colors.main100,
     },
 
     flag: {
       fontSize: 14,
     },
 
+    latinRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 6,
+      marginTop: 1,
+    },
+
     latin: {
       fontSize: 12,
       fontStyle: "italic",
       color: Colors.statIcon,
-      marginTop: 1,
+      flexShrink: 1,
     },
 
     metaRow: {
@@ -305,7 +352,7 @@ const stylesFn = (Colors: ThemeColors) =>
       color: Colors.main100,
       marginRight: 8,
     },
-    hightlighted: {
+    highlighted: {
       backgroundColor: Colors.main300,
-    }
+    },
   });

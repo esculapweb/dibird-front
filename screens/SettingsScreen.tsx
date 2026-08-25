@@ -30,6 +30,7 @@ import { useExportProfile } from "../hooks/Profile/useExportProfile";
 import { useBiometricSetting } from "../hooks/useBiometricSetting";
 import { canUseBiometrics } from "../services/bio";
 import { openSupportEmail } from "../util/openSupportEmail";
+import { openDonatePage } from "../util/openDonatePage";
 import { BottomSheet } from "../services/bottomSheet";
 import { deleteMyProfile } from "../util/fetches";
 import { useApiError } from "../hooks/useApiError";
@@ -375,6 +376,17 @@ const SettingsScreen = () => {
           icon="chatbubble-outline"
           label={t("settings_send_feedback")}
           onPress={openSupportEmail}
+          hideChevron
+          colors={Colors}
+          styles={styles}
+        />
+        <Divider styles={styles} />
+        {/* Opens the site in the browser — see openDonatePage on why the wallets
+            stay out of the app. */}
+        <Row
+          icon="heart-outline"
+          label={t("settings_support_project")}
+          onPress={() => openDonatePage("settings")}
           hideChevron
           colors={Colors}
           styles={styles}

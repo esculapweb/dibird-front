@@ -120,6 +120,49 @@ describe("source/author row", () => {
     expect(screen.getByText("eBird")).toBeOnTheScreen();
     expect(screen.getByText("jdoe")).toBeOnTheScreen();
   });
+
+  // A dibird observation has no external source and no external username —
+  // it has a real profile behind it, and that is what signs the card.
+  it("names dibird as the source and takes the author from the owner", async () => {
+    await render(
+      <CommunityCard
+        item={{
+          ...OBSERVATION,
+          external_source: null,
+          external_username: null,
+          owner: { username: "anna" },
+        } as never}
+        index={0}
+      />,
+    );
+    expect(screen.getByText("source_dibird")).toBeOnTheScreen();
+    expect(screen.getByText("anna")).toBeOnTheScreen();
+  });
+
+  it("shows no author at all when neither side names one", async () => {
+    await render(
+      <CommunityCard
+        item={{ ...OBSERVATION, external_source: null, external_username: null } as never}
+        index={0}
+      />,
+    );
+    expect(screen.getByText("source_dibird")).toBeOnTheScreen();
+    expect(screen.queryByText("·")).not.toBeOnTheScreen();
+  });
+});
+
+describe("rare badge", () => {
+  // On the "all" tab the feed is mixed, and the rarities in it are marked by
+  // the card — the flag itself is computed by the server (api/rarity.py).
+  it("marks a rare row", async () => {
+    await render(<CommunityCard item={{ ...OBSERVATION, rare: true } as never} index={0} />);
+    expect(screen.getByText("rare")).toBeOnTheScreen();
+  });
+
+  it("leaves an ordinary row unmarked", async () => {
+    await render(<CommunityCard item={{ ...OBSERVATION, rare: false } as never} index={0} />);
+    expect(screen.queryByText("rare")).not.toBeOnTheScreen();
+  });
 });
 
 describe("distance", () => {

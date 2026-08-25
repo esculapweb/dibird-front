@@ -322,8 +322,11 @@ const ObservationEditorScreen = () => {
         setPlaceValue(newPlaceId);
         setPlaceData({
           value: newPlaceData.id,
-          label: newPlaceData.name,
+          // The place was just created by this user, so it always has a name;
+          // null is what the server sends for someone else's place.
+          label: newPlaceData.name ?? "",
           ...newPlaceData,
+          name: newPlaceData.name ?? undefined,
           preview: newPlaceData.preview ?? undefined,
           location: newPlaceData.location ?? undefined,
         });

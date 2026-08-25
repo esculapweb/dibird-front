@@ -225,6 +225,33 @@ describe("replaceLocalWithServer", () => {
     const real = rawRow(999);
     expect(real?.status).toBe("synced");
   });
+
+  // Regression: Observation2Serializer drops `owner` for every action but
+  // retrieve, so a create response is a subset of the detail shape. Written
+  // over the local record wholesale it blanked the author block until the next
+  // detail GET — which offline never comes. Same defect costs the diary its
+  // is_owner, see diaryRepository's test of the same name.
+  it("keeps detail-only fields the create response omits", () => {
+    const created = observationRepository.createLocal(
+      observationPayload(),
+      {},
+      PROFILE,
+      "req-1",
+    );
+
+    const { owner: _owner, ...listShaped } = created;
+    // Cast: the point of the test is that the argument is *not* a full item.
+    observationRepository.replaceLocalWithServer(created.id, {
+      ...listShaped,
+      id: 999,
+    } as ObservationItem);
+
+    for (const row of [rawRow(created.id), rawRow(999)]) {
+      const data = row?.data as typeof created;
+      expect(data.id).toBe(999);
+      expect(data.owner.username).toBe("jdoe");
+    }
+  });
 });
 
 describe("mutation-queue lifecycle", () => {
@@ -499,6 +526,24 @@ describe("removeLocal", () => {
     observationRepository.removeLocal(555);
 
     expect(rawRow(555)).toBeUndefined();
+  });
+
+  // Regression: same alias leak as diaryRepository's — a synced observation
+  // lives under both its real id and the temp-id alias, and deleting by the
+  // real id used to leave the alias row behind forever.
+  it("drops the temp-id alias of an already synced observation too", () => {
+    const created = observationRepository.createLocal(
+      observationPayload(),
+      {},
+      PROFILE,
+      "req-1",
+    );
+    observationRepository.replaceLocalWithServer(created.id, { ...created, id: 999 });
+
+    observationRepository.removeLocal(999);
+
+    expect(rawRow(999)).toBeUndefined();
+    expect(rawRow(created.id)).toBeUndefined();
   });
 });
 

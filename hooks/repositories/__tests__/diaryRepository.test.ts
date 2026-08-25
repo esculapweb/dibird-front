@@ -13,7 +13,7 @@ import { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { createTestDb, loadRepos } from "../testDb";
 import { diaryTable, mutationQueueTable } from "../../../services/db/schema";
 import * as schema from "../../../services/db/schema";
-import { DiaryFormData, ObservationFormData, Profile } from "../../../types";
+import { DiaryFormData, DiaryItem, ObservationFormData, Profile } from "../../../types";
 
 type DiaryRepo = typeof import("../diaryRepository");
 type ObservationRepo = typeof import("../observationRepository");
@@ -264,6 +264,37 @@ describe("replaceLocalWithServer", () => {
     const realRow = rawDiaryRow(999);
     expect(realRow?.status).toBe("synced");
     expect((realRow?.data as { id: number }).id).toBe(999);
+  });
+
+  // Regression: the create endpoint answers with the list serializer, a strict
+  // subset of the detail shape (no is_owner/owner/user_data). That response used
+  // to be written over the local record wholesale, so those fields vanished from
+  // both rows and DiaryDetailScreen — whose edit/delete actions are gated on
+  // is_owner — showed the user their own diary as somebody else's the moment an
+  // offline create synced.
+  it("keeps detail-only fields the create response omits", () => {
+    const created = diaryRepository.createLocal(
+      diaryPayload(),
+      {},
+      PROFILE,
+      "req-1",
+    );
+    expect(created.is_owner).toBe(true);
+
+    const { is_owner: _isOwner, owner: _owner, user_data: _userData, ...listShaped } = created;
+    // Cast: the point of the test is that the argument is *not* a full DiaryItem.
+    diaryRepository.replaceLocalWithServer(created.id, {
+      ...listShaped,
+      id: 999,
+    } as unknown as DiaryItem);
+
+    for (const row of [rawDiaryRow(created.id), rawDiaryRow(999)]) {
+      const data = row?.data as typeof created;
+      expect(data.id).toBe(999);
+      expect(data.is_owner).toBe(true);
+      expect(data.owner.username).toBe("jdoe");
+      expect(data.user_data.username).toBe("jdoe");
+    }
   });
 });
 
@@ -687,6 +718,25 @@ describe("removeLocal", () => {
 
     diaryRepository.removeLocal(created.id);
 
+    expect(rawDiaryRow(created.id)).toBeUndefined();
+  });
+
+  // Regression: a synced diary lives under two primary keys — its real id and
+  // the temp-id alias replaceLocalWithServer keeps around. Deleting it goes
+  // through the real id, and matching on the primary key alone left the alias
+  // behind forever, piling up rows for diaries gone from both device and server.
+  it("drops the temp-id alias of an already synced diary too", () => {
+    const created = diaryRepository.createLocal(
+      diaryPayload(),
+      {},
+      PROFILE,
+      "req-1",
+    );
+    diaryRepository.replaceLocalWithServer(created.id, { ...created, id: 999 });
+
+    diaryRepository.removeLocal(999);
+
+    expect(rawDiaryRow(999)).toBeUndefined();
     expect(rawDiaryRow(created.id)).toBeUndefined();
   });
 });

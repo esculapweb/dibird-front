@@ -261,10 +261,17 @@ const Navigation = () => {
       // guest never walked this stack and `lastGuestRouteRef` is empty. There the
       // "without leaving the funnel" role is played by the one-day TTL of the
       // intent itself.
+      // An intent from a shared link needs no such guard: the person tapped the
+      // link and was asked to sign in on the spot, so the funnel is the link
+      // itself. They are on Welcome at that moment — which is exactly the screen
+      // the guard below treats as "signed in somewhere else entirely".
       const from = lastGuestRouteRef.current?.name;
       const coldStart = from === undefined;
       const inFunnel =
-        coldStart || from === target.name || AUTH_FUNNEL_SCREENS.has(from);
+        target.fromLink ||
+        coldStart ||
+        from === target.name ||
+        AUTH_FUNNEL_SCREENS.has(from);
       if (!inFunnel) return;
 
       // Onboarding is over for this person before it began. They created an

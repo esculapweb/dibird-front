@@ -37,6 +37,7 @@ jest.mock("../../hooks/Profile/useExportProfile", () => ({ useExportProfile: jes
 jest.mock("../../hooks/useBiometricSetting", () => ({ useBiometricSetting: jest.fn() }));
 jest.mock("../../services/bio", () => ({ canUseBiometrics: jest.fn() }));
 jest.mock("../../util/openSupportEmail", () => ({ openSupportEmail: jest.fn() }));
+jest.mock("../../util/openDonatePage", () => ({ openDonatePage: jest.fn() }));
 jest.mock("../../services/bottomSheet", () => ({ BottomSheet: { show: jest.fn(), hide: jest.fn() } }));
 jest.mock("../../util/fetches", () => ({ deleteMyProfile: jest.fn() }));
 jest.mock("../../hooks/useApiError", () => ({ useApiError: () => ({ showErrorToast: mockShowErrorToast }) }));
@@ -56,6 +57,7 @@ import { useExportProfile } from "../../hooks/Profile/useExportProfile";
 import { useBiometricSetting } from "../../hooks/useBiometricSetting";
 import { canUseBiometrics } from "../../services/bio";
 import { openSupportEmail } from "../../util/openSupportEmail";
+import { openDonatePage } from "../../util/openDonatePage";
 import { BottomSheet } from "../../services/bottomSheet";
 import { deleteMyProfile } from "../../util/fetches";
 import api from "../../services/api";
@@ -276,6 +278,12 @@ it("send feedback opens the support email composer", async () => {
   await render(<SettingsScreen />);
   await fireEvent.press(screen.getByText("settings_send_feedback"));
   expect(openSupportEmail).toHaveBeenCalledTimes(1);
+});
+
+it("support the project opens the donation page with the settings source", async () => {
+  await render(<SettingsScreen />);
+  await fireEvent.press(screen.getByText("settings_support_project"));
+  expect(openDonatePage).toHaveBeenCalledWith("settings");
 });
 
 it("navigates to Privacy and Terms", async () => {

@@ -33,6 +33,9 @@ export type ShareType =
 /** Where the alerts were enabled from — the entry point, not the fact of enabling. */
 export type AlertsEnabledSource = "settings" | "main_card";
 
+/** Where the donation page was opened from. */
+export type DonateSource = "settings";
+
 /**
  * The onboarding steps. A literal union rather than `number`: in Firebase the
  * parameter turns into a string anyway, and a "step 5" that does not exist in the
@@ -100,6 +103,12 @@ type EventParams = {
   species_viewed: undefined;
   territory_viewed: undefined;
   share_tapped: { type: ShareType };
+  /**
+   * A tap on "Support the project". The source is here for the same reason as in
+   * `alerts_enabled`: the answer to "is the donation link worth its place"
+   * depends on where it stands, and one number over all entry points hides that.
+   */
+  donate_tapped: { source: DonateSource };
   observation_created: undefined;
   /** The key activation point; sent once per installation. */
   first_observation_created: undefined;

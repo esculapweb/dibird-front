@@ -68,12 +68,14 @@ beforeEach(() => {
 // The server applies the territory and the radius from the alert settings: our
 // own GPS fix gave a different centre than the pushes did, and without the
 // permission there were no coordinates at all — so the backend silently skipped
-// the radius.
+// the radius. `rare` is asked for explicitly too: the same feed also carries
+// ordinary public observations of dibird users, and a widget titled "rare
+// nearby" must not quietly start listing sparrows.
 it("asks the server for the alert-settings scope, enabled only with settings", async () => {
   await render(<RareNearby filters={{}} />);
   const props = lastListCall();
   expect(props.screenName).toBe("RareNearby");
-  expect(props.filters).toEqual({ near: "alerts" });
+  expect(props.filters).toEqual({ near: "alerts", rare: true });
   expect(props.sort).toBe("-date_time");
   expect(props.locationCoords).toBeUndefined();
   expect(props.enabled).toBe(true);

@@ -1,8 +1,17 @@
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
+);
+
 jest.mock("./util/helpers", () => ({
   langBaseUrl: () => "https://dibird.com",
 }));
 
+jest.mock("./services/authReturn", () => ({
+  setAuthReturn: jest.fn(),
+}));
+
 import linking from "./linking";
+import { setAuthReturn } from "./services/authReturn";
 import { getStateFromPath } from "@react-navigation/native";
 
 type State = ReturnType<typeof getStateFromPath>;
@@ -61,6 +70,13 @@ const SUPPORTED: Array<{ path: string; authed?: boolean; screen: string }> = [
   { path: "extinct/?name=dodo", screen: "Taxonomy" },
   { path: "order/", screen: "Taxonomy" },
   { path: "order/?name=owls&o=ioc_id", screen: "Taxonomy" },
+  // Claimed as App Links by app.config.js and sitemapped by the site, but
+  // unroutable until 22.08 — the app opened onto whatever screen it had been
+  // left on. The app itself never produces these (taxonListSharePath shares
+  // orders and species only), so they arrive from the website only.
+  { path: "family/", screen: "Taxonomy" },
+  { path: "genus/", screen: "Taxonomy" },
+  { path: "genus/?name=aix&o=ioc_id", screen: "Taxonomy" },
   { path: "extinct/", screen: "Taxonomy" },
   { path: "order/ducks-and-relatives/", screen: "TaxonGroupDetail" },
   { path: "order/ducks-and-relatives/?o=ioc_id", screen: "TaxonGroupDetail" },
@@ -156,6 +172,8 @@ const SUPPORTED: Array<{ path: string; authed?: boolean; screen: string }> = [
   },
   { path: "ru/species/?name=zhuravl", screen: "Taxonomy" },
   { path: "ru/order/", screen: "Taxonomy" },
+  { path: "ru/family/", screen: "Taxonomy" },
+  { path: "ru/genus/", screen: "Taxonomy" },
   { path: "ru/extinct/", screen: "Taxonomy" },
   { path: "ru/order/zhuravleobraznye/", screen: "TaxonGroupDetail" },
   {
@@ -224,6 +242,25 @@ describe("deep links from the QA page resolve to the right screen", () => {
     expect(stateFor(path)).toBeFalsy();
   });
 
+  // The four taxon list paths all land on Taxonomy, so asserting the screen
+  // says nothing about which list you got — the rank is the whole payload.
+  // `/family/` and `/genus/` are the reason this exists: they were claimed as
+  // App Links without a route behind them.
+  it.each([
+    ["order/", 2],
+    ["family/", 3],
+    ["genus/", 4],
+    ["species/", 5],
+    ["ru/family/", 3],
+    ["ru/genus/", 4],
+  ])("%s opens the list at rank %i", (path, rank) => {
+    const state = stateFor(path);
+    const last = state?.routes?.[state.routes.length - 1];
+
+    expect(last?.name).toBe("Taxonomy");
+    expect(last?.params).toEqual(expect.objectContaining({ rank }));
+  });
+
   // The catalogue needs no account — navigation/catalogScreens.tsx registers
   // it in the guest stack too — so every catalogue link above has to resolve
   // without one. What this guards against is a Share button whose recipient
@@ -262,6 +299,57 @@ describe("deep links from the QA page resolve to the right screen", () => {
     expect(routeNames(stateFor("my/observation/328145/", false))).toEqual([
       "Welcome",
     ]);
+  });
+
+  // The bounce above is where a shared link used to die: the guest signed up
+  // and landed on the dashboard, with nothing left of the diary they were sent.
+  // What the link asked for is handed to services/authReturn, which puts it
+  // back on top of Main once the navigator has been recreated (Navigation.tsx).
+  describe("what the guest was sent, remembered across the sign-in", () => {
+    beforeEach(() => {
+      (setAuthReturn as jest.Mock).mockClear();
+    });
+
+    it.each([
+      ["my/diary/15014/", "DiaryDetail", { diaryId: "15014" }],
+      ["my/community/328637/", "CommunityDetail", { observationId: "328637" }],
+      ["ru/my/diary/15014/", "DiaryDetail", { diaryId: "15014" }],
+      ["users/stat/2/", "UserStat", { profileId: "2" }],
+    ])("%s -> %s", (path, screen, params) => {
+      stateFor(path, false);
+
+      expect(setAuthReturn).toHaveBeenCalledWith(
+        expect.objectContaining({ name: screen, params }),
+        { fromLink: true },
+      );
+    });
+
+    it("keeps the filters the link carried", () => {
+      stateFor("my/diary/15004/?species=20415&o=-date_time", false);
+
+      expect(setAuthReturn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: "DiaryDetail",
+          params: expect.objectContaining({
+            diaryId: "15004",
+            species: "20415",
+          }),
+        }),
+        { fromLink: true },
+      );
+    });
+
+    it("remembers nothing for a link that resolves to no screen", () => {
+      stateFor("my/test-push/", false);
+
+      expect(setAuthReturn).not.toHaveBeenCalled();
+    });
+
+    it("remembers nothing for a signed-in user", () => {
+      stateFor("my/diary/15014/", true);
+
+      expect(setAuthReturn).not.toHaveBeenCalled();
+    });
   });
 
   // The taxonomy links carry state beyond the screen name: catalogue lists

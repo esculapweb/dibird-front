@@ -40,6 +40,10 @@ yarn-error.*
 # tests
 coverage/
 .maestro/.logs/
+# Throwaway flows (.maestro/scratch.sh). Kept out of the suite on purpose: a
+# bare `npm run e2e:android` globs .maestro/*.yaml, so a probe left in the
+# suite directory turns into a red flow in the next batch.
+.maestro/scratch/
 
 # generated native folders
 /ios

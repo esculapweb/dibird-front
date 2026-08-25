@@ -335,6 +335,25 @@ describe("returning the guest after sign-in", () => {
     expect(mockDispatch).not.toHaveBeenCalled();
   });
 
+  // The other source of an intent: a shared link to a page only an account can
+  // open. linking.ts drops such a guest on Welcome and remembers what they came
+  // for — the guard above must not mistake that for "signed in somewhere else".
+  it("returns the guest to what a shared link asked for", async () => {
+    setAuthReturn({ name: "DiaryDetail", params: { diaryId: "15014" } }, {
+      fromLink: true,
+    });
+
+    await signInFrom("WelcomeMain");
+
+    expect(resetPayload()).toEqual({
+      index: 1,
+      routes: [
+        { name: "Main" },
+        { name: "DiaryDetail", params: { diaryId: "15014" } },
+      ],
+    });
+  });
+
   it("does nothing for a plain sign-in with no wall behind it", async () => {
     await signInFrom("WelcomeMain");
 
