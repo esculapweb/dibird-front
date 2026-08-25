@@ -65,7 +65,14 @@ const ObservationsScreen = () => {
     <ListScreen
       route={route}
       fetchFunction={fetchObservations}
-      allowedFilters={["territory", "place", "date", "species", "unsynced"]}
+      allowedFilters={[
+        "territory",
+        "place",
+        "date",
+        "species",
+        "private",
+        "unsynced",
+      ]}
       errorTitle={t("observations_unavailable")}
       onFiltersChange={async (val) => setCurrentFilters(val)}
       onAdd={handleAdd}

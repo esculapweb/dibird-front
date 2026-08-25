@@ -60,6 +60,7 @@ it("passes fetchDiaries and titles/errors through to ListScreen", async () => {
 
   const props = mockListScreenCapture.mock.calls[0][0];
   expect(props.fetchFunction).toBe(fetchDiaries);
+  expect(props.allowedFilters).toContain("private");
   expect(props.title).toBe("diaries");
   expect(props.errorTitle).toBe("diaries_unavailable");
 });

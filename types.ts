@@ -249,13 +249,21 @@ export type DateFilter = {
   today?: boolean | null;
 } | null;
 
+// Who made the observation: a person in the app (no external source on the
+// row) or the eBird import. Matches the `source=` query param of the
+// community feed (see ObservationFilterSet.filter_source on the backend).
+export type ObservationSource = "dibird" | "ebird";
+
 export type AllowedFilterKey =
   | "territory"
   | "date"
   | "place"
   | "species"
   | "favourite"
-  | "unsynced";
+  | "unsynced"
+  | "private"
+  | "radius"
+  | "source";
 
 export interface Filters {
   date?: DateFilter | null;
@@ -271,10 +279,20 @@ export interface Filters {
   seen?: boolean | null;
   species?: number | null;
   speciesName?: string;
+  // Own lists only (observations/diaries): true — only what is hidden from
+  // everyone else, false — only what is published. Nobody else's list can
+  // carry a private record at all.
+  private?: boolean | null;
+  // Community feed only: "dibird" is `external_source IS NULL` server-side
+  // (a record made by a person in the app), "ebird" is the import.
+  source?: ObservationSource | null;
   tab?: seenMode | compareMode | null;
   territory?: number | null;
   user_id?: number | null;
   year?: number | null;
+  // Kilometres around the device's current position, sent together with
+  // lng/lat (see fetchPlaces/fetchCommunityObservations) — without them the
+  // server has no centre to apply it to and ignores the filter.
   radius?: number | null;
   // A scope preset computed entirely by the server: `alerts` is the territory and
   // the radius around the point from the alert settings. Coordinates are not sent

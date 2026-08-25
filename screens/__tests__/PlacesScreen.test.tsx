@@ -61,6 +61,7 @@ it("passes fetchPlaces, restricted filters, search, and location props through t
     "territory",
     "date",
     "favourite",
+    "radius",
     "unsynced",
   ]);
   expect(props.showSearch).toBe(true);

@@ -99,6 +99,21 @@ const dateRangeProps = () => mockDateRangeFilterCapture.mock.calls.at(-1)![0] as
   setDateFilter: (v: unknown) => void;
 };
 
+// The radius dropdown is the only one without a `type` (that prop also turns
+// on the sort icon of SelectListModal, and a radius has nothing to sort by),
+// so it is picked out by its title instead.
+const radiusDropdownProps = () =>
+  mockDropdownCapture.mock.calls
+    .map((c) => c[0] as { title?: string; value: number | null; setValue: (v: number | null) => void })
+    .filter((p) => p.title === "radius")
+    .at(-1)!;
+
+const radioGroupPropsByTestID = (testID: string) =>
+  mockRadioGroupCapture.mock.calls
+    .map((c) => c[0] as { testID?: string; value: unknown; onChange: (v: unknown) => void })
+    .filter((p) => p.testID === testID)
+    .at(-1)!;
+
 const baseProps = (overrides: Record<string, unknown> = {}) => ({
   filters: {} as Filters,
   allowed: ALL_ALLOWED,
@@ -304,6 +319,113 @@ describe("applyHandler", () => {
     );
     await fireEvent.press(screen.getByText("apply"));
     expect(mockSetSpecies).not.toHaveBeenCalled();
+  });
+});
+
+describe("privacy / source / radius", () => {
+  it("seeds and applies the privacy and source values", async () => {
+    await render(
+      <FilterSheetContent
+        {...baseProps({
+          allowed: ["private", "source"] as AllowedFilterKey[],
+          filters: { private: true, source: "ebird" } as Filters,
+        })}
+      />,
+    );
+
+    expect(radioGroupPropsByTestID("private-filter").value).toBe(true);
+    expect(radioGroupPropsByTestID("source-filter").value).toBe("ebird");
+
+    await act(async () => radioGroupPropsByTestID("source-filter").onChange("dibird"));
+    await fireEvent.press(screen.getByText("apply"));
+
+    expect(mockSetFilters).toHaveBeenCalledWith({ private: true, source: "dibird" });
+  });
+
+  it("takes a radius as soon as there is a fix", async () => {
+    (useLocation as jest.Mock).mockReturnValue({
+      locationCoords: [27.56, 53.9],
+      locationAvailable: true,
+      permissionStatus: "granted",
+      requestLocation: mockRequestLocation,
+    });
+
+    await render(
+      <FilterSheetContent {...baseProps({ allowed: ["radius"] as AllowedFilterKey[] })} />,
+    );
+
+    await act(async () => radiusDropdownProps().setValue(50));
+    expect(radiusDropdownProps().value).toBe(50);
+
+    await fireEvent.press(screen.getByText("apply"));
+    expect(mockSetFilters).toHaveBeenCalledWith({ radius: 50 });
+    expect(mockRequestLocation).not.toHaveBeenCalled();
+  });
+
+  it("asks for the location first when there is no fix yet, and keeps the radius once it arrives", async () => {
+    mockRequestLocation.mockResolvedValue({ coords: [27.56, 53.9], accuracy: 10 });
+
+    await render(
+      <FilterSheetContent {...baseProps({ allowed: ["radius"] as AllowedFilterKey[] })} />,
+    );
+
+    await act(async () => radiusDropdownProps().setValue(25));
+
+    expect(mockRequestLocation).toHaveBeenCalledTimes(1);
+    expect(radiusDropdownProps().value).toBe(25);
+    expect(mockHandleLocationUnavailable).not.toHaveBeenCalled();
+  });
+
+  it("drops the radius and explains itself when the request brings no fix", async () => {
+    mockRequestLocation.mockResolvedValue(null);
+
+    await render(
+      <FilterSheetContent {...baseProps({ allowed: ["radius"] as AllowedFilterKey[] })} />,
+    );
+
+    await act(async () => radiusDropdownProps().setValue(25));
+
+    expect(radiusDropdownProps().value).toBeNull();
+    expect(mockHandleLocationUnavailable).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not re-prompt an already denied user, it sends them to the settings", async () => {
+    (useLocation as jest.Mock).mockReturnValue({
+      locationCoords: null,
+      locationAvailable: false,
+      permissionStatus: "denied",
+      requestLocation: mockRequestLocation,
+    });
+
+    await render(
+      <FilterSheetContent {...baseProps({ allowed: ["radius"] as AllowedFilterKey[] })} />,
+    );
+
+    await act(async () => radiusDropdownProps().setValue(25));
+
+    expect(mockRequestLocation).not.toHaveBeenCalled();
+    expect(radiusDropdownProps().value).toBeNull();
+    expect(mockHandleLocationUnavailable).toHaveBeenCalledTimes(1);
+  });
+
+  it("clears the radius without touching the location at all", async () => {
+    (useLocation as jest.Mock).mockReturnValue({
+      locationCoords: null,
+      locationAvailable: false,
+      permissionStatus: "denied",
+      requestLocation: mockRequestLocation,
+    });
+
+    await render(
+      <FilterSheetContent
+        {...baseProps({ allowed: ["radius"] as AllowedFilterKey[], filters: { radius: 10 } })}
+      />,
+    );
+
+    await act(async () => radiusDropdownProps().setValue(null));
+
+    expect(radiusDropdownProps().value).toBeNull();
+    expect(mockHandleLocationUnavailable).not.toHaveBeenCalled();
   });
 });
 

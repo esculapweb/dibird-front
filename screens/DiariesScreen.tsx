@@ -57,7 +57,14 @@ const DiariesScreen = () => {
     <ListScreen
       route={route}
       fetchFunction={fetchDiaries}
-      allowedFilters={["territory", "place", "date", "species", "unsynced"]}
+      allowedFilters={[
+        "territory",
+        "place",
+        "date",
+        "species",
+        "private",
+        "unsynced",
+      ]}
       errorTitle={t("diaries_unavailable")}
       onFiltersChange={async (val) => setCurrentFilters(val)}
       onAdd={handleAdd}

@@ -89,7 +89,18 @@ const RareNearby: FC<NewSpeciesProps> = ({ filters }) => {
     return (
       <>
         <View style={styles.sectionHeader}>
-          <Text style={styles.groupLabel}>{t("rare_nearby")}</Text>
+          <View>
+            <Text style={styles.groupLabel}>{t("rare_nearby")}</Text>
+            {/* The scope row is part of the header, so the skeleton keeps its
+                height: without it the title sat 20px lower and jumped up the
+                moment the list arrived. */}
+            <View style={styles.scopeRow}>
+              <View
+                style={styles.scopeSkeleton}
+                testID="rare-nearby-scope-skeleton"
+              />
+            </View>
+          </View>
         </View>
         <View style={styles.nsList}>
           {[0, 1, 2].map((i) => (
@@ -171,14 +182,32 @@ const RareNearby: FC<NewSpeciesProps> = ({ filters }) => {
     <>
       <View style={styles.sectionHeader}>
         <TouchableOpacity
+          style={styles.scopeButton}
           onPress={() => navigation.navigate("AlertSettings")}
           hitSlop={8}
           testID="rare-nearby-scope"
         >
           <Text style={styles.groupLabel}>{t("rare_nearby")}</Text>
-          <Text style={styles.scope} numberOfLines={1}>
-            {scope ?? t("rare_nearby_set_location")}
-          </Text>
+          {/* The scope is not a caption but the control that changes it, so it
+              spells the action out: a grey line under the title read as a plain
+              label, and the trip to the alert settings — the only place where
+              the country and the radius are set — stayed invisible. With no
+              scope at all the line is already an invitation, so it carries the
+              accent colour on its own instead of a second "change". */}
+          <View style={styles.scopeRow}>
+            <Text
+              style={[styles.scope, scope ? null : styles.scopeAction]}
+              numberOfLines={1}
+            >
+              {scope ?? t("rare_nearby_set_location")}
+            </Text>
+            {scope ? (
+              <Text style={styles.scopeAction}>
+                {" · "}
+                {t("rare_nearby_change")}
+              </Text>
+            ) : null}
+          </View>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() =>
@@ -269,12 +298,34 @@ const stylesFn = (Colors: ThemeColors) =>
       color: Colors.textMain,
       marginLeft: H_PAD,
     },
+    // Long country names must eat their own row, not push "all →" off the edge.
+    scopeButton: {
+      flexShrink: 1,
+    },
+    scopeRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginLeft: H_PAD,
+      marginTop: 2,
+      marginBottom: 8,
+    },
     scope: {
       fontSize: 12,
       color: Colors.textSecondary,
-      marginLeft: H_PAD,
-      marginTop: 1,
-      marginBottom: 8,
+      flexShrink: 1,
+    },
+    scopeSkeleton: {
+      height: 14,
+      width: 130,
+      borderRadius: 4,
+      backgroundColor: Colors.textMain,
+      opacity: 0.15,
+    },
+    // A long country name is truncated instead of taking "change" down with it.
+    scopeAction: {
+      fontSize: 12,
+      color: Colors.main100,
+      flexShrink: 0,
     },
     seeAll: {
       fontSize: 14,

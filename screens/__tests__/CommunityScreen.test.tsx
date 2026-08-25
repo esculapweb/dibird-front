@@ -94,7 +94,13 @@ it("passes fetchCommunityObservations, title/errorTitle and allowedFilters throu
   expect(props.fetchFunction).toBe(fetchCommunityObservations);
   expect(props.title).toBe("community");
   expect(props.errorTitle).toBe("observations_unavailable");
-  expect(props.allowedFilters).toEqual(["territory", "date", "species"]);
+  expect(props.allowedFilters).toEqual([
+    "territory",
+    "date",
+    "species",
+    "source",
+    "radius",
+  ]);
 });
 
 it("forwards the current location and its unavailable-handler through to ListScreen", async () => {

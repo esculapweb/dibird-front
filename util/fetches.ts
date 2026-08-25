@@ -6,6 +6,7 @@ import {
   isoToFlagEmoji,
   buildDateParams,
   cleanFilters,
+  roundCoords,
   stableStringify,
 } from "./helpers";
 import i18n from "../services/i18n";
@@ -1528,6 +1529,27 @@ const buildLocalOnlyResponse = <T>(items: T[]): PaginatedResponse<T> => ({
   },
 });
 
+// The centre a `radius` filter is measured from. Unlike the coordinates that
+// only refine a response (fetchAbstract's requestOnlyParams), these decide
+// *which* rows come back, so they belong in the cache key — two fixes a
+// hundred kilometres apart must never share one "within 50 km" list. Rounded
+// to ~100 m so that standing still keeps hitting the same cache entry instead
+// of writing a new one per GPS jitter; that is far below the smallest radius
+// on offer (see constants/radiusOptions.ts).
+//
+// No fix, no centre: the server then has nothing to apply the radius to and
+// says so in its log (ObservationFilterSet.filter_radius). The filter sheet
+// only lets a radius be picked once there is a fix, so this is the rare case
+// of losing it afterwards.
+const radiusCenterParams = (
+  filters: Filters,
+  coords?: Coords | null,
+): Record<string, number> => {
+  if (filters.radius == null) return {};
+  const rounded = roundCoords(coords, 3);
+  return rounded ? { lng: rounded[0], lat: rounded[1] } : {};
+};
+
 export const fetchPlaces = async (
   filters: Filters,
   order: string | null = "distance",
@@ -1547,15 +1569,20 @@ export const fetchPlaces = async (
   // as a hit — see fetchAbstract's comment on requestOnlyParams. Distance
   // *values* in an offline-served list may be stale/off, same tradeoff the
   // app already accepts elsewhere (e.g. fetchStat re-sorting cached data).
+  // A radius filter is the exception: there the same lng/lat select the rows,
+  // so radiusCenterParams puts them in the cache key instead.
+  const centerParams = radiusCenterParams(filters, coords);
   const requestOnlyParams =
-    isDistanceSort && coords ? { lng: coords[0], lat: coords[1] } : {};
+    isDistanceSort && coords && filters.radius == null
+      ? { lng: coords[0], lat: coords[1] }
+      : {};
   const data = await fetchAbstract<PaginatedResponse<PlaceItem>>(
     "/myapi/place2/",
     filters,
     order,
     search,
     page,
-    {},
+    centerParams,
     undefined,
     {
       table: placesListCacheTable,
@@ -1834,8 +1861,12 @@ export const fetchCommunityObservations = (
   // identical comment on requestOnlyParams above): otherwise a list cached
   // while online under one GPS fix cache-misses entirely once offline with a
   // slightly different (or no) fix, even though nothing else about the query
-  // changed — exactly what happened reopening the app in airplane mode.
-  const requestOnlyParams = coords ? { lng: coords[0], lat: coords[1] } : {};
+  // changed — exactly what happened reopening the app in airplane mode. With
+  // a radius filter they select the rows instead of refining them, and move
+  // into the key (radiusCenterParams).
+  const centerParams = radiusCenterParams(filters, coords);
+  const requestOnlyParams =
+    coords && filters.radius == null ? { lng: coords[0], lat: coords[1] } : {};
 
   return fetchAbstract<PaginatedResponse<ObservationItem>>(
     "/myapi/community2/",
@@ -1843,7 +1874,7 @@ export const fetchCommunityObservations = (
     order,
     search,
     page,
-    {},
+    centerParams,
     per_page,
     {
       table: communityObservationsCacheTable,

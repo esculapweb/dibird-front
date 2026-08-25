@@ -54,6 +54,7 @@ it("passes fetchObservations and titles/errors through to ListScreen", async () 
 
   const props = mockListScreenCapture.mock.calls[0][0];
   expect(props.fetchFunction).toBe(fetchObservations);
+  expect(props.allowedFilters).toContain("private");
   expect(props.title).toBe("observations");
   expect(props.errorTitle).toBe("observations_unavailable");
 });

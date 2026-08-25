@@ -1,4 +1,4 @@
-import { Filters, seenMode } from "../types";
+import { ObservationSource, Filters, seenMode } from "../types";
 
 interface DeepLinkParams {
   territory?: number | string | null;
@@ -7,10 +7,36 @@ interface DeepLinkParams {
   year?: number | string | null;
   date_time_min?: string | null;
   date_time_max?: string | null;
+  private?: boolean | string | null;
+  source?: string | null;
+  radius?: number | string | null;
   o?: string | null;
   seenMode?: seenMode | null;
   filtersOverride?: Filters;
 }
+
+const SOURCES: readonly ObservationSource[] = ["dibird", "ebird"];
+
+// A link carries `private=true`/`private=false`, and both are a filter — only
+// a missing (or unparsable) value means "not filtered by privacy". React
+// Navigation hands the value over as a string, an in-app navigation as a
+// boolean.
+const parseBoolParam = (
+  value: boolean | string | null | undefined,
+): boolean | null => {
+  if (value === true || value === "true") return true;
+  if (value === false || value === "false") return false;
+  return null;
+};
+
+const parseRadiusParam = (
+  value: number | string | null | undefined,
+): number | null => {
+  const km = Number(value);
+  return value != null && value !== "" && Number.isFinite(km) && km > 0
+    ? km
+    : null;
+};
 
 export const parseDeepLinkParams = (params: DeepLinkParams = {}) => {
   const {
@@ -20,6 +46,9 @@ export const parseDeepLinkParams = (params: DeepLinkParams = {}) => {
     year,
     date_time_min,
     date_time_max,
+    private: privateParam,
+    source,
+    radius,
     o,
     seenMode,
   } = params;
@@ -30,6 +59,19 @@ export const parseDeepLinkParams = (params: DeepLinkParams = {}) => {
     species: species ? Number(species) : null,
     date: null,
   };
+
+  // Set only when the link actually carries them, unlike the four above: a
+  // screen that has no such filter (privacy on a shared list, a radius without
+  // a device position) should not be handed a key it never asked about — the
+  // deep-linked filters replace the screen's own set wholesale.
+  const privateValue = parseBoolParam(privateParam);
+  if (privateValue !== null) filters.private = privateValue;
+
+  const sourceValue = SOURCES.find((s) => s === source) ?? null;
+  if (sourceValue) filters.source = sourceValue;
+
+  const radiusValue = parseRadiusParam(radius);
+  if (radiusValue) filters.radius = radiusValue;
 
   if (year) {
     filters.date = {
@@ -51,6 +93,9 @@ export const parseDeepLinkParams = (params: DeepLinkParams = {}) => {
     filters.place ||
     filters.species ||
     filters.date ||
+    filters.private != null ||
+    filters.source ||
+    filters.radius ||
     sort
   );
 

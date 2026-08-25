@@ -435,6 +435,63 @@ describe("fetchCommunityObservations", () => {
   });
 });
 
+describe("radius centre coordinates", () => {
+  // Online the cache is only written, never read (see cachedRead), so the key
+  // is taken from the write.
+  const cacheKeyOf = (call: number) =>
+    (listCacheRepository.cacheListResponse as jest.Mock).mock.calls[call][1];
+
+  it("folds the centre into the cache key when a radius is filtering the list", async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: { results: [] } });
+
+    await fetches.fetchCommunityObservations({ radius: 50 }, null, "", 1, [10, 20]);
+    await fetches.fetchCommunityObservations({ radius: 50 }, null, "", 1, [11, 21]);
+
+    const params = (api.get as jest.Mock).mock.calls[0][1].params;
+    expect(params).toEqual(expect.objectContaining({ lng: 10, lat: 20, radius: 50 }));
+    expect(cacheKeyOf(0)).not.toBe(cacheKeyOf(1));
+  });
+
+  it("rounds the centre to ~100 m so a standing still device keeps one entry", async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: { results: [] } });
+
+    await fetches.fetchCommunityObservations({ radius: 50 }, null, "", 1, [10.00001, 20.00002]);
+    await fetches.fetchCommunityObservations({ radius: 50 }, null, "", 1, [10.00003, 20.00004]);
+
+    expect((api.get as jest.Mock).mock.calls[0][1].params.lng).toBe(10);
+    expect(cacheKeyOf(0)).toBe(cacheKeyOf(1));
+  });
+
+  it("keeps the centre out of the key when nothing is filtered by it", async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: { results: [] } });
+
+    await fetches.fetchCommunityObservations({}, null, "", 1, [10, 20]);
+    await fetches.fetchCommunityObservations({}, null, "", 1, [99, 99]);
+
+    expect(cacheKeyOf(0)).toBe(cacheKeyOf(1));
+  });
+
+  it("sends the centre for a place radius, distance sort or not", async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: { results: [] } });
+
+    await fetches.fetchPlaces({ radius: 25 }, "name", "", 1, [10, 20]);
+
+    expect((api.get as jest.Mock).mock.calls[0][1].params).toEqual(
+      expect.objectContaining({ lng: 10, lat: 20, radius: 25 }),
+    );
+  });
+
+  it("leaves a radius without a fix to the server, which logs and ignores it", async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: { results: [] } });
+
+    await fetches.fetchPlaces({ radius: 25 }, "name", "", 1, null);
+
+    const params = (api.get as jest.Mock).mock.calls[0][1].params;
+    expect(params.radius).toBe(25);
+    expect(params).not.toHaveProperty("lng");
+  });
+});
+
 describe("simple cache-through fetchers (try live -> cache -> catch -> cached fallback -> rethrow)", () => {
   const cases: Array<{
     name: string;

@@ -133,6 +133,16 @@ describe("scope label", () => {
     ).not.toBeOnTheScreen();
   });
 
+  // The scope reads as a caption unless the action is spelled out, and the trip
+  // to the alert settings — the only place where the country and the radius are
+  // set — is the whole point of the line.
+  it("offers to change the scope next to it", async () => {
+    await render(<RareNearby filters={{}} />);
+    expect(
+      screen.getByText("rare_nearby_change", { exact: false }),
+    ).toBeOnTheScreen();
+  });
+
   it("asks for a location when neither a centre nor a country is known", async () => {
     (useAlertSettings as jest.Mock).mockReturnValue({
       settings: {
@@ -145,6 +155,10 @@ describe("scope label", () => {
     await render(<RareNearby filters={{}} />);
 
     expect(screen.getByText("rare_nearby_set_location")).toBeOnTheScreen();
+    // The invitation is already an action — a second "change" next to it is noise.
+    expect(
+      screen.queryByText("rare_nearby_change", { exact: false }),
+    ).not.toBeOnTheScreen();
   });
 });
 
@@ -154,6 +168,14 @@ describe("loading state", () => {
     await render(<RareNearby filters={{}} />);
     expect(screen.getByText("rare_nearby")).toBeOnTheScreen();
     expect(screen.queryByText("all", { exact: false })).not.toBeOnTheScreen();
+  });
+
+  // The header keeps the scope row's height while loading, or the title jumps
+  // once the list arrives.
+  it("holds the scope row's place", async () => {
+    mockList(undefined, true);
+    await render(<RareNearby filters={{}} />);
+    expect(screen.getByTestId("rare-nearby-scope-skeleton")).toBeOnTheScreen();
   });
 });
 
@@ -218,6 +240,12 @@ describe("navigation", () => {
     await render(<RareNearby filters={{}} />);
     await fireEvent.press(screen.getByText("Blue Tit"));
     expect(mockNavigation.navigate).toHaveBeenCalledWith("CommunityDetail", { observationId: 1 });
+  });
+
+  it("tapping the scope opens the alert settings", async () => {
+    await render(<RareNearby filters={{}} />);
+    await fireEvent.press(screen.getByTestId("rare-nearby-scope"));
+    expect(mockNavigation.navigate).toHaveBeenCalledWith("AlertSettings");
   });
 
   it("'see all' navigates to Community with the settings' territory and place/species cleared", async () => {

@@ -21,7 +21,13 @@ import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 import { useFilters } from "../../store/filters-context";
 import { useLocationUnavailable } from "../../hooks/useLocationUnavailable";
 import SearchInput from "../../components/ui/SearchInput";
-import { Filters, AllowedFilterKey, DateFilter } from "../../types";
+import { RADIUS_OPTIONS_KM } from "../../constants/radiusOptions";
+import {
+  Filters,
+  AllowedFilterKey,
+  DateFilter,
+  ObservationSource,
+} from "../../types";
 import { ThemeColors } from "../../store/theme-context";
 
 interface FilterSheetContentProps {
@@ -84,6 +90,21 @@ const FilterSheetContent = ({
     { label: t("unsynced_only"), value: true },
   ];
 
+  const privateOptions: { label: string; value: boolean | null }[] = [
+    { label: t("all"), value: null },
+    { label: t("public_only"), value: false },
+    { label: t("private_only"), value: true },
+  ];
+
+  const sourceOptions: { label: string; value: ObservationSource | null }[] = [
+    { label: t("all"), value: null },
+    { label: t("source_dibird"), value: "dibird" },
+    { label: t("source_ebird"), value: "ebird" },
+  ];
+
+  const radiusOptions: { label: string; value: number }[] =
+    RADIUS_OPTIONS_KM.map((km) => ({ label: `${km} ${t("km")}`, value: km }));
+
   const dateFilterInitial: DateFilter = {
     mode: "any",
     from: null,
@@ -111,6 +132,32 @@ const FilterSheetContent = ({
   const [unsyncedValue, setUnsyncedValue] = useState(
     filters?.unsynced ?? null,
   );
+  const [privateValue, setPrivateValue] = useState(filters?.private ?? null);
+  const [sourceValue, setSourceValue] = useState<ObservationSource | null>(
+    filters?.source ?? null,
+  );
+  const [radiusValue, setRadiusValue] = useState<number | null>(
+    filters?.radius ?? null,
+  );
+
+  // The radius is measured from the device's current position, and the server
+  // silently ignores it without lng/lat — so the value is only accepted once
+  // there actually is a fix. Same escalation as the distance sort in
+  // useDropdownQuery: ask for the permission when it was never answered, and
+  // send an already-denied user to the settings instead of re-prompting.
+  const handleRadiusChange = async (value: number | null) => {
+    if (value === null || locationAvailable) {
+      setRadiusValue(value);
+      return;
+    }
+    if (permissionStatus === "denied") {
+      handleLocationUnavailable();
+      return;
+    }
+    const fix = await requestLocation();
+    if (fix) setRadiusValue(value);
+    else handleLocationUnavailable();
+  };
 
   const effectiveTerritory: number | null =
     (allowed.includes("territory") ? territoryValue : extraTerritory) ?? null;
@@ -195,6 +242,9 @@ const FilterSheetContent = ({
       res.date = isDateFilterActive(dateFilter) ? dateFilter : undefined;
     if (allowed.includes("favourite")) res.favourite = favouriteValue;
     if (allowed.includes("unsynced")) res.unsynced = unsyncedValue;
+    if (allowed.includes("private")) res.private = privateValue;
+    if (allowed.includes("source")) res.source = sourceValue;
+    if (allowed.includes("radius")) res.radius = radiusValue;
     return res;
   };
 
@@ -312,6 +362,42 @@ const FilterSheetContent = ({
               testID="unsynced-filter"
             />
           </View>
+        )}
+        {allowed.includes("private") && (
+          <View style={{ marginTop: 12 }}>
+            <RadioGroup
+              label={`${t("privacy")}:`}
+              value={privateValue}
+              onChange={(value) => setPrivateValue(value as boolean | null)}
+              direction="column"
+              options={privateOptions}
+              testID="private-filter"
+            />
+          </View>
+        )}
+        {allowed.includes("source") && (
+          <View style={{ marginTop: 12 }}>
+            <RadioGroup
+              label={`${t("source")}:`}
+              value={sourceValue}
+              onChange={(value) =>
+                setSourceValue(value as ObservationSource | null)
+              }
+              direction="column"
+              options={sourceOptions}
+              testID="source-filter"
+            />
+          </View>
+        )}
+        {allowed.includes("radius") && (
+          <DropdownInput
+            title={t("radius")}
+            placeholder={t("any_distance")}
+            value={radiusValue}
+            setValue={handleRadiusChange}
+            query={{ data: radiusOptions }}
+            allowReset
+          />
         )}
         {allowed.includes("date") && (
           <DateRangeFilter value={dateFilter} setDateFilter={setDateFilter} />

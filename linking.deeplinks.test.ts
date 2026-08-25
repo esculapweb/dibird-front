@@ -116,6 +116,10 @@ const SUPPORTED: Array<{ path: string; authed?: boolean; screen: string }> = [
     path: "my/observation/?territory=68&place=5372",
     screen: "Observations",
   },
+  {
+    path: "my/observation/?private=true&o=-date_time",
+    screen: "Observations",
+  },
 
   // Community observations
   { path: "my/community/328637/", screen: "CommunityDetail" },
@@ -124,6 +128,7 @@ const SUPPORTED: Array<{ path: string; authed?: boolean; screen: string }> = [
   { path: "my/place/", screen: "Places" },
   { path: "my/place/5372/", screen: "PlaceDetail" },
   { path: "my/place/?territory=60&o=name", screen: "Places" },
+  { path: "my/place/?radius=25&o=distance", screen: "Places" },
 
   // Diaries
   { path: "my/diary/", screen: "Diaries" },
@@ -136,6 +141,7 @@ const SUPPORTED: Array<{ path: string; authed?: boolean; screen: string }> = [
     path: "my/diary/15004/?species=20415&o=-date_time",
     screen: "DiaryDetail",
   },
+  { path: "my/diary/?private=false", screen: "Diaries" },
 
   // Rating / user stats
   { path: "users/", screen: "Rating" },
@@ -360,6 +366,36 @@ describe("deep links from the QA page resolve to the right screen", () => {
     const routes = state?.routes ?? [];
     return (routes[routes.length - 1]?.params ?? {}) as Record<string, unknown>;
   };
+
+  // The own-list filters added alongside the shared ones: privacy on the two
+  // lists whose records are yours, and the radius on places. `private=false`
+  // is a filter of its own ("published only"), so it has to survive the trip
+  // as the string it arrived in rather than being dropped as falsy.
+  it("carries the privacy filter into the observations list", () => {
+    expect(leafParams(stateFor("my/observation/?private=true&o=-date_time"))).toMatchObject({
+      private: "true",
+      o: "-date_time",
+    });
+  });
+
+  it("keeps a false privacy filter on the diaries list", () => {
+    expect(leafParams(stateFor("my/diary/?private=false"))).toMatchObject({
+      private: "false",
+    });
+  });
+
+  it("carries the radius into the places list", () => {
+    expect(leafParams(stateFor("my/place/?radius=25&o=distance"))).toMatchObject({
+      radius: "25",
+      o: "distance",
+    });
+  });
+
+  it("drops an empty filter param instead of carrying it as a blank value", () => {
+    expect(leafParams(stateFor("my/observation/?private=&territory=68"))).toEqual({
+      territory: "68",
+    });
+  });
 
   it("restores the name search on a catalogue list link", () => {
     expect(leafParams(stateFor("species/?name=duck"))).toMatchObject({

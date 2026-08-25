@@ -51,6 +51,20 @@ describe("buildDeepLinkParams", () => {
   it("adds sort as params.o when provided", () => {
     expect(buildDeepLinkParams({}, "-created")).toEqual({ o: "-created" });
   });
+
+  it("copies source and radius when set, and skips them when they are not", () => {
+    expect(buildDeepLinkParams({ source: "ebird", radius: 25 }, null)).toEqual({
+      source: "ebird",
+      radius: 25,
+    });
+    expect(buildDeepLinkParams({ source: null, radius: null }, null)).toEqual({});
+  });
+
+  it("keeps both sides of the privacy filter, and only omits it when unset", () => {
+    expect(buildDeepLinkParams({ private: true }, null)).toEqual({ private: true });
+    expect(buildDeepLinkParams({ private: false }, null)).toEqual({ private: false });
+    expect(buildDeepLinkParams({ private: null }, null)).toEqual({});
+  });
 });
 
 describe("parseDeepLinkParams", () => {
@@ -113,6 +127,41 @@ describe("parseDeepLinkParams", () => {
     });
   });
 
+  describe("privacy / source / radius", () => {
+    it("reads both spellings of the privacy filter", () => {
+      expect(parseDeepLinkParams({ private: "true" }).filters.private).toBe(true);
+      expect(parseDeepLinkParams({ private: "false" }).filters.private).toBe(false);
+      expect(parseDeepLinkParams({ private: true }).filters.private).toBe(true);
+    });
+
+    it("leaves the key out entirely when the value is missing or unparsable", () => {
+      expect(parseDeepLinkParams({ private: "" }).filters).not.toHaveProperty("private");
+      expect(parseDeepLinkParams({ private: "yes" }).filters).not.toHaveProperty("private");
+      expect(parseDeepLinkParams({}).filters).not.toHaveProperty("private");
+    });
+
+    it("accepts only the two known sources", () => {
+      expect(parseDeepLinkParams({ source: "ebird" }).filters.source).toBe("ebird");
+      expect(parseDeepLinkParams({ source: "dibird" }).filters.source).toBe("dibird");
+      expect(parseDeepLinkParams({ source: "flickr" }).filters).not.toHaveProperty("source");
+    });
+
+    it("numberifies a positive radius and ignores anything else", () => {
+      expect(parseDeepLinkParams({ radius: "25" }).filters.radius).toBe(25);
+      expect(parseDeepLinkParams({ radius: "0" }).filters).not.toHaveProperty("radius");
+      expect(parseDeepLinkParams({ radius: "-5" }).filters).not.toHaveProperty("radius");
+      expect(parseDeepLinkParams({ radius: "abc" }).filters).not.toHaveProperty("radius");
+    });
+
+    it("counts each of them as params of their own", () => {
+      // Otherwise a link carrying nothing but one of these would be treated as
+      // "no filters in the URL" and the screen would restore its own instead.
+      expect(parseDeepLinkParams({ private: "false" }).hasParams).toBe(true);
+      expect(parseDeepLinkParams({ source: "ebird" }).hasParams).toBe(true);
+      expect(parseDeepLinkParams({ radius: "25" }).hasParams).toBe(true);
+    });
+  });
+
   it("passes sort and seenMode through", () => {
     const result = parseDeepLinkParams({ o: "-created", seenMode: "seen" });
     expect(result.sort).toBe("-created");
@@ -122,6 +171,14 @@ describe("parseDeepLinkParams", () => {
 });
 
 describe("buildDeepLinkParams / parseDeepLinkParams round trip", () => {
+  it("reconstructs privacy, source and radius as they were shared", () => {
+    const filters = { private: false, source: "ebird" as const, radius: 25 };
+    const built = buildDeepLinkParams(filters, null);
+
+    expect(parseDeepLinkParams(built).filters).toMatchObject(filters);
+  });
+
+
   it("reconstructs an equivalent range date filter for ISO input", () => {
     const filters = {
       date: {

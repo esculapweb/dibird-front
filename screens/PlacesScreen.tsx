@@ -37,7 +37,13 @@ const PlacesScreen = () => {
     <ListScreen
       route={route}
       fetchFunction={fetchPlaces}
-      allowedFilters={["territory", "date", "favourite", "unsynced"]}
+      allowedFilters={[
+        "territory",
+        "date",
+        "favourite",
+        "radius",
+        "unsynced",
+      ]}
       errorTitle={t("places_unavailable")}
       onAdd={handleAdd}
       renderItem={renderItem}
