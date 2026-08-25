@@ -133,10 +133,12 @@ export const useEditorForm = ({
   const [placeData, setPlaceData] = useState<PlaceDropdownItem | null>(() => {
     const pd = itemWithParsedDate?.place_data;
     if (!pd) return null;
+    // `place_data.name` is null only for someone else's place, and the editor
+    // only ever opens the user's own record.
     return {
       value: pd.id,
-      label: pd.name,
-      name: pd.name,
+      label: pd.name ?? "",
+      name: pd.name ?? undefined,
       preview: pd.preview ?? undefined,
       location: pd.location ?? undefined,
     };

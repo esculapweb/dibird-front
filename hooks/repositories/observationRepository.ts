@@ -79,14 +79,14 @@ export const getObservation = (id: number): ObservationItem | null => {
   return rows[0] ? rowToItem(rows[0]) : null;
 };
 
-// A server response is not always the full detail shape: Observation2Serializer
-// drops `owner` for every action but `retrieve`, so a create/list response is a
-// subset of what the detail screen was showing a moment earlier. Writing it
-// verbatim over a locally synthesized record blanked the author block until the
-// next detail GET (offline, never). Merging keeps the server authoritative for
-// every field it actually sends and preserves the detail-only ones the local
-// row already knows. Mirrors diaryRepository's mergedWithLocal, where the same
-// asymmetry also costs `is_owner` and hides the edit/delete actions.
+// A server response is not always the full detail shape, and writing a subset
+// verbatim over a locally synthesized record blanks whatever it omits until
+// the next detail GET (offline, never). Merging keeps the server authoritative
+// for every field it actually sends and preserves the rest. Mirrors
+// diaryRepository's mergedWithLocal, where the same asymmetry costs `owner`
+// and `is_owner` and hides the edit/delete actions — Observation2Serializer
+// itself no longer drops `owner` outside `retrieve` (the community feed needs
+// the author of a dibird row, which has no `external_username`).
 const mergedWithLocal = (id: number, item: ObservationItem) => {
   const existing = db
     .select()

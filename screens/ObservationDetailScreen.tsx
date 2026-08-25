@@ -385,10 +385,12 @@ const ObservationDetailScreen = () => {
 
               {(observation.is_owner || observation.location_private) && (
                 <Text style={styles.placeName} numberOfLines={2}>
-                  {observation?.place_data?.name
-                    ? observation.is_owner
-                      ? observation.place_data.name
-                      : t("approximate_area")
+                  {/* Whether the name is visible is the server's call:
+                      someone else's place comes back with `name: null`, a
+                      public eBird hotspot keeps its own. The presence of a
+                      place is `place_data` itself. */}
+                  {observation?.place_data
+                    ? (observation.place_data.name ?? t("approximate_area"))
                     : t("location_not_specified")}
                 </Text>
               )}

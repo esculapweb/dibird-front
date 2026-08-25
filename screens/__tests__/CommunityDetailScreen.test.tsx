@@ -254,13 +254,36 @@ describe("map", () => {
 
 // Regression: the place-name row was missing entirely from this screen, so a
 // private observation of another user showed only the territory + map and never
-// the "approximate area" label. Non-owners must never see the real place name.
+// the "approximate area" label.
+//
+// Whether the name is visible is the server's call, not this screen's: someone
+// else's place comes back with `name: null` (PlaceSimpleSerializer.get_name),
+// a public eBird hotspot keeps its own. The screen renders what it got.
 describe("place name", () => {
-  it("shows the approximate-area label (not the real place name) for a private location", async () => {
-    mockItem({ data: { ...OBSERVATION, is_owner: false, location_private: true } });
+  const withheldPlace = { ...OBSERVATION.place_data, name: null };
+
+  it("shows the approximate-area label when the server withheld the name", async () => {
+    mockItem({
+      data: {
+        ...OBSERVATION, is_owner: false, location_private: true,
+        place_data: withheldPlace,
+      },
+    });
     await render(<CommunityDetailScreen />);
     expect(screen.getByText("approximate_area")).toBeOnTheScreen();
     expect(screen.queryByText("City Park")).not.toBeOnTheScreen();
+  });
+
+  it("shows the name of a public eBird hotspot", async () => {
+    mockItem({
+      data: {
+        ...OBSERVATION, is_owner: false, location_private: true,
+        place_data: { ...OBSERVATION.place_data, name: "Naroch Lake" },
+      },
+    });
+    await render(<CommunityDetailScreen />);
+    expect(screen.getByText("Naroch Lake")).toBeOnTheScreen();
+    expect(screen.queryByText("approximate_area")).not.toBeOnTheScreen();
   });
 
   it("shows location_not_specified for a private observation with no place", async () => {
@@ -272,7 +295,12 @@ describe("place name", () => {
   });
 
   it("hides the place name entirely for a public location of another user's observation", async () => {
-    mockItem({ data: { ...OBSERVATION, is_owner: false, location_private: false } });
+    mockItem({
+      data: {
+        ...OBSERVATION, is_owner: false, location_private: false,
+        place_data: withheldPlace,
+      },
+    });
     await render(<CommunityDetailScreen />);
     expect(screen.queryByText("approximate_area")).not.toBeOnTheScreen();
     expect(screen.queryByText("City Park")).not.toBeOnTheScreen();

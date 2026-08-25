@@ -372,9 +372,19 @@ it("owner tapping the place row navigates to PlaceDetail", async () => {
 // Regression: a non-owner viewing a private-location observation must see the
 // "approximate area" label, never the real place name; a public location shows
 // no place name at all (only the territory + exact map).
+//
+// The name is withheld by the server (PlaceSimpleSerializer.get_name), so a
+// non-owner's fixture carries `name: null` — that is what actually arrives.
 describe("place name", () => {
-  it("shows the approximate-area label (not the real place name) for a non-owner's private location", async () => {
-    mockItem({ data: { ...OBSERVATION, is_owner: false, location_private: true } });
+  const withheldPlace = { ...OBSERVATION.place_data, name: null };
+
+  it("shows the approximate-area label when the server withheld the name", async () => {
+    mockItem({
+      data: {
+        ...OBSERVATION, is_owner: false, location_private: true,
+        place_data: withheldPlace,
+      },
+    });
     await render(<ObservationDetailScreen />);
     expect(screen.getByText("approximate_area")).toBeOnTheScreen();
     expect(screen.queryByText("City Park")).not.toBeOnTheScreen();
@@ -389,7 +399,12 @@ describe("place name", () => {
   });
 
   it("hides the place name entirely for a non-owner's public location", async () => {
-    mockItem({ data: { ...OBSERVATION, is_owner: false, location_private: false } });
+    mockItem({
+      data: {
+        ...OBSERVATION, is_owner: false, location_private: false,
+        place_data: withheldPlace,
+      },
+    });
     await render(<ObservationDetailScreen />);
     expect(screen.queryByText("approximate_area")).not.toBeOnTheScreen();
     expect(screen.queryByText("City Park")).not.toBeOnTheScreen();

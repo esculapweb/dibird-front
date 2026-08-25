@@ -26,6 +26,10 @@ export type LocationCoords = { lat: number | null; lng: number | null } | null;
 export type LocationType = {
   type: string;
   coordinates: Coords;
+  // Only on the bbox polygon the backend substitutes for a private location
+  // (`generate_bbox_polygon` in myapi/serializers.py): the centroid of the
+  // ring, so a map has something to centre on without unpacking the polygon.
+  center?: Coords;
 };
 
 export type PolygonGeometry = {
@@ -280,6 +284,9 @@ export interface Filters {
   // fetchObservations/fetchDiaries/fetchPlaces) — filters the list down to
   // items with a queued local create/update/delete that hasn't synced yet.
   unsynced?: boolean | null;
+  // Species rare for the country the observation was made in — the community
+  // feed only (see ObservationFilterSet.filter_rare on the backend).
+  rare?: boolean | null;
 }
 
 export type AllFiltersKey = keyof Filters;
@@ -773,7 +780,10 @@ export interface PlaceFormData {
 
 export interface PlaceData {
   id: number;
-  name: string;
+  // null for someone else's place: the name is the owner's own wording, and
+  // the server hands it out only to them (PlaceSimpleSerializer.get_name).
+  // Public eBird hotspots keep theirs.
+  name: string | null;
   preview: string | null;
   location: LocationType | null;
 }
@@ -817,6 +827,9 @@ export interface ObservationItem extends ObservationBaseItem {
   territory_data: TerritoryData;
   updated_at: string;
   external_source: "ebird" | null;
+  // Rare for `territory` — annotated by the community feed only
+  // (api/rarity.py annotate_rare), absent everywhere else.
+  rare?: boolean;
   external_username: string | null;
   location_private: boolean;
   distance?: number | null;

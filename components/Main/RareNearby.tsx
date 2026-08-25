@@ -26,7 +26,10 @@ const IMAGE_SIZE = 48;
  * coordinates at all — the backend silently ignored the radius and returned
  * rarities from all over the world under a "250 km" label.
  */
-const SCOPE_FILTERS: Filters = { near: "alerts" };
+// `rare` too, and not only the scope: the feed also carries ordinary public
+// observations of dibird users now, and a widget titled "rare nearby" must
+// not quietly start listing sparrows.
+const SCOPE_FILTERS: Filters = { near: "alerts", rare: true };
 
 interface NewSpeciesProps {
   filters: Filters;

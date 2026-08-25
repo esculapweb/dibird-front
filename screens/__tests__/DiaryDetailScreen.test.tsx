@@ -347,8 +347,16 @@ describe("listHeader", () => {
   // a location does not hand it over — the map below stays the only thing a
   // visitor gets. Do not "fix" it into showing place_data.name.
   describe("place name (non-owner)", () => {
+    // The server withholds someone else's place name outright
+    // (PlaceSimpleSerializer.get_name), so that is what the fixture carries.
     const renderHeader = async (data: Record<string, unknown>) => {
-      mockDiaryItem({ data: { ...DIARY, is_owner: false, ...data } });
+      mockDiaryItem({
+        data: {
+          ...DIARY, is_owner: false,
+          place_data: { ...DIARY.place_data, name: null },
+          ...data,
+        },
+      });
       await render(<DiaryDetailScreen />);
       await render(latestProps().listHeader());
     };
