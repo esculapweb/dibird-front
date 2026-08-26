@@ -22,7 +22,8 @@ import ErrorOverlay from "../components/Error/ErrorOverlay";
 import { useItem } from "../hooks/useItem";
 import { BirdSVG } from "../components/ui/Svgs";
 import { formatTimeString } from "../util/timeHelpers";
-import { isoToFlagEmoji, buildShareUrl, speciesDetails } from "../util/helpers";
+import { isoToFlagEmoji, buildShareUrl } from "../util/helpers";
+import { useOpenSpecies } from "../hooks/useOpenSpecies";
 import Section from "../components/ui/Section";
 import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
@@ -34,6 +35,7 @@ import MapL from "../components/Map/MapL";
 
 const CommunityDetailScreen = () => {
   const navigation = useNavigation<AppStackNavigationProp>();
+  const openSpecies = useOpenSpecies();
   const route = useRoute<AppStackRouteProp<"ObservationDetail">>();
   const { observationId } = route.params;
   const type = "Community";
@@ -105,6 +107,11 @@ const CommunityDetailScreen = () => {
   const name =
     observation.species_data.name_lang || observation.species_data.name;
   const latin = observation.species_data.name;
+  // Missing on a record created offline and on a copy cached under another
+  // language, and the segment is what the species page is keyed by. The header
+  // stops advertising a link it cannot follow rather than answering a tap with
+  // nothing.
+  const speciesSegment = observation.species_data.segment;
 
   const bottomEl = (
     <FlatButtonBottom
@@ -127,7 +134,8 @@ const CommunityDetailScreen = () => {
       <Section title={formatDateLong(observation.date_time)}>
         <Pressable
           style={styles.header}
-          onPress={() => speciesDetails(observation?.species_data?.segment)}
+          disabled={!speciesSegment}
+          onPress={() => openSpecies(speciesSegment, "community_observation")}
         >
           {({ pressed }) => (
             <>
@@ -146,7 +154,7 @@ const CommunityDetailScreen = () => {
                     <BirdSVG size={40} color={Colors.textSecondary} />
                   </View>
                 )}
-                {pressed && (
+                {pressed && !!speciesSegment && (
                   <View style={styles.imageOverlay}>
                     <Ionicons name="arrow-forward" size={14} color="#fff" />
                   </View>
@@ -158,8 +166,14 @@ const CommunityDetailScreen = () => {
                   <Text style={styles.title}>{name}</Text>
                   <View style={styles.subRow}>
                     <Text style={styles.latin}>{latin}</Text>
-                    <Text style={styles.aboutDot}>·</Text>
-                    <Text style={styles.aboutLink}>{t("about_species")}</Text>
+                    {!!speciesSegment && (
+                      <>
+                        <Text style={styles.aboutDot}>·</Text>
+                        <Text style={styles.aboutLink}>
+                          {t("about_species")}
+                        </Text>
+                      </>
+                    )}
                   </View>
 
                   {observation.time && (

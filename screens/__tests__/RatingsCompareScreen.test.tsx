@@ -16,12 +16,8 @@ jest.mock("../../util/fetches", () => ({
 jest.mock("../../store/profile-context", () => ({
   useProfile: jest.fn(),
 }));
-// buildShareUrl is real (pure, already covered by its own unit tests via
-// util/__tests__/deepLinkParams.test.ts's buildDeepLinkParams) — only
-// speciesDetails (a Linking.openURL side effect) is stubbed.
-jest.mock("../../util/helpers", () => ({
-  ...jest.requireActual("../../util/helpers"),
-  speciesDetails: jest.fn(),
+jest.mock("../../hooks/useOpenSpecies", () => ({
+  useOpenSpecies: () => mockOpenSpecies,
 }));
 jest.mock("../../components/ui/Tabs", () => {
   const { TouchableOpacity, Text } = require("react-native");
@@ -61,6 +57,7 @@ jest.mock("../../components/Rating/RatingCompareCard", () => {
     ),
   };
 });
+const mockOpenSpecies = jest.fn();
 const mockListScreenCapture = jest.fn();
 jest.mock("../ListScreen", () => ({
   __esModule: true,
@@ -76,7 +73,6 @@ import Toast from "react-native-toast-message";
 import { useQuery } from "@tanstack/react-query";
 import { fetchRatingCompareHeader } from "../../util/fetches";
 import { useProfile } from "../../store/profile-context";
-import { speciesDetails } from "../../util/helpers";
 import { createRouteMock } from "../test-utils";
 import RatingsCompareScreen from "../RatingsCompareScreen";
 
@@ -123,7 +119,7 @@ it("renderItem opens species details on press", async () => {
   const { renderItem } = latestProps();
   await render(renderItem({ item: { segment: "bird-1" }, index: 0 }));
   await fireEvent.press(screen.getByTestId("compare-card"));
-  expect(speciesDetails).toHaveBeenCalledWith("bird-1");
+  expect(mockOpenSpecies).toHaveBeenCalledWith("bird-1", "rating_compare");
 });
 
 it("renders the compare header as listHeader with the current profile id and counts", async () => {

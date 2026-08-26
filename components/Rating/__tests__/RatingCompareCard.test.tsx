@@ -1,3 +1,6 @@
+jest.mock("react-i18next", () => ({
+  useTranslation: () => ({ t: (key: string) => key }),
+}));
 jest.mock("../../../store/theme-context", () => ({
   useTheme: () => ({
     Colors: {

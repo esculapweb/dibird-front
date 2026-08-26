@@ -7,6 +7,7 @@ import { BirdSVG } from "../ui/Svgs";
 import SpeciesThumb from "../Taxonomy/SpeciesThumb";
 import { formatDateLong, isoToFlagEmoji } from "../../util/helpers";
 import { useTheme, ThemeColors } from "../../store/theme-context";
+import { useOpenSpecies } from "../../hooks/useOpenSpecies";
 import { formatTimeString } from "../../util/timeHelpers";
 import { AppStackNavigationProp, ObservationItem } from "../../types";
 
@@ -18,6 +19,7 @@ const ObservationCard = memo(
     const { Colors } = useTheme();
     const styles = useStyles(Colors);
     const navigation = useNavigation<AppStackNavigationProp>();
+    const openSpecies = useOpenSpecies();
 
     const dateText = formatDateLong(item.date_time);
     const territoryFlag = item.territory_data
@@ -43,6 +45,10 @@ const ObservationCard = memo(
             size={72}
             radius={12}
             style={styles.thumb}
+            onPress={() =>
+              openSpecies(item.species_data?.segment, "observation_list")
+            }
+            testID={`observation-species-thumb-${item.id}`}
           />
 
           <View style={styles.content}>

@@ -161,6 +161,7 @@ const TaxonomyScreen = () => {
   return (
     <Layout>
       <TaxonChildrenList
+        speciesSource="catalog"
         rank={rank}
         parent={
           parentSegment && parentRank

@@ -103,6 +103,7 @@ it("opens the species when a row is tapped", async () => {
   await fireEvent.press(screen.getByText("Osprey"));
   expect(mockNavigation.navigate).toHaveBeenCalledWith("SpeciesDetail", {
     segment: "osprey",
+    source: "taxon_group",
   });
 });
 

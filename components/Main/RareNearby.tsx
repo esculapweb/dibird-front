@@ -2,13 +2,12 @@ import { FC, useCallback } from "react";
 import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
-import { Image } from "expo-image";
 
 import WidgetError from "./WidgetError";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { useList } from "../../hooks/useList";
-import { Config } from "../../constants/config";
-import { BirdSVG } from "../ui/Svgs";
+import SpeciesThumb from "../Taxonomy/SpeciesThumb";
+import { useOpenSpecies } from "../../hooks/useOpenSpecies";
 import { formatDateShort, normalizeDistance } from "../../util/helpers";
 import { fetchCommunityObservations } from "../../util/fetches";
 import { Filters, AppStackNavigationProp, ObservationItem } from "../../types";
@@ -37,6 +36,7 @@ interface NewSpeciesProps {
 
 const RareNearby: FC<NewSpeciesProps> = ({ filters }) => {
   const navigation = useNavigation<AppStackNavigationProp>();
+  const openSpecies = useOpenSpecies();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -241,22 +241,15 @@ const RareNearby: FC<NewSpeciesProps> = ({ filters }) => {
               activeOpacity={0.7}
               onPress={() => handleNavigate(item)}
             >
-              <View style={styles.imageWrapper}>
-                {item.species_data.thumb ? (
-                  <Image
-                    source={{
-                      uri: `${Config.mediaUrl}/${item.species_data.thumb}`,
-                    }}
-                    style={styles.image}
-                    contentFit="cover"
-                    cachePolicy="disk"
-                  />
-                ) : (
-                  <View style={styles.imagePlaceholder}>
-                    <BirdSVG size={26} color={Colors.textSecondary} />
-                  </View>
-                )}
-              </View>
+              <SpeciesThumb
+                thumb={item.species_data.thumb}
+                size={IMAGE_SIZE}
+                radius={12}
+                onPress={() =>
+                  openSpecies(item.species_data.segment, "rare_nearby")
+                }
+                testID={`rare-nearby-species-thumb-${item.id}`}
+              />
               <View style={styles.nsNames}>
                 <Text style={styles.nsCommon} numberOfLines={2}>
                   {item.species_data.name_lang}
@@ -351,23 +344,11 @@ const stylesFn = (Colors: ThemeColors) =>
       borderBottomWidth: 0.5,
       borderBottomColor: Colors.divider,
     },
-    imageWrapper: {
-      width: IMAGE_SIZE,
-      height: IMAGE_SIZE,
-    },
     image: {
       width: IMAGE_SIZE,
       height: IMAGE_SIZE,
       borderRadius: 12,
       backgroundColor: Colors.imageBg,
-    },
-    imagePlaceholder: {
-      width: IMAGE_SIZE,
-      height: IMAGE_SIZE,
-      borderRadius: 12,
-      backgroundColor: Colors.imageBg,
-      justifyContent: "center",
-      alignItems: "center",
     },
     nsNames: { flex: 1 },
     nsCommon: {

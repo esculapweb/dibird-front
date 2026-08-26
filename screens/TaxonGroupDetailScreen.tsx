@@ -169,6 +169,7 @@ const TaxonGroupDetailScreen = () => {
           `descendants`, so those render grouped by genus like the web does. */}
       {rank === 2 ? (
         <TaxonChildrenList
+        speciesSource="taxon_group"
           rank={3}
           parent={{ segment, rank }}
           sort={sort}

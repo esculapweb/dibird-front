@@ -1,4 +1,4 @@
-import { useMemo, memo } from "react";
+import { ReactNode, useMemo, memo } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
@@ -6,16 +6,54 @@ import { useTranslation } from "react-i18next";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import SpeciesThumb from "../Taxonomy/SpeciesThumb";
 import { territoryStatusNote } from "../../util/taxonomy";
-import { ChecklistItem } from "../../types";
+import { ChecklistItem, StyleType } from "../../types";
 
 const useStyles = (Colors: ThemeColors) =>
   useMemo(() => stylesFn(Colors), [Colors]);
+
+/**
+ * The order/family/genus header. A plain View unless the host offers somewhere
+ * to go: the personal checklist's headers come from /myapi/checklist2/ and
+ * carry no segment, so there a pressable header would be a dead control.
+ */
+const GroupWrap = ({
+  item,
+  onGroupPress,
+  style,
+  pressedStyle,
+  children,
+}: {
+  item: ChecklistItem;
+  onGroupPress?: (item: ChecklistItem) => void;
+  style: StyleType;
+  pressedStyle: StyleType;
+  children: ReactNode;
+}) => {
+  if (!onGroupPress || !item.segment) return <View style={style}>{children}</View>;
+
+  return (
+    <Pressable
+      onPress={() => onGroupPress(item)}
+      accessibilityRole="button"
+      style={({ pressed }) => [style, pressed && pressedStyle]}
+    >
+      {children}
+    </Pressable>
+  );
+};
 
 interface ChecklistCardProps {
   item: ChecklistItem;
   index: number;
   onPress: () => void;
   onToggle: () => void;
+  // The bird's picture leads to the species page regardless of what the row
+  // itself does — see SpeciesThumb.
+  onSpeciesPress?: () => void;
+  // Order/family/genus headers lead into the taxon group. Only the country
+  // catalogue passes it: the personal checklist's headers come from
+  // /myapi/checklist2/ and carry no segment to navigate with.
+  onGroupPress?: (item: ChecklistItem) => void;
   // The user's own checklist for a territory: the seen checkbox, the
   // seen/total progress and the dimming of unseen birds. Off on the country
   // catalogue page, which is reference content — a "seen" mark there raises
@@ -24,10 +62,20 @@ interface ChecklistCardProps {
 }
 
 const ChecklistCard = memo(
-  ({ item, index, onPress, onToggle, personal = true }: ChecklistCardProps) => {
+  ({
+    item,
+    index,
+    onPress,
+    onToggle,
+    onSpeciesPress,
+    onGroupPress,
+    personal = true,
+  }: ChecklistCardProps) => {
     const { t } = useTranslation();
     const { Colors } = useTheme();
     const styles = useStyles(Colors);
+    // Only draw the chevron where the header actually leads somewhere.
+    const groupLink = !!onGroupPress && !!item.segment;
 
     if (item.type === "order") {
       const total = item.total ?? 0;
@@ -36,8 +84,11 @@ const ChecklistCard = memo(
       const progress = total > 0 ? seenCount / total : 0;
 
       return (
-        <View
+        <GroupWrap
+          item={item}
+          onGroupPress={onGroupPress}
           style={[styles.orderDivider, index > 0 && styles.orderDividerSpaced]}
+          pressedStyle={styles.groupPressed}
         >
           {index > 0 && <View style={styles.orderTopLine} />}
           <Text style={styles.taxonType}>{t("order")}</Text>
@@ -67,6 +118,17 @@ const ChecklistCard = memo(
                 </Text>
               )
             ) : null}
+            {groupLink && (
+              <Ionicons
+                name="chevron-forward"
+                size={14}
+                color={Colors.textSecondary}
+                style={[
+                  styles.groupChevron,
+                  total === 0 && styles.groupChevronAlone,
+                ]}
+              />
+            )}
           </View>
           {personal && total > 0 && (
             <View style={styles.progressTrack}>
@@ -79,20 +141,29 @@ const ChecklistCard = memo(
               />
             </View>
           )}
-        </View>
+        </GroupWrap>
       );
     }
 
-    if (item.type === "family") {
+    // Genus shares the family's look: the country tree can carry depth-4 rows
+    // (see TREE_DEPTH_TYPE in util/fetches.ts), and with no branch of their
+    // own they fell through to the species card below — a tap on which opened
+    // the species page on a genus segment.
+    if (item.type === "family" || item.type === "genus") {
       const total = item.total ?? 0;
       const seenCount = item.seen_count ?? 0;
       const isComplete = total > 0 && seenCount >= total;
       const progress = total > 0 ? seenCount / total : 0;
 
       return (
-        <View style={styles.familyWrapper}>
+        <GroupWrap
+          item={item}
+          onGroupPress={onGroupPress}
+          style={styles.familyWrapper}
+          pressedStyle={styles.groupPressed}
+        >
           <View style={styles.familyDivider}>
-            <Text style={styles.taxonTypeFaded}>{t("family")}</Text>
+            <Text style={styles.taxonTypeFaded}>{t(item.type)}</Text>
             <View style={styles.taxonRow}>
               <Text style={styles.familyName} numberOfLines={1}>
                 {item.name_lang}
@@ -123,6 +194,17 @@ const ChecklistCard = memo(
                   </Text>
                 )
               ) : null}
+              {groupLink && (
+                <Ionicons
+                  name="chevron-forward"
+                  size={13}
+                  color={Colors.textSecondary}
+                  style={[
+                    styles.groupChevron,
+                    total === 0 && styles.groupChevronAlone,
+                  ]}
+                />
+              )}
             </View>
             {personal && total > 0 && (
               <View style={styles.progressTrackThin}>
@@ -136,7 +218,7 @@ const ChecklistCard = memo(
               </View>
             )}
           </View>
-        </View>
+        </GroupWrap>
       );
     }
 
@@ -149,13 +231,19 @@ const ChecklistCard = memo(
 
     return (
       <View style={[styles.card, !isSeen && styles.cardUnseen]}>
-        <Pressable style={styles.row} onPress={onPress}>
+        <Pressable
+          style={styles.row}
+          onPress={onPress}
+          testID={`checklist-species-row-${item.species_id ?? item.id}`}
+        >
           <SpeciesThumb
             thumb={item.thumb}
             statusCode={item.status}
             size={40}
             radius={12}
             style={styles.thumb}
+            onPress={onSpeciesPress}
+            testID={`checklist-species-thumb-${item.species_id ?? item.id}`}
           />
 
           <View style={styles.content}>
@@ -348,6 +436,23 @@ const stylesFn = (Colors: ThemeColors) =>
       flexShrink: 0,
     },
 
+    groupPressed: {
+      opacity: 0.6,
+    },
+    groupChevron: {
+      // No marginLeft here: the count (or the "all" badge) already carries the
+      // row's only `marginLeft: "auto"`, and a second one would split the free
+      // space between the two — which is what left the number floating in the
+      // middle of the row instead of sitting by the chevron, the way the genus
+      // header does it in TaxonDescendantsList.
+      alignSelf: "center",
+    },
+    // ...unless there is no count at all, and then the chevron is the one that
+    // has to be pushed over.
+    groupChevronAlone: {
+      marginLeft: "auto",
+    },
+
     progressTrack: {
       height: 3,
       borderRadius: 2,
@@ -405,3 +510,9 @@ const stylesFn = (Colors: ThemeColors) =>
       marginBottom: 10,
     },
   });
+
+// The rank label above a group header is `t(item.type)` — a runtime key, so
+// i18next-parser cannot see it. Listed here so the extractor finds both
+// variants (see CLAUDE.md).
+// t("family")
+// t("genus")

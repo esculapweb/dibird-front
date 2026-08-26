@@ -74,11 +74,14 @@ jest.mock("react-native-render-html", () => {
   };
 });
 
+jest.mock("../../services/analytics", () => ({ track: jest.fn() }));
+
 import { Share } from "react-native";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { useQuery } from "@tanstack/react-query";
 import { createNavigationMock, createRouteMock } from "../test-utils";
 import { useDefaultTerritory } from "../../hooks/useDefaultTerritory";
+import { track } from "../../services/analytics";
 import SpeciesDetailScreen from "../SpeciesDetailScreen";
 import { TaxonSpeciesDetail } from "../../types";
 
@@ -637,7 +640,10 @@ it("pushes a new species detail screen when a related species is tapped", async 
 
   await render(<SpeciesDetailScreen />);
   await fireEvent.press(screen.getByText("Great Tit"));
-  expect(mockNavigation.push).toHaveBeenCalledWith("SpeciesDetail", { segment: "great-tit" });
+  expect(mockNavigation.push).toHaveBeenCalledWith("SpeciesDetail", {
+    segment: "great-tit",
+    source: "species_related",
+  });
 });
 
 it("navigates to the genus listing when 'show all related species' is tapped", async () => {
@@ -665,7 +671,10 @@ it("navigates to the genus listing when 'show all related species' is tapped", a
   });
 });
 
-it("pushes the next species in the paging strip when tapped", async () => {
+// Sideways, not deeper: the strip is for browsing the listing, and pushing
+// left someone who had stepped through ten birds with ten screens to back out
+// of.
+it("replaces the screen with the next species from the paging strip", async () => {
   mockQueries({
     detail: detailResult({
       data: {
@@ -677,7 +686,11 @@ it("pushes the next species in the paging strip when tapped", async () => {
 
   await render(<SpeciesDetailScreen />);
   await fireEvent.press(screen.getByText("Great Tit"));
-  expect(mockNavigation.push).toHaveBeenCalledWith("SpeciesDetail", { segment: "great-tit" });
+  expect(mockNavigation.replace).toHaveBeenCalledWith("SpeciesDetail", {
+    segment: "great-tit",
+    source: "species_paging",
+  });
+  expect(mockNavigation.push).not.toHaveBeenCalled();
 });
 
 // The page is one long read split into tabs, so a link shared from one of them
@@ -725,4 +738,47 @@ it("shares the species page on the tab it was read from", async () => {
   expect(arg.url ?? arg.message ?? "").toContain(
     "/species/blue-tit/?tab=countries",
   );
+});
+
+// Fifteen-odd places lead here, and `species_viewed` on its own only says the
+// page is popular. The road is carried on the route because the screen has no
+// way to work it out for itself.
+it("reports which road led to the page", async () => {
+  mockRoute = createRouteMock("SpeciesDetail", {
+    segment: "blue-tit",
+    source: "rare_nearby",
+  });
+  mockQueries({ detail: detailResult({ data: baseDetail }) });
+
+  await render(<SpeciesDetailScreen />);
+
+  expect(track).toHaveBeenCalledWith("species_viewed", {
+    source: "rare_nearby",
+  });
+});
+
+// A route restored from a persisted navigation state predates the parameter.
+it("still reports the view when the route carries no source", async () => {
+  mockQueries({ detail: detailResult({ data: baseDetail }) });
+
+  await render(<SpeciesDetailScreen />);
+
+  expect(track).toHaveBeenCalledWith("species_viewed", { source: "unknown" });
+});
+
+// A link with ?tab= opened while this very screen is on top updates the route
+// params instead of pushing a new screen, so the tab has to follow the
+// parameter and not just seed the initial state.
+it("follows a tab that arrives after the screen is already open", async () => {
+  mockQueries({ detail: detailResult({ data: baseDetail }) });
+  const { rerender } = await render(<SpeciesDetailScreen />);
+  expect(screen.queryByText("🇬🇧 United Kingdom")).toBeNull();
+
+  mockRoute = createRouteMock("SpeciesDetail", {
+    segment: "blue-tit",
+    initialTab: "countries",
+  });
+  await rerender(<SpeciesDetailScreen />);
+
+  expect(screen.getByText("🇬🇧 United Kingdom")).toBeOnTheScreen();
 });

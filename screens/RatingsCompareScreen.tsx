@@ -12,7 +12,8 @@ import Tabs from "../components/ui/Tabs";
 import CompareProfileHeader from "../components/Profile/CompareProfileHeader";
 import RatingCompareCard from "../components/Rating/RatingCompareCard";
 import { useProfile } from "../store/profile-context";
-import { buildShareUrl, speciesDetails } from "../util/helpers";
+import { buildShareUrl } from "../util/helpers";
+import { useOpenSpecies } from "../hooks/useOpenSpecies";
 import { track } from "../services/analytics";
 import {
   AppStackRouteProp,
@@ -24,6 +25,7 @@ import {
 
 const RatingsCompareScreen = () => {
   const { t } = useTranslation();
+  const openSpecies = useOpenSpecies();
   const route = useRoute<AppStackRouteProp<"RatingsCompare">>();
   const { profile1, profile2 } = route.params;
   const [tabMode, setTabMode] = useState<seenMode | compareMode>("all");
@@ -40,9 +42,13 @@ const RatingsCompareScreen = () => {
 
   const renderItem = useCallback(
     ({ item, index }: { item: RatingCompareItem; index: number }) => (
-      <RatingCompareCard item={item} index={index} onPress={() => speciesDetails(item.segment)} />
+      <RatingCompareCard
+        item={item}
+        index={index}
+        onPress={() => openSpecies(item.segment, "rating_compare")}
+      />
     ),
-    [headerData?.profile_data],
+    [headerData?.profile_data, openSpecies],
   );
 
   const handleShare = useCallback(async () => {

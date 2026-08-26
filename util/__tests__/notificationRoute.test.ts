@@ -27,10 +27,13 @@ describe("routeNotification", () => {
     });
   });
 
-  it("sends SpeciesDetail the species id", () => {
+  it("sends SpeciesDetail the species id, tagged as coming from a push", () => {
     route({ screen: "SpeciesDetail", speciesId: 42 });
 
-    expect(navigate).toHaveBeenCalledWith("SpeciesDetail", { id: 42 });
+    expect(navigate).toHaveBeenCalledWith("SpeciesDetail", {
+      id: 42,
+      source: "notification",
+    });
   });
 
   it("sends Achievements the highlight id", () => {

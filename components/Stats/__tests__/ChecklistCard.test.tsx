@@ -54,6 +54,8 @@ import ChecklistCard from "../ChecklistCard";
 
 const mockOnPress = jest.fn();
 const mockOnToggle = jest.fn();
+const mockOnSpeciesPress = jest.fn();
+const mockOnGroupPress = jest.fn();
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -329,5 +331,143 @@ describe("catalogue mode (personal={false})", () => {
     await fireEvent.press(screen.getByText("Blackbird"));
     expect(mockOnPress).toHaveBeenCalled();
     expect(mockOnToggle).not.toHaveBeenCalled();
+  });
+});
+
+// Two navigations out of one row: the row itself does whatever the screen it
+// sits on needs (a menu in the personal checklist, the species page in the
+// country catalogue), and the picture always goes to the species page.
+describe("the two ways out of a row", () => {
+  const SPECIES = {
+    type: "species",
+    species_id: 7,
+    name_lang: "Blackbird",
+    latin: "Turdus merula",
+    segment: "blackbird",
+    thumb: null,
+    seen: false,
+  };
+
+  it("opens the species from the thumbnail without firing the row's own press", async () => {
+    await render(
+      <ChecklistCard
+        item={SPECIES as never}
+        index={0}
+        onPress={mockOnPress}
+        onToggle={mockOnToggle}
+        onSpeciesPress={mockOnSpeciesPress}
+      />,
+    );
+
+    await fireEvent.press(screen.getByTestId("checklist-species-thumb-7"));
+
+    expect(mockOnSpeciesPress).toHaveBeenCalled();
+    expect(mockOnPress).not.toHaveBeenCalled();
+  });
+});
+
+describe("group headers as a way up the tree", () => {
+  const GROUP = {
+    type: "family",
+    name_lang: "Thrushes",
+    latin: "Turdidae",
+    segment: "turdidae",
+    total: 5,
+    seen_count: 5,
+  };
+
+  it("hands the header's own item back when the host offers a destination", async () => {
+    await render(
+      <ChecklistCard
+        item={GROUP as never}
+        index={0}
+        onPress={mockOnPress}
+        onToggle={mockOnToggle}
+        onGroupPress={mockOnGroupPress}
+      />,
+    );
+
+    await fireEvent.press(screen.getByText("Thrushes"));
+
+    expect(mockOnGroupPress).toHaveBeenCalledWith(GROUP);
+    expect(screen.getByText("chevron-forward")).toBeOnTheScreen();
+  });
+
+  // Both the count and the chevron used to claim `marginLeft: "auto"`, and
+  // flexbox split the free space between them — the number ended up floating
+  // in the middle of the row instead of sitting by the chevron, the way the
+  // genus header does it in TaxonDescendantsList.
+  it("keeps the count against the chevron rather than adrift in the row", async () => {
+    await render(
+      <ChecklistCard
+        item={GROUP as never}
+        index={0}
+        personal={false}
+        onPress={mockOnPress}
+        onToggle={mockOnToggle}
+        onGroupPress={mockOnGroupPress}
+      />,
+    );
+
+    const chevron = StyleSheet.flatten(
+      screen.getByText("chevron-forward").props.style,
+    );
+    const count = StyleSheet.flatten(screen.getByText("5").props.style);
+
+    expect(count.marginLeft).toBe("auto");
+    expect(chevron.marginLeft).toBeUndefined();
+  });
+
+  // Nothing to carry the row's alignment then, so the chevron takes it over.
+  it("pushes the chevron over itself when the group has no count", async () => {
+    await render(
+      <ChecklistCard
+        item={{ ...GROUP, total: 0 } as never}
+        index={0}
+        personal={false}
+        onPress={mockOnPress}
+        onToggle={mockOnToggle}
+        onGroupPress={mockOnGroupPress}
+      />,
+    );
+
+    const chevron = StyleSheet.flatten(
+      screen.getByText("chevron-forward").props.style,
+    );
+
+    expect(chevron.marginLeft).toBe("auto");
+  });
+
+  // The personal checklist's headers come from /myapi/checklist2/ and carry no
+  // segment, so a chevron there would promise a page that cannot be opened.
+  it("draws no chevron when there is nowhere to go", async () => {
+    await render(
+      <ChecklistCard
+        item={GROUP as never}
+        index={0}
+        onPress={mockOnPress}
+        onToggle={mockOnToggle}
+      />,
+    );
+
+    expect(screen.queryByText("chevron-forward")).toBeNull();
+  });
+
+  // A country tree can carry depth-4 rows (TREE_DEPTH_TYPE in util/fetches.ts).
+  // With no branch of their own they fell through to the species card, and a
+  // tap on that opened the species page on a genus segment.
+  it("renders a genus as a group header, not as a bird", async () => {
+    await render(
+      <ChecklistCard
+        item={{ ...GROUP, type: "genus", name_lang: "Turdus" } as never}
+        index={0}
+        onPress={mockOnPress}
+        onToggle={mockOnToggle}
+        onGroupPress={mockOnGroupPress}
+      />,
+    );
+
+    expect(screen.getByText("genus")).toBeOnTheScreen();
+    expect(screen.queryByTestId("species-thumb-placeholder")).toBeNull();
   });
 });

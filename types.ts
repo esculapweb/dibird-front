@@ -9,7 +9,11 @@ import { QueryObserverResult } from "@tanstack/react-query";
 import type { Feature, Geometry, GeoJsonProperties } from "geojson";
 // Type only: services/analytics pulls in services/errors, which imports from
 // here — at runtime this import is erased and there is no cycle.
-import type { GatedAction } from "./services/analytics";
+import type { GatedAction, SpeciesEntryPoint } from "./services/analytics";
+
+// Re-exported so screens and components keep importing their types from one
+// place; the definition stays next to the event that reads it.
+export type { SpeciesEntryPoint };
 
 export type IconType = ComponentProps<typeof Ionicons>["name"];
 export type StyleType = StyleProp<ViewStyle>;
@@ -1171,6 +1175,10 @@ export type CatalogParamList = {
   // (linking.ts / taxonShareLink.ts), same as the catalogue's initialSort etc.
   SpeciesDetail: ({ segment: string } | { id: number }) & {
     initialTab?: SpeciesDetailTab;
+    // Which of the app's many roads to this page was taken — read by
+    // `species_viewed` only (see SpeciesEntryPoint). Not part of any shared
+    // link: taxonShareLink builds the URL from the segment and the tab alone.
+    source?: SpeciesEntryPoint;
     // The action the guest did not get to without an account: after the login
     // services/authReturn brings them back to this screen with this parameter, and
     // the screen replays what was started (hooks/useRequireAuth). The screen clears

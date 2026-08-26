@@ -213,7 +213,13 @@ const matchTaxonPath = (normalizedPath: string): TaxonRoute | null => {
       const tab = parseEnumParam(params.get("tab"), SPECIES_DETAIL_TABS);
       return {
         name: "SpeciesDetail",
-        params: { segment: slug, ...(tab && { initialTab: tab }) },
+        params: {
+          segment: slug,
+          ...(tab && { initialTab: tab }),
+          // Counts the arrival from the receiving end; `deep_link_opened`
+          // counts the same one from the link side (see services/analytics).
+          source: "deep_link",
+        },
       };
     }
     const rank = GROUP_RANK_BY_PATH[head];

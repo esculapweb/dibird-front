@@ -3,16 +3,16 @@ import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
-import { Image } from "expo-image";
 
 import ProfileAvatar from "../Profile/ProfileAvatar";
 import { BirdSVG } from "../ui/Svgs";
+import SpeciesThumb from "../Taxonomy/SpeciesThumb";
+import { useOpenSpecies } from "../../hooks/useOpenSpecies";
 import {
   formatDateLong,
   isoToFlagEmoji,
   normalizeDistance,
 } from "../../util/helpers";
-import { Config } from "../../constants/config";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { formatTimeString } from "../../util/timeHelpers";
 import { AppStackNavigationProp, ObservationItem } from "../../types";
@@ -26,6 +26,7 @@ const CommunityCard = memo(
     const { t } = useTranslation();
     const styles = useStyles(Colors);
     const navigation = useNavigation<AppStackNavigationProp>();
+    const openSpecies = useOpenSpecies();
 
     // The feed carries both sources. An eBird row names its own author in
     // `external_username`; a dibird one has a real profile behind it.
@@ -47,21 +48,16 @@ const CommunityCard = memo(
         onPress={handlePress}
       >
         <View style={styles.row}>
-          {item.species_data?.thumb ? (
-            <Image
-              source={{
-                uri: `${Config.mediaUrl}/${item.species_data.thumb}`,
-              }}
-              style={styles.image}
-              contentFit="cover"
-              transition={0}
-              cachePolicy="disk"
-            />
-          ) : (
-            <View style={styles.imagePlaceholder}>
-              <BirdSVG size={38} color={Colors.textSecondary} />
-            </View>
-          )}
+          <SpeciesThumb
+            thumb={item.species_data?.thumb}
+            size={56}
+            radius={12}
+            style={styles.thumb}
+            onPress={() =>
+              openSpecies(item.species_data?.segment, "community_list")
+            }
+            testID={`community-species-thumb-${item.id}`}
+          />
 
           <View style={styles.content}>
             <View style={styles.titleRow}>
@@ -200,22 +196,8 @@ const stylesFn = (Colors: ThemeColors) =>
       padding: 8,
     },
 
-    image: {
-      width: 56,
-      height: 56,
-      borderRadius: 12,
+    thumb: {
       marginRight: 8,
-      backgroundColor: Colors.imageBg,
-    },
-
-    imagePlaceholder: {
-      width: 56,
-      height: 56,
-      borderRadius: 12,
-      marginRight: 8,
-      backgroundColor: Colors.imageBg,
-      justifyContent: "center",
-      alignItems: "center",
     },
 
     content: {

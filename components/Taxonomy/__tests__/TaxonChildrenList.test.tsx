@@ -133,6 +133,7 @@ const loadedWith = (results: TaxonListItem[]) =>
 const renderList = (traits?: TaxonTraitFilters) =>
   render(
     <TaxonChildrenList
+      speciesSource="catalog"
       rank={5}
       errorTitle="taxonomy_unavailable"
       emptyMessage="no_species_found"
@@ -201,6 +202,7 @@ it("shows the removable filter chips once per-filter removal is wired in", async
 
   await rerender(
     <TaxonChildrenList
+      speciesSource="catalog"
       rank={5}
       errorTitle="taxonomy_unavailable"
       emptyMessage="no_species_found"
@@ -216,6 +218,7 @@ it("offers to clear the filters, not just the search, when nothing matches", asy
   const onClearTraits = jest.fn();
   await render(
     <TaxonChildrenList
+      speciesSource="catalog"
       rank={5}
       errorTitle="taxonomy_unavailable"
       emptyMessage="no_species_found"
@@ -349,6 +352,7 @@ it("opens the species page from a species row", async () => {
 
   expect(mockNavigation.navigate).toHaveBeenCalledWith("SpeciesDetail", {
     segment: "osprey",
+    source: "catalog",
   });
 });
 
@@ -363,6 +367,7 @@ it("opens a group at its own rank from the other ranks", async () => {
 
   await render(
     <TaxonChildrenList
+      speciesSource="catalog"
       rank={3}
       errorTitle="taxonomy_unavailable"
       emptyMessage="no_species_found"
@@ -384,6 +389,7 @@ it("hands the species to the picker instead of opening it", async () => {
 
   await render(
     <TaxonChildrenList
+      speciesSource="catalog"
       rank={5}
       errorTitle="taxonomy_unavailable"
       emptyMessage="no_species_found"
@@ -436,6 +442,7 @@ it("refetches on pull-to-refresh", async () => {
 it("seeds the search box from a shared link", async () => {
   await render(
     <TaxonChildrenList
+      speciesSource="catalog"
       rank={5}
       errorTitle="taxonomy_unavailable"
       emptyMessage="no_species_found"
@@ -461,6 +468,7 @@ it("lets the screen own the search when it has to build a share link with it", a
   const onChangeSearch = jest.fn();
   await render(
     <TaxonChildrenList
+      speciesSource="catalog"
       rank={5}
       errorTitle="taxonomy_unavailable"
       emptyMessage="no_species_found"

@@ -484,6 +484,7 @@ describe("deep links from the QA page resolve to the right screen", () => {
     expect(leafParams(stateFor("species/mandarin-duck/?tab=sounds"))).toEqual({
       segment: "mandarin-duck",
       initialTab: "sounds",
+      source: "deep_link",
     });
   });
 

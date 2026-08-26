@@ -46,6 +46,20 @@ tags:
 
 - runFlow: common/bootstrap.yaml
 
+# `tapOn` does not scroll, and this row of the dashboard's Sections grid is the
+# last block on a screen whose height depends on the account's own data — how
+# many "new species" it has, whether the alerts card and "rare nearby" have
+# anything to show. It sat just inside the viewport and passed on that; a card
+# above it growing by one button row (BirdOfTheDay, 2026-08-26) was enough to
+# drop it out of the iOS hierarchy entirely, which reads as "element not found"
+# rather than "not visible". scrollUntilVisible is a no-op when the element is
+# already in view, so this costs nothing and stops the flow depending on the
+# dashboard's exact height.
+- scrollUntilVisible:
+    element:
+      id: "section-Places"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "section-Places"
 

@@ -9,13 +9,16 @@ jest.mock("expo-image", () => {
     ),
   };
 });
+jest.mock("react-i18next", () => ({
+  useTranslation: () => ({ t: (key: string) => key }),
+}));
 jest.mock("../../ui/Svgs", () => {
   const { View } = require("react-native");
   return { BirdSVG: () => <View testID="thumb-placeholder" /> };
 });
 
 import { StyleSheet } from "react-native";
-import { render, screen } from "@testing-library/react-native";
+import { fireEvent, render, screen } from "@testing-library/react-native";
 import SpeciesThumb from "../SpeciesThumb";
 
 const badgeStyle = (code: string) =>
@@ -64,4 +67,38 @@ it("keeps the qualifier form of a category on the badge", async () => {
   await render(<SpeciesThumb thumb={null} statusCode="CR (PE)" />);
 
   expect(screen.getByText("CR (PE)")).toBeOnTheScreen();
+});
+
+// The app-wide rule: the bird's picture leads to the bird, the rest of the row
+// leads to whatever the row is about.
+describe("as a way into the species page", () => {
+  it("is a button only when a handler is given", async () => {
+    const onPress = jest.fn();
+
+    await render(<SpeciesThumb thumb={null} onPress={onPress} testID="thumb" />);
+    await fireEvent.press(screen.getByTestId("thumb"));
+
+    expect(onPress).toHaveBeenCalled();
+  });
+
+  // Labelled by what it does, not by the bird it shows: the row it sits in
+  // already carries the name, and repeating it there gave the row two elements
+  // reading the same thing — one of which quietly went somewhere else.
+  it("announces itself as the way to the species page, not as the bird", async () => {
+    await render(
+      <SpeciesThumb thumb={null} onPress={jest.fn()} testID="thumb" />,
+    );
+
+    expect(screen.getByTestId("thumb").props.accessibilityLabel).toBe(
+      "species_details",
+    );
+  });
+
+  // A Pressable without a handler would still swallow the row's own press on
+  // the thumb, which is exactly what a plain photo must not do.
+  it("stays a plain view without one", async () => {
+    await render(<SpeciesThumb thumb={null} testID="thumb" />);
+
+    expect(screen.queryByTestId("thumb")).toBeNull();
+  });
 });

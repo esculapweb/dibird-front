@@ -1,3 +1,6 @@
+jest.mock("react-i18next", () => ({
+  useTranslation: () => ({ t: (key: string) => key }),
+}));
 jest.mock("../../../store/theme-context", () => ({
   useTheme: () => require("../../../screens/mockTheme").mockUseTheme(),
 }));
@@ -22,6 +25,9 @@ jest.mock("../../ui/Svgs", () => {
   return { BirdSVG: () => <View testID="species-thumb-placeholder" /> };
 });
 jest.mock("@react-navigation/native", () => ({ useNavigation: () => mockNavigation }));
+jest.mock("../../../hooks/useOpenSpecies", () => ({
+  useOpenSpecies: () => mockOpenSpecies,
+}));
 
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { createNavigationMock } from "../../../screens/test-utils";
@@ -29,6 +35,7 @@ import DiaryObservationCard from "../DiaryObservationCard";
 import { DiaryObservationItem } from "../../../types";
 
 const mockNavigation = createNavigationMock();
+const mockOpenSpecies = jest.fn();
 
 const ITEM = (overrides: Partial<DiaryObservationItem> = {}): DiaryObservationItem =>
   ({
@@ -109,4 +116,13 @@ describe("navigation on tap", () => {
     await fireEvent.press(screen.getByText("Blue Tit"));
     expect(mockNavigation.navigate).toHaveBeenCalledWith("CommunityDetail", { observationId: 5 });
   });
+});
+
+it("opens the species page from the thumbnail, leaving the row's own press alone", async () => {
+  await render(<DiaryObservationCard item={ITEM()} index={0} owner />);
+
+  await fireEvent.press(screen.getByTestId("diary-species-thumb-5"));
+
+  expect(mockOpenSpecies).toHaveBeenCalledWith("blue-tit", "diary");
+  expect(mockNavigation.navigate).not.toHaveBeenCalled();
 });

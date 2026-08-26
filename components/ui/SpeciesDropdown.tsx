@@ -12,7 +12,7 @@ import { Image } from "expo-image";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { Config } from "../../constants/config";
 import { BirdSVG } from "./Svgs";
-import { speciesDetails } from "../../util/helpers";
+import { useOpenSpecies } from "../../hooks/useOpenSpecies";
 
 import { QueryType, SpeciesDropdownItem } from "../../types";
 
@@ -37,6 +37,7 @@ const SpeciesDropdown = ({
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
+  const openSpecies = useOpenSpecies();
   const name = speciesData?.name_lang || speciesData?.name;
 
   const handlePress = () => {
@@ -72,7 +73,9 @@ const SpeciesDropdown = ({
             cachePolicy="disk"
           />
           <Pressable
-            onPress={() => speciesDetails(speciesData.segment as string)}
+            onPress={() =>
+              openSpecies(speciesData.segment as string, "observation_editor")
+            }
             style={styles.imageCornerBtn}
           >
             <Ionicons
@@ -89,7 +92,9 @@ const SpeciesDropdown = ({
         <View style={[styles.image, styles.imagePlaceholder]}>
           <BirdSVG size={44} color={Colors.textSecondary} />
           <Pressable
-            onPress={() => speciesDetails(speciesData.segment as string)}
+            onPress={() =>
+              openSpecies(speciesData.segment as string, "observation_editor")
+            }
             style={styles.imageCornerBtn}
           >
             <Ionicons

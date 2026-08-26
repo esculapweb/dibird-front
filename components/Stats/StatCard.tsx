@@ -18,6 +18,11 @@ interface StatCardProps {
   seenMode: seenMode;
   onPress: () => void;
   onToggle?: () => void;
+  // Tapping the bird's picture goes to the species page, whatever the row's
+  // own press does — see SpeciesThumb. The two stat screens differ in that
+  // press (a menu here, the species page on someone else's stat), and this is
+  // what keeps the reference one tap away from both.
+  onSpeciesPress?: () => void;
   personal?: boolean;
 }
 
@@ -28,6 +33,7 @@ const StatCard = memo(
     seenMode,
     onPress,
     onToggle,
+    onSpeciesPress,
     personal = false,
   }: StatCardProps) => {
     const { t } = useTranslation();
@@ -65,6 +71,8 @@ const StatCard = memo(
             size={showSmallImage ? 40 : 56}
             radius={12}
             style={showSmallImage ? styles.thumbSmall : styles.thumb}
+            onPress={onSpeciesPress}
+            testID={`stat-species-thumb-${item.species_id}`}
           />
 
           <View style={styles.content}>

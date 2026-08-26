@@ -38,12 +38,8 @@ jest.mock("../BirdOfTheDaySceleton", () => {
 });
 jest.mock("../../../store/profile-context", () => ({ useProfile: jest.fn() }));
 jest.mock("../../../store/language-context", () => ({ useLanguage: jest.fn() }));
-jest.mock("../../../services/bottomSheet", () => ({
-  BottomSheet: { showMenu: jest.fn(), hide: jest.fn() },
-}));
-jest.mock("../../../util/helpers", () => ({
-  ...jest.requireActual("../../../util/helpers"),
-  speciesDetails: jest.fn(),
+jest.mock("../../../hooks/useOpenSpecies", () => ({
+  useOpenSpecies: () => mockOpenSpecies,
 }));
 jest.mock("../../../util/fetches", () => ({ fetchBirdOfDay: jest.fn() }));
 
@@ -54,12 +50,11 @@ notifyManager.setScheduler((callback) => callback());
 import { createNavigationMock } from "../../../screens/test-utils";
 import { useProfile } from "../../../store/profile-context";
 import { useLanguage } from "../../../store/language-context";
-import { BottomSheet } from "../../../services/bottomSheet";
-import { speciesDetails } from "../../../util/helpers";
 import { fetchBirdOfDay } from "../../../util/fetches";
 import BirdOfTheDay from "../BirdOfTheDay";
 import { BirdOfTheDayType, Filters } from "../../../types";
 
+const mockOpenSpecies = jest.fn();
 const mockNavigation = createNavigationMock();
 
 let queryClient: QueryClient;
@@ -207,27 +202,24 @@ describe("hint key", () => {
   });
 });
 
-describe("tapping the card opens the action menu", () => {
-  it("shows add-observation and species-details options", async () => {
+// The card used to answer its own tap with a two-item sheet, under a chevron
+// that promises a page. The species page is what the card is for, so the tap
+// opens it and the other action gets a button of its own.
+describe("the card's two actions", () => {
+  it("opens the species page when the card is tapped", async () => {
     const { findByText } = await renderWithClient({ territory: 5, place: 3 });
     await findByText("Blue Tit");
 
-    await fireEvent.press(screen.getByText("telescope"));
-    expect(BottomSheet.showMenu).toHaveBeenCalledWith({
-      items: [
-        expect.objectContaining({ label: "add_observation" }),
-        expect.objectContaining({ label: "species_details" }),
-      ],
-    });
+    await fireEvent.press(screen.getByTestId("bird-of-the-day-card"));
+
+    expect(mockOpenSpecies).toHaveBeenCalledWith("blue-tit", "bird_of_the_day");
   });
 
-  it("add-observation navigates to ObservationEditor with the defaults, then hides the sheet", async () => {
+  it("navigates to ObservationEditor with the defaults from the add button", async () => {
     const { findByText } = await renderWithClient({ territory: 5, place: 3 });
     await findByText("Blue Tit");
-    await fireEvent.press(screen.getByText("telescope"));
 
-    const items = (BottomSheet.showMenu as jest.Mock).mock.calls[0][0].items;
-    items[0].onPress();
+    await fireEvent.press(screen.getByTestId("bird-of-the-day-add"));
 
     expect(mockNavigation.navigate).toHaveBeenCalledWith("ObservationEditor", {
       defaultTerritory: 5,
@@ -235,18 +227,8 @@ describe("tapping the card opens the action menu", () => {
       defaultSpecies: 42,
       returnMode: "back",
     });
-    expect(BottomSheet.hide).toHaveBeenCalledTimes(1);
-  });
-
-  it("species-details opens the species page, then hides the sheet", async () => {
-    const { findByText } = await renderWithClient({ territory: 5 });
-    await findByText("Blue Tit");
-    await fireEvent.press(screen.getByText("telescope"));
-
-    const items = (BottomSheet.showMenu as jest.Mock).mock.calls[0][0].items;
-    items[1].onPress();
-
-    expect(speciesDetails).toHaveBeenCalledWith("blue-tit");
-    expect(BottomSheet.hide).toHaveBeenCalledTimes(1);
+    // No sheet to close any more, and the species page is not opened on the
+    // way: the two actions are separate controls now.
+    expect(mockOpenSpecies).not.toHaveBeenCalled();
   });
 });

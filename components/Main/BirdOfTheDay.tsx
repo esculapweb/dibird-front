@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
+import { StyleSheet, Text, View, TouchableOpacity, Pressable } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -14,8 +14,7 @@ import { Config } from "../../constants/config";
 import BirdOfTheDaySkeleton from "./BirdOfTheDaySceleton";
 import { useProfile } from "../../store/profile-context";
 import { useLanguage } from "../../store/language-context";
-import { BottomSheet } from "../../services/bottomSheet";
-import { speciesDetails } from "../../util/helpers";
+import { useOpenSpecies } from "../../hooks/useOpenSpecies";
 import { AppStackNavigationProp, BirdOfTheDayType, Filters } from "../../types";
 
 const H_PAD = 16;
@@ -27,6 +26,7 @@ const getHintKey = (data: BirdOfTheDayType): string => {
 
 const BirdOfTheDay = ({ filters }: { filters: Filters }) => {
   const navigation = useNavigation<AppStackNavigationProp>();
+  const openSpecies = useOpenSpecies();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -53,43 +53,27 @@ const BirdOfTheDay = ({ filters }: { filters: Filters }) => {
   ].includes(data.reason?.user_seen_state);
   const hintKey = getHintKey(data);
 
-  const handleShowBottomSheetMenu = () => {
-    BottomSheet.showMenu({
-      items: [
-        {
-          label: t("add_observation"),
-          icon: "add-circle-outline" as const,
-          onPress: () => {
-            // Close first, navigate second: navigating can take the screen that
-            // owns the sheet out of the stack, and the sheet's own route watcher
-            // closes it on that — a hide() coming after would land on an already
-            // closed sheet.
-            BottomSheet.hide();
-            navigation.navigate("ObservationEditor", {
-              defaultTerritory: filters?.territory ?? null,
-              defaultPlace: filters?.place ?? null,
-              defaultSpecies: data?.taxon_id,
-              returnMode: "back",
-            });
-          },
-        },
-        {
-          label: t("species_details"),
-          icon: "information-circle-outline" as const,
-          onPress: () => {
-            BottomSheet.hide();
-            speciesDetails(data.sp_segment);
-          },
-        },
-      ],
+  // The card is the dashboard's daily hook, and the chevron on it promises a
+  // page. It used to open a two-item sheet instead — one tap of overhead on
+  // the thing the card exists for. Adding an observation is the other action
+  // and now has a button of its own, in plain sight rather than behind a menu.
+  const handleOpenSpecies = () =>
+    openSpecies(data.sp_segment, "bird_of_the_day");
+
+  const handleAddObservation = () =>
+    navigation.navigate("ObservationEditor", {
+      defaultTerritory: filters?.territory ?? null,
+      defaultPlace: filters?.place ?? null,
+      defaultSpecies: data?.taxon_id,
+      returnMode: "back",
     });
-  };
 
   return (
     <TouchableOpacity
       style={styles.botdCard}
       activeOpacity={0.85}
-      onPress={handleShowBottomSheetMenu}
+      onPress={handleOpenSpecies}
+      testID="bird-of-the-day-card"
     >
       <View style={styles.botdStrip}>
         <View style={styles.botdStripLeft}>
@@ -137,6 +121,22 @@ const BirdOfTheDay = ({ filters }: { filters: Filters }) => {
         </View>
         <Ionicons name="chevron-forward" size={22} color={Colors.border} />
       </View>
+
+      <Pressable
+        style={({ pressed }) => [
+          styles.botdAction,
+          pressed && styles.botdActionPressed,
+        ]}
+        onPress={handleAddObservation}
+        testID="bird-of-the-day-add"
+      >
+        <Ionicons
+          name="add-circle-outline"
+          size={18}
+          color={Colors.main100}
+        />
+        <Text style={styles.botdActionText}>{t("add_observation")}</Text>
+      </Pressable>
     </TouchableOpacity>
   );
 };
@@ -182,6 +182,24 @@ const stylesFn = (Colors: ThemeColors) =>
       paddingHorizontal: 16,
       paddingVertical: 16,
       backgroundColor: Colors.primary100,
+    },
+    botdAction: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      paddingVertical: 12,
+      borderTopWidth: 0.5,
+      borderTopColor: Colors.border,
+      backgroundColor: Colors.primary100,
+    },
+    botdActionPressed: {
+      opacity: 0.6,
+    },
+    botdActionText: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: Colors.main100,
     },
     botdText: { flex: 1 },
     botdName: {

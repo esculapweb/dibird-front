@@ -45,16 +45,31 @@ jest.mock("../../Stats/ChecklistCard", () => {
     default: ({
       item,
       onPress,
+      onSpeciesPress,
+      onGroupPress,
       personal,
     }: {
       item: { name_lang: string; type: string };
       onPress: () => void;
+      onSpeciesPress?: () => void;
+      onGroupPress?: (item: unknown) => void;
       personal?: boolean;
     }) => (
-      <Pressable testID={`row-${item.type}`} onPress={onPress}>
-        <Text>{item.name_lang}</Text>
-        <Text testID={`personal-${item.name_lang}`}>{String(personal)}</Text>
-      </Pressable>
+      <>
+        <Pressable testID={`row-${item.type}`} onPress={onPress}>
+          <Text>{item.name_lang}</Text>
+          <Text testID={`personal-${item.name_lang}`}>{String(personal)}</Text>
+        </Pressable>
+        <Pressable testID={`thumb-${item.type}`} onPress={onSpeciesPress}>
+          <Text>thumb</Text>
+        </Pressable>
+        <Pressable
+          testID={`group-${item.type}`}
+          onPress={() => onGroupPress?.(item)}
+        >
+          <Text>group</Text>
+        </Pressable>
+      </>
     ),
   };
 });
@@ -73,7 +88,7 @@ const mockUseQuery = useQuery as jest.Mock;
 const mockFetchTerritoryTree = fetchTerritoryTree as jest.Mock;
 
 const group = (
-  type: "order" | "family",
+  type: "order" | "family" | "genus",
   id: number,
   name: string,
 ): ChecklistItem => ({
@@ -81,7 +96,7 @@ const group = (
   id,
   name_lang: name,
   latin: `${name}-latin`,
-  segment: "",
+  segment: name.toLowerCase().replace(/ /g, "-"),
   seen: false,
   status: null,
   thumb: null,
@@ -223,6 +238,7 @@ it("opens the species page from a row", async () => {
 
   expect(mockNavigation.navigate).toHaveBeenCalledWith("SpeciesDetail", {
     segment: "greater-rhea",
+    source: "territory_checklist",
   });
 });
 
@@ -274,4 +290,35 @@ it("keeps an order whose other family still has matches", async () => {
     "Eagles",
     "Golden Eagle",
   ]);
+});
+
+// The country tree's headers are real taxa — the public endpoint sends their
+// segments — so the reader can go up into the order or family instead of only
+// down into a bird. The personal checklist has no such segments and passes no
+// handler, which is why the destination is the host's business, not the card's.
+it.each([
+  ["order", 2],
+  ["family", 3],
+] as const)("opens a %s header at its own rank", async (type, rank) => {
+  await render(<TerritoryChecklist idAvibase={52} />);
+  await renderRow(ROWS[type === "order" ? 0 : 1]);
+
+  await fireEvent.press(screen.getByTestId(`group-${type}`));
+
+  expect(mockNavigation.navigate).toHaveBeenCalledWith("TaxonGroupDetail", {
+    segment: type === "order" ? "rheas-order" : "rheas-family",
+    rank,
+  });
+});
+
+it("opens the species page from a row's thumbnail too", async () => {
+  await render(<TerritoryChecklist idAvibase={52} />);
+  await renderRow(ROWS[2]);
+
+  await fireEvent.press(screen.getByTestId("thumb-species"));
+
+  expect(mockNavigation.navigate).toHaveBeenCalledWith("SpeciesDetail", {
+    segment: "greater-rhea",
+    source: "territory_checklist",
+  });
 });

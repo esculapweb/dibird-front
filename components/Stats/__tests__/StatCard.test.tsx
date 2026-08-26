@@ -46,12 +46,14 @@ import StatCard from "../StatCard";
 
 const mockOnPress = jest.fn();
 const mockOnToggle = jest.fn();
+const mockOnSpeciesPress = jest.fn();
 
 const SPECIES_ITEM = {
   sp_name_lang: "Blackbird",
   sp_latin: "Turdus merula",
   sp_thumb: null as string | null,
   seen: true,
+  species_id: 7,
   min_date: "2026-01-01",
   max_date: "2026-01-01",
   qty_observations: 3,
@@ -251,4 +253,26 @@ describe("add-to-checklist button", () => {
     expect(mockOnToggle).toHaveBeenCalledTimes(1);
     expect(mockOnPress).not.toHaveBeenCalled();
   });
+});
+
+// The picture is the shortcut to the reference; the row keeps whatever the
+// screen it sits on does with a tap (a menu in the personal stat, the species
+// page in someone else's).
+it("opens the species from the thumbnail without firing the row's own press", async () => {
+  await render(
+    <StatCard
+      item={SPECIES_ITEM as never}
+      index={0}
+      seenMode="all"
+      onPress={mockOnPress}
+      onSpeciesPress={mockOnSpeciesPress}
+    />,
+  );
+
+  await fireEvent.press(
+    screen.getByTestId(`stat-species-thumb-${SPECIES_ITEM.species_id}`),
+  );
+
+  expect(mockOnSpeciesPress).toHaveBeenCalled();
+  expect(mockOnPress).not.toHaveBeenCalled();
 });

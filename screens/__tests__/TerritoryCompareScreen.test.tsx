@@ -340,6 +340,7 @@ it("opens the species page from a row", async () => {
 
   expect(mockNavigation.navigate).toHaveBeenCalledWith("SpeciesDetail", {
     segment: "greater-rhea",
+    source: "territory_compare",
   });
 });
 

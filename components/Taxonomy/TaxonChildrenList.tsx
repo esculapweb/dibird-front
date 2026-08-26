@@ -16,8 +16,10 @@ import { StaleTime } from "../../constants/staleTime";
 import { fetchTaxonList } from "../../util/fetches";
 import { stableStringify } from "../../util/helpers";
 import { latinPart, territoryStatusNote } from "../../util/taxonomy";
+import { useOpenSpecies } from "../../hooks/useOpenSpecies";
 import {
   AppStackNavigationProp,
+  SpeciesEntryPoint,
   TaxonListItem,
   TaxonRank,
   TaxonTraitFilters,
@@ -51,6 +53,10 @@ interface TaxonChildrenListProps {
   initialSearch?: string;
   search?: string;
   onChangeSearch?: (next: string) => void;
+  // Which page this list is standing on, for `species_viewed`. The same list
+  // serves the catalogue root, a taxon group and a country's species tab, and
+  // only the host knows which.
+  speciesSource: SpeciesEntryPoint;
 }
 
 const TaxonChildrenList = ({
@@ -71,10 +77,12 @@ const TaxonChildrenList = ({
   initialSearch,
   search: controlledSearch,
   onChangeSearch,
+  speciesSource,
 }: TaxonChildrenListProps) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const navigation = useNavigation<AppStackNavigationProp>();
+  const openSpecies = useOpenSpecies();
   const [internalSearch, setInternalSearch] = useState(initialSearch ?? "");
   const search = controlledSearch ?? internalSearch;
   const setSearch = onChangeSearch ?? setInternalSearch;
@@ -119,7 +127,7 @@ const TaxonChildrenList = ({
       return;
     }
     if (rank === 5) {
-      navigation.navigate("SpeciesDetail", { segment: item.segment });
+      openSpecies(item.segment, speciesSource);
     } else {
       navigation.navigate("TaxonGroupDetail", {
         segment: item.segment,

@@ -27,20 +27,18 @@ jest.mock("../../util/parseDeepLinkParams", () => ({
 jest.mock("../../services/bottomSheet", () => ({
   BottomSheet: { show: jest.fn(), showMenu: jest.fn(), hide: jest.fn() },
 }));
-// speciesDetails is a Linking.openURL side effect (stubbed); buildShareUrl
-// is real (pure, already covered elsewhere).
-jest.mock("../../util/helpers", () => ({
-  ...jest.requireActual("../../util/helpers"),
-  speciesDetails: jest.fn(),
+jest.mock("../../hooks/useOpenSpecies", () => ({
+  useOpenSpecies: () => mockOpenSpecies,
 }));
 jest.mock("../../components/Stats/StatCard", () => {
   const { TouchableOpacity, Text } = require("react-native");
   return {
     __esModule: true,
-    default: ({ item, onToggle, onPress }: {
+    default: ({ item, onToggle, onPress, onSpeciesPress }: {
       item: { species_id: number };
       onToggle: () => void;
       onPress: () => void;
+      onSpeciesPress: () => void;
     }) => (
       <>
         <TouchableOpacity testID={`toggle-${item.species_id}`} onPress={onToggle}>
@@ -48,6 +46,9 @@ jest.mock("../../components/Stats/StatCard", () => {
         </TouchableOpacity>
         <TouchableOpacity testID={`menu-${item.species_id}`} onPress={onPress}>
           <Text>menu</Text>
+        </TouchableOpacity>
+        <TouchableOpacity testID={`thumb-${item.species_id}`} onPress={onSpeciesPress}>
+          <Text>thumb</Text>
         </TouchableOpacity>
       </>
     ),
@@ -57,10 +58,11 @@ jest.mock("../../components/Stats/ChecklistCard", () => {
   const { TouchableOpacity, Text } = require("react-native");
   return {
     __esModule: true,
-    default: ({ item, onToggle, onPress }: {
+    default: ({ item, onToggle, onPress, onSpeciesPress }: {
       item: { species_id: number };
       onToggle: () => void;
       onPress: () => void;
+      onSpeciesPress: () => void;
     }) => (
       <>
         <TouchableOpacity testID={`toggle-${item.species_id}`} onPress={onToggle}>
@@ -68,6 +70,9 @@ jest.mock("../../components/Stats/ChecklistCard", () => {
         </TouchableOpacity>
         <TouchableOpacity testID={`menu-${item.species_id}`} onPress={onPress}>
           <Text>menu</Text>
+        </TouchableOpacity>
+        <TouchableOpacity testID={`thumb-${item.species_id}`} onPress={onSpeciesPress}>
+          <Text>thumb</Text>
         </TouchableOpacity>
       </>
     ),
@@ -112,6 +117,7 @@ jest.mock("../../components/ui/Tabs", () => {
     ),
   };
 });
+const mockOpenSpecies = jest.fn();
 const mockListScreenCapture = jest.fn();
 jest.mock("../ListScreen", () => ({
   __esModule: true,
@@ -131,7 +137,6 @@ import { useFilters } from "../../store/filters-context";
 import { useProfile } from "../../store/profile-context";
 import { parseDeepLinkParams } from "../../util/parseDeepLinkParams";
 import { BottomSheet } from "../../services/bottomSheet";
-import { speciesDetails } from "../../util/helpers";
 import { createNavigationMock, createRouteMock } from "../test-utils";
 import StatScreen from "../StatScreen";
 
@@ -389,7 +394,19 @@ describe("handleBottomSheetMenu (StatCard's onPress)", () => {
     expect(items).toHaveLength(2);
     expect(items[0].label).toBe("view_species_observations");
     items[1].onPress();
-    expect(speciesDetails).toHaveBeenCalledWith("sparrow");
+    expect(mockOpenSpecies).toHaveBeenCalledWith("sparrow", "stat");
+  });
+
+  // The row's tap keeps its menu — "seen"/"my observations" are what the
+  // personal list is for — while the picture is the shortcut to the reference,
+  // the same as in every other list in the app.
+  it("opens the species straight from the thumbnail, without the menu", async () => {
+    await render(<StatScreen />);
+    const { getByTestId } = await render(latestProps().renderItem({ item: { species_id: 1, seen: true, segment: "sparrow" }, index: 0 }));
+    await fireEvent.press(getByTestId("thumb-1"));
+
+    expect(mockOpenSpecies).toHaveBeenCalledWith("sparrow", "stat");
+    expect(BottomSheet.showMenu).not.toHaveBeenCalled();
   });
 
   it("unseen item's menu entry navigates to a pre-filled ObservationEditor", async () => {

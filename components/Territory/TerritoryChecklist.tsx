@@ -11,11 +11,15 @@ import ChecklistCard from "../Stats/ChecklistCard";
 import { fetchTerritoryTree } from "../../util/fetches";
 import { StaleTime } from "../../constants/staleTime";
 import { useLanguage } from "../../store/language-context";
+import { useOpenSpecies } from "../../hooks/useOpenSpecies";
 import { CatalogNavigationProp, ChecklistItem } from "../../types";
 
 // How deeply each kind of group header nests, so the search filter knows
 // which pending headers a new one replaces.
 const GROUP_LEVEL: Record<string, number> = { order: 0, family: 1, genus: 2 };
+
+// The taxon rank behind each header, for the group page it opens.
+const GROUP_RANK: Record<string, 2 | 3 | 4> = { order: 2, family: 3, genus: 4 };
 
 interface TerritoryChecklistProps {
   // Avibase's own territory id — what the public /api/checklist/ is keyed by.
@@ -36,6 +40,7 @@ const TerritoryChecklist = ({
   const { t } = useTranslation();
   const { language } = useLanguage();
   const navigation = useNavigation<CatalogNavigationProp>();
+  const openSpecies = useOpenSpecies();
   const [search, setSearch] = useState("");
 
   const { data, isLoading, isError, isRefetching, error, refetch } = useQuery<
@@ -107,8 +112,18 @@ const TerritoryChecklist = ({
           index={index}
           personal={false}
           onToggle={() => {}}
-          onPress={() =>
-            navigation.navigate("SpeciesDetail", { segment: item.segment })
+          onPress={() => openSpecies(item.segment, "territory_checklist")}
+          onSpeciesPress={() =>
+            openSpecies(item.segment, "territory_checklist")
+          }
+          // The tree's headers are real taxa here (the country endpoint sends
+          // their segments), so the reader can go up into the order or family
+          // instead of only down into a bird.
+          onGroupPress={(group) =>
+            navigation.navigate("TaxonGroupDetail", {
+              segment: group.segment,
+              rank: GROUP_RANK[group.type] ?? 3,
+            })
           }
         />
       )}

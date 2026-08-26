@@ -6,6 +6,9 @@ jest.mock("../../../store/theme-context", () => ({
   useTheme: () => require("../../../screens/mockTheme").mockUseTheme(),
 }));
 jest.mock("@react-navigation/native", () => ({ useNavigation: () => mockNavigation }));
+jest.mock("../../../hooks/useOpenSpecies", () => ({
+  useOpenSpecies: () => mockOpenSpecies,
+}));
 jest.mock("expo-image", () => {
   const { View } = require("react-native");
   return {
@@ -33,6 +36,7 @@ import { AlertSettings } from "../../../services/alertSettings";
 import { Filters, ObservationItem } from "../../../types";
 
 const mockNavigation = createNavigationMock();
+const mockOpenSpecies = jest.fn();
 
 const SETTINGS = {
   territory_data: { id: 5, name: "France" },
@@ -257,4 +261,16 @@ describe("navigation", () => {
       filtersOverride: { place: null, species: null, territory: 5 },
     });
   });
+});
+
+// The rare-bird row is where "what is that?" gets asked, and until now it only
+// led to the sighting.
+it("opens the species page from the thumbnail, the row still opening the sighting", async () => {
+  mockList([observationItem()]);
+  await render(<RareNearby filters={{}} />);
+
+  await fireEvent.press(screen.getByTestId("rare-nearby-species-thumb-1"));
+
+  expect(mockOpenSpecies).toHaveBeenCalledWith("blue-tit", "rare_nearby");
+  expect(mockNavigation.navigate).not.toHaveBeenCalled();
 });
