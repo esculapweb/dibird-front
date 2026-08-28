@@ -179,6 +179,15 @@ tags:
     commands:
       - back
       - waitForAnimationToEnd
+# Unwinding lands back on MainScreen, but parked where the scrollUntilVisible
+# above left it — down at the section grid, an offset that survives the `back`.
+# The quick actions are then in the hierarchy but under the header, and the wait
+# below asserts on visibility, so it fails on a screen that is already correct.
+- scrollUntilVisible:
+    element:
+      id: "quick-action-observation"
+    direction: UP
+    timeout: 10000
 - extendedWaitUntil:
     visible:
       id: "quick-action-observation"
@@ -194,6 +203,14 @@ tags:
 - assertNotVisible:
     id: "observation-sync-error-icon"
 - back
+
+# Same parked-dashboard problem as after the discard above: the scroll to the
+# section grid outlives the `back`, and the stat cards sit under the header.
+- scrollUntilVisible:
+    element:
+      id: "observations-stat-value"
+    direction: UP
+    timeout: 10000
 
 # Neither entity ever reached the server, so both counters must read exactly
 # what they did at the start — proof that "cleaned up locally" did not quietly

@@ -42,12 +42,16 @@ jest.mock("../../Profile/ProfileAvatar", () => {
   return { __esModule: true, default: () => <Text>avatar</Text> };
 });
 jest.mock("@react-navigation/native", () => ({ useNavigation: () => mockNavigation }));
+jest.mock("../../../hooks/useOpenSpecies", () => ({
+  useOpenSpecies: () => mockOpenSpecies,
+}));
 
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { createNavigationMock } from "../../../screens/test-utils";
 import CommunityCard from "../CommunityCard";
 
 const mockNavigation = createNavigationMock();
+const mockOpenSpecies = jest.fn();
 
 const OBSERVATION = {
   id: 1,
@@ -175,4 +179,13 @@ describe("distance", () => {
     await render(<CommunityCard item={{ ...OBSERVATION, distance: 1500 } as never} index={0} />);
     expect(screen.getByText("~1.5 km")).toBeOnTheScreen();
   });
+});
+
+it("opens the species page from the thumbnail, leaving the row's own press alone", async () => {
+  await render(<CommunityCard item={OBSERVATION as never} index={0} />);
+
+  await fireEvent.press(screen.getByTestId("community-species-thumb-1"));
+
+  expect(mockOpenSpecies).toHaveBeenCalledWith("blackbird", "community_list");
+  expect(mockNavigation.navigate).not.toHaveBeenCalled();
 });

@@ -79,6 +79,15 @@ export const placesDropdownCacheTable = cacheTable("places_dropdown_cache");
 export const statCacheTable = cacheTable("stat_cache");
 export const checklistCacheTable = cacheTable("checklist_cache");
 export const placesListCacheTable = cacheTable("places_list_cache");
+// Places as a map reads them: one page holding every place at once. Shared by
+// both map modes (observations and places) — their requests differ by
+// has_observations, which is part of the cache key, so their entries never
+// collide. Deliberately not sharing placesListCacheTable: a map's single huge
+// page would evict the Places screen's ordinary paged entries (every table is
+// capped by MAX_ENTRIES).
+export const observationPlacesCacheTable = cacheTable(
+  "observation_places_cache",
+);
 export const observationsListCacheTable = cacheTable("observations_list_cache");
 export const diariesListCacheTable = cacheTable("diaries_list_cache");
 export const diaryObservationsListCacheTable = cacheTable(

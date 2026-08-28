@@ -6,6 +6,7 @@ import {
   isoToFlagEmoji,
   buildDateParams,
   cleanFilters,
+  roundCoords,
   stableStringify,
 } from "./helpers";
 import i18n from "../services/i18n";
@@ -35,6 +36,7 @@ import {
   statCacheTable,
   checklistCacheTable,
   placesListCacheTable,
+  observationPlacesCacheTable,
   observationsListCacheTable,
   diariesListCacheTable,
   diaryObservationsListCacheTable,
@@ -65,6 +67,16 @@ import {
 // territory/sort/date-filter combo for species, however many species that
 // territory has).
 const MAX_ENTRIES = 3000;
+
+// One page holding every place for the observations map (see
+// fetchObservationPlaces). Sized to sit under the server's own per_page cap
+// (CustomPagination.max_page_size); a user with more distinct places than this
+// would lose the tail, which is far more places than an eBird import creates.
+const MAP_PLACES_PER_PAGE = 2000;
+
+// Points on a map have no meaningful order; this is here only because the
+// cache key is built from it, so it has to be stable.
+const MAP_PLACES_ORDER = "name";
 import {
   Filters,
   DateFilter,
@@ -1528,6 +1540,27 @@ const buildLocalOnlyResponse = <T>(items: T[]): PaginatedResponse<T> => ({
   },
 });
 
+// The centre a `radius` filter is measured from. Unlike the coordinates that
+// only refine a response (fetchAbstract's requestOnlyParams), these decide
+// *which* rows come back, so they belong in the cache key — two fixes a
+// hundred kilometres apart must never share one "within 50 km" list. Rounded
+// to ~100 m so that standing still keeps hitting the same cache entry instead
+// of writing a new one per GPS jitter; that is far below the smallest radius
+// on offer (see constants/radiusOptions.ts).
+//
+// No fix, no centre: the server then has nothing to apply the radius to and
+// says so in its log (ObservationFilterSet.filter_radius). The filter sheet
+// only lets a radius be picked once there is a fix, so this is the rare case
+// of losing it afterwards.
+const radiusCenterParams = (
+  filters: Filters,
+  coords?: Coords | null,
+): Record<string, number> => {
+  if (filters.radius == null) return {};
+  const rounded = roundCoords(coords, 3);
+  return rounded ? { lng: rounded[0], lat: rounded[1] } : {};
+};
+
 export const fetchPlaces = async (
   filters: Filters,
   order: string | null = "distance",
@@ -1547,15 +1580,20 @@ export const fetchPlaces = async (
   // as a hit — see fetchAbstract's comment on requestOnlyParams. Distance
   // *values* in an offline-served list may be stale/off, same tradeoff the
   // app already accepts elsewhere (e.g. fetchStat re-sorting cached data).
+  // A radius filter is the exception: there the same lng/lat select the rows,
+  // so radiusCenterParams puts them in the cache key instead.
+  const centerParams = radiusCenterParams(filters, coords);
   const requestOnlyParams =
-    isDistanceSort && coords ? { lng: coords[0], lat: coords[1] } : {};
+    isDistanceSort && coords && filters.radius == null
+      ? { lng: coords[0], lat: coords[1] }
+      : {};
   const data = await fetchAbstract<PaginatedResponse<PlaceItem>>(
     "/myapi/place2/",
     filters,
     order,
     search,
     page,
-    {},
+    centerParams,
     undefined,
     {
       table: placesListCacheTable,
@@ -1584,6 +1622,127 @@ export const fetchPlaces = async (
   );
 
   return placeRepository.applyOverlay(data, page ?? 1);
+};
+
+// Both map modes read the same endpoint: a map of observations is a map of
+// places, because an observation carries no geometry of its own — the point
+// comes from place_data.location. That keeps the payload at the number of
+// places (tens/hundreds) rather than observations (thousands), and the two are
+// visually identical anyway: every observation at one place sits on exactly
+// the same coordinate.
+//
+// `scope` is the whole difference. The Observations and Diaries maps each want
+// only the places that still have something of theirs; the Places map wants
+// every place, an empty one very much included.
+type MapPlacesScope = "all" | "withObservations" | "withDiaries";
+
+const MAP_SCOPE_PARAMS: Record<MapPlacesScope, Record<string, boolean>> = {
+  all: {},
+  withObservations: { has_observations: true },
+  withDiaries: { has_diaries: true },
+};
+
+const fetchMapPlaces = async (
+  filters: Filters,
+  search: string | undefined,
+  page: number | undefined,
+  scope: MapPlacesScope,
+) => {
+  // Neither map has infinite scroll: both need every point at once to fit the
+  // camera and to let MapLibre cluster them. Anything past the first page
+  // would be points silently missing from the map, so there is no page 2.
+  if ((page ?? 1) > 1) return emptyPaginatedResponse<PlaceItem>();
+
+  // `place` on the observations screen means "observations at this place";
+  // against the places endpoint the same intent is a place id, which is why it
+  // moves to extraParams rather than staying a filter. `unsynced` is
+  // client-only (see fetchPlaces) and locally-created places have no server
+  // row to aggregate, so the map simply drops it.
+  const { place, unsynced: _unsynced, ...placeFilters } = filters;
+
+  return fetchAbstract<PaginatedResponse<PlaceItem>>(
+    "/myapi/place2/",
+    placeFilters,
+    MAP_PLACES_ORDER,
+    search,
+    1,
+    // extraParams, not requestOnlyParams: these change which rows come back,
+    // so they have to take part in the cache key. That is also what keeps the
+    // two maps' entries apart in the shared cache table.
+    {
+      ...MAP_SCOPE_PARAMS[scope],
+      ...(place != null ? { id: place } : {}),
+    },
+    MAP_PLACES_PER_PAGE,
+    {
+      table: observationPlacesCacheTable,
+      maxEntries: MAX_ENTRIES,
+      resort: (data, ord) => ({
+        ...data,
+        results: resortPlaceListItems(data.results, ord),
+      }),
+    },
+  );
+};
+
+// The observations map: places that still hold matching observations, each
+// sized by how many. Reuses /myapi/place2/, whose counts already honour the
+// same filters (Place2ViewSet._get_obs_q); has_observations drops the places
+// left with nothing after them.
+export const fetchObservationPlaces = (
+  filters: Filters,
+  // Deliberately ignored. The screen shares its persisted sort between both
+  // view modes, and those are observation orderings ("-date_time", "ioc_id")
+  // that PlaceFilterSet has no such choice for — forwarding one gets a 400
+  // ("-date_time is not one of the available choices"). The map has no order
+  // of its own to offer, so fetchMapPlaces always asks for its own.
+  _order?: string | null,
+  search?: string,
+  page?: number,
+) => fetchMapPlaces(filters, search, page, "withObservations");
+
+// The diaries map: places that still hold matching outings, each sized by how
+// many. Sized by diary_place_count rather than the neighbouring diary_count —
+// that one is derived through observations and misses an outing with nothing
+// recorded in it yet (see Place2Serializer on the backend).
+export const fetchDiaryPlaces = (
+  filters: Filters,
+  // Ignored for the same reason as fetchObservationPlaces': the screen's
+  // persisted sort is a diary ordering PlaceFilterSet has no choice for.
+  _order?: string | null,
+  search?: string,
+  page?: number,
+) => fetchMapPlaces(filters, search, page, "withDiaries");
+
+// The places map: every place the list would show, empty ones included.
+export const fetchPlacesForMap = (
+  filters: Filters,
+  _order?: string | null,
+  search?: string,
+  page?: number,
+) => fetchMapPlaces(filters, search, page, "all");
+
+// Observations the map physically cannot show: without a place they have no
+// coordinates at all. The screen surfaces the number so they aren't silently
+// missing. per_page=1 — only pagination.count is wanted, not a page of rows.
+// Uncached on purpose: it is one small number next to a list that already
+// paints from cache, and a stale count here would contradict the map beside it.
+export const fetchNoPlaceObservationCount = async (
+  filters: Filters,
+): Promise<number> => {
+  const { date, place: _place, unsynced: _unsynced, ...rest } = filters;
+
+  const res = await api.get<PaginatedResponse<ObservationItem>>(
+    "/myapi/observation2/",
+    {
+      params: {
+        ...cleanFilters({ ...rest, ...buildDateParams(date) }),
+        has_place: false,
+        per_page: 1,
+      },
+    },
+  );
+  return res.data.pagination.count;
 };
 
 export const fetchObservations = async (
@@ -1688,6 +1847,39 @@ export const fetchDiaries = async (
 
   return diaryRepository.applyOverlay(data, page ?? 1);
 };
+
+/**
+ * The one row a place holds, for the maps' sheet.
+ *
+ * A place with a single observation (or a single outing) has nothing to choose
+ * from, so the sheet opens it rather than a filtered list of one. The map
+ * carries counts, not ids, so the row itself has to be asked for — through the
+ * screen's own fetch, which means the offline cache and the local overlay both
+ * still apply.
+ *
+ * Null whenever the answer is not exactly one row: a count that has drifted
+ * from the data, nothing cached while offline, a failed request. The caller
+ * then falls back to the filtered list, which is where the tap used to land
+ * anyway, so a miss costs the user a screen rather than an error.
+ */
+const fetchOnlyItemAtPlace = async <T>(
+  fetcher: (filters: Filters) => Promise<PaginatedResponse<T>>,
+  filters: Filters,
+  placeId: number,
+): Promise<T | null> => {
+  try {
+    const { results } = await fetcher({ ...filters, place: placeId });
+    return results.length === 1 ? results[0] : null;
+  } catch {
+    return null;
+  }
+};
+
+export const fetchOnlyObservationAtPlace = (filters: Filters, placeId: number) =>
+  fetchOnlyItemAtPlace(fetchObservations, filters, placeId);
+
+export const fetchOnlyDiaryAtPlace = (filters: Filters, placeId: number) =>
+  fetchOnlyItemAtPlace(fetchDiaries, filters, placeId);
 
 export const fetchDiaryObservations = async (
   filters: Filters,
@@ -1834,8 +2026,12 @@ export const fetchCommunityObservations = (
   // identical comment on requestOnlyParams above): otherwise a list cached
   // while online under one GPS fix cache-misses entirely once offline with a
   // slightly different (or no) fix, even though nothing else about the query
-  // changed — exactly what happened reopening the app in airplane mode.
-  const requestOnlyParams = coords ? { lng: coords[0], lat: coords[1] } : {};
+  // changed — exactly what happened reopening the app in airplane mode. With
+  // a radius filter they select the rows instead of refining them, and move
+  // into the key (radiusCenterParams).
+  const centerParams = radiusCenterParams(filters, coords);
+  const requestOnlyParams =
+    coords && filters.radius == null ? { lng: coords[0], lat: coords[1] } : {};
 
   return fetchAbstract<PaginatedResponse<ObservationItem>>(
     "/myapi/community2/",
@@ -1843,7 +2039,7 @@ export const fetchCommunityObservations = (
     order,
     search,
     page,
-    {},
+    centerParams,
     per_page,
     {
       table: communityObservationsCacheTable,

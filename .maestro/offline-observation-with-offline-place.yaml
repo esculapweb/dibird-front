@@ -65,6 +65,14 @@ tags:
     id: "observations-stat-value"
 - evalScript: ${output.observationBaselineCount = maestro.copiedText}
 
+# The section grid sits below the fold: the dashboard's height follows the
+# account's own data, so the tile is not reliably in view (see the longer
+# note in online-create-place.yaml). No-op when it already is.
+- scrollUntilVisible:
+    element:
+      id: "section-Places"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "section-Places"
 - extendedWaitUntil:
@@ -152,6 +160,14 @@ tags:
 
 # ---- CREATE Observation, offline, referencing that still-pending Place ----
 - back
+# Scroll back up first: MainScreen keeps the offset left by the scrollUntilVisible
+# that reached the section grid, so the quick actions sit under the header on
+# return — in the hierarchy, but not visible, which is what tapOn needs.
+- scrollUntilVisible:
+    element:
+      id: "quick-action-observation"
+    direction: UP
+    timeout: 10000
 - tapOn:
     id: "quick-action-observation"
 - tapOn:
@@ -191,6 +207,12 @@ tags:
 - assertVisible: "Nested E2E Place"
 
 - back
+# Below the fold, same as above.
+- scrollUntilVisible:
+    element:
+      id: "section-Observations"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "section-Observations"
 - assertVisible:
@@ -230,6 +252,12 @@ tags:
 - assertVisible: ".*Observations.*"
 
 - back
+# Below the fold, same as above.
+- scrollUntilVisible:
+    element:
+      id: "section-Places"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "section-Places"
 # Found by its distinctive name rather than a pending icon or list
@@ -254,6 +282,15 @@ tags:
     text: ${output.placeBaselineCount}
 
 - back
+# Scroll back up first: MainScreen keeps the offset left by the scrollUntilVisible
+# that reached the section grid, so on return the top of the dashboard sits under
+# the header — present in the hierarchy, but not visible, which is what Maestro
+# asserts on. Same reason as in offline-nested-observation-in-diary.yaml.
+- scrollUntilVisible:
+    element:
+      id: "observations-stat-value"
+    direction: UP
+    timeout: 10000
 - assertVisible:
     id: "observations-stat-value"
     text: ${output.observationBaselineCount}

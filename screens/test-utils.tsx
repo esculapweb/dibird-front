@@ -15,6 +15,9 @@ export function createNavigationMock(
     popToTop: jest.fn(),
     setOptions: jest.fn(),
     setParams: jest.fn(),
+    // Read by hooks/useOpenSpecies to tell "go back to the species page we came
+    // from" apart from "push a new one"; an empty stack means it always pushes.
+    getState: jest.fn(() => ({ index: -1, routes: [] })),
     getParent: jest.fn(() => createNavigationMock()),
     ...overrides,
   };

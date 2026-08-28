@@ -2,10 +2,10 @@ import { useMemo, memo } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import { Image } from "expo-image";
 
 import { BirdSVG } from "../ui/Svgs";
-import { Config } from "../../constants/config";
+import SpeciesThumb from "../Taxonomy/SpeciesThumb";
+import { useOpenSpecies } from "../../hooks/useOpenSpecies";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { formatTimeString } from "../../util/timeHelpers";
 import { AppStackNavigationProp, DiaryObservationItem } from "../../types";
@@ -26,6 +26,7 @@ const DiaryObservationCard = memo(
     const { Colors } = useTheme();
     const styles = useStyles(Colors);
     const navigation = useNavigation<AppStackNavigationProp>();
+    const openSpecies = useOpenSpecies();
 
     const handlePress = () => {
       if (owner) {
@@ -41,21 +42,14 @@ const DiaryObservationCard = memo(
         onPress={handlePress}
       >
         <View style={styles.row}>
-          {item.species_data?.thumb ? (
-            <Image
-              source={{
-                uri: `${Config.mediaUrl}/${item.species_data.thumb}`,
-              }}
-              style={styles.image}
-              contentFit="cover"
-              transition={0}
-              cachePolicy="disk"
-            />
-          ) : (
-            <View style={styles.imagePlaceholder}>
-              <BirdSVG size={38} color={Colors.textSecondary} />
-            </View>
-          )}
+          <SpeciesThumb
+            thumb={item.species_data?.thumb}
+            size={40}
+            radius={12}
+            style={styles.thumb}
+            onPress={() => openSpecies(item.species_data?.segment, "diary")}
+            testID={`diary-species-thumb-${item.id}`}
+          />
 
           <View style={styles.content}>
             <View style={styles.titleRow}>
@@ -131,22 +125,8 @@ const stylesFn = (Colors: ThemeColors) =>
       flexDirection: "row",
     },
 
-    image: {
-      width: 40,
-      height: 40,
-      borderRadius: 12,
+    thumb: {
       marginRight: 8,
-      backgroundColor: Colors.imageBg,
-    },
-
-    imagePlaceholder: {
-      width: 40,
-      height: 40,
-      borderRadius: 12,
-      marginRight: 8,
-      backgroundColor: Colors.imageBg,
-      justifyContent: "center",
-      alignItems: "center",
     },
 
     content: {

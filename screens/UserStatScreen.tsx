@@ -13,7 +13,8 @@ import { useFilters } from "../store/filters-context";
 import { useTheme, ThemeColors } from "../store/theme-context";
 import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
-import { buildShareUrl, speciesDetails } from "../util/helpers";
+import { buildShareUrl } from "../util/helpers";
+import { useOpenSpecies } from "../hooks/useOpenSpecies";
 import { track } from "../services/analytics";
 import {
   AppStackRouteProp,
@@ -28,6 +29,7 @@ import {
 
 const UserStatScreen = () => {
   const { t } = useTranslation();
+  const openSpecies = useOpenSpecies();
   const route = useRoute<AppStackRouteProp<"UserStat">>();
   const { profileId } = route.params;
   const { seenMode, setSeenMode } = useFilters();
@@ -118,10 +120,11 @@ const UserStatScreen = () => {
         item={item}
         index={index}
         seenMode={seenMode}
-        onPress={() => speciesDetails(item.segment)}
+        onPress={() => openSpecies(item.segment, "user_stat")}
+        onSpeciesPress={() => openSpecies(item.segment, "user_stat")}
       />
     ),
-    [seenMode],
+    [seenMode, openSpecies],
   );
 
   const tabOptions = [

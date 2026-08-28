@@ -41,6 +41,14 @@ tags:
 
 - runFlow: common/bootstrap.yaml
 
+# The section grid sits below the fold: the dashboard's height follows the
+# account's own data, so the tile is not reliably in view (see the longer
+# note in online-create-place.yaml). No-op when it already is.
+- scrollUntilVisible:
+    element:
+      id: "section-Observations"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "section-Observations"
 - extendedWaitUntil:
@@ -87,6 +95,15 @@ tags:
     text: ${output.observationsBaselineBadge}
 
 - runFlow: common/back.yaml
+# Scroll back up first: MainScreen keeps the offset left by the scrollUntilVisible
+# that reached the section grid, so on return the top of the dashboard sits under
+# the header — present in the hierarchy, but not visible, which is what Maestro
+# asserts on. Same reason as in offline-nested-observation-in-diary.yaml.
+- scrollUntilVisible:
+    element:
+      id: "quick-action-observation"
+    direction: UP
+    timeout: 10000
 - extendedWaitUntil:
     visible:
       id: "quick-action-observation"

@@ -36,11 +36,8 @@ jest.mock("@react-navigation/native", () => ({
   useRoute: () => mockRoute,
 }));
 jest.mock("../../hooks/useItem", () => ({ useItem: jest.fn() }));
-// speciesDetails is a Linking.openURL side effect (stubbed); buildShareUrl/
-// isoToFlagEmoji/formatDate* are real, pure, already unit-tested elsewhere.
-jest.mock("../../util/helpers", () => ({
-  ...jest.requireActual("../../util/helpers"),
-  speciesDetails: jest.fn(),
+jest.mock("../../hooks/useOpenSpecies", () => ({
+  useOpenSpecies: () => mockOpenSpecies,
 }));
 jest.mock("../../components/ui/Svgs", () => {
   const { View } = require("react-native");
@@ -57,6 +54,7 @@ jest.mock("../../components/Profile/ProfileAvatar", () => {
   const { Text } = require("react-native");
   return { __esModule: true, default: () => <Text>avatar</Text> };
 });
+const mockOpenSpecies = jest.fn();
 const mockMapCapture = jest.fn();
 jest.mock("../../components/Map/MapL", () => {
   const { Text } = require("react-native");
@@ -87,7 +85,6 @@ jest.mock("../../components/ui/IconsHeader", () => {
 import { Share, Platform } from "react-native";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { useItem } from "../../hooks/useItem";
-import { speciesDetails } from "../../util/helpers";
 import { createNavigationMock, createRouteMock } from "../test-utils";
 import CommunityDetailScreen from "../CommunityDetailScreen";
 
@@ -164,7 +161,26 @@ it("renders the species name (preferring the localized name) and opens species d
   expect(screen.getByText("Turdus merula")).toBeOnTheScreen();
 
   await fireEvent.press(screen.getByText("Blackbird"));
-  expect(speciesDetails).toHaveBeenCalledWith("blackbird");
+  expect(mockOpenSpecies).toHaveBeenCalledWith("blackbird", "community_observation");
+});
+
+// The segment is localized and rides on the same response as the name, so it
+// goes missing on a record created offline and on a copy cached under another
+// language. The header used to draw the "about" link anyway and answer the tap
+// with nothing at all.
+it("hides the species link when there is no segment to follow", async () => {
+  mockItem({
+    data: {
+      ...OBSERVATION,
+      species_data: { ...OBSERVATION.species_data, segment: "" },
+    },
+  });
+
+  await render(<CommunityDetailScreen />);
+  expect(screen.queryByText("about_species")).toBeNull();
+
+  await fireEvent.press(screen.getByText("Blackbird"));
+  expect(mockOpenSpecies).not.toHaveBeenCalled();
 });
 
 it("falls back to the latin name when no localized name is available", async () => {

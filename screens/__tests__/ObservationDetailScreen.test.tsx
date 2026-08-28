@@ -57,11 +57,8 @@ jest.mock("../../services/bottomSheet", () => ({
 jest.mock("../../hooks/useApiError", () => ({
   useApiError: () => ({ showErrorToast: mockShowErrorToast }),
 }));
-// speciesDetails is a Linking.openURL side effect (stubbed); buildShareUrl/
-// isoToFlagEmoji/formatDate* are real, pure, already unit-tested elsewhere.
-jest.mock("../../util/helpers", () => ({
-  ...jest.requireActual("../../util/helpers"),
-  speciesDetails: jest.fn(),
+jest.mock("../../hooks/useOpenSpecies", () => ({
+  useOpenSpecies: () => mockOpenSpecies,
 }));
 jest.mock("../../components/ui/Svgs", () => {
   const { View } = require("react-native");
@@ -122,10 +119,10 @@ import {
 import * as observationRepository from "../../hooks/repositories/observationRepository";
 import { runObservationSync } from "../../services/sync/observationSync";
 import { BottomSheet } from "../../services/bottomSheet";
-import { speciesDetails } from "../../util/helpers";
 import { createNavigationMock, createRouteMock } from "../test-utils";
 import ObservationDetailScreen from "../ObservationDetailScreen";
 
+const mockOpenSpecies = jest.fn();
 const mockShowErrorToast = jest.fn();
 const mockNavigation = createNavigationMock();
 const mockRoute = createRouteMock("ObservationDetail", { observationId: 1 });
@@ -218,7 +215,26 @@ it("renders the species name (preferring the localized name) and opens species d
   expect(screen.getByText("Turdus merula")).toBeOnTheScreen();
 
   await fireEvent.press(screen.getByText("Blackbird"));
-  expect(speciesDetails).toHaveBeenCalledWith("blackbird");
+  expect(mockOpenSpecies).toHaveBeenCalledWith("blackbird", "observation");
+});
+
+// The segment is localized and rides on the same response as the name, so it
+// goes missing on a record created offline and on a copy cached under another
+// language. The header used to draw the "about" link anyway and answer the tap
+// with nothing at all.
+it("hides the species link when there is no segment to follow", async () => {
+  mockItem({
+    data: {
+      ...OBSERVATION,
+      species_data: { ...OBSERVATION.species_data, segment: "" },
+    },
+  });
+
+  await render(<ObservationDetailScreen />);
+  expect(screen.queryByText("about_species")).toBeNull();
+
+  await fireEvent.press(screen.getByText("Blackbird"));
+  expect(mockOpenSpecies).not.toHaveBeenCalled();
 });
 
 it("shows FailedEditBanner only with a sync error and a matching failed mutation, wired to retry/discard", async () => {

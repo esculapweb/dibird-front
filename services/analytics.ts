@@ -30,6 +30,39 @@ export type ShareType =
   | "user_stat"
   | "app";
 
+/**
+ * How the species page was reached. Fifteen-odd places lead there — the
+ * catalogue, three country views, both stat screens, the observation screens,
+ * the dashboard cards, a push and a shared link — and without this parameter
+ * `species_viewed` says only that the page is popular, not which road carries
+ * the traffic. Every caller passes it explicitly (the route param on
+ * `SpeciesDetail`); `unknown` is the fallback for a route that predates the
+ * parameter, e.g. one restored from a persisted navigation state.
+ */
+export type SpeciesEntryPoint =
+  | "catalog"
+  | "taxon_group"
+  | "territory_species"
+  | "territory_checklist"
+  | "territory_compare"
+  | "species_related"
+  | "species_paging"
+  | "observation"
+  | "observation_list"
+  | "observation_editor"
+  | "community_observation"
+  | "community_list"
+  | "diary"
+  | "stat"
+  | "user_stat"
+  | "rating_compare"
+  | "bird_of_the_day"
+  | "rare_nearby"
+  | "new_species"
+  | "notification"
+  | "deep_link"
+  | "unknown";
+
 /** Where the alerts were enabled from — the entry point, not the fact of enabling. */
 export type AlertsEnabledSource = "settings" | "main_card";
 
@@ -67,10 +100,9 @@ type EventParams = {
   auth_wall_shown: { action: GatedAction };
   /**
    * An external link opened in the app. It answers the question "does sharing
-   * bring traffic" directly, which is why `species_viewed`/`territory_viewed`
-   * have no "where from" parameter of their own: there is nothing to determine it
-   * with on the screen itself — people arrive there from the tree, from the
-   * search and via a link.
+   * bring traffic" directly — `species_viewed`'s own `deep_link` source counts
+   * the same arrivals from the receiving end, and the two are expected to
+   * agree.
    */
   deep_link_opened: { screen: string; authed: "yes" | "no" };
   /**
@@ -100,7 +132,12 @@ type EventParams = {
    * and when.
    */
   onboarding_country_set: undefined;
-  species_viewed: undefined;
+  /**
+   * The key page of the catalogue. `source` is the road that led here — see
+   * SpeciesEntryPoint for why it is carried on the route rather than guessed
+   * on the screen.
+   */
+  species_viewed: { source: SpeciesEntryPoint };
   territory_viewed: undefined;
   share_tapped: { type: ShareType };
   /**

@@ -80,6 +80,18 @@ export const useFilterLabels = (
       case "unsynced":
         return [t("sync_status"), t("unsynced_only")];
 
+      case "private":
+        return [t("privacy"), value ? t("private") : t("public")];
+
+      case "source":
+        return [
+          t("source"),
+          value === "ebird" ? t("source_ebird") : t("source_dibird"),
+        ];
+
+      case "radius":
+        return [t("radius"), `${value} ${t("km")}`];
+
       case "date":
         return formatDateFilter(value as DateFilter, t);
 

@@ -79,7 +79,9 @@ it("opens the orders list", () => {
 it("opens the detail pages for species and each group rank", () => {
   expect(stateFor("/species/osprey/")?.routes[1]).toEqual({
     name: "SpeciesDetail",
-    params: { segment: "osprey" },
+    // `source` rides along on every species link — it is what tells
+    // `species_viewed` the arrival came from a shared URL.
+    params: { segment: "osprey", source: "deep_link" },
   });
   expect(stateFor("/genus/pandion/")?.routes[1]).toEqual({
     name: "TaxonGroupDetail",
@@ -115,6 +117,6 @@ it("roots the same catalogue link at Main when signed in", () => {
   expect(state?.routes[0]).toEqual({ name: "Main" });
   expect(state?.routes[1]).toEqual({
     name: "SpeciesDetail",
-    params: { segment: "osprey" },
+    params: { segment: "osprey", source: "deep_link" },
   });
 });

@@ -32,12 +32,16 @@ jest.mock("../../ui/Svgs", () => {
   };
 });
 jest.mock("@react-navigation/native", () => ({ useNavigation: () => mockNavigation }));
+jest.mock("../../../hooks/useOpenSpecies", () => ({
+  useOpenSpecies: () => mockOpenSpecies,
+}));
 
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { createNavigationMock } from "../../../screens/test-utils";
 import ObservationCard from "../ObservationCard";
 
 const mockNavigation = createNavigationMock();
+const mockOpenSpecies = jest.fn();
 
 const OBSERVATION = {
   id: 1,
@@ -213,4 +217,13 @@ describe("place row", () => {
     await render(<ObservationCard item={{ ...OBSERVATION, diary: 7 } as never} index={0} />);
     expect(screen.getByTestId("icon-book-outline")).toBeOnTheScreen();
   });
+});
+
+it("opens the species page from the thumbnail, leaving the row's own press alone", async () => {
+  await render(<ObservationCard item={OBSERVATION as never} index={0} />);
+
+  await fireEvent.press(screen.getByTestId("observation-species-thumb-1"));
+
+  expect(mockOpenSpecies).toHaveBeenCalledWith("blackbird", "observation_list");
+  expect(mockNavigation.navigate).not.toHaveBeenCalled();
 });

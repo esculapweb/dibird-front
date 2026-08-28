@@ -1,0 +1,143 @@
+# Getting to a species page from the *personal* half of the app.
+#
+# Every existing flow that reaches the species reference does it from the
+# catalogue (guest-browse.yaml) or from a shared link
+# (guest-deeplink-no-session.yaml). The roads from a signed-in user's own
+# screens — the checklist, the dashboard cards, an observation — had no cover
+# at all, which is exactly the half that changed when `speciesDetails()` (a
+# navigationRef dispatch) became the `useOpenSpecies` hook.
+#
+# The rule this guards is the app-wide one: the bird's picture leads to the
+# bird, the rest of the row leads to whatever that row is about. So the
+# checklist row is tapped twice — once on the thumbnail, which must land on
+# the species page, and once on the row itself, which must not.
+#
+# The species page is recognised by `compare-species-button`, the compare icon
+# in its header: it exists on that screen and nowhere else, so it says "we are
+# on the right screen" without depending on which bird the account's country
+# happens to list first.
+#
+# Data it needs: a country on the profile, which every e2e account has (the
+# onboarding sets one) — the country checklist comes from the backend
+# catalogue, not from the user's records, so a reset account lists birds just
+# the same.
+#
+# appId comes from run.sh (--env APP_ID).
+appId: ${APP_ID}
+tags:
+  - ios
+  - android
+---
+- launchApp
+
+- runFlow: common/bootstrap.yaml
+
+# ---- the country checklist: thumbnail vs row ----
+- scrollUntilVisible:
+    element:
+      id: "section-Checklist"
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: "section-Checklist"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "items-list"
+    timeout: 20000
+
+# The picture goes straight to the reference.
+- tapOn:
+    id: "checklist-species-thumb-.*"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "compare-species-button"
+    timeout: 15000
+
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: "items-list"
+    timeout: 15000
+
+# The row itself keeps its own menu — "my observations" / "mark as seen" are
+# what the personal checklist is for — so it must not open the species page.
+#
+# What can be asserted about that menu differs by platform, measured rather
+# than assumed (scratch probe, 2026-08-26): on Android its rows are reachable
+# by label, on iOS the sheet collapses into a single accessibility element and
+# *nothing* inside it is reachable — not the labels, not the testIDs. This is
+# the same gorhom limitation that keeps list-filters/list-sort-persist
+# Android-only (§1); the exception noted there for the catalogue's filter sheet
+# does not apply, since that one is a showContent with a `title` and this is a
+# showMenu without.
+#
+# So the cross-platform half of the check is the negative — the row did not
+# open the species page — and Android additionally pins down what it did open.
+# The menu has no cancel button (that testID belongs to the sheet's confirm
+# mode), so it is dismissed the way a user does it: a swipe down.
+- tapOn:
+    id: "checklist-species-row-.*"
+- waitForAnimationToEnd
+- assertNotVisible:
+    id: "compare-species-button"
+# Not "Species details": that string is also the accessibility label of every
+# species thumbnail on the screen behind the sheet, so it would pass whether or
+# not the menu opened. The other row is the menu's own, and which of the two it
+# is depends on whether that bird is already ticked off.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - assertVisible: ".*(View species observations|Add observation).*"
+- swipe:
+    direction: DOWN
+    duration: 400
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "items-list"
+    timeout: 10000
+
+- runFlow: common/back.yaml
+
+# ---- the dashboard's bird of the day ----
+# Unconditional. The pick comes from the union of the community's own stats and
+# the country's checklist (backend b0c03066), so every country with a checklist
+# has a bird of the day — and every e2e account has a country, which the
+# checklist half of this flow already leans on. Guarding this block with a
+# `when: visible` would only buy the ability to skip it in silence.
+#
+# Waited for rather than asserted outright: the widget is a query with an
+# hour-long staleTime, and on a cold start the dashboard paints its skeleton
+# first.
+- scrollUntilVisible:
+    element:
+      id: "quick-action-observation"
+    direction: UP
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: "bird-of-the-day-card"
+    timeout: 15000
+
+# The other action is a button of its own now, not a row in a menu.
+- assertVisible:
+    id: "bird-of-the-day-add"
+- tapOn:
+    id: "bird-of-the-day-card"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "compare-species-button"
+    timeout: 15000
+- runFlow: common/back.yaml
+
+- scrollUntilVisible:
+    element:
+      id: "quick-action-observation"
+    direction: UP
+    timeout: 10000
+- assertVisible:
+    id: "quick-action-observation"

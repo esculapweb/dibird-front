@@ -16,7 +16,8 @@ import Tabs from "../components/ui/Tabs";
 import ViewSwitch from "../components/ui/ViewSwitch";
 import { useFilters } from "../store/filters-context";
 import { useProfile } from "../store/profile-context";
-import { buildShareUrl, speciesDetails } from "../util/helpers";
+import { buildShareUrl } from "../util/helpers";
+import { useOpenSpecies } from "../hooks/useOpenSpecies";
 import { track } from "../services/analytics";
 import { parseDeepLinkParams } from "../util/parseDeepLinkParams";
 import { BottomSheet } from "../services/bottomSheet";
@@ -36,6 +37,7 @@ import {
 const StatScreen = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<AppStackNavigationProp>();
+  const openSpecies = useOpenSpecies();
   const route = useRoute<AppStackRouteProp<"Stat" | "Checklist">>();
 
   const openFilterRef = useRef<(() => void) | null>(null);
@@ -287,13 +289,13 @@ const StatScreen = () => {
             icon: "information-circle-outline" as const,
             onPress: () => {
               BottomSheet.hide();
-              speciesDetails(item.segment);
+              openSpecies(item.segment, "stat");
             },
           },
         ],
       });
     },
-    [t, currentFilters, navigation, handleShowObservations],
+    [t, currentFilters, navigation, handleShowObservations, openSpecies],
   );
 
   const renderItem = useCallback(
@@ -305,6 +307,10 @@ const StatScreen = () => {
             index={index}
             onToggle={() => handleStatCardPress(item)}
             onPress={() => handleBottomSheetMenu(item)}
+            // The row's tap keeps its menu — "seen"/"my observations" are
+            // what this screen is for — while the picture goes straight to
+            // the reference, the same as everywhere else.
+            onSpeciesPress={() => openSpecies(item.segment, "stat")}
           />
         );
       }
@@ -315,11 +321,12 @@ const StatScreen = () => {
           seenMode={seenMode}
           onToggle={() => handleStatCardPress(item)}
           onPress={() => handleBottomSheetMenu(item)}
+          onSpeciesPress={() => openSpecies(item.segment, "stat")}
           personal
         />
       );
     },
-    [seenMode, handleStatCardPress, handleBottomSheetMenu, viewMode],
+    [seenMode, handleStatCardPress, handleBottomSheetMenu, viewMode, openSpecies],
   );
 
   const handleShare = useCallback(async () => {

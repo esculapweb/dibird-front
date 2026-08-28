@@ -18,22 +18,27 @@ jest.mock("../../util/fetches", () => ({
 jest.mock("../../store/filters-context", () => ({
   useFilters: jest.fn(),
 }));
-jest.mock("../../util/helpers", () => ({
-  ...jest.requireActual("../../util/helpers"),
-  speciesDetails: jest.fn(),
+jest.mock("../../hooks/useOpenSpecies", () => ({
+  useOpenSpecies: () => mockOpenSpecies,
 }));
 jest.mock("../../components/Stats/StatCard", () => {
   const { TouchableOpacity, Text } = require("react-native");
   return {
     __esModule: true,
-    default: ({ item, seenMode, onPress }: {
+    default: ({ item, seenMode, onPress, onSpeciesPress }: {
       item: { segment: string };
       seenMode: string;
       onPress: () => void;
+      onSpeciesPress: () => void;
     }) => (
-      <TouchableOpacity testID="stat-card" onPress={onPress}>
-        <Text>{`stat-card:${item.segment}:${seenMode}`}</Text>
-      </TouchableOpacity>
+      <>
+        <TouchableOpacity testID="stat-card" onPress={onPress}>
+          <Text>{`stat-card:${item.segment}:${seenMode}`}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity testID="stat-card-thumb" onPress={onSpeciesPress}>
+          <Text>thumb</Text>
+        </TouchableOpacity>
+      </>
     ),
   };
 });
@@ -53,6 +58,7 @@ jest.mock("../../components/ui/Tabs", () => {
     ),
   };
 });
+const mockOpenSpecies = jest.fn();
 const mockListScreenCapture = jest.fn();
 jest.mock("../ListScreen", () => ({
   __esModule: true,
@@ -67,7 +73,6 @@ import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { useQuery } from "@tanstack/react-query";
 import { fetchStat, fetchUserProfile } from "../../util/fetches";
 import { useFilters } from "../../store/filters-context";
-import { speciesDetails } from "../../util/helpers";
 import { createRouteMock } from "../test-utils";
 import UserStatScreen from "../UserStatScreen";
 
@@ -133,11 +138,18 @@ it("customHeaderBadge formats 'seen / total' when both counts are numbers, else 
   expect(customHeaderBadge({})).toBeUndefined();
 });
 
-it("renderItem renders a StatCard wired to speciesDetails on press", async () => {
+// Someone else's list has no "mark seen" of its own, so both the row and the
+// picture lead to the same place.
+it("renderItem opens the species page from the row and from the thumbnail alike", async () => {
   await render(<UserStatScreen />);
   await render(latestProps().renderItem({ item: { segment: "sparrow" }, index: 0 }));
+
   await fireEvent.press(screen.getByTestId("stat-card"));
-  expect(speciesDetails).toHaveBeenCalledWith("sparrow");
+  expect(mockOpenSpecies).toHaveBeenCalledWith("sparrow", "user_stat");
+
+  mockOpenSpecies.mockClear();
+  await fireEvent.press(screen.getByTestId("stat-card-thumb"));
+  expect(mockOpenSpecies).toHaveBeenCalledWith("sparrow", "user_stat");
 });
 
 describe("topEl (profile header)", () => {

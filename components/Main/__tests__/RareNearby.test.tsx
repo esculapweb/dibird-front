@@ -6,6 +6,9 @@ jest.mock("../../../store/theme-context", () => ({
   useTheme: () => require("../../../screens/mockTheme").mockUseTheme(),
 }));
 jest.mock("@react-navigation/native", () => ({ useNavigation: () => mockNavigation }));
+jest.mock("../../../hooks/useOpenSpecies", () => ({
+  useOpenSpecies: () => mockOpenSpecies,
+}));
 jest.mock("expo-image", () => {
   const { View } = require("react-native");
   return {
@@ -33,6 +36,7 @@ import { AlertSettings } from "../../../services/alertSettings";
 import { Filters, ObservationItem } from "../../../types";
 
 const mockNavigation = createNavigationMock();
+const mockOpenSpecies = jest.fn();
 
 const SETTINGS = {
   territory_data: { id: 5, name: "France" },
@@ -133,6 +137,16 @@ describe("scope label", () => {
     ).not.toBeOnTheScreen();
   });
 
+  // The scope reads as a caption unless the action is spelled out, and the trip
+  // to the alert settings — the only place where the country and the radius are
+  // set — is the whole point of the line.
+  it("offers to change the scope next to it", async () => {
+    await render(<RareNearby filters={{}} />);
+    expect(
+      screen.getByText("rare_nearby_change", { exact: false }),
+    ).toBeOnTheScreen();
+  });
+
   it("asks for a location when neither a centre nor a country is known", async () => {
     (useAlertSettings as jest.Mock).mockReturnValue({
       settings: {
@@ -145,6 +159,10 @@ describe("scope label", () => {
     await render(<RareNearby filters={{}} />);
 
     expect(screen.getByText("rare_nearby_set_location")).toBeOnTheScreen();
+    // The invitation is already an action — a second "change" next to it is noise.
+    expect(
+      screen.queryByText("rare_nearby_change", { exact: false }),
+    ).not.toBeOnTheScreen();
   });
 });
 
@@ -154,6 +172,14 @@ describe("loading state", () => {
     await render(<RareNearby filters={{}} />);
     expect(screen.getByText("rare_nearby")).toBeOnTheScreen();
     expect(screen.queryByText("all", { exact: false })).not.toBeOnTheScreen();
+  });
+
+  // The header keeps the scope row's height while loading, or the title jumps
+  // once the list arrives.
+  it("holds the scope row's place", async () => {
+    mockList(undefined, true);
+    await render(<RareNearby filters={{}} />);
+    expect(screen.getByTestId("rare-nearby-scope-skeleton")).toBeOnTheScreen();
   });
 });
 
@@ -220,6 +246,12 @@ describe("navigation", () => {
     expect(mockNavigation.navigate).toHaveBeenCalledWith("CommunityDetail", { observationId: 1 });
   });
 
+  it("tapping the scope opens the alert settings", async () => {
+    await render(<RareNearby filters={{}} />);
+    await fireEvent.press(screen.getByTestId("rare-nearby-scope"));
+    expect(mockNavigation.navigate).toHaveBeenCalledWith("AlertSettings");
+  });
+
   it("'see all' navigates to Community with the settings' territory and place/species cleared", async () => {
     const filters: Filters = { place: 9, species: 3 };
     await render(<RareNearby filters={filters} />);
@@ -229,4 +261,16 @@ describe("navigation", () => {
       filtersOverride: { place: null, species: null, territory: 5 },
     });
   });
+});
+
+// The rare-bird row is where "what is that?" gets asked, and until now it only
+// led to the sighting.
+it("opens the species page from the thumbnail, the row still opening the sighting", async () => {
+  mockList([observationItem()]);
+  await render(<RareNearby filters={{}} />);
+
+  await fireEvent.press(screen.getByTestId("rare-nearby-species-thumb-1"));
+
+  expect(mockOpenSpecies).toHaveBeenCalledWith("blue-tit", "rare_nearby");
+  expect(mockNavigation.navigate).not.toHaveBeenCalled();
 });

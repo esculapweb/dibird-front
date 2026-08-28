@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { DateFilter } from "../types";
 
 const SORT_KEY = "sorting";
+const VIEW_MODE_KEY = "viewMode";
 const GLOBAL_KEY = "global";
 // Deliberately NOT included in Logout()'s AsyncStorage.multiRemove (util/auth.ts)
 // — it needs to survive logout so the next login can compare against it and
@@ -46,6 +47,11 @@ const clearItem = async (key: string, screen: string): Promise<void> => {
 export const saveSort = (screen: string, value: string | null): Promise<void> => saveItem(SORT_KEY, screen, value);
 export const loadSort = (screen: string): Promise<unknown> => loadItem(SORT_KEY, screen);
 export const clearSort = (screen: string): Promise<void> => clearItem(SORT_KEY, screen);
+
+// Which way a screen renders its list (list vs map) — remembered per screen,
+// the same way its sort is, so reopening it lands where the user left off.
+export const saveViewMode = (screen: string, value: string): Promise<void> => saveItem(VIEW_MODE_KEY, screen, value);
+export const loadViewMode = (screen: string): Promise<unknown> => loadItem(VIEW_MODE_KEY, screen);
 
 export const saveGlobalTerritory = (value: number | null): Promise<void> => saveItem(GLOBAL_KEY, "territory", value);
 export const loadGlobalTerritory = (): Promise<unknown> => loadItem(GLOBAL_KEY, "territory");

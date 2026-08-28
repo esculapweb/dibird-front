@@ -15,6 +15,16 @@ import {
 
 const parseString = (v: string | null): string | undefined => v || undefined;
 
+// Every filter a shared list link may carry. The list gates nothing — React
+// Navigation hands unknown query params to the screen just the same, and a
+// link's filters are applied as sent, whether or not the screen offers a
+// control for them (allowedFilters only decides what the filter sheet shows
+// and what the chips can remove). What `parse` does decide is how a value is
+// read: parseString is what turns an empty `?place=` into "no filter" rather
+// than "".
+//
+// `private` is meaningful only on the two own lists — privacy exists where the
+// records are yours (util/parseDeepLinkParams.ts).
 const withFilters = (path: string) => ({
   path,
   parse: {
@@ -26,14 +36,21 @@ const withFilters = (path: string) => ({
     year: parseString,
     date_time_min: parseString,
     date_time_max: parseString,
+    private: parseString,
+    source: parseString,
     o: parseString,
   },
 });
 
+// The places list: one country, one sort — plus the radius around the device's
+// current position. The link carries no centre; the app takes it from its own
+// GPS fix (see fetchPlaces), so a radius sent to a device without one simply
+// does not narrow the list.
 const withBasicFilters = (path: string) => ({
   path,
   parse: {
     territory: parseString,
+    radius: parseString,
     o: parseString,
   },
 });
@@ -196,7 +213,13 @@ const matchTaxonPath = (normalizedPath: string): TaxonRoute | null => {
       const tab = parseEnumParam(params.get("tab"), SPECIES_DETAIL_TABS);
       return {
         name: "SpeciesDetail",
-        params: { segment: slug, ...(tab && { initialTab: tab }) },
+        params: {
+          segment: slug,
+          ...(tab && { initialTab: tab }),
+          // Counts the arrival from the receiving end; `deep_link_opened`
+          // counts the same one from the link side (see services/analytics).
+          source: "deep_link",
+        },
       };
     }
     const rank = GROUP_RANK_BY_PATH[head];

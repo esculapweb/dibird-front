@@ -20,6 +20,7 @@ import { setNavigationCallback } from "../util/navigationCallbacks";
 import { buildTerritoryCompareUrl } from "../util/taxonShareLink";
 import { isoToFlagEmoji } from "../util/helpers";
 import { StaleTime } from "../constants/staleTime";
+import { useOpenSpecies } from "../hooks/useOpenSpecies";
 import { useLanguage } from "../store/language-context";
 import { useTheme, ThemeColors } from "../store/theme-context";
 import {
@@ -46,6 +47,7 @@ const TerritoryCompareScreen = () => {
   const { language } = useLanguage();
   const styles = stylesFn(Colors);
   const navigation = useNavigation<CatalogNavigationProp>();
+  const openSpecies = useOpenSpecies();
   const route = useRoute<CatalogRouteProp<"TerritoryCompare">>();
   // Name and flag are kept next to the segment, not read back off the
   // comparison response: that response only exists once *both* countries are
@@ -336,9 +338,7 @@ const TerritoryCompareScreen = () => {
         renderItem={({ item }: { item: TerritoryCompareSpecies }) => (
           <TerritoryCompareRow
             item={item}
-            onPress={() =>
-              navigation.navigate("SpeciesDetail", { segment: item.segment })
-            }
+            onPress={() => openSpecies(item.segment, "territory_compare")}
           />
         )}
         keyExtractor={(item: TerritoryCompareSpecies) => item.segment}

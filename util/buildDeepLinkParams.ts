@@ -7,6 +7,13 @@ export const buildDeepLinkParams = (filters: Filters | null = {}, sort: string |
   if (filters?.place) params.place = filters.place;
   if (filters?.species) params.species = filters.species;
 
+  // `private` is the one filter whose "off" value is also a real choice, so it
+  // is tested against null rather than for truthiness: `private=false` means
+  // "published only", not "no privacy filter".
+  if (filters?.private != null) params.private = filters.private;
+  if (filters?.source) params.source = filters.source;
+  if (filters?.radius) params.radius = filters.radius;
+
   if (filters?.date) {
     if (filters.date.type === "year") {
       params.year = filters.date.year;

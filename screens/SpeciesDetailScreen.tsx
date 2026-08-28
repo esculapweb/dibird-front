@@ -219,12 +219,31 @@ const SpeciesDetailScreen = () => {
     }
   }, [data?.redirect, navigation]);
 
+  // A link with `?tab=sounds` opened while this very screen is on top updates
+  // the route params instead of pushing a new screen (React Navigation matches
+  // the focused route by name), so the tab has to follow the parameter and not
+  // just seed the initial state.
+  const initialTab = route.params.initialTab;
+  useEffect(() => {
+    if (initialTab) handleTabChange(initialTab);
+  }, [initialTab]);
+
   // The key page of the catalogue: it measures whether a guest gets from the list
   // to a species — that is, whether they saw any value at all before signing up.
   // Once per species rather than on every re-render, hence segment in the
   // dependencies.
+  //
+  // `source` says which of the app's many roads led here. It rides on the route
+  // because the screen has no way to work it out for itself — the catalogue, a
+  // country checklist, an observation, a push and a shared link all land on the
+  // same params. A route without it is one restored from a persisted navigation
+  // state, from before the parameter existed.
+  const source = route.params.source ?? "unknown";
   useEffect(() => {
-    if (segment) track("species_viewed");
+    if (segment) track("species_viewed", { source });
+    // `source` is deliberately out of the dependencies: it belongs to the same
+    // arrival as the segment, and re-firing on it alone would double-count a
+    // page whose params were merely updated.
   }, [segment]);
 
   const groupedCountries = useMemo(() => {
@@ -283,8 +302,22 @@ const SpeciesDetailScreen = () => {
 
   if (isLoading || !data || data.redirect) return <LoadingOverlay />;
 
-  const goToSpecies = (targetSegment: string) =>
-    navigation.push("SpeciesDetail", { segment: targetSegment });
+  // Down into another bird: a new page on top of this one, so "back" returns
+  // to the bird it was reached from.
+  const goToRelated = (targetSegment: string) =>
+    navigation.push("SpeciesDetail", {
+      segment: targetSegment,
+      source: "species_related",
+    });
+
+  // Sideways to the neighbour in the listing. `replace`, not `push`: the strip
+  // is meant for browsing, and pushing left someone who had stepped through ten
+  // birds with ten screens to back out of.
+  const goToNeighbour = (targetSegment: string) =>
+    navigation.replace("SpeciesDetail", {
+      segment: targetSegment,
+      source: "species_paging",
+    });
 
   // The only navigation from here beyond the reference: the observation editor
   // lives in AppStack only, so a guest gets the signup sheet instead. The types
@@ -585,7 +618,7 @@ const SpeciesDetailScreen = () => {
                       <Pressable
                         key={s.segment}
                         style={styles.relatedCard}
-                        onPress={() => goToSpecies(s.segment)}
+                        onPress={() => goToRelated(s.segment)}
                       >
                         {uri ? (
                           <Image
@@ -643,7 +676,7 @@ const SpeciesDetailScreen = () => {
                 {data.paging.prev ? (
                   <Pressable
                     style={styles.pagingCard}
-                    onPress={() => goToSpecies(data.paging.prev!.segment)}
+                    onPress={() => goToNeighbour(data.paging.prev!.segment)}
                   >
                     <Ionicons
                       name="chevron-back"
@@ -662,7 +695,7 @@ const SpeciesDetailScreen = () => {
                 {data.paging.next ? (
                   <Pressable
                     style={styles.pagingCard}
-                    onPress={() => goToSpecies(data.paging.next!.segment)}
+                    onPress={() => goToNeighbour(data.paging.next!.segment)}
                   >
                     <Text
                       style={[styles.pagingName, styles.pagingNameEnd]}

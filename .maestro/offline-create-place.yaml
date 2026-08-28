@@ -42,6 +42,14 @@ tags:
 
 - runFlow: common/android-bootstrap.yaml
 
+# The section grid sits below the fold: the dashboard's height follows the
+# account's own data, so the tile is not reliably in view (see the longer
+# note in online-create-place.yaml). No-op when it already is.
+- scrollUntilVisible:
+    element:
+      id: "section-Places"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "section-Places"
 # Wait for the list's first page to actually load before reading the badge.

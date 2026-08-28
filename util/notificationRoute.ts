@@ -49,7 +49,10 @@ export const routeNotification = (
 
     case "SpeciesDetail":
       if (payload.speciesId == null) break;
-      navigate("SpeciesDetail", { id: payload.speciesId });
+      navigate("SpeciesDetail", {
+        id: payload.speciesId,
+        source: "notification",
+      });
       break;
 
     case "Achievements":

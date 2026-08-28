@@ -21,16 +21,15 @@ jest.mock("expo-image", () => {
     ),
   };
 });
-jest.mock("../../../util/helpers", () => ({
-  ...jest.requireActual("../../../util/helpers"),
-  speciesDetails: jest.fn(),
+jest.mock("../../../hooks/useOpenSpecies", () => ({
+  useOpenSpecies: () => mockOpenSpecies,
 }));
 
 import { fireEvent, render, screen } from "@testing-library/react-native";
-import { speciesDetails } from "../../../util/helpers";
 import SpeciesDropdown from "../SpeciesDropdown";
 import { QueryType, SpeciesDropdownItem } from "../../../types";
 
+const mockOpenSpecies = jest.fn();
 const mockOnPress = jest.fn();
 const mockRefetch = jest.fn();
 
@@ -107,7 +106,7 @@ describe("selected with a thumbnail", () => {
       <SpeciesDropdown query={baseQuery()} onPress={mockOnPress} value={3} speciesData={speciesData} />,
     );
     await fireEvent.press(screen.getByText("information-circle-outline"));
-    expect(speciesDetails).toHaveBeenCalledWith("blue-tit");
+    expect(mockOpenSpecies).toHaveBeenCalledWith("blue-tit", "observation_editor");
   });
 
   it("omits the latin name when it's identical to the display name", async () => {
@@ -136,7 +135,7 @@ describe("selected without a thumbnail", () => {
     );
     expect(screen.queryByTestId("species-image")).not.toBeOnTheScreen();
     await fireEvent.press(screen.getByText("information-circle-outline"));
-    expect(speciesDetails).toHaveBeenCalledWith("robin");
+    expect(mockOpenSpecies).toHaveBeenCalledWith("robin", "observation_editor");
   });
 });
 

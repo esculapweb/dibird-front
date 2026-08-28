@@ -23,6 +23,7 @@ jest.mock("../../../services/sync/networkStatus", () => ({
 }));
 
 const mockMapCapture = jest.fn();
+const mockLayerCapture = jest.fn();
 jest.mock("@maplibre/maplibre-react-native", () => {
   const { View } = require("react-native");
   return {
@@ -36,10 +37,15 @@ jest.mock("@maplibre/maplibre-react-native", () => {
       return <View testID="map-view">{props.children}</View>;
     },
     Camera: () => null,
-    Images: () => null,
     RasterSource: () => null,
-    GeoJSONSource: () => null,
-    Layer: () => null,
+    // Passthrough so the layers inside it are rendered and can be asserted on.
+    GeoJSONSource: (props: { children?: import("react").ReactNode }) => (
+      <View>{props.children}</View>
+    ),
+    Layer: (props: { id: string; type: string }) => {
+      mockLayerCapture(props);
+      return null;
+    },
   };
 });
 
@@ -53,6 +59,13 @@ import MapL from "../MapL";
 const mockOnPress = jest.fn();
 const mockOnUseMyLocation = jest.fn();
 const mockUnsubscribe = jest.fn();
+
+const layerById = (id: string) =>
+  mockLayerCapture.mock.calls
+    .map((call) => call[0])
+    .find((props) => props.id === id) as
+    | { id: string; type: string; layout?: Record<string, unknown> }
+    | undefined;
 
 const mapProps = () => mockMapCapture.mock.calls.at(-1)![0] as {
   onPress: (e: { nativeEvent: unknown }) => void;
@@ -70,6 +83,20 @@ beforeEach(() => {
 
 afterEach(() => {
   jest.useRealTimers();
+});
+
+describe("the point it plots", () => {
+  it("draws a dot rather than a pin icon", async () => {
+    // Every map in the app now shows a place the same way — the graduated dot
+    // the place maps use. Nothing loads an icon image any more, which is why
+    // assets/marker1.png is gone; a symbol layer here would need it back.
+    await render(<MapL currentCoords={[2, 48]} />);
+
+    expect(layerById("pointDot")?.type).toBe("circle");
+    expect(
+      mockLayerCapture.mock.calls.some((call) => call[0].type === "symbol"),
+    ).toBe(false);
+  });
 });
 
 describe("offline", () => {
@@ -202,6 +229,26 @@ describe("use my location button", () => {
     expect(screen.getByText("navigate")).toBeOnTheScreen();
 
     await fireEvent.press(screen.getByText("gps_locate_me_button"));
+    expect(mockOnUseMyLocation).toHaveBeenCalledTimes(1);
+  });
+
+  it("drops to a bare icon when the corner is taken, still named for a screen reader", async () => {
+    // The list screens keep their add button in that corner, so the pill moves
+    // aside as a round icon. Losing the wording on screen must not lose it
+    // altogether.
+    await render(
+      <MapL
+        currentCoords={[2, 48]}
+        onUseMyLocation={mockOnUseMyLocation}
+        myLocationLabel="map_my_location"
+        myLocationCompact
+      />,
+    );
+
+    expect(screen.queryByText("map_my_location")).not.toBeOnTheScreen();
+    expect(screen.getByLabelText("map_my_location")).toBeOnTheScreen();
+
+    await fireEvent.press(screen.getByTestId("map-locate-me"));
     expect(mockOnUseMyLocation).toHaveBeenCalledTimes(1);
   });
 

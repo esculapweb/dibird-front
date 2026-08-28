@@ -94,6 +94,25 @@ describe("favourite", () => {
   });
 });
 
+describe("private/source/radius", () => {
+  it("names the privacy side instead of yes/no", async () => {
+    const { result } = await renderHook(() => useFilterLabels(5));
+    expect(result.current.getFilterLabel("private", true)).toEqual(["privacy", "private"]);
+    expect(result.current.getFilterLabel("private", false)).toEqual(["privacy", "public"]);
+  });
+
+  it("labels the community source", async () => {
+    const { result } = await renderHook(() => useFilterLabels(5));
+    expect(result.current.getFilterLabel("source", "ebird")).toEqual(["source", "source_ebird"]);
+    expect(result.current.getFilterLabel("source", "dibird")).toEqual(["source", "source_dibird"]);
+  });
+
+  it("spells the radius out in kilometres", async () => {
+    const { result } = await renderHook(() => useFilterLabels(5));
+    expect(result.current.getFilterLabel("radius", 50)).toEqual(["radius", "50 km"]);
+  });
+});
+
 describe("date", () => {
   const label = async (value: DateFilter) => {
     const { result } = await renderHook(() => useFilterLabels(5));

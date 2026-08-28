@@ -10,6 +10,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 
+import { useOpenSpecies } from "../../hooks/useOpenSpecies";
+
 import SearchInput from "../ui/SearchInput";
 import EmptyState from "../Empty/EmptyState";
 import TaxonRow from "./TaxonRow";
@@ -95,6 +97,7 @@ const TaxonDescendantsList = ({
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const navigation = useNavigation<AppStackNavigationProp>();
+  const openSpecies = useOpenSpecies();
   const [search, setSearch] = useState("");
 
   // Everything is already in memory (one detail request brings the whole
@@ -177,9 +180,7 @@ const TaxonDescendantsList = ({
           latin={latinPart(item.d_name, item.d_name_lang)}
           thumb={item.thumb}
           statusCode={item.d_status}
-          onPress={() =>
-            navigation.navigate("SpeciesDetail", { segment: item.d_segment })
-          }
+          onPress={() => openSpecies(item.d_segment, "taxon_group")}
         />
       )}
       ListEmptyComponent={

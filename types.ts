@@ -9,7 +9,11 @@ import { QueryObserverResult } from "@tanstack/react-query";
 import type { Feature, Geometry, GeoJsonProperties } from "geojson";
 // Type only: services/analytics pulls in services/errors, which imports from
 // here — at runtime this import is erased and there is no cycle.
-import type { GatedAction } from "./services/analytics";
+import type { GatedAction, SpeciesEntryPoint } from "./services/analytics";
+
+// Re-exported so screens and components keep importing their types from one
+// place; the definition stays next to the event that reads it.
+export type { SpeciesEntryPoint };
 
 export type IconType = ComponentProps<typeof Ionicons>["name"];
 export type StyleType = StyleProp<ViewStyle>;
@@ -249,13 +253,21 @@ export type DateFilter = {
   today?: boolean | null;
 } | null;
 
+// Who made the observation: a person in the app (no external source on the
+// row) or the eBird import. Matches the `source=` query param of the
+// community feed (see ObservationFilterSet.filter_source on the backend).
+export type ObservationSource = "dibird" | "ebird";
+
 export type AllowedFilterKey =
   | "territory"
   | "date"
   | "place"
   | "species"
   | "favourite"
-  | "unsynced";
+  | "unsynced"
+  | "private"
+  | "radius"
+  | "source";
 
 export interface Filters {
   date?: DateFilter | null;
@@ -271,10 +283,20 @@ export interface Filters {
   seen?: boolean | null;
   species?: number | null;
   speciesName?: string;
+  // Own lists only (observations/diaries): true — only what is hidden from
+  // everyone else, false — only what is published. Nobody else's list can
+  // carry a private record at all.
+  private?: boolean | null;
+  // Community feed only: "dibird" is `external_source IS NULL` server-side
+  // (a record made by a person in the app), "ebird" is the import.
+  source?: ObservationSource | null;
   tab?: seenMode | compareMode | null;
   territory?: number | null;
   user_id?: number | null;
   year?: number | null;
+  // Kilometres around the device's current position, sent together with
+  // lng/lat (see fetchPlaces/fetchCommunityObservations) — without them the
+  // server has no centre to apply it to and ignores the filter.
   radius?: number | null;
   // A scope preset computed entirely by the server: `alerts` is the territory and
   // the radius around the point from the alert settings. Coordinates are not sent
@@ -896,6 +918,14 @@ export interface PlaceItemBase {
 
 export interface PlaceItem extends PlaceItemBase {
   diary_count: number;
+  // Diaries attached to this place by their own FK. Unlike diary_count, which
+  // the server derives through observations, this one also sees an outing with
+  // nothing recorded in it yet — which is what the diaries map is sized by.
+  //
+  // Optional because it genuinely can be absent: a place synthesised offline
+  // (placeRepository) never had a server row, and a page cached before this
+  // field shipped predates it. Readers treat missing as zero.
+  diary_place_count?: number;
   observation_count: number;
   species_count: number;
   territory: number;
@@ -1153,6 +1183,10 @@ export type CatalogParamList = {
   // (linking.ts / taxonShareLink.ts), same as the catalogue's initialSort etc.
   SpeciesDetail: ({ segment: string } | { id: number }) & {
     initialTab?: SpeciesDetailTab;
+    // Which of the app's many roads to this page was taken — read by
+    // `species_viewed` only (see SpeciesEntryPoint). Not part of any shared
+    // link: taxonShareLink builds the URL from the segment and the tab alone.
+    source?: SpeciesEntryPoint;
     // The action the guest did not get to without an account: after the login
     // services/authReturn brings them back to this screen with this parameter, and
     // the screen replays what was started (hooks/useRequireAuth). The screen clears

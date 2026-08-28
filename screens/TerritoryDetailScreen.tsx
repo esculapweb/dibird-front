@@ -337,6 +337,7 @@ const TerritoryDetailScreen = () => {
       />
     ) : (
       <TaxonChildrenList
+        speciesSource="territory_species"
         rank={5}
         fixedTraits={{ territory: territoryId }}
         traits={filters}

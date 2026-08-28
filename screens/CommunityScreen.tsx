@@ -72,7 +72,7 @@ const CommunityScreen = () => {
       locationAvailable={locationAvailable}
       onLocationUnavailable={handleLocationUnavailable}
       title={t("community")}
-      allowedFilters={["territory", "date", "species"]}
+      allowedFilters={["territory", "date", "species", "source", "radius"]}
       extraFilters={tab === "rare" ? { rare: true } : null}
       queryKeyExtra={tab}
       bottomEl={

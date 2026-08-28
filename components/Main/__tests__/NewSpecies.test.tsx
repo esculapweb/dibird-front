@@ -6,6 +6,9 @@ jest.mock("../../../store/theme-context", () => ({
   useTheme: () => require("../../../screens/mockTheme").mockUseTheme(),
 }));
 jest.mock("@react-navigation/native", () => ({ useNavigation: () => mockNavigation }));
+jest.mock("../../../hooks/useOpenSpecies", () => ({
+  useOpenSpecies: () => mockOpenSpecies,
+}));
 jest.mock("expo-image", () => {
   const { View } = require("react-native");
   return {
@@ -30,6 +33,7 @@ import NewSpecies from "../NewSpecies";
 import { Filters, SpeciesItem } from "../../../types";
 
 const mockNavigation = createNavigationMock();
+const mockOpenSpecies = jest.fn();
 
 const speciesItem = (overrides: Partial<SpeciesItem> = {}): SpeciesItem => ({
   species_id: 1,
@@ -186,4 +190,14 @@ describe("navigation", () => {
       o: "-seen,-date_time",
     });
   });
+});
+
+it("opens the species page from the thumbnail, the row still opening the observations", async () => {
+  mockList([speciesItem()]);
+  await render(<NewSpecies filters={{ territory: 5 }} filtersLoaded />);
+
+  await fireEvent.press(screen.getByTestId("new-species-thumb-1"));
+
+  expect(mockOpenSpecies).toHaveBeenCalledWith("blue-tit", "new_species");
+  expect(mockNavigation.navigate).not.toHaveBeenCalled();
 });

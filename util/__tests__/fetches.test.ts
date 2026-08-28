@@ -435,6 +435,141 @@ describe("fetchCommunityObservations", () => {
   });
 });
 
+describe("radius centre coordinates", () => {
+  // Online the cache is only written, never read (see cachedRead), so the key
+  // is taken from the write.
+  const cacheKeyOf = (call: number) =>
+    (listCacheRepository.cacheListResponse as jest.Mock).mock.calls[call][1];
+
+  it("folds the centre into the cache key when a radius is filtering the list", async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: { results: [] } });
+
+    await fetches.fetchCommunityObservations({ radius: 50 }, null, "", 1, [10, 20]);
+    await fetches.fetchCommunityObservations({ radius: 50 }, null, "", 1, [11, 21]);
+
+    const params = (api.get as jest.Mock).mock.calls[0][1].params;
+    expect(params).toEqual(expect.objectContaining({ lng: 10, lat: 20, radius: 50 }));
+    expect(cacheKeyOf(0)).not.toBe(cacheKeyOf(1));
+  });
+
+  it("rounds the centre to ~100 m so a standing still device keeps one entry", async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: { results: [] } });
+
+    await fetches.fetchCommunityObservations({ radius: 50 }, null, "", 1, [10.00001, 20.00002]);
+    await fetches.fetchCommunityObservations({ radius: 50 }, null, "", 1, [10.00003, 20.00004]);
+
+    expect((api.get as jest.Mock).mock.calls[0][1].params.lng).toBe(10);
+    expect(cacheKeyOf(0)).toBe(cacheKeyOf(1));
+  });
+
+  it("keeps the centre out of the key when nothing is filtered by it", async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: { results: [] } });
+
+    await fetches.fetchCommunityObservations({}, null, "", 1, [10, 20]);
+    await fetches.fetchCommunityObservations({}, null, "", 1, [99, 99]);
+
+    expect(cacheKeyOf(0)).toBe(cacheKeyOf(1));
+  });
+
+  it("sends the centre for a place radius, distance sort or not", async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: { results: [] } });
+
+    await fetches.fetchPlaces({ radius: 25 }, "name", "", 1, [10, 20]);
+
+    expect((api.get as jest.Mock).mock.calls[0][1].params).toEqual(
+      expect.objectContaining({ lng: 10, lat: 20, radius: 25 }),
+    );
+  });
+
+  it("leaves a radius without a fix to the server, which logs and ignores it", async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: { results: [] } });
+
+    await fetches.fetchPlaces({ radius: 25 }, "name", "", 1, null);
+
+    const params = (api.get as jest.Mock).mock.calls[0][1].params;
+    expect(params.radius).toBe(25);
+    expect(params).not.toHaveProperty("lng");
+  });
+});
+
+describe("fetchObservationPlaces (the observations map)", () => {
+  beforeEach(() => {
+    (api.get as jest.Mock).mockResolvedValue({ data: { results: [] } });
+  });
+
+  it("never forwards the observations screen's sort to the places endpoint", async () => {
+    // Regression: the screen keeps one persisted sort across both of its view
+    // modes, and PlaceFilterSet has no such choice — the map came up empty
+    // with "Select a valid choice. -date_time is not one of the available
+    // choices." from the server.
+    await fetches.fetchObservationPlaces({}, "-date_time", "", 1);
+
+    expect((api.get as jest.Mock).mock.calls[0][1].params.o).toBe("name");
+  });
+
+  it("asks only for places that still have matching observations", async () => {
+    await fetches.fetchObservationPlaces({ species: 11 }, null, "", 1);
+
+    expect((api.get as jest.Mock).mock.calls[0][1].params).toEqual(
+      expect.objectContaining({ has_observations: true, species: 11 }),
+    );
+  });
+
+  it("turns the screen's place filter into a place id", async () => {
+    await fetches.fetchObservationPlaces({ place: 42 }, null, "", 1);
+
+    const params = (api.get as jest.Mock).mock.calls[0][1].params;
+    expect(params.id).toBe(42);
+    expect(params).not.toHaveProperty("place");
+  });
+
+  it("drops the client-only unsynced filter", async () => {
+    await fetches.fetchObservationPlaces({ unsynced: true }, null, "", 1);
+
+    expect((api.get as jest.Mock).mock.calls[0][1].params).not.toHaveProperty(
+      "unsynced",
+    );
+  });
+
+  it("scopes each map to what its own screen is about", async () => {
+    await fetches.fetchObservationPlaces({}, null, "", 1);
+    await fetches.fetchDiaryPlaces({}, null, "", 1);
+    await fetches.fetchPlacesForMap({}, null, "", 1);
+
+    const paramsOf = (call: number) =>
+      (api.get as jest.Mock).mock.calls[call][1].params;
+
+    expect(paramsOf(0).has_observations).toBe(true);
+    expect(paramsOf(0)).not.toHaveProperty("has_diaries");
+
+    expect(paramsOf(1).has_diaries).toBe(true);
+    expect(paramsOf(1)).not.toHaveProperty("has_observations");
+
+    // The Places screen manages places, so an empty one is still a place.
+    expect(paramsOf(2)).not.toHaveProperty("has_observations");
+    expect(paramsOf(2)).not.toHaveProperty("has_diaries");
+  });
+
+  it("never forwards the diaries screen's sort either", async () => {
+    await fetches.fetchDiaryPlaces({}, "-date_time", "", 1);
+
+    expect((api.get as jest.Mock).mock.calls[0][1].params.o).toBe("name");
+  });
+
+  it("asks for every point at once and has no second page", async () => {
+    const first = await fetches.fetchObservationPlaces({}, null, "", 1);
+    expect((api.get as jest.Mock).mock.calls[0][1].params.per_page).toBe(2000);
+    expect(first).toBeTruthy();
+
+    (api.get as jest.Mock).mockClear();
+    const second = await fetches.fetchObservationPlaces({}, null, "", 2);
+
+    // A page 2 would be points silently missing from the map.
+    expect(api.get).not.toHaveBeenCalled();
+    expect(second.results).toEqual([]);
+  });
+});
+
 describe("simple cache-through fetchers (try live -> cache -> catch -> cached fallback -> rethrow)", () => {
   const cases: Array<{
     name: string;
