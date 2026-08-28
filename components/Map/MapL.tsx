@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { ReactNode, Ref, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -10,8 +10,10 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import {
   Map,
+  MapRef,
   Camera,
-  Images,
+  CameraRef,
+  LngLatBounds,
   RasterSource,
   GeoJSONSource,
   Layer,
@@ -22,6 +24,7 @@ import Clipboard from "@react-native-clipboard/clipboard";
 import { useTranslation } from "react-i18next";
 
 import { Config } from "../../constants/config";
+import { SYMBOL_STROKE_WIDTH } from "../../constants/mapSymbolScale";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { Coords, PolygonGeometry } from "../../types";
 import {
@@ -37,6 +40,12 @@ const EMPTY_MAP_STYLE = JSON.stringify({
 
 const MAP_LOAD_TIMEOUT_MS = 8000;
 
+// The lone point this component plots is drawn as a dot, the same symbol the
+// place maps use, so a place looks the same wherever it appears. Between the
+// smallest and the largest class of that scale (see constants/mapSymbolScale),
+// since a single point encodes no count.
+const POINT_RADIUS = 10;
+
 interface MapProps {
   currentCoords: Coords | null;
   mapHeight?: number;
@@ -46,7 +55,44 @@ interface MapProps {
   accuracy?: number;
   onUseMyLocation?: () => void;
   isLocating?: boolean;
+  /**
+   * Label on that button. The default ("Update GPS") is the editors' wording,
+   * where the tap moves the pin; a read-only map only wants to be shown where
+   * the viewer is standing, which is a different promise.
+   */
+  myLocationLabel?: string;
+  /**
+   * Extra room to the right of that button, for a map that has something of
+   * its own in the bottom-right corner (the list screens' add button).
+   */
+  myLocationRightOffset?: number;
+  /**
+   * Drop the wording and draw the button as a round icon, the size the legend
+   * toggle uses. For a map whose corner is already taken: the pill would have
+   * to be pushed out of the bottom row, and a control floating above the add
+   * button reads as detached from it.
+   */
+  myLocationCompact?: boolean;
+  /**
+   * Safe-area inset to lift the bottom overlays by. Only a map that runs to
+   * the physical bottom of the screen needs it; one boxed inside a scrolling
+   * screen (mapHeight) does not, which is why this is asked for rather than
+   * read from the insets here.
+   */
+  bottomInset?: number;
   polygon?: PolygonGeometry;
+  // Own sources/layers, drawn over the tiles instead of the single marker this
+  // component plots by default (see PlacesMap). Everything around the
+  // map — tiles, attribution, the offline/timeout fallback and its retry — is
+  // the same either way, which is the whole point of passing them in here.
+  children?: ReactNode;
+  // [west, south, east, north]: frames a whole set of points rather than
+  // centring on one. Ignored when currentCoords is given.
+  bounds?: LngLatBounds;
+  boundsPadding?: number;
+  cameraRef?: Ref<CameraRef>;
+  /** For callers that need to project coordinates to screen pixels. */
+  mapRef?: Ref<MapRef>;
 }
 
 const MapL = ({
@@ -57,11 +103,20 @@ const MapL = ({
   mapHeight,
   onUseMyLocation,
   isLocating,
+  myLocationLabel,
+  myLocationRightOffset = 0,
+  myLocationCompact = false,
+  bottomInset = 0,
   showCoords,
   polygon,
+  children,
+  bounds,
+  boundsPadding = 48,
+  cameraRef,
+  mapRef,
 }: MapProps) => {
   const { Colors } = useTheme();
-  const styles = stylesFn(Colors, mapHeight);
+  const styles = stylesFn(Colors, mapHeight, bottomInset, myLocationRightOffset);
   const { t } = useTranslation();
 
   const lng = currentCoords?.[0];
@@ -187,6 +242,7 @@ const MapL = ({
           <>
             <Map
               key={retryKey}
+              ref={mapRef}
               mapStyle={EMPTY_MAP_STYLE}
               logo={false}
               attribution={false}
@@ -195,20 +251,33 @@ const MapL = ({
               onDidFinishLoadingMap={handleMapLoaded}
               onDidFailLoadingMap={handleMapLoadError}
             >
-              <Images
-                images={{
-                  marker: require("../../assets/marker1.png"),
-                }}
-              />
-
-              {currentCoords && (
+              {currentCoords ? (
                 <Camera
+                  ref={cameraRef}
                   center={[lng!, lat!]}
                   zoom={Math.min(currentZoom, 19)}
                   minZoom={1}
                   maxZoom={19}
                   duration={500}
                 />
+              ) : bounds ? (
+                <Camera
+                  ref={cameraRef}
+                  bounds={bounds}
+                  padding={{
+                    top: boundsPadding,
+                    right: boundsPadding,
+                    bottom: boundsPadding,
+                    left: boundsPadding,
+                  }}
+                  minZoom={1}
+                  maxZoom={19}
+                  duration={500}
+                />
+              ) : (
+                cameraRef && (
+                  <Camera ref={cameraRef} minZoom={1} maxZoom={19} duration={500} />
+                )
               )}
 
               <RasterSource
@@ -221,7 +290,9 @@ const MapL = ({
                 <Layer type="raster" id="osmLayer" />
               </RasterSource>
 
-              {polygon && (
+              {children}
+
+              {!children && polygon && (
                 <GeoJSONSource
                   key={sourceKey}
                   id="polygonSource"
@@ -243,7 +314,7 @@ const MapL = ({
                 </GeoJSONSource>
               )}
 
-              {!polygon && currentCoords && (
+              {!children && !polygon && currentCoords && (
                 <GeoJSONSource
                   key={sourceKey}
                   id="pointSource"
@@ -274,13 +345,13 @@ const MapL = ({
                     />
                   )}
                   <Layer
-                    id="pointIcon"
-                    type="symbol"
-                    layout={{
-                      "icon-image": "marker",
-                      "icon-size": 1,
-                      "icon-anchor": "bottom",
-                      "icon-allow-overlap": true,
+                    id="pointDot"
+                    type="circle"
+                    paint={{
+                      "circle-radius": POINT_RADIUS,
+                      "circle-color": Colors.placeDotFill,
+                      "circle-stroke-color": Colors.placeDotStroke,
+                      "circle-stroke-width": SYMBOL_STROKE_WIDTH,
                     }}
                   />
                 </GeoJSONSource>
@@ -300,17 +371,31 @@ const MapL = ({
             the map itself can't render. */}
         {onUseMyLocation && (
           <TouchableOpacity
-            style={styles.myLocationButton}
+            style={
+              myLocationCompact
+                ? styles.myLocationCompact
+                : styles.myLocationButton
+            }
             onPress={onUseMyLocation}
+            testID="map-locate-me"
+            // The compact button says nothing out loud, so the wording it
+            // dropped has to reach a screen reader some other way.
+            accessibilityLabel={myLocationLabel ?? t("gps_locate_me_button")}
           >
             {isLocating ? (
               <ActivityIndicator size="small" color={Colors.textSecondary} />
             ) : (
-              <Ionicons name="navigate" size={12} color={Colors.textSecondary} />
+              <Ionicons
+                name="navigate"
+                size={myLocationCompact ? 15 : 12}
+                color={Colors.textSecondary}
+              />
             )}
-            <Text style={styles.myLocationButtonText}>
-              {t("gps_locate_me_button")}
-            </Text>
+            {!myLocationCompact && (
+              <Text style={styles.myLocationButtonText}>
+                {myLocationLabel ?? t("gps_locate_me_button")}
+              </Text>
+            )}
           </TouchableOpacity>
         )}
 
@@ -367,19 +452,35 @@ const MapL = ({
 
 export default MapL;
 
-const stylesFn = (Colors: ThemeColors, mapHeight?: number) =>
+const stylesFn = (
+  Colors: ThemeColors,
+  mapHeight: number | undefined,
+  bottomInset: number,
+  myLocationRightOffset: number,
+) =>
   StyleSheet.create({
     mapSection:
       mapHeight != null
         ? { height: mapHeight, position: "relative" }
         : { flex: 1, position: "relative" },
     container: { flex: 1, position: "relative" },
+    myLocationCompact: {
+      alignItems: "center",
+      justifyContent: "center",
+      position: "absolute",
+      bottom: 12 + bottomInset,
+      right: 12 + myLocationRightOffset,
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: Colors.overlayBg,
+    },
     myLocationButton: {
       flexDirection: "row",
       alignItems: "center",
       position: "absolute",
-      bottom: 12,
-      right: 12,
+      bottom: 12 + bottomInset,
+      right: 12 + myLocationRightOffset,
       paddingVertical: 3,
       paddingHorizontal: 6,
       backgroundColor: Colors.overlayBg,
@@ -396,7 +497,7 @@ const stylesFn = (Colors: ThemeColors, mapHeight?: number) =>
       alignItems: "center",
       justifyContent: "center",
       position: "absolute",
-      bottom: 12,
+      bottom: 12 + bottomInset,
       right: 12,
       paddingVertical: 3,
       paddingHorizontal: 6,
@@ -411,7 +512,7 @@ const stylesFn = (Colors: ThemeColors, mapHeight?: number) =>
     attribution: {
       position: "absolute",
       left: 12,
-      bottom: 12,
+      bottom: 12 + bottomInset,
       paddingHorizontal: 6,
       paddingVertical: 3,
       borderRadius: 12,

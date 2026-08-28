@@ -9,6 +9,7 @@ import {
 import {
   StyleSheet,
   Pressable,
+  View,
   ListRenderItem,
   FlatListProps,
 } from "react-native";
@@ -80,6 +81,21 @@ interface ListScreenProps<T, RouteName extends ScreenWithFiltersOnly> {
   queryKeyExtra?: string | null;
   topEl?: ReactNode;
   bottomEl?: ReactNode;
+  // Draws the loaded items itself instead of the standard scrolling list, for
+  // a screen whose data reads as something other than rows (the observations
+  // map). Everything around it — filters, chips, header badge, the error and
+  // loading overlays — stays shared, which is the point of routing a map
+  // through ListScreen at all. Infinite scroll has no meaning here, so a
+  // fetchFunction paired with this one is expected to return everything at
+  // once (see fetchObservationPlaces).
+  //
+  // `empty` carries what ItemsList would have used to pick an empty state, so
+  // a custom body can tell "nothing here yet" from "nothing matches the
+  // filters" without recomputing it.
+  renderContent?: (
+    items: T[],
+    empty: { type?: "filtered" | string; onClear: () => void },
+  ) => ReactNode;
   fabBottomOffset?: number;
   onFirstPageData?: (page: StatPaginatedResponse<T>) => void;
 }
@@ -115,6 +131,7 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
   queryKeyExtra,
   topEl,
   bottomEl,
+  renderContent,
   fabBottomOffset = 0,
   onFirstPageData,
 }: ListScreenProps<T, RouteName>) => {
@@ -384,7 +401,11 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
         </>
       }
     >
-      {topEl}
+      {/* topEl sits outside the list, so it misses the padding ItemsList's
+          contentContainerStyle gives everything inside it — without this the
+          view switch is pressed flat against the navigation header, unlike the
+          same switch in the checklist's list header. */}
+      {topEl && <View style={styles.topEl}>{topEl}</View>}
       {hasActiveFilters && (
         <FilterChips
           filters={filters}
@@ -394,19 +415,26 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
           allowed={allowedFilters}
         />
       )}
-      <ItemsList
-        data={items}
-        onEndReached={handleLoadMore}
-        isLoadingMore={isFetchingNextPage}
-        emptyType={emptyType}
-        onClear={handleClearFiltersSearch}
-        renderItem={renderItem}
-        keyExtractor={keyExtractor}
-        noItems={noItems}
-        listHeader={listHeader}
-        onRefresh={refetch}
-        isRefreshing={isRefetching}
-      />
+      {renderContent ? (
+        renderContent(items, {
+          type: emptyType,
+          onClear: handleClearFiltersSearch,
+        })
+      ) : (
+        <ItemsList
+          data={items}
+          onEndReached={handleLoadMore}
+          isLoadingMore={isFetchingNextPage}
+          emptyType={emptyType}
+          onClear={handleClearFiltersSearch}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          noItems={noItems}
+          listHeader={listHeader}
+          onRefresh={refetch}
+          isRefreshing={isRefetching}
+        />
+      )}
     </Layout>
   );
 };
@@ -415,6 +443,7 @@ export default ListScreen;
 
 const stylesFn = (Colors: ThemeColors, fabBottomOffset: number) =>
   StyleSheet.create({
+    topEl: { paddingTop: 8 },
     fab: {
       position: "absolute",
       bottom: fabBottomOffset,

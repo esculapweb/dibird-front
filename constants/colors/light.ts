@@ -56,4 +56,23 @@ export const LightColors = {
 
   squareFill: "rgba(239,68,68,0.2)",
   squareStroke: "rgba(239,68,68,0.5)",
+
+  // Observations map. Not the brand green — OSM tiles are themselves beige and
+  // green, and a translucent green dot vanished into them. A saturated
+  // red-orange is the one hue the basemap never uses, kept fully opaque and
+  // ringed in white so it reads over parks, water and dense city alike. The
+  // same values serve both themes: the tiles are the raster OSM ones either
+  // way, so there is no dark basemap to adapt to (see MapL's RasterSource).
+  //
+  // One fill for single places and clusters alike: both mean "this many
+  // observations", and they share a size scale so they can be compared by eye.
+  // What marks a cluster is the halo, not a different colour or size.
+  placeDotFill: "#ee4d2e",
+  placeDotStroke: "#ffffff",
+  clusterHalo: "rgba(238,77,46,0.28)",
+  // "You are here" on the place maps. Deliberately the blue every map app
+  // uses for the device's own position rather than the places' colour: it is
+  // not one of the plotted places and must not be read as one.
+  userDotFill: "#1a73e8",
+  userDotStroke: "#ffffff",
 };

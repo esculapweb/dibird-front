@@ -918,6 +918,14 @@ export interface PlaceItemBase {
 
 export interface PlaceItem extends PlaceItemBase {
   diary_count: number;
+  // Diaries attached to this place by their own FK. Unlike diary_count, which
+  // the server derives through observations, this one also sees an outing with
+  // nothing recorded in it yet — which is what the diaries map is sized by.
+  //
+  // Optional because it genuinely can be absent: a place synthesised offline
+  // (placeRepository) never had a server row, and a page cached before this
+  // field shipped predates it. Readers treat missing as zero.
+  diary_place_count?: number;
   observation_count: number;
   species_count: number;
   territory: number;
