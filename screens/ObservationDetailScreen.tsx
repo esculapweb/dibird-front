@@ -36,6 +36,7 @@ import { useOpenSpecies } from "../hooks/useOpenSpecies";
 import Section from "../components/ui/Section";
 import PrivacyToggle from "../components/ui/PrivacyToggle";
 import ProfileAvatar from "../components/Profile/ProfileAvatar";
+import ObservationPhotos from "../components/Observation/ObservationPhotos";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
 import IconsHeader from "../components/ui/IconsHeader";
 import Layout from "../components/ui/Layout";
@@ -327,6 +328,12 @@ const ObservationDetailScreen = () => {
             </>
           )}
         </Pressable>
+
+        {!!observation.photos?.length && (
+          <View style={styles.photosRow}>
+            <ObservationPhotos photos={observation.photos} />
+          </View>
+        )}
 
         {!observation.is_owner && (
           <Pressable
@@ -645,6 +652,12 @@ const stylesFn = (Colors: ThemeColors) =>
     },
     placeRow: {
       paddingVertical: 8,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: Colors.border,
+    },
+    photosRow: {
+      marginTop: 8,
+      paddingTop: 8,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: Colors.border,
     },

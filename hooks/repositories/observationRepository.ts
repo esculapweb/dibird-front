@@ -3,6 +3,7 @@ import { and, asc, eq, isNotNull, or, sql } from "drizzle-orm";
 import { db } from "../../services/db/client";
 import { mutationQueueTable, observationTable } from "../../services/db/schema";
 import { territoryDataFor, ownerFromProfile } from "./shared";
+import * as observationPhotoRepository from "./observationPhotoRepository";
 import {
   DiaryObservationItem,
   ObservationFormData,
@@ -93,7 +94,25 @@ const mergedWithLocal = (id: number, item: ObservationItem) => {
     .from(observationTable)
     .where(eq(observationTable.id, id))
     .all()[0];
-  return { ...(existing?.data as ObservationItem | undefined), ...item };
+  return withPendingPhotos(existing?.data as ObservationItem | undefined, item);
+};
+
+// A photo that hasn't been uploaded yet exists only on this device, so every
+// server response legitimately omits it — and a plain spread would then wipe
+// it from the local mirror. That is not a cosmetic flicker: the photo queue
+// later looks the optimistic entry up by its temp id to swap in the server's
+// row, and would find nothing. Pending entries (negative ids, see
+// observationPhotoRepository) therefore survive whatever the server sends.
+const withPendingPhotos = (
+  existing: ObservationItem | undefined,
+  item: ObservationItem,
+): ObservationItem => {
+  const merged = { ...existing, ...item };
+  const pending = (existing?.photos ?? []).filter((photo) => photo.id < 0);
+
+  if (pending.length === 0) return merged;
+
+  return { ...merged, photos: [...(item.photos ?? []), ...pending] };
 };
 
 export const upsertFromServer = (item: ObservationItem) => {
@@ -197,6 +216,11 @@ const synthesize = (
     territory_data:
       base?.territory_data ?? territoryDataFor(payload.territory ?? extras.diaryTerritory),
     location_private: payload.location_private ?? base?.location_private ?? true,
+    // Photos are not part of the form payload (they travel through their own
+    // queue), so they can only come from the previously known item. Without
+    // this line an offline edit of a synced observation wiped its photo strip
+    // until a fresh detail GET — which, offline, never comes.
+    photos: base?.photos ?? [],
     external_source: null,
     external_username: null,
     distance: undefined,
@@ -377,7 +401,10 @@ export const replaceLocalWithServer = (localId: number, serverItem: ObservationI
       .from(observationTable)
       .where(eq(observationTable.id, localId))
       .all()[0];
-    const data = { ...(existing?.data as ObservationItem | undefined), ...serverItem };
+    const data = withPendingPhotos(
+      existing?.data as ObservationItem | undefined,
+      serverItem,
+    );
 
     const aliasRow = {
       id: localId,
@@ -407,12 +434,37 @@ export const replaceLocalWithServer = (localId: number, serverItem: ObservationI
   });
 };
 
+// Cross-entity resolution for a photo's `observation` reference (see
+// services/sync/observationPhotoSync.ts) — the exact counterpart of
+// diaryRepository.resolveDiaryId, which an observation uses for its own
+// parent:
+// - null/positive id: nothing to resolve, returned unchanged.
+// - negative id whose local row is gone (the observation was discarded before
+//   it ever synced), or whose own create hit a real error: returns undefined,
+//   because this reference can never resolve on its own.
+// - negative id whose row still exists and is only pending: returns its
+//   current `.id` — still the same negative id while the observation hasn't
+//   synced, or the real server id once replaceLocalWithServer has run.
+export const resolveObservationId = (
+  id: number | null | undefined,
+): number | null | undefined => {
+  if (id == null || id > 0) return id;
+  const local = getObservation(id);
+  if (!local || local._pendingSync === "error") return undefined;
+  return local.id;
+};
+
 // Deletes the alias row too, not just the row whose primary key is `id`: once a
 // create has synced, the same observation lives under both its temp id and its
 // real one (see replaceLocalWithServer), and matching on the primary key alone
 // left the temp-id alias behind forever after a delete — an ever-growing pile
 // of rows for observations that no longer exist anywhere.
-export const removeLocal = (id: number) => {
+export const removeLocal = (id: number): string[] => {
+  // Photos queued against an observation that no longer exists have nowhere
+  // to go. Returns their local files so the caller can delete them — the
+  // repository itself stays free of filesystem calls.
+  const orphanedFiles = observationPhotoRepository.clearForObservation(id);
+
   db.delete(observationTable)
     .where(
       or(
@@ -421,6 +473,8 @@ export const removeLocal = (id: number) => {
       ),
     )
     .run();
+
+  return orphanedFiles;
 };
 
 // Atomically dequeues the single oldest pending mutation (select+delete in one
@@ -686,11 +740,15 @@ export const getPendingSpeciesForDiary = (
 // store/profile-context.tsx), not on ordinary logout — a session merely
 // expiring and the same user logging back in should keep whatever hasn't
 // synced yet.
-export const clearAllLocal = () => {
+export const clearAllLocal = (): string[] => {
+  const orphanedFiles = observationPhotoRepository.clearAllLocal();
+
   db.transaction((tx) => {
     tx.delete(observationTable).run();
     tx.delete(mutationQueueTable)
       .where(eq(mutationQueueTable.entity, "observation"))
       .run();
   });
+
+  return orphanedFiles;
 };

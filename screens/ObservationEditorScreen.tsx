@@ -1,8 +1,10 @@
 import {
   useState,
   useCallback,
+  useEffect,
   useLayoutEffect,
   useMemo,
+  useRef,
   Dispatch,
   SetStateAction,
 } from "react";
@@ -25,6 +27,9 @@ import { setTypedNavigationCallback } from "../util/navigationCallbacks";
 import { useEditorForm } from "../hooks/useEditorForm";
 import { useDefaultTerritory } from "../hooks/useDefaultTerritory";
 import * as observationRepository from "../hooks/repositories/observationRepository";
+import * as observationPhotoRepository from "../hooks/repositories/observationPhotoRepository";
+import { runObservationPhotoSync } from "../services/sync/observationPhotoSync";
+import { persistPickedPhoto, deleteLocalPhotos } from "../util/photoFiles";
 import { fetchDiarySpeciesIds } from "../util/fetches";
 import IconsHeader from "../components/ui/IconsHeader";
 import Layout from "../components/ui/Layout";
@@ -36,6 +41,7 @@ import {
   AppStackRouteProp,
   ErrorExtractor,
   ObservationFormData,
+  ObservationPhoto,
   PlaceData,
 } from "../types";
 
@@ -49,6 +55,12 @@ const FORM_FIELDS = [
   "quantity",
   "notes",
 ];
+
+// Ids for photos picked but not saved yet. Negative, like every other temp id
+// in the app, and display-only: the repository assigns the real ones when the
+// form is submitted.
+let stagedIdCounter = 0;
+const nextStagedId = () => -(Date.now() * 1000 + (stagedIdCounter++ % 1000));
 
 const ObservationEditorScreen = () => {
   const { t } = useTranslation();
@@ -72,6 +84,90 @@ const ObservationEditorScreen = () => {
   } = route.params || {};
   const isEditMode = !!observation;
   const fallbackTerritory = useDefaultTerritory();
+
+  // Photos are staged, not applied on the spot: leaving the form without
+  // saving must not upload anything, exactly like every other field here.
+  // `photos` is what the strip renders — the already-known ones minus what the
+  // user removed, plus what they just picked.
+  const [photos, setPhotos] = useState<ObservationPhoto[]>(
+    observation?.photos ?? [],
+  );
+  const [removedPhotos, setRemovedPhotos] = useState<ObservationPhoto[]>([]);
+  // Files written by ImageManipulator into the cache directory. They are
+  // copied somewhere durable only on save (see util/photoFiles.ts) — the other
+  // way round, an abandoned edit would leave files nothing ever deletes.
+  const stagedUrisRef = useRef<Map<number, string>>(new Map());
+
+  const handlePickPhotos = useCallback((uris: string[]) => {
+    const now = new Date().toISOString();
+    const picked = uris.map((uri) => {
+      const id = nextStagedId();
+      stagedUrisRef.current.set(id, uri);
+      return {
+        id,
+        image: null,
+        thumbnail: null,
+        sort_order: 0,
+        created_at: now,
+        local_uri: uri,
+        _pendingSync: "pending" as const,
+      };
+    });
+    setPhotos((prev) => [...prev, ...picked]);
+  }, []);
+
+  const handleRemovePhoto = useCallback((photo: ObservationPhoto) => {
+    setPhotos((prev) => prev.filter((p) => p.id !== photo.id));
+
+    if (stagedUrisRef.current.has(photo.id)) {
+      // Never left this screen — drop the cache file right away.
+      const uri = stagedUrisRef.current.get(photo.id);
+      stagedUrisRef.current.delete(photo.id);
+      deleteLocalPhotos([uri]);
+      return;
+    }
+
+    setRemovedPhotos((prev) => [...prev, photo]);
+  }, []);
+
+  // Anything still staged when the screen goes away was never saved.
+  useEffect(
+    () => () => {
+      // Empty after a successful save — commitPhotos clears the map.
+      deleteLocalPhotos([...stagedUrisRef.current.values()]);
+    },
+    [],
+  );
+
+  // Applies the staged photo changes to an observation that now definitely
+  // exists locally (it may still carry a temp id — the photo queue resolves
+  // that the same way observationSync resolves a parent diary).
+  const commitPhotos = useCallback(
+    async (observationId: number) => {
+      const staged = [...stagedUrisRef.current.values()];
+      stagedUrisRef.current.clear();
+
+      removedPhotos.forEach((photo) =>
+        deleteLocalPhotos([
+          observationPhotoRepository.queueDelete(observationId, photo),
+        ]),
+      );
+      setRemovedPhotos([]);
+
+      if (staged.length > 0) {
+        const persisted = await Promise.all(staged.map(persistPickedPhoto));
+        observationPhotoRepository.queueUploads(
+          observationId,
+          persisted.map((uri) => ({ uri })),
+        );
+      }
+
+      if (staged.length > 0 || removedPhotos.length > 0) {
+        runObservationPhotoSync();
+      }
+    },
+    [removedPhotos],
+  );
 
   const {
     itemWithParsedDate: observationWithParsedDate,
@@ -223,7 +319,12 @@ const ObservationEditorScreen = () => {
       updateObservationMutation.mutate(
         { payload, speciesData, placeData },
         {
-          onSuccess: () => {
+          onSuccess: async () => {
+            // The id is already known here, unlike on create — no need to
+            // depend on what the update response happens to carry.
+            if (observationWithParsedDate?.id != null) {
+              await commitPhotos(observationWithParsedDate.id);
+            }
             Keyboard.dismiss();
             navigation.goBack();
           },
@@ -234,7 +335,8 @@ const ObservationEditorScreen = () => {
       createObservationMutation.mutate(
         { payload, speciesData, placeData },
         {
-          onSuccess: (item) => {
+          onSuccess: async (item) => {
+            await commitPhotos(item.id);
             setSession("lastDate", payload.date_time);
             setSession("lastTerritory", payload.territory);
             Keyboard.dismiss();
@@ -267,6 +369,8 @@ const ObservationEditorScreen = () => {
     navigation,
     handleMutateError,
     validateForm,
+    commitPhotos,
+    observationWithParsedDate?.id,
   ]);
 
   const handleSaveAndAddAnother = useCallback(() => {
@@ -283,7 +387,9 @@ const ObservationEditorScreen = () => {
     createObservationMutation.mutate(
       { payload, speciesData, placeData },
       {
-        onSuccess: () => {
+        onSuccess: async (item) => {
+          await commitPhotos(item.id);
+          setPhotos([]);
           queryClient.invalidateQueries({
             queryKey: ["DiarySpecies", diaryId],
           });
@@ -313,6 +419,7 @@ const ObservationEditorScreen = () => {
     queryClient,
     diaryId,
     validateForm,
+    commitPhotos,
   ]);
 
   const handleAddNewPlace = useCallback(() => {
@@ -431,6 +538,9 @@ const ObservationEditorScreen = () => {
         isEditMode={isEditMode}
         onEditDiary={handleEditDiary}
         existingSpecies={existingSpecies}
+        photos={photos}
+        onPickPhotos={handlePickPhotos}
+        onRemovePhoto={handleRemovePhoto}
       />
     </Layout>
   );

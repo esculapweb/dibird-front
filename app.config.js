@@ -93,7 +93,7 @@ export default {
         NSLocationWhenInUseUsageDescription:
           "DiBird uses your location to send you push alerts when rare birds are spotted nearby (your approximate coordinates are stored on our servers), to sort birdwatching spots by distance, and to display them on the map.",
         NSPhotoLibraryUsageDescription:
-          "DiBird uses your photo library so you can select a profile picture. For example, you can choose an image from your gallery to set or update your avatar.",
+          "DiBird uses your photo library so you can attach photos to your birdwatching observations and select a profile picture. For example, you can add a photo of the bird you saw, or choose an image from your gallery to set or update your avatar.",
         ITSAppUsesNonExemptEncryption: false,
         LSApplicationQueriesSchemes: ["mailto"],
         UIBackgroundModes: ["fetch", "remote-notification"],

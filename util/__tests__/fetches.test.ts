@@ -1182,6 +1182,10 @@ describe("observation CSV import", () => {
     );
     expect((api.post as jest.Mock).mock.calls[0][2]).toEqual({
       headers: { "Content-Type": "multipart/form-data" },
+      // Not the client-wide 10 s from services/api.ts: that one cuts off a
+      // body still being sent, and a premature timeout looks exactly like
+      // being offline to everything downstream.
+      timeout: 120000,
     });
     // jsdom's FormData stringifies the RN file object into "[object Object]",
     // so only its presence is observable here — the { uri, name, type } shape

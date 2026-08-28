@@ -21,6 +21,10 @@ if (!__DEV__) {
   }
 }
 
+// Must match settings.OBSERVATION_PHOTO_MAX_COUNT on the backend: a higher
+// value here would let the user pick a photo the server then rejects.
+export const MAX_OBSERVATION_PHOTOS = 5;
+
 export const Config = {
   env,
   baseUrl,

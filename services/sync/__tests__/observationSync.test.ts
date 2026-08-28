@@ -13,6 +13,12 @@ jest.mock("../../../hooks/repositories/observationRepository", () => ({
   requeuePendingMutation: jest.fn(),
   requeueFailedMutation: jest.fn(),
 }));
+jest.mock("../observationPhotoSync", () => ({
+  runObservationPhotoSync: jest.fn(),
+}));
+jest.mock("../../../util/photoFiles", () => ({
+  deleteLocalPhotos: jest.fn(async () => {}),
+}));
 jest.mock("../../../hooks/repositories/diaryRepository", () => ({
   resolveDiaryId: jest.fn(),
 }));
@@ -31,6 +37,7 @@ import { queryClient } from "../../queryClient";
 import * as observationRepository from "../../../hooks/repositories/observationRepository";
 import * as diaryRepository from "../../../hooks/repositories/diaryRepository";
 import * as placeRepository from "../../../hooks/repositories/placeRepository";
+import { runObservationPhotoSync } from "../observationPhotoSync";
 import { isConnected } from "../networkStatus";
 import { runObservationSync, stopObservationSyncRetries } from "../observationSync";
 
@@ -79,6 +86,22 @@ describe("create", () => {
     });
     expect(replaceLocalWithServer).toHaveBeenCalledWith(-1, { id: 55, species: 100 });
     expect(queryClient.invalidateQueries).toHaveBeenCalled();
+  });
+
+  it("wakes the photo queue once the observation has a real server id", async () => {
+    // Photos picked for an offline-created observation are queued against its
+    // temp id and can only be uploaded now — this is the moment that
+    // dependency resolves.
+    claimNextMutation
+      .mockReturnValueOnce(
+        mutation({ op: "create", localId: -1, data: { species: 100 }, clientRequestId: "r1" }),
+      )
+      .mockReturnValueOnce(null);
+    apiPost.mockResolvedValueOnce({ data: { id: 55, species: 100 } });
+
+    await runObservationSync();
+
+    expect(runObservationPhotoSync).toHaveBeenCalled();
   });
 
   it("resolves both a negative diary id and a negative place id before sending", async () => {

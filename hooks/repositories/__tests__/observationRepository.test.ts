@@ -77,7 +77,7 @@ let observationRepository: ObservationRepo;
 
 beforeEach(() => {
   db = createTestDb();
-  const repos = loadRepos(db, ["observationRepository"]);
+  const repos = loadRepos(db, ["observationRepository", "observationPhotoRepository"]);
   observationRepository = repos.observationRepository as ObservationRepo;
 });
 
@@ -504,6 +504,138 @@ describe("clearAllLocal", () => {
     expect(rawRow(555)).toBeUndefined();
     expect(rawRow(created.id)).toBeUndefined();
     expect(mutations()).toHaveLength(0);
+  });
+});
+
+describe("photos", () => {
+  // Photos are not part of the form payload — they travel through their own
+  // queue — so synthesize() can only carry them over from the previously known
+  // item. Regression: without that, an offline edit of a synced observation
+  // wiped its photo strip until a detail GET that, offline, never comes.
+  it("survives an offline edit of a synced observation", () => {
+    const photos = [
+      {
+        id: 900,
+        image: "observation/900.jpg",
+        thumbnail: "observation/900-thumb.jpg",
+        sort_order: 0,
+        created_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    observationRepository.upsertFromServer(serverObservation({ id: 555, photos }));
+
+    const updated = observationRepository.updateLocal(
+      555,
+      observationPayload({ notes: "Edited offline" }),
+      null,
+      {},
+      PROFILE,
+    );
+
+    expect(updated.photos).toEqual(photos);
+    expect((rawRow(555)?.data as ObservationItem).photos).toEqual(photos);
+  });
+
+  it("keeps a not-yet-uploaded photo when the server answer omits it", () => {
+    // The server cannot know about a photo still sitting in the upload queue,
+    // and a plain merge would drop it — after which the photo queue could no
+    // longer find the entry it has to replace with the server's own row.
+    observationRepository.upsertFromServer(serverObservation({ id: 555, photos: [] }));
+    const pending = {
+      id: -900,
+      image: null,
+      thumbnail: null,
+      sort_order: 0,
+      created_at: "2026-01-01T00:00:00Z",
+      local_uri: "file:///a.jpg",
+      _pendingSync: "pending" as const,
+    };
+    db.update(observationTable)
+      .set({
+        data: {
+          ...(rawRow(555)?.data as ObservationItem),
+          photos: [pending],
+        },
+      })
+      .where(eq(observationTable.id, 555))
+      .run();
+
+    observationRepository.upsertFromServer(serverObservation({ id: 555, photos: [] }));
+
+    expect((rawRow(555)?.data as ObservationItem).photos).toEqual([pending]);
+  });
+
+  it("drops the pending copy once the server reports the uploaded photo", () => {
+    const uploaded = {
+      id: 900,
+      image: "observation/900.jpg",
+      thumbnail: "observation/900-thumb.jpg",
+      sort_order: 0,
+      created_at: "2026-01-01T00:00:00Z",
+    };
+    observationRepository.upsertFromServer(
+      serverObservation({ id: 555, photos: [uploaded] }),
+    );
+
+    expect((rawRow(555)?.data as ObservationItem).photos).toEqual([uploaded]);
+  });
+
+  it("is an empty list for a brand-new local observation", () => {
+    const created = observationRepository.createLocal(
+      observationPayload(),
+      {},
+      PROFILE,
+      "req-1",
+    );
+
+    expect(created.photos).toEqual([]);
+  });
+});
+
+describe("resolveObservationId", () => {
+  // The counterpart of diaryRepository.resolveDiaryId, used by the photo queue
+  // to decide between "send it", "wait" and "this can never resolve".
+  it("returns null and positive ids unchanged", () => {
+    expect(observationRepository.resolveObservationId(null)).toBeNull();
+    expect(observationRepository.resolveObservationId(555)).toBe(555);
+  });
+
+  it("returns undefined for a temp id whose observation is gone", () => {
+    expect(observationRepository.resolveObservationId(-1)).toBeUndefined();
+  });
+
+  it("returns undefined for a temp id whose create failed for good", () => {
+    const created = observationRepository.createLocal(
+      observationPayload(),
+      {},
+      PROFILE,
+      "req-1",
+    );
+    const claimed = observationRepository.claimNextMutation()!;
+    observationRepository.requeueFailedMutation(
+      claimed.payload as never,
+      claimed.createdAt,
+      claimed.attempts,
+      created.id,
+      "Species does not exist",
+    );
+
+    expect(observationRepository.resolveObservationId(created.id)).toBeUndefined();
+  });
+
+  it("returns the same temp id while the create is merely pending, and the real one afterwards", () => {
+    const created = observationRepository.createLocal(
+      observationPayload(),
+      {},
+      PROFILE,
+      "req-1",
+    );
+
+    expect(observationRepository.resolveObservationId(created.id)).toBe(created.id);
+
+    observationRepository.replaceLocalWithServer(created.id, { ...created, id: 999 });
+
+    expect(observationRepository.resolveObservationId(created.id)).toBe(999);
   });
 });
 

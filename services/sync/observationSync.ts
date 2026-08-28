@@ -4,6 +4,8 @@ import * as observationRepository from "../../hooks/repositories/observationRepo
 import { ObservationMutationPayload } from "../../hooks/repositories/observationRepository";
 import * as diaryRepository from "../../hooks/repositories/diaryRepository";
 import * as placeRepository from "../../hooks/repositories/placeRepository";
+import { runObservationPhotoSync } from "./observationPhotoSync";
+import { deleteLocalPhotos } from "../../util/photoFiles";
 import { isConnected } from "./networkStatus";
 import { INVALIDATION_MAP } from "../../util/invalidationMap";
 import { beginSyncPass, endSyncPass, queueInvalidation } from "./syncBatch";
@@ -204,6 +206,10 @@ const runObservationSyncInternal = async () => {
           client_request_id: payload.clientRequestId,
         });
         observationRepository.replaceLocalWithServer(payload.localId, res.data);
+        // The observation now has a real server id, which is the only thing
+        // its queued photos were waiting for. Woken synchronously (no await
+        // in front of it) — see the invariant in syncBatch.ts.
+        runObservationPhotoSync();
         invalidateObservationQueries(payload.localId, res.data.id);
       } else if (payload.op === "update") {
         const res = await api.patch(`${OBSERVATION_URL}${payload.localId}/`, payload.data);
@@ -211,7 +217,7 @@ const runObservationSyncInternal = async () => {
         invalidateObservationQueries(payload.localId);
       } else {
         await api.delete(`${OBSERVATION_URL}${payload.localId}/`);
-        observationRepository.removeLocal(payload.localId);
+        deleteLocalPhotos(observationRepository.removeLocal(payload.localId));
         invalidateObservationQueries(payload.localId);
       }
       // Got a real response (this attempt's own success) — the link is

@@ -23,8 +23,10 @@ import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 import { useTheme } from "../../store/theme-context";
 import { useFilters } from "../../store/filters-context";
 import { useLocationUnavailable } from "../../hooks/useLocationUnavailable";
+import ObservationPhotoPicker from "./ObservationPhotoPicker";
 import {
   ObservationFormData,
+  ObservationPhoto,
   PlaceDropdownItem,
   SpeciesDropdownItem,
   Errors,
@@ -50,6 +52,9 @@ interface ObservationFormProps {
   isDiaryMode?: boolean;
   onEditDiary: () => void;
   existingSpecies: Set<number | string>;
+  photos: ObservationPhoto[];
+  onPickPhotos: (uris: string[]) => void;
+  onRemovePhoto: (photo: ObservationPhoto) => void;
 }
 
 const ObservationForm = ({
@@ -72,6 +77,9 @@ const ObservationForm = ({
   isEditMode = false,
   onEditDiary,
   existingSpecies,
+  photos,
+  onPickPhotos,
+  onRemovePhoto,
 }: ObservationFormProps) => {
   const { t } = useTranslation();
   const { language } = useLanguage();
@@ -351,6 +359,19 @@ const ObservationForm = ({
           />
         </Section>
       )}
+
+      <Section
+        title={t("section_photos")}
+        hint={t("optional")}
+        collapsible={true}
+        collapsed={photos.length === 0}
+      >
+        <ObservationPhotoPicker
+          photos={photos}
+          onPicked={onPickPhotos}
+          onRemove={onRemovePhoto}
+        />
+      </Section>
 
       <Section
         title={t("section_details")}

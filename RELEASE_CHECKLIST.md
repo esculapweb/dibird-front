@@ -800,7 +800,14 @@ OS-level `toggleAirplaneMode`, полный цикл create → update → delet
    `guest-deeplink-no-session`. Состав ссылок брать из
    `linking.deeplinks.test.ts` — это источник истины, не QA-страница бэка.
    Дешёвый флоу на обе платформы.
-4. **Импорт наблюдений из CSV.** `screens/ImportScreen.tsx`, async-джоба с
+4. **Фото наблюдения офлайн.** `ObservationPhotoPicker`/
+   `observationPhotoSync` — отдельная очередь мутаций
+   (`entity: "observationPhoto"`), фото уезжает только после того, как
+   наблюдение получило серверный id. `testID` уже расставлены
+   (`observation-photo-add`, `observation-photo-tile-N`,
+   `observation-photo-remove-N`), но упирается в системный image picker — та
+   же хрупкость, что у аватара в пункте 1, и тот же разговор.
+5. **Импорт наблюдений из CSV.** `screens/ImportScreen.tsx`, async-джоба с
    поллингом. Упирается в `DocumentPicker.getDocumentAsync` — системный UI;
    самый хрупкий кандидат, брать последним или не брать.
 

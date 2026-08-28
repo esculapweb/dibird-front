@@ -41,6 +41,15 @@ jest.mock("../../../hooks/repositories/observationRepository", () => ({
   requeuePendingMutation: jest.fn(),
   requeueFailedMutation: jest.fn(),
 }));
+// The photo queue takes part in the same cascade (observationSync wakes it
+// after a create), so it is left real and simply given an empty queue.
+jest.mock("../../../hooks/repositories/observationPhotoRepository", () => ({
+  claimNextMutation: jest.fn(() => null),
+}));
+jest.mock("../../../util/photoFiles", () => ({
+  deleteLocalPhotos: jest.fn(async () => {}),
+  deleteLocalPhoto: jest.fn(async () => {}),
+}));
 jest.mock("../networkStatus", () => ({
   isConnected: jest.fn(() => true),
 }));
