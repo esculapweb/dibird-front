@@ -150,6 +150,48 @@ export const clearOnboardingPending = async (): Promise<void> => {
   }
 };
 
+/**
+ * Which release the app has already reported to the backend, per slot — so the
+ * same "what's new" is not announced on every launch.
+ *
+ * Like LAST_USER_KEY above, deliberately outside Logout()'s multiRemove
+ * (util/auth.ts): which build a phone runs has nothing to do with who is signed
+ * in on it, and clearing this would announce the same release again to the next
+ * account.
+ */
+const APP_UPDATE_KEY = "reported_app_release";
+
+export type ReportedReleaseSlot = "ota_pending" | "ota_applied" | "build";
+
+export interface ReportedRelease {
+  revision: string;
+  /** The backend answered with a notification — there is nothing left to ask. */
+  done: boolean;
+  /** When we first asked about this revision, so the asking can be given up on. */
+  firstAskedAt: number;
+}
+
+export const loadReportedRelease = async (
+  slot: ReportedReleaseSlot,
+): Promise<ReportedRelease | null> => {
+  const value = await loadItem(APP_UPDATE_KEY, slot);
+  if (!value || typeof value !== "object") return null;
+
+  const { revision, done, firstAskedAt } = value as Partial<ReportedRelease>;
+  if (typeof revision !== "string") return null;
+
+  return {
+    revision,
+    done: done === true,
+    firstAskedAt: typeof firstAskedAt === "number" ? firstAskedAt : Date.now(),
+  };
+};
+
+export const saveReportedRelease = (
+  slot: ReportedReleaseSlot,
+  release: ReportedRelease,
+): Promise<void> => saveItem(APP_UPDATE_KEY, slot, release);
+
 export const initGlobalFilters = async (profileTerritory: number | null): Promise<void> => {
   const alreadyInited = await AsyncStorage.getItem("filters_inited");
   if (alreadyInited) return;

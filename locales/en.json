@@ -665,6 +665,8 @@
   "unlock_message": "Unlock DiBird",
   "unsynced_only": "Unsynced only",
   "update_failed": "Update unsuccessful",
+  "update_finish_editing_first": "Finish editing and tap again to apply it.",
+  "update_ready": "Update ready",
   "updated": "Updated at",
   "user_stat": "Participant statistics",
   "username": "Username",

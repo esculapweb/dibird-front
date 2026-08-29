@@ -1345,6 +1345,27 @@ export type NotificationPayload = (
 ) & { id?: number };
 
 /**
+ * A notification about a release of the app itself, created by the backend at
+ * the app's own request (hooks/useAppUpdateNotifications).
+ *
+ * These carry no `screen`: "applied" says everything it has to say in the card
+ * itself, and "pending" restarts the app instead of navigating — which is why
+ * they are recognised by `kind` rather than routed through
+ * util/notificationRoute.
+ */
+export type AppUpdateKind = "ota" | "build";
+export type AppUpdateStage = "pending" | "applied";
+
+export const getAppUpdateStage = (
+  data: AppNotification["data"],
+): AppUpdateStage | null => {
+  if (data?.kind !== "app_update") return null;
+  return data.stage === "pending" || data.stage === "applied"
+    ? data.stage
+    : null;
+};
+
+/**
  * The screens a notification can point at.
  *
  * Derived from the payload rather than listed by hand — the hand-written list it

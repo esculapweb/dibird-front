@@ -119,6 +119,8 @@ import {
   ObservationImport,
   ObservationPhoto,
   FetchFunction,
+  AppUpdateKind,
+  AppUpdateStage,
 } from "../types";
 
 export const exportProfileData = async (): Promise<void> => {
@@ -2163,6 +2165,35 @@ export const registerPushToken = async (token: string): Promise<void> => {
     token,
     platform: Platform.OS, // 'ios' | 'android'
   });
+};
+
+/**
+ * Tell the backend which release this device is on, so it can put a "what's
+ * new" (or "update ready") notification into the bell.
+ *
+ * The call is deliberately made from the device rather than broadcast by the
+ * server: only the app knows whether an OTA update has actually been
+ * downloaded and applied here, and a broadcast by version would reach half the
+ * audience before they have anything to restart into.
+ *
+ * Returns whether a notification was actually created. A 204 means the backend
+ * has nothing to say about this release *yet*: release notes are usually
+ * written just after publishing, and often after the first devices have already
+ * picked the update up — so "nothing yet" must not be remembered as final, or
+ * everyone who asked early would never hear about it.
+ */
+export const reportAppUpdate = async (params: {
+  kind: AppUpdateKind;
+  stage: AppUpdateStage;
+  revision: string;
+}): Promise<boolean> => {
+  const res = await api.post("/myapi/notifications/app-update/", {
+    ...params,
+    platform: Platform.OS, // 'ios' | 'android'
+    language: i18n.language,
+  });
+
+  return res.status !== 204;
 };
 
 export const unregisterPushToken = async (token: string): Promise<void> => {

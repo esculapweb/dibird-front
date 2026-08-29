@@ -3,17 +3,26 @@ import { Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import * as Updates from "expo-updates";
+import Toast from "react-native-toast-message";
 
 import ItemsList from "../components/ui/ItemsList";
 import NotificationCard from "../components/Notification/NotificationCard";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import Layout from "../components/ui/Layout";
 import { fetchNotifications, markNotificationsRead } from "../util/fetches";
-import { AppNotification, isNotificationPayload } from "../types";
+import {
+  AppNotification,
+  getAppUpdateStage,
+  isNotificationPayload,
+} from "../types";
 import { routeNotification } from "../util/notificationRoute";
 import { UNREAD_COUNT_KEY } from "../hooks/useUnreadCount";
 import { AppStackNavigationProp } from "../types";
 import { useTheme, ThemeColors } from "../store/theme-context";
+
+// Screens whose unsaved form state a reload would silently drop.
+const EDITOR_SCREENS = ["ObservationEditor", "DiaryEditor", "PlaceEditor"];
 
 export default function NotificationsScreen() {
   const { t } = useTranslation();
@@ -63,6 +72,31 @@ export default function NotificationsScreen() {
         queryClient.invalidateQueries({ queryKey: UNREAD_COUNT_KEY });
       }
 
+      // "Update ready" applies the update instead of navigating — that tap is
+      // the whole point of the notification (hooks/useAppUpdateNotifications).
+      if (getAppUpdateStage(item.data) === "pending") {
+        // A reload throws away whatever an editor further down the stack is
+        // holding: form state lives in memory, not in the offline mirror. The
+        // update is already downloaded and applies itself on the next cold
+        // start anyway, so losing a half-written observation to it would be a
+        // poor trade.
+        const editorOpen = navigation
+          .getState()
+          ?.routes.some((route) => EDITOR_SCREENS.includes(route.name));
+
+        if (editorOpen) {
+          Toast.show({
+            type: "info",
+            text1: t("update_ready"),
+            text2: t("update_finish_editing_first"),
+          });
+          return;
+        }
+
+        await Updates.reloadAsync();
+        return;
+      }
+
       // The same payload that arrives as a push, routed by the same switch —
       // this screen used to hold a copy of it, and the copies drifted (see
       // util/notificationRoute).
@@ -77,7 +111,7 @@ export default function NotificationsScreen() {
       ) => void;
       routeNotification(item.data, (screen, params) => navigate(screen, params));
     },
-    [navigation, queryClient],
+    [navigation, queryClient, t],
   );
 
   const items = data?.pages.flatMap((p) => p.results) ?? [];

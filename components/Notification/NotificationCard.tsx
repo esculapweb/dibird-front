@@ -48,7 +48,13 @@ const NotificationCard = ({ item, onPress }: Props) => {
         <Text style={styles.title} numberOfLines={2}>
           {item.title}
         </Text>
-        <Text style={styles.body} numberOfLines={2}>
+        {/* "What's new" arrives as a list of bullet points, and two lines cut
+            it off mid-sentence — there is nowhere else to read the rest, since
+            these notifications lead to no screen. */}
+        <Text
+          style={styles.body}
+          numberOfLines={item.type === "system" ? 8 : 2}
+        >
           {item.body}
         </Text>
         <Text style={styles.time}>{formatDateTime(item.created_at)}</Text>
