@@ -45,6 +45,7 @@ import { useDiarySync } from "./hooks/Diary/useDiarySync";
 import { usePlaceSync } from "./hooks/Place/usePlaceSync";
 import { useNotificationSync } from "./hooks/Notification/useNotificationSync";
 import { useSpeciesImagePrefetch } from "./hooks/useSpeciesImagePrefetch";
+import { useAppUpdateNotifications } from "./hooks/useAppUpdateNotifications";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -152,6 +153,7 @@ const Root = () => {
   usePlaceSync(isAuthenticated);
   useNotificationSync(isAuthenticated);
   useSpeciesImagePrefetch(isAuthenticated);
+  useAppUpdateNotifications(isAuthenticated);
 
   // Silently: signing in is no reason for a system dialog about location. For
   // those who already granted the permission nothing changes (there was no

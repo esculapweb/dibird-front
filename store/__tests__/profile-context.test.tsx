@@ -26,7 +26,12 @@ jest.mock("../../hooks/repositories/profileRepository", () => ({
   discardMutation: jest.fn(),
 }));
 jest.mock("../../hooks/repositories/observationRepository", () => ({
-  clearAllLocal: jest.fn(),
+  // Returns the local files of photos that were still queued for the previous
+  // account — profile-context passes them straight to deleteLocalPhotos.
+  clearAllLocal: jest.fn(() => ["file:///pending-photo.jpg"]),
+}));
+jest.mock("../../util/photoFiles", () => ({
+  deleteLocalPhotos: jest.fn(async () => {}),
 }));
 jest.mock("../../hooks/repositories/diaryRepository", () => ({
   clearAllLocal: jest.fn(),
@@ -98,6 +103,7 @@ import { runProfileSync } from "../../services/sync/profileSync";
 import { runAvatarSync } from "../../services/sync/avatarSync";
 import * as profileRepository from "../../hooks/repositories/profileRepository";
 import * as observationRepository from "../../hooks/repositories/observationRepository";
+import { deleteLocalPhotos } from "../../util/photoFiles";
 import * as diaryRepository from "../../hooks/repositories/diaryRepository";
 import * as placeRepository from "../../hooks/repositories/placeRepository";
 import {
@@ -270,6 +276,7 @@ describe("account switch detection", () => {
 
     await waitFor(() => expect(setLastLoggedInUserId).toHaveBeenCalledWith(99));
     expect(observationRepository.clearAllLocal).toHaveBeenCalledTimes(1);
+    expect(deleteLocalPhotos).toHaveBeenCalledWith(["file:///pending-photo.jpg"]);
     expect(diaryRepository.clearAllLocal).toHaveBeenCalledTimes(1);
     expect(placeRepository.clearAllLocal).toHaveBeenCalledTimes(1);
     expect(queryClient.clear).toHaveBeenCalledTimes(1);

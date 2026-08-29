@@ -171,6 +171,42 @@ export const observationTable = sqliteTable("observation", {
   updatedAt: integer("updated_at").notNull(),
 });
 
+// Queue-side truth for a photo the user picked but that hasn't reached the
+// server yet. The *display* copy lives inside observationTable.data.photos (an
+// optimistic entry with a negative id and local_uri), so every existing read
+// path — list overlay, card, detail — keeps working untouched; this table
+// holds only what the sync engine needs: which file to upload, which server
+// photo to delete, and the retry bookkeeping. Same split as
+// profileTable.pendingAvatarUri plus a mutation-queue row, and for the same
+// reason: an observation has a single op/status, so a failed photo would
+// otherwise mark the whole observation as failed.
+export const observationPhotoTable = sqliteTable(
+  "observation_photo",
+  {
+    // Negative local id; the same value identifies the optimistic entry in
+    // observationTable.data.photos.
+    id: integer("id").primaryKey(),
+    // May still be an observation's negative temp id — resolved right before
+    // the upload (see services/sync/observationPhotoSync.ts), exactly like
+    // diary/place temp ids are in observationSync.
+    observationId: integer("observation_id").notNull(),
+    // Real server photo id — set only for a queued delete.
+    serverId: integer("server_id"),
+    localUri: text("local_uri"),
+    sortOrder: integer("sort_order").notNull().default(0),
+    clientRequestId: text("client_request_id"),
+    op: text("op", { enum: ["upload", "delete"] }).notNull(),
+    status: text("status", { enum: ["pending", "error"] })
+      .notNull()
+      .default("pending"),
+    lastError: text("last_error"),
+    createdAt: integer("created_at").notNull(),
+  },
+  (table) => [
+    index("observation_photo_observation_idx").on(table.observationId),
+  ],
+);
+
 export const diaryTable = sqliteTable("diary", {
   // negative id = local temp id for an unsynced create, positive = real server id
   id: integer("id").primaryKey(),

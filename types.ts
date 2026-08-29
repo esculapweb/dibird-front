@@ -835,6 +835,25 @@ interface ObservationBaseItem {
   time: string | null;
 }
 
+export interface ObservationPhoto {
+  // Negative for a photo picked locally and not uploaded yet — same temp-id
+  // convention observation/diary/place already use for unsynced creates.
+  id: number;
+  // Server-relative media paths (Config.mediaUrl is prefixed by the UI);
+  // null while the photo exists only on this device.
+  image: string | null;
+  thumbnail: string | null;
+  sort_order: number;
+  created_at: string;
+  // Client-only: file:// URI of a pending upload. Kept inside the item so the
+  // photo strip renders immediately and still renders after an app restart
+  // while offline, exactly like profileTable.pendingAvatarUri does for the
+  // avatar. Never sent to the server.
+  local_uri?: string;
+  _pendingSync?: "pending" | "error";
+  _syncError?: string | null;
+}
+
 export interface ObservationItem extends ObservationBaseItem {
   date_time: string;
   diary: number | null;
@@ -855,6 +874,9 @@ export interface ObservationItem extends ObservationBaseItem {
   external_username: string | null;
   location_private: boolean;
   distance?: number | null;
+  // Optional because a row cached before photos existed simply has no such
+  // field — every read has to survive that.
+  photos?: ObservationPhoto[];
   // Client-only: set when this item has an unsynced local create/update/delete
   // queued (see hooks/repositories/observationRepository.ts). Never sent to the server.
   _pendingSync?: "pending" | "error";
@@ -1321,6 +1343,27 @@ export type NotificationPayload = (
   | { screen: "Notifications" }
   | { screen: "Checklist" }
 ) & { id?: number };
+
+/**
+ * A notification about a release of the app itself, created by the backend at
+ * the app's own request (hooks/useAppUpdateNotifications).
+ *
+ * These carry no `screen`: "applied" says everything it has to say in the card
+ * itself, and "pending" restarts the app instead of navigating — which is why
+ * they are recognised by `kind` rather than routed through
+ * util/notificationRoute.
+ */
+export type AppUpdateKind = "ota" | "build";
+export type AppUpdateStage = "pending" | "applied";
+
+export const getAppUpdateStage = (
+  data: AppNotification["data"],
+): AppUpdateStage | null => {
+  if (data?.kind !== "app_update") return null;
+  return data.stage === "pending" || data.stage === "applied"
+    ? data.stage
+    : null;
+};
 
 /**
  * The screens a notification can point at.

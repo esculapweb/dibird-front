@@ -9,6 +9,10 @@ jest.mock("../../services/sync/observationSync", () => ({
   runObservationSync: jest.fn(),
   stopObservationSyncRetries: jest.fn(),
 }));
+jest.mock("../../services/sync/observationPhotoSync", () => ({
+  runObservationPhotoSync: jest.fn(),
+  stopObservationPhotoSyncRetries: jest.fn(),
+}));
 jest.mock("../../services/sync/placeSync", () => ({
   runPlaceSync: jest.fn(),
   stopPlaceSyncRetries: jest.fn(),

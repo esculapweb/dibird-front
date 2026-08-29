@@ -2,6 +2,10 @@ import { useEffect, useRef } from "react";
 import { AppState } from "react-native";
 
 import { runObservationSync, stopObservationSyncRetries } from "../../services/sync/observationSync";
+import {
+  runObservationPhotoSync,
+  stopObservationPhotoSyncRetries,
+} from "../../services/sync/observationPhotoSync";
 import { subscribeToReconnect } from "../../services/sync/networkStatus";
 
 // Drains the observation mutation queue regardless of which screen is mounted
@@ -14,12 +18,17 @@ export const useObservationSync = (isAuthenticated: boolean) => {
   useEffect(() => {
     if (!isAuthenticated) {
       stopObservationSyncRetries();
+      stopObservationPhotoSyncRetries();
       return;
     }
 
     const trigger = () => {
       lastRunRef.current = Date.now();
       runObservationSync();
+      // Photos of observations that synced in an earlier session are queued
+      // independently, so they need their own trigger — observationSync only
+      // wakes this queue when it creates an observation right now.
+      runObservationPhotoSync();
     };
 
     trigger();
@@ -47,6 +56,7 @@ export const useObservationSync = (isAuthenticated: boolean) => {
       sub.remove();
       if (timeout) clearTimeout(timeout);
       stopObservationSyncRetries();
+      stopObservationPhotoSyncRetries();
     };
   }, [isAuthenticated]);
 };

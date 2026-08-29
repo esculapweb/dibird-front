@@ -129,12 +129,25 @@ const ObservationCard = memo(
                 )}
               </View>
 
-              {item.quantity && (
-                <View style={styles.badge}>
-                  <BirdSVG size={14} color={Colors.textMain} />
-                  <Text style={styles.badgeText}>{item.quantity}</Text>
-                </View>
-              )}
+              <View style={styles.metaRight}>
+                {!!item.photos?.length && (
+                  <View style={styles.badge}>
+                    <Ionicons
+                      name="images-outline"
+                      size={14}
+                      color={Colors.textMain}
+                    />
+                    <Text style={styles.badgeText}>{item.photos.length}</Text>
+                  </View>
+                )}
+
+                {item.quantity && (
+                  <View style={styles.badge}>
+                    <BirdSVG size={14} color={Colors.textMain} />
+                    <Text style={styles.badgeText}>{item.quantity}</Text>
+                  </View>
+                )}
+              </View>
             </View>
 
             <View style={styles.placeRow}>
@@ -263,6 +276,12 @@ const stylesFn = (Colors: ThemeColors) =>
       flexDirection: "row",
       alignItems: "center",
       gap: 4,
+    },
+
+    metaRight: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
     },
 
     metaText: {

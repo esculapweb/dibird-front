@@ -58,6 +58,17 @@ jest.mock("../../hooks/useDefaultTerritory", () => ({
 jest.mock("../../util/fetches", () => ({
   fetchDiarySpeciesIds: jest.fn(),
 }));
+jest.mock("../../hooks/repositories/observationPhotoRepository", () => ({
+  queueUploads: jest.fn(),
+  queueDelete: jest.fn(() => null),
+}));
+jest.mock("../../services/sync/observationPhotoSync", () => ({
+  runObservationPhotoSync: jest.fn(),
+}));
+jest.mock("../../util/photoFiles", () => ({
+  persistPickedPhoto: jest.fn(async (uri: string) => `persisted:${uri}`),
+  deleteLocalPhotos: jest.fn(async () => {}),
+}));
 jest.mock("../../hooks/repositories/observationRepository", () => ({
   getPendingSpeciesForDiary: jest.fn(() => new Set()),
 }));
@@ -305,7 +316,7 @@ describe("save navigation branching", () => {
     await pressSave();
 
     const { onSuccess } = mockCreateMutate.mock.calls[0][1];
-    onSuccess({ id: 123, date_time: "2026-01-01" });
+    await onSuccess({ id: 123, date_time: "2026-01-01" });
 
     expect(mockNavigation.goBack).toHaveBeenCalledTimes(1);
     expect(mockNavigation.replace).not.toHaveBeenCalled();
@@ -316,7 +327,7 @@ describe("save navigation branching", () => {
     await pressSave();
 
     const { onSuccess } = mockCreateMutate.mock.calls[0][1];
-    onSuccess({ id: 123, date_time: "2026-01-01" });
+    await onSuccess({ id: 123, date_time: "2026-01-01" });
 
     expect(setSession).toHaveBeenCalledWith("lastDate", "2026-01-01");
     // Seeds the fallback the next observation opens on.
@@ -333,7 +344,7 @@ describe("save navigation branching", () => {
     await pressSave();
 
     const { onSuccess } = mockUpdateMutate.mock.calls[0][1];
-    onSuccess();
+    await onSuccess();
 
     expect(mockNavigation.goBack).toHaveBeenCalledTimes(1);
   });

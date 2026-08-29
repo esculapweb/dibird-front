@@ -17,6 +17,7 @@ import { clearPersistedQueryCache } from "../services/queryPersist";
 import { mutationQueueTable, profileTable } from "../services/db/schema";
 import * as profileRepository from "../hooks/repositories/profileRepository";
 import * as observationRepository from "../hooks/repositories/observationRepository";
+import { deleteLocalPhotos } from "../util/photoFiles";
 import * as diaryRepository from "../hooks/repositories/diaryRepository";
 import * as placeRepository from "../hooks/repositories/placeRepository";
 import * as profileSync from "../services/sync/profileSync";
@@ -163,7 +164,9 @@ export const ProfileProvider = ({
       if (profile.user) {
         const lastUserId = await getLastLoggedInUserId();
         if (lastUserId !== null && lastUserId !== profile.user) {
-          observationRepository.clearAllLocal();
+          // Also wipes the queued photos of the previous account, and hands
+          // back their local files so they don't linger in documentDirectory.
+          deleteLocalPhotos(observationRepository.clearAllLocal());
           diaryRepository.clearAllLocal();
           placeRepository.clearAllLocal();
           // Same reasoning as the local repositories above, but for the

@@ -88,6 +88,14 @@ jest.mock("../../Place/PlaceBlock", () => ({
     return null;
   },
 }));
+const mockPhotoPickerCapture = jest.fn();
+jest.mock("../ObservationPhotoPicker", () => ({
+  __esModule: true,
+  default: (props: Record<string, unknown>) => {
+    mockPhotoPickerCapture(props);
+    return null;
+  },
+}));
 jest.mock("../../ui/SpeciesOptionRow", () => {
   const { Text } = require("react-native");
   return {
@@ -127,6 +135,9 @@ const BASE_FORM_DATA = {
   notes: null as string | null,
 };
 
+const mockOnPickPhotos = jest.fn();
+const mockOnRemovePhoto = jest.fn();
+
 const baseProps = () => ({
   formData: BASE_FORM_DATA as never,
   setFormData: mockSetFormData,
@@ -145,6 +156,9 @@ const baseProps = () => ({
   setSpeciesData: mockSetSpeciesData,
   onEditDiary: mockOnEditDiary,
   existingSpecies: new Set<number>(),
+  photos: [],
+  onPickPhotos: mockOnPickPhotos,
+  onRemovePhoto: mockOnRemovePhoto,
 });
 
 const dropdownProps = (type: string) =>

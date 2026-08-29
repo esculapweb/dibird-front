@@ -37,8 +37,12 @@ jest.mock("../../util/fetches", () => ({
   fetchNotifications: jest.fn(),
   markNotificationsRead: jest.fn(),
 }));
+jest.mock("expo-updates", () => ({ reloadAsync: jest.fn() }));
+jest.mock("react-native-toast-message", () => ({ show: jest.fn() }));
 
 import { fireEvent, render, screen } from "@testing-library/react-native";
+import * as Updates from "expo-updates";
+import Toast from "react-native-toast-message";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { markNotificationsRead } from "../../util/fetches";
 import { UNREAD_COUNT_KEY } from "../../hooks/useUnreadCount";
@@ -174,6 +178,73 @@ describe("tap routing", () => {
 
     await fireEvent.press(screen.getByText("Item"));
 
+    expect(mockNavigation.navigate).not.toHaveBeenCalled();
+  });
+});
+
+describe("an update waiting to be applied", () => {
+  const pending = { kind: "app_update", stage: "pending" };
+
+  it("restarts into the update instead of navigating", async () => {
+    mockQuery({
+      data: {
+        pages: [
+          { results: [notification({ id: 1, title: "Item", is_read: true, data: pending })] },
+        ],
+      },
+    });
+    await render(<NotificationsScreen />);
+
+    await fireEvent.press(screen.getByText("Item"));
+
+    expect(Updates.reloadAsync).toHaveBeenCalled();
+    expect(mockNavigation.navigate).not.toHaveBeenCalled();
+  });
+
+  it("holds the restart back while an editor is open", async () => {
+    // A reload drops whatever the editor is holding — its form state lives in
+    // memory only, and the update applies itself on the next cold start anyway.
+    (mockNavigation.getState as jest.Mock).mockReturnValueOnce({
+      index: 1,
+      routes: [{ name: "Notifications" }, { name: "ObservationEditor" }],
+    });
+    mockQuery({
+      data: {
+        pages: [
+          { results: [notification({ id: 1, title: "Item", is_read: true, data: pending })] },
+        ],
+      },
+    });
+    await render(<NotificationsScreen />);
+
+    await fireEvent.press(screen.getByText("Item"));
+
+    expect(Updates.reloadAsync).not.toHaveBeenCalled();
+    expect(Toast.show).toHaveBeenCalled();
+  });
+
+  it("leaves a what's-new notification as a plain card", async () => {
+    mockQuery({
+      data: {
+        pages: [
+          {
+            results: [
+              notification({
+                id: 1,
+                title: "Item",
+                is_read: true,
+                data: { kind: "app_update", stage: "applied" },
+              }),
+            ],
+          },
+        ],
+      },
+    });
+    await render(<NotificationsScreen />);
+
+    await fireEvent.press(screen.getByText("Item"));
+
+    expect(Updates.reloadAsync).not.toHaveBeenCalled();
     expect(mockNavigation.navigate).not.toHaveBeenCalled();
   });
 });

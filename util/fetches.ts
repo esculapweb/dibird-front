@@ -117,7 +117,10 @@ import {
   TerritoryDetail,
   TerritoryCompareResponse,
   ObservationImport,
+  ObservationPhoto,
   FetchFunction,
+  AppUpdateKind,
+  AppUpdateStage,
 } from "../types";
 
 export const exportProfileData = async (): Promise<void> => {
@@ -140,6 +143,17 @@ export const downloadExportFile = async (
   });
 };
 
+// axios is configured with a client-wide 10 s timeout (services/api.ts). That
+// is a sane *read* timeout and a bad *upload* one: a request that is still
+// sending its body gets cut off, and a premature timeout is indistinguishable
+// from being offline — the offline-first layers then queue a retry of a
+// request the server may well have received. Every multipart call below sets
+// its own instead.
+const UPLOAD_TIMEOUT_MS = 60000;
+// The CSV import allows the largest file of anything here
+// (OBS_IMPORT_MAX_BYTES on the backend), so it gets proportionally longer.
+const IMPORT_UPLOAD_TIMEOUT_MS = 120000;
+
 export const startObservationImport = async (
   file: { uri: string; name: string },
   makePublic: boolean,
@@ -158,6 +172,7 @@ export const startObservationImport = async (
   return (
     await api.post<ObservationImport>("/myapi/observation-import/", formData, {
       headers: { "Content-Type": "multipart/form-data" },
+      timeout: IMPORT_UPLOAD_TIMEOUT_MS,
     })
   ).data;
 };
@@ -739,6 +754,38 @@ export const deleteMyProfile = async (
   return res?.status;
 };
 
+const OBSERVATION_PHOTO_URL = "/myapi/observation-photo/";
+
+export const uploadObservationPhoto = async (
+  observationId: number,
+  uri: string,
+  sortOrder: number,
+  clientRequestId: string,
+): Promise<ObservationPhoto> => {
+  const formData = new FormData();
+
+  // The same shape as for the avatar (`patchAvatar`): RN's FormData accepts a
+  // file object that does not exist in the web Blob type.
+  formData.append("image", {
+    uri,
+    name: "photo.jpg",
+    type: "image/jpeg",
+  } as unknown as Blob);
+  formData.append("observation", String(observationId));
+  formData.append("sort_order", String(sortOrder));
+  formData.append("client_request_id", clientRequestId);
+
+  return (
+    await api.post<ObservationPhoto>(OBSERVATION_PHOTO_URL, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+      timeout: UPLOAD_TIMEOUT_MS,
+    })
+  ).data;
+};
+
+export const deleteObservationPhoto = (id: number) =>
+  api.delete(`${OBSERVATION_PHOTO_URL}${id}/`);
+
 export const patchAvatar = async (
   image: ImageAsset,
 ): Promise<AvatarResponse> => {
@@ -755,6 +802,7 @@ export const patchAvatar = async (
       headers: {
         "Content-Type": "multipart/form-data",
       },
+      timeout: UPLOAD_TIMEOUT_MS,
     })
   ).data;
 };
@@ -2117,6 +2165,35 @@ export const registerPushToken = async (token: string): Promise<void> => {
     token,
     platform: Platform.OS, // 'ios' | 'android'
   });
+};
+
+/**
+ * Tell the backend which release this device is on, so it can put a "what's
+ * new" (or "update ready") notification into the bell.
+ *
+ * The call is deliberately made from the device rather than broadcast by the
+ * server: only the app knows whether an OTA update has actually been
+ * downloaded and applied here, and a broadcast by version would reach half the
+ * audience before they have anything to restart into.
+ *
+ * Returns whether a notification was actually created. A 204 means the backend
+ * has nothing to say about this release *yet*: release notes are usually
+ * written just after publishing, and often after the first devices have already
+ * picked the update up — so "nothing yet" must not be remembered as final, or
+ * everyone who asked early would never hear about it.
+ */
+export const reportAppUpdate = async (params: {
+  kind: AppUpdateKind;
+  stage: AppUpdateStage;
+  revision: string;
+}): Promise<boolean> => {
+  const res = await api.post("/myapi/notifications/app-update/", {
+    ...params,
+    platform: Platform.OS, // 'ios' | 'android'
+    language: i18n.language,
+  });
+
+  return res.status !== 204;
 };
 
 export const unregisterPushToken = async (token: string): Promise<void> => {
