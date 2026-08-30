@@ -12,10 +12,13 @@
 # checklist row is tapped twice — once on the thumbnail, which must land on
 # the species page, and once on the row itself, which must not.
 #
-# The species page is recognised by `compare-species-button`, the compare icon
-# in its header: it exists on that screen and nowhere else, so it says "we are
-# on the right screen" without depending on which bird the account's country
-# happens to list first.
+# The species page is recognised by `species-scroll`, the id of its own scroll
+# view — the same marker guest-browse.yaml and guest-deeplink-no-session.yaml
+# use: it exists on that screen and nowhere else, so it says "we are on the
+# right screen" without depending on which bird the account's country happens
+# to list first. It used to be `compare-species-button`, the compare icon in
+# the header, until compare moved into the "..." overflow menu — from where it
+# is not reachable at all until the menu is opened, and on iOS not even then.
 #
 # Data it needs: a country on the profile, which every e2e account has (the
 # onboarding sets one) — the country checklist comes from the backend
@@ -52,7 +55,7 @@ tags:
 - waitForAnimationToEnd
 - extendedWaitUntil:
     visible:
-      id: "compare-species-button"
+      id: "species-scroll"
     timeout: 15000
 
 - runFlow: common/back.yaml
@@ -81,7 +84,7 @@ tags:
     id: "checklist-species-row-.*"
 - waitForAnimationToEnd
 - assertNotVisible:
-    id: "compare-species-button"
+    id: "species-scroll"
 # Not "Species details": that string is also the accessibility label of every
 # species thumbnail on the screen behind the sheet, so it would pass whether or
 # not the menu opened. The other row is the menu's own, and which of the two it
@@ -130,7 +133,7 @@ tags:
 - waitForAnimationToEnd
 - extendedWaitUntil:
     visible:
-      id: "compare-species-button"
+      id: "species-scroll"
     timeout: 15000
 - runFlow: common/back.yaml
 
