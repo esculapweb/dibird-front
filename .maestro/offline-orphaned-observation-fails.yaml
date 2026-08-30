@@ -70,7 +70,8 @@ tags:
 # DiaryDetailScreen is a ListScreen and paints nothing until its observations
 # query settles — hence the wide budget, same as offline-create-diary.yaml.
 - extendedWaitUntil:
-    visible: ".*Delete diary.*"
+    visible:
+      id: "diary-edit-button"
     timeout: 25000
 
 # ---- CREATE an Observation inside that still-unsynced Diary ----
@@ -99,13 +100,16 @@ tags:
 # A diary-scoped save returns to the diary it was opened from (returnMode
 # "back"), unlike the quick-action path which replaces onto the new record.
 - extendedWaitUntil:
-    visible: ".*Delete diary.*"
+    visible:
+      id: "diary-edit-button"
     timeout: 8000
 
 # ---- ORPHAN IT: delete the parent while both are still local drafts ----
 # No delete mutation is queued for an unsynced draft, so nothing will ever
 # tell the server about this diary — and nothing will ever give the child a
 # real diary id.
+- tapOn:
+    id: "overflow-button"
 - tapOn:
     id: "diary-delete-button"
 - extendedWaitUntil:

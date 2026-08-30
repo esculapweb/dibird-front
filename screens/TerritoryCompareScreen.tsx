@@ -12,6 +12,7 @@ import Tabs from "../components/ui/Tabs";
 import ItemsList from "../components/ui/ItemsList";
 import SearchInput from "../components/ui/SearchInput";
 import IconsHeader from "../components/ui/IconsHeader";
+import { overflowButton } from "../components/ui/overflowMenu";
 import EmptyState from "../components/Empty/EmptyState";
 import TerritoryCompareRow from "../components/Territory/TerritoryCompareRow";
 import { useScreenSort } from "../hooks/useScreenSort";
@@ -112,9 +113,13 @@ const TerritoryCompareScreen = () => {
       headerRight: () => (
         <IconsHeader
           onSortPress={bothChosen ? openSortSheet : undefined}
-          onSharePress={
-            bothChosen
-              ? async () => {
+          headerRightEnd={[
+            overflowButton([
+              {
+                condition: bothChosen,
+                label: t("share"),
+                icon: "share-social-outline",
+                onPress: () => {
                   // Carries the open tab, the order and the search box, so the
                   // link reopens on the same slice of the comparison.
                   const url = buildTerritoryCompareUrl(
@@ -123,12 +128,13 @@ const TerritoryCompareScreen = () => {
                     { tab: tabMode, sort, search },
                   );
                   track("share_tapped", { type: "territory_compare" });
-                  await Share.share(
+                  void Share.share(
                     Platform.OS === "ios" ? { url } : { message: url },
                   );
-                }
-              : undefined
-          }
+                },
+              },
+            ]),
+          ]}
         />
       ),
     });

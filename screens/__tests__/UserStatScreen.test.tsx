@@ -7,6 +7,21 @@ jest.mock("react-i18next", () => ({
 }));
 jest.mock("@react-navigation/native", () => ({
   useRoute: () => mockRoute,
+  useNavigation: () => mockNavigation,
+}));
+jest.mock("../../hooks/useModeration", () => ({
+  useModeration: () => ({
+    report: mockReport,
+    block: mockBlock,
+    unblock: jest.fn(),
+    isPending: false,
+  }),
+}));
+jest.mock("../../services/bottomSheet", () => ({
+  BottomSheet: {
+    showMenu: (payload: unknown) => mockShowMenu(payload),
+    hide: jest.fn(),
+  },
 }));
 jest.mock("@tanstack/react-query", () => ({
   useQuery: jest.fn(),
@@ -73,10 +88,19 @@ import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { useQuery } from "@tanstack/react-query";
 import { fetchStat, fetchUserProfile } from "../../util/fetches";
 import { useFilters } from "../../store/filters-context";
-import { createRouteMock } from "../test-utils";
+import {
+  createNavigationMock,
+  createRouteMock,
+  openOverflow,
+  overflowRow,
+} from "../test-utils";
 import UserStatScreen from "../UserStatScreen";
 
 const mockRoute = createRouteMock("UserStat", { profileId: 9 });
+const mockNavigation = createNavigationMock();
+const mockReport = jest.fn();
+const mockBlock = jest.fn();
+const mockShowMenu = jest.fn();
 const mockSetSeenMode = jest.fn();
 const originalOS = Platform.OS;
 const latestProps = () => mockListScreenCapture.mock.calls.at(-1)![0];
@@ -184,10 +208,52 @@ it("onFiltersChange without a territory (outside 'seen' mode) swaps noItems to a
   expect(openFilterModal).toHaveBeenCalledTimes(1);
 });
 
-it("handleShare shares a platform-appropriate stat url", async () => {
+it("shares a platform-appropriate stat url from the menu", async () => {
   const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction" } as never);
   Platform.OS = "android";
   await render(<UserStatScreen />);
-  await latestProps().handleSharePress();
+
+  overflowRow(
+    openOverflow(latestProps().headerRightEnd, mockShowMenu),
+    "share",
+  ).onPress();
+
   expect(shareSpy).toHaveBeenCalledWith({ message: expect.stringContaining("users/stat/9") });
+});
+
+describe("moderation actions", () => {
+  const openMenu = async () => {
+    await render(<UserStatScreen />);
+    return openOverflow(latestProps().headerRightEnd, mockShowMenu);
+  };
+
+  it("keeps only sorting and filtering as icons, the rest behind the menu", async () => {
+    const items = await openMenu();
+
+    expect(items.map((item) => item.label)).toEqual([
+      "share",
+      "report_user",
+      "block_user",
+    ]);
+  });
+
+  it("reports the profile being looked at", async () => {
+    const items = await openMenu();
+
+    overflowRow(items, "report_user").onPress();
+
+    expect(mockReport).toHaveBeenCalledWith({ target_profile: 9 });
+  });
+
+  it("leaves the screen once the user is blocked", async () => {
+    const items = await openMenu();
+
+    overflowRow(items, "block_user").onPress();
+
+    expect(mockBlock).toHaveBeenCalledWith(9, { onDone: expect.any(Function) });
+    // Their records are gone from the feed; standing on their statistics is not
+    // a state worth keeping.
+    mockBlock.mock.calls.at(-1)![1].onDone();
+    expect(mockNavigation.goBack).toHaveBeenCalled();
+  });
 });

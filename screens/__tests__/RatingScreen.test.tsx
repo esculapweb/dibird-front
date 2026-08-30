@@ -1,3 +1,12 @@
+const mockShowMenu = jest.fn();
+jest.mock("../../services/bottomSheet", () => ({
+  BottomSheet: {
+    showMenu: (payload: unknown) => mockShowMenu(payload),
+    showContent: jest.fn(),
+    show: jest.fn(),
+    hide: jest.fn(),
+  },
+}));
 jest.mock("../../store/theme-context", () => ({
   useTheme: () => require("../mockTheme").mockUseTheme(),
 }));
@@ -50,7 +59,12 @@ import Toast from "react-native-toast-message";
 import { fetchRating } from "../../util/fetches";
 import { useFilters } from "../../store/filters-context";
 import { useProfile } from "../../store/profile-context";
-import { createNavigationMock, createRouteMock } from "../test-utils";
+import {
+  createNavigationMock,
+  createRouteMock,
+  openOverflow,
+  overflowRow,
+} from "../test-utils";
 import RatingScreen from "../RatingScreen";
 
 const mockNavigation = createNavigationMock();
@@ -147,11 +161,17 @@ it("handleShare shares a platform-appropriate payload", async () => {
 
   Platform.OS = "ios";
   await render(<RatingScreen />);
-  await latestProps().handleSharePress();
+  overflowRow(
+    openOverflow(latestProps().headerRightEnd, mockShowMenu),
+    "share",
+  ).onPress();
   expect(shareSpy).toHaveBeenLastCalledWith({ url: expect.any(String) });
 
   Platform.OS = "android";
   await render(<RatingScreen />);
-  await latestProps().handleSharePress();
+  overflowRow(
+    openOverflow(latestProps().headerRightEnd, mockShowMenu),
+    "share",
+  ).onPress();
   expect(shareSpy).toHaveBeenLastCalledWith({ message: expect.any(String) });
 });

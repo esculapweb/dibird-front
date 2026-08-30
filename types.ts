@@ -860,6 +860,46 @@ export interface ObservationPhoto {
   _syncError?: string | null;
 }
 
+/**
+ * Complaint about someone else's content. The server takes exactly one target
+ * — an observation, one of its photos, or a profile — and answers 400 to
+ * anything else, so this is a union rather than three optional fields.
+ */
+export type ReportTarget =
+  | { observation: number }
+  | { photo: number }
+  | { target_profile: number };
+
+// Kept in sync with ContentReport.Reason on the server (myapi/models.py): the
+// value is stored as sent, an unknown one is a 400. Which of them a user is
+// actually offered depends on what is being reported — see REASONS_BY_TARGET
+// in hooks/useModeration.tsx.
+export const REPORT_REASONS = [
+  "sexual",
+  "violence",
+  "hate",
+  "spam",
+  "irrelevant",
+  "other",
+] as const;
+
+export type ReportReason = (typeof REPORT_REASONS)[number];
+
+export interface BlockedUser {
+  // The block itself; unblocking is addressed by `blocked` instead — see
+  // unblockUser in util/fetches.ts.
+  id: number;
+  blocked: number;
+  blocked_data: {
+    id: number;
+    username: string;
+    first_name: string;
+    last_name: string;
+    avatar: string;
+  };
+  created_at: string;
+}
+
 export interface ObservationItem extends ObservationBaseItem {
   date_time: string;
   diary: number | null;
@@ -1191,6 +1231,7 @@ export type AppStackParamList = CatalogParamList & {
   Achievements: { highlightId?: string } | undefined;
   Privacy: undefined;
   Terms: undefined;
+  BlockedUsers: undefined;
 };
 
 /**

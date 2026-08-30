@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 
 import { Config } from "../../constants/config";
+import { BottomSheet } from "../../services/bottomSheet";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import PhotoViewerModal from "../ui/PhotoViewerModal";
 import { ObservationPhoto } from "../../types";
@@ -41,6 +42,9 @@ interface ObservationPhotosProps {
   onAdd?: () => void;
   onRemove?: (photo: ObservationPhoto) => void;
   addDisabled?: boolean;
+  // Someone else's photos only (the community card): reporting is offered
+  // inside the full-screen viewer, where the photo is actually looked at.
+  onReport?: (photo: ObservationPhoto) => void;
 }
 
 const ObservationPhotos = ({
@@ -48,6 +52,7 @@ const ObservationPhotos = ({
   onAdd,
   onRemove,
   addDisabled = false,
+  onReport,
 }: ObservationPhotosProps) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -169,6 +174,34 @@ const ObservationPhotos = ({
         photos={viewable.map((photo) => ({ uri: fullUri(photo) ?? "" }))}
         initialIndex={viewerIndex ?? 0}
         onClose={() => setViewerIndex(null)}
+        onMorePress={
+          onReport
+            ? (index) => {
+                const photo = viewable[index];
+                if (!photo) return;
+                // The viewer has to go first. It is a native Modal, in its own
+                // window, while the app's single bottom sheet lives in the root
+                // view underneath it — a sheet opened over it would be
+                // invisible, and would only turn up once the viewer was
+                // closed, which reads as the button doing nothing.
+                setViewerIndex(null);
+                // A menu of one row, on purpose: "report" has no pictogram
+                // anyone recognises, and here it gets a label. No hide() on
+                // the row — picking a reason replaces this sheet with the next
+                // one (see overflowMenu for why that must not be dismissed).
+                BottomSheet.showMenu({
+                  items: [
+                    {
+                      label: t("report_photo"),
+                      icon: "flag-outline",
+                      testID: "report-photo-button",
+                      onPress: () => onReport(photo),
+                    },
+                  ],
+                });
+              }
+            : undefined
+        }
       />
     </>
   );

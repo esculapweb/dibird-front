@@ -8,6 +8,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 
 import Layout from "../components/ui/Layout";
 import IconsHeader from "../components/ui/IconsHeader";
+import { overflowButton } from "../components/ui/overflowMenu";
 import TaxonChildrenList from "../components/Taxonomy/TaxonChildrenList";
 import TaxonFilterSheet, {
   hasTraitFilters,
@@ -88,9 +89,14 @@ const TaxonomyScreen = () => {
         <IconsHeader
           onSortPress={openSortSheet}
           hasActiveFilters={hasTraitFilters(traits)}
-          onSharePress={
-            sharePath
-              ? async () => {
+          headerRightEnd={[
+            overflowButton([
+              {
+                condition: !!sharePath,
+                label: t("share"),
+                icon: "share-social-outline",
+                onPress: () => {
+                  if (!sharePath) return;
                   const url = buildTaxonCatalogUrl(
                     sharePath,
                     traits,
@@ -98,12 +104,13 @@ const TaxonomyScreen = () => {
                     search,
                   );
                   track("share_tapped", { type: "taxon_list" });
-                  await Share.share(
+                  void Share.share(
                     Platform.OS === "ios" ? { url } : { message: url },
                   );
-                }
-              : undefined
-          }
+                },
+              },
+            ]),
+          ]}
           onFilterPress={
             canFilter
               ? () =>

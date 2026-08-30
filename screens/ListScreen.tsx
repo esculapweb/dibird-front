@@ -62,7 +62,6 @@ interface ListScreenProps<T, RouteName extends ScreenWithFiltersOnly> {
   extraFilters?: Filters | null;
   headerRightBeginning?: IconButtonConfig[];
   headerRightEnd?: IconButtonConfig[];
-  handleSharePress?: () => Promise<void>;
   fabIcon?: IconType;
   getItemId?: (item: T) => string | number;
   onFiltersChange?: (val: Filters | null) => Promise<void>;
@@ -116,7 +115,6 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
   extraFilters,
   headerRightBeginning,
   headerRightEnd,
-  handleSharePress,
   fabIcon,
   getItemId,
   onFiltersChange,
@@ -266,7 +264,6 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
     ...(headerRightBeginning || []),
     allowSort ? 1 : 0,
     1,
-    handleSharePress ? 1 : 0,
     ...(headerRightEnd || []),
   ].filter(Boolean).length;
 
@@ -351,7 +348,6 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
           hasActiveFilters={hasActiveFilters}
           onSortPress={allowSort ? handleSortPress : undefined}
           onFilterPress={handleFilterPress}
-          onSharePress={handleSharePress}
           headerRightBeginning={headerRightBeginning}
           headerRightEnd={headerRightEnd}
         />
@@ -362,7 +358,6 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
     hasActiveFilters,
     allowSort,
     iconCount,
-    handleSharePress,
     headerRightBeginning,
     headerRightEnd,
     handleFilterPress,

@@ -79,10 +79,14 @@ jest.mock("../../components/ui/IconsHeader", () => {
   const { TouchableOpacity, Text } = require("react-native");
   return {
     __esModule: true,
-    default: ({ onSortPress, onFilterPress, onSharePress }: {
+    default: ({ onSortPress, onFilterPress, headerRightEnd = [] }: {
       onSortPress?: () => void;
       onFilterPress?: () => void;
-      onSharePress?: () => void;
+      headerRightEnd?: Array<{
+        condition: boolean;
+        onPress: () => void;
+        testID?: string;
+      }>;
     }) => (
       <>
         {onSortPress && (
@@ -93,11 +97,17 @@ jest.mock("../../components/ui/IconsHeader", () => {
         <TouchableOpacity testID="filter-btn" onPress={onFilterPress}>
           <Text>filter</Text>
         </TouchableOpacity>
-        {onSharePress && (
-          <TouchableOpacity testID="share-btn" onPress={onSharePress}>
-            <Text>share</Text>
-          </TouchableOpacity>
-        )}
+        {headerRightEnd
+          .filter((btn) => btn.condition)
+          .map((btn) => (
+            <TouchableOpacity
+              key={btn.testID}
+              testID={btn.testID}
+              onPress={btn.onPress}
+            >
+              <Text>{btn.testID}</Text>
+            </TouchableOpacity>
+          ))}
       </>
     ),
   };
@@ -360,16 +370,22 @@ describe("header actions", () => {
     expect(sheet.renderContent(jest.fn()).props.filters).toEqual({ territory: 7 });
   });
 
-  it("share button only renders when handleSharePress is provided", async () => {
-    await render(<ListScreen {...defaultProps()} />);
+  it("renders the screen's own trailing buttons after sort and filter", async () => {
+    // Where the "⋯" menu goes on every screen that has one — sharing,
+    // deleting and reporting all live behind it now (see overflowMenu).
+    const onPress = jest.fn();
+    await render(
+      <ListScreen
+        {...defaultProps()}
+        headerRightEnd={[
+          { condition: true, onPress, icon: "ellipsis-horizontal", testID: "overflow-button" },
+        ]}
+      />,
+    );
     await renderHeaderRight();
-    expect(screen.queryByTestId("share-btn")).not.toBeOnTheScreen();
 
-    const handleSharePress = jest.fn();
-    await render(<ListScreen {...defaultProps()} handleSharePress={handleSharePress} />);
-    await renderHeaderRight();
-    await fireEvent.press(screen.getByTestId("share-btn"));
-    expect(handleSharePress).toHaveBeenCalledTimes(1);
+    await fireEvent.press(screen.getByTestId("overflow-button"));
+    expect(onPress).toHaveBeenCalledTimes(1);
   });
 });
 

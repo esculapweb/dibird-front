@@ -1,5 +1,6 @@
 // jest.config.js's setupFiles path only evaluates the async-storage mock
 // without wiring it up as a replacement — the sort preference reads it.
+const mockShowMenu = jest.fn();
 jest.mock("@react-native-async-storage/async-storage", () =>
   require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
 );
@@ -95,6 +96,9 @@ jest.mock("../../services/bottomSheet", () => ({
     }) => {
       mockSheetContent = renderContent(() => {}) as never;
     },
+    showMenu: (payload: unknown) => mockShowMenu(payload),
+    show: jest.fn(),
+    hide: jest.fn(),
   },
 }));
 jest.mock("../../components/Taxonomy/TaxonFilterSheet", () => {
@@ -121,7 +125,12 @@ import { ReactElement } from "react";
 import { Share } from "react-native";
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { useQuery } from "@tanstack/react-query";
-import { createNavigationMock, createRouteMock } from "../test-utils";
+import {
+  createNavigationMock,
+  createRouteMock,
+  openOverflow,
+  overflowRow,
+} from "../test-utils";
 import TerritoryDetailScreen from "../TerritoryDetailScreen";
 import { TerritoryDetail } from "../../types";
 
@@ -342,7 +351,10 @@ it("shares the country at the site's own path", async () => {
   } as never);
 
   await render(<TerritoryDetailScreen />);
-  await (headerProps().onSharePress as () => Promise<void>)();
+  overflowRow(
+    openOverflow(headerProps().headerRightEnd, mockShowMenu),
+    "share",
+  ).onPress();
 
   const arg = shareSpy.mock.calls[0][0] as { url?: string; message?: string };
   expect(arg.url ?? arg.message ?? "").toContain("/territory/argentina/");
@@ -350,10 +362,10 @@ it("shares the country at the site's own path", async () => {
 
 it("starts a comparison with this country already on one side", async () => {
   await render(<TerritoryDetailScreen />);
-  const [compare] = headerProps().headerRightBeginning as {
-    onPress: () => void;
-  }[];
-  compare.onPress();
+  overflowRow(
+    openOverflow(headerProps().headerRightEnd, mockShowMenu),
+    "compare_territories",
+  ).onPress();
 
   expect(mockNavigation.navigate).toHaveBeenCalledWith("TerritoryCompare", {
     segment1: "argentina",
@@ -396,7 +408,10 @@ it("shares the tree layout as the plain country link", async () => {
   } as never);
 
   await render(<TerritoryDetailScreen />);
-  await (headerProps().onSharePress as () => Promise<void>)();
+  overflowRow(
+    openOverflow(headerProps().headerRightEnd, mockShowMenu),
+    "share",
+  ).onPress();
 
   const arg = shareSpy.mock.calls[0][0] as { url?: string; message?: string };
   expect(arg.url ?? arg.message ?? "").toMatch(/\/territory\/argentina\/$/);
@@ -409,7 +424,10 @@ it("shares the open tab and layout", async () => {
 
   await render(<TerritoryDetailScreen />);
   await fireEvent.press(screen.getByTestId("tab-info"));
-  await (headerProps().onSharePress as () => Promise<void>)();
+  overflowRow(
+    openOverflow(headerProps().headerRightEnd, mockShowMenu),
+    "share",
+  ).onPress();
 
   const arg = shareSpy.mock.calls[0][0] as { url?: string; message?: string };
   expect(arg.url ?? arg.message ?? "").toContain(

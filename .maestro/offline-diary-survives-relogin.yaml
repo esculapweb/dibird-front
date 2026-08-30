@@ -87,7 +87,8 @@ tags:
 # ListScreen and paints nothing at all until its observations query settles
 # (see offline-create-diary.yaml's note on the same gate).
 - extendedWaitUntil:
-    visible: ".*Delete diary.*"
+    visible:
+      id: "diary-edit-button"
     timeout: 25000
 - back
 
@@ -168,8 +169,11 @@ tags:
 - tapOn: "Diaries"
 - tapOn: "Relogin E2E Diary"
 - extendedWaitUntil:
-    visible: ".*Delete diary.*"
+    visible:
+      id: "diary-edit-button"
     timeout: 25000
+- tapOn:
+    id: "overflow-button"
 - tapOn:
     id: "diary-delete-button"
 - extendedWaitUntil:

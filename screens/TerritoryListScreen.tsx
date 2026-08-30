@@ -8,6 +8,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 
 import Layout from "../components/ui/Layout";
 import IconsHeader from "../components/ui/IconsHeader";
+import { overflowButton } from "../components/ui/overflowMenu";
 import ItemsList from "../components/ui/ItemsList";
 import SearchInput from "../components/ui/SearchInput";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
@@ -91,19 +92,24 @@ const TerritoryListScreen = () => {
       headerRight: () => (
         <IconsHeader
           onSortPress={openSortSheet}
-          // The picker is a transient sub-screen of the compare page, and the
-          // site has no URL for it.
-          onSharePress={
-            pickerKey
-              ? undefined
-              : async () => {
+          headerRightEnd={[
+            overflowButton([
+              {
+                // The picker is a transient sub-screen of the compare page,
+                // and the site has no URL for it.
+                condition: !pickerKey,
+                label: t("share"),
+                icon: "share-social-outline",
+                onPress: () => {
                   const url = buildTerritoryListUrl(region, sort, search);
                   track("share_tapped", { type: "territory_list" });
-                  await Share.share(
+                  void Share.share(
                     Platform.OS === "ios" ? { url } : { message: url },
                   );
-                }
-          }
+                },
+              },
+            ]),
+          ]}
         />
       ),
     });

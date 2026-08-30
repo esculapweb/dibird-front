@@ -157,6 +157,8 @@ tags:
 
 # ---- Cleanup ----
 - tapOn:
+    id: "overflow-button"
+- tapOn:
     id: "place-delete-button"
 - extendedWaitUntil:
     visible:

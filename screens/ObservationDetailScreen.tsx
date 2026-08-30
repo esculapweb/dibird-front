@@ -16,7 +16,6 @@ import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/nativ
 import { useTheme, ThemeColors } from "../store/theme-context";
 import { formatDate, formatDateTime, formatDateLong } from "../util/helpers";
 import { Config } from "../constants/config";
-import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import {
@@ -39,6 +38,7 @@ import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import ObservationPhotos from "../components/Observation/ObservationPhotos";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
 import IconsHeader from "../components/ui/IconsHeader";
+import { overflowButton } from "../components/ui/overflowMenu";
 import Layout from "../components/ui/Layout";
 import { AppStackNavigationProp, AppStackRouteProp } from "../types";
 import { BottomSheet } from "../services/bottomSheet";
@@ -184,17 +184,44 @@ const ObservationDetailScreen = () => {
     await Share.share(Platform.OS === "ios" ? { url } : { message: url });
   }, [observation, observationId]);
 
+  // Editing stays an icon — it is what the owner comes here for. Sharing and
+  // deleting move into the menu: one is occasional, the other destructive, and
+  // both read better with a label than as a pictogram.
+  const headerRightEnd = useMemo(
+    () => [
+      overflowButton([
+        {
+          label: t("share"),
+          icon: "share-social-outline",
+          onPress: () => {
+            void handleShare();
+          },
+        },
+        {
+          condition: !!observation?.is_owner,
+          label: t("delete_observation"),
+          icon: "trash-outline",
+          danger: true,
+          opensAnotherSheet: true,
+          testID: "observation-delete-button",
+          onPress: handleDelete,
+        },
+      ]),
+    ],
+    [t, handleShare, handleDelete, observation],
+  );
+
   useLayoutEffect(() => {
     if (!observation) return;
     navigation.setOptions({
       headerRight: () => (
         <IconsHeader
           headerRightBeginning={headerRightBeginning}
-          onSharePress={handleShare}
+          headerRightEnd={headerRightEnd}
         />
       ),
     });
-  }, [navigation, headerRightBeginning, handleShare, observation]);
+  }, [navigation, headerRightBeginning, headerRightEnd, observation]);
 
   // TanStack Query flips status/isError to true on *any* failed fetch,
   // including a background refetch that happens to fail while we're still
@@ -225,22 +252,9 @@ const ObservationDetailScreen = () => {
   // nothing.
   const speciesSegment = observation.species_data.segment;
 
-  const bottomEl = observation.is_owner && (
-    <FlatButtonBottom
-      textColor={Colors.error600}
-      onPress={handleDelete}
-      icon="trash-outline"
-      loading={deleteMutation.isPending}
-      testID="observation-delete-button"
-    >
-      {t("delete_observation")}
-    </FlatButtonBottom>
-  );
-
   return (
     <Layout
       style={{ padding: 12 }}
-      bottom={bottomEl}
       withScroll={true}
       onRefresh={refetch}
       isRefreshing={isRefetching}

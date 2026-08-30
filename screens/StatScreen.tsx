@@ -5,6 +5,7 @@ import Toast from "react-native-toast-message";
 import { useNavigation, useRoute } from "@react-navigation/native";
 
 import ListScreen from "./ListScreen";
+import { overflowButton } from "../components/ui/overflowMenu";
 import {
   fetchStat,
   fetchChecklist,
@@ -351,6 +352,24 @@ const StatScreen = () => {
     await Share.share(Platform.OS === "ios" ? { url } : { message: url });
   }, [profile, currentFilters, currentSort, t]);
 
+  // The share link points at the stats page; in checklist mode there is
+  // nothing to point at, and the menu disappears with its only row.
+  const headerRightEnd = useMemo(
+    () => [
+      overflowButton([
+        {
+          condition: viewMode === "stats",
+          label: t("share"),
+          icon: "share-social-outline",
+          onPress: () => {
+            void handleShare();
+          },
+        },
+      ]),
+    ],
+    [t, handleShare, viewMode],
+  );
+
   const customHeaderBadge = useCallback(
     (
       res: StatPaginatedResponse<SpeciesItem | ChecklistItem>,
@@ -412,7 +431,7 @@ const StatScreen = () => {
         // the switch would keep showing the pages fetched for the tree.
         queryKeyExtra={viewMode === "checklist" ? checklistView : null}
         staleTime={config.staleTime}
-        handleSharePress={viewMode === "stats" ? handleShare : undefined}
+        headerRightEnd={headerRightEnd}
         onOpenFilterModal={(fn) => {
           openFilterRef.current = fn;
         }}

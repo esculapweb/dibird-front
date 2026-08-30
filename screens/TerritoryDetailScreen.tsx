@@ -21,6 +21,7 @@ import Section from "../components/ui/Section";
 import Tabs from "../components/ui/Tabs";
 import ViewSwitch from "../components/ui/ViewSwitch";
 import IconsHeader from "../components/ui/IconsHeader";
+import { overflowButton } from "../components/ui/overflowMenu";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import EmptyState from "../components/Empty/EmptyState";
@@ -98,15 +99,7 @@ const TerritoryDetailScreen = () => {
       title: data?.name ?? t("countries"),
       headerRight: () => (
         <IconsHeader
-          headerRightBeginning={[
-            {
-              condition: true,
-              icon: "git-compare-outline",
-              onPress: () =>
-                navigation.navigate("TerritoryCompare", { segment1: segment }),
-              testID: "compare-territory-button",
-            },
-          ]}
+
           onSortPress={
             tab === "species" && view === "flat" ? openSortSheet : undefined
           }
@@ -128,20 +121,38 @@ const TerritoryDetailScreen = () => {
                   })
               : undefined
           }
-          onSharePress={async () => {
-            // Reopens on the same tab and layout, with the flat list's sort
-            // and filters — see buildTerritoryDetailUrl / linking.ts.
-            const url = buildTerritoryDetailUrl(segment, {
-              tab,
-              view,
-              sort,
-              traits: filters,
-            });
-            track("share_tapped", { type: "territory" });
-            await Share.share(
-              Platform.OS === "ios" ? { url } : { message: url },
-            );
-          }}
+          headerRightEnd={[
+            overflowButton([
+              {
+                label: t("compare_territories"),
+                icon: "git-compare-outline",
+                testID: "compare-territory-button",
+                onPress: () =>
+                  navigation.navigate("TerritoryCompare", {
+                    segment1: segment,
+                  }),
+              },
+              {
+                label: t("share"),
+                icon: "share-social-outline",
+                onPress: () => {
+                  // Reopens on the same tab and layout, with the flat list's
+                  // sort and filters — see buildTerritoryDetailUrl /
+                  // linking.ts.
+                  const url = buildTerritoryDetailUrl(segment, {
+                    tab,
+                    view,
+                    sort,
+                    traits: filters,
+                  });
+                  track("share_tapped", { type: "territory" });
+                  void Share.share(
+                    Platform.OS === "ios" ? { url } : { message: url },
+                  );
+                },
+              },
+            ]),
+          ]}
         />
       ),
     });

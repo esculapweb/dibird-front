@@ -1,4 +1,4 @@
-import { useLayoutEffect, useCallback, useEffect } from "react";
+import { useLayoutEffect, useCallback, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -31,7 +31,14 @@ import IconsHeader from "../components/ui/IconsHeader";
 import ObservationPhotos from "../components/Observation/ObservationPhotos";
 import { track } from "../services/analytics";
 import Layout from "../components/ui/Layout";
-import { AppStackNavigationProp, AppStackRouteProp } from "../types";
+import { overflowButton } from "../components/ui/overflowMenu";
+import { useModeration } from "../hooks/useModeration";
+import {
+  AppStackNavigationProp,
+  AppStackRouteProp,
+  IconButtonConfig,
+  ObservationPhoto,
+} from "../types";
 import MapL from "../components/Map/MapL";
 
 const CommunityDetailScreen = () => {
@@ -53,6 +60,7 @@ const CommunityDetailScreen = () => {
   const { Colors } = useTheme();
   const { t } = useTranslation();
   const styles = stylesFn(Colors);
+  const { report, block } = useModeration();
 
   // Own record on the feed's screen: the share button on ObservationDetail
   // builds a community URL (`my/community/<id>/`), and the feed's retrieve
@@ -95,12 +103,67 @@ const CommunityDetailScreen = () => {
     await Share.share(Platform.OS === "ios" ? { url } : { message: url });
   }, [observation, observationId]);
 
+  // The server stops serving a record its viewer reported, so staying here
+  // would mean sitting on a card the next refetch turns into a 404.
+  const handleReport = useCallback(
+    () =>
+      report(
+        { observation: observationId },
+        { onDone: () => navigation.goBack() },
+      ),
+    [report, observationId, navigation],
+  );
+
+  // A photo is reported without leaving: the rest of the record is not what
+  // the complaint is about, and the invalidated query drops the photo from
+  // the strip by itself.
+  const handleReportPhoto = useCallback(
+    (photo: ObservationPhoto) => report({ photo: photo.id }),
+    [report],
+  );
+
+  // Blocking sits next to reporting rather than only on the author's profile:
+  // this is where a stranger's content is actually seen, and making the reader
+  // find the profile screen first is exactly the friction Apple's UGC rule is
+  // about.
+  const headerRightEnd = useMemo<IconButtonConfig[]>(
+    () => [
+      overflowButton([
+        {
+          label: t("share"),
+          icon: "share-social-outline",
+          onPress: () => {
+            void handleShare();
+          },
+        },
+        {
+          label: t("report_observation"),
+          icon: "flag-outline",
+          opensAnotherSheet: true,
+          testID: "report-observation-button",
+          onPress: handleReport,
+        },
+        {
+          condition: !!observation?.owner?.id,
+          label: t("block_author"),
+          icon: "ban-outline",
+          danger: true,
+          opensAnotherSheet: true,
+          testID: "block-author-button",
+          onPress: () =>
+            block(observation.owner.id, { onDone: () => navigation.goBack() }),
+        },
+      ]),
+    ],
+    [t, handleShare, handleReport, block, observation, navigation],
+  );
+
   useLayoutEffect(() => {
     if (!observation) return;
     navigation.setOptions({
-      headerRight: () => <IconsHeader onSharePress={handleShare} />,
+      headerRight: () => <IconsHeader headerRightEnd={headerRightEnd} />,
     });
-  }, [navigation, handleShare, observation]);
+  }, [navigation, headerRightEnd, observation]);
 
   // TanStack sets isError on *any* failed fetch, background ones included,
   // and does not clear `data` when that happens — so isError alone doesn't
@@ -240,7 +303,10 @@ const CommunityDetailScreen = () => {
             own observation does. */}
         {!!observation.photos?.length && (
           <View style={styles.photosRow}>
-            <ObservationPhotos photos={observation.photos} />
+            <ObservationPhotos
+              photos={observation.photos}
+              onReport={handleReportPhoto}
+            />
           </View>
         )}
 

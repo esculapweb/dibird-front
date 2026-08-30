@@ -62,7 +62,8 @@ tags:
 
 # Local-first create lands on the (temp-id) detail screen even offline.
 - extendedWaitUntil:
-    visible: ".*Delete diary.*"
+    visible:
+      id: "diary-edit-button"
     timeout: 6000
 
 # ---- CREATE Observation nested inside that (still unsynced) Diary ----
@@ -95,7 +96,8 @@ tags:
 # MainScreen quick-action path, which replaces onto the new item's own
 # detail screen.
 - extendedWaitUntil:
-    visible: ".*Delete diary.*"
+    visible:
+      id: "diary-edit-button"
     timeout: 6000
 
 - back
@@ -128,7 +130,8 @@ tags:
 - tapOn:
     id: "observation-sync-pending-icon"
 - extendedWaitUntil:
-    visible: ".*Delete observation.*"
+    visible:
+      id: "observation-edit-button"
     timeout: 6000
 
 # ---- Reconnect: both the Diary and its nested Observation must resolve ----
@@ -145,9 +148,12 @@ tags:
 # diary_id resolution would either leave this record in a permanent error
 # state or the delete button gone; still being able to delete it below is
 # itself part of the proof that resolution succeeded.
-- assertVisible: ".*Delete observation.*"
+- assertVisible:
+    id: "observation-edit-button"
 
 # ---- Cleanup: Observation first (references the diary), then the Diary ----
+- tapOn:
+    id: "overflow-button"
 - tapOn:
     id: "observation-delete-button"
 - extendedWaitUntil:
@@ -174,7 +180,10 @@ tags:
 # Found by its distinctive note text rather than a pending icon or list
 # position — true regardless of whether it's already synced by now.
 - tapOn: "Nested E2E Diary"
-- assertVisible: ".*Delete diary.*"
+- assertVisible:
+    id: "diary-edit-button"
+- tapOn:
+    id: "overflow-button"
 - tapOn:
     id: "diary-delete-button"
 - extendedWaitUntil:

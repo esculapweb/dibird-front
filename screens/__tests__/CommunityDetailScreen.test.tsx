@@ -36,6 +36,18 @@ jest.mock("@react-navigation/native", () => ({
   useRoute: () => mockRoute,
 }));
 jest.mock("../../hooks/useItem", () => ({ useItem: jest.fn() }));
+jest.mock("../../hooks/useModeration", () => ({
+  useModeration: () => ({
+    report: mockReport,
+    block: mockBlock,
+    unblock: jest.fn(),
+    isPending: false,
+  }),
+}));
+const mockShowMenu = jest.fn();
+jest.mock("../../services/bottomSheet", () => ({
+  BottomSheet: { showMenu: (payload: unknown) => mockShowMenu(payload), hide: jest.fn() },
+}));
 jest.mock("../../hooks/useOpenSpecies", () => ({
   useOpenSpecies: () => mockOpenSpecies,
 }));
@@ -81,13 +93,19 @@ jest.mock("../../components/ui/IconsHeader", () => {
   const { TouchableOpacity, Text } = require("react-native");
   return {
     __esModule: true,
-    default: ({ onSharePress }: { onSharePress?: () => void }) => (
+    default: ({
+      headerRightEnd = [],
+    }: {
+      headerRightEnd?: Array<{ condition: boolean; onPress: () => void; testID?: string }>;
+    }) => (
       <>
-        {onSharePress && (
-          <TouchableOpacity testID="share-button" onPress={onSharePress}>
-            <Text>share</Text>
-          </TouchableOpacity>
-        )}
+        {headerRightEnd
+          .filter((btn) => btn.condition)
+          .map((btn) => (
+            <TouchableOpacity key={btn.testID} testID={btn.testID} onPress={btn.onPress}>
+              <Text>{btn.testID}</Text>
+            </TouchableOpacity>
+          ))}
       </>
     ),
   };
@@ -102,6 +120,8 @@ import CommunityDetailScreen from "../CommunityDetailScreen";
 const mockNavigation = createNavigationMock();
 const mockRoute = createRouteMock("ObservationDetail", { observationId: 1 });
 const mockRefetch = jest.fn();
+const mockReport = jest.fn();
+const mockBlock = jest.fn();
 const originalOS = Platform.OS;
 
 const OBSERVATION = {
@@ -126,6 +146,16 @@ const mockItem = (overrides: Record<string, unknown> = {}) => {
     refetch: mockRefetch,
     ...overrides,
   });
+};
+
+// Everything the card can do now lives behind the header's "⋯".
+const menuRow = async (label: string) => {
+  await headerRight();
+  await fireEvent.press(screen.getByTestId("overflow-button"));
+  const { items } = mockShowMenu.mock.calls.at(-1)![0];
+  const row = items.find((item: { label: string }) => item.label === label);
+  if (!row) throw new Error(`no "${label}" row: ${items.map((i: { label: string }) => i.label)}`);
+  return row as { onPress: () => void };
 };
 
 const headerRight = async () => {
@@ -200,19 +230,17 @@ it("falls back to the latin name when no localized name is available", async () 
   expect(screen.getAllByText("Turdus merula")).toHaveLength(2);
 });
 
-it("wires up the share header button once the observation loads", async () => {
+it("shares from the header menu once the observation loads", async () => {
   const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction" } as never);
   Platform.OS = "ios";
   await render(<CommunityDetailScreen />);
-  await headerRight();
-  await fireEvent.press(screen.getByTestId("share-button"));
+  (await menuRow("share")).onPress();
   expect(shareSpy).toHaveBeenCalledWith({ url: expect.stringContaining("my/community/1/") });
 
   shareSpy.mockClear();
   Platform.OS = "android";
   await render(<CommunityDetailScreen />);
-  await headerRight();
-  await fireEvent.press(screen.getByTestId("share-button"));
+  (await menuRow("share")).onPress();
   expect(shareSpy).toHaveBeenCalledWith({ message: expect.stringContaining("my/community/1/") });
 });
 
@@ -258,7 +286,9 @@ describe("photos", () => {
     await render(<CommunityDetailScreen />);
 
     expect(screen.getByTestId("observation-photos")).toBeOnTheScreen();
-    expect(mockPhotosCapture).toHaveBeenCalledWith({ photos });
+    expect(mockPhotosCapture).toHaveBeenCalledWith(
+      expect.objectContaining({ photos }),
+    );
   });
 });
 
@@ -372,4 +402,59 @@ describe("place name", () => {
   // The owner's own case is gone from this screen: such a record is replaced
   // with ObservationDetail (see "own record" above), which has the exact place
   // of its own.
+});
+
+describe("reporting", () => {
+  it("reports the observation from the header menu and leaves the card", async () => {
+    await render(<CommunityDetailScreen />);
+
+    (await menuRow("report_observation")).onPress();
+
+    expect(mockReport).toHaveBeenCalledWith(
+      { observation: 1 },
+      { onDone: expect.any(Function) },
+    );
+    // The server stops serving a record its reporter reported, so the screen
+    // has to leave rather than sit on a card the next refetch turns into 404.
+    mockReport.mock.calls.at(-1)![1].onDone();
+    expect(mockNavigation.goBack).toHaveBeenCalled();
+  });
+
+  it("hands the photo strip a per-photo report", async () => {
+    mockItem({
+      data: {
+        ...OBSERVATION,
+        photos: [{ id: 42, image: "a.jpg", thumbnail: "a-thumb.jpg" }],
+      },
+    });
+    await render(<CommunityDetailScreen />);
+
+    const { onReport } = mockPhotosCapture.mock.calls.at(-1)![0];
+    onReport({ id: 42 });
+
+    // No onDone: only the photo goes, and the invalidated query drops it from
+    // the strip without taking the card down.
+    expect(mockReport).toHaveBeenCalledWith({ photo: 42 });
+  });
+});
+
+describe("blocking the author", () => {
+  it("is offered next to reporting, where the content is actually seen", async () => {
+    await render(<CommunityDetailScreen />);
+
+    (await menuRow("block_author")).onPress();
+
+    expect(mockBlock).toHaveBeenCalledWith(9, { onDone: expect.any(Function) });
+    // Their records leave the feed at once, so the card behind this one is
+    // about to stop existing.
+    mockBlock.mock.calls.at(-1)![1].onDone();
+    expect(mockNavigation.goBack).toHaveBeenCalled();
+  });
+
+  it("is left out when the record has no author to block (an eBird import)", async () => {
+    mockItem({ data: { ...OBSERVATION, owner: null } });
+    await render(<CommunityDetailScreen />);
+
+    await expect(menuRow("block_author")).rejects.toThrow();
+  });
 });

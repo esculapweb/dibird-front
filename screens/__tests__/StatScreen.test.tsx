@@ -137,7 +137,12 @@ import { useFilters } from "../../store/filters-context";
 import { useProfile } from "../../store/profile-context";
 import { parseDeepLinkParams } from "../../util/parseDeepLinkParams";
 import { BottomSheet } from "../../services/bottomSheet";
-import { createNavigationMock, createRouteMock } from "../test-utils";
+import {
+  createNavigationMock,
+  createRouteMock,
+  openOverflow,
+  overflowRow,
+} from "../test-utils";
 import StatScreen from "../StatScreen";
 
 const mockNavigation = createNavigationMock();
@@ -175,7 +180,7 @@ describe("view mode", () => {
     expect(props.title).toBe("statistics");
     expect(props.errorTitle).toBe("stat_unavailable");
     expect(props.allowSort).toBe(true);
-    expect(typeof props.handleSharePress).toBe("function");
+    expect(() => openOverflow(props.headerRightEnd, (BottomSheet.showMenu as jest.Mock))).not.toThrow();
   });
 
   it("Checklist route uses the checklist config (fetchChecklist, not sortable, no share)", async () => {
@@ -185,7 +190,8 @@ describe("view mode", () => {
     expect(props.title).toBe("checklist");
     expect(props.errorTitle).toBe("checklist_unavailable");
     expect(props.allowSort).toBe(false);
-    expect(props.handleSharePress).toBeUndefined();
+    // Nothing to share in checklist mode, and the menu goes with its only row.
+    expect(() => openOverflow(props.headerRightEnd, (BottomSheet.showMenu as jest.Mock))).toThrow();
   });
 });
 
@@ -428,7 +434,10 @@ describe("handleShare", () => {
     (useProfile as jest.Mock).mockReturnValue({ profile: {} });
     const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction" } as never);
     await render(<StatScreen />);
-    await latestProps().handleSharePress();
+    overflowRow(
+      openOverflow(latestProps().headerRightEnd, (BottomSheet.showMenu as jest.Mock)),
+      "share",
+    ).onPress();
     expect(shareSpy).not.toHaveBeenCalled();
   });
 
@@ -436,7 +445,10 @@ describe("handleShare", () => {
     (useProfile as jest.Mock).mockReturnValue({ profile: { user: 1, private: true } });
     const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction" } as never);
     await render(<StatScreen />);
-    await latestProps().handleSharePress();
+    overflowRow(
+      openOverflow(latestProps().headerRightEnd, (BottomSheet.showMenu as jest.Mock)),
+      "share",
+    ).onPress();
 
     expect(Toast.show).toHaveBeenCalledWith(expect.objectContaining({ text1: "profile_private" }));
     expect(shareSpy).not.toHaveBeenCalled();
@@ -446,7 +458,10 @@ describe("handleShare", () => {
     const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction" } as never);
     Platform.OS = "ios";
     await render(<StatScreen />);
-    await latestProps().handleSharePress();
+    overflowRow(
+      openOverflow(latestProps().headerRightEnd, (BottomSheet.showMenu as jest.Mock)),
+      "share",
+    ).onPress();
     expect(shareSpy).toHaveBeenCalledWith({ url: expect.stringContaining("users/stat/1/") });
   });
 });

@@ -143,6 +143,11 @@ interface PhotoViewerModalProps {
   photos: PhotoViewerItem[];
   initialIndex: number;
   onClose: () => void;
+  // Actions on someone else's photo (reporting it). Passed only where the
+  // photos belong to another user — the community card. Full screen is where
+  // the content is actually looked at, so it is where the menu belongs; what
+  // is in it is the caller's business.
+  onMorePress?: (index: number) => void;
 }
 
 const PhotoViewerModal = ({
@@ -150,6 +155,7 @@ const PhotoViewerModal = ({
   photos,
   initialIndex,
   onClose,
+  onMorePress,
 }: PhotoViewerModalProps) => {
   const { width, height } = useWindowDimensions();
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
@@ -194,6 +200,17 @@ const PhotoViewerModal = ({
           style={styles.closeButton}
           testID="photo-viewer-close"
         />
+
+        {onMorePress && (
+          <IconButton
+            onPress={() => onMorePress(currentIndex)}
+            icon="ellipsis-horizontal"
+            size={24}
+            tintColor="#fff"
+            style={styles.moreButton}
+            testID="photo-viewer-more"
+          />
+        )}
 
         <FlatList
           testID="photo-viewer-list"
@@ -253,6 +270,12 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 56,
     right: 16,
+    zIndex: 10,
+  },
+  moreButton: {
+    position: "absolute",
+    top: 58,
+    left: 16,
     zIndex: 10,
   },
   imageWrap: {

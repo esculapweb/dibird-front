@@ -392,6 +392,16 @@ const SettingsScreen = () => {
           styles={styles}
         />
         <Divider styles={styles} />
+        {/* Blocking has to be undoable somewhere, and this is the only screen
+            that outlives the profile it was made on. */}
+        <Row
+          icon="ban-outline"
+          label={t("blocked_users")}
+          onPress={() => navigation.navigate("BlockedUsers")}
+          colors={Colors}
+          styles={styles}
+        />
+        <Divider styles={styles} />
         <Row
           icon="shield-checkmark-outline"
           label={t("privacy_policy")}

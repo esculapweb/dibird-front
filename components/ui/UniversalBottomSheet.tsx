@@ -284,6 +284,7 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
                     {i > 0 && <View style={styles.divider} />}
                     <Pressable
                       style={styles.menuRow}
+                      testID={item.testID}
                       onPress={() => {
                         item.onPress();
                       }}

@@ -9,6 +9,7 @@ import { track } from "../services/analytics";
 
 import Layout from "../components/ui/Layout";
 import IconsHeader from "../components/ui/IconsHeader";
+import { overflowButton } from "../components/ui/overflowMenu";
 import TaxonChildrenList from "../components/Taxonomy/TaxonChildrenList";
 import TaxonDescendantsList from "../components/Taxonomy/TaxonDescendantsList";
 import TaxonBreadcrumbs from "../components/Taxonomy/TaxonBreadcrumbs";
@@ -62,19 +63,28 @@ const TaxonGroupDetailScreen = () => {
       headerRight: () => (
         <IconsHeader
           onSortPress={openSortSheet}
-          onSharePress={async () => {
-            // Carry the current sort so the shared link reopens in the same
-            // order (parsed back via matchTaxonPath's `o` in linking.ts).
-            const url = buildShareUrl(
-              `${SHARE_PATH[rank]}/${segment}/`,
-              null,
-              sort,
-            );
-            track("share_tapped", { type: "taxon_group" });
-            await Share.share(
-              Platform.OS === "ios" ? { url } : { message: url },
-            );
-          }}
+          headerRightEnd={[
+            overflowButton([
+              {
+                label: t("share"),
+                icon: "share-social-outline",
+                onPress: () => {
+                  // Carry the current sort so the shared link reopens in the
+                  // same order (parsed back via matchTaxonPath's `o` in
+                  // linking.ts).
+                  const url = buildShareUrl(
+                    `${SHARE_PATH[rank]}/${segment}/`,
+                    null,
+                    sort,
+                  );
+                  track("share_tapped", { type: "taxon_group" });
+                  void Share.share(
+                    Platform.OS === "ios" ? { url } : { message: url },
+                  );
+                },
+              },
+            ]),
+          ]}
         />
       ),
     });

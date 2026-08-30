@@ -39,7 +39,8 @@ tags:
       - tapOn:
           id: "diary-save-button"
 - extendedWaitUntil:
-    visible: ".*Delete diary.*"
+    visible:
+      id: "diary-edit-button"
     timeout: 8000
 
 # ---- UPDATE, online ----
@@ -59,6 +60,8 @@ tags:
 - assertVisible: ".*Private.*"
 
 # ---- DELETE, online ----
+- tapOn:
+    id: "overflow-button"
 - tapOn:
     id: "diary-delete-button"
 - extendedWaitUntil:

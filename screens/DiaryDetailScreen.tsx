@@ -14,7 +14,6 @@ import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/nativ
 
 import { useTheme, ThemeColors } from "../store/theme-context";
 import { formatDateLong, buildShareUrl, isoToFlagEmoji } from "../util/helpers";
-import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import {
@@ -30,6 +29,7 @@ import PlacePreviewRow from "../components/Place/PlacePreviewRow";
 import Section from "../components/ui/Section";
 import PrivacyToggle from "../components/ui/PrivacyToggle";
 import ListScreen from "./ListScreen";
+import { overflowButton } from "../components/ui/overflowMenu";
 import { fetchDiaryObservations } from "../util/fetches";
 import { StaleTime } from "../constants/staleTime";
 import DiaryObservationCard from "../components/Diary/DiaryObservationCard";
@@ -361,6 +361,33 @@ const DiaryDetailScreen = () => {
     [diary, handleOpenEdit, updateMutation.isPending],
   );
 
+  // Sorting and filtering are the list's own tools and stay icons; editing is
+  // what the owner opens this screen for. Sharing and deleting are neither
+  // frequent nor self-evident as pictograms — they go under the menu.
+  const headerRightEnd = useMemo(
+    () => [
+      overflowButton([
+        {
+          label: t("share"),
+          icon: "share-social-outline",
+          onPress: () => {
+            void handleShare();
+          },
+        },
+        {
+          condition: !!diary?.is_owner,
+          label: t("delete_diary"),
+          icon: "trash-outline",
+          danger: true,
+          opensAnotherSheet: true,
+          testID: "diary-delete-button",
+          onPress: handleDelete,
+        },
+      ]),
+    ],
+    [t, handleShare, handleDelete, diary],
+  );
+
   // TanStack sets isError on *any* failed fetch, background ones included,
   // and does not clear `data` when that happens — so isError alone doesn't
   // mean "nothing to show" (see useDiaryItem's initialData seeding, same
@@ -381,18 +408,6 @@ const DiaryDetailScreen = () => {
 
   if (isLoading || !diary) return <LoadingOverlay />;
 
-  const bottomEl = diary?.is_owner && (
-    <FlatButtonBottom
-      textColor={Colors.error600}
-      onPress={handleDelete}
-      icon="trash-outline"
-      loading={deleteMutation.isPending}
-      testID="diary-delete-button"
-    >
-      {t("delete_diary")}
-    </FlatButtonBottom>
-  );
-
   return (
     <ListScreen
       route={route}
@@ -407,10 +422,8 @@ const DiaryDetailScreen = () => {
       noItems={noItems}
       title={t("diary")}
       headerRightBeginning={headerRightBeginning}
-      handleSharePress={handleShare}
+      headerRightEnd={headerRightEnd}
       listHeader={listHeader}
-      bottomEl={bottomEl}
-      fabBottomOffset={60}
       staleTime={StaleTime.TWO_MINUTES}
     />
   );

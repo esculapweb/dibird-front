@@ -158,6 +158,8 @@ tags:
 
 # ---- DELETE, online ----
 - tapOn:
+    id: "overflow-button"
+- tapOn:
     id: "place-delete-button"
 - extendedWaitUntil:
     visible:

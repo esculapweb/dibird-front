@@ -5,9 +5,8 @@
 # instead of queuing through the mutation-queue-then-sync path). No
 # pending-icon dance either: an online create resolves to synced fast enough
 # that there's no reliable window to assert a pending icon, so this flow
-# treats the immediate presence of "Delete observation" (is_owner-gated, only
-# true for a real persisted record) as proof the save round-tripped the
-# server.
+# treats the immediate presence of the edit button (is_owner-gated, only true
+# for a real persisted record) as proof the save round-tripped the server.
 #
 # Runs on both platforms — this file replaces the iOS-only
 # create-observation.yaml, which had grown into a second copy of the same
@@ -119,9 +118,11 @@ tags:
       - tapOn:
           id: "observation-save-button"
 # A successful save lands on the new observation's detail screen. Asserted on
-# the delete button's label specifically: it only renders when is_owner is
-# true on a real persisted item, confirming the save reached the server.
-- assertVisible: ".*Delete observation.*"
+# the edit button specifically: it only renders when is_owner is true on a
+# real persisted item, confirming the save reached the server. (Deleting moved
+# into the header's "⋯" menu, so its label is no longer on the screen.)
+- assertVisible:
+    id: "observation-edit-button"
 
 # ---- UPDATE, online ----
 - tapOn:
@@ -140,6 +141,8 @@ tags:
 - assertVisible: ".*Private.*"
 
 # ---- DELETE, online ----
+- tapOn:
+    id: "overflow-button"
 - tapOn:
     id: "observation-delete-button"
 - extendedWaitUntil:

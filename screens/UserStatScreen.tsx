@@ -1,8 +1,8 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import { View, Text, StyleSheet, Share, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 
 import ListScreen from "./ListScreen";
 import { fetchStat, fetchUserProfile } from "../util/fetches";
@@ -16,8 +16,12 @@ import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
 import { buildShareUrl } from "../util/helpers";
 import { useOpenSpecies } from "../hooks/useOpenSpecies";
 import { track } from "../services/analytics";
+import { overflowButton } from "../components/ui/overflowMenu";
+import { useModeration } from "../hooks/useModeration";
 import {
+  AppStackNavigationProp,
   AppStackRouteProp,
+  IconButtonConfig,
   emptyPaginatedResponse,
   EmptyStateProps,
   Filters,
@@ -30,8 +34,10 @@ import {
 const UserStatScreen = () => {
   const { t } = useTranslation();
   const openSpecies = useOpenSpecies();
+  const navigation = useNavigation<AppStackNavigationProp>();
   const route = useRoute<AppStackRouteProp<"UserStat">>();
   const { profileId } = route.params;
+  const { report, block } = useModeration();
   const { seenMode, setSeenMode } = useFilters();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -100,6 +106,46 @@ const UserStatScreen = () => {
     track("share_tapped", { type: "user_stat" });
     await Share.share(Platform.OS === "ios" ? { url } : { message: url });
   }, [profileId, currentFilters, currentSort]);
+
+  // Sharing, reporting and blocking all live in the menu: the screen's own
+  // tools are sorting and filtering, and this is the only place in the app
+  // that shows a stranger as a person — which is where Apple's UGC rule
+  // expects both moderation actions to be reachable.
+  const headerRightEnd = useMemo<IconButtonConfig[]>(
+    () => [
+      overflowButton(
+        [
+          {
+            label: t("share"),
+            icon: "share-social-outline",
+            onPress: () => {
+              void handleShare();
+            },
+          },
+          {
+            label: t("report_user"),
+            icon: "flag-outline",
+            opensAnotherSheet: true,
+            testID: "report-user-button",
+            onPress: () => report({ target_profile: profileId }),
+          },
+          {
+            label: t("block_user"),
+            icon: "ban-outline",
+            danger: true,
+            opensAnotherSheet: true,
+            testID: "block-user-button",
+            // Their records leave the feed on the spot; standing on their
+            // statistics afterwards makes no sense.
+            onPress: () =>
+              block(profileId, { onDone: () => navigation.goBack() }),
+          },
+        ],
+        { title: fullName },
+      ),
+    ],
+    [fullName, t, handleShare, report, block, profileId, navigation],
+  );
 
   const customHeaderBadge = useCallback(
     (res: StatPaginatedResponse<SpeciesItem>): number | string | undefined => {
@@ -199,7 +245,7 @@ const UserStatScreen = () => {
         setCurrentFilters(val);
       }}
       onSortChange={async (val) => setCurrentSort(val)}
-      handleSharePress={handleShare}
+      headerRightEnd={headerRightEnd}
       customHeaderBadge={customHeaderBadge}
       onFirstPageData={handleFirstPageData}
       topEl={topEl}

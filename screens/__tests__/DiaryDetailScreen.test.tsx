@@ -36,7 +36,7 @@ jest.mock("../../util/fetches", () => ({
   fetchDiaryObservations: jest.fn(),
 }));
 jest.mock("../../services/bottomSheet", () => ({
-  BottomSheet: { show: jest.fn() },
+  BottomSheet: { show: jest.fn(), showMenu: jest.fn(), hide: jest.fn() },
 }));
 jest.mock("../../hooks/useApiError", () => ({
   useApiError: () => ({ showErrorToast: mockShowErrorToast }),
@@ -92,7 +92,12 @@ import {
 import * as diaryRepository from "../../hooks/repositories/diaryRepository";
 import { runDiarySync } from "../../services/sync/diarySync";
 import { BottomSheet } from "../../services/bottomSheet";
-import { createNavigationMock, createRouteMock } from "../test-utils";
+import {
+  createNavigationMock,
+  createRouteMock,
+  openOverflow,
+  overflowRow,
+} from "../test-utils";
 import DiaryDetailScreen from "../DiaryDetailScreen";
 
 const mockShowErrorToast = jest.fn();
@@ -219,21 +224,33 @@ describe("owner-only actions", () => {
     expect((await headerButton("diary-edit-button")).condition).toBeFalsy();
   });
 
-  it("bottomEl (delete button) only renders for the owner", async () => {
+  it("offers deleting to the owner only", async () => {
     await render(<DiaryDetailScreen />);
-    expect(latestProps().bottomEl).toBeTruthy();
+    expect(
+      overflowRow(
+        openOverflow(latestProps().headerRightEnd, BottomSheet.showMenu as jest.Mock),
+        "delete_diary",
+      ),
+    ).toBeTruthy();
 
     mockDiaryItem({ data: { ...DIARY, is_owner: false } });
     await render(<DiaryDetailScreen />);
-    expect(latestProps().bottomEl).toBeFalsy();
+    expect(() =>
+      overflowRow(
+        openOverflow(latestProps().headerRightEnd, BottomSheet.showMenu as jest.Mock),
+        "delete_diary",
+      ),
+    ).toThrow();
   });
 });
 
 describe("delete", () => {
   it("shows a danger confirm sheet, deleting and going back on confirm", async () => {
     await render(<DiaryDetailScreen />);
-    await render(latestProps().bottomEl);
-    await fireEvent.press(screen.getByText("delete_diary"));
+    overflowRow(
+      openOverflow(latestProps().headerRightEnd, BottomSheet.showMenu as jest.Mock),
+      "delete_diary",
+    ).onPress();
 
     expect(BottomSheet.show).toHaveBeenCalledWith(
       expect.objectContaining({ danger: true, title: "delete_title" }),
@@ -253,7 +270,10 @@ describe("handleShare", () => {
     mockDiaryItem({ data: { ...DIARY, private: true } });
     const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction" } as never);
     await render(<DiaryDetailScreen />);
-    await latestProps().handleSharePress();
+    overflowRow(
+      openOverflow(latestProps().headerRightEnd, (BottomSheet.showMenu as jest.Mock)),
+      "share",
+    ).onPress();
 
     expect(Toast.show).toHaveBeenCalledWith(expect.objectContaining({ text1: "diary_private" }));
     expect(shareSpy).not.toHaveBeenCalled();
@@ -263,7 +283,10 @@ describe("handleShare", () => {
     const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction" } as never);
     Platform.OS = "ios";
     await render(<DiaryDetailScreen />);
-    await latestProps().handleSharePress();
+    overflowRow(
+      openOverflow(latestProps().headerRightEnd, (BottomSheet.showMenu as jest.Mock)),
+      "share",
+    ).onPress();
     expect(shareSpy).toHaveBeenCalledWith({ url: expect.stringContaining("my/diary/1/") });
   });
 });

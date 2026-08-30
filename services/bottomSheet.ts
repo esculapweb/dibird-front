@@ -28,6 +28,10 @@ export interface MenuItem {
   icon?: IconType;
   onPress: () => void;
   danger?: boolean;
+  // Menu rows are the only affordance some actions have left (deleting a
+  // record, reporting content), and Maestro has nothing else to grab onto:
+  // the label is translated, the row has no other identity.
+  testID?: string;
 }
 
 export interface MenuSheetPayload {
