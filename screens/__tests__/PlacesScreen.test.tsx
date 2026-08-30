@@ -184,9 +184,18 @@ describe("map mode", () => {
 });
 
 describe("place sheet", () => {
-  const tapPlace = async (place: Record<string, unknown>) => {
+  const tapPlace = async (
+    place: Record<string, unknown>,
+    mapFilters?: Record<string, unknown>,
+  ) => {
     (loadViewMode as jest.Mock).mockResolvedValue("map");
     await render(<PlacesScreen />);
+
+    if (mapFilters) {
+      await act(async () => {
+        await lastProps().onFiltersChange(mapFilters);
+      });
+    }
 
     const mapElement = lastProps().renderContent([{ id: 1 }], {
       onClear: jest.fn(),
@@ -195,7 +204,7 @@ describe("place sheet", () => {
     };
     mapElement.props.onSelectPlace(place);
 
-    return (BottomSheet.showMenu as jest.Mock).mock.calls[0][0];
+    return (BottomSheet.showMenu as jest.Mock).mock.calls.at(-1)![0];
   };
 
   it("leads with opening the place", async () => {
@@ -254,5 +263,71 @@ describe("place sheet", () => {
     });
 
     expect(items).toHaveLength(1);
+  });
+
+  it("offers the place's species on the statistics screen", async () => {
+    const { items } = await tapPlace({
+      id: 42,
+      name: "Marsh",
+      observation_count: 7,
+      species_count: 3,
+    });
+
+    items[2].onPress();
+    expect(BottomSheet.hide).toHaveBeenCalled();
+    expect(mockNavigation.push).toHaveBeenCalledWith("Stat", {
+      filtersOverride: { place: 42 },
+      seenMode: "seen",
+    });
+  });
+
+  it("carries the map's date filter to both destinations", async () => {
+    const date = { from: "2024-05-01", to: "2024-05-31" };
+    const { items } = await tapPlace(
+      { id: 42, name: "Marsh", observation_count: 7, species_count: 3 },
+      // favourite is a places-only filter: neither destination can show or
+      // clear it, so it must not travel with the tap.
+      { date, favourite: true, territory: 7 },
+    );
+
+    items[1].onPress();
+    expect(mockNavigation.navigate).toHaveBeenCalledWith("Observations", {
+      filtersOverride: { date, place: 42 },
+    });
+
+    items[2].onPress();
+    expect(mockNavigation.push).toHaveBeenCalledWith("Stat", {
+      filtersOverride: { date, place: 42 },
+      seenMode: "seen",
+    });
+  });
+
+  it("looks the place's only observation up under that same date", async () => {
+    // Without the date the lookup can resolve a different observation than the
+    // one the map counted.
+    const date = { from: "2024-05-01", to: "2024-05-31" };
+    (fetchOnlyObservationAtPlace as jest.Mock).mockResolvedValue(null);
+    const { items } = await tapPlace(
+      { id: 42, name: "Marsh", observation_count: 1 },
+      { date },
+    );
+
+    await act(async () => {
+      await items[1].onPress();
+    });
+
+    expect(fetchOnlyObservationAtPlace).toHaveBeenCalledWith({ date }, 42);
+  });
+
+  it("does not offer species for a place that has none", async () => {
+    // Same dead end as the observations link, on the statistics screen.
+    const { items } = await tapPlace({
+      id: 42,
+      name: "Marsh",
+      observation_count: 7,
+      species_count: 0,
+    });
+
+    expect(items).toHaveLength(2);
   });
 });

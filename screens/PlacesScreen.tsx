@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigation, useRoute } from "@react-navigation/native";
 
@@ -23,6 +23,7 @@ import {
   AllowedFilterKey,
   AppStackNavigationProp,
   AppStackRouteProp,
+  Filters,
   PlaceItem,
 } from "../types";
 
@@ -50,13 +51,26 @@ const PlacesScreen = () => {
     options: viewModeOptions,
   } = useMapViewMode(route.name);
 
+  // Lifted out of the map's ListScreen so the sheet can hand the date the user
+  // is looking at to the screen it opens. Only the map instance reports: the
+  // sheet exists nowhere else.
+  const [mapFilters, setMapFilters] = useState<Filters | null>({});
+
   const handleLocationUnavailable = useLocationUnavailable();
 
   const handleAdd = () => navigation.navigate("PlaceEditor");
 
+  // Only the date travels with the tap: the place itself already pins the
+  // territory, and "favourite" is a places-only filter neither destination
+  // knows how to show or clear.
+  const carriedFilters: Filters = useMemo(
+    () => (mapFilters?.date ? { date: mapFilters.date } : {}),
+    [mapFilters?.date],
+  );
+
   // Opening the place is the point of this screen, so it leads. Its
-  // observations are offered second, and only when there are any — the
-  // Observations screen filtered to a place with nothing in it is a dead end.
+  // observations and species follow, each only when there are any — a list or
+  // a stat screen filtered to a place with nothing in it is a dead end.
   const handleSelectPlace = useCallback(
     (place: PlaceFeatureProperties) => {
       BottomSheet.showMenu({
@@ -83,7 +97,7 @@ const PlacesScreen = () => {
                     // observation is opened rather than listed.
                     if (place.observation_count === 1) {
                       const observation = await fetchOnlyObservationAtPlace(
-                        {},
+                        carriedFilters,
                         place.id,
                       );
                       if (observation) {
@@ -95,7 +109,26 @@ const PlacesScreen = () => {
                       }
                     }
                     navigation.navigate("Observations", {
-                      filtersOverride: { place: place.id },
+                      filtersOverride: { ...carriedFilters, place: place.id },
+                    });
+                  },
+                },
+              ]
+            : []),
+          ...(place.species_count
+            ? [
+                {
+                  label: t("map_show_place_species", {
+                    count: place.species_count,
+                  }),
+                  icon: "stats-chart-outline" as const,
+                  onPress: () => {
+                    BottomSheet.hide();
+                    // Same destination as PlaceDetailScreen's species card:
+                    // the statistics screen narrowed to this place.
+                    navigation.push("Stat", {
+                      filtersOverride: { ...carriedFilters, place: place.id },
+                      seenMode: "seen",
                     });
                   },
                 },
@@ -104,7 +137,7 @@ const PlacesScreen = () => {
         ],
       });
     },
-    [navigation, t],
+    [navigation, carriedFilters, t],
   );
 
   const noItems = {
@@ -150,6 +183,7 @@ const PlacesScreen = () => {
         topEl={viewSwitch}
         showSearch
         noItems={noItems}
+        onFiltersChange={async (val) => setMapFilters(val)}
         // Never called — renderContent takes over from the list entirely.
         renderItem={() => null}
         renderContent={(places, empty) =>

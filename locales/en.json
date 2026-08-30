@@ -306,6 +306,8 @@
   "map_show_place_diaries_other": "Show {{count}} diaries",
   "map_show_place_observations_one": "Show {{count}} observation",
   "map_show_place_observations_other": "Show {{count}} observations",
+  "map_show_place_species_one": "Show {{count}} species",
+  "map_show_place_species_other": "Show {{count}} species",
   "map_unavailable_offline": "Map unavailable offline",
   "mark_all_read": "Mark all read",
   "mass": "Body mass",
