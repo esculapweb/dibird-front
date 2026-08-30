@@ -136,12 +136,20 @@ const PlaceDetailScreen = () => {
       confirmText: t("delete"),
       cancelText: t("cancel"),
       danger: true,
+      // See ObservationDetailScreen: the promise is what keeps the confirm
+      // sheet showing progress until the delete settles.
       onConfirm: () =>
-        deleteMutation.mutate(placeId, {
-          onSuccess: () => navigation.goBack(),
-          onError: (e) => {
-            showErrorToast(e, `PlaceDetailScreen:deletePlace:${placeId}`);
-          },
+        new Promise<void>((resolve) => {
+          deleteMutation.mutate(placeId, {
+            onSuccess: () => {
+              navigation.goBack();
+              resolve();
+            },
+            onError: (e) => {
+              showErrorToast(e, `PlaceDetailScreen:deletePlace:${placeId}`);
+              resolve();
+            },
+          });
         }),
     });
   }, [place, placeId, deleteMutation, navigation]);

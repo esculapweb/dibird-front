@@ -92,13 +92,15 @@ afterEach(() => {
   Platform.OS = originalOS;
 });
 
-it("passes fetchRating, getItemId, and fabIcon through to ListScreen", async () => {
+it("passes fetchRating and getItemId through to ListScreen", async () => {
   await render(<RatingScreen />);
   const props = latestProps();
   expect(props.fetchFunction).toBe(fetchRating);
   expect(props.title).toBe("rating");
-  expect(props.fabIcon).toBe("people-outline");
   expect(props.getItemId({ profile_id: 42 })).toBe(42);
+  // No fabIcon: ListScreen draws the FAB only for `onAdd`, which this screen
+  // does not pass — comparing happens through the button at the bottom.
+  expect(props.fabIcon).toBeUndefined();
 });
 
 it("renderItem wires isSelected/onToggle/profile from RatingScreen's own state", async () => {

@@ -130,14 +130,26 @@ const ObservationDetailScreen = () => {
       confirmText: t("delete"),
       cancelText: t("cancel"),
       danger: true,
+      // Resolved rather than fired and forgotten: the sheet keeps its spinner
+      // until the mutation settles, which is the progress the red button at
+      // the bottom of the screen used to show before deleting moved into the
+      // header menu. Resolving on failure too — the error is already reported
+      // by the toast below, and the sheet has nothing left to wait for.
       onConfirm: () =>
-        deleteMutation.mutate(observationId, {
-          onSuccess: () => navigation.goBack(),
-          onError: (e) =>
-            showErrorToast(
-              e,
-              `ObservationDetailScreen:deleteObservation:${observationId}`,
-            ),
+        new Promise<void>((resolve) => {
+          deleteMutation.mutate(observationId, {
+            onSuccess: () => {
+              navigation.goBack();
+              resolve();
+            },
+            onError: (e) => {
+              showErrorToast(
+                e,
+                `ObservationDetailScreen:deleteObservation:${observationId}`,
+              );
+              resolve();
+            },
+          });
         }),
     });
   }, [observation, observationId]);

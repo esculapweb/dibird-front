@@ -79,6 +79,7 @@ const PlacesScreen = () => {
           {
             label: t("map_open_place"),
             icon: "location-outline",
+            testID: "map-open-place-button",
             onPress: () => {
               BottomSheet.hide();
               navigation.navigate("PlaceDetail", { placeId: place.id });
@@ -91,6 +92,7 @@ const PlacesScreen = () => {
                     count: place.observation_count,
                   }),
                   icon: "binoculars-outline" as const,
+                  testID: "map-place-observations-button",
                   onPress: async () => {
                     BottomSheet.hide();
                     // Same shortcut as the observations map: a single
@@ -122,6 +124,7 @@ const PlacesScreen = () => {
                     count: place.species_count,
                   }),
                   icon: "stats-chart-outline" as const,
+                  testID: "map-place-species-button",
                   onPress: () => {
                     BottomSheet.hide();
                     // Same destination as PlaceDetailScreen's species card:

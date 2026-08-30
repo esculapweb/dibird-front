@@ -258,7 +258,8 @@ const StatScreen = () => {
       const seenItem = item.seen
         ? {
             label: t("view_species_observations"),
-            icon: "binoculars" as const,
+            icon: "binoculars-outline" as const,
+            testID: "stat-view-observations-button",
             onPress: () => {
               // Close first, navigate second: navigating can take the screen
               // that owns the sheet out of the stack, and the sheet's own route
@@ -271,6 +272,7 @@ const StatScreen = () => {
         : {
             label: t("add_observation"),
             icon: "add-circle-outline" as const,
+            testID: "stat-add-observation-button",
             onPress: () => {
               BottomSheet.hide();
               navigation.navigate("ObservationEditor", {
@@ -288,6 +290,7 @@ const StatScreen = () => {
           {
             label: t("species_details"),
             icon: "information-circle-outline" as const,
+            testID: "stat-species-details-button",
             onPress: () => {
               BottomSheet.hide();
               openSpecies(item.segment, "stat");

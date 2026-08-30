@@ -115,6 +115,7 @@ const ObservationsScreen = () => {
               count: place.observation_count,
             }),
             icon: "binoculars-outline",
+            testID: "map-place-observations-button",
             onPress: async () => {
               BottomSheet.hide();
               // A list of one row is a stop with nothing to choose: go where
@@ -142,6 +143,7 @@ const ObservationsScreen = () => {
           {
             label: t("map_open_place"),
             icon: "location-outline",
+            testID: "map-open-place-button",
             onPress: () => {
               BottomSheet.hide();
               navigation.navigate("PlaceDetail", { placeId: place.id });

@@ -24,7 +24,7 @@ jest.mock("../../../hooks/useApiError", () => ({
   useApiError: () => ({ showErrorToast: mockShowErrorToast }),
 }));
 jest.mock("../../../services/bottomSheet", () => ({
-  BottomSheet: { show: jest.fn(), showMenu: jest.fn() },
+  BottomSheet: { show: jest.fn(), showMenu: jest.fn(), hide: jest.fn() },
 }));
 jest.mock("../../../hooks/repositories/profileRepository", () => ({
   queuePendingAvatar: jest.fn(),
@@ -149,6 +149,31 @@ describe("tap behavior", () => {
         ],
       }),
     );
+  });
+
+  it("closes the menu before opening the system picker", async () => {
+    mockProfile({ avatar_thumbnail: "avatars/1.jpg" });
+    await render(<Avatar />);
+    await fireEvent.press(screen.getByTestId("icon-pencil"));
+
+    const items = (BottomSheet.showMenu as jest.Mock).mock.calls[0][0].items;
+    await act(async () => items[0].onPress());
+
+    // Regression: a menu row does not dismiss the sheet by itself, so without
+    // this the picker opened over a menu that was still there afterwards.
+    expect(BottomSheet.hide).toHaveBeenCalledTimes(1);
+    expect(ImagePicker.getMediaLibraryPermissionsAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the sheet for remove-photo, which replaces it with a confirmation", async () => {
+    mockProfile({ avatar_thumbnail: "avatars/1.jpg" });
+    await render(<Avatar />);
+    await fireEvent.press(screen.getByTestId("icon-pencil"));
+
+    const items = (BottomSheet.showMenu as jest.Mock).mock.calls[0][0].items;
+    await act(async () => items[1].onPress());
+
+    expect(BottomSheet.hide).not.toHaveBeenCalled();
   });
 
   it("wires the remove-photo menu item to a confirm sheet that calls removeAvatar", async () => {

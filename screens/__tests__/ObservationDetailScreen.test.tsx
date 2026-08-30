@@ -342,6 +342,38 @@ describe("delete", () => {
     expect(mockDeleteMutate).toHaveBeenCalledWith(1, expect.anything());
     expect(mockNavigation.goBack).toHaveBeenCalledTimes(1);
   });
+
+  it("keeps the confirm sheet waiting until the delete settles", async () => {
+    await render(<ObservationDetailScreen />);
+    (await menuRow("delete_observation")).onPress();
+    const { onConfirm } = (BottomSheet.show as jest.Mock).mock.calls[0][0];
+
+    let settled = false;
+    const pending = onConfirm().then(() => {
+      settled = true;
+    });
+
+    // The sheet shows its spinner for as long as this promise is unresolved —
+    // the progress the red button at the bottom of the screen used to carry.
+    await Promise.resolve();
+    expect(settled).toBe(false);
+
+    mockDeleteMutate.mock.calls[0][1].onSuccess();
+    await pending;
+    expect(settled).toBe(true);
+  });
+
+  it("stops waiting when the delete fails, after reporting it", async () => {
+    await render(<ObservationDetailScreen />);
+    (await menuRow("delete_observation")).onPress();
+    const { onConfirm } = (BottomSheet.show as jest.Mock).mock.calls[0][0];
+
+    const pending = onConfirm();
+    mockDeleteMutate.mock.calls[0][1].onError({ message: "boom" });
+
+    await expect(pending).resolves.toBeUndefined();
+    expect(mockShowErrorToast).toHaveBeenCalled();
+  });
 });
 
 describe("handleShare", () => {

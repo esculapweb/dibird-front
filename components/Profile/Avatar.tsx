@@ -63,13 +63,22 @@ const Avatar = () => {
       items: [
         {
           label: t("change_photo"),
-          icon: "pencil" as const,
-          onPress: pickAvatar,
+          icon: "create-outline" as const,
+          testID: "avatar-change-button",
+          // A menu row does not dismiss the sheet by itself: without this the
+          // system picker opens over a menu that is still there when it
+          // closes. Its neighbour below deliberately does not hide — that one
+          // replaces the menu with a confirmation in the same sheet.
+          onPress: () => {
+            BottomSheet.hide();
+            pickAvatar();
+          },
         },
         {
           label: t("remove_photo"),
-          icon: "trash" as const,
+          icon: "trash-outline" as const,
           danger: true,
+          testID: "avatar-remove-button",
           onPress: () =>
             BottomSheet.show({
               title: t("remove_title"),

@@ -325,11 +325,20 @@ const DiaryDetailScreen = () => {
       confirmText: t("delete"),
       cancelText: t("cancel"),
       danger: true,
+      // See ObservationDetailScreen: the promise is what keeps the confirm
+      // sheet showing progress until the delete settles.
       onConfirm: () =>
-        deleteMutation.mutate(diaryId, {
-          onSuccess: () => navigation.goBack(),
-          onError: (e) =>
-            showErrorToast(e, `DiaryDetailScreen:deleteDiary:${diaryId}`),
+        new Promise<void>((resolve) => {
+          deleteMutation.mutate(diaryId, {
+            onSuccess: () => {
+              navigation.goBack();
+              resolve();
+            },
+            onError: (e) => {
+              showErrorToast(e, `DiaryDetailScreen:deleteDiary:${diaryId}`);
+              resolve();
+            },
+          });
         }),
     });
   }, [diary, diaryId]);

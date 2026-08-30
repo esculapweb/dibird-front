@@ -131,7 +131,6 @@ const RatingScreen = () => {
       getItemId={(item: RatingItem) => item.profile_id}
       noItems={noItems}
       title={t("rating")}
-      fabIcon="people-outline"
       headerRightEnd={headerRightEnd}
       bottomEl={bottomEl}
     />

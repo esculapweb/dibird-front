@@ -1,3 +1,10 @@
+const mockShowMenu = jest.fn();
+jest.mock("../../services/bottomSheet", () => ({
+  BottomSheet: {
+    showMenu: (payload: unknown) => mockShowMenu(payload),
+    hide: jest.fn(),
+  },
+}));
 jest.mock("../../store/theme-context", () => ({
   useTheme: () => require("../mockTheme").mockUseTheme(),
 }));
@@ -40,14 +47,18 @@ jest.mock("../../util/fetches", () => ({
 jest.mock("expo-updates", () => ({ reloadAsync: jest.fn() }));
 jest.mock("react-native-toast-message", () => ({ show: jest.fn() }));
 
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import * as Updates from "expo-updates";
 import Toast from "react-native-toast-message";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { markNotificationsRead } from "../../util/fetches";
 import { UNREAD_COUNT_KEY } from "../../hooks/useUnreadCount";
 import { AppNotification } from "../../types";
-import { createNavigationMock } from "../test-utils";
+import {
+  createNavigationMock,
+  openOverflow,
+  overflowRow,
+} from "../test-utils";
 import NotificationsScreen from "../NotificationsScreen";
 
 const mockNavigation = createNavigationMock();
@@ -110,12 +121,19 @@ it("shows the empty state when there are no notifications", async () => {
 it("mark-all-read posts, then invalidates both the notifications and unread-count queries", async () => {
   await render(<NotificationsScreen />);
   const headerRight = (mockNavigation.setOptions as jest.Mock).mock.calls[0][0].headerRight;
-  await render(headerRight());
 
-  await fireEvent.press(screen.getByText("mark_all_read"));
+  // A long label that used to crowd the title — it lives in the "⋯" menu now.
+  overflowRow(
+    openOverflow(headerRight().props.headerRightEnd, mockShowMenu),
+    "mark_all_read",
+  ).onPress();
 
   expect(markNotificationsRead).toHaveBeenCalledWith();
-  expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ["notifications"] });
+  // The invalidations sit behind an await inside the handler, and a menu row
+  // is pressed synchronously — unlike the tap on a rendered button before.
+  await waitFor(() =>
+    expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ["notifications"] }),
+  );
   expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: UNREAD_COUNT_KEY });
 });
 
