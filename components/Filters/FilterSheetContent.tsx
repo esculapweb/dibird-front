@@ -96,6 +96,12 @@ const FilterSheetContent = ({
     { label: t("private_only"), value: true },
   ];
 
+  const photoOptions: { label: string; value: boolean | null }[] = [
+    { label: t("all"), value: null },
+    { label: t("with_photo_only"), value: true },
+    { label: t("without_photo_only"), value: false },
+  ];
+
   const sourceOptions: { label: string; value: ObservationSource | null }[] = [
     { label: t("all"), value: null },
     { label: t("source_dibird"), value: "dibird" },
@@ -133,6 +139,7 @@ const FilterSheetContent = ({
     filters?.unsynced ?? null,
   );
   const [privateValue, setPrivateValue] = useState(filters?.private ?? null);
+  const [hasPhotoValue, setHasPhotoValue] = useState(filters?.has_photo ?? null);
   const [sourceValue, setSourceValue] = useState<ObservationSource | null>(
     filters?.source ?? null,
   );
@@ -158,6 +165,14 @@ const FilterSheetContent = ({
     if (fix) setRadiusValue(value);
     else handleLocationUnavailable();
   };
+
+  // The three lists that offer it answer "unsynced" from this device's local
+  // mutation queue alone and send nothing to the server, so every other filter
+  // is ignored while it is on (see fetchObservations/fetchDiaries/fetchPlaces).
+  // The controls keep their values — they are what the list goes back to once
+  // this is switched off — but they are disabled to say they narrow nothing
+  // right now, and FilterChips hides their chips for the same reason.
+  const unsyncedOnly = allowed.includes("unsynced") && unsyncedValue === true;
 
   const effectiveTerritory: number | null =
     (allowed.includes("territory") ? territoryValue : extraTerritory) ?? null;
@@ -243,6 +258,7 @@ const FilterSheetContent = ({
     if (allowed.includes("favourite")) res.favourite = favouriteValue;
     if (allowed.includes("unsynced")) res.unsynced = unsyncedValue;
     if (allowed.includes("private")) res.private = privateValue;
+    if (allowed.includes("has_photo")) res.has_photo = hasPhotoValue;
     if (allowed.includes("source")) res.source = sourceValue;
     if (allowed.includes("radius")) res.radius = radiusValue;
     return res;
@@ -296,6 +312,8 @@ const FilterSheetContent = ({
             sort={countriesSort}
             onSortChange={onCountriesSortChange}
             allowReset
+            disabled={unsyncedOnly}
+            disabledMessage={t("unsynced_ignores_other_filters")}
           />
         )}
         {allowed.includes("place") && (
@@ -309,8 +327,12 @@ const FilterSheetContent = ({
             sort={placesSort}
             onSortChange={onPlacesSortChange}
             allowReset
-            disabled={!effectiveTerritory}
-            disabledMessage={t("select_country_first")}
+            disabled={unsyncedOnly || !effectiveTerritory}
+            disabledMessage={
+              unsyncedOnly
+                ? t("unsynced_ignores_other_filters")
+                : t("select_country_first")
+            }
             locationAvailable={locationAvailable}
             onLocationUnavailable={handleLocationUnavailable}
             useDefault
@@ -327,8 +349,12 @@ const FilterSheetContent = ({
             sort={speciesSort}
             onSortChange={onSpeciesSortChange}
             allowReset
-            disabled={!effectiveTerritory}
-            disabledMessage={t("select_country_first")}
+            disabled={unsyncedOnly || !effectiveTerritory}
+            disabledMessage={
+              unsyncedOnly
+                ? t("unsynced_ignores_other_filters")
+                : t("select_country_first")
+            }
             renderOption={({ item, selected, onSelect, onClose }) => (
               <SpeciesOptionRow
                 item={item}
@@ -348,6 +374,7 @@ const FilterSheetContent = ({
               onChange={(value) => setFavouriteValue(value as boolean | null)}
               direction="column"
               options={favouriteOptions}
+              disabled={unsyncedOnly}
             />
           </View>
         )}
@@ -361,6 +388,11 @@ const FilterSheetContent = ({
               options={unsyncedOptions}
               testID="unsynced-filter"
             />
+            {unsyncedOnly && (
+              <Text style={styles.hint} testID="unsynced-only-hint">
+                {t("unsynced_ignores_other_filters")}
+              </Text>
+            )}
           </View>
         )}
         {allowed.includes("private") && (
@@ -372,6 +404,20 @@ const FilterSheetContent = ({
               direction="column"
               options={privateOptions}
               testID="private-filter"
+              disabled={unsyncedOnly}
+            />
+          </View>
+        )}
+        {allowed.includes("has_photo") && (
+          <View style={{ marginTop: 12 }}>
+            <RadioGroup
+              label={`${t("section_photos")}:`}
+              value={hasPhotoValue}
+              onChange={(value) => setHasPhotoValue(value as boolean | null)}
+              direction="column"
+              options={photoOptions}
+              testID="has-photo-filter"
+              disabled={unsyncedOnly}
             />
           </View>
         )}
@@ -386,6 +432,7 @@ const FilterSheetContent = ({
               direction="column"
               options={sourceOptions}
               testID="source-filter"
+              disabled={unsyncedOnly}
             />
           </View>
         )}
@@ -397,10 +444,19 @@ const FilterSheetContent = ({
             setValue={handleRadiusChange}
             query={{ data: radiusOptions }}
             allowReset
+            disabled={unsyncedOnly}
+            disabledMessage={t("unsynced_ignores_other_filters")}
           />
         )}
         {allowed.includes("date") && (
-          <DateRangeFilter value={dateFilter} setDateFilter={setDateFilter} />
+          // DateRangeFilter has no disabled state of its own — it is a group of
+          // inputs rather than one control — so the wrapper swallows the taps.
+          <View
+            pointerEvents={unsyncedOnly ? "none" : "auto"}
+            style={unsyncedOnly && styles.disabledBlock}
+          >
+            <DateRangeFilter value={dateFilter} setDateFilter={setDateFilter} />
+          </View>
         )}
       </BottomSheetScrollView>
 
@@ -426,6 +482,15 @@ const stylesFn = (Colors: ThemeColors, insets: EdgeInsets) =>
       paddingHorizontal: 16,
       paddingTop: 56,
       paddingBottom: 96,
+    },
+    hint: {
+      fontSize: 12,
+      lineHeight: 16,
+      color: Colors.textSecondary,
+      marginTop: 4,
+    },
+    disabledBlock: {
+      opacity: 0.4,
     },
     footer: {
       padding: 12,

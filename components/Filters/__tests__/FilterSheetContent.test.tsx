@@ -104,13 +104,29 @@ const dateRangeProps = () => mockDateRangeFilterCapture.mock.calls.at(-1)![0] as
 // so it is picked out by its title instead.
 const radiusDropdownProps = () =>
   mockDropdownCapture.mock.calls
-    .map((c) => c[0] as { title?: string; value: number | null; setValue: (v: number | null) => void })
+    .map(
+      (c) =>
+        c[0] as {
+          title?: string;
+          value: number | null;
+          setValue: (v: number | null) => void;
+          disabled?: boolean;
+        },
+    )
     .filter((p) => p.title === "radius")
     .at(-1)!;
 
 const radioGroupPropsByTestID = (testID: string) =>
   mockRadioGroupCapture.mock.calls
-    .map((c) => c[0] as { testID?: string; value: unknown; onChange: (v: unknown) => void })
+    .map(
+      (c) =>
+        c[0] as {
+          testID?: string;
+          value: unknown;
+          onChange: (v: unknown) => void;
+          disabled?: boolean;
+        },
+    )
     .filter((p) => p.testID === testID)
     .at(-1)!;
 
@@ -322,6 +338,65 @@ describe("applyHandler", () => {
   });
 });
 
+describe("unsynced", () => {
+  const ALLOWED: AllowedFilterKey[] = [
+    "territory",
+    "place",
+    "species",
+    "unsynced",
+    "private",
+    "has_photo",
+    "source",
+    "radius",
+  ];
+
+  it("greys out every other control while it is on, and explains why", async () => {
+    await render(
+      <FilterSheetContent
+        {...baseProps({
+          allowed: ALLOWED,
+          filters: { territory: 5, unsynced: true } as Filters,
+        })}
+      />,
+    );
+
+    expect(screen.getByTestId("unsynced-only-hint")).toBeOnTheScreen();
+    expect(radioGroupPropsByTestID("unsynced-filter").disabled).toBeFalsy();
+    expect(radioGroupPropsByTestID("private-filter").disabled).toBe(true);
+    expect(radioGroupPropsByTestID("has-photo-filter").disabled).toBe(true);
+    expect(radioGroupPropsByTestID("source-filter").disabled).toBe(true);
+    expect(radiusDropdownProps().disabled).toBe(true);
+  });
+
+  it("keeps the other filters intact — they are what the list returns to", async () => {
+    await render(
+      <FilterSheetContent
+        {...baseProps({
+          allowed: ALLOWED,
+          filters: { territory: 5, private: true, unsynced: true } as Filters,
+        })}
+      />,
+    );
+    await fireEvent.press(screen.getByText("apply"));
+
+    expect(mockSetFilters).toHaveBeenCalledWith(
+      expect.objectContaining({ territory: 5, private: true, unsynced: true }),
+    );
+  });
+
+  it("leaves everything enabled when it is off", async () => {
+    await render(
+      <FilterSheetContent
+        {...baseProps({ allowed: ALLOWED, filters: { territory: 5 } as Filters })}
+      />,
+    );
+
+    expect(screen.queryByTestId("unsynced-only-hint")).not.toBeOnTheScreen();
+    expect(radioGroupPropsByTestID("private-filter").disabled).toBeFalsy();
+    expect(radiusDropdownProps().disabled).toBeFalsy();
+  });
+});
+
 describe("privacy / source / radius", () => {
   it("seeds and applies the privacy and source values", async () => {
     await render(
@@ -340,6 +415,26 @@ describe("privacy / source / radius", () => {
     await fireEvent.press(screen.getByText("apply"));
 
     expect(mockSetFilters).toHaveBeenCalledWith({ private: true, source: "dibird" });
+  });
+
+  it("seeds and applies the photo filter, keeping `false` as a choice", async () => {
+    await render(
+      <FilterSheetContent
+        {...baseProps({
+          allowed: ["has_photo"] as AllowedFilterKey[],
+          filters: { has_photo: true } as Filters,
+        })}
+      />,
+    );
+
+    expect(radioGroupPropsByTestID("has-photo-filter").value).toBe(true);
+
+    // "without photo" is a filter, not an absence of one — it has to survive
+    // the apply the same way `private: false` does.
+    await act(async () => radioGroupPropsByTestID("has-photo-filter").onChange(false));
+    await fireEvent.press(screen.getByText("apply"));
+
+    expect(mockSetFilters).toHaveBeenCalledWith({ has_photo: false });
   });
 
   it("takes a radius as soon as there is a fix", async () => {

@@ -99,6 +99,7 @@ it("passes fetchCommunityObservations, title/errorTitle and allowedFilters throu
     "date",
     "species",
     "source",
+    "has_photo",
     "radius",
   ]);
 });

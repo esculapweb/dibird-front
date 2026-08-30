@@ -267,7 +267,8 @@ export type AllowedFilterKey =
   | "unsynced"
   | "private"
   | "radius"
-  | "source";
+  | "source"
+  | "has_photo";
 
 export interface Filters {
   date?: DateFilter | null;
@@ -309,6 +310,11 @@ export interface Filters {
   // Species rare for the country the observation was made in — the community
   // feed only (see ObservationFilterSet.filter_rare on the backend).
   rare?: boolean | null;
+  // Observations that carry photos (true) or that carry none (false); a
+  // missing value means the list isn't filtered by photos at all. Server-side
+  // on both the own list and the community feed (see
+  // ObservationFilterSet.filter_has_photo on the backend).
+  has_photo?: boolean | null;
 }
 
 export type AllFiltersKey = keyof Filters;

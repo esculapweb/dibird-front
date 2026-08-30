@@ -24,7 +24,10 @@ const parseString = (v: string | null): string | undefined => v || undefined;
 // than "".
 //
 // `private` is meaningful only on the two own lists — privacy exists where the
-// records are yours (util/parseDeepLinkParams.ts).
+// records are yours (util/parseDeepLinkParams.ts). `has_photo` reaches the web
+// list as well: myweb forwards the whole query string to the same
+// ObservationFilterSet (MyFilterView.get_params), so a shared link narrows
+// both sides.
 const withFilters = (path: string) => ({
   path,
   parse: {
@@ -37,6 +40,7 @@ const withFilters = (path: string) => ({
     date_time_min: parseString,
     date_time_max: parseString,
     private: parseString,
+    has_photo: parseString,
     source: parseString,
     o: parseString,
   },

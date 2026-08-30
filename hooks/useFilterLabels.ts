@@ -83,6 +83,9 @@ export const useFilterLabels = (
       case "private":
         return [t("privacy"), value ? t("private") : t("public")];
 
+      case "has_photo":
+        return [t("section_photos"), value ? t("yes") : t("no")];
+
       case "source":
         return [
           t("source"),

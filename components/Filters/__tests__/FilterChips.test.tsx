@@ -90,6 +90,57 @@ it("calls onRemove with the filter key when a chip's close icon is pressed", asy
   expect(mockOnRemove).toHaveBeenCalledWith("territory");
 });
 
+describe("unsynced", () => {
+  const WITH_UNSYNCED: AllowedFilterKey[] = [...ALL_ALLOWED, "unsynced"];
+
+  it("shows only its own chip, since the rest narrow nothing while it is on", async () => {
+    await render(
+      <FilterChips
+        filters={{ territory: 5, favourite: true, unsynced: true }}
+        onRemove={mockOnRemove}
+        hints={{}}
+        allowed={WITH_UNSYNCED}
+      />,
+    );
+
+    expect(screen.getByText("unsynced:", { exact: false })).toBeOnTheScreen();
+    expect(
+      screen.queryByText("territory:", { exact: false }),
+    ).not.toBeOnTheScreen();
+    expect(
+      screen.queryByText("favourite:", { exact: false }),
+    ).not.toBeOnTheScreen();
+  });
+
+  it("brings the other chips back once it is off", async () => {
+    await render(
+      <FilterChips
+        filters={{ territory: 5, unsynced: null }}
+        onRemove={mockOnRemove}
+        hints={{}}
+        allowed={WITH_UNSYNCED}
+      />,
+    );
+
+    expect(screen.getByText("territory:", { exact: false })).toBeOnTheScreen();
+  });
+
+  it("leaves a screen that does not offer the filter with all of its chips", async () => {
+    // The map has no "unsynced" of its own; a stray value must not blank its
+    // chip row.
+    await render(
+      <FilterChips
+        filters={{ territory: 5, unsynced: true }}
+        onRemove={mockOnRemove}
+        hints={{}}
+        allowed={ALL_ALLOWED}
+      />,
+    );
+
+    expect(screen.getByText("territory:", { exact: false })).toBeOnTheScreen();
+  });
+});
+
 describe("effectiveTerritory resolution", () => {
   it("uses filters.territory when present", async () => {
     await render(

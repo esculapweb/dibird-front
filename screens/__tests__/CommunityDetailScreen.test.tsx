@@ -66,6 +66,17 @@ jest.mock("../../components/Map/MapL", () => {
     },
   };
 });
+const mockPhotosCapture = jest.fn();
+jest.mock("../../components/Observation/ObservationPhotos", () => {
+  const { View } = require("react-native");
+  return {
+    __esModule: true,
+    default: (props: Record<string, unknown>) => {
+      mockPhotosCapture(props);
+      return <View testID="observation-photos" />;
+    },
+  };
+});
 jest.mock("../../components/ui/IconsHeader", () => {
   const { TouchableOpacity, Text } = require("react-native");
   return {
@@ -215,6 +226,42 @@ it("'i saw this too' navigates to a pre-filled ObservationEditor", async () => {
   });
 });
 
+describe("own record", () => {
+  it("replaces itself with the own card instead of rendering a stranger's one", async () => {
+    mockItem({ data: { ...OBSERVATION, is_owner: true } });
+    await render(<CommunityDetailScreen />);
+
+    // Reachable only through a shared link: the own observation's share button
+    // builds a community URL, and the feed's retrieve serves own records too.
+    expect(mockNavigation.replace).toHaveBeenCalledWith("ObservationDetail", {
+      observationId: 1,
+    });
+    expect(screen.getByTestId("loading-overlay")).toBeOnTheScreen();
+    expect(screen.queryByText("Blackbird")).not.toBeOnTheScreen();
+  });
+
+  it("leaves someone else's record on this screen", async () => {
+    await render(<CommunityDetailScreen />);
+
+    expect(mockNavigation.replace).not.toHaveBeenCalled();
+    expect(screen.getByText("Blackbird")).toBeOnTheScreen();
+  });
+});
+
+describe("photos", () => {
+  it("shows another user's photos, and nothing at all without them", async () => {
+    await render(<CommunityDetailScreen />);
+    expect(screen.queryByTestId("observation-photos")).not.toBeOnTheScreen();
+
+    const photos = [{ id: 1, image: "a.jpg", thumbnail: "a-thumb.jpg" }];
+    mockItem({ data: { ...OBSERVATION, photos } });
+    await render(<CommunityDetailScreen />);
+
+    expect(screen.getByTestId("observation-photos")).toBeOnTheScreen();
+    expect(mockPhotosCapture).toHaveBeenCalledWith({ photos });
+  });
+});
+
 describe("author row", () => {
   it("navigates to the author's stats unless their profile is private", async () => {
     await render(<CommunityDetailScreen />);
@@ -322,10 +369,7 @@ describe("place name", () => {
     expect(screen.queryByText("City Park")).not.toBeOnTheScreen();
   });
 
-  it("shows the real place name to the owner", async () => {
-    mockItem({ data: { ...OBSERVATION, is_owner: true, location_private: true } });
-    await render(<CommunityDetailScreen />);
-    expect(screen.getByText("City Park")).toBeOnTheScreen();
-    expect(screen.queryByText("approximate_area")).not.toBeOnTheScreen();
-  });
+  // The owner's own case is gone from this screen: such a record is replaced
+  // with ObservationDetail (see "own record" above), which has the exact place
+  // of its own.
 });

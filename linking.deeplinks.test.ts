@@ -120,6 +120,10 @@ const SUPPORTED: Array<{ path: string; authed?: boolean; screen: string }> = [
     path: "my/observation/?private=true&o=-date_time",
     screen: "Observations",
   },
+  {
+    path: "my/observation/?has_photo=true",
+    screen: "Observations",
+  },
 
   // Community observations
   { path: "my/community/328637/", screen: "CommunityDetail" },
@@ -381,6 +385,12 @@ describe("deep links from the QA page resolve to the right screen", () => {
   it("keeps a false privacy filter on the diaries list", () => {
     expect(leafParams(stateFor("my/diary/?private=false"))).toMatchObject({
       private: "false",
+    });
+  });
+
+  it("carries the photo filter into the observations list", () => {
+    expect(leafParams(stateFor("my/observation/?has_photo=false"))).toMatchObject({
+      has_photo: "false",
     });
   });
 

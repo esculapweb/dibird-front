@@ -65,6 +65,12 @@ describe("buildDeepLinkParams", () => {
     expect(buildDeepLinkParams({ private: false }, null)).toEqual({ private: false });
     expect(buildDeepLinkParams({ private: null }, null)).toEqual({});
   });
+
+  it("keeps both sides of the photo filter too", () => {
+    expect(buildDeepLinkParams({ has_photo: true }, null)).toEqual({ has_photo: true });
+    expect(buildDeepLinkParams({ has_photo: false }, null)).toEqual({ has_photo: false });
+    expect(buildDeepLinkParams({ has_photo: null }, null)).toEqual({});
+  });
 });
 
 describe("parseDeepLinkParams", () => {
@@ -140,6 +146,14 @@ describe("parseDeepLinkParams", () => {
       expect(parseDeepLinkParams({}).filters).not.toHaveProperty("private");
     });
 
+    it("reads both spellings of the photo filter, and drops an unparsable one", () => {
+      expect(parseDeepLinkParams({ has_photo: "true" }).filters.has_photo).toBe(true);
+      expect(parseDeepLinkParams({ has_photo: "false" }).filters.has_photo).toBe(false);
+      expect(parseDeepLinkParams({ has_photo: true }).filters.has_photo).toBe(true);
+      expect(parseDeepLinkParams({ has_photo: "" }).filters).not.toHaveProperty("has_photo");
+      expect(parseDeepLinkParams({ has_photo: "yes" }).filters).not.toHaveProperty("has_photo");
+    });
+
     it("accepts only the two known sources", () => {
       expect(parseDeepLinkParams({ source: "ebird" }).filters.source).toBe("ebird");
       expect(parseDeepLinkParams({ source: "dibird" }).filters.source).toBe("dibird");
@@ -157,6 +171,7 @@ describe("parseDeepLinkParams", () => {
       // Otherwise a link carrying nothing but one of these would be treated as
       // "no filters in the URL" and the screen would restore its own instead.
       expect(parseDeepLinkParams({ private: "false" }).hasParams).toBe(true);
+      expect(parseDeepLinkParams({ has_photo: "false" }).hasParams).toBe(true);
       expect(parseDeepLinkParams({ source: "ebird" }).hasParams).toBe(true);
       expect(parseDeepLinkParams({ radius: "25" }).hasParams).toBe(true);
     });
@@ -171,8 +186,13 @@ describe("parseDeepLinkParams", () => {
 });
 
 describe("buildDeepLinkParams / parseDeepLinkParams round trip", () => {
-  it("reconstructs privacy, source and radius as they were shared", () => {
-    const filters = { private: false, source: "ebird" as const, radius: 25 };
+  it("reconstructs privacy, photos, source and radius as they were shared", () => {
+    const filters = {
+      private: false,
+      has_photo: true,
+      source: "ebird" as const,
+      radius: 25,
+    };
     const built = buildDeepLinkParams(filters, null);
 
     expect(parseDeepLinkParams(built).filters).toMatchObject(filters);

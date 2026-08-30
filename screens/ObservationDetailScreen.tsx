@@ -267,14 +267,27 @@ const ObservationDetailScreen = () => {
             <>
               <View style={styles.imageWrapper}>
                 {observation?.species_data?.thumb ? (
-                  <Image
-                    source={{
-                      uri: `${Config.mediaUrl}/${observation.species_data.thumb}`,
-                    }}
-                    style={styles.image}
-                    contentFit="cover"
-                    cachePolicy="disk"
-                  />
+                  <>
+                    <Image
+                      source={{
+                        uri: `${Config.mediaUrl}/${observation.species_data.thumb}`,
+                      }}
+                      style={styles.image}
+                      contentFit="cover"
+                      cachePolicy="disk"
+                    />
+                    {/* Same shape and same subject as the observation's own
+                        photos in the strip below, so this reference shot of
+                        the species has to say which of the two it is. */}
+                    <View style={styles.speciesPhotoBadge}>
+                      <Text
+                        style={styles.speciesPhotoBadgeText}
+                        numberOfLines={1}
+                      >
+                        {t("species_photo_badge")}
+                      </Text>
+                    </View>
+                  </>
                 ) : (
                   <View style={styles.imagePlaceholder}>
                     <BirdSVG size={40} color={Colors.textSecondary} />
@@ -560,6 +573,24 @@ const stylesFn = (Colors: ThemeColors) =>
       backgroundColor: Colors.imageBg,
       justifyContent: "center",
       alignItems: "center",
+    },
+    speciesPhotoBadge: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      bottom: 0,
+      alignItems: "center",
+      paddingVertical: 3,
+      backgroundColor: "rgba(0, 0, 0, 0.45)",
+      borderBottomLeftRadius: 12,
+      borderBottomRightRadius: 12,
+    },
+    speciesPhotoBadgeText: {
+      fontSize: 9,
+      fontWeight: "600",
+      color: "#fff",
+      textTransform: "uppercase",
+      letterSpacing: 0.4,
     },
     imageOverlay: {
       position: "absolute",
