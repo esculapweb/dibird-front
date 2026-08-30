@@ -103,7 +103,7 @@ jest.mock("../../components/ui/IconsHeader", () => {
   };
 });
 
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { Text } from "react-native";
 import { useSyncedFilters } from "../../hooks/useSyncedFilters";
 import { useList } from "../../hooks/useList";
@@ -409,4 +409,56 @@ it("registers an onOpenFilterModal callback that opens the same filter sheet", a
   expect(BottomSheet.showContent).toHaveBeenCalledWith(
     expect.objectContaining({ title: "filters" }),
   );
+});
+
+// Saving an observation invalidates the list with `refetchType: "all"`, so the
+// query starts refetching on a screen the user never pulled. Wired straight to
+// RefreshControl that showed a spinner over the list, and anything that
+// re-invalidates on a timer left it there for good.
+describe("pull to refresh", () => {
+  it("ignores a background refetch the user did not ask for", async () => {
+    mockListQuery({ isRefetching: true });
+    await render(<ListScreen {...defaultProps()} />);
+
+    expect(
+      screen.getByTestId("items-list").props.refreshControl.props.refreshing,
+    ).toBe(false);
+  });
+
+  it("spins for an actual pull and stops once the refetch settles", async () => {
+    let settle: () => void = () => {};
+    mockRefetch.mockReturnValue(
+      new Promise<void>((resolve) => {
+        settle = resolve;
+      }),
+    );
+    await render(<ListScreen {...defaultProps()} />);
+
+    const control = () =>
+      screen.getByTestId("items-list").props.refreshControl.props;
+
+    await act(async () => {
+      control().onRefresh();
+    });
+    expect(control().refreshing).toBe(true);
+
+    await act(async () => {
+      settle();
+    });
+    expect(control().refreshing).toBe(false);
+  });
+
+  it("stops spinning even when the refetch rejects", async () => {
+    mockRefetch.mockRejectedValue(new Error("offline"));
+    await render(<ListScreen {...defaultProps()} />);
+
+    const control = () =>
+      screen.getByTestId("items-list").props.refreshControl.props;
+
+    await act(async () => {
+      await control().onRefresh().catch(() => {});
+    });
+
+    expect(control().refreshing).toBe(false);
+  });
 });

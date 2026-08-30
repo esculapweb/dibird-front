@@ -358,7 +358,7 @@
   "observation_count_desc": "Number of observations (descending)",
   "observation_date": "Observation date",
   "observation_photos_hint": "Photos are uploaded when the observation is saved",
-  "observation_photos_note": "Taken by the observer — not the reference photo of the species.",
+  "observation_photos_note": "Uploaded by the observer. The species reference photo is in the header",
   "observation_photos_title": "Observation photos",
   "observation_private": "Only you can see this observation",
   "observation_private_share_hint": "Make it public to share it",

@@ -4,6 +4,7 @@ import {
   useLayoutEffect,
   useMemo,
   useRef,
+  useState,
   ReactNode,
 } from "react";
 import {
@@ -187,7 +188,6 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
     isFetchingNextPage,
     isLoading,
     isError,
-    isRefetching,
     error,
     refetch,
   } = useList({
@@ -226,6 +226,26 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
       return true;
     });
   }, [data?.pages]);
+
+  // The pull-to-refresh spinner has to follow the pull, not the query.
+  // `isRefetching` is true for *any* background fetch: a page of infinite
+  // scroll, or a refetch some other screen started by invalidating with
+  // `refetchType: "all"` — which is exactly what saving an observation does
+  // (invalidateObservationCaches). Wired straight to RefreshControl that put
+  // a spinner over a list nobody pulled, and anything that re-invalidates on
+  // a timer (the photo queue's backoff retries) kept putting it back, so it
+  // read as a loader that never goes away. Local state instead, the shape
+  // MainScreen already uses.
+  const [isPullRefreshing, setIsPullRefreshing] = useState(false);
+
+  const handlePullRefresh = useCallback(async () => {
+    setIsPullRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setIsPullRefreshing(false);
+    }
+  }, [refetch]);
 
   const isEmpty = items.length === 0;
 
@@ -431,8 +451,8 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
           keyExtractor={keyExtractor}
           noItems={noItems}
           listHeader={listHeader}
-          onRefresh={refetch}
-          isRefreshing={isRefetching}
+          onRefresh={handlePullRefresh}
+          isRefreshing={isPullRefreshing}
         />
       )}
     </Layout>

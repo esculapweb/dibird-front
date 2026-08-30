@@ -124,7 +124,10 @@ const ObservationPhotos = ({
                 onPress={() => onRemove(photo)}
                 hitSlop={8}
               >
-                <Ionicons name="close" size={14} color={Colors.textMain} />
+                {/* Not textMain: `overlay` is a dark scrim in both themes
+                    (rgba(0,0,0,.4) light, .7 dark), and in the light one
+                    textMain is near-black — the cross all but vanished. */}
+                <Ionicons name="close" size={14} color="#fff" />
               </Pressable>
             )}
           </Pressable>

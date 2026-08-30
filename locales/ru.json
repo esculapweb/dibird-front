@@ -370,7 +370,7 @@
   "observation_count_desc": "Количеству наблюдений (убыв.)",
   "observation_date": "Дата наблюдения",
   "observation_photos_hint": "Фото загрузятся, когда наблюдение будет сохранено",
-  "observation_photos_note": "Сняты автором наблюдения — это не справочное фото вида.",
+  "observation_photos_note": "Загрузил автор наблюдения. Справочное фото вида — в шапке карточки",
   "observation_photos_title": "Фото наблюдения",
   "observation_private": "Наблюдение видно только вам",
   "observation_private_share_hint": "Сделайте его публичным, чтобы поделиться",
