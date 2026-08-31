@@ -461,7 +461,14 @@ const FilterSheetContent = ({
       </BottomSheetScrollView>
 
       <View style={styles.footer}>
-        <Pressable style={styles.primaryButton} onPress={applyHandler}>
+        {/* Has to be reachable by id: its own label is the word "apply", which
+            also ends the unsynced hint ("...the other filters do not apply")
+            shown right above it, so a text selector picks the hint first. */}
+        <Pressable
+          style={styles.primaryButton}
+          onPress={applyHandler}
+          testID="filter-apply-button"
+        >
           <Text style={styles.primaryText}>{t("apply")}</Text>
         </Pressable>
       </View>

@@ -55,13 +55,15 @@ tags:
 - tapOn:
     id: "filter-button"
 - extendedWaitUntil:
-    visible: ".*Apply.*"
+    visible:
+      id: "taxon-filter-apply-button"
     timeout: 6000
 # Groups start collapsed — open Body mass, then pick one of its buckets.
 - tapOn: ".*Body mass.*"
 - waitForAnimationToEnd
 - tapOn: ".*over 1 kg.*"
-- tapOn: ".*Apply.*"
+- tapOn:
+    id: "taxon-filter-apply-button"
 - waitForAnimationToEnd
 
 # Outside the sheet again: the active filter shows up as a removable chip,

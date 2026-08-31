@@ -17,6 +17,13 @@
 # full, so "All" hits the Sync status option and not "All locations"/
 # "All species"/"All time".
 #
+# Apply is the exception and goes by id. Picking "Unsynced only" paints the
+# hint "Showing unsynced records only — the other filters do not apply" over
+# the Location and Species dropdowns, and ".*Apply.*" matches that sentence
+# too — earlier in the hierarchy than the button. The tap then landed on a
+# dropdown that is disabled in exactly this state, so nothing happened at
+# all and the flow failed further down, on the empty state that never came.
+#
 # tags: android only. On iOS *nothing* inside this particular sheet reaches
 # the accessibility hierarchy — not the options, not even its Apply button —
 # while the taxonomy filter sheet right next door is fully addressable
@@ -63,10 +70,12 @@ tags:
 - tapOn:
     id: "filter-button"
 - extendedWaitUntil:
-    visible: ".*Apply.*"
+    visible:
+      id: "filter-apply-button"
     timeout: 6000
 - tapOn: "Unsynced only"
-- tapOn: ".*Apply.*"
+- tapOn:
+    id: "filter-apply-button"
 - waitForAnimationToEnd
 
 # The empty state, and the badge agreeing with it — not just one or the other.
@@ -81,10 +90,12 @@ tags:
 - tapOn:
     id: "filter-button"
 - extendedWaitUntil:
-    visible: ".*Apply.*"
+    visible:
+      id: "filter-apply-button"
     timeout: 6000
 - tapOn: "All"
-- tapOn: ".*Apply.*"
+- tapOn:
+    id: "filter-apply-button"
 - waitForAnimationToEnd
 - extendedWaitUntil:
     visible:
