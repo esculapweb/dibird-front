@@ -286,6 +286,27 @@ const SettingsScreen = () => {
       }
     >
       <Section
+        title={t("settings_section_account")}
+        styles={styles}
+        colors={Colors}
+      >
+        <Row
+          icon="at-outline"
+          label={t("emails_title")}
+          onPress={() => navigation.navigate("Emails")}
+          colors={Colors}
+          styles={styles}
+        />
+        <Row
+          icon="link-outline"
+          label={t("linked_accounts_title")}
+          onPress={() => navigation.navigate("LinkedAccounts")}
+          colors={Colors}
+          styles={styles}
+        />
+      </Section>
+
+      <Section
         title={t("settings_section_alerts")}
         styles={styles}
         colors={Colors}
@@ -308,12 +329,22 @@ const SettingsScreen = () => {
         )}
       </Section>
 
-      {bioAvailable && (
-        <Section
-          title={t("settings_section_security")}
-          styles={styles}
+      {/* The section itself is unconditional now: the password row belongs to
+          everyone, while the biometric switch still depends on the device
+          having a sensor enrolled. */}
+      <Section
+        title={t("settings_section_security")}
+        styles={styles}
+        colors={Colors}
+      >
+        <Row
+          icon="key-outline"
+          label={t("change_password")}
+          onPress={() => navigation.navigate("ChangePassword")}
           colors={Colors}
-        >
+          styles={styles}
+        />
+        {bioAvailable && (
           <RowSwitch
             icon="finger-print-outline"
             label={t("settings_biometric_lock")}
@@ -323,8 +354,8 @@ const SettingsScreen = () => {
             colors={Colors}
             styles={styles}
           />
-        </Section>
-      )}
+        )}
+      </Section>
 
       <Section
         title={t("settings_section_data")}

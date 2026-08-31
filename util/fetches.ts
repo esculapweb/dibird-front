@@ -104,6 +104,8 @@ import {
   ImageAsset,
   AvatarResponse,
   ReverseGeocode,
+  EmailAddressItem,
+  SocialAccountItem,
   emptyPaginatedResponse,
   AppError,
   TaxonRank,
@@ -2246,4 +2248,46 @@ export const reverseGeocoding = async (
   });
 
   return res.data;
+};
+
+// Account: e-mail addresses and connected providers. None of these has an
+// offline fallback, and that is deliberate — every one of them is a change to
+// the account itself, which only the server can make, and a list cached from
+// last week would show a person addresses they have already removed.
+const EMAILS_URL = "/myapi/emails/";
+
+export const fetchMyEmails = async (): Promise<EmailAddressItem[]> => {
+  const res = await api.get<EmailAddressItem[]>(EMAILS_URL);
+  return res.data;
+};
+
+export const addMyEmail = async (email: string): Promise<EmailAddressItem> => {
+  const res = await api.post<EmailAddressItem>(EMAILS_URL, { email });
+  return res.data;
+};
+
+export const deleteMyEmail = async (id: number): Promise<void> => {
+  await api.delete(`${EMAILS_URL}${id}/`);
+};
+
+export const setMyPrimaryEmail = async (
+  id: number,
+): Promise<EmailAddressItem[]> => {
+  const res = await api.post<EmailAddressItem[]>(
+    `${EMAILS_URL}${id}/set-primary/`,
+  );
+  return res.data;
+};
+
+export const resendMyEmailConfirmation = async (id: number): Promise<void> => {
+  await api.post(`${EMAILS_URL}${id}/resend/`);
+};
+
+export const fetchMySocialAccounts = async (): Promise<SocialAccountItem[]> => {
+  const res = await api.get<SocialAccountItem[]>("/myapi/profile/social/");
+  return res.data;
+};
+
+export const disconnectSocialAccount = async (id: number): Promise<void> => {
+  await api.post(`/myapi/social-accounts/${id}/disconnect/`);
 };

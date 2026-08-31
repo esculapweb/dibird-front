@@ -237,6 +237,38 @@ const matchTaxonPath = (normalizedPath: string): TaxonRoute | null => {
   return null;
 };
 
+// The password-reset link from the letter:
+// /accounts/password/reset/key/<uid>-<token>/.
+//
+// Both halves ride in one path segment, so React Navigation's own `:param`
+// matching cannot produce the two params the screen takes — hence a matcher of
+// its own. It splits on the FIRST dash: the uid is a base36 primary key and
+// never contains one, while the token always does ("de75v1-de5817b3…"), and
+// splitting anywhere else would hand the server half a token.
+const PASSWORD_RESET_PREFIX = "/accounts/password/reset/key/";
+
+const matchPasswordResetPath = (
+  normalizedPath: string,
+): MinimalRoute | null => {
+  if (!normalizedPath.startsWith(PASSWORD_RESET_PREFIX)) return null;
+
+  const key = normalizedPath
+    .slice(PASSWORD_RESET_PREFIX.length)
+    .split("?")[0]
+    .replace(/\/+$/, "");
+  const dash = key.indexOf("-");
+
+  // Nothing before the dash, nothing after it, or no dash at all — not a key
+  // this app can use, and sending the halves on anyway would only produce a
+  // confusing "link expired" from the server.
+  if (dash <= 0 || dash === key.length - 1) return null;
+
+  return {
+    name: "ResetPassword",
+    params: { uid: key.slice(0, dash), token: key.slice(dash + 1) },
+  };
+};
+
 // Exported for constants/__tests__/deepLinkScreens.test.ts: the list of screens
 // a shared link can reach lives in constants/deepLinkScreens.ts, and the two
 // must not drift apart.
@@ -262,6 +294,11 @@ export const AUTHED_SCREENS: PathConfigMap<AppStackParamList> = {
   UserStat: withFilters("users/stat/:profileId"),
   Privacy: "privacy",
   Terms: "terms",
+  // Confirming a *second* address (Settings → e-mails) happens while its owner
+  // is signed in, so the same link the guest stack handles has to resolve here
+  // too — without it the letter opened the app onto whatever screen it had
+  // been left on.
+  ConfirmEmail: "accounts/confirm-email/:key",
 };
 
 const GUEST_SCREENS: PathConfigMap<AuthStackParamList> = {
@@ -312,6 +349,22 @@ const linking = (
     const normalizedPath = localePrefix
       ? normalizedPath2.replace(`/${localePrefix}`, "")
       : normalizedPath2;
+
+    const resetRoute = matchPasswordResetPath(normalizedPath);
+    if (resetRoute) {
+      // Already signed in: `ResetPassword` lives in the guest stack only, and
+      // someone who is inside does not need a reset — they can change the
+      // password from Settings. Without this branch the link resolved to
+      // nothing and the app simply opened wherever it had been left.
+      if (isAuthenticated) {
+        return {
+          index: 1,
+          routes: [{ name: "Main" }, { name: "ChangePassword" }],
+        };
+      }
+
+      return { index: 1, routes: [{ name: "Welcome" }, resetRoute] };
+    }
 
     const authPaths = ["/accounts/login", "/accounts/signup"];
     const isAuthPath = authPaths.some((p) => normalizedPath.startsWith(p));
@@ -390,6 +443,17 @@ const linking = (
       return {
         index: 2,
         routes: [{ name: "Main" }, { name: "Community" }, state.routes[0]],
+      };
+    }
+
+    // Confirming a second address from inside the account: without Main
+    // underneath, ConfirmEmail becomes the whole stack, and Back from the
+    // e-mail list lands on a spent confirmation screen. The guest stack is
+    // left alone — there ConfirmEmail *is* the root, and Main does not exist.
+    if (routeName === "ConfirmEmail" && isAuthenticated) {
+      return {
+        index: 1,
+        routes: [{ name: "Main" }, state.routes[0]],
       };
     }
 

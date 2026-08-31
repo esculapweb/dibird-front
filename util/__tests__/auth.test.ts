@@ -54,6 +54,12 @@ import {
   Logout,
   LoginWithGoogle,
   LoginWithApple,
+  requestPasswordReset,
+  confirmPasswordReset,
+  changePassword,
+  resendVerificationEmail,
+  connectGoogle,
+  connectApple,
 } from "../auth";
 
 const apiPost = api.post as jest.Mock;
@@ -378,5 +384,146 @@ describe("LoginWithApple", () => {
 
     expect(logEvent).toHaveBeenCalledWith(expect.anything(), "login", { method: "apple" });
     expect(markPending).not.toHaveBeenCalled();
+  });
+});
+
+describe("password endpoints", () => {
+  it("asks for a reset letter", async () => {
+    apiPost.mockResolvedValueOnce({ data: { detail: "sent" } });
+
+    await requestPasswordReset("jane@example.com");
+
+    expect(apiPost).toHaveBeenCalledWith(
+      "/api-auth/password/reset/",
+      { email: "jane@example.com" },
+      { withCredentials: false },
+    );
+  });
+
+  it("sends the uid/token pair and the new password twice on confirm", async () => {
+    apiPost.mockResolvedValueOnce({ data: { detail: "ok" } });
+
+    await confirmPasswordReset({ uid: "687", token: "de75v1-abc", password: "hunter22" });
+
+    expect(apiPost).toHaveBeenCalledWith(
+      "/api-auth/password/reset/confirm/",
+      {
+        uid: "687",
+        token: "de75v1-abc",
+        new_password1: "hunter22",
+        new_password2: "hunter22",
+      },
+      { withCredentials: false },
+    );
+  });
+
+  // The backend drops old_password entirely for an account that has none
+  // (CustomPasswordChangeSerializer), and sending the field there is a 400 —
+  // so "set a password" must omit the key rather than send it empty.
+  it("omits old_password when there is none to confirm with", async () => {
+    apiPost.mockResolvedValueOnce({ data: { detail: "ok" } });
+
+    await changePassword({ password: "hunter22" });
+
+    expect(apiPost).toHaveBeenCalledWith(
+      "/api-auth/password/change/",
+      { new_password1: "hunter22", new_password2: "hunter22" },
+      { withCredentials: false },
+    );
+  });
+
+  it("sends old_password when there is one", async () => {
+    apiPost.mockResolvedValueOnce({ data: { detail: "ok" } });
+
+    await changePassword({ oldPassword: "old-one", password: "hunter22" });
+
+    expect(apiPost).toHaveBeenCalledWith(
+      "/api-auth/password/change/",
+      {
+        old_password: "old-one",
+        new_password1: "hunter22",
+        new_password2: "hunter22",
+      },
+      { withCredentials: false },
+    );
+  });
+
+  it("resends the signup confirmation letter", async () => {
+    apiPost.mockResolvedValueOnce({ data: {} });
+
+    await resendVerificationEmail("jane@example.com");
+
+    expect(apiPost).toHaveBeenCalledWith(
+      "/api-auth/registration/resend-email/",
+      { email: "jane@example.com" },
+      { withCredentials: false },
+    );
+  });
+});
+
+describe("connecting a provider to an account already signed in", () => {
+  it("posts the Google tokens to the connect endpoint and keeps the session", async () => {
+    (GoogleSignin.signIn as jest.Mock).mockResolvedValueOnce({ data: { idToken: "it" } });
+    (GoogleSignin.getTokens as jest.Mock).mockResolvedValueOnce({ accessToken: "at" });
+    apiPost.mockResolvedValueOnce({ data: {} });
+
+    const result = await connectGoogle();
+
+    expect(result).toBe(true);
+    expect(apiPost).toHaveBeenCalledWith(
+      "/auth/google/connect/",
+      { access_token: "at", id_token: "it" },
+      { withCredentials: false },
+    );
+    // The whole difference from a login: connecting must not drop the tokens
+    // of the session doing the connecting, nor mint new ones.
+    expect(clearTokens).not.toHaveBeenCalled();
+    expect(saveTokens).not.toHaveBeenCalled();
+  });
+
+  // Without this the SDK hands back the session already on the device and
+  // "link a different account" silently re-attaches the connected one.
+  it("signs out of Google first so the account picker appears", async () => {
+    (GoogleSignin.signIn as jest.Mock).mockResolvedValueOnce({ data: { idToken: "it" } });
+    (GoogleSignin.getTokens as jest.Mock).mockResolvedValueOnce({ accessToken: "at" });
+    apiPost.mockResolvedValueOnce({ data: {} });
+
+    await connectGoogle();
+
+    expect((GoogleSignin.signOut as jest.Mock).mock.invocationCallOrder[0]).toBeLessThan(
+      (GoogleSignin.signIn as jest.Mock).mock.invocationCallOrder[0],
+    );
+  });
+
+  it("reports backing out of the dialog as false, without calling the server", async () => {
+    (GoogleSignin.signIn as jest.Mock).mockResolvedValueOnce({});
+
+    const result = await connectGoogle();
+
+    expect(result).toBe(false);
+    expect(apiPost).not.toHaveBeenCalled();
+  });
+
+  it("posts the Apple identity token to the connect endpoint", async () => {
+    (AppleAuthentication.signInAsync as jest.Mock).mockResolvedValueOnce({
+      identityToken: "id-token",
+      fullName: { givenName: "Jane", familyName: "Doe" },
+    });
+    apiPost.mockResolvedValueOnce({ data: {} });
+
+    const result = await connectApple();
+
+    expect(result).toBe(true);
+    expect(apiPost).toHaveBeenCalledWith(
+      "/auth/apple/connect/",
+      {
+        access_token: "id-token",
+        id_token: "id-token",
+        first_name: "Jane",
+        last_name: "Doe",
+      },
+      { withCredentials: false },
+    );
+    expect(saveTokens).not.toHaveBeenCalled();
   });
 });

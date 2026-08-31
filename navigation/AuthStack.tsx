@@ -14,6 +14,8 @@ import LoginScreen from "../screens/LoginScreen";
 import SignupScreen from "../screens/SignupScreen";
 import CheckEmailScreen from "../screens/CheckEmailScreen";
 import ConfirmEmailScreen from "../screens/ConfirmEmailScreen";
+import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
+import ResetPasswordScreen from "../screens/ResetPasswordScreen";
 import LanguageSwitcher from "../components/Language/LanguageSwitcher";
 import { useTheme } from "../store/theme-context";
 import ThemeSwitcher from "../components/Theme/ThemeSwitcher";
@@ -176,6 +178,20 @@ const AuthNavigator = () => {
         name="ConfirmEmail"
         component={ConfirmEmailScreen}
         options={{ title: t("confirm_email") }}
+      />
+
+      <Stack.Screen
+        name="ForgotPassword"
+        component={ForgotPasswordScreen}
+        options={{ title: t("forgot_password_title") }}
+      />
+
+      {/* Reached by the link in the reset letter, not from inside the app —
+          see GUEST_SCREENS in linking.ts. */}
+      <Stack.Screen
+        name="ResetPassword"
+        component={ResetPasswordScreen}
+        options={{ title: t("reset_password_title") }}
       />
 
       {catalogScreens(Stack, t)}

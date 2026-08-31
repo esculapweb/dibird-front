@@ -1,0 +1,80 @@
+# Linked accounts: the screen loads its list from the server and offers the
+# providers this build can actually connect.
+#
+# Short on purpose. Connecting is the interesting half and it cannot be
+# automated: tapping "Link Google" hands control to the Google SDK's own
+# system dialog, which needs a real account chooser and a real consent screen.
+# Disconnecting is worse — the test accounts sign in with a password, so they
+# have nothing linked to disconnect, and linking something just to unlink it
+# would need that same dialog first. Both stay manual (§1 of
+# RELEASE_CHECKLIST); the rules around them are covered by
+# `myapi/tests/test_social_accounts_api.py` and
+# `screens/__tests__/LinkedAccountsScreen.test.tsx`.
+#
+# What remains is worth the ninety seconds anyway, because it is exactly what
+# unit tests cannot see: that `GET /myapi/profile/social/` answers a real
+# request at all. That endpoint existed in the backend for a long time with no
+# caller — this screen is its first — so nothing has ever exercised it end to
+# end, and a serializer that raises would show here as the error state instead
+# of the list.
+#
+# Deliberately never taps a connect button: the SDK dialog that follows is
+# system UI, and backing out of it is exactly the kind of step that leaves a
+# flow — and sometimes the device — in a state the next flow inherits.
+#
+# appId comes from run.sh (--env APP_ID).
+appId: ${APP_ID}
+tags:
+  - ios
+  - android
+---
+# No clearState: session reuse, like every other signed-in flow.
+- launchApp
+
+- runFlow: common/bootstrap.yaml
+
+# ---- into Settings -> Account ----
+- tapOn:
+    id: "burger-menu-button"
+- waitForAnimationToEnd
+- tapOn: ".*Settings.*"
+# scrollUntilVisible, not a bare wait: `tapOn` does not scroll, and an
+# off-screen row is reported as "element not found". The Account section is
+# the first on the screen, so this is normally a no-op.
+- scrollUntilVisible:
+    element: ".*Linked accounts.*"
+    direction: DOWN
+    timeout: 10000
+- tapOn: ".*Linked accounts.*"
+
+# ---- the list came back ----
+# The hint is rendered next to the list, after the query resolves — not while
+# it is loading (LoadingOverlay replaces the screen) and not on failure
+# (ErrorOverlay does). So its presence is the assertion that the request
+# succeeded, whatever the account happens to have linked.
+- extendedWaitUntil:
+    visible: ".*Services you can sign in with.*"
+    timeout: 20000
+
+# The test accounts sign in with an email and a password and have nothing
+# linked, so the empty state is what this run should find. Not asserted
+# strictly, because the same flow has to survive an account that a manual test
+# once linked something to: either the empty state or a provider row is a
+# correct answer, and both mean the endpoint replied.
+- runFlow:
+    when:
+      visible: ".*No linked accounts yet.*"
+    commands:
+      # Nothing linked, so Google must be on offer. Apple only appears on iOS,
+      # where the app carries its SDK — asserting it here would fail the
+      # Android half for a reason that has nothing to do with the screen.
+      - assertVisible:
+          id: "social-connect-google"
+
+# ---- back to where the batch expects to find the app ----
+- runFlow: common/back.yaml
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: "quick-action-observation"
+    timeout: 15000

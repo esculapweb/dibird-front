@@ -40,6 +40,10 @@ if (!variant) {
 // opens in the browser instead of the app.
 const APP_LINK_PATHS = [
   "/accounts/confirm-email/",
+  // The link in the password-reset letter. The website's own reset *form*
+  // (/accounts/password/reset/) is deliberately not claimed: someone who
+  // reached that page in a browser should stay there.
+  "/accounts/password/reset/key/",
   "/accounts/login/",
   "/accounts/signup/",
   "/my/",
