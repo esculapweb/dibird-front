@@ -34,10 +34,10 @@ describe("cacheCountries / getCachedCountries", () => {
     });
   });
 
-  it("marks a favourite with iconLabelRight: 'flag'", () => {
+  it("marks a favourite with iconLabelRight: 'star'", () => {
     referenceRepository.cacheCountries([ALBANIA]);
     const [result] = referenceRepository.getCachedCountries("name");
-    expect(result.iconLabelRight).toBe("flag");
+    expect(result.iconLabelRight).toBe("star");
   });
 
   it("fully replaces the previous cache rather than merging", () => {

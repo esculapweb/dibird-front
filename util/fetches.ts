@@ -560,7 +560,7 @@ export const fetchMyCountries = (
         label: item.name,
         code: item.code,
         icon: isoToFlagEmoji(item.code),
-        iconLabelRight: item.favourite ? ("flag" as const) : undefined,
+        iconLabelRight: item.favourite ? ("star" as const) : undefined,
       }));
     },
   );
