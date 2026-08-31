@@ -1,5 +1,4 @@
 import { useCallback, useLayoutEffect } from "react";
-import { Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -10,6 +9,8 @@ import ItemsList from "../components/ui/ItemsList";
 import NotificationCard from "../components/Notification/NotificationCard";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import Layout from "../components/ui/Layout";
+import IconsHeader from "../components/ui/IconsHeader";
+import { overflowButton } from "../components/ui/overflowMenu";
 import { fetchNotifications, markNotificationsRead } from "../util/fetches";
 import {
   AppNotification,
@@ -19,7 +20,6 @@ import {
 import { routeNotification } from "../util/notificationRoute";
 import { UNREAD_COUNT_KEY } from "../hooks/useUnreadCount";
 import { AppStackNavigationProp } from "../types";
-import { useTheme, ThemeColors } from "../store/theme-context";
 
 // Screens whose unsaved form state a reload would silently drop.
 const EDITOR_SCREENS = ["ObservationEditor", "DiaryEditor", "PlaceEditor"];
@@ -28,8 +28,6 @@ export default function NotificationsScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation<AppStackNavigationProp>();
   const queryClient = useQueryClient();
-  const { Colors } = useTheme();
-  const styles = stylesFn(Colors);
 
   const {
     data,
@@ -53,16 +51,30 @@ export default function NotificationsScreen() {
     queryClient.invalidateQueries({ queryKey: UNREAD_COUNT_KEY });
   }, [queryClient]);
 
+  // In the menu rather than as a header button of its own: the label is long
+  // in Russian and used to crowd the title, and this is a rare, sweeping
+  // action — exactly what "⋯" is for on every other screen.
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: t("notifications"),
       headerRight: () => (
-        <TouchableOpacity onPress={handleMarkAllRead} style={styles.markAll}>
-          <Text style={styles.markAllText}>{t("mark_all_read")}</Text>
-        </TouchableOpacity>
+        <IconsHeader
+          headerRightEnd={[
+            overflowButton([
+              {
+                label: t("mark_all_read"),
+                icon: "checkmark-done-outline",
+                testID: "mark-all-read-button",
+                onPress: () => {
+                  void handleMarkAllRead();
+                },
+              },
+            ]),
+          ]}
+        />
       ),
     });
-  }, [navigation, handleMarkAllRead, Colors]);
+  }, [navigation, handleMarkAllRead, t]);
 
   const handlePress = useCallback(
     async (item: AppNotification) => {
@@ -142,8 +154,4 @@ export default function NotificationsScreen() {
   );
 }
 
-const stylesFn = (Colors: ThemeColors) =>
-  StyleSheet.create({
-    markAll: { paddingHorizontal: 16, paddingVertical: 8 },
-    markAllText: { fontSize: 14, color: Colors.main100 },
-  });
+

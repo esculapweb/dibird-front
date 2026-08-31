@@ -6,10 +6,10 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { useTheme, ThemeColors } from "../store/theme-context";
 import { isoToFlagEmoji, formatDate, formatDateTime } from "../util/helpers";
-import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import IconsHeader from "../components/ui/IconsHeader";
+import { overflowButton } from "../components/ui/overflowMenu";
 import Layout from "../components/ui/Layout";
 import StatCard from "../components/ui/StatCard";
 import FilterChips from "../components/Filters/FilterChips";
@@ -118,15 +118,6 @@ const PlaceDetailScreen = () => {
         disabled: !place || updateMutation.isPending,
         testID: "place-edit-button",
       },
-      {
-        condition: !!place,
-        onPress: handleFavourite,
-        icon: place?.favourite ? ("star" as const) : ("star-outline" as const),
-        tintColor: Colors.yellow,
-        disabled: updateMutation.isPending || !place,
-        loading: updateMutation.isPending,
-        testID: "place-favourite-button",
-      },
     ],
     [
       place,
@@ -145,12 +136,20 @@ const PlaceDetailScreen = () => {
       confirmText: t("delete"),
       cancelText: t("cancel"),
       danger: true,
+      // See ObservationDetailScreen: the promise is what keeps the confirm
+      // sheet showing progress until the delete settles.
       onConfirm: () =>
-        deleteMutation.mutate(placeId, {
-          onSuccess: () => navigation.goBack(),
-          onError: (e) => {
-            showErrorToast(e, `PlaceDetailScreen:deletePlace:${placeId}`);
-          },
+        new Promise<void>((resolve) => {
+          deleteMutation.mutate(placeId, {
+            onSuccess: () => {
+              navigation.goBack();
+              resolve();
+            },
+            onError: (e) => {
+              showErrorToast(e, `PlaceDetailScreen:deletePlace:${placeId}`);
+              resolve();
+            },
+          });
         }),
     });
   }, [place, placeId, deleteMutation, navigation]);
@@ -195,15 +194,46 @@ const PlaceDetailScreen = () => {
     queryClient.invalidateQueries({ queryKey: [type, placeId], exact: false });
   }, [date]);
 
+  // Only editing stays an icon. The favourite row carries the state in its own
+  // icon instead (a filled star when it is on), which is the one thing the
+  // header pictogram did that a menu row would otherwise lose.
+  const headerRightEnd = useMemo(
+    () => [
+      overflowButton([
+        {
+          condition: !!place,
+          label: place?.favourite
+            ? t("remove_from_favourites")
+            : t("add_to_favourites"),
+          icon: place?.favourite ? "star" : "star-outline",
+          testID: "place-favourite-button",
+          onPress: handleFavourite,
+        },
+        {
+          label: t("delete_place"),
+          icon: "trash-outline",
+          danger: true,
+          opensAnotherSheet: true,
+          testID: "place-delete-button",
+          onPress: handleDelete,
+        },
+      ]),
+    ],
+    [t, place, handleFavourite, handleDelete],
+  );
+
   useLayoutEffect(() => {
     if (!place) return;
 
     navigation.setOptions({
       headerRight: () => (
-        <IconsHeader headerRightBeginning={headerRightBeginning} />
+        <IconsHeader
+          headerRightBeginning={headerRightBeginning}
+          headerRightEnd={headerRightEnd}
+        />
       ),
     });
-  }, [navigation, headerRightBeginning, place]);
+  }, [navigation, headerRightBeginning, headerRightEnd, place]);
 
   if (isError && !place) {
     return (
@@ -224,23 +254,10 @@ const PlaceDetailScreen = () => {
 
   const [lng, lat] = place.location.coordinates;
 
-  const bottomEl = (
-    <FlatButtonBottom
-      textColor={Colors.error600}
-      onPress={handleDelete}
-      icon="trash-outline"
-      loading={deleteMutation.isPending}
-      testID="place-delete-button"
-    >
-      {t("delete_place")}
-    </FlatButtonBottom>
-  );
-
   return (
     <Layout
       withScroll={true}
       style={{ paddingBottom: 40 }}
-      bottom={bottomEl}
       onRefresh={refetch}
       isRefreshing={isRefetching}
     >

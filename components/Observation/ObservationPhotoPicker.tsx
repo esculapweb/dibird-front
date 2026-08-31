@@ -60,11 +60,13 @@ const ObservationPhotoPicker = ({
       // camera capture would need a new native build (see app.config.js).
       // `allowsEditing` is deliberately absent — it is mutually exclusive with
       // multiple selection.
+      // No `quality` here: it only applies when the picker re-encodes, and
+      // every asset is re-encoded below anyway (resize + compress). Asking for
+      // it twice cost a JPEG generation and its losses for nothing.
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ["images"],
         allowsMultipleSelection: true,
         selectionLimit: remaining,
-        quality: 0.8,
       });
 
       // iOS "limited photo access" can grant permission and still hand back

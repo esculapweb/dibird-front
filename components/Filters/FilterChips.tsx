@@ -34,9 +34,21 @@ const FilterChips = ({
   // nothing.
   if (!filters || typeof filters !== "object") return null;
 
+  // "unsynced" is answered from this device's local queue alone, with every
+  // other filter ignored (see fetchObservations/fetchDiaries/fetchPlaces), so
+  // while it is on it is the only chip there is. The other values stay in the
+  // filters — removing this chip brings their rows straight back — they just
+  // have nothing to say about what the list currently shows. The filter sheet
+  // greys the matching controls out for the same reason. Gated on `allowed`
+  // as well, so a screen that does not offer the filter at all (the map) can
+  // never end up hiding every chip it has.
+  const unsyncedOnly =
+    !!filters.unsynced && (!allowed || allowed.includes("unsynced"));
+
   const activeFilters = (Object.entries(filters) as [AllFiltersKey, unknown][]).filter(
     ([key, value]) =>
       (!allowed || allowed.includes(key as AllowedFilterKey)) &&
+      (!unsyncedOnly || key === "unsynced") &&
       value !== null &&
       value !== undefined &&
       !(Array.isArray(value) && value.length === 0),

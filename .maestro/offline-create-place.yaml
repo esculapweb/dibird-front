@@ -191,6 +191,8 @@ tags:
 # ---- DELETE, offline ----
 - toggleAirplaneMode
 - tapOn:
+    id: "overflow-button"
+- tapOn:
     id: "place-delete-button"
 # Confirm sheet slides up asynchronously — wait for it, don't race it.
 - extendedWaitUntil:

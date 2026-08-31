@@ -409,3 +409,21 @@ describe("paging away from a photo that is still magnified", () => {
     expect(transformOf(1).scale).toBe(2.5);
   });
 });
+
+describe("the actions menu", () => {
+  it("offers no menu button unless the screen provides one", async () => {
+    await renderViewer();
+
+    expect(screen.queryByTestId("photo-viewer-more")).not.toBeOnTheScreen();
+  });
+
+  it("acts on the photo currently on screen, not the one it opened on", async () => {
+    const onMorePress = jest.fn();
+    await renderViewer({ onMorePress });
+
+    await scrollToPage(2);
+    await fireEvent.press(screen.getByTestId("photo-viewer-more"));
+
+    expect(onMorePress).toHaveBeenCalledWith(2);
+  });
+});

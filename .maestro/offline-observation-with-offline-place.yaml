@@ -202,7 +202,8 @@ tags:
 # place_data.name already resolves locally via the join to the pending
 # Place row, before either side has synced.
 - extendedWaitUntil:
-    visible: ".*Delete observation.*"
+    visible:
+      id: "observation-edit-button"
     timeout: 6000
 - assertVisible: "Nested E2E Place"
 
@@ -222,7 +223,8 @@ tags:
 - tapOn:
     id: "observation-sync-pending-icon"
 - extendedWaitUntil:
-    visible: ".*Delete observation.*"
+    visible:
+      id: "observation-edit-button"
     timeout: 6000
 
 # ---- Reconnect: Place resolves first, cascades into waking Observation sync ----
@@ -238,9 +240,12 @@ tags:
 # name (not a blank/fallback state), and the record is still deletable, not
 # stuck in a permanent error state from a failed place id resolution.
 - assertVisible: "Nested E2E Place"
-- assertVisible: ".*Delete observation.*"
+- assertVisible:
+    id: "observation-edit-button"
 
 # ---- Cleanup: Observation first (references the place), then the Place ----
+- tapOn:
+    id: "overflow-button"
 - tapOn:
     id: "observation-delete-button"
 - extendedWaitUntil:
@@ -264,7 +269,9 @@ tags:
 # position — true regardless of whether it's already synced by now.
 - tapOn: "Nested E2E Place"
 - assertVisible:
-    id: "place-delete-button"
+    id: "place-edit-button"
+- tapOn:
+    id: "overflow-button"
 - tapOn:
     id: "place-delete-button"
 - extendedWaitUntil:

@@ -53,7 +53,7 @@ jest.mock("../../store/filters-context", () => ({
   useFilters: jest.fn(),
 }));
 jest.mock("../../services/bottomSheet", () => ({
-  BottomSheet: { show: jest.fn() },
+  BottomSheet: { show: jest.fn(), showMenu: jest.fn(), hide: jest.fn() },
 }));
 jest.mock("../../hooks/useApiError", () => ({
   useApiError: () => ({ showErrorToast: mockShowErrorToast }),
@@ -62,11 +62,12 @@ jest.mock("../../components/ui/IconsHeader", () => {
   const { TouchableOpacity, Text } = require("react-native");
   return {
     __esModule: true,
-    default: ({ headerRightBeginning }: {
-      headerRightBeginning: Array<{ onPress: () => void; disabled?: boolean; loading?: boolean; testID?: string }>;
+    default: ({ headerRightBeginning = [], headerRightEnd = [] }: {
+      headerRightBeginning?: Array<{ onPress: () => void; disabled?: boolean; loading?: boolean; testID?: string }>;
+      headerRightEnd?: Array<{ onPress: () => void; disabled?: boolean; loading?: boolean; testID?: string }>;
     }) => (
       <>
-        {headerRightBeginning.map((btn, i) => (
+        {[...headerRightBeginning, ...headerRightEnd].map((btn, i) => (
           <TouchableOpacity key={i} testID={btn.testID} onPress={btn.disabled ? undefined : btn.onPress}>
             <Text>{btn.loading ? "loading" : btn.disabled ? "disabled" : "enabled"}</Text>
           </TouchableOpacity>
@@ -132,6 +133,15 @@ const mockPlaceItem = (overrides: Record<string, unknown> = {}) => {
     refetch: mockRefetch,
     ...overrides,
   });
+};
+
+// Everything but editing lives behind the header's "⋯" now.
+const menuRow = async (label: string) => {
+  await fireEvent.press(await headerButton("overflow-button"));
+  const { items } = (BottomSheet.showMenu as jest.Mock).mock.calls.at(-1)![0];
+  const row = items.find((item: { label: string }) => item.label === label);
+  if (!row) throw new Error(`no "${label}" row: ${items.map((i: { label: string }) => i.label)}`);
+  return row as { onPress: () => void; icon?: string };
 };
 
 const headerButton = async (testID: string) => {
@@ -242,19 +252,29 @@ it("retrying a failed sync retries the mutation, resyncs, and refetches", async 
 describe("favourite toggle", () => {
   it("toggles favourite via updateMutation", async () => {
     await render(<PlaceDetailScreen />);
-    const btn = await headerButton("place-favourite-button");
-    await fireEvent.press(btn);
+
+    (await menuRow("add_to_favourites")).onPress();
+
     expect(mockUpdateMutate).toHaveBeenCalledWith(
       { favourite: true },
       expect.objectContaining({ onError: expect.any(Function) }),
     );
   });
 
+  it("names the row by what it will do, and carries the state in its icon", async () => {
+    // The star used to be a header icon, where filled/outline showed whether
+    // the place is a favourite. A menu row has to say it instead.
+    mockPlaceItem({ data: { ...PLACE, favourite: true } });
+    await render(<PlaceDetailScreen />);
+
+    expect((await menuRow("remove_from_favourites")).icon).toBe("star");
+  });
+
   it("reports an error via showErrorToast on failure", async () => {
     await render(<PlaceDetailScreen />);
-    await headerButton("place-favourite-button");
-    // Trigger via a fresh press since mutate isn't auto-invoked above.
-    await fireEvent.press(screen.getByTestId("place-favourite-button"));
+
+    (await menuRow("add_to_favourites")).onPress();
+
     const call = mockUpdateMutate.mock.calls.at(-1)![1];
     call.onError({ message: "boom" });
     expect(mockShowErrorToast).toHaveBeenCalledWith({ message: "boom" }, "PlaceDetailScreen:toggleFavourite:1");
@@ -271,7 +291,8 @@ it("edit button navigates to PlaceEditor with the current place", async () => {
 describe("delete", () => {
   it("shows a danger confirm sheet, deleting and going back on confirm", async () => {
     await render(<PlaceDetailScreen />);
-    await fireEvent.press(screen.getByText("delete_place"));
+    // Deleting moved off the bottom of the screen and into the header menu.
+    (await menuRow("delete_place")).onPress();
 
     expect(BottomSheet.show).toHaveBeenCalledWith(
       expect.objectContaining({ danger: true, title: "delete_title" }),

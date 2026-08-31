@@ -64,7 +64,8 @@ tags:
 # Kept generous anyway — the screen still waits on a query, and a loaded
 # CI emulator is slower than this one.
 - extendedWaitUntil:
-    visible: ".*Delete diary.*"
+    visible:
+      id: "diary-edit-button"
     timeout: 25000
 - back
 - tapOn:
@@ -107,6 +108,8 @@ tags:
 
 # ---- DELETE, offline ----
 - toggleAirplaneMode
+- tapOn:
+    id: "overflow-button"
 - tapOn:
     id: "diary-delete-button"
 # Confirm sheet slides up asynchronously — wait for it, don't race it.

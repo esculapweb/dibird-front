@@ -79,10 +79,14 @@ jest.mock("../../components/ui/IconsHeader", () => {
   const { TouchableOpacity, Text } = require("react-native");
   return {
     __esModule: true,
-    default: ({ onSortPress, onFilterPress, onSharePress }: {
+    default: ({ onSortPress, onFilterPress, headerRightEnd = [] }: {
       onSortPress?: () => void;
       onFilterPress?: () => void;
-      onSharePress?: () => void;
+      headerRightEnd?: Array<{
+        condition: boolean;
+        onPress: () => void;
+        testID?: string;
+      }>;
     }) => (
       <>
         {onSortPress && (
@@ -93,17 +97,23 @@ jest.mock("../../components/ui/IconsHeader", () => {
         <TouchableOpacity testID="filter-btn" onPress={onFilterPress}>
           <Text>filter</Text>
         </TouchableOpacity>
-        {onSharePress && (
-          <TouchableOpacity testID="share-btn" onPress={onSharePress}>
-            <Text>share</Text>
-          </TouchableOpacity>
-        )}
+        {headerRightEnd
+          .filter((btn) => btn.condition)
+          .map((btn) => (
+            <TouchableOpacity
+              key={btn.testID}
+              testID={btn.testID}
+              onPress={btn.onPress}
+            >
+              <Text>{btn.testID}</Text>
+            </TouchableOpacity>
+          ))}
       </>
     ),
   };
 });
 
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { Text } from "react-native";
 import { useSyncedFilters } from "../../hooks/useSyncedFilters";
 import { useList } from "../../hooks/useList";
@@ -360,16 +370,22 @@ describe("header actions", () => {
     expect(sheet.renderContent(jest.fn()).props.filters).toEqual({ territory: 7 });
   });
 
-  it("share button only renders when handleSharePress is provided", async () => {
-    await render(<ListScreen {...defaultProps()} />);
+  it("renders the screen's own trailing buttons after sort and filter", async () => {
+    // Where the "⋯" menu goes on every screen that has one — sharing,
+    // deleting and reporting all live behind it now (see overflowMenu).
+    const onPress = jest.fn();
+    await render(
+      <ListScreen
+        {...defaultProps()}
+        headerRightEnd={[
+          { condition: true, onPress, icon: "ellipsis-horizontal", testID: "overflow-button" },
+        ]}
+      />,
+    );
     await renderHeaderRight();
-    expect(screen.queryByTestId("share-btn")).not.toBeOnTheScreen();
 
-    const handleSharePress = jest.fn();
-    await render(<ListScreen {...defaultProps()} handleSharePress={handleSharePress} />);
-    await renderHeaderRight();
-    await fireEvent.press(screen.getByTestId("share-btn"));
-    expect(handleSharePress).toHaveBeenCalledTimes(1);
+    await fireEvent.press(screen.getByTestId("overflow-button"));
+    expect(onPress).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -409,4 +425,56 @@ it("registers an onOpenFilterModal callback that opens the same filter sheet", a
   expect(BottomSheet.showContent).toHaveBeenCalledWith(
     expect.objectContaining({ title: "filters" }),
   );
+});
+
+// Saving an observation invalidates the list with `refetchType: "all"`, so the
+// query starts refetching on a screen the user never pulled. Wired straight to
+// RefreshControl that showed a spinner over the list, and anything that
+// re-invalidates on a timer left it there for good.
+describe("pull to refresh", () => {
+  it("ignores a background refetch the user did not ask for", async () => {
+    mockListQuery({ isRefetching: true });
+    await render(<ListScreen {...defaultProps()} />);
+
+    expect(
+      screen.getByTestId("items-list").props.refreshControl.props.refreshing,
+    ).toBe(false);
+  });
+
+  it("spins for an actual pull and stops once the refetch settles", async () => {
+    let settle: () => void = () => {};
+    mockRefetch.mockReturnValue(
+      new Promise<void>((resolve) => {
+        settle = resolve;
+      }),
+    );
+    await render(<ListScreen {...defaultProps()} />);
+
+    const control = () =>
+      screen.getByTestId("items-list").props.refreshControl.props;
+
+    await act(async () => {
+      control().onRefresh();
+    });
+    expect(control().refreshing).toBe(true);
+
+    await act(async () => {
+      settle();
+    });
+    expect(control().refreshing).toBe(false);
+  });
+
+  it("stops spinning even when the refetch rejects", async () => {
+    mockRefetch.mockRejectedValue(new Error("offline"));
+    await render(<ListScreen {...defaultProps()} />);
+
+    const control = () =>
+      screen.getByTestId("items-list").props.refreshControl.props;
+
+    await act(async () => {
+      await control().onRefresh().catch(() => {});
+    });
+
+    expect(control().refreshing).toBe(false);
+  });
 });

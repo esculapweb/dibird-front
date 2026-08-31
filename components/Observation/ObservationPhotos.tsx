@@ -5,11 +5,25 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 
 import { Config } from "../../constants/config";
+import { BottomSheet } from "../../services/bottomSheet";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import PhotoViewerModal from "../ui/PhotoViewerModal";
 import { ObservationPhoto } from "../../types";
 
+// Editing tiles stay small: that row also carries the add tile and a remove
+// button on every photo, and the form has little vertical room to spare. The
+// read-only strip uses the 150 pt square of the species gallery in
+// SpeciesDetailScreen — which is also the largest size the 400x400 server
+// thumbnail fills without upscaling.
 const TILE_SIZE = 88;
+const VIEW_TILE_SIZE = 150;
+const TILE_GAP = 8;
+
+// What the caption asks for when it sits beside the photos. Anything narrower
+// is not worth a column, and the row wraps the caption under the strip
+// instead — see `row` in the stylesheet.
+const CAPTION_BASIS = 140;
+const CAPTION_GAP = 12;
 
 // A local file:// URI is used as is; a server path is relative, and the media
 // host prefix is the client's job — the same split ProfileAvatar makes for the
@@ -28,6 +42,9 @@ interface ObservationPhotosProps {
   onAdd?: () => void;
   onRemove?: (photo: ObservationPhoto) => void;
   addDisabled?: boolean;
+  // Someone else's photos only (the community card): reporting is offered
+  // inside the full-screen viewer, where the photo is actually looked at.
+  onReport?: (photo: ObservationPhoto) => void;
 }
 
 const ObservationPhotos = ({
@@ -35,6 +52,7 @@ const ObservationPhotos = ({
   onAdd,
   onRemove,
   addDisabled = false,
+  onReport,
 }: ObservationPhotosProps) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -45,93 +63,145 @@ const ObservationPhotos = ({
 
   if (photos.length === 0 && !onAdd) return null;
 
-  // A lone thumbnail in a row of one reads as an appendix to whatever sits
-  // above it rather than as a photo of this observation, so a single photo
-  // gets the full width instead. In the editor the row always holds the add
-  // tile as well, so it stays a strip there.
-  const single = !onAdd && photos.length === 1;
+  // The detail screens show the strip without any editing affordance, and only
+  // there does the caption belong: the form already sits under a "Photos"
+  // section header of its own.
+  const readOnly = !onAdd;
+
+  // Exact width of the strip, used as the flex basis of the scroller so the
+  // row can decide by itself where the caption goes. Both terms are known:
+  // an observation holds at most MAX_OBSERVATION_PHOTOS photos.
+  const stripWidth =
+    photos.length * VIEW_TILE_SIZE + Math.max(photos.length - 1, 0) * TILE_GAP;
+
+  const strip = (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.strip}
+      style={readOnly ? { flexBasis: stripWidth, flexShrink: 1 } : undefined}
+    >
+      {photos.map((photo, index) => {
+        const uri = tileUri(photo);
+
+        return (
+          <Pressable
+            key={photo.id}
+            testID={`observation-photo-tile-${index}`}
+            style={[styles.tile, readOnly && styles.viewTile]}
+            onPress={() => {
+              const position = viewable.indexOf(photo);
+              if (position >= 0) setViewerIndex(position);
+            }}
+          >
+            {uri ? (
+              <Image source={{ uri }} style={styles.image} contentFit="cover" />
+            ) : (
+              <View style={[styles.image, styles.placeholder]}>
+                <Ionicons
+                  name="image-outline"
+                  size={22}
+                  color={Colors.textSecondary}
+                />
+              </View>
+            )}
+
+            {photo._pendingSync === "pending" && (
+              <View style={styles.badge}>
+                <Ionicons
+                  name="cloud-upload-outline"
+                  size={12}
+                  color={Colors.textMain}
+                />
+              </View>
+            )}
+
+            {photo._pendingSync === "error" && (
+              <View style={[styles.badge, { backgroundColor: Colors.error100 }]}>
+                <Ionicons name="warning-outline" size={12} color={Colors.error600} />
+              </View>
+            )}
+
+            {onRemove && (
+              <Pressable
+                testID={`observation-photo-remove-${index}`}
+                style={styles.remove}
+                onPress={() => onRemove(photo)}
+                hitSlop={8}
+              >
+                {/* Not textMain: `overlay` is a dark scrim in both themes
+                    (rgba(0,0,0,.4) light, .7 dark), and in the light one
+                    textMain is near-black — the cross all but vanished. */}
+                <Ionicons name="close" size={14} color="#fff" />
+              </Pressable>
+            )}
+          </Pressable>
+        );
+      })}
+
+      {onAdd && (
+        <Pressable
+          testID="observation-photo-add"
+          style={[styles.tile, styles.addTile, addDisabled && styles.addDisabled]}
+          onPress={onAdd}
+          disabled={addDisabled}
+        >
+          <Ionicons name="add" size={26} color={Colors.main100} />
+          <Text style={styles.addLabel}>{t("add_photo")}</Text>
+        </Pressable>
+      )}
+    </ScrollView>
+  );
 
   return (
     <>
-      <ScrollView
-        horizontal={!single}
-        scrollEnabled={!single}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={single ? styles.single : styles.strip}
-      >
-        {photos.map((photo, index) => {
-          const uri = tileUri(photo);
-
-          return (
-            <Pressable
-              key={photo.id}
-              testID={`observation-photo-tile-${index}`}
-              style={single ? styles.wideTile : styles.tile}
-              onPress={() => {
-                const position = viewable.indexOf(photo);
-                if (position >= 0) setViewerIndex(position);
-              }}
-            >
-              {uri ? (
-                <Image source={{ uri }} style={styles.image} contentFit="cover" />
-              ) : (
-                <View style={[styles.image, styles.placeholder]}>
-                  <Ionicons
-                    name="image-outline"
-                    size={22}
-                    color={Colors.textSecondary}
-                  />
-                </View>
-              )}
-
-              {photo._pendingSync === "pending" && (
-                <View style={styles.badge}>
-                  <Ionicons
-                    name="cloud-upload-outline"
-                    size={12}
-                    color={Colors.textMain}
-                  />
-                </View>
-              )}
-
-              {photo._pendingSync === "error" && (
-                <View style={[styles.badge, { backgroundColor: Colors.error100 }]}>
-                  <Ionicons name="warning-outline" size={12} color={Colors.error600} />
-                </View>
-              )}
-
-              {onRemove && (
-                <Pressable
-                  testID={`observation-photo-remove-${index}`}
-                  style={styles.remove}
-                  onPress={() => onRemove(photo)}
-                  hitSlop={8}
-                >
-                  <Ionicons name="close" size={14} color={Colors.textMain} />
-                </Pressable>
-              )}
-            </Pressable>
-          );
-        })}
-
-        {onAdd && (
-          <Pressable
-            testID="observation-photo-add"
-            style={[styles.tile, styles.addTile, addDisabled && styles.addDisabled]}
-            onPress={onAdd}
-            disabled={addDisabled}
-          >
-            <Ionicons name="add" size={26} color={Colors.main100} />
-            <Text style={styles.addLabel}>{t("add_photo")}</Text>
-          </Pressable>
-        )}
-      </ScrollView>
+      {readOnly ? (
+        <View style={styles.row}>
+          {strip}
+          <View testID="observation-photos-caption" style={styles.caption}>
+            <Text style={styles.captionTitle}>
+              {t("observation_photos_title")}
+            </Text>
+            <Text style={styles.captionNote}>{t("observation_photos_note")}</Text>
+          </View>
+        </View>
+      ) : (
+        strip
+      )}
 
       <PhotoViewerModal
         visible={viewerIndex !== null}
         photos={viewable.map((photo) => ({ uri: fullUri(photo) ?? "" }))}
         initialIndex={viewerIndex ?? 0}
         onClose={() => setViewerIndex(null)}
+        onMorePress={
+          onReport
+            ? (index) => {
+                const photo = viewable[index];
+                if (!photo) return;
+                // The viewer has to go first. It is a native Modal, in its own
+                // window, while the app's single bottom sheet lives in the root
+                // view underneath it — a sheet opened over it would be
+                // invisible, and would only turn up once the viewer was
+                // closed, which reads as the button doing nothing.
+                setViewerIndex(null);
+                // A menu of one row, on purpose: "report" has no pictogram
+                // anyone recognises, and here it gets a label. No hide() on
+                // the row — picking a reason replaces this sheet with the next
+                // one (see overflowMenu for why that must not be dismissed).
+                BottomSheet.showMenu({
+                  items: [
+                    {
+                      label: t("report_photo"),
+                      icon: "flag-outline",
+                      testID: "report-photo-button",
+                      onPress: () => onReport(photo),
+                    },
+                  ],
+                });
+              }
+            : undefined
+        }
       />
     </>
   );
@@ -141,12 +211,38 @@ export default ObservationPhotos;
 
 const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
-    strip: {
-      gap: 8,
-      paddingVertical: 4,
+    // Wrapping is what places the caption: it stays on the photos' line while
+    // the line still fits `CAPTION_BASIS`, and drops under them when it does
+    // not — one photo leaves room for it even on a phone, two already do not,
+    // and a tablet has room to spare for all five. Doing this in flexbox
+    // rather than by measuring the row keeps it correct on the first frame,
+    // with no reflow after a layout pass.
+    row: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      alignItems: "flex-start",
+      columnGap: CAPTION_GAP,
+      rowGap: 8,
     },
-    single: {
-      width: "100%",
+    caption: {
+      flexGrow: 1,
+      flexShrink: 1,
+      flexBasis: CAPTION_BASIS,
+    },
+    captionTitle: {
+      fontSize: 11,
+      color: Colors.textSecondary,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+      marginBottom: 4,
+    },
+    captionNote: {
+      fontSize: 12,
+      color: Colors.textSecondary,
+      lineHeight: 16,
+    },
+    strip: {
+      gap: TILE_GAP,
       paddingVertical: 4,
     },
     tile: {
@@ -155,11 +251,11 @@ const stylesFn = (Colors: ThemeColors) =>
       borderRadius: 10,
       overflow: "hidden",
     },
-    wideTile: {
-      width: "100%",
-      aspectRatio: 4 / 3,
-      borderRadius: 12,
-      overflow: "hidden",
+    viewTile: {
+      width: VIEW_TILE_SIZE,
+      height: VIEW_TILE_SIZE,
+      borderRadius: 14,
+      backgroundColor: Colors.imageBg,
     },
     image: {
       width: "100%",

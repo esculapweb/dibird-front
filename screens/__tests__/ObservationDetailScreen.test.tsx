@@ -52,7 +52,7 @@ jest.mock("../../services/sync/observationSync", () => ({
   runObservationSync: jest.fn(),
 }));
 jest.mock("../../services/bottomSheet", () => ({
-  BottomSheet: { show: jest.fn() },
+  BottomSheet: { show: jest.fn(), showMenu: jest.fn(), hide: jest.fn() },
 }));
 jest.mock("../../hooks/useApiError", () => ({
   useApiError: () => ({ showErrorToast: mockShowErrorToast }),
@@ -87,21 +87,18 @@ jest.mock("../../components/ui/IconsHeader", () => {
   const { TouchableOpacity, Text } = require("react-native");
   return {
     __esModule: true,
-    default: ({ headerRightBeginning, onSharePress }: {
-      headerRightBeginning: Array<{ onPress: () => void; disabled?: boolean; condition?: unknown; testID?: string }>;
-      onSharePress?: () => void;
+    default: ({ headerRightBeginning = [], headerRightEnd = [] }: {
+      headerRightBeginning?: Array<{ onPress: () => void; disabled?: boolean; condition?: unknown; testID?: string }>;
+      headerRightEnd?: Array<{ onPress: () => void; disabled?: boolean; condition?: unknown; testID?: string }>;
     }) => (
       <>
-        {headerRightBeginning.filter((btn) => btn.condition).map((btn, i) => (
-          <TouchableOpacity key={i} testID={btn.testID} onPress={btn.disabled ? undefined : btn.onPress}>
-            <Text>{btn.disabled ? "disabled" : "enabled"}</Text>
-          </TouchableOpacity>
-        ))}
-        {onSharePress && (
-          <TouchableOpacity testID="share-button" onPress={onSharePress}>
-            <Text>share</Text>
-          </TouchableOpacity>
-        )}
+        {[...headerRightBeginning, ...headerRightEnd]
+          .filter((btn) => btn.condition)
+          .map((btn, i) => (
+            <TouchableOpacity key={i} testID={btn.testID} onPress={btn.disabled ? undefined : btn.onPress}>
+              <Text>{btn.disabled ? "disabled" : "enabled"}</Text>
+            </TouchableOpacity>
+          ))}
       </>
     ),
   };
@@ -162,6 +159,16 @@ const mockItem = (overrides: Record<string, unknown> = {}) => {
     refetch: mockRefetch,
     ...overrides,
   });
+};
+
+// Sharing and deleting live behind the header's "⋯" now — open it and pick a
+// row by label (the test `t` returns the key).
+const menuRow = async (label: string) => {
+  await fireEvent.press(await headerButton("overflow-button"));
+  const { items } = (BottomSheet.showMenu as jest.Mock).mock.calls.at(-1)![0];
+  const row = items.find((item: { label: string }) => item.label === label);
+  if (!row) throw new Error(`no "${label}" row: ${items.map((i: { label: string }) => i.label)}`);
+  return row as { onPress: () => void };
 };
 
 const headerButton = async (testID: string) => {
@@ -309,20 +316,20 @@ describe("owner-only header actions", () => {
     expect(screen.queryByTestId("observation-edit-button")).not.toBeOnTheScreen();
   });
 
-  it("bottomEl (delete button) only renders for the owner", async () => {
+  it("offers deleting to the owner only", async () => {
     await render(<ObservationDetailScreen />);
-    expect(screen.getByText("delete_observation")).toBeOnTheScreen();
+    expect(await menuRow("delete_observation")).toBeTruthy();
 
     mockItem({ data: { ...OBSERVATION, is_owner: false } });
     await render(<ObservationDetailScreen />);
-    expect(screen.queryByText("delete_observation")).not.toBeOnTheScreen();
+    await expect(menuRow("delete_observation")).rejects.toThrow();
   });
 });
 
 describe("delete", () => {
   it("shows a danger confirm sheet, deleting and going back on confirm", async () => {
     await render(<ObservationDetailScreen />);
-    await fireEvent.press(screen.getByText("delete_observation"));
+    (await menuRow("delete_observation")).onPress();
 
     expect(BottomSheet.show).toHaveBeenCalledWith(
       expect.objectContaining({ danger: true, title: "delete_title" }),
@@ -335,6 +342,38 @@ describe("delete", () => {
     expect(mockDeleteMutate).toHaveBeenCalledWith(1, expect.anything());
     expect(mockNavigation.goBack).toHaveBeenCalledTimes(1);
   });
+
+  it("keeps the confirm sheet waiting until the delete settles", async () => {
+    await render(<ObservationDetailScreen />);
+    (await menuRow("delete_observation")).onPress();
+    const { onConfirm } = (BottomSheet.show as jest.Mock).mock.calls[0][0];
+
+    let settled = false;
+    const pending = onConfirm().then(() => {
+      settled = true;
+    });
+
+    // The sheet shows its spinner for as long as this promise is unresolved —
+    // the progress the red button at the bottom of the screen used to carry.
+    await Promise.resolve();
+    expect(settled).toBe(false);
+
+    mockDeleteMutate.mock.calls[0][1].onSuccess();
+    await pending;
+    expect(settled).toBe(true);
+  });
+
+  it("stops waiting when the delete fails, after reporting it", async () => {
+    await render(<ObservationDetailScreen />);
+    (await menuRow("delete_observation")).onPress();
+    const { onConfirm } = (BottomSheet.show as jest.Mock).mock.calls[0][0];
+
+    const pending = onConfirm();
+    mockDeleteMutate.mock.calls[0][1].onError({ message: "boom" });
+
+    await expect(pending).resolves.toBeUndefined();
+    expect(mockShowErrorToast).toHaveBeenCalled();
+  });
 });
 
 describe("handleShare", () => {
@@ -342,8 +381,7 @@ describe("handleShare", () => {
     mockItem({ data: { ...OBSERVATION, private: true } });
     const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction" } as never);
     await render(<ObservationDetailScreen />);
-    await headerButton("observation-edit-button");
-    await fireEvent.press(screen.getByTestId("share-button"));
+    (await menuRow("share")).onPress();
 
     expect(Toast.show).toHaveBeenCalledWith(expect.objectContaining({ text1: "observation_private" }));
     expect(shareSpy).not.toHaveBeenCalled();
@@ -353,8 +391,7 @@ describe("handleShare", () => {
     const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction" } as never);
     Platform.OS = "android";
     await render(<ObservationDetailScreen />);
-    await headerButton("observation-edit-button");
-    await fireEvent.press(screen.getByTestId("share-button"));
+    (await menuRow("share")).onPress();
     expect(shareSpy).toHaveBeenCalledWith({ message: expect.stringContaining("my/community/1/") });
   });
 });

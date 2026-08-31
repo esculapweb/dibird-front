@@ -1,4 +1,4 @@
-import { useLayoutEffect, useCallback } from "react";
+import { useLayoutEffect, useCallback, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -28,9 +28,17 @@ import Section from "../components/ui/Section";
 import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
 import IconsHeader from "../components/ui/IconsHeader";
+import ObservationPhotos from "../components/Observation/ObservationPhotos";
 import { track } from "../services/analytics";
 import Layout from "../components/ui/Layout";
-import { AppStackNavigationProp, AppStackRouteProp } from "../types";
+import { overflowButton } from "../components/ui/overflowMenu";
+import { useModeration } from "../hooks/useModeration";
+import {
+  AppStackNavigationProp,
+  AppStackRouteProp,
+  IconButtonConfig,
+  ObservationPhoto,
+} from "../types";
 import MapL from "../components/Map/MapL";
 
 const CommunityDetailScreen = () => {
@@ -39,8 +47,6 @@ const CommunityDetailScreen = () => {
   const route = useRoute<AppStackRouteProp<"ObservationDetail">>();
   const { observationId } = route.params;
   const type = "Community";
-
-  // todo? if observation.is_owner navigate to observationDetail - no observation object
 
   const {
     data: observation,
@@ -54,6 +60,24 @@ const CommunityDetailScreen = () => {
   const { Colors } = useTheme();
   const { t } = useTranslation();
   const styles = stylesFn(Colors);
+  const { report, block } = useModeration();
+
+  // Own record on the feed's screen: the share button on ObservationDetail
+  // builds a community URL (`my/community/<id>/`), and the feed's retrieve
+  // serves your own observations too — so opening your own shared link lands
+  // here, on a card built for someone else's record: no notes, no privacy
+  // toggle, no editing, and an "I saw this too" button that would duplicate
+  // what you are looking at. The list itself never gets here (it excludes own
+  // records server-side, and DiaryObservationCard routes by ownership).
+  //
+  // replace, not navigate: this screen has nothing to come back to. The id is
+  // enough — `initialObservation` is optional on ObservationDetail, which
+  // loads the record itself.
+  useEffect(() => {
+    if (observation?.is_owner) {
+      navigation.replace("ObservationDetail", { observationId });
+    }
+  }, [observation?.is_owner, navigation, observationId]);
 
   const { fullName } = useProfileDisplay({
     firstName: observation?.owner?.first_name,
@@ -79,12 +103,67 @@ const CommunityDetailScreen = () => {
     await Share.share(Platform.OS === "ios" ? { url } : { message: url });
   }, [observation, observationId]);
 
+  // The server stops serving a record its viewer reported, so staying here
+  // would mean sitting on a card the next refetch turns into a 404.
+  const handleReport = useCallback(
+    () =>
+      report(
+        { observation: observationId },
+        { onDone: () => navigation.goBack() },
+      ),
+    [report, observationId, navigation],
+  );
+
+  // A photo is reported without leaving: the rest of the record is not what
+  // the complaint is about, and the invalidated query drops the photo from
+  // the strip by itself.
+  const handleReportPhoto = useCallback(
+    (photo: ObservationPhoto) => report({ photo: photo.id }),
+    [report],
+  );
+
+  // Blocking sits next to reporting rather than only on the author's profile:
+  // this is where a stranger's content is actually seen, and making the reader
+  // find the profile screen first is exactly the friction Apple's UGC rule is
+  // about.
+  const headerRightEnd = useMemo<IconButtonConfig[]>(
+    () => [
+      overflowButton([
+        {
+          label: t("share"),
+          icon: "share-social-outline",
+          onPress: () => {
+            void handleShare();
+          },
+        },
+        {
+          label: t("report_observation"),
+          icon: "flag-outline",
+          opensAnotherSheet: true,
+          testID: "report-observation-button",
+          onPress: handleReport,
+        },
+        {
+          condition: !!observation?.owner?.id,
+          label: t("block_author"),
+          icon: "ban-outline",
+          danger: true,
+          opensAnotherSheet: true,
+          testID: "block-author-button",
+          onPress: () =>
+            block(observation.owner.id, { onDone: () => navigation.goBack() }),
+        },
+      ]),
+    ],
+    [t, handleShare, handleReport, block, observation, navigation],
+  );
+
   useLayoutEffect(() => {
     if (!observation) return;
     navigation.setOptions({
-      headerRight: () => <IconsHeader onSharePress={handleShare} />,
+      headerRight: () => <IconsHeader headerRightEnd={headerRightEnd} />,
     });
-  }, [navigation, handleShare, observation]);
+  }, [navigation, headerRightEnd, observation]);
 
   // TanStack sets isError on *any* failed fetch, background ones included,
   // and does not clear `data` when that happens — so isError alone doesn't
@@ -102,7 +181,10 @@ const CommunityDetailScreen = () => {
     );
   }
 
-  if (isLoading || !observation) return <LoadingOverlay />;
+  // is_owner holds the screen on the overlay rather than rendering a card the
+  // effect above is about to replace anyway.
+  if (isLoading || !observation || observation.is_owner)
+    return <LoadingOverlay />;
 
   const name =
     observation.species_data.name_lang || observation.species_data.name;
@@ -141,14 +223,27 @@ const CommunityDetailScreen = () => {
             <>
               <View style={styles.imageWrapper}>
                 {observation?.species_data?.thumb ? (
-                  <Image
-                    source={{
-                      uri: `${Config.mediaUrl}/${observation.species_data.thumb}`,
-                    }}
-                    style={styles.image}
-                    contentFit="cover"
-                    cachePolicy="disk"
-                  />
+                  <>
+                    <Image
+                      source={{
+                        uri: `${Config.mediaUrl}/${observation.species_data.thumb}`,
+                      }}
+                      style={styles.image}
+                      contentFit="cover"
+                      cachePolicy="disk"
+                    />
+                    {/* Same shape and same subject as the observation's own
+                        photos in the strip below, so this reference shot of
+                        the species has to say which of the two it is. */}
+                    <View style={styles.speciesPhotoBadge}>
+                      <Text
+                        style={styles.speciesPhotoBadgeText}
+                        numberOfLines={1}
+                      >
+                        {t("species_photo_badge")}
+                      </Text>
+                    </View>
+                  </>
                 ) : (
                   <View style={styles.imagePlaceholder}>
                     <BirdSVG size={40} color={Colors.textSecondary} />
@@ -202,6 +297,18 @@ const CommunityDetailScreen = () => {
             </>
           )}
         </Pressable>
+
+        {/* Someone else's photos come down with the feed row itself (see
+            Observation2Serializer), so the card shows them the same way the
+            own observation does. */}
+        {!!observation.photos?.length && (
+          <View style={styles.photosRow}>
+            <ObservationPhotos
+              photos={observation.photos}
+              onReport={handleReportPhoto}
+            />
+          </View>
+        )}
 
         <Pressable
           style={[styles.placeRow, { marginTop: 8 }]}
@@ -264,7 +371,10 @@ const CommunityDetailScreen = () => {
                 {observation?.territory_data?.name}
               </Text>
 
-              {(observation.is_owner || observation.location_private) && (
+              {/* Own records never render here any more — they are replaced
+                  with ObservationDetail above — so what is left is the
+                  stranger's half of the rule. */}
+              {observation.location_private && (
                 <Text style={styles.placeName} numberOfLines={2}>
                   {/* Whether the name is visible is the server's call:
                       someone else's place comes back with `name: null`, a
@@ -331,6 +441,24 @@ const stylesFn = (Colors: ThemeColors) =>
       backgroundColor: Colors.imageBg,
       justifyContent: "center",
       alignItems: "center",
+    },
+    speciesPhotoBadge: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      bottom: 0,
+      alignItems: "center",
+      paddingVertical: 3,
+      backgroundColor: "rgba(0, 0, 0, 0.45)",
+      borderBottomLeftRadius: 12,
+      borderBottomRightRadius: 12,
+    },
+    speciesPhotoBadgeText: {
+      fontSize: 9,
+      fontWeight: "600",
+      color: "#fff",
+      textTransform: "uppercase",
+      letterSpacing: 0.4,
     },
     imageOverlay: {
       position: "absolute",
@@ -420,6 +548,12 @@ const stylesFn = (Colors: ThemeColors) =>
       fontSize: 12,
       color: Colors.textSecondary,
       marginBottom: 2,
+    },
+    photosRow: {
+      marginTop: 8,
+      paddingTop: 8,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: Colors.border,
     },
     placeRow: {
       paddingVertical: 8,

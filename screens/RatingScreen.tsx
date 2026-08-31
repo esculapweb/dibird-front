@@ -1,10 +1,11 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Share, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
 import { useNavigation, useRoute } from "@react-navigation/native";
 
 import ListScreen from "./ListScreen";
+import { overflowButton } from "../components/ui/overflowMenu";
 import { fetchRating } from "../util/fetches";
 import RatingCard from "../components/Rating/RatingCard";
 import { useFilters } from "../store/filters-context";
@@ -76,6 +77,21 @@ const RatingScreen = () => {
     await Share.share(Platform.OS === "ios" ? { url } : { message: url });
   }, [currentFilters, currentSort]);
 
+  const headerRightEnd = useMemo(
+    () => [
+      overflowButton([
+        {
+          label: t("share"),
+          icon: "share-social-outline",
+          onPress: () => {
+            void handleShare();
+          },
+        },
+      ]),
+    ],
+    [t, handleShare],
+  );
+
   const noItems = {
     icon: "trophy-outline" as const,
     message: t("no_rating_yet"),
@@ -115,8 +131,7 @@ const RatingScreen = () => {
       getItemId={(item: RatingItem) => item.profile_id}
       noItems={noItems}
       title={t("rating")}
-      fabIcon="people-outline"
-      handleSharePress={handleShare}
+      headerRightEnd={headerRightEnd}
       bottomEl={bottomEl}
     />
   );

@@ -29,6 +29,15 @@ jest.mock("@expo/vector-icons", () => {
     Ionicons: ({ name }: { name: string }) => <Text>{`icon-${name}`}</Text>,
   };
 });
+const mockShowMenu = jest.fn();
+jest.mock("../../services/bottomSheet", () => ({
+  BottomSheet: {
+    showMenu: (payload: unknown) => mockShowMenu(payload),
+    showContent: jest.fn(),
+    show: jest.fn(),
+    hide: jest.fn(),
+  },
+}));
 jest.mock("../../components/ui/IconsHeader", () => {
   const { View } = require("react-native");
   return { __esModule: true, default: () => <View testID="icons-header" /> };
@@ -52,7 +61,12 @@ jest.mock("../../hooks/useTaxonomySort", () => ({
 
 import { Share } from "react-native";
 import { fireEvent, render, screen } from "@testing-library/react-native";
-import { createNavigationMock, createRouteMock } from "../test-utils";
+import {
+  createNavigationMock,
+  createRouteMock,
+  openOverflow,
+  overflowRow,
+} from "../test-utils";
 import TaxonomyScreen from "../TaxonomyScreen";
 import { setNavigationCallback } from "../../util/navigationCallbacks";
 
@@ -60,8 +74,9 @@ let mockRoute: ReturnType<typeof createRouteMock>;
 let mockListProps: Record<string, unknown>;
 const mockNavigation = createNavigationMock();
 
-// The IconsHeader props (onSharePress etc.) the screen hands to setOptions,
-// read straight off the headerRight element without mounting it.
+// The IconsHeader props the screen hands to setOptions, read straight off the
+// headerRight element without mounting it. Sharing is no longer one of them —
+// it lives in the "⋯" menu (see openOverflow).
 const headerProps = (): Record<string, unknown> => {
   const options = (mockNavigation.setOptions as jest.Mock).mock.calls.at(-1)![0];
   return options.headerRight().props;
@@ -196,7 +211,10 @@ it("shares the catalogue with its current filters", async () => {
   });
 
   await render(<TaxonomyScreen />);
-  await (headerProps().onSharePress as () => Promise<void>)();
+  overflowRow(
+    openOverflow(headerProps().headerRightEnd, mockShowMenu),
+    "share",
+  ).onPress();
 
   const arg = shareSpy.mock.calls[0][0] as { url?: string; message?: string };
   const shared = arg.url ?? arg.message ?? "";
@@ -208,7 +226,10 @@ it("offers no share action while picking a species", async () => {
 
   await render(<TaxonomyScreen />);
 
-  expect(headerProps().onSharePress).toBeUndefined();
+  // Its only row gone, the menu button goes with it rather than opening empty.
+  expect(() =>
+    openOverflow(headerProps().headerRightEnd, mockShowMenu),
+  ).toThrow();
 });
 
 it("shares the extinct list at its own path", async () => {
@@ -218,7 +239,10 @@ it("shares the extinct list at its own path", async () => {
   mockRoute = createRouteMock("Taxonomy", { rank: 5, extinct: true });
 
   await render(<TaxonomyScreen />);
-  await (headerProps().onSharePress as () => Promise<void>)();
+  overflowRow(
+    openOverflow(headerProps().headerRightEnd, mockShowMenu),
+    "share",
+  ).onPress();
 
   const arg = shareSpy.mock.calls[0][0] as { url?: string; message?: string };
   expect(arg.url ?? arg.message ?? "").toContain("/extinct/");
@@ -250,7 +274,10 @@ it("shares the orders list at its own path", async () => {
   mockRoute = createRouteMock("Taxonomy", { rank: 2 });
 
   await render(<TaxonomyScreen />);
-  await (headerProps().onSharePress as () => Promise<void>)();
+  overflowRow(
+    openOverflow(headerProps().headerRightEnd, mockShowMenu),
+    "share",
+  ).onPress();
 
   const arg = shareSpy.mock.calls[0][0] as { url?: string; message?: string };
   expect(arg.url ?? arg.message ?? "").toContain("/order/");
@@ -265,7 +292,9 @@ it("offers no share on a nested list", async () => {
 
   await render(<TaxonomyScreen />);
 
-  expect(headerProps().onSharePress).toBeUndefined();
+  expect(() =>
+    openOverflow(headerProps().headerRightEnd, mockShowMenu),
+  ).toThrow();
 });
 
 it("autofocuses and relabels the search on the species list", async () => {

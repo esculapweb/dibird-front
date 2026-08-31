@@ -121,6 +121,9 @@ import {
   FetchFunction,
   AppUpdateKind,
   AppUpdateStage,
+  BlockedUser,
+  ReportReason,
+  ReportTarget,
 } from "../types";
 
 export const exportProfileData = async (): Promise<void> => {
@@ -785,6 +788,37 @@ export const uploadObservationPhoto = async (
 
 export const deleteObservationPhoto = (id: number) =>
   api.delete(`${OBSERVATION_PHOTO_URL}${id}/`);
+
+// Moderation. Neither of these has an offline fallback on purpose: a report
+// that only reached the local database would leave the user believing the
+// content is gone while nobody has been told, and a block is what the feed's
+// own queryset is filtered by — it has to reach the server to mean anything.
+export const reportContent = async (
+  target: ReportTarget,
+  reason: ReportReason,
+  comment?: string,
+): Promise<void> => {
+  await api.post("/myapi/reports/", {
+    ...target,
+    reason,
+    ...(comment ? { comment } : {}),
+  });
+};
+
+export const fetchBlockedUsers = async (): Promise<BlockedUser[]> => {
+  const res = await api.get<PaginatedResponse<BlockedUser>>("/myapi/blocks/");
+  return res.data.results;
+};
+
+export const blockUser = async (profileId: number): Promise<void> => {
+  await api.post("/myapi/blocks/", { blocked: profileId });
+};
+
+// Addressed by profile id, not by the id of the block row: the screen that
+// unblocks knows who, and the server's lookup_field matches (UserBlockViewSet).
+export const unblockUser = async (profileId: number): Promise<void> => {
+  await api.delete(`/myapi/blocks/${profileId}/`);
+};
 
 export const patchAvatar = async (
   image: ImageAsset,

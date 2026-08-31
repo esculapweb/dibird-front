@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Share, Platform } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -8,6 +8,7 @@ import { useRoute } from "@react-navigation/native";
 import { fetchRatingCompareHeader, fetchRatingCompare } from "../util/fetches";
 import { StaleTime } from "../constants/staleTime";
 import ListScreen from "./ListScreen";
+import { overflowButton } from "../components/ui/overflowMenu";
 import Tabs from "../components/ui/Tabs";
 import CompareProfileHeader from "../components/Profile/CompareProfileHeader";
 import RatingCompareCard from "../components/Rating/RatingCompareCard";
@@ -81,6 +82,21 @@ const RatingsCompareScreen = () => {
     message: t("no_observations_yet"),
   };
 
+  const headerRightEnd = useMemo(
+    () => [
+      overflowButton([
+        {
+          label: t("share"),
+          icon: "share-social-outline",
+          onPress: () => {
+            void handleShare();
+          },
+        },
+      ]),
+    ],
+    [t, handleShare],
+  );
+
   const topEl = (
     <CompareProfileHeader
       myProfileId={profile?.user}
@@ -127,7 +143,7 @@ const RatingsCompareScreen = () => {
       onFiltersChange={async (val) => setCurrentFilters(val)}
       onSortChange={async (val) => setCurrentSort(val)}
       showHeaderBadge={false}
-      handleSharePress={handleShare}
+      headerRightEnd={headerRightEnd}
       listHeader={topEl}
       bottomEl={
         <Tabs

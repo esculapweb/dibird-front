@@ -97,6 +97,7 @@ const DiariesScreen = () => {
               count: place.diary_place_count,
             }),
             icon: "book-outline",
+            testID: "map-place-diaries-button",
             onPress: async () => {
               // Same shortcut as the observations map: one outing needs no
               // list to pick it out of.
@@ -123,6 +124,7 @@ const DiariesScreen = () => {
           {
             label: t("map_open_place"),
             icon: "location-outline",
+            testID: "map-open-place-button",
             onPress: () => {
               BottomSheet.hide();
               navigation.navigate("PlaceDetail", { placeId: place.id });

@@ -8,6 +8,7 @@ interface DeepLinkParams {
   date_time_min?: string | null;
   date_time_max?: string | null;
   private?: boolean | string | null;
+  has_photo?: boolean | string | null;
   source?: string | null;
   radius?: number | string | null;
   o?: string | null;
@@ -20,7 +21,7 @@ const SOURCES: readonly ObservationSource[] = ["dibird", "ebird"];
 // A link carries `private=true`/`private=false`, and both are a filter — only
 // a missing (or unparsable) value means "not filtered by privacy". React
 // Navigation hands the value over as a string, an in-app navigation as a
-// boolean.
+// boolean. `has_photo` is read the same way, for the same reason.
 const parseBoolParam = (
   value: boolean | string | null | undefined,
 ): boolean | null => {
@@ -47,6 +48,7 @@ export const parseDeepLinkParams = (params: DeepLinkParams = {}) => {
     date_time_min,
     date_time_max,
     private: privateParam,
+    has_photo: hasPhotoParam,
     source,
     radius,
     o,
@@ -66,6 +68,9 @@ export const parseDeepLinkParams = (params: DeepLinkParams = {}) => {
   // deep-linked filters replace the screen's own set wholesale.
   const privateValue = parseBoolParam(privateParam);
   if (privateValue !== null) filters.private = privateValue;
+
+  const hasPhotoValue = parseBoolParam(hasPhotoParam);
+  if (hasPhotoValue !== null) filters.has_photo = hasPhotoValue;
 
   const sourceValue = SOURCES.find((s) => s === source) ?? null;
   if (sourceValue) filters.source = sourceValue;
@@ -94,6 +99,7 @@ export const parseDeepLinkParams = (params: DeepLinkParams = {}) => {
     filters.species ||
     filters.date ||
     filters.private != null ||
+    filters.has_photo != null ||
     filters.source ||
     filters.radius ||
     sort

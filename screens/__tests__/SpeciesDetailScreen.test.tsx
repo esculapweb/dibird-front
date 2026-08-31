@@ -2,6 +2,15 @@
 // needs a native module this environment has no business loading. The gate
 // itself is covered by hooks/__tests__/useRequireAuth.test.tsx; here we take
 // the signed-in path, which is what the add-observation cases below assert.
+const mockShowMenu = jest.fn();
+jest.mock("../../services/bottomSheet", () => ({
+  BottomSheet: {
+    showMenu: (payload: unknown) => mockShowMenu(payload),
+    showContent: jest.fn(),
+    show: jest.fn(),
+    hide: jest.fn(),
+  },
+}));
 jest.mock("../../hooks/useRequireAuth", () => ({
   useRequireAuth: () => (_action: string, run: () => void) => run(),
 }));
@@ -79,7 +88,12 @@ jest.mock("../../services/analytics", () => ({ track: jest.fn() }));
 import { Share } from "react-native";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { useQuery } from "@tanstack/react-query";
-import { createNavigationMock, createRouteMock } from "../test-utils";
+import {
+  createNavigationMock,
+  createRouteMock,
+  openOverflow,
+  overflowRow,
+} from "../test-utils";
 import { useDefaultTerritory } from "../../hooks/useDefaultTerritory";
 import { track } from "../../services/analytics";
 import SpeciesDetailScreen from "../SpeciesDetailScreen";
@@ -732,7 +746,10 @@ it("shares the species page on the tab it was read from", async () => {
   await render(<SpeciesDetailScreen />);
   await fireEvent.press(screen.getByText("countries"));
   const options = (mockNavigation.setOptions as jest.Mock).mock.calls.at(-1)![0];
-  await options.headerRight().props.onSharePress();
+  overflowRow(
+    openOverflow(options.headerRight().props.headerRightEnd, mockShowMenu),
+    "share",
+  ).onPress();
 
   const arg = shareSpy.mock.calls[0][0] as { url?: string; message?: string };
   expect(arg.url ?? arg.message ?? "").toContain(

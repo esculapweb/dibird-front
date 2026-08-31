@@ -105,10 +105,22 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
       // Optimistically, without waiting for the library's own onChange: a
       // dismiss() arriving in the same tick has to find the sheet open, or it
       // would be dropped by the guard below and leave the sheet hanging.
+      const wasOpen = isOpenRef.current;
       isOpenRef.current = true;
       setPayload(newPayload);
       setInputValue("");
-      bottomSheetRef.current?.present();
+      // Only ask the library to open a sheet that is not open already. A menu
+      // row that opens a confirmation (overflowMenu's `opensAnotherSheet`)
+      // presents straight over the open menu, and present() on the library's
+      // side is not the no-op it looks like: it re-snaps in a
+      // requestAnimationFrame, and with enableDynamicSizing that lands before
+      // React has laid out the payload we just swapped in — so it snaps
+      // against a content height that is on its way out and can resolve to the
+      // closed position, which arrives here as onChange(-1) and takes the
+      // sheet down a few frames after it was asked to show something. Swapping
+      // the payload alone is enough: dynamic sizing re-measures the new
+      // content and re-snaps to it by itself.
+      if (!wasOpen) bottomSheetRef.current?.present();
 
       // This sheet is a single one for the whole app (services/bottomSheet.ts
       // drives it through a module-level ref) and lives outside the navigator,
@@ -152,6 +164,15 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
           | undefined;
         if (!root || hasRouteKey(root, openedOn)) return;
         stopWatchingRoute();
+        // Mark it closed here, exactly as dismiss() does — this is the same
+        // close, just reached from the other side. Without it the flag stays
+        // true on an already-closing sheet and the next dismiss() sails past
+        // its guard, which is the fatal second dismiss() described there.
+        // A confirm sheet whose onConfirm resolves only *after* navigating
+        // away (the delete handlers do: they resolve inside the mutation's
+        // onSuccess, right after goBack) reaches that ordering every time —
+        // this listener fires first, handleConfirm's dismiss() lands second.
+        isOpenRef.current = false;
         bottomSheetRef.current?.dismiss();
       });
     },
@@ -284,6 +305,7 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
                     {i > 0 && <View style={styles.divider} />}
                     <Pressable
                       style={styles.menuRow}
+                      testID={item.testID}
                       onPress={() => {
                         item.onPress();
                       }}

@@ -1,3 +1,12 @@
+const mockShowMenu = jest.fn();
+jest.mock("../../services/bottomSheet", () => ({
+  BottomSheet: {
+    showMenu: (payload: unknown) => mockShowMenu(payload),
+    showContent: jest.fn(),
+    show: jest.fn(),
+    hide: jest.fn(),
+  },
+}));
 jest.mock("../../store/theme-context", () => ({
   useTheme: () => require("../mockTheme").mockUseTheme(),
 }));
@@ -50,7 +59,12 @@ import Toast from "react-native-toast-message";
 import { fetchRating } from "../../util/fetches";
 import { useFilters } from "../../store/filters-context";
 import { useProfile } from "../../store/profile-context";
-import { createNavigationMock, createRouteMock } from "../test-utils";
+import {
+  createNavigationMock,
+  createRouteMock,
+  openOverflow,
+  overflowRow,
+} from "../test-utils";
 import RatingScreen from "../RatingScreen";
 
 const mockNavigation = createNavigationMock();
@@ -78,13 +92,15 @@ afterEach(() => {
   Platform.OS = originalOS;
 });
 
-it("passes fetchRating, getItemId, and fabIcon through to ListScreen", async () => {
+it("passes fetchRating and getItemId through to ListScreen", async () => {
   await render(<RatingScreen />);
   const props = latestProps();
   expect(props.fetchFunction).toBe(fetchRating);
   expect(props.title).toBe("rating");
-  expect(props.fabIcon).toBe("people-outline");
   expect(props.getItemId({ profile_id: 42 })).toBe(42);
+  // No fabIcon: ListScreen draws the FAB only for `onAdd`, which this screen
+  // does not pass — comparing happens through the button at the bottom.
+  expect(props.fabIcon).toBeUndefined();
 });
 
 it("renderItem wires isSelected/onToggle/profile from RatingScreen's own state", async () => {
@@ -147,11 +163,17 @@ it("handleShare shares a platform-appropriate payload", async () => {
 
   Platform.OS = "ios";
   await render(<RatingScreen />);
-  await latestProps().handleSharePress();
+  overflowRow(
+    openOverflow(latestProps().headerRightEnd, mockShowMenu),
+    "share",
+  ).onPress();
   expect(shareSpy).toHaveBeenLastCalledWith({ url: expect.any(String) });
 
   Platform.OS = "android";
   await render(<RatingScreen />);
-  await latestProps().handleSharePress();
+  overflowRow(
+    openOverflow(latestProps().headerRightEnd, mockShowMenu),
+    "share",
+  ).onPress();
   expect(shareSpy).toHaveBeenLastCalledWith({ message: expect.any(String) });
 });

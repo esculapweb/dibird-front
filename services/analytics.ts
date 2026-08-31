@@ -69,6 +69,9 @@ export type AlertsEnabledSource = "settings" | "main_card";
 /** Where the donation page was opened from. */
 export type DonateSource = "settings";
 
+/** What a complaint is about — mirrors ReportTarget in types.ts. */
+export type ReportTargetKind = "observation" | "photo" | "profile";
+
 /**
  * The onboarding steps. A literal union rather than `number`: in Firebase the
  * parameter turns into a string anyway, and a "step 5" that does not exist in the
@@ -170,6 +173,13 @@ type EventParams = {
    * it is the taxonomy that needs catching up, not the funnel.
    */
   import_finished: { imported: number; unmatched: number };
+  /**
+   * The reason sheet was opened, not the complaint that followed: the sheet can
+   * be dismissed, and the gap between the two is what says whether people are
+   * reaching for the button by mistake. `target` is what was being reported,
+   * because a photo and a person are different problems.
+   */
+  report_opened: { target: ReportTargetKind };
 };
 
 export type AnalyticsEventName = keyof EventParams;

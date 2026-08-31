@@ -107,6 +107,12 @@ describe("private/source/radius", () => {
     expect(result.current.getFilterLabel("source", "dibird")).toEqual(["source", "source_dibird"]);
   });
 
+  it("labels both sides of the photo filter", async () => {
+    const { result } = await renderHook(() => useFilterLabels(5));
+    expect(result.current.getFilterLabel("has_photo", true)).toEqual(["section_photos", "yes"]);
+    expect(result.current.getFilterLabel("has_photo", false)).toEqual(["section_photos", "no"]);
+  });
+
   it("spells the radius out in kilometres", async () => {
     const { result } = await renderHook(() => useFilterLabels(5));
     expect(result.current.getFilterLabel("radius", 50)).toEqual(["radius", "50 km"]);

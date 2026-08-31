@@ -235,12 +235,18 @@ const TaxonFilterSheet = ({
         );
       })}
 
+      {/* Reachable by id rather than by its label: "apply" is a common enough
+          word to turn up inside some other string in the same sheet, and a
+          text selector takes the first match in the hierarchy — which is a
+          trait row long before it is this button. That is exactly how the
+          filter sheet next door broke (see FilterSheetContent). */}
       <Pressable
         style={styles.applyButton}
         onPress={() => {
           onApply(draft);
           dismiss();
         }}
+        testID="taxon-filter-apply-button"
       >
         <Text style={styles.applyText}>{t("apply")}</Text>
       </Pressable>

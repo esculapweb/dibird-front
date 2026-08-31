@@ -1,3 +1,12 @@
+const mockShowMenu = jest.fn();
+jest.mock("../../services/bottomSheet", () => ({
+  BottomSheet: {
+    showMenu: (payload: unknown) => mockShowMenu(payload),
+    showContent: jest.fn(),
+    show: jest.fn(),
+    hide: jest.fn(),
+  },
+}));
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
   initReactI18next: { type: "3rdParty", init: () => {} },
@@ -115,7 +124,12 @@ import { ReactElement } from "react";
 import { Share } from "react-native";
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { useQuery } from "@tanstack/react-query";
-import { createNavigationMock, createRouteMock } from "../test-utils";
+import {
+  createNavigationMock,
+  createRouteMock,
+  openOverflow,
+  overflowRow,
+} from "../test-utils";
 import TerritoryCompareScreen from "../TerritoryCompareScreen";
 import { callNavigationCallback } from "../../util/navigationCallbacks";
 import { TerritoryCompareResponse, TerritoryCompareSpecies } from "../../types";
@@ -451,7 +465,10 @@ it("shares the comparison at the site's own two-country path", async () => {
   } as never);
 
   await render(<TerritoryCompareScreen />);
-  await (headerProps().onSharePress as () => Promise<void>)();
+  overflowRow(
+    openOverflow(headerProps().headerRightEnd, mockShowMenu),
+    "share",
+  ).onPress();
 
   const arg = shareSpy.mock.calls[0][0] as { url?: string; message?: string };
   expect(arg.url ?? arg.message ?? "").toContain(
@@ -464,7 +481,9 @@ it("offers no share action until both countries are picked", async () => {
 
   await render(<TerritoryCompareScreen />);
 
-  expect(headerProps().onSharePress).toBeUndefined();
+  expect(() =>
+    openOverflow(headerProps().headerRightEnd, mockShowMenu),
+  ).toThrow();
 });
 
 // A link shared from another language carries that language's slugs. The API
@@ -544,7 +563,10 @@ it("shares the tab, order and search along with the two countries", async () => 
   } as never);
 
   await render(<TerritoryCompareScreen />);
-  await (headerProps().onSharePress as () => Promise<void>)();
+  overflowRow(
+    openOverflow(headerProps().headerRightEnd, mockShowMenu),
+    "share",
+  ).onPress();
 
   const arg = shareSpy.mock.calls[0][0] as { url?: string; message?: string };
   expect(arg.url ?? arg.message ?? "").toContain(

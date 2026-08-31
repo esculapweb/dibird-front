@@ -27,6 +27,7 @@ import DiaryEditorScreen from "../screens/DiaryEditorScreen";
 import RatingScreen from "../screens/RatingScreen";
 import RatingsCompareScreen from "../screens/RatingsCompareScreen";
 import UserStatScreen from "../screens/UserStatScreen";
+import BlockedUsersScreen from "../screens/BlockedUsersScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import AlertSettingsScreen from "../screens/AlertSettingsScreen";
 import ImportScreen from "../screens/ImportScreen";
@@ -291,6 +292,12 @@ const AppNavigator = () => {
         name="Terms"
         component={StaticScreen}
         options={{ title: t("terms_of_service") }}
+      />
+
+      <Stack.Screen
+        name="BlockedUsers"
+        component={BlockedUsersScreen}
+        options={{ title: t("blocked_users") }}
       />
 
       <Stack.Screen

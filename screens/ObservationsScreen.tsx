@@ -39,11 +39,14 @@ const LIST_FILTERS: AllowedFilterKey[] = [
   "date",
   "species",
   "private",
+  "has_photo",
   "unsynced",
 ];
 
-// The map reads places, and "unsynced" only ever means an observation queued
-// locally — such a record has no aggregated server row to draw.
+// The map reads places, and neither of the two filters left out here narrows
+// a place: "unsynced" only ever means an observation queued locally (such a
+// record has no aggregated server row to draw), and "has_photo" is a property
+// of a single observation, which /myapi/place2/ does not aggregate.
 const MAP_FILTERS: AllowedFilterKey[] = [
   "territory",
   "place",
@@ -112,6 +115,7 @@ const ObservationsScreen = () => {
               count: place.observation_count,
             }),
             icon: "binoculars-outline",
+            testID: "map-place-observations-button",
             onPress: async () => {
               BottomSheet.hide();
               // A list of one row is a stop with nothing to choose: go where
@@ -139,6 +143,7 @@ const ObservationsScreen = () => {
           {
             label: t("map_open_place"),
             icon: "location-outline",
+            testID: "map-open-place-button",
             onPress: () => {
               BottomSheet.hide();
               navigation.navigate("PlaceDetail", { placeId: place.id });

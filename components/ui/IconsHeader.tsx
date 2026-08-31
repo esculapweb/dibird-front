@@ -8,16 +8,24 @@ interface IconsHeaderProps {
   hasActiveFilters?: boolean;
   onSortPress?: () => void;
   onFilterPress?: () => void;
-  onSharePress?: () => void;
   headerRightBeginning?: IconButtonConfig[];
   headerRightEnd?: IconButtonConfig[];
 }
 
+/**
+ * The icons of a screen header, always in this order: whatever the screen puts
+ * first, then sorting, then filters, then whatever it puts last — which is
+ * where the "⋯" button belongs (see components/ui/overflowMenu).
+ *
+ * There is deliberately no share button here any more. Icons carry no labels,
+ * so only actions with an unmistakable pictogram earn one — editing, saving,
+ * sorting, filtering — and everything else (sharing, deleting, reporting,
+ * blocking, comparing) lives in the overflow menu, where it has a name.
+ */
 const IconsHeader = ({
   hasActiveFilters,
   onSortPress,
   onFilterPress,
-  onSharePress,
   headerRightBeginning = [],
   headerRightEnd = [],
 }: IconsHeaderProps) => {
@@ -42,11 +50,6 @@ const IconsHeader = ({
       icon: hasActiveFilters ? "options" : "options-outline",
       active: hasActiveFilters,
       testID: "filter-button",
-    },
-    {
-      condition: !!onSharePress,
-      onPress: onSharePress,
-      icon: "share-social-outline",
     },
     ...(Array.isArray(headerRightEnd) ? headerRightEnd : []),
   ];

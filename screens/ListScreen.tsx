@@ -4,6 +4,7 @@ import {
   useLayoutEffect,
   useMemo,
   useRef,
+  useState,
   ReactNode,
 } from "react";
 import {
@@ -61,7 +62,6 @@ interface ListScreenProps<T, RouteName extends ScreenWithFiltersOnly> {
   extraFilters?: Filters | null;
   headerRightBeginning?: IconButtonConfig[];
   headerRightEnd?: IconButtonConfig[];
-  handleSharePress?: () => Promise<void>;
   fabIcon?: IconType;
   getItemId?: (item: T) => string | number;
   onFiltersChange?: (val: Filters | null) => Promise<void>;
@@ -115,7 +115,6 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
   extraFilters,
   headerRightBeginning,
   headerRightEnd,
-  handleSharePress,
   fabIcon,
   getItemId,
   onFiltersChange,
@@ -187,7 +186,6 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
     isFetchingNextPage,
     isLoading,
     isError,
-    isRefetching,
     error,
     refetch,
   } = useList({
@@ -227,6 +225,26 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
     });
   }, [data?.pages]);
 
+  // The pull-to-refresh spinner has to follow the pull, not the query.
+  // `isRefetching` is true for *any* background fetch: a page of infinite
+  // scroll, or a refetch some other screen started by invalidating with
+  // `refetchType: "all"` — which is exactly what saving an observation does
+  // (invalidateObservationCaches). Wired straight to RefreshControl that put
+  // a spinner over a list nobody pulled, and anything that re-invalidates on
+  // a timer (the photo queue's backoff retries) kept putting it back, so it
+  // read as a loader that never goes away. Local state instead, the shape
+  // MainScreen already uses.
+  const [isPullRefreshing, setIsPullRefreshing] = useState(false);
+
+  const handlePullRefresh = useCallback(async () => {
+    setIsPullRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setIsPullRefreshing(false);
+    }
+  }, [refetch]);
+
   const isEmpty = items.length === 0;
 
   const emptyType =
@@ -246,7 +264,6 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
     ...(headerRightBeginning || []),
     allowSort ? 1 : 0,
     1,
-    handleSharePress ? 1 : 0,
     ...(headerRightEnd || []),
   ].filter(Boolean).length;
 
@@ -331,7 +348,6 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
           hasActiveFilters={hasActiveFilters}
           onSortPress={allowSort ? handleSortPress : undefined}
           onFilterPress={handleFilterPress}
-          onSharePress={handleSharePress}
           headerRightBeginning={headerRightBeginning}
           headerRightEnd={headerRightEnd}
         />
@@ -342,7 +358,6 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
     hasActiveFilters,
     allowSort,
     iconCount,
-    handleSharePress,
     headerRightBeginning,
     headerRightEnd,
     handleFilterPress,
@@ -431,8 +446,8 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
           keyExtractor={keyExtractor}
           noItems={noItems}
           listHeader={listHeader}
-          onRefresh={refetch}
-          isRefreshing={isRefetching}
+          onRefresh={handlePullRefresh}
+          isRefreshing={isPullRefreshing}
         />
       )}
     </Layout>

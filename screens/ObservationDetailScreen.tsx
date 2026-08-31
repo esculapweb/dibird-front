@@ -16,7 +16,6 @@ import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/nativ
 import { useTheme, ThemeColors } from "../store/theme-context";
 import { formatDate, formatDateTime, formatDateLong } from "../util/helpers";
 import { Config } from "../constants/config";
-import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import {
@@ -39,6 +38,7 @@ import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import ObservationPhotos from "../components/Observation/ObservationPhotos";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
 import IconsHeader from "../components/ui/IconsHeader";
+import { overflowButton } from "../components/ui/overflowMenu";
 import Layout from "../components/ui/Layout";
 import { AppStackNavigationProp, AppStackRouteProp } from "../types";
 import { BottomSheet } from "../services/bottomSheet";
@@ -130,14 +130,26 @@ const ObservationDetailScreen = () => {
       confirmText: t("delete"),
       cancelText: t("cancel"),
       danger: true,
+      // Resolved rather than fired and forgotten: the sheet keeps its spinner
+      // until the mutation settles, which is the progress the red button at
+      // the bottom of the screen used to show before deleting moved into the
+      // header menu. Resolving on failure too — the error is already reported
+      // by the toast below, and the sheet has nothing left to wait for.
       onConfirm: () =>
-        deleteMutation.mutate(observationId, {
-          onSuccess: () => navigation.goBack(),
-          onError: (e) =>
-            showErrorToast(
-              e,
-              `ObservationDetailScreen:deleteObservation:${observationId}`,
-            ),
+        new Promise<void>((resolve) => {
+          deleteMutation.mutate(observationId, {
+            onSuccess: () => {
+              navigation.goBack();
+              resolve();
+            },
+            onError: (e) => {
+              showErrorToast(
+                e,
+                `ObservationDetailScreen:deleteObservation:${observationId}`,
+              );
+              resolve();
+            },
+          });
         }),
     });
   }, [observation, observationId]);
@@ -184,17 +196,44 @@ const ObservationDetailScreen = () => {
     await Share.share(Platform.OS === "ios" ? { url } : { message: url });
   }, [observation, observationId]);
 
+  // Editing stays an icon — it is what the owner comes here for. Sharing and
+  // deleting move into the menu: one is occasional, the other destructive, and
+  // both read better with a label than as a pictogram.
+  const headerRightEnd = useMemo(
+    () => [
+      overflowButton([
+        {
+          label: t("share"),
+          icon: "share-social-outline",
+          onPress: () => {
+            void handleShare();
+          },
+        },
+        {
+          condition: !!observation?.is_owner,
+          label: t("delete_observation"),
+          icon: "trash-outline",
+          danger: true,
+          opensAnotherSheet: true,
+          testID: "observation-delete-button",
+          onPress: handleDelete,
+        },
+      ]),
+    ],
+    [t, handleShare, handleDelete, observation],
+  );
+
   useLayoutEffect(() => {
     if (!observation) return;
     navigation.setOptions({
       headerRight: () => (
         <IconsHeader
           headerRightBeginning={headerRightBeginning}
-          onSharePress={handleShare}
+          headerRightEnd={headerRightEnd}
         />
       ),
     });
-  }, [navigation, headerRightBeginning, handleShare, observation]);
+  }, [navigation, headerRightBeginning, headerRightEnd, observation]);
 
   // TanStack Query flips status/isError to true on *any* failed fetch,
   // including a background refetch that happens to fail while we're still
@@ -225,22 +264,9 @@ const ObservationDetailScreen = () => {
   // nothing.
   const speciesSegment = observation.species_data.segment;
 
-  const bottomEl = observation.is_owner && (
-    <FlatButtonBottom
-      textColor={Colors.error600}
-      onPress={handleDelete}
-      icon="trash-outline"
-      loading={deleteMutation.isPending}
-      testID="observation-delete-button"
-    >
-      {t("delete_observation")}
-    </FlatButtonBottom>
-  );
-
   return (
     <Layout
       style={{ padding: 12 }}
-      bottom={bottomEl}
       withScroll={true}
       onRefresh={refetch}
       isRefreshing={isRefetching}
@@ -267,14 +293,27 @@ const ObservationDetailScreen = () => {
             <>
               <View style={styles.imageWrapper}>
                 {observation?.species_data?.thumb ? (
-                  <Image
-                    source={{
-                      uri: `${Config.mediaUrl}/${observation.species_data.thumb}`,
-                    }}
-                    style={styles.image}
-                    contentFit="cover"
-                    cachePolicy="disk"
-                  />
+                  <>
+                    <Image
+                      source={{
+                        uri: `${Config.mediaUrl}/${observation.species_data.thumb}`,
+                      }}
+                      style={styles.image}
+                      contentFit="cover"
+                      cachePolicy="disk"
+                    />
+                    {/* Same shape and same subject as the observation's own
+                        photos in the strip below, so this reference shot of
+                        the species has to say which of the two it is. */}
+                    <View style={styles.speciesPhotoBadge}>
+                      <Text
+                        style={styles.speciesPhotoBadgeText}
+                        numberOfLines={1}
+                      >
+                        {t("species_photo_badge")}
+                      </Text>
+                    </View>
+                  </>
                 ) : (
                   <View style={styles.imagePlaceholder}>
                     <BirdSVG size={40} color={Colors.textSecondary} />
@@ -560,6 +599,24 @@ const stylesFn = (Colors: ThemeColors) =>
       backgroundColor: Colors.imageBg,
       justifyContent: "center",
       alignItems: "center",
+    },
+    speciesPhotoBadge: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      bottom: 0,
+      alignItems: "center",
+      paddingVertical: 3,
+      backgroundColor: "rgba(0, 0, 0, 0.45)",
+      borderBottomLeftRadius: 12,
+      borderBottomRightRadius: 12,
+    },
+    speciesPhotoBadgeText: {
+      fontSize: 9,
+      fontWeight: "600",
+      color: "#fff",
+      textTransform: "uppercase",
+      letterSpacing: 0.4,
     },
     imageOverlay: {
       position: "absolute",

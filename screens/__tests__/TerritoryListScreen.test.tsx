@@ -1,3 +1,12 @@
+const mockShowMenu = jest.fn();
+jest.mock("../../services/bottomSheet", () => ({
+  BottomSheet: {
+    showMenu: (payload: unknown) => mockShowMenu(payload),
+    showContent: jest.fn(),
+    show: jest.fn(),
+    hide: jest.fn(),
+  },
+}));
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
   initReactI18next: { type: "3rdParty", init: () => {} },
@@ -113,7 +122,12 @@ jest.mock("../../components/Territory/TerritoryRow", () => {
 import { ReactElement } from "react";
 import { Share } from "react-native";
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
-import { createNavigationMock, createRouteMock } from "../test-utils";
+import {
+  createNavigationMock,
+  createRouteMock,
+  openOverflow,
+  overflowRow,
+} from "../test-utils";
 import TerritoryListScreen from "../TerritoryListScreen";
 import { useList } from "../../hooks/useList";
 import { fetchTerritoryList } from "../../util/fetches";
@@ -351,7 +365,10 @@ it("shares the list at the site's own path, carrying the current order", async (
   } as never);
 
   await render(<TerritoryListScreen />);
-  await (headerProps().onSharePress as () => Promise<void>)();
+  overflowRow(
+    openOverflow(headerProps().headerRightEnd, mockShowMenu),
+    "share",
+  ).onPress();
 
   expect(sharedUrl(shareSpy)).toContain("/territory/?o=name");
 });
@@ -362,7 +379,9 @@ it("offers no share action while picking a country", async () => {
 
   await render(<TerritoryListScreen />);
 
-  expect(headerProps().onSharePress).toBeUndefined();
+  expect(() =>
+    openOverflow(headerProps().headerRightEnd, mockShowMenu),
+  ).toThrow();
 });
 
 it("opens the sort sheet from the header", async () => {
@@ -410,7 +429,10 @@ it("carries the region and the order into the shared link", async () => {
 
   await render(<TerritoryListScreen />);
   await fireEvent.press(screen.getByTestId("pick-region"));
-  await (headerProps().onSharePress as () => Promise<void>)();
+  overflowRow(
+    openOverflow(headerProps().headerRightEnd, mockShowMenu),
+    "share",
+  ).onPress();
 
   expect(sharedUrl(shareSpy)).toContain("/territory/?region=15&o=name");
 });

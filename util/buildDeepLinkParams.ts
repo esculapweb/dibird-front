@@ -11,6 +11,10 @@ export const buildDeepLinkParams = (filters: Filters | null = {}, sort: string |
   // is tested against null rather than for truthiness: `private=false` means
   // "published only", not "no privacy filter".
   if (filters?.private != null) params.private = filters.private;
+  // Tested against null for the same reason as `private` above:
+  // `has_photo=false` means "only the ones without a photo", not "no photo
+  // filter".
+  if (filters?.has_photo != null) params.has_photo = filters.has_photo;
   if (filters?.source) params.source = filters.source;
   if (filters?.radius) params.radius = filters.radius;
 

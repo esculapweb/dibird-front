@@ -103,6 +103,20 @@ it("shows the quantity badge only when quantity is set", async () => {
   expect(screen.getByText("4")).toBeOnTheScreen();
 });
 
+it("counts the photos in a badge, and shows none without them", async () => {
+  await render(<CommunityCard item={OBSERVATION as never} index={0} />);
+  expect(screen.queryByTestId("icon-images-outline")).not.toBeOnTheScreen();
+
+  await render(
+    <CommunityCard
+      item={{ ...OBSERVATION, photos: [{ id: 1 }, { id: 2 }] } as never}
+      index={0}
+    />,
+  );
+  expect(screen.getByTestId("icon-images-outline")).toBeOnTheScreen();
+  expect(screen.getByText("2")).toBeOnTheScreen();
+});
+
 describe("thumbnail", () => {
   it("shows the placeholder without a thumb, the real image with one", async () => {
     await render(<CommunityCard item={OBSERVATION as never} index={0} />);

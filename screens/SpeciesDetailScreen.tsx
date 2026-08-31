@@ -24,6 +24,7 @@ import LoadingOverlay from "../components/ui/LoadingOverlay";
 import PhotoViewerModal from "../components/ui/PhotoViewerModal";
 import Section from "../components/ui/Section";
 import IconsHeader from "../components/ui/IconsHeader";
+import { overflowButton } from "../components/ui/overflowMenu";
 import Tabs from "../components/ui/Tabs";
 import TaxonBreadcrumbs from "../components/Taxonomy/TaxonBreadcrumbs";
 import TaxonSoundRow from "../components/Taxonomy/TaxonSoundRow";
@@ -186,28 +187,33 @@ const SpeciesDetailScreen = () => {
       title: data?.name_lang ?? t("species"),
       headerRight: () => (
         <IconsHeader
-          headerRightBeginning={[
-            {
-              condition: !!segment,
-              icon: "git-compare-outline",
-              onPress: () =>
-                navigation.navigate("SpeciesCompare", { segmentA: segment }),
-              testID: "compare-species-button",
-            },
-          ]}
-          onSharePress={
-            segment
-              ? async () => {
+          headerRightEnd={[
+            overflowButton([
+              {
+                condition: !!segment,
+                label: t("compare_species"),
+                icon: "git-compare-outline",
+                testID: "compare-species-button",
+                onPress: () =>
+                  navigation.navigate("SpeciesCompare", { segmentA: segment }),
+              },
+              {
+                condition: !!segment,
+                label: t("share"),
+                icon: "share-social-outline",
+                onPress: () => {
+                  if (!segment) return;
                   // The page is one long read split into tabs — a link shared
                   // from "Sounds" should open on sounds, not the overview.
                   const url = buildSpeciesDetailUrl(segment, activeTab);
                   track("share_tapped", { type: "species" });
-                  await Share.share(
+                  void Share.share(
                     Platform.OS === "ios" ? { url } : { message: url },
                   );
-                }
-              : undefined
-          }
+                },
+              },
+            ]),
+          ]}
         />
       ),
     });

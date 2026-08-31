@@ -111,6 +111,14 @@ export const getCachedListResponseByPrefix = <T>(
   return rows[0] ? (rows[0].response as T) : null;
 };
 
+// Drops one table's cached responses. For the case where a change makes what
+// is cached wrong rather than merely stale: a report or a block removes
+// content from the community feed, and an offline read of the old cache would
+// put it right back on screen.
+export const clearListCache = (table: CacheTable) => {
+  db.delete(table).run();
+};
+
 // The cache tables wiped on logout — kept as one explicit list rather than
 // reflecting over the schema module, so a table can't end up here by accident.
 // Everything below is either user-specific or carries per-user fields (e.g. a

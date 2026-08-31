@@ -563,6 +563,64 @@ describe("re-present over an open sheet", () => {
     expect(screen.getByText("Third")).toBeOnTheScreen();
   });
 
+  // The library's present() is not the no-op it looks like on an open sheet: it
+  // re-snaps in a requestAnimationFrame, which with enableDynamicSizing lands
+  // before React has laid out the payload just swapped in, and can resolve to
+  // the closed position. In e2e that took the confirmation down a few frames
+  // after the menu row that opened it was tapped ("[SHEET] present
+  // mode=confirm wasOpen=true" followed 54 ms later by "onChange index=-1").
+  it("does not re-present the open sheet, only swaps its payload", async () => {
+    const ref = await renderSheet();
+    await act(async () => {
+      ref.current?.present({ mode: "menu", items: [{ label: "First", onPress: mockOnPress1 }] });
+    });
+    expect(mockInnerPresent).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      ref.current?.present({
+        mode: "confirm",
+        title: "Delete",
+        confirmText: "Delete",
+        cancelText: "Cancel",
+        onConfirm: mockOnConfirm,
+      });
+    });
+    expect(mockInnerPresent).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("bottom-sheet-confirm-button")).toBeOnTheScreen();
+
+    // And a sheet that really did close is presented again as usual.
+    await act(async () => {
+      capturedOnChange?.(-1);
+      capturedOnDismiss?.();
+    });
+    await act(async () => {
+      ref.current?.present({ mode: "menu", items: [{ label: "Second", onPress: mockOnPress2 }] });
+    });
+    expect(mockInnerPresent).toHaveBeenCalledTimes(2);
+  });
+
+  // The delete handlers resolve their onConfirm promise inside the mutation's
+  // onSuccess, i.e. *after* navigation.goBack() — so the route watcher closes
+  // the sheet first and handleConfirm's own dismiss() arrives second. It has to
+  // find the sheet already marked closed, or the library gets the fatal second
+  // dismiss().
+  it("marks the sheet closed when the route watcher closes it", async () => {
+    mountNavigation();
+    const ref = await renderSheet();
+    await act(async () => {
+      ref.current?.present({ mode: "menu", items: [{ label: "First", onPress: mockOnPress1 }] });
+    });
+
+    await pop();
+    expect(mockInnerDismiss).toHaveBeenCalledTimes(1);
+
+    // The confirmation's own finishing dismiss(), late as always.
+    await act(async () => {
+      ref.current?.dismiss();
+    });
+    expect(mockInnerDismiss).toHaveBeenCalledTimes(1);
+  });
+
   it("clears content on the first onDismiss when nothing was replaced", async () => {
     const ref = await renderSheet();
     await act(async () => {

@@ -1,3 +1,12 @@
+const mockShowMenu = jest.fn();
+jest.mock("../../services/bottomSheet", () => ({
+  BottomSheet: {
+    showMenu: (payload: unknown) => mockShowMenu(payload),
+    showContent: jest.fn(),
+    show: jest.fn(),
+    hide: jest.fn(),
+  },
+}));
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
   initReactI18next: { type: "3rdParty", init: () => {} },
@@ -73,7 +82,7 @@ import Toast from "react-native-toast-message";
 import { useQuery } from "@tanstack/react-query";
 import { fetchRatingCompareHeader } from "../../util/fetches";
 import { useProfile } from "../../store/profile-context";
-import { createRouteMock } from "../test-utils";
+import { createRouteMock, openOverflow, overflowRow } from "../test-utils";
 import RatingsCompareScreen from "../RatingsCompareScreen";
 
 const mockRoute = createRouteMock("RatingsCompare", { profile1: 1, profile2: 2 });
@@ -144,7 +153,10 @@ describe("handleShare", () => {
     (useProfile as jest.Mock).mockReturnValue({ profile: {} });
     const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction" } as never);
     await render(<RatingsCompareScreen />);
-    await latestProps().handleSharePress();
+    overflowRow(
+      openOverflow(latestProps().headerRightEnd, mockShowMenu),
+      "share",
+    ).onPress();
     expect(shareSpy).not.toHaveBeenCalled();
   });
 
@@ -152,7 +164,10 @@ describe("handleShare", () => {
     (useProfile as jest.Mock).mockReturnValue({ profile: { user: 1, private: true } });
     const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction" } as never);
     await render(<RatingsCompareScreen />);
-    await latestProps().handleSharePress();
+    overflowRow(
+      openOverflow(latestProps().headerRightEnd, mockShowMenu),
+      "share",
+    ).onPress();
 
     expect(Toast.show).toHaveBeenCalledWith(expect.objectContaining({ text1: "profile_private" }));
     expect(shareSpy).not.toHaveBeenCalled();
@@ -162,7 +177,10 @@ describe("handleShare", () => {
     const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction" } as never);
     Platform.OS = "ios";
     await render(<RatingsCompareScreen />);
-    await latestProps().handleSharePress();
+    overflowRow(
+      openOverflow(latestProps().headerRightEnd, mockShowMenu),
+      "share",
+    ).onPress();
     expect(shareSpy).toHaveBeenCalledWith({ url: expect.stringContaining("users/compare/1/2/") });
   });
 });

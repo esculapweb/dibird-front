@@ -133,6 +133,9 @@ it("picks from the gallery only, never the camera", async () => {
   );
   // allowsEditing is mutually exclusive with multiple selection.
   expect(launchLibrary.mock.calls[0][0]).not.toHaveProperty("allowsEditing");
+  // And no `quality`: every asset is re-encoded by the manipulator below, so
+  // asking the picker to encode a JPEG first only loses quality twice.
+  expect(launchLibrary.mock.calls[0][0]).not.toHaveProperty("quality");
 });
 
 it("limits the selection to what is left of the server's quota", async () => {
