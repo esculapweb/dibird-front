@@ -40,6 +40,7 @@ import AchievementsScreen from "../screens/AchievementsScreen";
 import CommunityScreen from "../screens/CommunityScreen";
 import CommunityDetailScreen from "../screens/CommunityDetailScreen";
 import OnboardingScreen from "../screens/OnboardingScreen";
+import AboutScreen from "../screens/AboutScreen";
 
 import { useAuth, setOnLogout } from "../store/auth-context";
 import { useProfile } from "../store/profile-context";
@@ -314,6 +315,12 @@ const AppNavigator = () => {
         name="Settings"
         component={SettingsScreen}
         options={{ title: t("settings") }}
+      />
+
+      <Stack.Screen
+        name="About"
+        component={AboutScreen}
+        options={{ title: t("settings_section_about") }}
       />
 
       <Stack.Screen

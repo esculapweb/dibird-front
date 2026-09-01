@@ -57,3 +57,11 @@ it("calls changeLanguage with the tapped language", async () => {
   await fireEvent.press(screen.getByText("RU"));
   expect(mockChangeLanguage).toHaveBeenCalledWith("ru");
 });
+
+// The Settings copy of the switcher has to line up with the rows around it: no
+// divider of its own and no trailing colon, which the drawer footer does need.
+it("drops the drawer chrome in the settings variant", async () => {
+  await render(<LanguageSwitcher variant="settings" />);
+  expect(screen.getByText("language")).toBeOnTheScreen();
+  expect(screen.queryByText("language:")).not.toBeOnTheScreen();
+});

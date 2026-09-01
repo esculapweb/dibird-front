@@ -1228,6 +1228,7 @@ export type AppStackParamList = CatalogParamList & {
   Main: undefined;
   Profile: undefined;
   Settings: undefined;
+  About: undefined;
   AlertSettings: undefined;
   Import: undefined;
   Stat: ScreenWithFilters | undefined;

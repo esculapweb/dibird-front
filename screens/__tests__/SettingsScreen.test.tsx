@@ -1,5 +1,16 @@
 jest.mock("../../store/theme-context", () => ({
-  useTheme: () => require("../mockTheme").mockUseTheme(),
+  useTheme: () => ({
+    ...require("../mockTheme").mockUseTheme(),
+    // ThemeSwitcher, rendered in the Appearance section, reads these two.
+    manualTheme: null,
+    toggleTheme: mockToggleTheme,
+  }),
+}));
+// The Appearance section renders the real switchers, and language-context throws
+// outside its provider — mocked here rather than wrapped, so that the screen's
+// own tests stay free of provider setup.
+jest.mock("../../store/language-context", () => ({
+  useLanguage: () => ({ language: "en", changeLanguage: mockChangeLanguage }),
 }));
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string, opts?: Record<string, unknown>) => (opts ? `${key}:${JSON.stringify(opts)}` : key) }),
@@ -36,19 +47,13 @@ jest.mock("../../store/onboarding-context", () => ({ useOnboarding: jest.fn() })
 jest.mock("../../hooks/Profile/useExportProfile", () => ({ useExportProfile: jest.fn() }));
 jest.mock("../../hooks/useBiometricSetting", () => ({ useBiometricSetting: jest.fn() }));
 jest.mock("../../services/bio", () => ({ canUseBiometrics: jest.fn() }));
-jest.mock("../../util/openSupportEmail", () => ({ openSupportEmail: jest.fn() }));
-jest.mock("../../util/openDonatePage", () => ({ openDonatePage: jest.fn() }));
 jest.mock("../../services/bottomSheet", () => ({ BottomSheet: { show: jest.fn(), hide: jest.fn() } }));
 jest.mock("../../util/fetches", () => ({ deleteMyProfile: jest.fn() }));
 jest.mock("../../hooks/useApiError", () => ({ useApiError: () => ({ showErrorToast: mockShowErrorToast }) }));
-jest.mock("../../util/helpers", () => ({
-  ...jest.requireActual("../../util/helpers"),
-  getFullVersion: () => "1.0.0 (42)",
-}));
 jest.mock("../../services/api", () => ({ post: jest.fn() }));
 jest.mock("../../services/errors", () => ({ logError: jest.fn() }));
 
-import { Share, Platform, Alert } from "react-native";
+import { Platform, Alert } from "react-native";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { useProfile } from "../../store/profile-context";
 import { useAuth } from "../../store/auth-context";
@@ -56,8 +61,6 @@ import { useOnboarding } from "../../store/onboarding-context";
 import { useExportProfile } from "../../hooks/Profile/useExportProfile";
 import { useBiometricSetting } from "../../hooks/useBiometricSetting";
 import { canUseBiometrics } from "../../services/bio";
-import { openSupportEmail } from "../../util/openSupportEmail";
-import { openDonatePage } from "../../util/openDonatePage";
 import { BottomSheet } from "../../services/bottomSheet";
 import { deleteMyProfile } from "../../util/fetches";
 import api from "../../services/api";
@@ -66,6 +69,8 @@ import { createNavigationMock } from "../test-utils";
 import SettingsScreen from "../SettingsScreen";
 
 const mockShowErrorToast = jest.fn();
+const mockToggleTheme = jest.fn();
+const mockChangeLanguage = jest.fn();
 const mockNavigation = createNavigationMock();
 const mockLogout = jest.fn();
 const mockToggleBiometric = jest.fn();
@@ -117,17 +122,29 @@ afterEach(() => {
   Platform.OS = originalOS;
 });
 
-it("renders the always-present rows, including the app version", async () => {
+it("renders the always-present rows", async () => {
   await render(<SettingsScreen />);
+  expect(screen.getByText("profile")).toBeOnTheScreen();
+  expect(screen.getByText("emails_title")).toBeOnTheScreen();
+  expect(screen.getByText("linked_accounts_title")).toBeOnTheScreen();
+  expect(screen.getByText("change_password")).toBeOnTheScreen();
+  expect(screen.getByText("blocked_users")).toBeOnTheScreen();
   expect(screen.getByText("alert_settings")).toBeOnTheScreen();
   expect(screen.getByText("export_data")).toBeOnTheScreen();
   expect(screen.getByText("import_data")).toBeOnTheScreen();
-  expect(screen.getByText("settings_tell_a_friend")).toBeOnTheScreen();
-  expect(screen.getByText("settings_send_feedback")).toBeOnTheScreen();
-  expect(screen.getByText("privacy_policy")).toBeOnTheScreen();
-  expect(screen.getByText("terms_of_service")).toBeOnTheScreen();
+  expect(screen.getByText("settings_section_about")).toBeOnTheScreen();
   expect(screen.getByText("delete_profile")).toBeOnTheScreen();
-  expect(screen.getByText('app_version:{"version":"1.0.0 (42)"}')).toBeOnTheScreen();
+});
+
+// Duplicated on purpose with the drawer footer (see the comment on the section):
+// both copies read the same contexts, so they cannot drift apart.
+it("renders the language and theme switchers in the Appearance section", async () => {
+  await render(<SettingsScreen />);
+  expect(screen.getByText("language")).toBeOnTheScreen();
+  expect(screen.getByText("theme")).toBeOnTheScreen();
+
+  await fireEvent.press(screen.getByText("RU"));
+  expect(mockChangeLanguage).toHaveBeenCalledWith("ru");
 });
 
 it("cleans up the export poller on unmount", async () => {
@@ -260,44 +277,19 @@ describe("export data row", () => {
   });
 });
 
-it("tells a friend with a platform-appropriate share payload", async () => {
-  const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction" } as never);
-  Platform.OS = "ios";
+it.each([
+  ["profile", "Profile"],
+  ["emails_title", "Emails"],
+  ["linked_accounts_title", "LinkedAccounts"],
+  ["change_password", "ChangePassword"],
+  ["blocked_users", "BlockedUsers"],
+  ["alert_settings", "AlertSettings"],
+  ["import_data", "Import"],
+  ["settings_section_about", "About"],
+])("row %s navigates to %s", async (label, route) => {
   await render(<SettingsScreen />);
-  await fireEvent.press(screen.getByText("settings_tell_a_friend"));
-  expect(shareSpy).toHaveBeenCalledWith(expect.objectContaining({ url: expect.stringContaining("http") }));
-
-  shareSpy.mockClear();
-  Platform.OS = "android";
-  await render(<SettingsScreen />);
-  await fireEvent.press(screen.getByText("settings_tell_a_friend"));
-  expect(shareSpy).toHaveBeenCalledWith({ message: "tell_a_friend_message" });
-});
-
-it("send feedback opens the support email composer", async () => {
-  await render(<SettingsScreen />);
-  await fireEvent.press(screen.getByText("settings_send_feedback"));
-  expect(openSupportEmail).toHaveBeenCalledTimes(1);
-});
-
-it("support the project opens the donation page with the settings source", async () => {
-  await render(<SettingsScreen />);
-  await fireEvent.press(screen.getByText("settings_support_project"));
-  expect(openDonatePage).toHaveBeenCalledWith("settings");
-});
-
-it("navigates to Privacy and Terms", async () => {
-  await render(<SettingsScreen />);
-  await fireEvent.press(screen.getByText("privacy_policy"));
-  expect(mockNavigation.navigate).toHaveBeenCalledWith("Privacy");
-  await fireEvent.press(screen.getByText("terms_of_service"));
-  expect(mockNavigation.navigate).toHaveBeenCalledWith("Terms");
-});
-
-it("navigates to AlertSettings", async () => {
-  await render(<SettingsScreen />);
-  await fireEvent.press(screen.getByText("alert_settings"));
-  expect(mockNavigation.navigate).toHaveBeenCalledWith("AlertSettings");
+  await fireEvent.press(screen.getByText(label));
+  expect(mockNavigation.navigate).toHaveBeenCalledWith(route);
 });
 
 describe("delete profile", () => {
