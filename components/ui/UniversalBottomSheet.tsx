@@ -39,6 +39,12 @@ export interface BottomSheetRef {
 
 type RouteTree = { routes?: { key?: string; state?: RouteTree }[] };
 
+// How long a present() is given to actually open the sheet before the check in
+// `present` steps in. The opening animation lands around 300ms, so this is
+// twice that: late enough not to fire on a slow frame, early enough that the
+// rescue still reads as a sheet opening rather than as a second tap.
+const OPEN_ANIMATION_GRACE = 600;
+
 // getRootState() returns the root navigator only: the screens of nested ones
 // (drawer → native-stack) live in route.state, so the whole tree is walked.
 const hasRouteKey = (state: RouteTree | undefined, key: string): boolean =>
@@ -56,6 +62,11 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const isOpenRef = useRef(false);
+  // "The library actually animated it open", as opposed to isOpenRef's "we
+  // asked it to" — the two come apart in the case present() guards against
+  // below.
+  const didOpenRef = useRef(false);
+  const openTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const unwatchRouteRef = useRef<(() => void) | null>(null);
 
   const confirm =
@@ -120,7 +131,38 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
       // sheet down a few frames after it was asked to show something. Swapping
       // the payload alone is enough: dynamic sizing re-measures the new
       // content and re-snaps to it by itself.
-      if (!wasOpen) bottomSheetRef.current?.present();
+      if (!wasOpen) {
+        didOpenRef.current = false;
+        bottomSheetRef.current?.present();
+
+        // A present() that mounts the sheet but never opens it is not
+        // hypothetical: it happens after a confirmation that was shown over a
+        // menu (menu → BottomSheet.show → confirm), roughly one time in three
+        // on a device. The teardown of that sheet races @gorhom/portal — the
+        // modal removes its portal entry, a re-render re-adds it, and the
+        // Portal node that unmounts a moment later does not take it back out
+        // (BottomSheetModal.handlePortalOnUnmount early-exits once its status
+        // is back to INITIAL). The next present() then reconciles into that
+        // stale node instead of mounting a fresh sheet: the content lays out
+        // and no `animateToPosition` ever runs. Nothing reports an error, and
+        // because this sheet is the single global one, every menu and every
+        // confirmation in the app is silently dead until the process restarts.
+        //
+        // snapToIndex(0) on the sheet that is already there opens it — measured
+        // on a device 2026-09-01, before and after. So rather than trying to
+        // win the race, this checks the outcome: if the sheet has not reported
+        // itself open by the time an open animation is long over, it is asked
+        // again, directly. In the healthy case didOpenRef is set a good frame
+        // earlier and nothing happens; a stray snapToIndex(0) would only
+        // re-target the position the sheet is already animating to anyway.
+        if (openTimeoutRef.current) clearTimeout(openTimeoutRef.current);
+        openTimeoutRef.current = setTimeout(() => {
+          openTimeoutRef.current = null;
+          // Dismissed while we waited, or opened normally — nothing to do.
+          if (!isOpenRef.current || didOpenRef.current) return;
+          bottomSheetRef.current?.snapToIndex(0);
+        }, OPEN_ANIMATION_GRACE);
+      }
 
       // This sheet is a single one for the whole app (services/bottomSheet.ts
       // drives it through a module-level ref) and lives outside the navigator,
@@ -208,6 +250,7 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
   // honest from its own events rather than from our calls alone is what stops a
   // later dismiss() from reaching a sheet that is already closed.
   const handleChange = useCallback((index: number) => {
+    if (index >= 0) didOpenRef.current = true;
     isOpenRef.current = index >= 0;
   }, []);
 

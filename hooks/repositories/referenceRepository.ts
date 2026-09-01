@@ -54,7 +54,7 @@ export const getCachedCountries = (order: string): TerritoryDropdownItem[] =>
     label: row.label,
     code: row.code,
     icon: isoToFlagEmoji(row.code),
-    iconLabelRight: row.favourite ? ("flag" as const) : undefined,
+    iconLabelRight: row.favourite ? ("star" as const) : undefined,
   }));
 
 export const cacheTimezones = (items: DropdownItem[]) => {

@@ -2,17 +2,22 @@ import { useEffect, useRef, useState } from "react";
 import { Text, ActivityIndicator, View, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { useQueryClient } from "@tanstack/react-query";
+import Toast from "react-native-toast-message";
 
 import { useTheme, ThemeColors } from "../store/theme-context";
+import { useAuth } from "../store/auth-context";
 import Layout from "../components/ui/Layout";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import Logo from "../components/ui/Logo";
 import {
   AppError,
+  AppStackNavigationProp,
   AuthStackNavigationProp,
   AuthStackRouteProp,
 } from "../types";
 import { sendConfirmEmail } from "../util/fetches";
+import { EMAILS_QUERY_KEY } from "../constants/accountQueryKeys";
 import { logError } from "../services/errors";
 
 const ConfirmEmailScreen = () => {
@@ -21,7 +26,16 @@ const ConfirmEmailScreen = () => {
   const route = useRoute<AuthStackRouteProp<"ConfirmEmail">>();
   const { t } = useTranslation();
   const { key } = route.params;
+  const { isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
+
+  // The screen is registered in both stacks (a link confirming a *second*
+  // address arrives while its owner is signed in), and the way onward differs:
+  // a guest has just unlocked the login, while someone already inside came
+  // from the e-mail list and belongs back there. Same navigation object twice,
+  // typed for each stack — the routes of one do not exist in the other.
   const navigation = useNavigation<AuthStackNavigationProp>();
+  const appNavigation = useNavigation<AppStackNavigationProp>();
 
   const isConfirmedRef = useRef(false);
   const [loading, setLoading] = useState(true);
@@ -40,6 +54,17 @@ const ConfirmEmailScreen = () => {
 
       if (resp.status === 200) {
         isConfirmedRef.current = true;
+
+        if (isAuthenticated) {
+          await queryClient.invalidateQueries({ queryKey: EMAILS_QUERY_KEY });
+          Toast.show({ type: "success", text1: t("email_confirmed") });
+          // replace, not navigate: the confirmation is spent, and Back from
+          // the list should reach Main (put under this screen by linking.ts)
+          // rather than a screen that would only report a dead key.
+          appNavigation.replace("Emails");
+          return;
+        }
+
         navigation.navigate("Login", {
           emailConfirmed: true,
           prefillEmail: resp.data?.email || "",

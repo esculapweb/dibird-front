@@ -55,6 +55,18 @@ const SUPPORTED: Array<{ path: string; authed?: boolean; screen: string }> = [
     authed: false,
     screen: "ConfirmEmail",
   },
+  // Confirming a second address happens from inside the account, so the same
+  // link has to resolve in the authed stack too.
+  {
+    path: "accounts/confirm-email/somekey123/",
+    authed: true,
+    screen: "ConfirmEmail",
+  },
+  {
+    path: "accounts/password/reset/key/687-de75v1-de5817b3b216c8dc/",
+    authed: false,
+    screen: "ResetPassword",
+  },
 
   // Taxonomy catalogue + detail pages
   { path: "species/", screen: "Taxonomy" },
@@ -175,6 +187,11 @@ const SUPPORTED: Array<{ path: string; authed?: boolean; screen: string }> = [
     authed: false,
     screen: "ConfirmEmail",
   },
+  {
+    path: "ru/accounts/password/reset/key/687-de75v1-de5817b3b216c8dc/",
+    authed: false,
+    screen: "ResetPassword",
+  },
   { path: "ru/species/", screen: "Taxonomy" },
   {
     path: "ru/species/?territory=68&habitat=Wetland&o=ioc_id",
@@ -237,6 +254,11 @@ const UNSUPPORTED: string[] = [
   "territory_compare/austria/",
   // Russian-locale twins of the unsupported links above.
   "ru/my/test-push/",
+  // A reset key with no uid/token split is not something the app can act on:
+  // passing half a key on would only earn a confusing "link expired".
+  "accounts/password/reset/key/nodashhere/",
+  "accounts/password/reset/key/-onlytoken/",
+  "accounts/password/reset/key/onlyuid-/",
 ];
 
 describe("deep links from the QA page resolve to the right screen", () => {
@@ -574,4 +596,68 @@ describe("supported deep links are claimed as Android App Links", () => {
     const pathname = `/${path}`.replace(/\/{2,}/g, "/").split("?")[0];
     expect(pathPrefixes.some((p) => p && pathname.startsWith(p))).toBe(true);
   });
+});
+
+describe("the password-reset link splits into uid and token", () => {
+  // The key rides in one path segment as `<uid>-<token>`, and the token itself
+  // contains a dash ("de75v1-de5817b3…"). Splitting anywhere but the first one
+  // hands the server half a token and the person a dead link.
+  const stateForReset = (path: string) => {
+    const state = stateFor(path, false);
+    return state?.routes?.[state.routes.length - 1];
+  };
+
+  it("cuts at the first dash, not the last", () => {
+    const route = stateForReset(
+      "accounts/password/reset/key/687-de75v1-de5817b3b216c8dc/",
+    );
+
+    expect(route?.name).toBe("ResetPassword");
+    expect(route?.params).toEqual({
+      uid: "687",
+      token: "de75v1-de5817b3b216c8dc",
+    });
+  });
+
+  it("survives a missing trailing slash and a query string", () => {
+    expect(
+      stateForReset("accounts/password/reset/key/687-de75v1-abc?utm=mail")
+        ?.params,
+    ).toEqual({ uid: "687", token: "de75v1-abc" });
+  });
+
+  it("puts Welcome underneath so Back lands somewhere that exists", () => {
+    const names = routeNames(
+      stateFor("accounts/password/reset/key/687-de75v1-abc/", false),
+    );
+
+    expect(names[0]).toBe("Welcome");
+  });
+
+  // Someone already inside has no use for a reset key — and ResetPassword is
+  // not a screen their stack has. Sending them to the change-password form
+  // beats the link resolving to nothing and the app opening wherever it was.
+  it("sends an already signed-in person to ChangePassword", () => {
+    const names = routeNames(
+      stateFor("accounts/password/reset/key/687-de75v1-abc/", true),
+    );
+
+    expect(names).toContain("ChangePassword");
+    expect(names).not.toContain("ResetPassword");
+  });
+});
+
+// Back from a confirmation opened while signed in has to land on Main, not on
+// a screen whose key is already spent.
+it("puts Main under an authed confirm-email link", () => {
+  const names = routeNames(stateFor("accounts/confirm-email/somekey123/", true));
+
+  expect(names).toEqual(["Main", "ConfirmEmail"]);
+});
+
+// The guest stack has no Main, and there the confirmation *is* the root.
+it("leaves a guest confirm-email link as the root", () => {
+  const names = routeNames(stateFor("accounts/confirm-email/somekey123/", false));
+
+  expect(names).toEqual(["ConfirmEmail"]);
 });

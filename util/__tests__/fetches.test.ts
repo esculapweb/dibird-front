@@ -855,13 +855,13 @@ describe("fetchTimezones", () => {
 });
 
 describe("fetchMyCountries", () => {
-  it("caches and returns flag-annotated territories when not favourites-only", async () => {
+  it("caches and returns favourite-annotated territories when not favourites-only", async () => {
     (api.get as jest.Mock).mockResolvedValue({
       data: [{ territory_id: 5, name: "France", code: "FR", favourite: true }],
     });
     const result = await fetches.fetchMyCountries(false, "name");
     expect(result).toEqual([
-      { value: 5, label: "France", code: "FR", icon: "🇫🇷", iconLabelRight: "flag" },
+      { value: 5, label: "France", code: "FR", icon: "🇫🇷", iconLabelRight: "star" },
     ]);
     expect(referenceRepository.cacheCountries).toHaveBeenCalled();
   });

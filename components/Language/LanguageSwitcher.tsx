@@ -5,17 +5,34 @@ import { useTranslation } from "react-i18next";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
 
-const LanguageSwitcher = () => {
+interface LanguageSwitcherProps {
+  // "drawer" draws the switcher the way the drawer footer needs it — with its
+  // own top divider and padding. "settings" makes it line up with the rows of a
+  // SettingsList card, where the divider is drawn by the section instead. The
+  // switcher lives in both places: the drawer keeps it one tap away, Settings is
+  // where people go looking for it.
+  variant?: "drawer" | "settings";
+}
+
+const LanguageSwitcher = ({ variant = "drawer" }: LanguageSwitcherProps) => {
   const { language, changeLanguage } = useLanguage();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
+  const inSettings = variant === "settings";
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, inSettings && styles.containerInCard]}>
       <View style={styles.left}>
-        <Ionicons name="language-outline" size={22} style={styles.icon} />
-        <Text style={styles.title}>{t("language")}:</Text>
+        <Ionicons
+          name="language-outline"
+          size={inSettings ? 18 : 22}
+          style={[styles.icon, inSettings && styles.iconInCard]}
+        />
+        <Text style={[styles.title, inSettings && styles.titleInCard]}>
+          {t("language")}
+          {inSettings ? "" : ":"}
+        </Text>
       </View>
       <View style={styles.buttonsRight}>
         {["en", "ru"].map((lang) => {
@@ -83,5 +100,17 @@ const stylesFn = (Colors: ThemeColors) =>
     },
     pressed: {
       opacity: 0.7,
+    },
+    containerInCard: {
+      borderTopWidth: 0,
+      paddingHorizontal: 14,
+      paddingVertical: 6,
+    },
+    titleInCard: {
+      fontSize: 15,
+    },
+    iconInCard: {
+      marginRight: 12,
+      color: Colors.main100,
     },
   });

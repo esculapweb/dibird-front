@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { StyleSheet, View, Text } from "react-native";
+import { StyleSheet, View, Text, Pressable } from "react-native";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
 import { useNavigation } from "@react-navigation/native";
@@ -10,6 +10,7 @@ import { useTheme, ThemeColors } from "../../store/theme-context";
 import FormWrapper from "../ui/FormWrapper";
 import { useApiError } from "../../hooks/useApiError";
 import { track } from "../../services/analytics";
+import { MIN_PASSWORD_LENGTH } from "../../constants/auth";
 import {
   AppError,
   AuthStackNavigationProp,
@@ -87,7 +88,7 @@ const AuthContent = ({
     password = password.trim();
 
     const emailIsValid = email.includes("@");
-    const passwordIsValid = password.length > 6;
+    const passwordIsValid = password.length >= MIN_PASSWORD_LENGTH;
     const userNameIsValid =
       !isLogin && userName && userName.length > 0 && userName !== email;
     const passwordsAreEqual = !isLogin ? confirmPassword === password : true;
@@ -166,6 +167,14 @@ const AuthContent = ({
         loading={loading}
         prefillEmail={prefillEmail}
       />
+      {isLogin && (
+        <Pressable
+          onPress={() => navigation.navigate("ForgotPassword", { prefillEmail })}
+          testID="forgot-password-link"
+        >
+          <Text style={styles.forgotPassword}>{t("forgot_password_link")}</Text>
+        </Pressable>
+      )}
     </FormWrapper>
   );
 };
@@ -197,6 +206,13 @@ const stylesFn = (Colors: ThemeColors) =>
       color: Colors.main100,
       flexShrink: 1,
       flexWrap: "wrap",
+    },
+    forgotPassword: {
+      fontSize: 14,
+      textAlign: "center",
+      color: Colors.main100,
+      textDecorationLine: "underline",
+      paddingVertical: 8,
     },
     logo: {
       alignSelf: "center",

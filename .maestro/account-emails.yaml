@@ -1,0 +1,159 @@
+# The account's e-mail addresses: what the list shows, and adding/removing one.
+#
+# Everything here used to be website-only (allauth's /accounts/email/), so
+# there is no older flow this overlaps with. The parts worth a device test are
+# the two the unit tests cannot reach: that the new `/myapi/emails/` endpoints
+# answer at all against a real backend, and that the per-row action sheet
+# offers exactly the actions the server would accept — the primary address has
+# none, an unconfirmed one can only be re-sent and removed.
+#
+# Android only. The per-row actions live in a `BottomSheet.showMenu`, and on
+# iOS that sheet's contents do not reach Maestro at all — not by testID, not by
+# the text of its rows (measured 2026-08-26, see §1 of RELEASE_CHECKLIST). This
+# flow cannot merely skip those legs on iOS: without the menu there is no way
+# to remove the address it added, and it would leave the shared account dirtier
+# on every run. Worth re-measuring, though — that finding was made on a menu
+# with no `title`, and this one passes the address as a title, which is the
+# very difference the checklist blames for the filter sheet being reachable.
+#
+# Cleans up after itself, and after a previous run that died: the extra address
+# is a fixed string, and the flow removes it up front if it is still there. The
+# primary address (the account's own, from .env.local) is never touched — the
+# server would refuse, and the whole batch logs in with it.
+#
+# appId comes from run.sh (--env APP_ID).
+appId: com.dibird.app
+tags:
+  - android
+---
+# No clearState: session reuse, like every other signed-in flow.
+- launchApp
+
+- runFlow: common/bootstrap.yaml
+
+# ---- into the new Account section of Settings ----
+# Through the drawer, the only path a real person has (same as onboarding.yaml).
+- tapOn:
+    id: "burger-menu-button"
+- waitForAnimationToEnd
+- tapOn: ".*Settings.*"
+# scrollUntilVisible, not a bare wait: `tapOn` does not scroll, and an
+# off-screen row is reported as "element not found". The Account section is
+# the first on the screen, so this is normally a no-op.
+- scrollUntilVisible:
+    element: ".*Email addresses.*"
+    direction: DOWN
+    timeout: 10000
+- tapOn: ".*Email addresses.*"
+
+# The list is a request, not cached state — wait for it rather than for an
+# animation. The account's own address is primary and confirmed, so both
+# badges have to be on screen.
+- extendedWaitUntil:
+    visible: "Primary"
+    timeout: 15000
+- assertVisible: "Verified"
+
+# ---- leftovers from a run that died before its cleanup ----
+# Optional by construction: on a clean account there is no such row and the
+# whole block is skipped.
+- runFlow:
+    when:
+      visible: "e2e-extra@example.com"
+    commands:
+      - tapOn: "e2e-extra@example.com"
+      - extendedWaitUntil:
+          visible: "Remove"
+          timeout: 6000
+      - tapOn: "Remove"
+      - tapOn:
+          id: "bottom-sheet-confirm-button"
+      - extendedWaitUntil:
+          notVisible: "e2e-extra@example.com"
+          timeout: 15000
+
+# ---- the primary address offers nothing ----
+# Not decoration: removing the primary address, or making it primary again,
+# are both 400s on the server. Offering either would be a menu whose every
+# row fails. With no actions the screen says so instead of opening a sheet.
+#
+# The address goes into a text selector, which Maestro reads as a regex — fine
+# for the dots in a domain, which match themselves, but an account address
+# containing a `+` would need escaping here.
+- tapOn: "${TEST_EMAIL}"
+- extendedWaitUntil:
+    visible: ".*Nothing to do with this address.*"
+    timeout: 6000
+
+# ---- add an address ----
+- tapOn:
+    id: "add-email-input"
+# Google Password Manager offers this field the account's saved credential the
+# moment it takes focus, as a dialog that swallows the paste and covers the
+# submit button — see common/dismiss-autofill.yaml.
+- runFlow: common/dismiss-autofill.yaml
+- setClipboard: "e2e-extra@example.com"
+- pasteText
+# Defocus before submitting — see common/credential-entry.yaml on why
+# hideKeyboard is avoided on this Input. The section heading above the field
+# is static text and safe to tap.
+- tapOn:
+    text: ".*Add an address.*"
+    optional: true
+- tapOn:
+    id: "add-email-button"
+
+# It lands unconfirmed and not primary — the server sends a letter and waits.
+- extendedWaitUntil:
+    visible: "e2e-extra@example.com"
+    timeout: 20000
+- assertVisible: "Not verified"
+
+# ---- what an unconfirmed address may do ----
+# "Make primary" must NOT be here: allauth would refuse to make an unverified
+# address primary, and the app mirrors that rule rather than discovering it
+# through an error toast.
+- tapOn: "e2e-extra@example.com"
+- extendedWaitUntil:
+    visible: "Resend confirmation"
+    timeout: 6000
+- assertNotVisible: "Make primary"
+- assertVisible: "Remove"
+- tapOn: "Resend confirmation"
+# The second letter went out. Asserted on the toast, not on the row: the row
+# is on screen either way, so it would pass whether the request happened or
+# not.
+- extendedWaitUntil:
+    visible: ".*Confirmation email sent to.*"
+    timeout: 20000
+
+# ---- and remove it again ----
+- tapOn: "e2e-extra@example.com"
+- extendedWaitUntil:
+    visible: "Remove"
+    timeout: 6000
+- tapOn: "Remove"
+# Removal is not undoable, so it goes through the confirm sheet rather than
+# straight off the menu row — the same UniversalBottomSheet every delete uses.
+- extendedWaitUntil:
+    visible:
+      id: "bottom-sheet-confirm-button"
+    timeout: 6000
+- tapOn:
+    id: "bottom-sheet-confirm-button"
+
+# Gone from the server's answer, not just from local state: the list is
+# refetched after the delete.
+- extendedWaitUntil:
+    notVisible: "e2e-extra@example.com"
+    timeout: 20000
+# The account's own address survived it all.
+- assertVisible: "Primary"
+
+# ---- back to where the batch expects to find the app ----
+- runFlow: common/back.yaml
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: "quick-action-observation"
+    timeout: 15000

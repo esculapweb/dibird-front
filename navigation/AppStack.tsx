@@ -29,6 +29,10 @@ import RatingsCompareScreen from "../screens/RatingsCompareScreen";
 import UserStatScreen from "../screens/UserStatScreen";
 import BlockedUsersScreen from "../screens/BlockedUsersScreen";
 import SettingsScreen from "../screens/SettingsScreen";
+import ChangePasswordScreen from "../screens/ChangePasswordScreen";
+import EmailsScreen from "../screens/EmailsScreen";
+import LinkedAccountsScreen from "../screens/LinkedAccountsScreen";
+import ConfirmEmailScreen from "../screens/ConfirmEmailScreen";
 import AlertSettingsScreen from "../screens/AlertSettingsScreen";
 import ImportScreen from "../screens/ImportScreen";
 import NotificationsScreen from "../screens/NotificationsScreen";
@@ -36,6 +40,7 @@ import AchievementsScreen from "../screens/AchievementsScreen";
 import CommunityScreen from "../screens/CommunityScreen";
 import CommunityDetailScreen from "../screens/CommunityDetailScreen";
 import OnboardingScreen from "../screens/OnboardingScreen";
+import AboutScreen from "../screens/AboutScreen";
 
 import { useAuth, setOnLogout } from "../store/auth-context";
 import { useProfile } from "../store/profile-context";
@@ -313,9 +318,42 @@ const AppNavigator = () => {
       />
 
       <Stack.Screen
+        name="About"
+        component={AboutScreen}
+        options={{ title: t("settings_section_about") }}
+      />
+
+      <Stack.Screen
         name="AlertSettings"
         component={AlertSettingsScreen}
         options={{ title: t("alert_settings") }}
+      />
+
+      <Stack.Screen
+        name="ChangePassword"
+        component={ChangePasswordScreen}
+        options={{ title: t("change_password") }}
+      />
+
+      <Stack.Screen
+        name="Emails"
+        component={EmailsScreen}
+        options={{ title: t("emails_title") }}
+      />
+
+      <Stack.Screen
+        name="LinkedAccounts"
+        component={LinkedAccountsScreen}
+        options={{ title: t("linked_accounts_title") }}
+      />
+
+      {/* Also in AuthStack. The letter that confirms a second address arrives
+          while the person is already signed in, and without the route here
+          that deep link would resolve to nothing. */}
+      <Stack.Screen
+        name="ConfirmEmail"
+        component={ConfirmEmailScreen}
+        options={{ title: t("confirm_email") }}
       />
 
       <Stack.Screen

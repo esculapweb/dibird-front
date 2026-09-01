@@ -126,6 +126,27 @@ export interface CredentialsValidation {
   confirmPassword: boolean;
 }
 
+/** One row of `GET /myapi/emails/` — an allauth EmailAddress. */
+export interface EmailAddressItem {
+  id: number;
+  email: string;
+  verified: boolean;
+  primary: boolean;
+}
+
+/** One row of `GET /myapi/profile/social/`. */
+export interface SocialAccountItem {
+  id: number;
+  provider: string;
+  provider_user_id: string;
+  email: string | null;
+  last_login: string;
+  date_joined: string;
+}
+
+/** The providers the app can connect on its own — it holds no others' SDKs. */
+export type SocialProvider = "google" | "apple";
+
 export type ExportStatus =
   | "idle"
   | "pending"
@@ -194,6 +215,14 @@ export interface Profile {
   registration_ip: string;
   timezone: string;
   territory?: number | null;
+  // Whether the account has a password at all: false for someone who only ever
+  // signed in with Google/Apple. Decides "change password" vs "set password"
+  // (ChangePasswordScreen) and whether the last social account may be
+  // disconnected. Deliberately NOT mirrored in SQLite by profileRepository —
+  // a password can be set on the website, and a stale local copy would send
+  // people to the wrong form. Undefined means "came from the offline mirror,
+  // not the server".
+  has_usable_password?: boolean;
   // Local file:// URI for an avatar upload/removal made while offline, not
   // yet synced to the server — see profileRepository.queuePendingAvatar.
   pendingAvatarUri?: string | null;
@@ -1160,11 +1189,22 @@ export type AuthStackParamList = CatalogParamList & {
   Welcome: undefined;
   Login: { emailConfirmed?: boolean; prefillEmail?: string } | undefined;
   Signup: undefined;
-  CheckEmail: { email?: string };
+  CheckEmail: { email?: string; mode?: CheckEmailMode };
   ConfirmEmail: { key: string };
+  ForgotPassword: { prefillEmail?: string } | undefined;
+  // Both halves come from one path segment of the link in the letter —
+  // see linking.ts, which splits `<uid>-<token>` on the first dash.
+  ResetPassword: { uid: string; token: string };
   Privacy: undefined;
   Terms: undefined;
 };
+
+/**
+ * What the "check your inbox" screen is waiting for. `signup` is the letter
+ * that confirms a new account, `reset` the one that carries a password-reset
+ * link — the wording and the resend endpoint differ, the screen does not.
+ */
+export type CheckEmailMode = "signup" | "reset";
 
 export interface ScreenWithFilters {
   filtersOverride?: Filters;
@@ -1188,6 +1228,7 @@ export type AppStackParamList = CatalogParamList & {
   Main: undefined;
   Profile: undefined;
   Settings: undefined;
+  About: undefined;
   AlertSettings: undefined;
   Import: undefined;
   Stat: ScreenWithFilters | undefined;
@@ -1232,6 +1273,14 @@ export type AppStackParamList = CatalogParamList & {
   Privacy: undefined;
   Terms: undefined;
   BlockedUsers: undefined;
+  ChangePassword: undefined;
+  Emails: undefined;
+  LinkedAccounts: undefined;
+  // Also declared in AuthStack. A second address added from Settings is
+  // confirmed by a link in a letter, and that link arrives while the person is
+  // signed in — without the route here the deep link would resolve to nothing
+  // (see linking.ts).
+  ConfirmEmail: { key: string };
 };
 
 /**

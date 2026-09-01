@@ -70,3 +70,11 @@ describe("selecting an option", () => {
     expect(mockToggleTheme).toHaveBeenCalledWith("dark");
   });
 });
+
+// The Settings copy of the switcher has to line up with the rows around it: no
+// divider of its own and no trailing colon, which the drawer footer does need.
+it("drops the drawer chrome in the settings variant", async () => {
+  await render(<ThemeSwitcher variant="settings" />);
+  expect(screen.getByText("theme")).toBeOnTheScreen();
+  expect(screen.queryByText("theme:")).not.toBeOnTheScreen();
+});

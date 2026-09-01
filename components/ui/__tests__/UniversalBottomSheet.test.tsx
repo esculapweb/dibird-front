@@ -16,6 +16,7 @@ jest.mock("@expo/vector-icons", () => {
 
 const mockInnerPresent = jest.fn();
 const mockInnerDismiss = jest.fn();
+const mockInnerSnapToIndex = jest.fn();
 let capturedOnDismiss: (() => void) | undefined;
 let capturedOnChange: ((index: number) => void) | undefined;
 
@@ -30,6 +31,7 @@ jest.mock("@gorhom/bottom-sheet", () => {
       React.useImperativeHandle(ref, () => ({
         present: mockInnerPresent,
         dismiss: mockInnerDismiss,
+        snapToIndex: mockInnerSnapToIndex,
       }));
       return <View>{props.children}</View>;
     }),
@@ -136,6 +138,57 @@ describe("imperative handle", () => {
       ref.current?.present({ mode: "menu", items: [{ label: "A", onPress: mockOnPress1 }] });
     });
     expect(mockInnerPresent).toHaveBeenCalledTimes(1);
+  });
+
+  // A present() can mount the sheet without ever opening it: the library's
+  // teardown of the previous one races @gorhom/portal and leaves a stale node
+  // for this one to reconcile into, and nothing animates. It is silent, and it
+  // takes every sheet in the app down with it until the process restarts, so
+  // present() checks the outcome instead of trusting it.
+  describe("a present() that never opens", () => {
+    const openMenu = async (ref: React.RefObject<BottomSheetRef | null>) => {
+      await act(async () => {
+        ref.current?.present({
+          mode: "menu",
+          items: [{ label: "A", onPress: mockOnPress1 }],
+        });
+      });
+    };
+
+    it("asks the sheet again when it has not reported itself open", async () => {
+      const ref = await renderSheet();
+      await openMenu(ref);
+
+      await act(async () => {
+        jest.advanceTimersByTime(600);
+      });
+
+      expect(mockInnerSnapToIndex).toHaveBeenCalledWith(0);
+    });
+
+    it("leaves a sheet that opened normally alone", async () => {
+      const ref = await renderSheet();
+      await openMenu(ref);
+      await act(async () => {
+        capturedOnChange?.(0);
+        jest.advanceTimersByTime(600);
+      });
+
+      expect(mockInnerSnapToIndex).not.toHaveBeenCalled();
+    });
+
+    // Dismissed before the sheet was ever seen open — re-snapping it then would
+    // put back on screen exactly what the caller has just taken off.
+    it("leaves a sheet that was dismissed while waiting alone", async () => {
+      const ref = await renderSheet();
+      await openMenu(ref);
+      await act(async () => {
+        ref.current?.dismiss();
+        jest.advanceTimersByTime(600);
+      });
+
+      expect(mockInnerSnapToIndex).not.toHaveBeenCalled();
+    });
   });
 
   it("dismiss() forwards to the inner sheet's dismiss()", async () => {

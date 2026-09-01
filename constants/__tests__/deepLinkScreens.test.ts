@@ -10,8 +10,17 @@ import { AUTHED_SCREENS } from "../../linking";
 import { SHARED_LINK_SCREEN_NAMES } from "../deepLinkScreens";
 
 // `Main` is where the return puts the target on top of, and Privacy/Terms open
-// for a guest as they are — neither is something to come back to.
-const NOT_A_RETURN_TARGET = new Set(["Main", "Privacy", "Terms"]);
+// for a guest as they are — neither is something to come back to. `ConfirmEmail`
+// is here for a third reason: the guest stack handles that link itself (it is
+// not under /my or /users, so there is no bounce to Welcome and nothing to
+// return to), and it is listed in the authed config only because a second
+// address is confirmed from inside the account.
+const NOT_A_RETURN_TARGET = new Set([
+  "Main",
+  "Privacy",
+  "Terms",
+  "ConfirmEmail",
+]);
 
 // A screen added to linking.ts but forgotten here would silently lose its
 // deep link for guests: the bounce to Welcome still happens, the return no

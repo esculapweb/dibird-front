@@ -5,10 +5,16 @@ import { useTranslation } from "react-i18next";
 import { IconType } from "../../types";
 import { Theme } from "../../types";
 
-const ThemeSwitcher = () => {
+interface ThemeSwitcherProps {
+  // Same two variants as LanguageSwitcher — see the comment there.
+  variant?: "drawer" | "settings";
+}
+
+const ThemeSwitcher = ({ variant = "drawer" }: ThemeSwitcherProps) => {
   const { manualTheme, toggleTheme, Colors } = useTheme();
   const { t } = useTranslation();
   const styles = stylesFn(Colors);
+  const inSettings = variant === "settings";
 
   interface OptionType{
     value: Theme| null;
@@ -24,10 +30,17 @@ const ThemeSwitcher = () => {
   ];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, inSettings && styles.containerInCard]}>
       <View style={styles.left}>
-        <Ionicons name="color-palette-outline" size={22} style={styles.icon} />
-        <Text style={styles.title}>{t("theme")}:</Text>
+        <Ionicons
+          name="color-palette-outline"
+          size={inSettings ? 18 : 22}
+          style={[styles.icon, inSettings && styles.iconInCard]}
+        />
+        <Text style={[styles.title, inSettings && styles.titleInCard]}>
+          {t("theme")}
+          {inSettings ? "" : ":"}
+        </Text>
       </View>
       <View style={styles.buttonsRight}>
         {options.map((option) => {
@@ -103,5 +116,17 @@ const stylesFn = (Colors: ThemeColors) =>
     },
     pressed: {
       opacity: 0.7,
+    },
+    containerInCard: {
+      borderTopWidth: 0,
+      paddingHorizontal: 14,
+      paddingVertical: 6,
+    },
+    titleInCard: {
+      fontSize: 15,
+    },
+    iconInCard: {
+      marginRight: 12,
+      color: Colors.main100,
     },
   });

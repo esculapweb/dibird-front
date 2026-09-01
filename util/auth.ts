@@ -57,6 +57,66 @@ export const CreateUser = async (
   return data;
 };
 
+/**
+ * Ask for a password-reset letter.
+ *
+ * Answers 200 for an unknown address too — the server deliberately does not
+ * say whether an account exists, so the screen can only ever report "sent".
+ */
+export const requestPasswordReset = async (email: string) => {
+  await post("/api-auth/password/reset/", { email });
+};
+
+/**
+ * Finish the reset with the pair carried by the link from the letter.
+ *
+ * `uid`/`token` are the two halves of the last path segment — linking.ts
+ * splits it, because the token itself contains a dash.
+ */
+export const confirmPasswordReset = async ({
+  uid,
+  token,
+  password,
+}: {
+  uid: string;
+  token: string;
+  password: string;
+}) => {
+  await post("/api-auth/password/reset/confirm/", {
+    uid,
+    token,
+    new_password1: password,
+    new_password2: password,
+  });
+};
+
+/**
+ * Change (or, for a social-only account, set) the password.
+ *
+ * `oldPassword` is required of everyone who has one and rejected for everyone
+ * who has not — the backend drops the field for an account with no usable
+ * password (CustomPasswordChangeSerializer), so sending it there would be a
+ * 400. The caller decides by `profile.has_usable_password`.
+ */
+export const changePassword = async ({
+  oldPassword,
+  password,
+}: {
+  oldPassword?: string;
+  password: string;
+}) => {
+  await post("/api-auth/password/change/", {
+    ...(oldPassword ? { old_password: oldPassword } : {}),
+    new_password1: password,
+    new_password2: password,
+  });
+};
+
+/** Send the account-confirmation letter again. */
+export const resendVerificationEmail = async (email: string) => {
+  await post("/api-auth/registration/resend-email/", { email });
+};
+
 export const Logout = async (onLogoutCallback: () => void) => {
   try {
     let refresh: string | null = null;
@@ -107,6 +167,61 @@ export const initGoogleSignIn = () => {
   });
 };
 
+/**
+ * Everything Google-side of a sign-in: the SDK dialog and the two tokens.
+ *
+ * Split out of LoginWithGoogle so that connecting a provider to an account
+ * that is already signed in (connectGoogle) can reuse it — the difference
+ * between the two flows is only which endpoint the tokens go to, and that
+ * `LoginWithGoogle` drops the current session first while a connect must keep
+ * it.
+ *
+ * Returns null, not an error, when the person backs out of the dialog or the
+ * device has no usable Play Services: neither is a failure to report.
+ */
+const getGoogleTokens = async (): Promise<{
+  idToken: string;
+  accessToken: string;
+} | null> => {
+  try {
+    await GoogleSignin.hasPlayServices({
+      showPlayServicesUpdateDialog: true,
+    });
+  } catch (e) {
+    Sentry.captureException(e, {
+      tags: { auth_provider: "google" },
+      extra: { step: "hasPlayServices" },
+    });
+    return null;
+  }
+
+  const userInfo = await GoogleSignin.signIn();
+
+  if (!userInfo?.data) {
+    return null;
+  }
+
+  const tokens = await GoogleSignin.getTokens();
+
+  const idToken = userInfo.data.idToken;
+  const accessToken = tokens.accessToken;
+
+  if (!idToken || !accessToken) {
+    throw new Error("Google: missing tokens");
+  }
+
+  return { idToken, accessToken };
+};
+
+/** The Apple half of a sign-in — same split, same reason, as for Google. */
+const getAppleCredential = () =>
+  AppleAuthentication.signInAsync({
+    requestedScopes: [
+      AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+      AppleAuthentication.AppleAuthenticationScope.EMAIL,
+    ],
+  });
+
 export const LoginWithGoogle = async () => {
   try {
     Sentry.addBreadcrumb({
@@ -115,32 +230,13 @@ export const LoginWithGoogle = async () => {
       level: "info",
     });
 
-    try {
-      await GoogleSignin.hasPlayServices({
-        showPlayServicesUpdateDialog: true,
-      });
-    } catch (e) {
-      Sentry.captureException(e, {
-        tags: { auth_provider: "google" },
-        extra: { step: "hasPlayServices" },
-      });
+    const googleTokens = await getGoogleTokens();
+
+    if (!googleTokens) {
       return null;
     }
 
-    const userInfo = await GoogleSignin.signIn();
-
-    if (!userInfo?.data) {
-      return null;
-    }
-
-    const tokens = await GoogleSignin.getTokens();
-
-    const idToken = userInfo.data.idToken;
-    const accessToken = tokens.accessToken;
-
-    if (!idToken || !accessToken) {
-      throw new Error("Google: missing tokens");
-    }
+    const { idToken, accessToken } = googleTokens;
 
     await clearTokens();
 
@@ -196,12 +292,7 @@ export const LoginWithGoogle = async () => {
 };
 
 export const LoginWithApple = async () => {
-  const credential = await AppleAuthentication.signInAsync({
-    requestedScopes: [
-      AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-      AppleAuthentication.AppleAuthenticationScope.EMAIL,
-    ],
-  });
+  const credential = await getAppleCredential();
 
   const { identityToken, fullName } = credential;
   if (!identityToken) throw new Error("Apple: no identity_token");
@@ -223,4 +314,50 @@ export const LoginWithApple = async () => {
   const eventName = is_new_user ? "sign_up" : "login";
   track(eventName, { method: "apple" });
   return access;
+};
+
+/**
+ * Attach Google to the account that is already signed in.
+ *
+ * No `agree_terms` here, unlike the sign-in endpoints: the terms were accepted
+ * when the account was created, and the backend skips that gate entirely for a
+ * connect (CustomSocialAccountAdapter.pre_social_login).
+ *
+ * Returns false when the person backed out of the provider's dialog — the
+ * screen shows nothing in that case.
+ */
+export const connectGoogle = async () => {
+  // Sign out of Google first, or the SDK hands back the session already on the
+  // device without showing a picker — and "connect a different account" would
+  // silently re-attach the very account that is connected already.
+  try {
+    await GoogleSignin.signOut();
+  } catch (e) {
+    logError(e, "GoogleSignin.signOut");
+  }
+
+  const tokens = await getGoogleTokens();
+  if (!tokens) return false;
+
+  await post("/auth/google/connect/", {
+    access_token: tokens.accessToken,
+    id_token: tokens.idToken,
+  });
+
+  return true;
+};
+
+/** Attach Apple to the account that is already signed in. */
+export const connectApple = async () => {
+  const { identityToken, fullName } = await getAppleCredential();
+  if (!identityToken) throw new Error("Apple: no identity_token");
+
+  await post("/auth/apple/connect/", {
+    access_token: identityToken,
+    id_token: identityToken,
+    first_name: fullName?.givenName ?? "",
+    last_name: fullName?.familyName ?? "",
+  });
+
+  return true;
 };

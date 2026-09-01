@@ -1,157 +1,28 @@
 import { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Platform,
-  Share,
-  Switch,
-  Alert,
-} from "react-native";
+import { StyleSheet, Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
-import { Ionicons } from "@expo/vector-icons";
 
 import Layout from "../components/ui/Layout";
-import { ThemeColors, useTheme } from "../store/theme-context";
+import { Row, RowSwitch, Section } from "../components/Settings/SettingsList";
+import LanguageSwitcher from "../components/Language/LanguageSwitcher";
+import ThemeSwitcher from "../components/Theme/ThemeSwitcher";
 import { useProfile } from "../store/profile-context";
 import { useAuth } from "../store/auth-context";
 import { useOnboarding } from "../store/onboarding-context";
 import {
   AppDrawerNavigationProp,
-  IconType,
   ErrorExtractor,
   AppError,
 } from "../types";
-import { Config } from "../constants/config";
-import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import { useExportProfile } from "../hooks/Profile/useExportProfile";
 import { useBiometricSetting } from "../hooks/useBiometricSetting";
 import { canUseBiometrics } from "../services/bio";
-import { openSupportEmail } from "../util/openSupportEmail";
-import { openDonatePage } from "../util/openDonatePage";
 import { BottomSheet } from "../services/bottomSheet";
 import { deleteMyProfile } from "../util/fetches";
 import { useApiError } from "../hooks/useApiError";
-import { getFullVersion } from "../util/helpers";
 import api from "../services/api";
 import { logError } from "../services/errors";
-import { track } from "../services/analytics";
-
-interface RowSwitchProps {
-  icon: IconType;
-  label: string;
-  value: boolean;
-  onValueChange: (v: boolean) => void;
-  disabled?: boolean;
-  colors: ThemeColors;
-  styles: ReturnType<typeof stylesFn>;
-}
-
-const RowSwitch = ({
-  icon,
-  label,
-  value,
-  onValueChange,
-  disabled = false,
-  colors,
-  styles,
-}: RowSwitchProps) => (
-  <View style={[styles.row, disabled && styles.rowDisabled]}>
-    <Ionicons name={icon} size={18} color={colors.main100} />
-    <Text
-      style={[styles.rowLabel, { color: colors.textMain }]}
-      numberOfLines={1}
-    >
-      {label}
-    </Text>
-    <Switch
-      value={value}
-      onValueChange={onValueChange}
-      disabled={disabled}
-      trackColor={{ true: colors.main100 }}
-      thumbColor={Platform.OS === "android" ? colors.primary100 : undefined}
-    />
-  </View>
-);
-
-interface RowProps {
-  icon: IconType;
-  label: string;
-  onPress?: () => void;
-  rightLabel?: string;
-  danger?: boolean;
-  disabled?: boolean;
-  hideChevron?: boolean;
-  colors: ThemeColors;
-  styles: ReturnType<typeof stylesFn>;
-}
-
-const Row = ({
-  icon,
-  label,
-  onPress,
-  rightLabel,
-  danger = false,
-  disabled = false,
-  hideChevron = false,
-  colors,
-  styles,
-}: RowProps) => {
-  const labelColor = danger ? colors.error600 : colors.textMain;
-  const iconColor = danger ? colors.error600 : colors.main100;
-
-  return (
-    <TouchableOpacity
-      style={[styles.row, disabled && styles.rowDisabled]}
-      onPress={onPress}
-      disabled={disabled}
-      activeOpacity={0.55}
-    >
-      <Ionicons name={icon} size={18} color={iconColor} />
-      <Text style={[styles.rowLabel, { color: labelColor }]} numberOfLines={1}>
-        {label}
-      </Text>
-      <View style={styles.rowRight}>
-        {rightLabel ? (
-          <Text style={[styles.rowRightLabel, { color: colors.textSecondary }]}>
-            {rightLabel}
-          </Text>
-        ) : null}
-        {!hideChevron && (
-          <Ionicons
-            name="chevron-forward"
-            size={16}
-            color={colors.textSecondary}
-          />
-        )}
-      </View>
-    </TouchableOpacity>
-  );
-};
-
-const Divider = ({ styles }: { styles: ReturnType<typeof stylesFn> }) => (
-  <View style={styles.divider} />
-);
-
-interface SectionProps {
-  title: string;
-  children: React.ReactNode;
-  styles: ReturnType<typeof stylesFn>;
-  colors: ThemeColors;
-}
-
-const Section = ({ title, children, styles, colors }: SectionProps) => (
-  <View style={styles.section}>
-    <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-      {title}
-    </Text>
-    <View style={[styles.sectionCard, { backgroundColor: colors.primary100 }]}>
-      {children}
-    </View>
-  </View>
-);
 
 const APP_REVIEW_PROFILE_ID = 9386;
 // The e2e accounts — one per platform, so that the iOS and Android batches can
@@ -163,8 +34,6 @@ const TEST_ANDROID_PROFILE_ID = 8263;
 
 const SettingsScreen = () => {
   const { t } = useTranslation();
-  const { Colors } = useTheme();
-  const styles = stylesFn(Colors);
   const { showErrorToast } = useApiError();
   const { logout } = useAuth();
   const { profile } = useProfile();
@@ -176,11 +45,11 @@ const SettingsScreen = () => {
 
   const userEmail = profile?.user_data?.email ?? "";
 
-  // The same gate as for "Send test push": the debug strings are visible only on
-  // the review account, on the e2e accounts and on the first one. Every id is
-  // compared separately — a bare constant in a `||` chain is always truthy and
-  // would open the debug strings (and the auto-jump into onboarding below) to
-  // absolutely everyone.
+  // The gate for the whole Debug section: it is visible only on the review
+  // account, on the e2e accounts and on the first one. Every id is compared
+  // separately — a bare constant in a `||` chain is always truthy and would open
+  // the section (and the auto-jump into onboarding below) to absolutely
+  // everyone.
   const isDebugProfile =
     profile?.user === APP_REVIEW_PROFILE_ID ||
     profile?.user === TEST_IOS_PROFILE_ID ||
@@ -227,7 +96,7 @@ const SettingsScreen = () => {
       Alert.alert("OK", "Push sent");
     } catch (e) {
       const error = e as AppError;
-      logError(error, "ConfirmEmail API ERROR");
+      logError(error, "TEST PUSH API ERROR");
       Alert.alert("Error", "Could not send push");
     }
   };
@@ -236,18 +105,6 @@ const SettingsScreen = () => {
     title: t("delete_failed"),
     message: err?.response?.data?.detail ?? t("could_not_delete_profile"),
   });
-
-  const handleTellAFriend = async () => {
-    track("share_tapped", { type: "app" });
-    await Share.share(
-      Platform.OS === "ios"
-        ? {
-            url: `${Config.baseUrl}/`,
-            message: t("tell_a_friend_message"),
-          }
-        : { message: t("tell_a_friend_message") },
-    );
-  };
 
   const handleShowBottomSheet = () =>
     BottomSheet.show({
@@ -276,61 +133,70 @@ const SettingsScreen = () => {
     });
 
   return (
-    <Layout
-      withScroll
-      contentContainerStyle={styles.scroll}
-      bottom={
-        <FlatButtonBottom textColor={Colors.textSecondary} disabled>
-          {t("app_version", { version: getFullVersion() })}
-        </FlatButtonBottom>
-      }
-    >
-      <Section
-        title={t("settings_section_alerts")}
-        styles={styles}
-        colors={Colors}
-      >
+    <Layout withScroll contentContainerStyle={styles.scroll}>
+      {/* Everything tied to the account itself: who I am, how I sign in, and who
+          I have shut out. The password and the biometric lock used to be a
+          "Security" section of their own, but both are just ways into this one
+          account, and a section per row is what made the screen sprawl. */}
+      <Section title={t("settings_section_account")}>
         <Row
-          icon="notifications-outline"
-          label={t("alert_settings")}
-          onPress={() => navigation.navigate("AlertSettings")}
-          colors={Colors}
-          styles={styles}
+          icon="person-circle-outline"
+          label={t("profile")}
+          onPress={() => navigation.navigate("Profile")}
         />
-        {isDebugProfile && (
-          <Row
-            icon="notifications-outline"
-            label="Send test push"
-            onPress={handleTestPush}
-            colors={Colors}
-            styles={styles}
-          />
-        )}
-      </Section>
-
-      {bioAvailable && (
-        <Section
-          title={t("settings_section_security")}
-          styles={styles}
-          colors={Colors}
-        >
+        <Row
+          icon="at-outline"
+          label={t("emails_title")}
+          onPress={() => navigation.navigate("Emails")}
+        />
+        <Row
+          icon="link-outline"
+          label={t("linked_accounts_title")}
+          onPress={() => navigation.navigate("LinkedAccounts")}
+        />
+        <Row
+          icon="key-outline"
+          label={t("change_password")}
+          onPress={() => navigation.navigate("ChangePassword")}
+        />
+        {/* The switch depends on the device having a sensor enrolled; the rows
+            around it belong to everyone. */}
+        {bioAvailable && (
           <RowSwitch
             icon="finger-print-outline"
             label={t("settings_biometric_lock")}
             value={biometricEnabled}
             onValueChange={toggleBiometric}
             disabled={bioLoading}
-            colors={Colors}
-            styles={styles}
           />
-        </Section>
-      )}
+        )}
+        {/* Blocking has to be undoable somewhere, and this is the only screen
+            that outlives the profile it was made on. */}
+        <Row
+          icon="ban-outline"
+          label={t("blocked_users")}
+          onPress={() => navigation.navigate("BlockedUsers")}
+        />
+      </Section>
 
-      <Section
-        title={t("settings_section_data")}
-        styles={styles}
-        colors={Colors}
-      >
+      <Section title={t("settings_section_alerts")}>
+        <Row
+          icon="notifications-outline"
+          label={t("alert_settings")}
+          onPress={() => navigation.navigate("AlertSettings")}
+        />
+      </Section>
+
+      {/* Both switchers are also in the drawer footer, deliberately: the drawer
+          keeps them one tap away, and this is where people go looking for them.
+          They share the state (language-context / theme-context), so the two
+          copies can never disagree. */}
+      <Section title={t("settings_section_appearance")}>
+        <LanguageSwitcher variant="settings" />
+        <ThemeSwitcher variant="settings" />
+      </Section>
+
+      <Section title={t("settings_section_data")}>
         <Row
           icon="download-outline"
           label={
@@ -345,108 +211,50 @@ const SettingsScreen = () => {
           onPress={isExporting ? undefined : handleExportPress}
           disabled={isExporting}
           hideChevron
-          colors={Colors}
-          styles={styles}
         />
-        <Divider styles={styles} />
         <Row
           icon="cloud-upload-outline"
           label={t("import_data")}
           onPress={() => navigation.navigate("Import")}
-          colors={Colors}
-          styles={styles}
         />
       </Section>
 
-      <Section
-        title={t("settings_section_about")}
-        styles={styles}
-        colors={Colors}
-      >
+      {/* Untitled: a lone row into the About screen, which has no group of its
+          own to head. */}
+      <Section>
         <Row
-          icon="share-social-outline"
-          label={t("settings_tell_a_friend")}
-          onPress={handleTellAFriend}
-          hideChevron
-          colors={Colors}
-          styles={styles}
-        />
-        <Divider styles={styles} />
-        <Row
-          icon="chatbubble-outline"
-          label={t("settings_send_feedback")}
-          onPress={openSupportEmail}
-          hideChevron
-          colors={Colors}
-          styles={styles}
-        />
-        <Divider styles={styles} />
-        {/* Opens the site in the browser — see openDonatePage on why the wallets
-            stay out of the app. */}
-        <Row
-          icon="heart-outline"
-          label={t("settings_support_project")}
-          onPress={() => openDonatePage("settings")}
-          hideChevron
-          colors={Colors}
-          styles={styles}
-        />
-        <Divider styles={styles} />
-        {/* Blocking has to be undoable somewhere, and this is the only screen
-            that outlives the profile it was made on. */}
-        <Row
-          icon="ban-outline"
-          label={t("blocked_users")}
-          onPress={() => navigation.navigate("BlockedUsers")}
-          colors={Colors}
-          styles={styles}
-        />
-        <Divider styles={styles} />
-        <Row
-          icon="shield-checkmark-outline"
-          label={t("privacy_policy")}
-          onPress={() => navigation.navigate("Privacy")}
-          colors={Colors}
-          styles={styles}
-        />
-        <Divider styles={styles} />
-        <Row
-          icon="document-text-outline"
-          label={t("terms_of_service")}
-          onPress={() => navigation.navigate("Terms")}
-          colors={Colors}
-          styles={styles}
+          icon="information-circle-outline"
+          label={t("settings_section_about")}
+          onPress={() => navigation.navigate("About")}
         />
       </Section>
 
-      {/* Deliberately without i18n, like "Send test push": the string never
-          reaches an ordinary user and there is no point translating it. */}
+      {/* Deliberately without i18n: these strings never reach an ordinary user
+          and there is no point translating them. */}
       {isDebugProfile && (
-        <Section title="Debug" styles={styles} colors={Colors}>
+        <Section title="Debug">
+          <Row
+            icon="notifications-outline"
+            label="Send test push"
+            onPress={handleTestPush}
+            hideChevron
+          />
           <Row
             icon="refresh-outline"
             label="Replay onboarding"
             onPress={restartOnboarding}
             hideChevron
-            colors={Colors}
-            styles={styles}
           />
         </Section>
       )}
 
-      <Section
-        title={t("settings_section_danger")}
-        styles={styles}
-        colors={Colors}
-      >
+      <Section title={t("settings_section_danger")}>
         <Row
           icon="trash-outline"
           label={t("delete_profile")}
           onPress={handleShowBottomSheet}
           danger
           hideChevron
-          colors={Colors}
-          styles={styles}
         />
       </Section>
     </Layout>
@@ -455,67 +263,9 @@ const SettingsScreen = () => {
 
 export default SettingsScreen;
 
-// ------------------------------------------------------------------
-// Styles
-// ------------------------------------------------------------------
-
-const stylesFn = (Colors: ThemeColors) =>
-  StyleSheet.create({
-    scroll: {
-      paddingHorizontal: 16,
-    },
-    section: {
-      marginTop: 24,
-    },
-    sectionTitle: {
-      fontSize: 11,
-      fontWeight: "600",
-      letterSpacing: 0.7,
-      textTransform: "uppercase",
-      marginBottom: 6,
-      marginLeft: 2,
-    },
-    sectionCard: {
-      borderRadius: 14,
-      overflow: "hidden",
-    },
-    row: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingHorizontal: 14,
-      paddingVertical: 14,
-      gap: 12,
-    },
-    rowDisabled: {
-      opacity: 0.35,
-    },
-    rowLabel: {
-      flex: 1,
-      fontSize: 15,
-    },
-    rowDescription: {
-      fontSize: 12,
-      marginTop: 1,
-      lineHeight: 16,
-    },
-    rowRight: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 4,
-    },
-    rowRightLabel: {
-      fontSize: 14,
-    },
-    divider: {
-      height: StyleSheet.hairlineWidth,
-      backgroundColor: Colors.border,
-      marginLeft: 44,
-      marginRight: 16,
-    },
-    version: {
-      textAlign: "center",
-      fontSize: 12,
-      color: Colors.textSecondary,
-      opacity: 0.5,
-    },
-  });
+const styles = StyleSheet.create({
+  scroll: {
+    paddingHorizontal: 16,
+    paddingBottom: 24,
+  },
+});
