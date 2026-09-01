@@ -32,8 +32,9 @@ const exactSet = new Set(exact);
 // Ids that belong to the platform rather than to this codebase, so no testID
 // will ever back them: React Navigation's iOS back button, the dev-client's own
 // settings glyph in common/connect.yaml, and the AOSP autofill dialog that
-// Google Password Manager puts over a focused e-mail field (account-emails.yaml
-// dismisses it). The last one is a regex because the id on the device is
+// Google Password Manager puts over a focused e-mail or password field
+// (common/dismiss-autofill.yaml closes it). The last one is a regex because the
+// id on the device is
 // `android:id/autofill_dialog_picker` — a full resource id, unlike a testID.
 const NATIVE_IDS = new Set([
   "BackButton",
