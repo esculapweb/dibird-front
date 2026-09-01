@@ -208,11 +208,17 @@ const EmailsScreen = () => {
     // address can become primary.
     const actions = [];
 
+    // A menu row does not close the sheet by itself, so each action that ends
+    // in a toast has to — otherwise the menu hangs over its own result. Same
+    // rule as components/ui/overflowMenu, which does it for the header menus.
     if (item.verified && !item.primary) {
       actions.push({
         label: t("email_make_primary"),
         icon: "star-outline" as const,
-        onPress: () => handleSetPrimary(item),
+        onPress: () => {
+          BottomSheet.hide();
+          handleSetPrimary(item);
+        },
         testID: `email-make-primary-${item.id}`,
       });
     }
@@ -221,11 +227,18 @@ const EmailsScreen = () => {
       actions.push({
         label: t("email_resend_confirmation"),
         icon: "send-outline" as const,
-        onPress: () => handleResend(item),
+        onPress: () => {
+          BottomSheet.hide();
+          handleResend(item);
+        },
         testID: `email-resend-${item.id}`,
       });
     }
 
+    // The exception: this one opens a confirmation of its own, and `present`
+    // swaps the payload of the single global sheet in place. Hiding first
+    // would race that swap — overflowMenu spells the same case out as
+    // `opensAnotherSheet`.
     if (!item.primary && emails.length > 1) {
       actions.push({
         label: t("remove"),

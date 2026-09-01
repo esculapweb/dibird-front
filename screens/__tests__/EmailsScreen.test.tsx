@@ -22,7 +22,7 @@ jest.mock("@tanstack/react-query", () => ({
   useQueryClient: () => ({ invalidateQueries: jest.fn() }),
 }));
 jest.mock("../../services/bottomSheet", () => ({
-  BottomSheet: { show: jest.fn(), showMenu: jest.fn() },
+  BottomSheet: { show: jest.fn(), showMenu: jest.fn(), hide: jest.fn() },
 }));
 jest.mock("../../util/fetches", () => ({
   fetchMyEmails: jest.fn(),
@@ -175,6 +175,20 @@ describe("the actions themselves", () => {
     );
   });
 
+  // A menu row does not close the sheet on its own: an action that only shows
+  // a toast has to, or the menu stays on screen over its own result.
+  it("closes the menu before an action that ends in a toast", async () => {
+    await render(<EmailsScreen />);
+
+    const row = overflowRow(
+      await menuFor(unconfirmedSecond),
+      "email_resend_confirmation",
+    );
+    await act(async () => row.onPress());
+
+    expect(BottomSheet.hide).toHaveBeenCalled();
+  });
+
   // Removing an address is not undoable, so it goes through the confirm sheet
   // rather than straight off the menu row.
   it("asks before removing, and removes only on confirm", async () => {
@@ -183,6 +197,9 @@ describe("the actions themselves", () => {
     overflowRow(await menuFor(confirmedSecond), "remove").onPress();
 
     expect(deleteMyEmail).not.toHaveBeenCalled();
+    // Not hidden first: the confirmation is presented over the open menu, and
+    // a dismiss racing that swap can leave nothing on screen at all.
+    expect(BottomSheet.hide).not.toHaveBeenCalled();
     const sheet = (BottomSheet.show as jest.Mock).mock.calls.at(-1)![0];
     await act(async () => sheet.onConfirm());
 

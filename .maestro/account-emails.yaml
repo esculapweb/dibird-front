@@ -88,6 +88,28 @@ tags:
 # ---- add an address ----
 - tapOn:
     id: "add-email-input"
+# Google Password Manager offers the app's saved login credential the moment
+# this field takes focus (`autoComplete="email"`, and the device has a password
+# saved for this very app — every Android run signs in with one). On Android 14+
+# that offer is a *dialog*, not the keyboard's suggestion strip: it takes the
+# focus, so `pasteText` lands in it instead of the field, and it covers the
+# lower half of the screen including the submit button. Back dismisses it and
+# leaves the input focused with its keyboard up — measured 2026-09-01.
+#
+# Conditional, not unconditional: on a device with nothing saved the dialog
+# never appears, and a stray Back would close the keyboard instead. The
+# `waitForAnimationToEnd` is what makes the condition meaningful — the dialog
+# animates in after the tap returns, so checking for it immediately would race.
+# The id is the AOSP one (`android:id/autofill_dialog_picker`), which is why it
+# is matched by regex rather than spelled out: only the app's own testIDs land
+# in the hierarchy verbatim.
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible:
+        id: ".*autofill_dialog_picker.*"
+    commands:
+      - pressKey: Back
 - setClipboard: "e2e-extra@example.com"
 - pasteText
 # Defocus before submitting — see common/credential-entry.yaml on why
