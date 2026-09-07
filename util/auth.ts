@@ -148,7 +148,16 @@ export const Logout = async (onLogoutCallback: () => void) => {
         "profile",
         "filters",
         "sorting",
+        // "global" holds the filter values, "filters_inited" the flag that says
+        // they have already been seeded from the profile — they must go
+        // together, otherwise the next login finds no filters but a flag saying
+        // they were set, and initGlobalFilters() leaves the user on "all
+        // countries, all time". AppStack's onLogout callback wipes both via
+        // resetFilters(), but it is only registered once AppNavigator mounts:
+        // a session killed by a failed token refresh during the splash screen
+        // (another device rotated the refresh token) never reaches it.
         "global",
+        "filters_inited",
       ]);
     } catch (e) {
       logError(e, "AsyncStorage.multiRemove");
