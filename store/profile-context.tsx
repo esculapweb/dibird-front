@@ -20,6 +20,8 @@ import * as observationRepository from "../hooks/repositories/observationReposit
 import { deleteLocalPhotos } from "../util/photoFiles";
 import * as diaryRepository from "../hooks/repositories/diaryRepository";
 import * as placeRepository from "../hooks/repositories/placeRepository";
+import { clearAllListCaches } from "../hooks/repositories/listCacheRepository";
+import { clearReferenceData } from "../hooks/repositories/referenceRepository";
 import * as profileSync from "../services/sync/profileSync";
 import * as avatarSync from "../services/sync/avatarSync";
 import { subscribeToReconnect } from "../services/sync/networkStatus";
@@ -175,6 +177,18 @@ export const ProfileProvider = ({
           // cached under the previous account must not leak into this one.
           queryClient.clear();
           await clearPersistedQueryCache();
+          // And the SQLite read-through caches: raw list/stat responses
+          // (observations, diaries, places, notifications, ratings...) plus
+          // the countries dropdown with its per-user `favourite` flags. Their
+          // keys are built from URL/language/filters/search/page only, with no
+          // user id in them, so the next account hits the previous one's rows
+          // on identical filters — and an offline read serves them without
+          // even trying the network (services/cacheFallback.ts). AppStack's
+          // onLogout callback clears both, but it is only registered once
+          // AppNavigator mounts, which a session killed by a failed token
+          // refresh during the splash screen never reaches.
+          clearAllListCaches();
+          clearReferenceData();
         }
         await setLastLoggedInUserId(profile.user);
       }

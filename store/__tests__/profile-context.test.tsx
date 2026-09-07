@@ -39,6 +39,12 @@ jest.mock("../../hooks/repositories/diaryRepository", () => ({
 jest.mock("../../hooks/repositories/placeRepository", () => ({
   clearAllLocal: jest.fn(),
 }));
+jest.mock("../../hooks/repositories/listCacheRepository", () => ({
+  clearAllListCaches: jest.fn(),
+}));
+jest.mock("../../hooks/repositories/referenceRepository", () => ({
+  clearReferenceData: jest.fn(),
+}));
 
 jest.mock("../../services/sync/profileSync", () => ({
   runProfileSync: jest.fn(async () => {}),
@@ -106,6 +112,8 @@ import * as observationRepository from "../../hooks/repositories/observationRepo
 import { deleteLocalPhotos } from "../../util/photoFiles";
 import * as diaryRepository from "../../hooks/repositories/diaryRepository";
 import * as placeRepository from "../../hooks/repositories/placeRepository";
+import { clearAllListCaches } from "../../hooks/repositories/listCacheRepository";
+import { clearReferenceData } from "../../hooks/repositories/referenceRepository";
 import {
   getLastLoggedInUserId,
   initGlobalFilters,
@@ -240,9 +248,12 @@ it("does not re-run on a quick background/foreground flicker under the 10 second
 // whatever offline observation/diary/place data the previous session left
 // behind (both synced mirror rows and still-unsynced edits — see
 // hooks/repositories/{observation,diary,place}Repository.ts's clearAllLocal),
-// but an ordinary re-login of the *same* user (e.g. after a 401-triggered
-// logout) must keep it. lastLoggedInUserId is what distinguishes the two —
-// see the effect in profile-context.tsx keyed on `updatedAt`.
+// nor the caches keyed without a user id (React Query, the SQLite
+// read-through list caches, the countries dropdown with its per-user
+// `favourite` flags) — but an ordinary re-login of the *same* user (e.g. after
+// a 401-triggered logout) must keep it. lastLoggedInUserId is what
+// distinguishes the two — see the effect in profile-context.tsx keyed on
+// `updatedAt`.
 describe("account switch detection", () => {
   const mockLoadedProfile = (userId: number) => {
     (useLiveQuery as jest.Mock).mockReturnValue({
@@ -281,6 +292,8 @@ describe("account switch detection", () => {
     expect(placeRepository.clearAllLocal).toHaveBeenCalledTimes(1);
     expect(queryClient.clear).toHaveBeenCalledTimes(1);
     expect(clearPersistedQueryCache).toHaveBeenCalledTimes(1);
+    expect(clearAllListCaches).toHaveBeenCalledTimes(1);
+    expect(clearReferenceData).toHaveBeenCalledTimes(1);
   });
 
   it("does not wipe when the same user re-authenticates (e.g. after a 401-triggered logout)", async () => {
@@ -295,6 +308,8 @@ describe("account switch detection", () => {
     expect(placeRepository.clearAllLocal).not.toHaveBeenCalled();
     expect(queryClient.clear).not.toHaveBeenCalled();
     expect(clearPersistedQueryCache).not.toHaveBeenCalled();
+    expect(clearAllListCaches).not.toHaveBeenCalled();
+    expect(clearReferenceData).not.toHaveBeenCalled();
   });
 
   it("does not wipe on the very first login on a device (no last user recorded yet)", async () => {
@@ -309,6 +324,8 @@ describe("account switch detection", () => {
     expect(placeRepository.clearAllLocal).not.toHaveBeenCalled();
     expect(queryClient.clear).not.toHaveBeenCalled();
     expect(clearPersistedQueryCache).not.toHaveBeenCalled();
+    expect(clearAllListCaches).not.toHaveBeenCalled();
+    expect(clearReferenceData).not.toHaveBeenCalled();
   });
 });
 
