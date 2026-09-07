@@ -6,7 +6,7 @@ import {
   useMemo,
   useRef,
 } from "react";
-import { Keyboard, StyleSheet, Text } from "react-native";
+import { Keyboard, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import type { PressEvent } from "@maplibre/maplibre-react-native";
@@ -15,10 +15,16 @@ import { useTheme, ThemeColors } from "../store/theme-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import { useCreatePlace, useUpdatePlace } from "../hooks/Place/useOfflinePlace";
 import PlaceForm from "../components/Place/PlaceForm";
+import NearbyPlaceSuggestion from "../components/Place/NearbyPlaceSuggestion";
 import {
   usePlaceLocation,
   normalizeCoords,
 } from "../hooks/Place/usePlaceLocation";
+import { useNearbyPlaces } from "../hooks/Place/useNearbyPlaces";
+import { useDropdownQuery } from "../hooks/useDropdownQuery";
+import { useLocation } from "../store/location-context";
+import { fetchMyPlaces } from "../util/fetches";
+import { roundCoords } from "../util/helpers";
 import { callNavigationCallback } from "../util/navigationCallbacks";
 import IconsHeader from "../components/ui/IconsHeader";
 import Layout from "../components/ui/Layout";
@@ -27,6 +33,7 @@ import {
   AppStackNavigationProp,
   AppStackRouteProp,
   AppError,
+  PlaceDropdownItem,
   PlaceFormData,
   ErrorExtractor,
 } from "../types";
@@ -79,7 +86,38 @@ const PlaceEditorScreen = () => {
     territory: place?.territory ? Number(place.territory) : 0,
   });
   const [errors, setErrors] = useState<FormErrors>({});
+  const [suggestionDismissed, setSuggestionDismissed] = useState(false);
   const initialCoords = place?.location?.coordinates;
+
+  const { locationCoords, locationAvailable, permissionStatus, requestLocation } =
+    useLocation();
+
+  // Deliberately the exact same query the editors' own place dropdown runs
+  // (same type, same params), so arriving here from an observation/diary form
+  // is a cache hit: no request, and the suggestion works offline for free.
+  // `enabled` only gates the fetch — cached data still comes back.
+  const { query: queryPlaces } = useDropdownQuery({
+    type: "PlacesDropdown",
+    queryFn: (sort) => fetchMyPlaces(formData.territory || null, locationCoords, sort),
+    params: [formData.territory || null, roundCoords(locationCoords)],
+    enabled: !isEditMode && !!formData.territory,
+    locationAvailable,
+    requestLocation,
+    permissionStatus,
+  });
+
+  // Measured from the pin, not from the phone: the user may well be pinning a
+  // spot they are looking at from across a field.
+  const nearby = useNearbyPlaces({
+    coords,
+    // 0 is this hook's "no fix" value, and after a manual pin it is also what
+    // updateCoords resets to — neither is an accuracy to widen anything by.
+    accuracy: accuracy > 0 ? accuracy : null,
+    places: queryPlaces.data,
+  });
+
+  const showSuggestion =
+    !isEditMode && !isLocating && !suggestionDismissed && !!nearby.nearest;
 
   const buildPlacePayload = (data: PlaceFormData): PlaceFormData => {
     const payload: PlaceFormData = {
@@ -100,6 +138,31 @@ const PlaceEditorScreen = () => {
 
     return payload;
   };
+
+  const handleUseExistingPlace = useCallback(
+    (suggested: PlaceDropdownItem) => {
+      Keyboard.dismiss();
+      const placeId = Number(suggested.value);
+
+      if (returnToScreen) {
+        // The very callback the create path fires. To the form that opened
+        // this screen the only thing that matters is that the place is
+        // settled — whether it was just created or picked out of the
+        // neighbourhood makes no difference to it.
+        callNavigationCallback("onPlaceCreated", placeId, formData.territory, {
+          id: placeId,
+          name: suggested.label ?? suggested.name ?? null,
+          preview: suggested.preview ?? null,
+          location: suggested.location ?? null,
+        });
+        navigation.goBack();
+        return;
+      }
+
+      navigation.replace("PlaceDetail", { placeId });
+    },
+    [returnToScreen, formData.territory, navigation],
+  );
 
   const handleMapPress = useCallback(
     (e: PressEvent) => {
@@ -369,6 +432,16 @@ const PlaceEditorScreen = () => {
           {t("gps_low_accuracy_hint")}
         </Text>
       )}
+      {showSuggestion && (
+        <View style={styles.suggestionWrapper}>
+          <NearbyPlaceSuggestion
+            {...nearby}
+            variant="editor"
+            onSelect={handleUseExistingPlace}
+            onDismiss={() => setSuggestionDismissed(true)}
+          />
+        </View>
+      )}
       <PlaceForm
         onCoordsChange={handleCoordsChange}
         formData={formData}
@@ -396,6 +469,10 @@ const stylesFn = (Colors: ThemeColors) =>
       color: Colors.error600,
       textAlign: "center",
       marginTop: 6,
+      marginHorizontal: 16,
+    },
+    suggestionWrapper: {
+      marginTop: 12,
       marginHorizontal: 16,
     },
   });

@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction } from "react";
+import { Dispatch, SetStateAction, useCallback, useState } from "react";
 import { StyleSheet, View, Text, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
@@ -6,6 +6,9 @@ import { UseQueryResult } from "@tanstack/react-query";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import DropdownInput from "../ui/DropdownInput";
+import { useLocation } from "../../store/location-context";
+import { useNearbyPlaces } from "../../hooks/Place/useNearbyPlaces";
+import NearbyPlaceSuggestion from "./NearbyPlaceSuggestion";
 import { PlaceDropdownItem, AppError } from "../../types";
 import PrivacyToggle  from "../ui/PrivacyToggle";
 
@@ -49,9 +52,45 @@ const PlaceBlock = <T extends { place?: number | null }>({
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
+  const { locationCoords } = useLocation();
+  const [suggestionDismissed, setSuggestionDismissed] = useState(false);
+
+  const selectSuggestedPlace = useCallback(
+    (place: PlaceDropdownItem) => {
+      const value = place.value as number;
+      setPlaceValue(value);
+      setFormData((prev) => ({ ...prev, place: value }));
+      setPlaceData(place);
+    },
+    [setPlaceValue, setFormData, setPlaceData],
+  );
+
+  // No accuracy to hand over: the context keeps the fix's coordinates but not
+  // its accuracy, so this falls back to the plain 100 m threshold. The place
+  // editor, which does know the accuracy, passes it.
+  const nearby = useNearbyPlaces({
+    coords: locationCoords,
+    places: queryPlaces.data,
+  });
+
+  // Only worth asking while the question is still open — once a place is
+  // picked, the card would be second-guessing the user's own choice.
+  const showSuggestion =
+    !placeValue && !suggestionDismissed && !!nearby.nearest;
 
   return (
     <View>
+      {showSuggestion && (
+        <View style={styles.suggestionWrapper}>
+          <NearbyPlaceSuggestion
+            {...nearby}
+            variant="picker"
+            onSelect={selectSuggestedPlace}
+            onDismiss={() => setSuggestionDismissed(true)}
+          />
+        </View>
+      )}
+
       <DropdownInput
         placeholder={t("select_location")}
         value={placeValue}
@@ -191,5 +230,8 @@ const stylesFn = (Colors: ThemeColors) =>
     },
     privacyWrapper: {
       paddingTop: 16,
+    },
+    suggestionWrapper: {
+      marginBottom: 12,
     }
   });

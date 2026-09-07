@@ -33,6 +33,28 @@ jest.mock("../../hooks/Place/usePlaceLocation", () => ({
 jest.mock("../../util/navigationCallbacks", () => ({
   callNavigationCallback: jest.fn(),
 }));
+jest.mock("../../util/fetches", () => ({ fetchMyPlaces: jest.fn() }));
+jest.mock("../../hooks/useDropdownQuery", () => ({ useDropdownQuery: jest.fn() }));
+jest.mock("../../store/location-context", () => ({ useLocation: jest.fn() }));
+const mockNearbyCapture = jest.fn();
+jest.mock("../../components/Place/NearbyPlaceSuggestion", () => {
+  const { TouchableOpacity, Text } = require("react-native");
+  return {
+    __esModule: true,
+    default: (props: Record<string, unknown>) => {
+      mockNearbyCapture(props);
+      const { onSelect, nearest } = props as {
+        onSelect: (p: unknown) => void;
+        nearest: { place: unknown };
+      };
+      return (
+        <TouchableOpacity testID="nearby-suggestion" onPress={() => onSelect(nearest.place)}>
+          <Text>nearby</Text>
+        </TouchableOpacity>
+      );
+    },
+  };
+});
 jest.mock("../../hooks/useApiError", () => ({
   useApiError: () => ({ showErrorToast: mockShowErrorToast }),
 }));
@@ -111,7 +133,10 @@ import {
   useUpdatePlace,
 } from "../../hooks/Place/useOfflinePlace";
 import { usePlaceLocation } from "../../hooks/Place/usePlaceLocation";
+import { useDropdownQuery } from "../../hooks/useDropdownQuery";
+import { useLocation } from "../../store/location-context";
 import { callNavigationCallback } from "../../util/navigationCallbacks";
+import { PlaceDropdownItem } from "../../types";
 import { createNavigationMock, createRouteMock } from "../test-utils";
 import PlaceEditorScreen from "../PlaceEditorScreen";
 
@@ -125,6 +150,23 @@ const mockUpdateCoords = jest.fn();
 const mockLocateMe = jest.fn();
 const mockSetLatText = jest.fn();
 const mockSetLngText = jest.fn();
+
+// 2.35/48.86 is where every test in this file drops the pin; this one sits
+// roughly 30 m away, well inside the "same spot" threshold.
+const NEARBY_PLACE: PlaceDropdownItem = {
+  value: 12,
+  label: "Old Pond",
+  preview: "p/12.png",
+  location: { type: "Point", coordinates: [2.3504, 48.8602] },
+};
+
+const mockPlaces = (places: PlaceDropdownItem[]) => {
+  (useDropdownQuery as jest.Mock).mockReturnValue({
+    query: { data: places },
+    sort: "name",
+    onSortChange: jest.fn(),
+  });
+};
 
 const mockLocation = (overrides: Record<string, unknown> = {}) => {
   (usePlaceLocation as jest.Mock).mockReturnValue({
@@ -152,6 +194,13 @@ beforeEach(() => {
   mockRoute = createRouteMock("PlaceEditor", {});
   (useCreatePlace as jest.Mock).mockReturnValue({ mutate: mockCreateMutate, isPending: false });
   (useUpdatePlace as jest.Mock).mockReturnValue({ mutate: mockUpdateMutate, isPending: false });
+  (useLocation as jest.Mock).mockReturnValue({
+    locationCoords: [2.35, 48.86],
+    locationAvailable: true,
+    permissionStatus: "granted",
+    requestLocation: jest.fn(),
+  });
+  mockPlaces([]);
   mockLocation();
 });
 
@@ -526,5 +575,78 @@ describe("the error message handed to the toast", () => {
         response: { data: { non_field_errors: ["Nope"], other: ["Also nope"] } },
       }),
     ).toEqual({ title: "create_failed", message: "Nope\nAlso nope" });
+  });
+});
+
+describe("nearby place suggestion", () => {
+  const renderWithNearbyPlace = async (params: Record<string, unknown> = {}) => {
+    mockPlaces([NEARBY_PLACE]);
+    mockRoute = createRouteMock("PlaceEditor", params);
+    await render(<PlaceEditorScreen />);
+    // The dropdown query is territory-gated, exactly like the editors' own
+    // place picker — nothing to compare against until the country resolves.
+    await fireEvent.press(screen.getByTestId("fill-territory"));
+  };
+
+  it("offers the place the pin landed next to", async () => {
+    await renderWithNearbyPlace();
+
+    expect(screen.queryByTestId("nearby-suggestion")).not.toBeNull();
+    const props = mockNearbyCapture.mock.calls.at(-1)![0];
+    expect(props.variant).toBe("editor");
+    expect(props.nearest.place).toEqual(NEARBY_PLACE);
+    expect(props.isStrong).toBe(true);
+  });
+
+  it("stays quiet when the nearest place is nowhere near the pin", async () => {
+    mockPlaces([
+      { ...NEARBY_PLACE, location: { type: "Point", coordinates: [3.5, 49.5] } },
+    ]);
+    await render(<PlaceEditorScreen />);
+    await fireEvent.press(screen.getByTestId("fill-territory"));
+
+    expect(screen.queryByTestId("nearby-suggestion")).toBeNull();
+  });
+
+  it("never second-guesses a place that is being edited", async () => {
+    await renderWithNearbyPlace({
+      place: { id: 1, location: { coordinates: [2.35, 48.86] } },
+    });
+
+    expect(screen.queryByTestId("nearby-suggestion")).toBeNull();
+  });
+
+  it("is dismissable, and stays dismissed", async () => {
+    await renderWithNearbyPlace();
+    const { onDismiss } = mockNearbyCapture.mock.calls.at(-1)![0];
+    await act(async () => {
+      onDismiss();
+    });
+
+    expect(screen.queryByTestId("nearby-suggestion")).toBeNull();
+  });
+
+  it("hands the existing place back to the form that asked for a new one", async () => {
+    await renderWithNearbyPlace({ returnToScreen: "ObservationEditor" });
+    await fireEvent.press(screen.getByTestId("nearby-suggestion"));
+
+    expect(callNavigationCallback).toHaveBeenCalledWith("onPlaceCreated", 12, 5, {
+      id: 12,
+      name: "Old Pond",
+      preview: "p/12.png",
+      location: NEARBY_PLACE.location,
+    });
+    expect(mockNavigation.goBack).toHaveBeenCalled();
+    expect(mockCreateMutate).not.toHaveBeenCalled();
+  });
+
+  it("opens the existing place instead when nothing is waiting on a new one", async () => {
+    await renderWithNearbyPlace();
+    await fireEvent.press(screen.getByTestId("nearby-suggestion"));
+
+    expect(callNavigationCallback).not.toHaveBeenCalled();
+    expect(mockNavigation.replace).toHaveBeenCalledWith("PlaceDetail", {
+      placeId: 12,
+    });
   });
 });

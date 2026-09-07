@@ -121,6 +121,14 @@ export const usePlaceLocation = () => {
       }
 
       if (options.fromManual) {
+        // A hand-placed pin (map tap, typed coordinates) has nothing to do
+        // with the last GPS fix, so that fix's accuracy must stop describing
+        // it: left alone it kept driving the accuracy circle, the readout on
+        // the map and PlaceEditor's low-accuracy warning long after the user
+        // had corrected the pin themselves — telling them their own tap was
+        // imprecise. `normalizeOnSave` is the save path rewriting the very
+        // same coordinates, not a new pin, so it keeps whatever is there.
+        if (!options.normalizeOnSave) setAccuracy(0);
         if (options.latText) setLatText(options.latText);
         if (options.lngText) setLngText(options.lngText);
       } else {

@@ -280,3 +280,53 @@ describe("locateMe", () => {
     expect(result.current.accuracy).toBe(12);
   });
 });
+
+describe("accuracy after the pin is moved by hand", () => {
+  const locatedHook = async () => {
+    mockRequestLocation.mockResolvedValue({ coords: [2, 48], accuracy: 300 });
+    const { result } = await renderHook(() => usePlaceLocation());
+    await act(async () => {
+      await result.current.locateMe();
+    });
+    expect(result.current.accuracy).toBe(300);
+    return result;
+  };
+
+  it("drops the GPS fix's accuracy, which no longer describes the pin", async () => {
+    const result = await locatedHook();
+
+    await act(async () => {
+      result.current.updateCoords([2.5, 48.5], {
+        fromManual: true,
+        latText: "48.5000",
+        lngText: "2.5000",
+      });
+    });
+
+    expect(result.current.accuracy).toBe(0);
+  });
+
+  it("keeps it when the save path merely rewrites the same coordinates", async () => {
+    const result = await locatedHook();
+
+    await act(async () => {
+      result.current.updateCoords([2, 48], {
+        fromManual: true,
+        normalizeOnSave: true,
+        withGeocode: false,
+      });
+    });
+
+    expect(result.current.accuracy).toBe(300);
+  });
+
+  it("leaves a fresh fix's own accuracy alone", async () => {
+    const result = await locatedHook();
+
+    await act(async () => {
+      result.current.updateCoords([2.1, 48.1]);
+    });
+
+    expect(result.current.accuracy).toBe(300);
+  });
+});

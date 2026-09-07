@@ -68,6 +68,7 @@ const ImagePart = ({
         <Pressable
           style={styles.mapOverlay}
           hitSlop={8}
+          testID="place-dropdown-open"
           onPress={() => {
             navigation.navigate("PlaceDetail", { placeId: value });
           }}
@@ -244,7 +245,12 @@ const PlaceDropdown = ({
       </View>
 
       {value && onClear && !query.isLoading && !query.isError && (
-        <Pressable onPress={onClear} hitSlop={8} style={{ marginRight: 4 }}>
+        <Pressable
+          onPress={onClear}
+          hitSlop={8}
+          testID="place-dropdown-clear"
+          style={{ marginRight: 4 }}
+        >
           <Ionicons
             name="close-circle"
             size={20}
