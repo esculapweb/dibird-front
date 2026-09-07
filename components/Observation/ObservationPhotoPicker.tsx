@@ -5,7 +5,6 @@ import * as ImageManipulator from "expo-image-manipulator";
 import { useTranslation } from "react-i18next";
 
 import ObservationPhotos from "./ObservationPhotos";
-import { useMediaLibraryUnavailable } from "../../hooks/useMediaLibraryUnavailable";
 import { useApiError } from "../../hooks/useApiError";
 import { BottomSheet } from "../../services/bottomSheet";
 import { useTheme, ThemeColors } from "../../store/theme-context";
@@ -33,7 +32,6 @@ const ObservationPhotoPicker = ({
   const styles = stylesFn(Colors);
   const [busy, setBusy] = useState(false);
   const { showErrorToast } = useApiError();
-  const handleMediaLibraryUnavailable = useMediaLibraryUnavailable();
 
   const remaining = MAX_OBSERVATION_PHOTOS - photos.length;
 
@@ -42,19 +40,11 @@ const ObservationPhotoPicker = ({
     setBusy(true);
 
     try {
-      const { status: existingStatus } =
-        await ImagePicker.getMediaLibraryPermissionsAsync();
-
-      if (existingStatus === "denied") {
-        handleMediaLibraryUnavailable();
-        return;
-      }
-
-      if (existingStatus !== "granted") {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== "granted") return;
-      }
-
+      // No permission gate before the picker — see the same comment in
+      // components/Profile/Avatar.tsx: launchImageLibraryAsync needs none on
+      // either platform, and asking for one only produced iOS's limited-access
+      // grant and a hard block on Android 12 and older.
+      //
       // Gallery only, never launchCameraAsync: the expo-image-picker config
       // plugin in app.config.js blocks the camera permission outright, so a
       // camera capture would need a new native build (see app.config.js).
@@ -69,8 +59,8 @@ const ObservationPhotoPicker = ({
         selectionLimit: remaining,
       });
 
-      // iOS "limited photo access" can grant permission and still hand back
-      // nothing, so an empty result is a normal outcome, not a failure.
+      // The picker can come back with nothing at all (cancelled, or dismissed
+      // without a selection) — a normal outcome, not a failure.
       if (result.canceled || !result.assets || result.assets.length === 0) {
         return;
       }

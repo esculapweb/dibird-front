@@ -5,6 +5,7 @@ import {
   Text,
   Pressable,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
@@ -17,7 +18,6 @@ import { useProfile } from "../../store/profile-context";
 import ProfileAvatar from "./ProfileAvatar";
 import { useProfileDisplay } from "../../hooks/Profile/useProfileDisplay";
 import { useInvalidateProfile } from "../../hooks/Profile/useUpdateProfile";
-import { useMediaLibraryUnavailable } from "../../hooks/useMediaLibraryUnavailable";
 import { BottomSheet } from "../../services/bottomSheet";
 import { useApiError } from "../../hooks/useApiError";
 import * as profileRepository from "../../hooks/repositories/profileRepository";
@@ -40,8 +40,6 @@ const Avatar = () => {
   const lastName = profile?.user_data?.last_name;
   const username = profile?.user_data?.username ?? "";
   const { fullName } = useProfileDisplay({ firstName, lastName, username });
-
-  const handleMediaLibraryUnavailable = useMediaLibraryUnavailable();
 
   useEffect(() => {
     if (profile?.pendingAvatarOp === "upload") {
@@ -98,23 +96,25 @@ const Avatar = () => {
     setLoading(true);
 
     try {
-      const { status: existingStatus } =
-        await ImagePicker.getMediaLibraryPermissionsAsync();
-
-      if (existingStatus === "denied") {
-        handleMediaLibraryUnavailable();
-        return;
-      }
-
-      if (existingStatus !== "granted") {
-        const { status } =
-          await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== "granted") return;
-      }
-
+      // No permission gate before the picker: launchImageLibraryAsync needs
+      // none (expo's own docs say "requires MEDIA_LIBRARY on iOS 10 only", and
+      // on Android 13+ expo-image-picker asks for an empty permission list
+      // anyway — the system photo picker is trusted UI and hands back only what
+      // was picked). Asking regardless only did harm: on iOS it is what offered
+      // "Selected Photos" in the first place, and on Android 12 and older a
+      // declined storage permission blocked a picker that would have opened
+      // without it.
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ["images"],
-        allowsEditing: true,
+        // iOS is the only platform that pays for allowsEditing: expo-image-picker
+        // answers it with the legacy UIImagePickerController instead of PHPicker
+        // (see its launchImagePicker), and that one is confined to the app's
+        // photo-library authorization — for anyone who ever granted limited
+        // access, a handful of photos and no albums at all. Nothing is lost:
+        // the square comes from the backend thumbnail (crop) and ProfileAvatar's
+        // contentFit "cover". Android runs its cropper as a separate activity
+        // after the system picker, so there the editing step is free.
+        allowsEditing: Platform.OS !== "ios",
         aspect: [1, 1],
         quality: 0.8,
       });

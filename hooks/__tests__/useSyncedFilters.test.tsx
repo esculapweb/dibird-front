@@ -339,6 +339,10 @@ describe("loadAndApplySort", () => {
     // coordinates resolve (see the "auto-apply" describe block below).
     expect(result.current.sort).not.toBe("distance");
     expect(mockRequestLocation).toHaveBeenCalledTimes(1);
+    // Silently: restoring a saved sort is the app's initiative, and a system
+    // dialog on merely opening a screen is what App.tsx's startup fetch already
+    // avoids for the same reason.
+    expect(mockRequestLocation).toHaveBeenCalledWith(undefined, { prompt: false });
   });
 });
 

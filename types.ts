@@ -1045,6 +1045,10 @@ export interface IconButtonProps {
 
 export interface RatingItem {
   avatar: string | null;
+  // Optional because a row can predate the field: an offline list cache
+  // written by an earlier version, or a client running ahead of the backend.
+  // Callers fall back to `avatar` — see RatingCard.
+  avatar_thumbnail?: string | null;
   first_name: string;
   last_name: string;
   username: string;

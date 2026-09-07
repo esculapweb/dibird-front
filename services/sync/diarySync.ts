@@ -13,7 +13,8 @@ const DIARY_URL = "/myapi/diary2/";
 const invalidateDiaryQueries = (...ids: (number | null | undefined)[]) => {
   // Same reasoning as observationSync.ts's invalidateObservationQueries:
   // refetchType "all" because this runs in the background regardless of which
-  // screen is mounted, and useList's infinite query has refetchOnMount disabled.
+  // screen is mounted, so the queries it touches are mostly unmounted ones and
+  // marking them stale alone would leave the next open on the old data.
   //
   // Uses the same key list as the live (online) update path (useOfflineDiary's
   // invalidateDiaryCaches) — a diary's PATCH cascades private/location_private/

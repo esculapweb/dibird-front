@@ -67,7 +67,10 @@ describe("requestLocation", () => {
     });
 
     expect(Location.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
-    expect(Location.getCurrentPositionAsync).toHaveBeenCalledWith({ accuracy: 3 });
+    expect(Location.getCurrentPositionAsync).toHaveBeenCalledWith({
+      accuracy: 3,
+      mayShowUserSettingsDialog: true,
+    });
     expect(result.current.locationCoords).toEqual([2.35, 48.85]);
     expect(result.current.locationAvailable).toBe(true);
     expect(result.current.permissionStatus).toBe("granted");
@@ -85,7 +88,10 @@ describe("requestLocation", () => {
       await result.current.requestLocation(Location.Accuracy.High);
     });
 
-    expect(Location.getCurrentPositionAsync).toHaveBeenCalledWith({ accuracy: 4 });
+    expect(Location.getCurrentPositionAsync).toHaveBeenCalledWith({
+      accuracy: 4,
+      mayShowUserSettingsDialog: true,
+    });
   });
 
   it("prompts for permission when not yet granted, then proceeds on approval", async () => {
@@ -230,6 +236,33 @@ describe("prompt: false", () => {
     });
 
     expect(result.current.locationCoords).toEqual([2.35, 48.85]);
+  });
+
+  // Regression test: on Android the position lookup itself pops a system dialog
+  // (Play Services offering to switch improved accuracy on) whenever the network
+  // location provider is off — separately from the runtime permission, and again
+  // on every call, since declining it changes no setting. That turned App.tsx's
+  // silent startup fetch into a dialog at every launch. "Silent" has to cover
+  // this one too.
+  it("does not let the position lookup show the accuracy settings dialog", async () => {
+    (Location.getForegroundPermissionsAsync as jest.Mock).mockResolvedValue({
+      status: "granted",
+    });
+    (Location.getCurrentPositionAsync as jest.Mock).mockResolvedValue({
+      coords: { latitude: 48.85, longitude: 2.35, accuracy: 10 },
+    });
+
+    const { result } = await renderHook(() => useLocation(), {
+      wrapper: LocationProvider,
+    });
+    await act(async () => {
+      await result.current.requestLocation(undefined, { prompt: false });
+    });
+
+    expect(Location.getCurrentPositionAsync).toHaveBeenCalledWith({
+      accuracy: 3,
+      mayShowUserSettingsDialog: false,
+    });
   });
 
   // A silent request must not answer on behalf of someone who tapped "I am here"
