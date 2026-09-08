@@ -1249,6 +1249,8 @@ export type AppStackParamList = CatalogParamList & {
     observation?: ObservationItem;
     observationId?: number;
     diaryId?: number;
+    // Date-only string: the diary's own date, shown read-only in diary mode.
+    diaryDate?: string;
     territoryValue?: number;
     diaryLocationPrivate?: boolean;
     defaultTerritory?: number | null;

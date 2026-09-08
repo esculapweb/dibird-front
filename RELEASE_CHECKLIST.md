@@ -115,12 +115,39 @@ reverse` из `run.sh`). Reap залипших `maestro.cli.AppKt` от прош
 | `online-create-place-location-denied` | ✅ | ✅ |
 | `online-nested-observation` | ✅ | ✅ |
 | `online-nearby-place` | ✅ | — |
+| `online-observation-time` | ✅ | — |
 | `taxonomy-tree-filters` | ✅ | ✅ |
 | `species-from-my-lists` | ✅ | ✅ |
 | `list-sort-persist`, `list-filters` | — | ✅ |
 | `account-forgot-password`, `account-change-password`, `account-linked-accounts` | ✅ | ✅ |
 | `account-emails` | — | ✅ |
 | `offline-*` (8 флоу) | — | ✅ |
+
+`online-observation-time` (08.09.2026) покрывает необязательное время
+наблюдения — чип в одной строке с датой и его bottom-sheet
+(`components/ui/TimeChip.tsx`). **iOS-only намеренно**: на Android чип
+открывает родной диалог вместо шита (`@react-native-community/datetimepicker`
+там сам диалог и внутрь шторки не встраивается), то есть вся середина флоу
+на Android смысла не имеет — нужна отдельная ветка с диалогом, написанная и
+первый раз прогнанная на эмуляторе, как ветка даты в
+`online-create-observation.yaml`. Ничего не сохраняет: форма ни разу не
+отправляется, аккаунт остаётся как был.
+
+Первый же прогон на симуляторе нашёл то, чего юнит-тесты увидеть не могли, и
+это та же ловушка, что уже описана в `components/Taxonomy/TaxonFilterSheet.tsx`:
+контент-шторка **не должна передавать `title`**, если сама рендерит
+`BottomSheetView`. При `enableDynamicSizing` заголовок и контент — два
+измеряемых узла, пишущих в один `contentHeight`, побеждает последний, и шторка
+открывается ниже своего содержимого: строка «Сейчас / Убрать время» уезжала за
+верхний край, оставаясь при этом видимой в accessibility-дереве (то есть
+`assertVisible` по ней проходил, а тап проваливался в пустоту). Заголовок
+теперь рисует сам `TimeSheetContent` — один измеряемый узел.
+
+Колесо самого пикера, как и спиннер даты, флоу не крутит: синтетический свайп
+Maestro не двигает ни то, ни другое (проверено сравнением с production-панелью
+даты в том же прогоне) — проверять руками. Что флоу всё-таки доказывает про
+жесты: шторка под свайпом по колесу не едет, то есть `disableContentPanning`
+делает свою работу.
 
 `online-nearby-place` (07.09.2026) покрывает подсказку «рядом уже есть такое
 место» в обеих её точках — в пикере места формы наблюдения и в редакторе

@@ -200,6 +200,8 @@ describe("owner-only actions", () => {
     await latestProps().onAdd();
     expect(mockNavigation.navigate).toHaveBeenCalledWith("ObservationEditor", {
       diaryId: 1,
+      // The observation form shows it read-only: a diary owns its date.
+      diaryDate: "2026-01-01",
       territoryValue: 5,
       diaryLocationPrivate: false,
       returnMode: "back",

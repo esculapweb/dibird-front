@@ -295,6 +295,7 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
       enableDynamicSizing
       maxDynamicContentSize={screenHeight * 0.9}
       enablePanDownToClose
+      enableContentPanningGesture={!content?.disableContentPanning}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
       android_keyboardInputMode="adjustResize"

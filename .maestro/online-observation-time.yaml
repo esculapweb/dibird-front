@@ -1,0 +1,146 @@
+# The optional time field of an Observation, which lives in the same row as
+# the date and is edited in a bottom sheet (components/ui/TimeChip.tsx).
+#
+# Three things here can only be checked on a device, and all three broke
+# silently in the versions this flow was written against:
+#
+#   - the chip really sits *inside* the date field. It is passed as
+#     DateInput's `trailing` slot, so nothing in the unit tests renders the two
+#     together; iOS merges the field and its slot into one accessibility node,
+#     which is exactly what makes it assertable here — the date input's own
+#     label carries the chip's text.
+#   - the spinner works inside @gorhom/bottom-sheet at all. The sheet pans
+#     vertically and so does the wheel; the payload switches the sheet's
+#     content gesture off (`disableContentPanning`) to settle that, and no test
+#     that mocks the picker away can tell whether it worked.
+#   - the field is never filled in behind the user's back. Opening the sheet
+#     and dismissing it must leave the time empty — an observation logged in
+#     the evening for the morning must not silently acquire "now" (the
+#     previous TimeInput did exactly that on iOS).
+#
+# iOS only, deliberately: on Android the chip opens the native time dialog
+# instead — @react-native-community/datetimepicker is a dialog there and cannot
+# live inside a sheet — so the whole middle of this flow has no Android
+# counterpart. Covering it needs a dialog branch written and first-run on a
+# real emulator, the way online-create-observation.yaml's date branch was.
+#
+# Creates nothing: the form is never saved, so this flow leaves the shared test
+# account exactly as it found it.
+#
+# appId comes from run.sh (--env APP_ID).
+appId: ${APP_ID}
+tags:
+  - ios
+---
+- launchApp
+
+- runFlow: common/bootstrap.yaml
+
+- tapOn:
+    id: "quick-action-observation"
+
+# ---- empty state: one row, and an invitation rather than a value ----
+- extendedWaitUntil:
+    visible:
+      id: "observation-time-chip"
+    timeout: 8000
+# The chip's label reaching the date input's node is what "same row" means
+# here; the clear button exists only once there is something to clear.
+- assertVisible:
+    id: "observation-date-input"
+    text: ".*Add time.*"
+- assertNotVisible:
+    id: "observation-time-chip-clear"
+
+# ---- the sheet opens, and offers no "clear" with nothing set ----
+- tapOn:
+    id: "observation-time-chip"
+- extendedWaitUntil:
+    visible:
+      id: "time-sheet-done"
+    timeout: 4000
+- assertVisible:
+    id: "time-sheet-now"
+- assertNotVisible:
+    id: "time-sheet-clear"
+
+# ---- dismissed without "Done" writes nothing ----
+# Tapping above the sheet hits its backdrop (pressBehavior: "close"), which is
+# the closest thing to a user giving up on the field.
+- tapOn:
+    point: "50%,12%"
+- extendedWaitUntil:
+    notVisible:
+      id: "time-sheet-done"
+    timeout: 4000
+- assertNotVisible:
+    id: "observation-time-chip-clear"
+- assertVisible:
+    id: "observation-date-input"
+    text: ".*Add time.*"
+
+# ---- "Now" + "Done" commits, and the row shows it ----
+- tapOn:
+    id: "observation-time-chip"
+- extendedWaitUntil:
+    visible:
+      id: "time-sheet-now"
+    timeout: 4000
+- tapOn:
+    id: "time-sheet-now"
+- tapOn:
+    id: "time-sheet-done"
+- extendedWaitUntil:
+    visible:
+      id: "observation-time-chip-clear"
+    timeout: 4000
+# Whatever the simulator's clock says, as HH:MM, next to the date.
+- assertVisible:
+    id: "observation-date-input"
+    text: ".*[0-9][0-9]:[0-9][0-9].*"
+
+# ---- "Clear time" inside the sheet empties the field and closes it ----
+- tapOn:
+    id: "observation-time-chip"
+- extendedWaitUntil:
+    visible:
+      id: "time-sheet-clear"
+    timeout: 4000
+- tapOn:
+    id: "time-sheet-clear"
+- extendedWaitUntil:
+    notVisible:
+      id: "time-sheet-done"
+    timeout: 4000
+- assertNotVisible:
+    id: "observation-time-chip-clear"
+
+# ---- and the × on the chip itself does the same, without the sheet ----
+- tapOn:
+    id: "observation-time-chip"
+- extendedWaitUntil:
+    visible:
+      id: "time-sheet-now"
+    timeout: 4000
+- tapOn:
+    id: "time-sheet-now"
+- tapOn:
+    id: "time-sheet-done"
+- extendedWaitUntil:
+    visible:
+      id: "observation-time-chip-clear"
+    timeout: 4000
+- tapOn:
+    id: "observation-time-chip-clear"
+- assertNotVisible:
+    id: "observation-time-chip-clear"
+- assertVisible:
+    id: "observation-date-input"
+    text: ".*Add time.*"
+
+# ---- leave without saving: nothing of this flow's own is left behind ----
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: "quick-action-observation"
+    timeout: 8000

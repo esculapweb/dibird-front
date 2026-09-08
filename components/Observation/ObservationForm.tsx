@@ -5,14 +5,14 @@ import { Ionicons } from "@expo/vector-icons";
 
 import DropdownInput from "../ui/DropdownInput";
 import DateInput from "../ui/DateInput";
-import TimeInput from "../ui/TimeInput";
+import TimeChip from "../ui/TimeChip";
 import {
   fetchMyCountries,
   fetchMyPlaces,
   fetchSpecies,
 } from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
-import { roundCoords } from "../../util/helpers";
+import { roundCoords, formatDateLong } from "../../util/helpers";
 import SpeciesOptionRow from "../ui/SpeciesOptionRow";
 import Input from "../ui/Input";
 import Section from "../ui/Section";
@@ -50,6 +50,9 @@ interface ObservationFormProps {
   speciesData: SpeciesDropdownItem | null;
   setSpeciesData: Dispatch<SetStateAction<SpeciesDropdownItem | null>>;
   isDiaryMode?: boolean;
+  // Date-only string. A diary owns the date of its observations, so in diary
+  // mode it is shown read-only instead of the date field.
+  diaryDate?: string | null;
   onEditDiary: () => void;
   existingSpecies: Set<number | string>;
   photos: ObservationPhoto[];
@@ -75,6 +78,7 @@ const ObservationForm = ({
   setPlaceData,
   isDiaryMode = false,
   isEditMode = false,
+  diaryDate,
   onEditDiary,
   existingSpecies,
   photos,
@@ -160,6 +164,25 @@ const ObservationForm = ({
     // already runs when the list arrives, and re-running because of its own write
     // is pointless.
   }, [querySpecies.data]);
+
+  // Optional, and never filled in on its own: the chip stays empty until the
+  // user picks a time (see TimeChip).
+  const timeChip = (
+    <TimeChip
+      value={formData.time ?? null}
+      onChange={(newTime) =>
+        setFormData((prev) => ({ ...prev, time: newTime }))
+      }
+      testID="observation-time-chip"
+    />
+  );
+
+  // formatDateLong parses with Date(), which reads a bare "YYYY-MM-DD" as UTC
+  // and lands on the previous day west of Greenwich — the explicit local
+  // midnight keeps the diary's own date.
+  const diaryDateText = diaryDate
+    ? formatDateLong(`${diaryDate}T00:00:00`)
+    : null;
 
   const DiaryBanner = () => (
     <Pressable
@@ -307,7 +330,34 @@ const ObservationForm = ({
           onSortChange={onSpeciesSortChange}
         />
 
-        {!hideDiaryFields && (
+        {hideDiaryFields ? (
+          <View
+            style={[
+              styles.diaryDateRow,
+              {
+                borderColor: Colors.border,
+                backgroundColor: Colors.primary100,
+              },
+            ]}
+            testID="observation-diary-date"
+          >
+            <Ionicons
+              name="book-outline"
+              size={16}
+              color={Colors.textSecondary}
+            />
+            <Text
+              style={[styles.diaryDateText, { color: Colors.textSecondary }]}
+              numberOfLines={1}
+            >
+              {diaryDateText ?? t("diary_date")}
+            </Text>
+            <View
+              style={[styles.divider, { backgroundColor: Colors.border }]}
+            />
+            {timeChip}
+          </View>
+        ) : (
           <DateInput
             testID="observation-date-input"
             value={formData.date_time ?? null}
@@ -319,6 +369,7 @@ const ObservationForm = ({
             error={errors.date_time}
             allowClear={false}
             style={{ marginVertical: 16 }}
+            trailing={timeChip}
           />
         )}
 
@@ -377,16 +428,8 @@ const ObservationForm = ({
         title={t("section_details")}
         hint={t("optional")}
         collapsible={true}
-        collapsed={
-          !formData.time && formData.quantity == null && !formData.notes
-        }
+        collapsed={formData.quantity == null && !formData.notes}
       >
-        <TimeInput
-          value={formData.time ?? ""}
-          onChange={(newTime) =>
-            setFormData((prev) => ({ ...prev, time: newTime }))
-          }
-        />
         <Input
           value={formData?.quantity != null ? formData.quantity.toString() : ""}
           keyboardType="numeric"
@@ -423,6 +466,24 @@ export default ObservationForm;
 const styles = StyleSheet.create({
   container: {
     padding: 12,
+  },
+  diaryDateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    height: 40,
+    marginVertical: 16,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+    borderRadius: 6,
+  },
+  diaryDateText: {
+    flex: 1,
+    fontSize: 16,
+  },
+  divider: {
+    width: StyleSheet.hairlineWidth,
+    height: 22,
   },
   diaryBanner: {
     flexDirection: "row",

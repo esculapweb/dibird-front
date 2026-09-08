@@ -78,6 +78,7 @@ const ObservationEditorScreen = () => {
     defaultPlace,
     defaultSpecies,
     diaryId,
+    diaryDate: diaryDateParam,
     territoryValue: diaryTerritoryValue,
     diaryLocationPrivate,
     returnMode,
@@ -206,6 +207,11 @@ const ObservationEditorScreen = () => {
     diaryId,
     defaultLocationPrivate: diaryLocationPrivate ?? true,
   });
+
+  // The date of an observation inside a diary belongs to the diary, so the form
+  // shows it read-only. An edit already carries it on the item; a create is
+  // told by DiaryDetail.
+  const diaryDate = observationWithParsedDate?.date_time ?? diaryDateParam;
 
   const { data: diarySpeciesIds } = useQuery({
     queryKey: ["DiarySpecies", diaryId],
@@ -536,6 +542,7 @@ const ObservationEditorScreen = () => {
         onAddNewPlace={handleAddNewPlace}
         isDiaryMode={!!diaryId}
         isEditMode={isEditMode}
+        diaryDate={diaryDate}
         onEditDiary={handleEditDiary}
         existingSpecies={existingSpecies}
         photos={photos}

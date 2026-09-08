@@ -1,4 +1,4 @@
-import { useRef, useCallback, useState } from "react";
+import { ReactNode, useRef, useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -54,6 +54,12 @@ interface DateInputProps {
   disabled?: boolean;
   style?: StyleType;
   testID?: string;
+  // Rendered inside the field itself, right of the icons, behind a divider.
+  // Date and time are one thing ("when") and share one row — see the time chip
+  // in ObservationForm. Kept inside the field so the field itself stays full
+  // width: the iOS panel below it holds a three-wheel spinner that a half-width
+  // column would squeeze.
+  trailing?: ReactNode;
 }
 
 const DateInput = ({
@@ -67,6 +73,7 @@ const DateInput = ({
   disabled = false,
   style,
   testID,
+  trailing,
 }: DateInputProps) => {
   const { t, i18n } = useTranslation();
   const { Colors, theme } = useTheme();
@@ -173,9 +180,11 @@ const DateInput = ({
           <Text
             style={[
               styles.text,
+              !!trailing && styles.textFlex,
               !value && styles.placeholder,
               disabled && styles.textDisabled,
             ]}
+            numberOfLines={1}
           >
             {value ? formatDate(value, i18n.language) : placeholder}
           </Text>
@@ -196,6 +205,13 @@ const DateInput = ({
               color={Colors.textSecondary}
             />
           </View>
+
+          {trailing ? (
+            <View style={styles.trailing}>
+              <View style={styles.trailingDivider} />
+              {trailing}
+            </View>
+          ) : null}
         </Pressable>
       </Animated.View>
 
@@ -271,9 +287,17 @@ const stylesFn = (Colors: ThemeColors) =>
     inputPressed: { backgroundColor: Colors.primary200 },
     inputDisabled: { opacity: 0.5 },
     text: { fontSize: 16, color: Colors.textMain },
+    textFlex: { flex: 1 },
     placeholder: { color: Colors.textSecondary },
     textDisabled: { color: Colors.textSecondary },
     icons: { flexDirection: "row", alignItems: "center", gap: 6 },
+    trailing: { flexDirection: "row", alignItems: "center", gap: 8 },
+    trailingDivider: {
+      width: StyleSheet.hairlineWidth,
+      height: 22,
+      marginLeft: 8,
+      backgroundColor: Colors.border,
+    },
     error: { marginTop: 4, fontSize: 12, color: Colors.error500 },
     errorBorder: { borderColor: Colors.error500 },
     panel: {
