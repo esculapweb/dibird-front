@@ -119,12 +119,15 @@ jest.mock("../../components/Observation/ObservationForm", () => {
       onAddNewPlace,
       onEditDiary,
       existingSpecies,
+      openSpeciesSignal,
     }: {
       onAddNewPlace: () => void;
       onEditDiary: () => void;
       existingSpecies: Set<string | number>;
+      openSpeciesSignal?: number;
     }) => (
       <>
+        <Text testID="open-species-signal">{String(openSpeciesSignal)}</Text>
         <TouchableOpacity testID="add-new-place" onPress={onAddNewPlace}>
           <Text>add place</Text>
         </TouchableOpacity>
@@ -415,6 +418,9 @@ describe("save and add another (diary mode)", () => {
     expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ["DiarySpecies", 11] });
     expect(mockSetSpeciesValue).toHaveBeenCalledWith(null);
     expect(mockSetSpeciesData).toHaveBeenCalledWith(null);
+    // Picking the next species is the whole point of the button — the form
+    // gets a bumped signal and opens the species list without another tap.
+    expect(screen.getByTestId("open-species-signal")).toHaveTextContent("1");
     expect(mockSetErrors).toHaveBeenCalledWith({});
     const formUpdater = mockSetFormData.mock.calls[0][0];
     expect(formUpdater({ date_time: "2026-01-01", territory: 5 })).toEqual({

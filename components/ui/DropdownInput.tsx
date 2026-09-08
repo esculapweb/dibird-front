@@ -47,6 +47,10 @@ interface DropdownInputProps<T extends string | number | null = string | number 
   locationAvailable?: boolean;
   onLocationUnavailable?: () => void;
   useDefault?: boolean;
+  // Opens the list without a tap when the number changes. 0 (the default)
+  // means "never asked", so a fresh mount stays closed — see the species
+  // dropdown in ObservationForm, reopened right after "save & add another".
+  openSignal?: number;
 }
 
 const DropdownInput = <T extends string | number | null>({
@@ -69,6 +73,7 @@ const DropdownInput = <T extends string | number | null>({
   locationAvailable = true,
   onLocationUnavailable,
   useDefault = false,
+  openSignal = 0,
 }: DropdownInputProps<T>) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -102,6 +107,13 @@ const DropdownInput = <T extends string | number | null>({
     setSearch("");
     setModalVisible(true);
   };
+
+  useEffect(() => {
+    if (!openSignal) return;
+    openModal();
+    // Dependencies are curated: only a new signal reopens the list, the rest
+    // of openModal's closure must not.
+  }, [openSignal]);
 
   const clearValue = () => {
     setValue(null as T);

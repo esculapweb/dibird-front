@@ -232,6 +232,11 @@ describe("species dropdown", () => {
     expect(mockSetSpeciesData).toHaveBeenCalledWith(null);
   });
 
+  it("forwards openSpeciesSignal to the dropdown so the editor can reopen the list", async () => {
+    await render(<ObservationForm {...baseProps()} openSpeciesSignal={3} />);
+    expect(dropdownProps("SpeciesDropdown").openSignal).toBe(3);
+  });
+
   it("disables already-added species via renderOption, still active for the rest", async () => {
     await render(<ObservationForm {...baseProps()} existingSpecies={new Set([9])} />);
     const { renderOption } = dropdownProps("SpeciesDropdown");

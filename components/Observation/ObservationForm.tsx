@@ -58,6 +58,9 @@ interface ObservationFormProps {
   photos: ObservationPhoto[];
   onPickPhotos: (uris: string[]) => void;
   onRemovePhoto: (photo: ObservationPhoto) => void;
+  // Bumped by the editor after "save & add another": the next observation
+  // always starts with picking a species, so the list opens by itself.
+  openSpeciesSignal?: number;
 }
 
 const ObservationForm = ({
@@ -84,6 +87,7 @@ const ObservationForm = ({
   photos,
   onPickPhotos,
   onRemovePhoto,
+  openSpeciesSignal,
 }: ObservationFormProps) => {
   const { t } = useTranslation();
   const { language } = useLanguage();
@@ -325,6 +329,7 @@ const ObservationForm = ({
             />
           )}
           speciesData={speciesData ?? undefined}
+          openSignal={openSpeciesSignal}
           type="SpeciesDropdown"
           sort={speciesSort}
           onSortChange={onSpeciesSortChange}
