@@ -8,6 +8,11 @@ import { AllowedFilterKey, Filters, AllFiltersKey } from "../../types";
 interface FilterChipsProps {
   filters: Filters;
   onRemove: (key: AllFiltersKey) => void;
+  // A tap on the chip itself (the cross keeps removing it) reopens the filter
+  // sheet on this very control. Optional: a screen without a filter sheet of
+  // its own — the place page, which only shows the date chip — leaves it out
+  // and the chips stay display-only.
+  onEdit?: (key: AllFiltersKey) => void;
   extraFilters?: Filters | null;
   hints: {
     speciesName?: string;
@@ -18,6 +23,7 @@ interface FilterChipsProps {
 const FilterChips = ({
   filters,
   onRemove,
+  onEdit,
   extraFilters,
   hints,
   allowed,
@@ -66,7 +72,16 @@ const FilterChips = ({
         {activeFilters.map(([key, value]) => {
           const [filterName, filterLabel] = getFilterLabel(key, value);
           return (
-            <View key={key} style={styles.filterChip}>
+            <Pressable
+              key={key}
+              style={({ pressed }) => [
+                styles.filterChip,
+                pressed && !!onEdit && styles.filterChipPressed,
+              ]}
+              onPress={onEdit ? () => onEdit(key) : undefined}
+              disabled={!onEdit}
+              testID={`edit-filter-${key}`}
+            >
               <Text
                 style={styles.filterText}
                 numberOfLines={1}
@@ -88,7 +103,7 @@ const FilterChips = ({
                   />
                 </Pressable>
               </View>
-            </View>
+            </Pressable>
           );
         })}
       </ScrollView>
@@ -121,6 +136,9 @@ const stylesFn = (Colors: ThemeColors) =>
       borderWidth: 1,
       borderColor: Colors.border,
       maxWidth: 300,
+    },
+    filterChipPressed: {
+      opacity: 0.6,
     },
     filterText: {
       fontSize: 12,

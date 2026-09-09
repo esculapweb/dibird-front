@@ -82,6 +82,23 @@ const TaxonomyScreen = () => {
   const sharePath =
     !pickerKey && !parentSegment ? taxonListSharePath(rank, extinct) : null;
 
+  // The header button and the chips row open the same sheet; a chip passes
+  // the group it stands for, so the sheet opens on that filter.
+  const openTraitSheet = (focusGroup?: string) =>
+    // No `title` on purpose: the shared title block is its own
+    // BottomSheetView, and with dynamic sizing a second measured node fights
+    // the sheet's height (see TaxonFilterSheet).
+    BottomSheet.showContent({
+      renderContent: (dismiss: () => void) => (
+        <TaxonFilterSheet
+          value={traits}
+          onApply={setTraits}
+          dismiss={dismiss}
+          focusGroup={focusGroup}
+        />
+      ),
+    });
+
   useLayoutEffect(() => {
     navigation.setOptions({
       title: title ?? (extinct ? t("extinct_species") : t(RANK_TITLE_KEY[rank])),
@@ -111,23 +128,7 @@ const TaxonomyScreen = () => {
               },
             ]),
           ]}
-          onFilterPress={
-            canFilter
-              ? () =>
-                  // No `title` on purpose: the shared title block is its own
-                  // BottomSheetView, and with dynamic sizing a second measured
-                  // node fights the sheet's height (see TaxonFilterSheet).
-                  BottomSheet.showContent({
-                    renderContent: (dismiss: () => void) => (
-                      <TaxonFilterSheet
-                        value={traits}
-                        onApply={setTraits}
-                        dismiss={dismiss}
-                      />
-                    ),
-                  })
-              : undefined
-          }
+          onFilterPress={canFilter ? () => openTraitSheet() : undefined}
         />
       ),
     });
@@ -180,6 +181,7 @@ const TaxonomyScreen = () => {
         traits={traits}
         onClearTraits={() => setTraits({})}
         onChangeTraits={setTraits}
+        onEditTraits={openTraitSheet}
         search={search}
         onChangeSearch={setSearch}
         onPick={

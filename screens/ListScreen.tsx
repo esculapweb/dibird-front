@@ -36,6 +36,7 @@ import {
   AppStackNavigationProp,
   ScreenWithFiltersParamList,
   ScreenWithFiltersOnly,
+  AllFiltersKey,
   AllowedFilterKey,
   seenMode,
   Filters,
@@ -275,7 +276,9 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
     onSortChange?.(sort);
   }, [sort]);
 
-  const openFilterSheet = () =>
+  // `focusKey` comes from a tap on a chip: the sheet then opens on that very
+  // filter rather than at the top of the list.
+  const openFilterSheet = (focusKey?: AllFiltersKey) =>
     BottomSheet.showContent({
       title: t("filters"),
       onReset: handleClearFilters,
@@ -289,6 +292,7 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
           showSearch={showSearch}
           initialSearch={search}
           onSearchChange={setSearch}
+          focusKey={focusKey}
         />
       ),
     });
@@ -327,6 +331,10 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
   openSortSheetRef.current = openSortSheet;
 
   const handleFilterPress = useCallback(() => openFilterSheetRef.current(), []);
+  const handleFilterEdit = useCallback(
+    (key: AllFiltersKey) => openFilterSheetRef.current(key),
+    [],
+  );
   const handleSortPress = useCallback(() => openSortSheetRef.current(), []);
 
   useEffect(() => {
@@ -425,6 +433,7 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
         <FilterChips
           filters={filters}
           onRemove={removeFilter}
+          onEdit={handleFilterEdit}
           extraFilters={extraFilters}
           hints={filterHints}
           allowed={allowedFilters}

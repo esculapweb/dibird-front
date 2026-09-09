@@ -30,38 +30,37 @@ jest.mock("../../../store/language-context", () => ({
 // (useDropdownQuery → useSavedSort, networkStatus); stub it and the input so
 // the sheet's own logic is what's under test.
 jest.mock("../../../hooks/useDropdownQuery", () => ({
-  useDropdownQuery: () => ({
-    query: { data: [{ value: 5, label: "France" }] },
-    sort: "name",
-    onSortChange: jest.fn(),
-  }),
+  useDropdownQuery: jest.fn(),
 }));
+const mockDropdownCapture = jest.fn();
 jest.mock("../../ui/DropdownInput", () => {
   const { Text, Pressable } = require("react-native");
   return {
     __esModule: true,
-    default: ({
-      value,
-      setValue,
-      placeholder,
-    }: {
+    default: (props: {
       value: number | null;
       setValue: (v: number | null) => void;
       placeholder: string;
-    }) => (
-      <Pressable testID="country-dropdown" onPress={() => setValue(5)}>
-        <Text>{value == null ? placeholder : `country-${value}`}</Text>
-      </Pressable>
-    ),
+    }) => {
+      mockDropdownCapture(props);
+      const { value, setValue, placeholder } = props;
+      return (
+        <Pressable testID="country-dropdown" onPress={() => setValue(5)}>
+          <Text>{value == null ? placeholder : `country-${value}`}</Text>
+        </Pressable>
+      );
+    },
   };
 });
 
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { useQuery } from "@tanstack/react-query";
+import { useDropdownQuery } from "../../../hooks/useDropdownQuery";
 import TaxonFilterSheet, { hasTraitFilters } from "../TaxonFilterSheet";
 import { TaxonTraitFilters } from "../../../types";
 
 const mockUseQuery = useQuery as jest.Mock;
+const mockUseDropdownQuery = useDropdownQuery as jest.Mock;
 const mockOnApply = jest.fn();
 const mockDismiss = jest.fn();
 
@@ -81,15 +80,24 @@ const OPTIONS = {
   ],
 };
 
-const renderSheet = (value: TaxonTraitFilters = {}, showCountry = true) =>
+const renderSheet = (
+  value: TaxonTraitFilters = {},
+  showCountry = true,
+  focusGroup?: string,
+) =>
   render(
     <TaxonFilterSheet
       value={value}
       onApply={mockOnApply}
       dismiss={mockDismiss}
       showCountry={showCountry}
+      focusGroup={focusGroup}
     />,
   );
+
+const countryOpenSignal = () =>
+  (mockDropdownCapture.mock.calls.at(-1)![0] as { openSignal?: number })
+    .openSignal;
 
 // Groups start folded away, so a test that wants the chips has to open one.
 const openGroup = (id: string) =>
@@ -98,6 +106,11 @@ const openGroup = (id: string) =>
 beforeEach(() => {
   jest.clearAllMocks();
   mockUseQuery.mockReturnValue({ data: OPTIONS, isLoading: false });
+  mockUseDropdownQuery.mockReturnValue({
+    query: { data: [{ value: 5, label: "France" }] },
+    sort: "name",
+    onSortChange: jest.fn(),
+  });
 });
 
 it("starts with every group folded, showing one row each instead of 36 chips", async () => {
@@ -277,5 +290,42 @@ describe("hasTraitFilters", () => {
     expect(hasTraitFilters({ mass_min: 1000 })).toBe(true);
     expect(hasTraitFilters({ habitat: ["Forest"] })).toBe(true);
     expect(hasTraitFilters({ territory: 5 })).toBe(true);
+  });
+});
+
+describe("focusGroup — the chip a tap asked to edit", () => {
+  it("opens that group expanded instead of the usual folded row", async () => {
+    await renderSheet({ habitat: ["Forest"] }, true, "habitat");
+
+    // "Marine" only exists as a chip, so it is proof the group is open —
+    // unlike "Forest", which the folded row already shows as its summary.
+    expect(screen.getByText("Marine")).toBeOnTheScreen();
+    // Still one group at a time: the rest stay folded.
+    expect(screen.queryByText("mass_large")).toBeNull();
+  });
+
+  it("opens the country list outright, expanding no group", async () => {
+    await renderSheet({ territory: 5 }, true, "territory");
+
+    expect(countryOpenSignal()).toBe(1);
+    expect(screen.queryByText("Forest")).toBeNull();
+  });
+
+  it("leaves the country list closed when the sheet was opened from the header", async () => {
+    await renderSheet({ territory: 5 });
+
+    expect(countryOpenSignal()).toBe(0);
+  });
+
+  it("waits for the countries query before opening its list", async () => {
+    mockUseDropdownQuery.mockReturnValue({
+      query: { data: undefined, isLoading: true },
+      sort: "name",
+      onSortChange: jest.fn(),
+    });
+
+    await renderSheet({ territory: 5 }, true, "territory");
+
+    expect(countryOpenSignal()).toBe(0);
   });
 });

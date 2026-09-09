@@ -94,6 +94,21 @@ const TerritoryDetailScreen = () => {
   // detail response carries — the screen is reached by segment.
   const territoryId = data?.territory_id;
 
+  // The header button and the chips row open the same sheet; a chip passes
+  // the group it stands for, so the sheet opens on that filter.
+  const openTraitSheet = (focusGroup?: string) =>
+    BottomSheet.showContent({
+      renderContent: (dismiss: () => void) => (
+        <TaxonFilterSheet
+          value={filters}
+          onApply={setFilters}
+          dismiss={dismiss}
+          showCountry={false}
+          focusGroup={focusGroup}
+        />
+      ),
+    });
+
   useLayoutEffect(() => {
     navigation.setOptions({
       title: data?.name ?? t("countries"),
@@ -108,17 +123,7 @@ const TerritoryDetailScreen = () => {
             // The tree comes from the checklist endpoint, which takes no
             // trait filters — only the flat list can be narrowed.
             tab === "species" && view === "flat"
-              ? () =>
-                  BottomSheet.showContent({
-                    renderContent: (dismiss: () => void) => (
-                      <TaxonFilterSheet
-                        value={filters}
-                        onApply={setFilters}
-                        dismiss={dismiss}
-                        showCountry={false}
-                      />
-                    ),
-                  })
+              ? () => openTraitSheet()
               : undefined
           }
           headerRightEnd={[
@@ -353,6 +358,7 @@ const TerritoryDetailScreen = () => {
         fixedTraits={{ territory: territoryId }}
         traits={filters}
         onChangeTraits={setFilters}
+        onEditTraits={openTraitSheet}
         onClearTraits={() => setFilters({})}
         sort={sort}
         errorTitle={t("taxonomy_unavailable")}

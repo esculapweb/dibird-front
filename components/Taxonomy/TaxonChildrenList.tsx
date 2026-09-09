@@ -41,6 +41,10 @@ interface TaxonChildrenListProps {
   onClearTraits?: () => void;
   // Per-filter removal from the chips row; without it the chips don't render.
   onChangeTraits?: (next: TaxonTraitFilters) => void;
+  // A tap on a chip itself: the host reopens its trait sheet on that group.
+  // The sheet lives on the screen (it is the same one the header button
+  // opens), so the list only forwards the request.
+  onEditTraits?: (groupId: string) => void;
   // Picker mode: hand the tapped species to this callback instead of opening
   // its page (see AppStackParamList.Taxonomy.pickerKey).
   onPick?: (item: TaxonListItem) => void;
@@ -71,6 +75,7 @@ const TaxonChildrenList = ({
   fixedTraits,
   onClearTraits,
   onChangeTraits,
+  onEditTraits,
   onPick,
   searchPlaceholder,
   autoFocusSearch,
@@ -199,7 +204,11 @@ const TaxonChildrenList = ({
             autoFocus={autoFocusSearch}
           />
           {hasTraitFilters && onChangeTraits && traits && (
-            <TaxonFilterChips traits={traits} onChange={onChangeTraits} />
+            <TaxonFilterChips
+              traits={traits}
+              onChange={onChangeTraits}
+              onEdit={onEditTraits}
+            />
           )}
           {hasTraitFilters && total != null && (
             <Text style={styles.total}>

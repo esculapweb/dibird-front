@@ -14,6 +14,10 @@ import { TaxonTraitFilters, TraitFilterOptions } from "../../types";
 interface TaxonFilterChipsProps {
   traits: TaxonTraitFilters;
   onChange: (next: TaxonTraitFilters) => void;
+  // A tap on the chip itself (the cross keeps removing it) reopens the trait
+  // sheet on this chip's own group — see FilterChips, which does the same for
+  // the global filters.
+  onEdit?: (id: string) => void;
 }
 
 // A removable chip: `name: value`, and `clear` returns the traits with this
@@ -28,7 +32,11 @@ interface Chip {
 // Mirrors FilterChips (the global filters row), but over TaxonTraitFilters —
 // which FilterChips/useFilterLabels don't understand (mass buckets, trait
 // vocabularies). Labels are built from the same shared config the sheet uses.
-const TaxonFilterChips = ({ traits, onChange }: TaxonFilterChipsProps) => {
+const TaxonFilterChips = ({
+  traits,
+  onChange,
+  onEdit,
+}: TaxonFilterChipsProps) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const { language } = useLanguage();
@@ -102,7 +110,16 @@ const TaxonFilterChips = ({ traits, onChange }: TaxonFilterChipsProps) => {
         contentContainerStyle={styles.scrollContainer}
       >
         {chips.map((chip) => (
-          <View key={chip.id} style={styles.filterChip}>
+          <Pressable
+            key={chip.id}
+            style={({ pressed }) => [
+              styles.filterChip,
+              pressed && !!onEdit && styles.filterChipPressed,
+            ]}
+            onPress={onEdit ? () => onEdit(chip.id) : undefined}
+            disabled={!onEdit}
+            testID={`edit-taxon-filter-${chip.id}`}
+          >
             <Text
               style={styles.filterText}
               numberOfLines={1}
@@ -124,7 +141,7 @@ const TaxonFilterChips = ({ traits, onChange }: TaxonFilterChipsProps) => {
                 />
               </Pressable>
             </View>
-          </View>
+          </Pressable>
         ))}
       </ScrollView>
     </View>
@@ -153,6 +170,9 @@ const stylesFn = (Colors: ThemeColors) =>
       borderWidth: 1,
       borderColor: Colors.border,
       maxWidth: 300,
+    },
+    filterChipPressed: {
+      opacity: 0.6,
     },
     filterText: {
       fontSize: 12,

@@ -65,10 +65,14 @@ jest.mock("../../services/bottomSheet", () => ({
 // useDropdownQuery — a separately-testable widget unrelated to ListScreen's
 // own "render it only when hasActiveFilters" responsibility.
 jest.mock("../../components/Filters/FilterChips", () => {
-  const { Text } = require("react-native");
+  const { Text, TouchableOpacity } = require("react-native");
   return {
     __esModule: true,
-    default: () => <Text>filter-chips</Text>,
+    default: ({ onEdit }: { onEdit?: (key: string) => void }) => (
+      <TouchableOpacity testID="chip-species" onPress={() => onEdit?.("species")}>
+        <Text>filter-chips</Text>
+      </TouchableOpacity>
+    ),
   };
 });
 // IconsHeader/IconButton's Pressable didn't reliably respect fireEvent.press
@@ -397,6 +401,16 @@ describe("filter chips", () => {
     mockFilters({ hasActiveFilters: true });
     await render(<ListScreen {...defaultProps()} />);
     expect(screen.getByText("filter-chips")).toBeOnTheScreen();
+  });
+
+  it("opens the filter sheet on the tapped chip's own control", async () => {
+    mockFilters({ hasActiveFilters: true, filters: { species: 3 } });
+    await render(<ListScreen {...defaultProps()} />);
+
+    await fireEvent.press(screen.getByTestId("chip-species"));
+
+    const sheet = (BottomSheet.showContent as jest.Mock).mock.calls.at(-1)![0];
+    expect(sheet.renderContent(jest.fn()).props.focusKey).toBe("species");
   });
 });
 

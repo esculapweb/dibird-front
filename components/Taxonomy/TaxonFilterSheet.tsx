@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Pressable, LayoutAnimation } from "react-native";
 import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { Ionicons } from "@expo/vector-icons";
@@ -10,6 +10,7 @@ import LoadingOverlay from "../ui/LoadingOverlay";
 import DropdownInput from "../ui/DropdownInput";
 import { fetchTraitFilters, fetchMyCountries } from "../../util/fetches";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
+import { useFocusScroll } from "../../hooks/useFocusScroll";
 import { StaleTime } from "../../constants/staleTime";
 import { useLanguage } from "../../store/language-context";
 import { useTheme, ThemeColors } from "../../store/theme-context";
@@ -39,6 +40,9 @@ interface TaxonFilterSheetProps {
   // species list): picking another one there would quietly turn it into a
   // different page's list.
   showCountry?: boolean;
+  // The chip a tap asked to edit: that group opens expanded and scrolled to,
+  // and "territory" opens the country list outright.
+  focusGroup?: string | null;
 }
 
 // Everything lives inside the one BottomSheetScrollView on purpose. With
@@ -54,6 +58,7 @@ const TaxonFilterSheet = ({
   onApply,
   dismiss,
   showCountry = true,
+  focusGroup,
 }: TaxonFilterSheetProps) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -61,7 +66,10 @@ const TaxonFilterSheet = ({
   const insets = useSafeAreaInsets();
   const styles = stylesFn(Colors, insets);
   const [draft, setDraft] = useState<TaxonTraitFilters>(value);
-  const [expanded, setExpanded] = useState<string | null>(null);
+  // The focused group starts open — it is the one the tap was about. Chips for
+  // the country carry no group of their own, so nothing is expanded for them.
+  const [expanded, setExpanded] = useState<string | null>(focusGroup ?? null);
+  const { scrollRef, onSectionLayout } = useFocusScroll(focusGroup);
 
   const { data: options, isLoading } = useQuery<TraitFilterOptions>({
     queryKey: ["TraitFilters", language],
@@ -79,6 +87,20 @@ const TaxonFilterSheet = ({
     queryFn: (sort) => fetchMyCountries(false, sort),
     params: [language],
   });
+
+  // Straight into the country list when its own chip was tapped, but only
+  // once the query is settled: DropdownInput refuses to open while it loads.
+  const countryFocusPending =
+    !!countriesQuery.isLoading || !!countriesQuery.isError;
+  const [countryOpenSignal, setCountryOpenSignal] = useState(0);
+
+  useEffect(() => {
+    if (countryOpenSignal || focusGroup !== "territory" || countryFocusPending)
+      return;
+    setCountryOpenSignal(1);
+    // Curated deps: fires once, and only on the readiness of that one query —
+    // see the same signal in FilterSheetContent.
+  }, [focusGroup, countryFocusPending, countryOpenSignal]);
 
   // One open group at a time, so the sheet never grows past a screenful.
   const toggleGroup = (id: string) => {
@@ -155,6 +177,7 @@ const TaxonFilterSheet = ({
 
   return (
     <BottomSheetScrollView
+      ref={scrollRef}
       style={styles.scroll}
       contentContainerStyle={styles.scrollContent}
     >
@@ -168,19 +191,22 @@ const TaxonFilterSheet = ({
       </View>
 
       {showCountry && (
-        <DropdownInput
-          title={t("country")}
-          placeholder={t("all_countries")}
-          value={draft.territory ?? null}
-          setValue={(value) =>
-            setDraft((prev) => ({ ...prev, territory: value }))
-          }
-          query={countriesQuery}
-          type="CountriesDropdown"
-          sort={countriesSort}
-          onSortChange={onCountriesSortChange}
-          allowReset
-        />
+        <View onLayout={onSectionLayout("territory")}>
+          <DropdownInput
+            title={t("country")}
+            placeholder={t("all_countries")}
+            value={draft.territory ?? null}
+            setValue={(value) =>
+              setDraft((prev) => ({ ...prev, territory: value }))
+            }
+            query={countriesQuery}
+            type="CountriesDropdown"
+            sort={countriesSort}
+            onSortChange={onCountriesSortChange}
+            allowReset
+            openSignal={countryOpenSignal}
+          />
+        </View>
       )}
 
       {GROUPS.map((group) => {
@@ -192,7 +218,11 @@ const TaxonFilterSheet = ({
           const groupSummary = summary(group);
 
         return (
-          <View key={group.id} style={styles.group}>
+          <View
+            key={group.id}
+            style={styles.group}
+            onLayout={onSectionLayout(group.id)}
+          >
               <Pressable
                 style={styles.groupHeader}
                 onPress={() => toggleGroup(group.id)}

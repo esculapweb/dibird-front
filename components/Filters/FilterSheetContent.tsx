@@ -19,11 +19,13 @@ import SpeciesOptionRow from "../ui/SpeciesOptionRow";
 import { useLocation } from "../../store/location-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 import { useFilters } from "../../store/filters-context";
+import { useFocusScroll } from "../../hooks/useFocusScroll";
 import { useLocationUnavailable } from "../../hooks/useLocationUnavailable";
 import SearchInput from "../../components/ui/SearchInput";
 import { RADIUS_OPTIONS_KM } from "../../constants/radiusOptions";
 import {
   Filters,
+  AllFiltersKey,
   AllowedFilterKey,
   DateFilter,
   ObservationSource,
@@ -39,9 +41,21 @@ interface FilterSheetContentProps {
   showSearch?: boolean;
   initialSearch?: string;
   onSearchChange?: (value: string) => void;
+  // The filter a chip tap asked to edit: its control is scrolled into view
+  // and, when it is a dropdown, its list is opened straight away.
+  focusKey?: AllFiltersKey | null;
 }
 
 const BUTTON_HEIGHT = 48;
+
+// Chip taps on these open the control's own list right away; every other
+// filter is a radio group or the date block, edited in place once scrolled to.
+const DROPDOWN_FILTER_KEYS: AllFiltersKey[] = [
+  "territory",
+  "place",
+  "species",
+  "radius",
+];
 
 const FilterSheetContent = ({
   filters,
@@ -52,12 +66,14 @@ const FilterSheetContent = ({
   showSearch,
   initialSearch = "",
   onSearchChange,
+  focusKey,
 }: FilterSheetContentProps) => {
   const { language } = useLanguage();
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = stylesFn(Colors, insets);
+  const { scrollRef, onSectionLayout } = useFocusScroll(focusKey);
   const { setTerritory, date, setDate, setPlace, setSpecies } = useFilters();
   const {
     locationCoords,
@@ -214,6 +230,30 @@ const FilterSheetContent = ({
       !!effectiveTerritory && date !== undefined && allowed.includes("species"),
   });
 
+  // A chip tap should land in the open list, not just next to the control —
+  // but DropdownInput refuses to open while its query is loading or failed, so
+  // the signal waits for the query behind the focused dropdown. The radius has
+  // no query of its own and fires straight away.
+  const focusQuery =
+    focusKey === "territory"
+      ? queryMyCountries
+      : focusKey === "place"
+        ? queryPlaces
+        : focusKey === "species"
+          ? querySpecies
+          : null;
+  const focusQueryPending = !!focusQuery?.isLoading || !!focusQuery?.isError;
+  const [openSignal, setOpenSignal] = useState(0);
+
+  useEffect(() => {
+    if (openSignal || !focusKey || focusQueryPending) return;
+    if (!DROPDOWN_FILTER_KEYS.includes(focusKey)) return;
+    setOpenSignal(1);
+    // Curated deps: only the readiness of the focused query may fire this, and
+    // only once — `openSignal` going non-zero closes it for good, so nothing
+    // reopens the list the user has just dismissed.
+  }, [focusKey, focusQueryPending, openSignal]);
+
   const prevTerritoryRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -289,6 +329,7 @@ const FilterSheetContent = ({
   return (
     <>
       <BottomSheetScrollView
+        ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
@@ -302,72 +343,84 @@ const FilterSheetContent = ({
           />
         )}
         {allowed.includes("territory") && (
-          <DropdownInput
-            title={t("country")}
-            placeholder={t("all_countries")}
-            value={territoryValue}
-            setValue={(value) => setTerritoryValue(value)}
-            query={queryMyCountries}
-            type="CountriesDropdown"
-            sort={countriesSort}
-            onSortChange={onCountriesSortChange}
-            allowReset
-            disabled={unsyncedOnly}
-            disabledMessage={t("unsynced_ignores_other_filters")}
-          />
+          <View onLayout={onSectionLayout("territory")}>
+            <DropdownInput
+              title={t("country")}
+              placeholder={t("all_countries")}
+              value={territoryValue}
+              setValue={(value) => setTerritoryValue(value)}
+              query={queryMyCountries}
+              type="CountriesDropdown"
+              sort={countriesSort}
+              onSortChange={onCountriesSortChange}
+              allowReset
+              disabled={unsyncedOnly}
+              disabledMessage={t("unsynced_ignores_other_filters")}
+              openSignal={focusKey === "territory" ? openSignal : 0}
+            />
+          </View>
         )}
         {allowed.includes("place") && (
-          <DropdownInput
-            title={t("location")}
-            placeholder={t("all_locations")}
-            value={placeValue}
-            setValue={(value) => setPlaceValue(value)}
-            query={queryPlaces}
-            type="PlacesDropdown"
-            sort={placesSort}
-            onSortChange={onPlacesSortChange}
-            allowReset
-            disabled={unsyncedOnly || !effectiveTerritory}
-            disabledMessage={
-              unsyncedOnly
-                ? t("unsynced_ignores_other_filters")
-                : t("select_country_first")
-            }
-            locationAvailable={locationAvailable}
-            onLocationUnavailable={handleLocationUnavailable}
-            useDefault
-          />
+          <View onLayout={onSectionLayout("place")}>
+            <DropdownInput
+              title={t("location")}
+              placeholder={t("all_locations")}
+              value={placeValue}
+              setValue={(value) => setPlaceValue(value)}
+              query={queryPlaces}
+              type="PlacesDropdown"
+              sort={placesSort}
+              onSortChange={onPlacesSortChange}
+              allowReset
+              disabled={unsyncedOnly || !effectiveTerritory}
+              disabledMessage={
+                unsyncedOnly
+                  ? t("unsynced_ignores_other_filters")
+                  : t("select_country_first")
+              }
+              locationAvailable={locationAvailable}
+              onLocationUnavailable={handleLocationUnavailable}
+              useDefault
+              openSignal={focusKey === "place" ? openSignal : 0}
+            />
+          </View>
         )}
         {allowed.includes("species") && (
-          <DropdownInput
-            title={t("species")}
-            placeholder={t("all_species")}
-            value={speciesValue}
-            setValue={(value) => setSpeciesValue(value as number | null)}
-            query={querySpecies}
-            type="SpeciesDropdown"
-            sort={speciesSort}
-            onSortChange={onSpeciesSortChange}
-            allowReset
-            disabled={unsyncedOnly || !effectiveTerritory}
-            disabledMessage={
-              unsyncedOnly
-                ? t("unsynced_ignores_other_filters")
-                : t("select_country_first")
-            }
-            renderOption={({ item, selected, onSelect, onClose }) => (
-              <SpeciesOptionRow
-                item={item}
-                selected={selected}
-                onSelect={onSelect}
-                onClose={onClose}
-              />
-            )}
-            useDefault
-          />
+          <View onLayout={onSectionLayout("species")}>
+            <DropdownInput
+              title={t("species")}
+              placeholder={t("all_species")}
+              value={speciesValue}
+              setValue={(value) => setSpeciesValue(value as number | null)}
+              query={querySpecies}
+              type="SpeciesDropdown"
+              sort={speciesSort}
+              onSortChange={onSpeciesSortChange}
+              allowReset
+              disabled={unsyncedOnly || !effectiveTerritory}
+              disabledMessage={
+                unsyncedOnly
+                  ? t("unsynced_ignores_other_filters")
+                  : t("select_country_first")
+              }
+              renderOption={({ item, selected, onSelect, onClose }) => (
+                <SpeciesOptionRow
+                  item={item}
+                  selected={selected}
+                  onSelect={onSelect}
+                  onClose={onClose}
+                />
+              )}
+              useDefault
+              openSignal={focusKey === "species" ? openSignal : 0}
+            />
+          </View>
         )}
         {allowed.includes("favourite") && (
-          <View style={{ marginTop: 12 }}>
+          <View
+            style={{ marginTop: 12 }}
+            onLayout={onSectionLayout("favourite")}
+          >
             <RadioGroup
               label={`${t("favourites")}:`}
               value={favouriteValue}
@@ -379,7 +432,10 @@ const FilterSheetContent = ({
           </View>
         )}
         {allowed.includes("unsynced") && (
-          <View style={{ marginTop: 12 }}>
+          <View
+            style={{ marginTop: 12 }}
+            onLayout={onSectionLayout("unsynced")}
+          >
             <RadioGroup
               label={`${t("sync_status")}:`}
               value={unsyncedValue}
@@ -396,7 +452,10 @@ const FilterSheetContent = ({
           </View>
         )}
         {allowed.includes("private") && (
-          <View style={{ marginTop: 12 }}>
+          <View
+            style={{ marginTop: 12 }}
+            onLayout={onSectionLayout("private")}
+          >
             <RadioGroup
               label={`${t("privacy")}:`}
               value={privateValue}
@@ -409,7 +468,10 @@ const FilterSheetContent = ({
           </View>
         )}
         {allowed.includes("has_photo") && (
-          <View style={{ marginTop: 12 }}>
+          <View
+            style={{ marginTop: 12 }}
+            onLayout={onSectionLayout("has_photo")}
+          >
             <RadioGroup
               label={`${t("section_photos")}:`}
               value={hasPhotoValue}
@@ -422,7 +484,10 @@ const FilterSheetContent = ({
           </View>
         )}
         {allowed.includes("source") && (
-          <View style={{ marginTop: 12 }}>
+          <View
+            style={{ marginTop: 12 }}
+            onLayout={onSectionLayout("source")}
+          >
             <RadioGroup
               label={`${t("source")}:`}
               value={sourceValue}
@@ -437,16 +502,19 @@ const FilterSheetContent = ({
           </View>
         )}
         {allowed.includes("radius") && (
-          <DropdownInput
-            title={t("radius")}
-            placeholder={t("any_distance")}
-            value={radiusValue}
-            setValue={handleRadiusChange}
-            query={{ data: radiusOptions }}
-            allowReset
-            disabled={unsyncedOnly}
-            disabledMessage={t("unsynced_ignores_other_filters")}
-          />
+          <View onLayout={onSectionLayout("radius")}>
+            <DropdownInput
+              title={t("radius")}
+              placeholder={t("any_distance")}
+              value={radiusValue}
+              setValue={handleRadiusChange}
+              query={{ data: radiusOptions }}
+              allowReset
+              disabled={unsyncedOnly}
+              disabledMessage={t("unsynced_ignores_other_filters")}
+              openSignal={focusKey === "radius" ? openSignal : 0}
+            />
+          </View>
         )}
         {allowed.includes("date") && (
           // DateRangeFilter has no disabled state of its own — it is a group of
@@ -454,6 +522,7 @@ const FilterSheetContent = ({
           <View
             pointerEvents={unsyncedOnly ? "none" : "auto"}
             style={unsyncedOnly && styles.disabledBlock}
+            onLayout={onSectionLayout("date")}
           >
             <DateRangeFilter value={dateFilter} setDateFilter={setDateFilter} />
           </View>

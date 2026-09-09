@@ -16,6 +16,7 @@ import FilterChips from "../FilterChips";
 import { AllFiltersKey, AllowedFilterKey, Filters } from "../../../types";
 
 const mockOnRemove = jest.fn();
+const mockOnEdit = jest.fn();
 
 const getFilterLabel = jest.fn(
   (key: AllFiltersKey, value: unknown): [string, string] => [String(key), String(value)],
@@ -88,6 +89,54 @@ it("calls onRemove with the filter key when a chip's close icon is pressed", asy
   );
   await fireEvent.press(screen.getByTestId("remove-filter-territory"));
   expect(mockOnRemove).toHaveBeenCalledWith("territory");
+});
+
+describe("editing a filter", () => {
+  it("calls onEdit with the filter key when the chip itself is pressed", async () => {
+    await render(
+      <FilterChips
+        filters={{ territory: 5 }}
+        onRemove={mockOnRemove}
+        onEdit={mockOnEdit}
+        hints={{}}
+        allowed={ALL_ALLOWED}
+      />,
+    );
+    await fireEvent.press(screen.getByTestId("edit-filter-territory"));
+    expect(mockOnEdit).toHaveBeenCalledWith("territory");
+    expect(mockOnRemove).not.toHaveBeenCalled();
+  });
+
+  it("keeps the close icon on removal, not on editing", async () => {
+    await render(
+      <FilterChips
+        filters={{ territory: 5 }}
+        onRemove={mockOnRemove}
+        onEdit={mockOnEdit}
+        hints={{}}
+        allowed={ALL_ALLOWED}
+      />,
+    );
+    await fireEvent.press(screen.getByTestId("remove-filter-territory"));
+    expect(mockOnRemove).toHaveBeenCalledWith("territory");
+    expect(mockOnEdit).not.toHaveBeenCalled();
+  });
+
+  it("still removes without an onEdit — a screen with no filter sheet of its own", async () => {
+    await render(
+      <FilterChips
+        filters={{ territory: 5 }}
+        onRemove={mockOnRemove}
+        hints={{}}
+        allowed={ALL_ALLOWED}
+      />,
+    );
+    await fireEvent.press(screen.getByTestId("edit-filter-territory"));
+    expect(mockOnEdit).not.toHaveBeenCalled();
+
+    await fireEvent.press(screen.getByTestId("remove-filter-territory"));
+    expect(mockOnRemove).toHaveBeenCalledWith("territory");
+  });
 });
 
 describe("unsynced", () => {
