@@ -23,6 +23,32 @@ jest.mock("../../services/sync/networkStatus", () => {
   };
 });
 
+// useFocusEffect needs a navigation tree this hook test deliberately does not
+// build. The stand-in keeps the real contract that matters here — the effect
+// runs once when the screen mounts focused — and exposes a trigger for the
+// case the revalidation is actually about: coming back to a screen that stayed
+// mounted the whole time.
+jest.mock("@react-navigation/native", () => {
+  const React = require("react");
+  let callbacks: Array<() => void | (() => void)> = [];
+  return {
+    useFocusEffect: (cb: () => void | (() => void)) => {
+      React.useEffect(() => {
+        callbacks.push(cb);
+        const cleanup = cb();
+        return () => {
+          callbacks = callbacks.filter((c) => c !== cb);
+          if (typeof cleanup === "function") cleanup();
+        };
+      }, [cb]);
+    },
+    __emitFocus: () => callbacks.forEach((cb) => cb()),
+    __resetFocusCallbacks: () => {
+      callbacks = [];
+    },
+  };
+});
+
 import { QueryClient, QueryClientProvider, notifyManager } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 
@@ -30,6 +56,7 @@ notifyManager.setScheduler((callback) => callback());
 
 import { useLanguage } from "../../store/language-context";
 import * as networkStatusMock from "../../services/sync/networkStatus";
+import * as navigationMock from "@react-navigation/native";
 import { useList } from "../useList";
 import { Filters, PaginatedResponse } from "../../types";
 
@@ -68,6 +95,7 @@ const baseArgs = (overrides: Record<string, unknown> = {}) => ({
 beforeEach(() => {
   jest.clearAllMocks();
   (networkStatusMock as unknown as { __resetReconnectListeners: () => void }).__resetReconnectListeners();
+  (navigationMock as unknown as { __resetFocusCallbacks: () => void }).__resetFocusCallbacks();
   queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   (useLanguage as jest.Mock).mockReturnValue({ language: "en" });
   mockFetchFunction.mockResolvedValue(page());
@@ -301,5 +329,46 @@ describe("reconnect refetch", () => {
 
     (networkStatusMock as unknown as { __emitReconnect: () => void }).__emitReconnect();
     expect(mockFetchFunction).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("focus refetch", () => {
+  // Regression test: a list screen stays mounted while you navigate on top of
+  // it, so nothing used to refresh it for the rest of the session — the rating
+  // kept showing the avatars and species counts other users had when it was
+  // first opened.
+  const emitFocus = () =>
+    (navigationMock as unknown as { __emitFocus: () => void }).__emitFocus();
+
+  it("refetches when the screen is focused again and the data is stale", async () => {
+    const { result } = await renderUseList(baseArgs({ staleTime: 0 }));
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockFetchFunction).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      emitFocus();
+    });
+    await waitFor(() => expect(mockFetchFunction).toHaveBeenCalledTimes(2));
+  });
+
+  it("does not refetch on focus while the data is still fresh", async () => {
+    const { result } = await renderUseList(baseArgs({ staleTime: 60_000 }));
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockFetchFunction).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      emitFocus();
+    });
+    expect(mockFetchFunction).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not refetch on focus while disabled", async () => {
+    const { result } = await renderUseList(baseArgs({ enabled: false, staleTime: 0 }));
+    expect(result.current.fetchStatus).toBe("idle");
+
+    await act(async () => {
+      emitFocus();
+    });
+    expect(mockFetchFunction).not.toHaveBeenCalled();
   });
 });

@@ -21,6 +21,10 @@ export interface ContentSheetPayload {
   renderContent: (dismiss: () => void) => React.ReactNode;
   onReset?: () => void;
   resetLabel?: string;
+  // Turns off the sheet's own drag-to-dismiss on the content area, leaving it
+  // on the handle. Content that scrolls vertically by itself (a picker wheel)
+  // otherwise loses every swipe to the sheet.
+  disableContentPanning?: boolean;
 }
 
 export interface MenuItem {

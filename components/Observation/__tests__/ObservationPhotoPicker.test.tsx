@@ -21,9 +21,6 @@ jest.mock("@expo/vector-icons", () => {
     ),
   };
 });
-jest.mock("../../../hooks/useMediaLibraryUnavailable", () => ({
-  useMediaLibraryUnavailable: () => mockHandleMediaLibraryUnavailable,
-}));
 jest.mock("../../../hooks/useApiError", () => ({
   useApiError: () => ({ showErrorToast: mockShowErrorToast }),
 }));
@@ -40,7 +37,6 @@ jest.mock("expo-image-manipulator", () => ({
   SaveFormat: { JPEG: "jpeg" },
 }));
 
-const mockHandleMediaLibraryUnavailable = jest.fn();
 const mockShowErrorToast = jest.fn();
 const mockStripCapture = jest.fn();
 jest.mock("../ObservationPhotos", () => ({
@@ -97,30 +93,23 @@ const press = async (props: Record<string, unknown>) => {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  getPermissions.mockResolvedValue({ status: "granted" });
   launchLibrary.mockResolvedValue({ canceled: true, assets: null });
   manipulate.mockImplementation(async (uri: string) => ({ uri: `${uri}-small` }));
 });
 
-it("opens the settings sheet instead of the picker when access was denied", async () => {
-  getPermissions.mockResolvedValue({ status: "denied" });
+// Regression: the picker used to sit behind a media-library permission it
+// needs on neither platform (expo's own docs: "requires MEDIA_LIBRARY on iOS 10
+// only"; on Android 13+ expo-image-picker asks for an empty permission list).
+// Asking anyway is what offered iOS's limited access, and what let a declined
+// storage permission block attaching photos outright on Android 12 and older.
+it("opens the picker without asking for a media library permission", async () => {
   const props = await renderPicker();
 
   await press(props);
 
-  expect(mockHandleMediaLibraryUnavailable).toHaveBeenCalledTimes(1);
-  expect(launchLibrary).not.toHaveBeenCalled();
-});
-
-it("asks for permission when it has not been decided yet, and stops if refused", async () => {
-  getPermissions.mockResolvedValue({ status: "undetermined" });
-  requestPermissions.mockResolvedValue({ status: "denied" });
-  const props = await renderPicker();
-
-  await press(props);
-
-  expect(requestPermissions).toHaveBeenCalledTimes(1);
-  expect(launchLibrary).not.toHaveBeenCalled();
+  expect(getPermissions).not.toHaveBeenCalled();
+  expect(requestPermissions).not.toHaveBeenCalled();
+  expect(launchLibrary).toHaveBeenCalledTimes(1);
 });
 
 it("picks from the gallery only, never the camera", async () => {

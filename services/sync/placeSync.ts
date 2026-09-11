@@ -12,10 +12,10 @@ const PLACE_URL = "/myapi/place2/";
 
 const invalidatePlaceQueries = (...ids: (number | null | undefined)[]) => {
   // refetchType "all" (not the default "active") matters here: this sync
-  // runs in the background regardless of which screen is mounted, and
-  // useList's infinite query has refetchOnMount disabled — so a query that's
-  // merely marked stale while unmounted would otherwise keep showing
-  // whatever it last had the next time it's opened.
+  // runs in the background regardless of which screen is mounted, so what it
+  // touches is mostly unmounted queries. Merely marking those stale would
+  // leave the next open rendering whatever they last had until the
+  // revalidation lands.
   //
   // Uses the same key list as the live (online) create/update path (see
   // useOfflinePlace.ts's invalidatePlaceCaches) — a place's counts/name feed

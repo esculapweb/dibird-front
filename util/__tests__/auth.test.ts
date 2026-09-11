@@ -139,11 +139,18 @@ describe("Logout", () => {
     expect(apiPost).toHaveBeenCalledWith("/api-auth/logout/", { refresh: "refresh-token" });
     expect(GoogleSignin.signOut).toHaveBeenCalled();
     expect(clearTokens).toHaveBeenCalled();
+    // "filters_inited" has to go together with the "global" filter values it
+    // guards: it was once left to AppStack's onLogout callback, which a session
+    // killed by a failed token refresh during the splash screen never reaches
+    // (AppNavigator is not mounted yet). The flag then survived into the next
+    // login, initGlobalFilters() returned early, and the user landed on "all
+    // countries, all time" instead of their own country and this year.
     expect(AsyncStorage.multiRemove).toHaveBeenCalledWith([
       "profile",
       "filters",
       "sorting",
       "global",
+      "filters_inited",
     ]);
     expect(onLogoutCallback).toHaveBeenCalledTimes(1);
   });

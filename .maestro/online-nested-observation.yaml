@@ -66,6 +66,17 @@ tags:
 # territory.
 - tapOn:
     id: "list-add-button"
+# The diary owns the date of its observations, so the diary-scoped editor has
+# no date field at all — it shows the diary's own date read-only, with the
+# optional time chip beside it (see online-observation-time.yaml for the chip
+# itself). Nothing else on this screen distinguishes diary mode from the plain
+# editor, so a regression here is otherwise invisible until someone looks.
+- assertVisible:
+    id: "observation-diary-date"
+- assertNotVisible:
+    id: "observation-date-input"
+- assertVisible:
+    id: "observation-time-chip"
 - tapOn:
     id: "species-dropdown-trigger"
 - extendedWaitUntil:

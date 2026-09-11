@@ -1,0 +1,220 @@
+# Device-level online test: the "is this maybe the place you already have?"
+# suggestion, in both of the places it appears.
+#
+# The feature itself is client-side (hooks/Place/useNearbyPlaces.ts measures
+# against the places the dropdown already carries), so what needs a device is
+# the part unit tests cannot reach: that a real GPS fix, a real reverse
+# geocode and a place created minutes earlier line up closely enough for the
+# card to appear at all.
+#
+# Shape: create an anchor place at the mock fix *from inside the observation
+# form*, then check that
+#   1. the form offers it back once the picker is cleared
+#      (components/Place/PlaceBlock.tsx, "picker" variant), and
+#   2. the place editor offers it instead of letting a duplicate be created
+#      (screens/PlaceEditorScreen.tsx, "editor" variant),
+# then delete the anchor again — flows reuse the account and each one clears
+# up after itself.
+#
+# The anchor is deliberately created through "Add new location" rather than
+# from the Locations list: the suggestion only compares places *within the
+# form's territory*, and the form's territory comes from the account's own
+# profile — France for one platform's test account, Belarus for the other's
+# (seen on the first run of this flow). Creating the place from the form
+# makes ObservationEditorScreen's onPlaceCreated switch the form's territory
+# to wherever the pin actually landed, so both sides of the comparison come
+# from the mock fix below and neither depends on whose account is running.
+#
+# Runs on both platforms; text selectors are `.*regex.*` throughout because
+# iOS merges icon+label elements into one accessibility node — see
+# online-create-observation.yaml.
+#
+# appId comes from run.sh (--env APP_ID): the iOS build is the dev client,
+# Android has one package for every variant.
+appId: ${APP_ID}
+tags:
+  - ios
+  - android
+---
+# iOS has no "allow" — location is granted as `inuse` there. Same split as
+# online-create-place.yaml.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - launchApp:
+          permissions:
+            location: allow
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - launchApp:
+          permissions:
+            location: inuse
+
+# A fixed point, not the emulator's own default: both sides of this test are
+# compared against each other, so the anchor place and the suggestion have to
+# read the same fix. Paris is simply somewhere with a real reverse geocode.
+- setLocation:
+    latitude: 48.8566
+    longitude: 2.3522
+
+- runFlow: common/bootstrap.yaml
+
+# The backend keeps place names unique per profile
+# (place_unique_profile_name_no_external in myapi/models.py), so a fixed name
+# makes every run after a failed one unable to create its anchor at all — the
+# save is rejected and the flow dies on the *next* step, nowhere near the
+# cause. A per-run name sidesteps that entirely.
+- evalScript: ${output.anchorName = "Nearby Anchor " + Date.now()}
+
+# ---- SETUP: an anchor place at the mock fix, created from the form ----
+- tapOn:
+    id: "quick-action-observation"
+- scrollUntilVisible:
+    element:
+      text: ".*Add new location.*"
+    direction: DOWN
+    timeout: 10000
+- tapOn: ".*Add new location.*"
+- extendedWaitUntil:
+    visible:
+      id: "latitude-input"
+    timeout: 8000
+- waitForAnimationToEnd:
+    timeout: 4000
+
+# A run that died before its cleanup leaves an anchor of its own behind, and
+# then this very card shows up here — on the setup step, where it is noise,
+# and where it shifts the form's fields down. Optional: on a clean account
+# there is nothing to dismiss.
+- tapOn:
+    id: "nearby-place-dismiss"
+    optional: true
+
+- tapOn:
+    id: "place-name-input"
+# Pre-filled by the reverse geocode — erase first or pasteText appends.
+- eraseText: 50
+- setClipboard: ${output.anchorName}
+- pasteText
+# Dismiss the keyboard without navigating.
+- tapOn: ".*Latitude.*"
+- tapOn:
+    id: "place-save-button"
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - runFlow: common/back.yaml
+      - tapOn:
+          id: "place-save-button"
+# Back in the observation form, with the new place filled into the picker and
+# the form's territory moved to wherever the pin landed.
+- extendedWaitUntil:
+    visible:
+      id: "place-dropdown-clear"
+    timeout: 15000
+- assertVisible: ".*${output.anchorName}.*"
+
+# ---- 1. The form offers the place back once the picker is empty ----
+- tapOn:
+    id: "place-dropdown-clear"
+# Generous: this waits on the places query re-reading the territory plus the
+# location fix, not on an animation.
+- extendedWaitUntil:
+    visible:
+      id: "nearby-place-suggestion"
+    timeout: 20000
+- assertVisible: ".*Looks like.*"
+- assertVisible: ".*${output.anchorName}.*"
+
+- tapOn:
+    id: "nearby-place-use"
+# Accepting fills the picker in, and the card has nothing left to ask about.
+# Asserting the name only after the card is gone matters: the card carries the
+# same name, so before that it proves nothing about the picker.
+- extendedWaitUntil:
+    notVisible:
+      id: "nearby-place-suggestion"
+    timeout: 6000
+- assertVisible:
+    id: "place-dropdown-clear"
+- assertVisible: ".*${output.anchorName}.*"
+
+# ---- 2. The place editor offers it instead of a duplicate ----
+- tapOn:
+    id: "place-dropdown-clear"
+- scrollUntilVisible:
+    element:
+      text: ".*Add new location.*"
+    direction: DOWN
+    timeout: 10000
+- tapOn: ".*Add new location.*"
+- extendedWaitUntil:
+    visible:
+      id: "latitude-input"
+    timeout: 8000
+- extendedWaitUntil:
+    visible:
+      id: "nearby-place-suggestion"
+    timeout: 20000
+# The editor's wording, not the form's: here accepting means abandoning the
+# place being created, so the card says so.
+- assertVisible: ".*already have a place.*"
+- assertVisible: ".*${output.anchorName}.*"
+
+- tapOn:
+    id: "nearby-place-use"
+# Taking the existing place hands it back to the form exactly as a freshly
+# created one would, and the editor closes without creating a second place —
+# cleanup below finds exactly one anchor to delete.
+- extendedWaitUntil:
+    notVisible:
+      id: "latitude-input"
+    timeout: 8000
+- assertVisible:
+    id: "place-dropdown-clear"
+- assertVisible: ".*${output.anchorName}.*"
+
+# ---- CLEANUP ----
+# Through the picker's own "open this place" button, not the Locations list:
+# that list is filtered by the global country filter, and the anchor sits at
+# the mock fix rather than in the account's own country — it is simply not in
+# that list, which is what sank the first attempt at this cleanup. The button
+# rides on the map preview the backend renders on demand, hence the timeout.
+- extendedWaitUntil:
+    visible:
+      id: "place-dropdown-open"
+    timeout: 20000
+- tapOn:
+    id: "place-dropdown-open"
+- extendedWaitUntil:
+    visible:
+      id: "place-edit-button"
+    timeout: 10000
+- assertVisible: ".*${output.anchorName}.*"
+- tapOn:
+    id: "overflow-button"
+- tapOn:
+    id: "place-delete-button"
+- extendedWaitUntil:
+    visible:
+      id: "bottom-sheet-confirm-button"
+    timeout: 4000
+- tapOn:
+    id: "bottom-sheet-confirm-button"
+# Delete lands back on the observation form this place was opened from, with
+# the picker now empty. The observation itself is left unsaved: this flow
+# tests the place suggestion, and an observation would be one more thing to
+# clean up after.
+- extendedWaitUntil:
+    visible:
+      id: "place-dropdown-trigger"
+    timeout: 10000
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: "quick-action-observation"
+    timeout: 10000

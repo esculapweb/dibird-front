@@ -1,5 +1,6 @@
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { keepPreviousData, useInfiniteQuery } from "@tanstack/react-query";
+import { useFocusEffect } from "@react-navigation/native";
 import { useLanguage } from "../store/language-context";
 import { stableStringify, roundCoords } from "../util/helpers";
 import { subscribeToReconnect } from "../services/sync/networkStatus";
@@ -104,6 +105,40 @@ export const useList = <T>({
     refetchOnReconnect: false,
     enabled,
   });
+
+  // Revalidate when the screen comes back into focus. React Navigation keeps a
+  // screen mounted while you navigate on top of it, so a list opened once has
+  // nothing left that would ever refresh it: refetchOnMount never fires again,
+  // refetchOnWindowFocus is off (and dead in RN anyway — nothing wires
+  // react-query's focusManager to AppState), and an invalidation only helps for
+  // changes this device made. Everything else was frozen for the rest of the
+  // session — most visibly in the rating, where another user's new avatar or
+  // species count could not appear at all.
+  //
+  // Read through a ref rather than depending on `isStale`: as a dependency it
+  // would re-run the effect on every staleness flip while the screen is already
+  // focused, firing a second refetch on top of the one an invalidation had just
+  // started. Staleness (staleTime, 1 minute by default) is what keeps hopping
+  // between two screens from costing a request each time.
+  const queryRef = useRef(query);
+  queryRef.current = query;
+  // The first focus is the screen mounting, and a fresh observer landing on
+  // stale data is refetchOnMount's job — without this the two would fire the
+  // same request twice on every list that opens onto a persisted cache.
+  const focusedOnceRef = useRef(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!enabled) return;
+      if (!focusedOnceRef.current) {
+        focusedOnceRef.current = true;
+        return;
+      }
+      if (queryRef.current.isStale && !queryRef.current.isFetching) {
+        queryRef.current.refetch();
+      }
+    }, [enabled]),
+  );
 
   // While offline, page 1 can come back from the cache's "relaxed match"
   // fallback (fetchAbstract in util/fetches.ts) — the same page number, but

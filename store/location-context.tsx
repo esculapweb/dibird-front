@@ -116,6 +116,18 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
 
       const loc = await Location.getCurrentPositionAsync({
         accuracy: desiredAccuracy,
+        // Android only, and nothing to do with the runtime permission above:
+        // with the default (true) expo-location asks Play Services to resolve
+        // the device's location settings, and whenever the network location
+        // provider is off that resolution IS a system dialog offering to turn
+        // "improved accuracy" on. Declining it changes no setting, so the very
+        // next call brings it straight back — and App.tsx's startup fetch calls
+        // this on every launch, which is how a fetch documented as silent
+        // ("prompt: false") ended up putting a dialog on screen at every start
+        // no matter what the user answered last time. Tie it to `prompt`: a
+        // caller that is allowed to show a dialog may offer it, a silent one
+        // must stay silent and make do with whatever provider is on.
+        mayShowUserSettingsDialog: prompt,
       });
 
       const { latitude, longitude, accuracy } = loc.coords;

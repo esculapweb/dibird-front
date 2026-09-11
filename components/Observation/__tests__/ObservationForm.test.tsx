@@ -45,11 +45,11 @@ jest.mock("../../ui/DateInput", () => ({
     return null;
   },
 }));
-const mockTimeInputCapture = jest.fn();
-jest.mock("../../ui/TimeInput", () => ({
+const mockTimeChipCapture = jest.fn();
+jest.mock("../../ui/TimeChip", () => ({
   __esModule: true,
   default: (props: Record<string, unknown>) => {
-    mockTimeInputCapture(props);
+    mockTimeChipCapture(props);
     return null;
   },
 }));
@@ -232,6 +232,11 @@ describe("species dropdown", () => {
     expect(mockSetSpeciesData).toHaveBeenCalledWith(null);
   });
 
+  it("forwards openSpeciesSignal to the dropdown so the editor can reopen the list", async () => {
+    await render(<ObservationForm {...baseProps()} openSpeciesSignal={3} />);
+    expect(dropdownProps("SpeciesDropdown").openSignal).toBe(3);
+  });
+
   it("disables already-added species via renderOption, still active for the rest", async () => {
     await render(<ObservationForm {...baseProps()} existingSpecies={new Set([9])} />);
     const { renderOption } = dropdownProps("SpeciesDropdown");
@@ -351,6 +356,29 @@ describe("date/privacy/place section visibility", () => {
   });
 });
 
+describe("time chip", () => {
+  it("shares the date row and updates formData.time", async () => {
+    await render(<ObservationForm {...baseProps()} />);
+    expect(screen.queryByTestId("observation-diary-date")).not.toBeOnTheScreen();
+
+    // The chip rides along as DateInput's `trailing` node, and DateInput is
+    // mocked away here — so it is the element, not a render, that carries it.
+    const chip = mockDateInputCapture.mock.calls[0][0].trailing;
+    chip.props.onChange("14:30:00");
+    expect(mockSetFormData.mock.calls[0][0]({ time: null })).toEqual({ time: "14:30:00" });
+  });
+
+  it("stays available in diary mode, next to the diary's read-only date", async () => {
+    await render(
+      <ObservationForm {...baseProps()} isDiaryMode diaryDate="2026-01-01" />,
+    );
+
+    expect(screen.getByTestId("observation-diary-date")).toBeOnTheScreen();
+    expect(screen.getByText(/2026/)).toBeOnTheScreen();
+    expect(mockTimeChipCapture).toHaveBeenCalled();
+  });
+});
+
 describe("date input", () => {
   it("updates formData.date_time and clears the date error on change", async () => {
     await render(<ObservationForm {...baseProps()} />);
@@ -369,8 +397,8 @@ describe("privacy toggle", () => {
   });
 });
 
-describe("details section (time/quantity/notes)", () => {
-  it("is collapsed only when time, quantity and notes are all empty", async () => {
+describe("details section (quantity/notes)", () => {
+  it("is collapsed only when quantity and notes are both empty", async () => {
     await render(<ObservationForm {...baseProps()} />);
     const detailsSection = mockSectionCapture.mock.calls
       .map((c) => c[0])
@@ -383,7 +411,7 @@ describe("details section (time/quantity/notes)", () => {
       sort: `${type}-sort`,
       onSortChange: onSortChangeByType[type],
     }));
-    await render(<ObservationForm {...baseProps()} formData={{ ...BASE_FORM_DATA, time: "10:00" } as never} />);
+    await render(<ObservationForm {...baseProps()} formData={{ ...BASE_FORM_DATA, quantity: 2 } as never} />);
     const expandedSection = mockSectionCapture.mock.calls
       .map((c) => c[0])
       .find((p) => p.title === "section_details");

@@ -87,6 +87,7 @@ interface CapturedDropdownProps {
   value: number | null;
   setValue: (v: number | null) => void;
   disabled?: boolean;
+  openSignal?: number;
 }
 
 const dropdownPropsByType = (type: string) =>
@@ -539,5 +540,51 @@ describe("search wiring", () => {
 
     await act(async () => props.onClear());
     expect(mockOnSearchChange).toHaveBeenCalledWith("");
+  });
+});
+
+describe("focusKey — the chip a tap asked to edit", () => {
+  it("opens the focused dropdown's list and leaves the others alone", async () => {
+    await render(
+      <FilterSheetContent {...baseProps({ filters: { territory: 5 }, focusKey: "species" })} />,
+    );
+
+    expect(dropdownPropsByType("SpeciesDropdown").openSignal).toBe(1);
+    expect(dropdownPropsByType("CountriesDropdown").openSignal).toBe(0);
+    expect(dropdownPropsByType("PlacesDropdown").openSignal).toBe(0);
+  });
+
+  it("opens no list at all when the sheet was opened from the header", async () => {
+    await render(<FilterSheetContent {...baseProps({ filters: { territory: 5 } })} />);
+
+    expect(dropdownPropsByType("SpeciesDropdown").openSignal).toBe(0);
+    expect(dropdownPropsByType("CountriesDropdown").openSignal).toBe(0);
+  });
+
+  it("waits for the focused dropdown's query, which is what DropdownInput refuses to open on", async () => {
+    (useDropdownQuery as jest.Mock).mockImplementation(
+      ({ type }: { type: string }) => ({
+        query:
+          type === "SpeciesDropdown"
+            ? { data: undefined, isLoading: true }
+            : queriesByType[type],
+        sort: `${type}-sort`,
+        onSortChange: onSortChangeByType[type],
+      }),
+    );
+
+    await render(
+      <FilterSheetContent {...baseProps({ filters: { territory: 5 }, focusKey: "species" })} />,
+    );
+
+    expect(dropdownPropsByType("SpeciesDropdown").openSignal).toBe(0);
+  });
+
+  it("leaves every dropdown closed for a filter that is edited in place", async () => {
+    // "favourite" is a radio group: the sheet only scrolls to it.
+    await render(<FilterSheetContent {...baseProps({ focusKey: "favourite" })} />);
+
+    expect(dropdownPropsByType("CountriesDropdown").openSignal).toBe(0);
+    expect(dropdownPropsByType("SpeciesDropdown").openSignal).toBe(0);
   });
 });

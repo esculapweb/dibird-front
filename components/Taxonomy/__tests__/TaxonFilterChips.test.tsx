@@ -45,9 +45,16 @@ const OPTIONS = {
 };
 
 const mockOnChange = jest.fn();
+const mockOnEdit = jest.fn();
 
-const renderChips = (traits: TaxonTraitFilters) =>
-  render(<TaxonFilterChips traits={traits} onChange={mockOnChange} />);
+const renderChips = (traits: TaxonTraitFilters, onEdit?: jest.Mock) =>
+  render(
+    <TaxonFilterChips
+      traits={traits}
+      onChange={mockOnChange}
+      onEdit={onEdit}
+    />,
+  );
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -90,4 +97,22 @@ it("drops the country when its chip is removed", async () => {
   await fireEvent.press(screen.getByTestId("remove-taxon-filter-territory"));
 
   expect(mockOnChange).toHaveBeenCalledWith({ mass_min: 1000 });
+});
+
+it("asks the host to edit the group when the chip itself is pressed", async () => {
+  await renderChips({ mass_min: 1000, habitat: ["Forest"] }, mockOnEdit);
+
+  await fireEvent.press(screen.getByTestId("edit-taxon-filter-habitat"));
+
+  expect(mockOnEdit).toHaveBeenCalledWith("habitat");
+  expect(mockOnChange).not.toHaveBeenCalled();
+});
+
+it("removes rather than edits when the close icon is pressed", async () => {
+  await renderChips({ territory: 5, mass_min: 1000 }, mockOnEdit);
+
+  await fireEvent.press(screen.getByTestId("remove-taxon-filter-territory"));
+
+  expect(mockOnChange).toHaveBeenCalledWith({ mass_min: 1000 });
+  expect(mockOnEdit).not.toHaveBeenCalled();
 });

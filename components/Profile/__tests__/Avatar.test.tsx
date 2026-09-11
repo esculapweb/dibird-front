@@ -17,9 +17,6 @@ jest.mock("../../../store/profile-context", () => ({ useProfile: jest.fn() }));
 jest.mock("../../../hooks/Profile/useUpdateProfile", () => ({
   useInvalidateProfile: () => mockInvalidateProfile,
 }));
-jest.mock("../../../hooks/useMediaLibraryUnavailable", () => ({
-  useMediaLibraryUnavailable: () => mockHandleMediaLibraryUnavailable,
-}));
 jest.mock("../../../hooks/useApiError", () => ({
   useApiError: () => ({ showErrorToast: mockShowErrorToast }),
 }));
@@ -54,6 +51,7 @@ jest.mock("../ProfileAvatar", () => ({
 }));
 
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
+import { Platform } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as FileSystem from "expo-file-system/legacy";
@@ -64,7 +62,6 @@ import * as avatarSync from "../../../services/sync/avatarSync";
 import Avatar from "../Avatar";
 
 const mockInvalidateProfile = jest.fn();
-const mockHandleMediaLibraryUnavailable = jest.fn();
 const mockShowErrorToast = jest.fn();
 
 const mockProfile = (overrides: Record<string, unknown> = {}) => {
@@ -84,7 +81,6 @@ const avatarProps = () => mockProfileAvatarCapture.mock.calls.at(-1)![0] as { av
 beforeEach(() => {
   jest.clearAllMocks();
   mockProfile();
-  (ImagePicker.getMediaLibraryPermissionsAsync as jest.Mock).mockResolvedValue({ status: "granted" });
   (ImagePicker.launchImageLibraryAsync as jest.Mock).mockResolvedValue({
     canceled: false,
     assets: [{ uri: "file:///picked.jpg" }],
@@ -133,7 +129,7 @@ describe("tap behavior", () => {
     await render(<Avatar />);
     await fireEvent.press(screen.getByTestId("icon-pencil"));
     expect(BottomSheet.showMenu).not.toHaveBeenCalled();
-    expect(ImagePicker.getMediaLibraryPermissionsAsync).toHaveBeenCalledTimes(1);
+    expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledTimes(1);
   });
 
   it("opens a change/remove menu when an avatar is already set", async () => {
@@ -162,7 +158,7 @@ describe("tap behavior", () => {
     // Regression: a menu row does not dismiss the sheet by itself, so without
     // this the picker opened over a menu that was still there afterwards.
     expect(BottomSheet.hide).toHaveBeenCalledTimes(1);
-    expect(ImagePicker.getMediaLibraryPermissionsAsync).toHaveBeenCalledTimes(1);
+    expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledTimes(1);
   });
 
   it("keeps the sheet for remove-photo, which replaces it with a confirmation", async () => {
@@ -197,37 +193,54 @@ describe("tap behavior", () => {
   });
 });
 
-describe("pickAvatar permission handling", () => {
-  it("bails out to the unavailable sheet when permission was already denied", async () => {
-    (ImagePicker.getMediaLibraryPermissionsAsync as jest.Mock).mockResolvedValue({ status: "denied" });
+const originalOS = Platform.OS;
+
+describe("pickAvatar picker options", () => {
+  afterEach(() => {
+    Platform.OS = originalOS;
+  });
+
+  // Regression: the picker used to sit behind a media-library permission it
+  // needs on neither platform (expo's own docs: "requires MEDIA_LIBRARY on iOS
+  // 10 only"; on Android 13+ expo-image-picker asks for an empty permission
+  // list). Asking anyway is what offered iOS's limited access — after which the
+  // picker showed a handful of photos and no albums — and what let a declined
+  // storage permission block an avatar change outright on Android 12 and older.
+  it("opens the picker without asking for a media library permission", async () => {
     await render(<Avatar />);
     await fireEvent.press(screen.getByTestId("icon-pencil"));
     await act(async () => Promise.resolve());
 
-    expect(mockHandleMediaLibraryUnavailable).toHaveBeenCalledTimes(1);
+    expect(ImagePicker.getMediaLibraryPermissionsAsync).not.toHaveBeenCalled();
     expect(ImagePicker.requestMediaLibraryPermissionsAsync).not.toHaveBeenCalled();
-    expect(ImagePicker.launchImageLibraryAsync).not.toHaveBeenCalled();
-  });
-
-  it("requests permission when undetermined, and stops if the user declines", async () => {
-    (ImagePicker.getMediaLibraryPermissionsAsync as jest.Mock).mockResolvedValue({ status: "undetermined" });
-    (ImagePicker.requestMediaLibraryPermissionsAsync as jest.Mock).mockResolvedValue({ status: "denied" });
-    await render(<Avatar />);
-    await fireEvent.press(screen.getByTestId("icon-pencil"));
-    await act(async () => Promise.resolve());
-
-    expect(ImagePicker.requestMediaLibraryPermissionsAsync).toHaveBeenCalledTimes(1);
-    expect(ImagePicker.launchImageLibraryAsync).not.toHaveBeenCalled();
-  });
-
-  it("proceeds to the picker once the requested permission is granted", async () => {
-    (ImagePicker.getMediaLibraryPermissionsAsync as jest.Mock).mockResolvedValue({ status: "undetermined" });
-    (ImagePicker.requestMediaLibraryPermissionsAsync as jest.Mock).mockResolvedValue({ status: "granted" });
-    await render(<Avatar />);
-    await fireEvent.press(screen.getByTestId("icon-pencil"));
-    await act(async () => Promise.resolve());
-
     expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledTimes(1);
+  });
+
+  // allowsEditing is what makes expo-image-picker fall back from PHPicker to
+  // the legacy UIImagePickerController, and that one only ever shows what the
+  // photo-library authorization allows. The square is made downstream anyway.
+  it("asks for no editing step on iOS", async () => {
+    Platform.OS = "ios";
+    await render(<Avatar />);
+    await fireEvent.press(screen.getByTestId("icon-pencil"));
+    await act(async () => Promise.resolve());
+
+    expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledWith(
+      expect.objectContaining({ allowsEditing: false }),
+    );
+  });
+
+  // Android runs its cropper as a separate activity after the system picker,
+  // so the editing step costs nothing there and is worth keeping.
+  it("keeps the square crop step on Android", async () => {
+    Platform.OS = "android";
+    await render(<Avatar />);
+    await fireEvent.press(screen.getByTestId("icon-pencil"));
+    await act(async () => Promise.resolve());
+
+    expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledWith(
+      expect.objectContaining({ allowsEditing: true, aspect: [1, 1] }),
+    );
   });
 });
 

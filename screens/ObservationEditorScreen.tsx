@@ -67,6 +67,9 @@ const ObservationEditorScreen = () => {
   const { Colors } = useTheme();
   const { profile } = useProfile();
   const [justSaved, setJustSaved] = useState(false);
+  // Reopens the species list after "save & add another" — the field the user
+  // has to fill in next is always the species (see ObservationForm).
+  const [openSpeciesSignal, setOpenSpeciesSignal] = useState(0);
   const queryClient = useQueryClient();
   const navigation = useNavigation<AppStackNavigationProp>();
   const route = useRoute<AppStackRouteProp<"ObservationEditor">>();
@@ -78,6 +81,7 @@ const ObservationEditorScreen = () => {
     defaultPlace,
     defaultSpecies,
     diaryId,
+    diaryDate: diaryDateParam,
     territoryValue: diaryTerritoryValue,
     diaryLocationPrivate,
     returnMode,
@@ -206,6 +210,11 @@ const ObservationEditorScreen = () => {
     diaryId,
     defaultLocationPrivate: diaryLocationPrivate ?? true,
   });
+
+  // The date of an observation inside a diary belongs to the diary, so the form
+  // shows it read-only. An edit already carries it on the item; a create is
+  // told by DiaryDetail.
+  const diaryDate = observationWithParsedDate?.date_time ?? diaryDateParam;
 
   const { data: diarySpeciesIds } = useQuery({
     queryKey: ["DiarySpecies", diaryId],
@@ -397,6 +406,7 @@ const ObservationEditorScreen = () => {
           setTimeout(() => setJustSaved(false), 1500);
           setSpeciesValue(null);
           setSpeciesData(null);
+          setOpenSpeciesSignal((prev) => prev + 1);
           setFormData((prev) => ({
             ...prev,
             species: null,
@@ -509,6 +519,7 @@ const ObservationEditorScreen = () => {
       icon="add-outline"
       loading={createObservationMutation.isPending}
       savedLabel={justSaved ? t("observation_added") : undefined}
+      testID="observation-save-add-another-button"
     >
       {t("save_and_add_another")}
     </FlatButtonBottom>
@@ -536,11 +547,13 @@ const ObservationEditorScreen = () => {
         onAddNewPlace={handleAddNewPlace}
         isDiaryMode={!!diaryId}
         isEditMode={isEditMode}
+        diaryDate={diaryDate}
         onEditDiary={handleEditDiary}
         existingSpecies={existingSpecies}
         photos={photos}
         onPickPhotos={handlePickPhotos}
         onRemovePhoto={handleRemovePhoto}
+        openSpeciesSignal={openSpeciesSignal}
       />
     </Layout>
   );

@@ -191,6 +191,46 @@ describe("opening the modal", () => {
   });
 });
 
+describe("openSignal", () => {
+  it("keeps the list closed while no open was requested", async () => {
+    await render(<DropdownInput value={null} setValue={mockSetValue} query={baseQuery()} openSignal={0} />);
+    expect(modalProps().visible).toBe(false);
+  });
+
+  it("opens the list when the parent bumps the signal", async () => {
+    const view = await render(
+      <DropdownInput value={null} setValue={mockSetValue} query={baseQuery()} openSignal={0} />,
+    );
+    await view.rerender(
+      <DropdownInput value={null} setValue={mockSetValue} query={baseQuery()} openSignal={1} />,
+    );
+    expect(modalProps().visible).toBe(true);
+  });
+
+  it("opens on mount when the signal is already set", async () => {
+    // The editor unmounts the form while the mutation is pending, so after
+    // "save & add another" the dropdown mounts with the bumped signal instead
+    // of seeing it change.
+    await render(<DropdownInput value={null} setValue={mockSetValue} query={baseQuery()} openSignal={1} />);
+    expect(modalProps().visible).toBe(true);
+  });
+
+  it("ignores the signal while the query is loading, in error, or the field is disabled", async () => {
+    await render(
+      <DropdownInput value={null} setValue={mockSetValue} query={baseQuery({ isLoading: true })} openSignal={1} />,
+    );
+    expect(modalProps().visible).toBe(false);
+
+    await render(
+      <DropdownInput value={null} setValue={mockSetValue} query={baseQuery({ isError: true })} openSignal={1} />,
+    );
+    expect(modalProps().visible).toBe(false);
+
+    await render(<DropdownInput value={null} setValue={mockSetValue} query={baseQuery()} disabled openSignal={1} />);
+    expect(modalProps().visible).toBe(false);
+  });
+});
+
 describe("selecting from the modal", () => {
   it("sets the value and resolves the label/icon from the matching option, then closes", async () => {
     await render(<DropdownInput value={null} setValue={mockSetValue} query={baseQuery()} placeholder="Pick one" />);

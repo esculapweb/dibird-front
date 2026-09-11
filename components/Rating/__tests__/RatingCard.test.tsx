@@ -28,7 +28,13 @@ jest.mock("../../ui/Svgs", () => {
 });
 jest.mock("../../Profile/ProfileAvatar", () => {
   const { Text } = require("react-native");
-  return { __esModule: true, default: () => <Text>avatar</Text> };
+  return {
+    __esModule: true,
+    default: (props: Record<string, unknown>) => {
+      mockAvatarCapture(props);
+      return <Text>avatar</Text>;
+    },
+  };
 });
 jest.mock("@react-navigation/native", () => ({ useNavigation: () => mockNavigation }));
 
@@ -38,6 +44,10 @@ import RatingCard from "../RatingCard";
 
 const mockNavigation = createNavigationMock();
 const mockOnToggle = jest.fn();
+const mockAvatarCapture = jest.fn();
+
+const avatarProp = () =>
+  (mockAvatarCapture.mock.calls.at(-1)![0] as { avatar: string | null }).avatar;
 
 const RATING_ITEM = {
   profile_id: 9,
@@ -141,5 +151,40 @@ describe("selection checkbox", () => {
     await fireEvent.press(screen.getByTestId("icon-square-outline"));
     expect(mockOnToggle).toHaveBeenCalledTimes(1);
     expect(mockNavigation.navigate).not.toHaveBeenCalled();
+  });
+});
+
+describe("avatar source", () => {
+  // A page of this list is up to a hundred rows, and `avatar` is the path to
+  // the original the camera produced — the 150px thumbnail is what the 64px
+  // tile actually needs.
+  it("prefers the thumbnail over the full-size avatar", async () => {
+    await render(
+      <RatingCard
+        item={{ ...RATING_ITEM, avatar: "profile/aa/bb/9-1.jpg", avatar_thumbnail: "profile/aa/bb/9-1.jpg.150x150_q85_crop.jpg" } as never}
+        index={0}
+        isSelected={false}
+        onToggle={mockOnToggle}
+        profile={null}
+      />,
+    );
+
+    expect(avatarProp()).toBe("profile/aa/bb/9-1.jpg.150x150_q85_crop.jpg");
+  });
+
+  // A row can predate the field: an offline list cache written by an earlier
+  // version, or a client shipped ahead of the backend.
+  it("falls back to the full-size avatar when no thumbnail came back", async () => {
+    await render(
+      <RatingCard
+        item={{ ...RATING_ITEM, avatar: "profile/aa/bb/9-1.jpg" } as never}
+        index={0}
+        isSelected={false}
+        onToggle={mockOnToggle}
+        profile={null}
+      />,
+    );
+
+    expect(avatarProp()).toBe("profile/aa/bb/9-1.jpg");
   });
 });

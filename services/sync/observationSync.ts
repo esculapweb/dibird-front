@@ -14,10 +14,11 @@ const OBSERVATION_URL = "/myapi/observation2/";
 
 const invalidateObservationQueries = (...ids: (number | null | undefined)[]) => {
   // refetchType: "all" (not the default "active") matters here: this sync runs
-  // in the background on reconnect regardless of which screen is mounted, and
-  // useList's infinite query has refetchOnMount disabled — so a query that's
-  // merely marked stale while unmounted would otherwise keep showing whatever
-  // (possibly wrong/incomplete) data it last had the next time it's opened.
+  // in the background on reconnect regardless of which screen is mounted, so
+  // what it touches is mostly unmounted queries. Merely marking those stale
+  // would leave the next open rendering the old — possibly wrong or
+  // incomplete — data until the revalidation lands; refetching right away
+  // means the screen opens on the synced result.
   //
   // Uses the same key list as the live (online) create/update path
   // (useOfflineObservation.ts's invalidateObservationCaches) — this used to

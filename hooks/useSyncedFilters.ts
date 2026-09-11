@@ -176,8 +176,18 @@ export const useSyncedFilters = <RouteName extends ScreenWithFiltersOnly>({
     );
     setSortReady(true);
 
+    // Silently: restoring a sort saved in some earlier session is the app's
+    // initiative, not the user's, and a system dialog on merely opening a
+    // screen is exactly what App.tsx's startup fetch avoids for the same
+    // reason. Nothing is lost — a distance sort can only have been saved from a
+    // session that already had a fix, so the permission is granted and the
+    // silent request returns coordinates just the same; the effect below then
+    // swaps the fallback sort back to distance. Where it is not granted the
+    // screen quietly keeps the fallback, and the dialog appears where the user
+    // asks for the location themselves (the alerts card, the place editor,
+    // "locate me" on the map).
     if (isDistanceSort(resolved) && permissionStatus !== "denied") {
-      requestLocation();
+      requestLocation(undefined, { prompt: false });
     }
   };
 

@@ -1,0 +1,212 @@
+# "Save & add another" — the chained way of filling a Diary, online.
+#
+# Logging a morning's twenty species one by one is the workload this button
+# exists for, and the part of it that unit tests cannot see is what happens
+# right after the save: the species list has to open by itself, on an
+# otherwise reset form (ObservationEditorScreen's openSpeciesSignal ->
+# ObservationForm -> DropdownInput). Jest can assert that the signal was
+# bumped and nothing more — whether a modal really appears on top of a screen
+# that unmounts into LoadingOverlay and remounts around the pending mutation
+# is a device question, and the remount is exactly why the dropdown has to
+# open on mount rather than on a prop change.
+#
+# online-nested-observation.yaml already covers the diary-scoped editor
+# itself (the observation is filed under the diary it was opened from, the
+# save returns to the diary). This flow takes that as given and only presses
+# the header save once, for the second observation.
+#
+# Create and delete net to zero: both observations and the diary holding them
+# are removed at the end, and MainScreen's counters are asserted back to
+# their starting values — the account is shared with every other flow.
+#
+# appId comes from run.sh (--env APP_ID).
+appId: ${APP_ID}
+tags:
+  - ios
+  - android
+---
+- launchApp
+
+- runFlow: common/bootstrap.yaml
+
+- extendedWaitUntil:
+    visible:
+      id: "diaries-stat-value"
+    timeout: 20000
+- copyTextFrom:
+    id: "diaries-stat-value"
+- evalScript: ${output.diaryBaselineCount = maestro.copiedText}
+- copyTextFrom:
+    id: "observations-stat-value"
+- evalScript: ${output.observationBaselineCount = maestro.copiedText}
+
+# ---- CREATE the Diary that both observations go into ----
+- tapOn:
+    id: "quick-action-diary"
+# A distinctive note so this diary can be found by text later — list rows
+# carry no testID, and online there is no pending icon to grab either.
+- tapOn: ".*Add a note.*"
+- setClipboard: "Add Another E2E Diary"
+- pasteText
+# Defocus without navigating — tapping a static label on the same form, the
+# same technique common/credential-entry.yaml uses.
+- tapOn: ".*Location.*"
+- tapOn:
+    id: "diary-save-button"
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - runFlow: common/back.yaml
+      - tapOn:
+          id: "diary-save-button"
+- extendedWaitUntil:
+    visible:
+      id: "diary-edit-button"
+    timeout: 8000
+
+# ---- FIRST observation: picked by hand, saved with "save & add another" ----
+- tapOn:
+    id: "list-add-button"
+- extendedWaitUntil:
+    visible:
+      id: "species-dropdown-trigger"
+    timeout: 8000
+- tapOn:
+    id: "species-dropdown-trigger"
+- extendedWaitUntil:
+    visible:
+      id: "option-row-0"
+    timeout: 6000
+# Remember which species the dropdown happened to offer (contents are
+# backend/seed-data dependent): it is how each row is recognised on the diary
+# screen below, and how each observation is reopened for cleanup.
+- copyTextFrom:
+    id: "option-row-0"
+# Just the common name: the dropdown row reads "Common name, Scientific name"
+# (and on iOS the accessibility node keeps the trailing space), while the
+# observation row on the diary shows the common name alone.
+- evalScript: ${output.firstSpecies = maestro.copiedText.split(",")[0]}
+- tapOn:
+    id: "option-row-0"
+
+# The list must be gone before the button is pressed, or the assertion below
+# would pass on a modal that never closed instead of on the one the save
+# reopened.
+- extendedWaitUntil:
+    notVisible:
+      id: "option-row-0"
+    timeout: 5000
+- tapOn:
+    id: "observation-save-add-another-button"
+
+# ---- the point of this flow: the list is open again, nobody tapped it ----
+# Generous timeout: this waits out the create mutation's round-trip, the
+# LoadingOverlay the screen shows while it is pending, and the remount of the
+# form underneath.
+- extendedWaitUntil:
+    visible:
+      id: "option-row-0"
+    timeout: 20000
+
+# ---- SECOND observation: a different species, saved from the header ----
+# Not option-row-0: the species just saved is in this diary now, and
+# ObservationForm disables the rows of species the diary already has
+# (existingSpecies), so tapping it would select nothing at all.
+- extendedWaitUntil:
+    visible:
+      id: "option-row-1"
+    timeout: 6000
+- copyTextFrom:
+    id: "option-row-1"
+- evalScript: ${output.secondSpecies = maestro.copiedText.split(",")[0]}
+- tapOn:
+    id: "option-row-1"
+# The form underneath really was reset and re-filled, not left holding the
+# first species — the trigger shows what was just picked.
+- assertVisible: ".*${output.secondSpecies}.*"
+- tapOn:
+    id: "observation-save-button"
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - runFlow: common/back.yaml
+      - tapOn:
+          id: "observation-save-button"
+
+# ---- both of them are in the diary ----
+- extendedWaitUntil:
+    visible:
+      id: "diary-edit-button"
+    timeout: 8000
+- extendedWaitUntil:
+    visible: ".*${output.firstSpecies}.*"
+    timeout: 10000
+- assertVisible: ".*${output.secondSpecies}.*"
+
+# ---- Cleanup: both observations (they reference the diary), then the diary ----
+- tapOn: ".*${output.firstSpecies}.*"
+- extendedWaitUntil:
+    visible:
+      id: "observation-edit-button"
+    timeout: 8000
+- tapOn:
+    id: "overflow-button"
+- tapOn:
+    id: "observation-delete-button"
+- extendedWaitUntil:
+    visible:
+      id: "bottom-sheet-confirm-button"
+    timeout: 4000
+- tapOn:
+    id: "bottom-sheet-confirm-button"
+
+# Delete returns to the diary the observation was opened from.
+- extendedWaitUntil:
+    visible:
+      id: "diary-edit-button"
+    timeout: 8000
+- tapOn: ".*${output.secondSpecies}.*"
+- extendedWaitUntil:
+    visible:
+      id: "observation-edit-button"
+    timeout: 8000
+- tapOn:
+    id: "overflow-button"
+- tapOn:
+    id: "observation-delete-button"
+- extendedWaitUntil:
+    visible:
+      id: "bottom-sheet-confirm-button"
+    timeout: 4000
+- tapOn:
+    id: "bottom-sheet-confirm-button"
+
+- extendedWaitUntil:
+    visible:
+      id: "diary-edit-button"
+    timeout: 8000
+- tapOn:
+    id: "overflow-button"
+- tapOn:
+    id: "diary-delete-button"
+- extendedWaitUntil:
+    visible:
+      id: "bottom-sheet-confirm-button"
+    timeout: 4000
+- tapOn:
+    id: "bottom-sheet-confirm-button"
+
+# Both counters back where they started — nothing of this flow's own is left
+# behind for the next one to trip over.
+- extendedWaitUntil:
+    visible:
+      id: "observations-stat-value"
+    timeout: 15000
+- assertVisible:
+    id: "observations-stat-value"
+    text: ${output.observationBaselineCount}
+- assertVisible:
+    id: "diaries-stat-value"
+    text: ${output.diaryBaselineCount}

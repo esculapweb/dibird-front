@@ -13,7 +13,12 @@ import Toast from "react-native-toast-message";
 import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 
 import { useTheme, ThemeColors } from "../store/theme-context";
-import { formatDateLong, buildShareUrl, isoToFlagEmoji } from "../util/helpers";
+import {
+  formatDateLong,
+  buildShareUrl,
+  isoToFlagEmoji,
+  toDateOnly,
+} from "../util/helpers";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import {
@@ -276,6 +281,7 @@ const DiaryDetailScreen = () => {
     if (!diary) return;
     navigation.navigate("ObservationEditor", {
       diaryId: diary.id,
+      diaryDate: toDateOnly(diary.date_time) ?? undefined,
       territoryValue: diary.territory,
       diaryLocationPrivate: diary.location_private,
       returnMode: "back",

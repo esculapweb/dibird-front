@@ -63,7 +63,11 @@ const RatingCard = ({
     >
       <View style={styles.row}>
         <ProfileAvatar
-          avatar={item.avatar}
+          // The 150px thumbnail, not the full-size original the camera
+          // produced — a page of this list is up to a hundred rows. The
+          // fallback covers a row that predates the field (an offline cache
+          // written by an earlier version, or a backend not deployed yet).
+          avatar={item.avatar_thumbnail ?? item.avatar}
           firstName={item.first_name}
           lastName={item.last_name}
           username={item.username}

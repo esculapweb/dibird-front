@@ -38,8 +38,9 @@ export const invalidateObservationCaches = (
 ) => {
   // ["Observation"] (no id) is included here with exact:false, which prefix-matches
   // ["Observation", anyId] too, so a single shared list covers add/update/delete.
-  // refetchType: "all" so this also refreshes the Observations list even if it
-  // happens to be unmounted (useList has refetchOnMount disabled).
+  // refetchType: "all" so this also refreshes the Observations list while it is
+  // unmounted, instead of only marking it stale and letting it open on the
+  // pre-save data for as long as the revalidation takes.
   INVALIDATION_MAP.Observation.update.forEach((key) =>
     queryClient.invalidateQueries({ queryKey: key, exact: false, refetchType: "all" }),
   );
