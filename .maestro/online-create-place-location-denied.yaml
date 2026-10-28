@@ -63,19 +63,6 @@ tags:
 - tapOn:
     id: "section-Places"
 
-# `permissions: location: deny` in launchApp records the denial but does NOT
-# mark it as final: on an app that has never asked before (a fresh install, or
-# `pm clear` from reset-state.sh) Android still shows the system dialog — it
-# covers the list, and the badge count below is then not found. Denying it by
-# hand is exactly the state this flow is about. The flow only survived without
-# this because the denial had already been written by an earlier run; with
-# state reset it failed on its very first step.
-- runFlow:
-    when:
-      visible: "Don.t allow"
-    commands:
-      - tapOn: "Don.t allow"
-
 - extendedWaitUntil:
     visible:
       id: "list-header-badge-count"
@@ -86,6 +73,24 @@ tags:
 
 - tapOn:
     id: "list-add-button"
+
+# `permissions: location: deny` in launchApp records the denial but does NOT
+# mark it as final: Android still shows the system dialog to the first caller
+# that is allowed to prompt. That used to be App.tsx's startup fetch (so the
+# dialog covered the list); since it became `prompt: false` the first prompting
+# caller is PlaceEditor's locateMe(), and the dialog lands here. Denying it by
+# hand is exactly the state this flow is about. Conditional: once Android has
+# recorded a hand-made denial it stops asking, and the dialog never appears.
+# Wait for whichever of the two comes first — the prompt is async, so checking
+# for it straight after the tap would race it.
+- extendedWaitUntil:
+    visible: "(Don.t allow|.*Open settings.*)"
+    timeout: 8000
+- runFlow:
+    when:
+      visible: "Don.t allow"
+    commands:
+      - tapOn: "Don.t allow"
 
 # locateMe() fires on mount, sees the denied permission, and shows this
 # bottom sheet instead of ever requesting a fix — dismiss it and confirm

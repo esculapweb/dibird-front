@@ -15,11 +15,13 @@ import { usePlaceLocation, normalizeCoords } from "../usePlaceLocation";
 
 const mockHandleLocationUnavailable = jest.fn();
 const mockRequestLocation = jest.fn();
+const mockGetPermissionStatus = jest.fn();
 
 const mockLocationCtx = (overrides: Record<string, unknown> = {}) => {
   (useLocation as jest.Mock).mockReturnValue({
     locationCoords: null,
     permissionStatus: "granted",
+    getPermissionStatus: mockGetPermissionStatus,
     requestLocation: mockRequestLocation,
     ...overrides,
   });
@@ -235,6 +237,22 @@ describe("locateMe", () => {
     });
     expect(result.current.isLocating).toBe(false);
     expect(result.current.accuracy).toBe(0);
+  });
+
+  it("shows the hint when the user denies in the dialog this very request opened", async () => {
+    // The render's status is still "undetermined"; only the provider knows
+    // the answer that came back from the OS dialog.
+    mockLocationCtx({ permissionStatus: "undetermined" });
+    mockRequestLocation.mockResolvedValue(null);
+    mockGetPermissionStatus.mockReturnValue("denied");
+    const { result } = await renderHook(() => usePlaceLocation());
+
+    await act(async () => {
+      await result.current.locateMe();
+    });
+
+    expect(mockRequestLocation).toHaveBeenCalledTimes(1);
+    expect(mockHandleLocationUnavailable).toHaveBeenCalledTimes(1);
   });
 
   it("swallows a requestLocation failure without crashing", async () => {
