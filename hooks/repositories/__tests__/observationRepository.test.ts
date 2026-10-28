@@ -873,3 +873,51 @@ describe("applyDiaryOverlay short-circuits", () => {
     expect(result.results[0]).not.toHaveProperty("territory");
   });
 });
+
+describe("createLocalMany", () => {
+  it("writes one observation row and one queued create per species, each with its own ids", () => {
+    const created = observationRepository.createLocalMany(
+      [100, 101, 102].map((species, i) => ({
+        payload: observationPayload({ species }),
+        extras: {},
+        clientRequestId: `req-${i}`,
+      })),
+      PROFILE,
+    );
+
+    expect(created.map((item) => item.species)).toEqual([100, 101, 102]);
+    expect(new Set(created.map((item) => item.id)).size).toBe(3);
+    created.forEach((item) => {
+      expect(item.id).toBeLessThan(0);
+      expect(rawRow(item.id)?.status).toBe("pending");
+    });
+
+    const queued = mutations().map(
+      (row) => row.payload as { localId: number; clientRequestId: string },
+    );
+    expect(queued.map((p) => p.localId)).toEqual(created.map((item) => item.id));
+    expect(queued.map((p) => p.clientRequestId)).toEqual(["req-0", "req-1", "req-2"]);
+  });
+
+  it("writes nothing when one item of the batch can't be built", () => {
+    const broken = {};
+    Object.defineProperty(broken, "speciesData", {
+      get: () => {
+        throw new Error("boom");
+      },
+    });
+
+    expect(() =>
+      observationRepository.createLocalMany(
+        [
+          { payload: observationPayload(), extras: {}, clientRequestId: "req-1" },
+          { payload: observationPayload(), extras: broken, clientRequestId: "req-2" },
+        ],
+        PROFILE,
+      ),
+    ).toThrow("boom");
+
+    expect(db.select().from(observationTable).all()).toHaveLength(0);
+    expect(mutations()).toHaveLength(0);
+  });
+});

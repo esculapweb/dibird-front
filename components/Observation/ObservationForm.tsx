@@ -58,9 +58,17 @@ interface ObservationFormProps {
   photos: ObservationPhoto[];
   onPickPhotos: (uris: string[]) => void;
   onRemovePhoto: (photo: ObservationPhoto) => void;
-  // Bumped by the editor after "save & add another": the next observation
-  // always starts with picking a species, so the list opens by itself.
+  // Raised by the editor for a just-created diary: its first observation
+  // starts with picking species, so the list opens by itself.
   openSpeciesSignal?: number;
+  // Species chosen in the picker's multi-select mode. Holds two or more items
+  // or is empty — a single pick goes through speciesValue as before. Passing
+  // the setter is what enables the mode (only for a new diary observation,
+  // where the list is always multi-select).
+  // Whole items, not ids: the editor needs each one's speciesData to show the
+  // offline-created observations before they sync.
+  multiSpecies?: SpeciesDropdownItem[];
+  setMultiSpecies?: (items: SpeciesDropdownItem[]) => void;
 }
 
 const ObservationForm = ({
@@ -88,6 +96,8 @@ const ObservationForm = ({
   onPickPhotos,
   onRemovePhoto,
   openSpeciesSignal,
+  multiSpecies = [],
+  setMultiSpecies,
 }: ObservationFormProps) => {
   const { t } = useTranslation();
   const { language } = useLanguage();
@@ -113,6 +123,9 @@ const ObservationForm = ({
   const isDiaryCreate = isDiaryMode && !isEditMode;
   const isDiaryEdit = isDiaryMode && isEditMode;
   const hideDiaryFields = isDiaryCreate || isDiaryEdit;
+  const allowMultiSpecies = isDiaryCreate && !!setMultiSpecies;
+  const isMultiSpecies = allowMultiSpecies && multiSpecies.length > 1;
+  const multiSpeciesIds = multiSpecies.map((item) => item.value);
 
   const {
     query: queryMyCountries,
@@ -168,6 +181,73 @@ const ObservationForm = ({
     // already runs when the list arrives, and re-running because of its own write
     // is pointless.
   }, [querySpecies.data]);
+
+  // speciesValue keeps the first of several chosen species, so the required
+  // field check and everything else built around a single species keep
+  // working; the editor reads the whole set from multiSpecies on save.
+  const applySpeciesSelection = (values: (string | number)[]) => {
+    const items = values
+      .map((value) => querySpecies.data?.find((item) => item.value === value))
+      .filter((item): item is SpeciesDropdownItem => !!item);
+    const first = (items[0]?.value as number | undefined) ?? null;
+    setMultiSpecies?.(items.length > 1 ? items : []);
+    setSpeciesValue(first);
+    setSpeciesData(items[0] ?? null);
+    setFormData((prev) => ({ ...prev, species: first }));
+    setErrors((prev) => ({ ...prev, species: undefined }));
+  };
+
+  const renderMultiSpecies = (open: () => void) => (
+    <Pressable
+      onPress={open}
+      style={[
+        styles.multiSpecies,
+        { borderColor: Colors.border, backgroundColor: Colors.primary100 },
+      ]}
+      testID="multi-species-summary"
+    >
+      <View style={styles.multiSpeciesHeader}>
+        <Text style={[styles.multiSpeciesTitle, { color: Colors.textMain }]}>
+          {t("species_selected_count", { count: multiSpecies.length })}
+        </Text>
+        <Ionicons name="create-outline" size={18} color={Colors.main100} />
+      </View>
+      <View style={styles.chips}>
+        {multiSpecies.map((option) => {
+          const id = option.value;
+          return (
+            <View
+              key={id}
+              style={[styles.chip, { backgroundColor: Colors.main300 }]}
+            >
+              <Text
+                style={[styles.chipText, { color: Colors.textMain }]}
+                numberOfLines={1}
+              >
+                {option.name_lang ?? option.label}
+              </Text>
+              <Pressable
+                onPress={() =>
+                  applySpeciesSelection(multiSpeciesIds.filter((v) => v !== id))
+                }
+                hitSlop={8}
+                testID={`multi-species-remove-${id}`}
+              >
+                <Ionicons
+                  name="close-circle"
+                  size={16}
+                  color={Colors.textSecondary}
+                />
+              </Pressable>
+            </View>
+          );
+        })}
+      </View>
+      <Text style={[styles.multiSpeciesHint, { color: Colors.textSecondary }]}>
+        {t("multi_species_after_save_hint")}
+      </Text>
+    </Pressable>
+  );
 
   // Optional, and never filled in on its own: the chip stays empty until the
   // user picks a time (see TimeChip).
@@ -309,6 +389,7 @@ const ObservationForm = ({
           placeholder={t("select_species")}
           value={speciesValue}
           setValue={(val) => {
+            setMultiSpecies?.([]);
             setSpeciesValue(val as number);
             setFormData((prev) => ({ ...prev, species: val as number }));
             setErrors((prev) => ({ ...prev, species: undefined }));
@@ -318,7 +399,16 @@ const ObservationForm = ({
           query={querySpecies}
           disabled={!territoryValue}
           error={errors.species}
-          renderOption={({ item, selected, onSelect, onClose, index }) => (
+          renderOption={({
+            item,
+            selected,
+            onSelect,
+            onClose,
+            index,
+            multiple,
+            checked,
+            onToggle,
+          }) => (
             <SpeciesOptionRow
               item={item}
               selected={selected}
@@ -326,8 +416,15 @@ const ObservationForm = ({
               onClose={onClose}
               disabled={existingSpecies?.has(item.value)}
               index={index}
+              multiple={multiple}
+              checked={checked}
+              onToggle={onToggle}
             />
           )}
+          allowMultiple={allowMultiSpecies}
+          selectedValues={isMultiSpecies ? multiSpeciesIds : undefined}
+          onConfirmMultiple={applySpeciesSelection}
+          renderTrigger={isMultiSpecies ? renderMultiSpecies : undefined}
           speciesData={speciesData ?? undefined}
           openSignal={openSpeciesSignal}
           type="SpeciesDropdown"
@@ -416,51 +513,61 @@ const ObservationForm = ({
         </Section>
       )}
 
-      <Section
-        title={t("section_photos")}
-        hint={t("optional")}
-        collapsible={true}
-        collapsed={photos.length === 0}
-      >
-        <ObservationPhotoPicker
-          photos={photos}
-          onPicked={onPickPhotos}
-          onRemove={onRemovePhoto}
-        />
-      </Section>
+      {/* A photo belongs to one observation, so it can't be shared across
+          several species — they get photos one by one after saving. */}
+      {!isMultiSpecies && (
+        <Section
+          title={t("section_photos")}
+          hint={t("optional")}
+          collapsible={true}
+          collapsed={photos.length === 0}
+        >
+          <ObservationPhotoPicker
+            photos={photos}
+            onPicked={onPickPhotos}
+            onRemove={onRemovePhoto}
+          />
+        </Section>
+      )}
 
-      <Section
-        title={t("section_details")}
-        hint={t("optional")}
-        collapsible={true}
-        collapsed={formData.quantity == null && !formData.notes}
-      >
-        <Input
-          value={formData?.quantity != null ? formData.quantity.toString() : ""}
-          keyboardType="numeric"
-          onUpdateValue={(val) =>
-            setFormData((prev) => ({
-              ...prev,
-              quantity: val?.trim() === "" ? null : Number(val.trim()),
-            }))
-          }
-          error={errors.quantity}
-          isInvalid={!!errors.quantity}
-          placeholder={t("quantity_placeholder")}
-          birdSvg
-        />
-        <Input
-          value={formData.notes ?? ""}
-          onUpdateValue={(val) =>
-            setFormData((prev) => ({ ...prev, notes: val }))
-          }
-          error={errors.notes}
-          isInvalid={!!errors.notes}
-          icon="document-text-outline"
-          placeholder={t("add_a_note")}
-          multiline
-        />
-      </Section>
+      {/* Count and notes are per species too: one value copied into every
+          observation of the set would be wrong for all but one of them. */}
+      {!isMultiSpecies && (
+        <Section
+          title={t("section_details")}
+          hint={t("optional")}
+          collapsible={true}
+          collapsed={formData.quantity == null && !formData.notes}
+        >
+          <Input
+            value={
+              formData?.quantity != null ? formData.quantity.toString() : ""
+            }
+            keyboardType="numeric"
+            onUpdateValue={(val) =>
+              setFormData((prev) => ({
+                ...prev,
+                quantity: val?.trim() === "" ? null : Number(val.trim()),
+              }))
+            }
+            error={errors.quantity}
+            isInvalid={!!errors.quantity}
+            placeholder={t("quantity_placeholder")}
+            birdSvg
+          />
+          <Input
+            value={formData.notes ?? ""}
+            onUpdateValue={(val) =>
+              setFormData((prev) => ({ ...prev, notes: val }))
+            }
+            error={errors.notes}
+            isInvalid={!!errors.notes}
+            icon="document-text-outline"
+            placeholder={t("add_a_note")}
+            multiline
+          />
+        </Section>
+      )}
       {isDiaryEdit && <DiaryBanner />}
     </View>
   );
@@ -471,6 +578,43 @@ export default ObservationForm;
 const styles = StyleSheet.create({
   container: {
     padding: 12,
+  },
+  multiSpecies: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    gap: 8,
+  },
+  multiSpeciesHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  multiSpeciesTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  multiSpeciesHint: {
+    fontSize: 12,
+  },
+  chips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    maxWidth: "100%",
+    borderRadius: 14,
+    paddingVertical: 4,
+    paddingLeft: 10,
+    paddingRight: 6,
+  },
+  chipText: {
+    fontSize: 14,
+    flexShrink: 1,
   },
   diaryDateRow: {
     flexDirection: "row",

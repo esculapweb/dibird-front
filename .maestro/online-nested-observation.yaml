@@ -55,34 +55,15 @@ tags:
       - runFlow: common/back.yaml
       - tapOn:
           id: "diary-save-button"
-- extendedWaitUntil:
-    visible:
-      id: "diary-edit-button"
-    timeout: 8000
 
 # ---- CREATE an Observation from inside that Diary ----
-# DiaryDetailScreen's own add action reuses ListScreen's list-add-button
-# testID and opens ObservationEditor pre-filled with this diary's id and
-# territory.
-- tapOn:
-    id: "list-add-button"
-# The diary owns the date of its observations, so the diary-scoped editor has
-# no date field at all — it shows the diary's own date read-only, with the
-# optional time chip beside it (see online-observation-time.yaml for the chip
-# itself). Nothing else on this screen distinguishes diary mode from the plain
-# editor, so a regression here is otherwise invisible until someone looks.
-- assertVisible:
-    id: "observation-diary-date"
-- assertNotVisible:
-    id: "observation-date-input"
-- assertVisible:
-    id: "observation-time-chip"
-- tapOn:
-    id: "species-dropdown-trigger"
+# Creating a diary goes straight on to its first observation, with the
+# species list already open (DiaryDetailScreen's addObservation param). The editor
+# comes pre-filled with this diary's id and territory.
 - extendedWaitUntil:
     visible:
       id: "option-row-0"
-    timeout: 6000
+    timeout: 14000
 # Remember which species the dropdown happened to offer (contents are
 # backend/seed-data dependent): it is how the new row is recognised on the
 # diary screen below, and how the observation is reopened for cleanup.
@@ -94,6 +75,22 @@ tags:
 - evalScript: ${output.nestedSpecies = maestro.copiedText.split(",")[0]}
 - tapOn:
     id: "option-row-0"
+# The diary's species list is always multi-select: a tap only checks the
+# row, "Done" hands the selection to the form.
+- tapOn:
+    id: "select-multiple-done"
+# The diary owns the date of its observations, so the diary-scoped editor has
+# no date field at all — it shows the diary's own date read-only, with the
+# optional time chip beside it (see online-observation-time.yaml for the chip
+# itself). Nothing else on this screen distinguishes diary mode from the plain
+# editor, so a regression here is otherwise invisible until someone looks.
+# Checked only now: until a species is picked the list covers the form.
+- assertVisible:
+    id: "observation-diary-date"
+- assertNotVisible:
+    id: "observation-date-input"
+- assertVisible:
+    id: "observation-time-chip"
 - tapOn:
     id: "observation-save-button"
 - runFlow:

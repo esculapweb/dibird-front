@@ -76,6 +76,15 @@ appId: ${APP_ID}
     id: "bottom-sheet-cancel-button"
     optional: true
 
+# A guest flow that died mid-way leaves no session *and* a catalogue screen
+# restored on top of Welcome (guest-deeplink-no-session.yaml failing on the
+# species page took settings-language-switch down with it, 2026-10-28). The
+# sign-in guard above saw no Welcome and skipped, and the unwind then backed
+# out onto Welcome with nobody signing in. Hence the same guard inside every
+# unwind step: whichever `back` reaches Welcome signs in from there, and the
+# steps after it find MainScreen and skip. On Android that also stops the next
+# `back` from leaving the app from the AuthStack root.
+#
 # A warm relaunch can reopen on whatever screen was last open (React
 # Navigation restore), not necessarily MainScreen — pop back until the
 # MainScreen-only quick action appears. Bounded, not blind: `back` at the
@@ -101,6 +110,18 @@ appId: ${APP_ID}
         id: "quick-action-observation"
     commands:
       - runFlow: back.yaml
+      - runFlow:
+          when:
+            visible: ".*Continue with email.*"
+          commands:
+            - runFlow: credential-entry.yaml
+            # The login round-trip outlasts the 4s wait below, and a step
+            # that misses MainScreen presses `back` on it.
+            - extendedWaitUntil:
+                visible:
+                  id: "quick-action-observation"
+                timeout: 25000
+                optional: true
       - extendedWaitUntil:
           visible:
             id: "quick-action-observation"
@@ -112,6 +133,18 @@ appId: ${APP_ID}
         id: "quick-action-observation"
     commands:
       - runFlow: back.yaml
+      - runFlow:
+          when:
+            visible: ".*Continue with email.*"
+          commands:
+            - runFlow: credential-entry.yaml
+            # The login round-trip outlasts the 4s wait below, and a step
+            # that misses MainScreen presses `back` on it.
+            - extendedWaitUntil:
+                visible:
+                  id: "quick-action-observation"
+                timeout: 25000
+                optional: true
       - extendedWaitUntil:
           visible:
             id: "quick-action-observation"
@@ -123,6 +156,18 @@ appId: ${APP_ID}
         id: "quick-action-observation"
     commands:
       - runFlow: back.yaml
+      - runFlow:
+          when:
+            visible: ".*Continue with email.*"
+          commands:
+            - runFlow: credential-entry.yaml
+            # The login round-trip outlasts the 4s wait below, and a step
+            # that misses MainScreen presses `back` on it.
+            - extendedWaitUntil:
+                visible:
+                  id: "quick-action-observation"
+                timeout: 25000
+                optional: true
       - extendedWaitUntil:
           visible:
             id: "quick-action-observation"

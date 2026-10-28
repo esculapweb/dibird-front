@@ -16,6 +16,11 @@ interface SpeciesOptionRow {
   itemHeight?: number;
   disabled?: boolean;
   index?: number;
+  // Multi-select mode of SelectListModal: a tap checks the row instead of
+  // picking it, and the list stays open.
+  multiple?: boolean;
+  checked?: boolean;
+  onToggle?: (value: string | number) => void;
 }
 
 const SpeciesOptionRow = ({
@@ -26,15 +31,22 @@ const SpeciesOptionRow = ({
   itemHeight = 52,
   disabled = false,
   index,
+  multiple = false,
+  checked = false,
+  onToggle,
 }: SpeciesOptionRow) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors, itemHeight);
-  const isActive = item.value === selected;
+  const isActive = multiple ? checked : item.value === selected;
 
   return (
     <Pressable
       onPress={() => {
         if (disabled) return;
+        if (multiple) {
+          onToggle?.(item.value);
+          return;
+        }
         onSelect(item.value);
         onClose();
       }}
@@ -86,6 +98,16 @@ const SpeciesOptionRow = ({
             size={18}
             color={Colors.green}
             style={styles.eyeIcon}
+          />
+        )}
+
+        {multiple && !disabled && (
+          <Ionicons
+            name={checked ? "checkbox" : "square-outline"}
+            size={28}
+            color={checked ? Colors.main100 : Colors.textSecondary}
+            style={styles.checkIcon}
+            testID={index != null ? `option-row-check-${index}` : undefined}
           />
         )}
       </View>
@@ -171,6 +193,10 @@ const stylesFn = (Colors: ThemeColors, itemHeight: number) =>
     },
     itemDisabled: {
       borderLeftColor: "transparent",
+    },
+
+    checkIcon: {
+      marginLeft: 8,
     },
 
     eyeIcon: {

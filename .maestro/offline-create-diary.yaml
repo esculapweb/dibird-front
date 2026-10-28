@@ -51,6 +51,17 @@ tags:
       - tapOn:
           id: "diary-save-button"
 
+# Creating a diary goes straight on to its first observation, with the
+# species list already open (DiaryDetailScreen's addObservation param). Close
+# the list and step back to the diary — this flow is about the diary itself.
+- extendedWaitUntil:
+    visible:
+      id: "modal-close-button"
+    timeout: 25000
+- tapOn:
+    id: "modal-close-button"
+- back
+
 # Local-first create lands on the (temp-id) detail screen even offline —
 # used as a wait gate before `back`.
 #

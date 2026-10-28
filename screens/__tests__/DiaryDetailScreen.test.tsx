@@ -194,6 +194,48 @@ it("renderItem forwards diary.is_owner to DiaryObservationCard", async () => {
   expect(screen.getByText("obs-card:true")).toBeOnTheScreen();
 });
 
+describe("addObservation (right after creating the diary)", () => {
+  afterEach(() => {
+    mockRoute.params = { diaryId: 1 };
+  });
+
+  it("clears the flag and opens ObservationEditor with the species list open", async () => {
+    mockRoute.params = { diaryId: 1, addObservation: true } as typeof mockRoute.params;
+    await render(<DiaryDetailScreen />);
+
+    expect(mockNavigation.setParams).toHaveBeenCalledWith({ addObservation: undefined });
+    expect(mockNavigation.navigate).toHaveBeenCalledTimes(1);
+    expect(mockNavigation.navigate).toHaveBeenCalledWith("ObservationEditor", {
+      diaryId: 1,
+      diaryDate: "2026-01-01",
+      territoryValue: 5,
+      diaryLocationPrivate: false,
+      returnMode: "back",
+      openSpecies: true,
+    });
+  });
+
+  it("waits for the diary to load before navigating", async () => {
+    mockRoute.params = { diaryId: 1, addObservation: true } as typeof mockRoute.params;
+    mockDiaryItem({ data: undefined, isLoading: true });
+    await render(<DiaryDetailScreen />);
+
+    expect(mockNavigation.navigate).not.toHaveBeenCalled();
+    expect(mockNavigation.setParams).not.toHaveBeenCalled();
+  });
+
+  it("does nothing without the flag", async () => {
+    await render(<DiaryDetailScreen />);
+    expect(mockNavigation.navigate).not.toHaveBeenCalled();
+  });
+
+  it("the regular add button doesn't open the species list", async () => {
+    await render(<DiaryDetailScreen />);
+    await latestProps().onAdd({ nativeEvent: {} });
+    expect((mockNavigation.navigate as jest.Mock).mock.calls[0][1].openSpecies).toBeUndefined();
+  });
+});
+
 describe("owner-only actions", () => {
   it("onAdd navigates to ObservationEditor scoped to this diary, only for the owner", async () => {
     await render(<DiaryDetailScreen />);

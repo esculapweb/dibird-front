@@ -56,7 +56,7 @@ import MapL from "../components/Map/MapL";
 const DiaryDetailScreen = () => {
   const navigation = useNavigation<AppStackNavigationProp>();
   const route = useRoute<AppStackRouteProp<"DiaryDetail">>();
-  const { diaryId, initialDiary } = route.params;
+  const { diaryId, initialDiary, addObservation } = route.params;
   const { showErrorToast } = useApiError();
 
   // Same defensive retry as ObservationDetailScreen: NetInfo's reconnect event
@@ -277,16 +277,36 @@ const DiaryDetailScreen = () => {
     [diary, failedMutation, handleRetrySync, handleDiscardSync],
   );
 
-  const handleAdd = useCallback(async () => {
-    if (!diary) return;
-    navigation.navigate("ObservationEditor", {
-      diaryId: diary.id,
-      diaryDate: toDateOnly(diary.date_time) ?? undefined,
-      territoryValue: diary.territory,
-      diaryLocationPrivate: diary.location_private,
-      returnMode: "back",
-    });
-  }, [navigation, diary]);
+  const openObservationEditor = useCallback(
+    (openSpecies?: boolean) => {
+      if (!diary) return;
+      navigation.navigate("ObservationEditor", {
+        diaryId: diary.id,
+        diaryDate: toDateOnly(diary.date_time) ?? undefined,
+        territoryValue: diary.territory,
+        diaryLocationPrivate: diary.location_private,
+        returnMode: "back",
+        openSpecies,
+      });
+    },
+    [navigation, diary],
+  );
+
+  // Kept argument-less: it is handed straight to onPress, whose event must
+  // not end up in openObservationEditor's flag.
+  const handleAdd = useCallback(
+    () => openObservationEditor(),
+    [openObservationEditor],
+  );
+
+  // Right after creating a diary: go on to its first observation with the
+  // species list already open. The flag is cleared first, so coming back
+  // here (or a remount) doesn't open the editor again.
+  useEffect(() => {
+    if (!addObservation || !diary) return;
+    navigation.setParams({ addObservation: undefined });
+    openObservationEditor(true);
+  }, [addObservation, diary, navigation, openObservationEditor]);
 
   const handleShare = useCallback(async () => {
     if (diary?.private) {

@@ -81,7 +81,8 @@ export const usePlaceLocation = () => {
   // was still pending, silently killing the "locate me" spinner well before
   // the fix actually arrived.
   const [isLocating, setIsLocating] = useState(false);
-  const { locationCoords, permissionStatus, requestLocation } = useLocation();
+  const { locationCoords, permissionStatus, getPermissionStatus, requestLocation } =
+    useLocation();
   const { t } = useTranslation();
   const handleLocationUnavailable = useLocationUnavailable(t('location_unavailable_map_hint'));
 
@@ -166,7 +167,10 @@ export const usePlaceLocation = () => {
         const acc = result.accuracy ?? 0;
         setAccuracy(acc);
         setZoom(acc > 0 ? zoomFromAccuracy(acc) : 15);
-      } else if (permissionStatus === "denied") {
+      } else if (getPermissionStatus() === "denied") {
+        // Not `permissionStatus`: that is this render's value, captured before
+        // the request — on a first "Don't allow" in the OS dialog it still
+        // reads "undetermined" and the hint never showed.
         handleLocationUnavailable();
       }
     } catch (e) {
@@ -174,7 +178,7 @@ export const usePlaceLocation = () => {
     } finally {
       setIsLocating(false);
     }
-  }, [permissionStatus, requestLocation, handleLocationUnavailable]);
+  }, [permissionStatus, getPermissionStatus, requestLocation, handleLocationUnavailable]);
 
   return {
     coords,

@@ -227,36 +227,57 @@ const synthesize = (
   };
 };
 
+export interface CreateLocalInput {
+  payload: ObservationFormData;
+  extras: SynthesizeExtras;
+  clientRequestId: string;
+}
+
+// Every create — single or bulk — goes through one transaction, so a failure
+// halfway through a bulk add leaves neither orphan rows without a queued
+// mutation nor a partial batch the user can't see. nextTempId stays unique for
+// up to 1000 calls within one millisecond, which covers a diary checklist.
+export const createLocalMany = (
+  inputs: CreateLocalInput[],
+  profile: Profile | null | undefined,
+): ObservationItem[] => {
+  const created = inputs.map(({ payload, extras, clientRequestId }) => {
+    const id = nextTempId();
+    const item = synthesize(id, null, payload, extras, profile);
+    return { id, item, payload, clientRequestId };
+  });
+
+  db.transaction((tx) => {
+    for (const { id, item, payload, clientRequestId } of created) {
+      tx.insert(observationTable)
+        .values({ id, data: item, op: "create", status: "pending", updatedAt: Date.now() })
+        .run();
+
+      tx.insert(mutationQueueTable)
+        .values({
+          entity: "observation",
+          payload: {
+            op: "create",
+            localId: id,
+            data: payload,
+            clientRequestId,
+          } satisfies ObservationMutationPayload,
+          createdAt: Date.now(),
+        })
+        .run();
+    }
+  });
+
+  return created.map(({ item }) => item);
+};
+
 export const createLocal = (
   payload: ObservationFormData,
   extras: SynthesizeExtras,
   profile: Profile | null | undefined,
   clientRequestId: string,
-): ObservationItem => {
-  const id = nextTempId();
-  const item = synthesize(id, null, payload, extras, profile);
-
-  db.transaction((tx) => {
-    tx.insert(observationTable)
-      .values({ id, data: item, op: "create", status: "pending", updatedAt: Date.now() })
-      .run();
-
-    tx.insert(mutationQueueTable)
-      .values({
-        entity: "observation",
-        payload: {
-          op: "create",
-          localId: id,
-          data: payload,
-          clientRequestId,
-        } satisfies ObservationMutationPayload,
-        createdAt: Date.now(),
-      })
-      .run();
-  });
-
-  return item;
-};
+): ObservationItem =>
+  createLocalMany([{ payload, extras, clientRequestId }], profile)[0];
 
 export const updateLocal = (
   id: number,

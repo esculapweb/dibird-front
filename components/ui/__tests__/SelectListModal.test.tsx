@@ -1,3 +1,6 @@
+jest.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}));
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
   initReactI18next: { type: "3rdParty", init: () => {} },
@@ -275,5 +278,81 @@ describe("sort menu", () => {
     );
     await fireEvent.press(screen.getByTestId("modal-sort-toggle"));
     expect(radioProps().disabledValues).toEqual([]);
+  });
+});
+
+describe("multi-select mode", () => {
+  const mockOnConfirmMultiple = jest.fn();
+  // A row that shows its checked state the way SpeciesOptionRow does.
+  const renderOption = ({
+    item,
+    onSelect,
+    multiple,
+    checked,
+    onToggle,
+  }: {
+    item: DropdownItem;
+    onSelect: (v: string | number | null) => void;
+    multiple?: boolean;
+    checked?: boolean;
+    onToggle?: (v: string | number) => void;
+  }) => {
+    const { TouchableOpacity, Text } = require("react-native");
+    return (
+      <TouchableOpacity
+        testID={`row-${item.value}`}
+        onPress={() => (multiple ? onToggle!(item.value) : onSelect(item.value))}
+      >
+        <Text>{`${item.label}${checked ? " [x]" : ""}`}</Text>
+      </TouchableOpacity>
+    );
+  };
+
+  const multiProps = (overrides: Record<string, unknown> = {}) =>
+    baseProps({
+      allowMultiple: true,
+      onConfirmMultiple: mockOnConfirmMultiple,
+      renderOption,
+      ...overrides,
+    });
+
+  it("picks a single row and shows no Done button unless allowed", async () => {
+    await render(<SelectListModal {...baseProps({ renderOption })} />);
+    expect(screen.queryByTestId("select-multiple-done")).toBeNull();
+    await act(async () => fireEvent.press(screen.getByTestId("row-2")));
+    expect(mockOnSelect).toHaveBeenCalledWith(2);
+  });
+
+  it("checks rows instead of picking them and confirms the set in tap order", async () => {
+    await render(<SelectListModal {...multiProps()} />);
+
+    await act(async () => fireEvent.press(screen.getByTestId("row-2")));
+    await act(async () => fireEvent.press(screen.getByTestId("row-1")));
+
+    expect(mockOnSelect).not.toHaveBeenCalled();
+    expect(mockOnClose).not.toHaveBeenCalled();
+    expect(screen.getByText("France [x]")).toBeTruthy();
+
+    await act(async () => fireEvent.press(screen.getByTestId("select-multiple-done")));
+    expect(mockOnConfirmMultiple).toHaveBeenCalledWith([2, 1]);
+  });
+
+  it("unchecks a row on a second tap", async () => {
+    await render(<SelectListModal {...multiProps()} />);
+
+    await act(async () => fireEvent.press(screen.getByTestId("row-1")));
+    await act(async () => fireEvent.press(screen.getByTestId("row-2")));
+    await act(async () => fireEvent.press(screen.getByTestId("row-1")));
+    await act(async () => fireEvent.press(screen.getByTestId("select-multiple-done")));
+
+    expect(mockOnConfirmMultiple).toHaveBeenCalledWith([2]);
+  });
+
+  it("reopens in multi-select with the form's current set already checked", async () => {
+    await render(<SelectListModal {...multiProps({ selected: 1, selectedValues: [1, 3] })} />);
+
+    expect(screen.getByText("France [x]")).toBeTruthy();
+    expect(screen.getByText("Ёлочная [x]")).toBeTruthy();
+    expect(screen.getByText("Germany")).toBeTruthy();
   });
 });

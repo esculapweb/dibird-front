@@ -19,6 +19,7 @@ import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ObservationForm from "../components/Observation/ObservationForm";
 import {
   useCreateObservation,
+  useCreateObservations,
   useUpdateObservation,
 } from "../hooks/Observation/useOfflineObservation";
 import { useProfile } from "../store/profile-context";
@@ -33,7 +34,6 @@ import { persistPickedPhoto, deleteLocalPhotos } from "../util/photoFiles";
 import { fetchDiarySpeciesIds } from "../util/fetches";
 import IconsHeader from "../components/ui/IconsHeader";
 import Layout from "../components/ui/Layout";
-import FlatButtonBottom from "../components/ui/FlatButtonBottom";
 import { useApiError } from "../hooks/useApiError";
 import {
   AppError,
@@ -43,6 +43,7 @@ import {
   ObservationFormData,
   ObservationPhoto,
   PlaceData,
+  SpeciesDropdownItem,
 } from "../types";
 
 const FORM_FIELDS = [
@@ -66,13 +67,18 @@ const ObservationEditorScreen = () => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const { profile } = useProfile();
-  const [justSaved, setJustSaved] = useState(false);
-  // Reopens the species list after "save & add another" — the field the user
-  // has to fill in next is always the species (see ObservationForm).
-  const [openSpeciesSignal, setOpenSpeciesSignal] = useState(0);
+  const route = useRoute<AppStackRouteProp<"ObservationEditor">>();
+  // Opens the species list on arrival when the caller asks for it (a
+  // just-created diary) — the field the user has to fill in first.
+  const [openSpeciesSignal] = useState(() =>
+    route.params?.openSpecies ? 1 : 0,
+  );
+  // Two or more species picked at once in a diary (see ObservationForm);
+  // empty in the ordinary single-species flow.
+  const [multiSpecies, setMultiSpecies] = useState<SpeciesDropdownItem[]>([]);
+  const isMultiSpecies = multiSpecies.length > 1;
   const queryClient = useQueryClient();
   const navigation = useNavigation<AppStackNavigationProp>();
-  const route = useRoute<AppStackRouteProp<"ObservationEditor">>();
   const { showErrorToast } = useApiError();
 
   const {
@@ -270,6 +276,7 @@ const ObservationEditorScreen = () => {
   };
 
   const createObservationMutation = useCreateObservation();
+  const createObservationsMutation = useCreateObservations();
   const updateObservationMutation = useUpdateObservation(
     observationWithParsedDate?.id,
   );
@@ -324,7 +331,33 @@ const ObservationEditorScreen = () => {
       place: placeValue,
     });
 
-    if (isEditMode) {
+    if (isMultiSpecies) {
+      createObservationsMutation.mutate(
+        {
+          // Quantity and notes are hidden for a set, but values typed in
+          // before the second species was picked are still in formData.
+          items: multiSpecies.map((item) => ({
+            payload: {
+              ...payload,
+              species: item.value as number,
+              quantity: null,
+              notes: "",
+            },
+            speciesData: item,
+          })),
+        },
+        {
+          onSuccess: () => {
+            queryClient.invalidateQueries({
+              queryKey: ["DiarySpecies", diaryId],
+            });
+            Keyboard.dismiss();
+            navigation.goBack();
+          },
+          onError: handleMutateError,
+        },
+      );
+    } else if (isEditMode) {
       updateObservationMutation.mutate(
         { payload, speciesData, placeData },
         {
@@ -375,61 +408,16 @@ const ObservationEditorScreen = () => {
     returnMode,
     updateObservationMutation,
     createObservationMutation,
+    createObservationsMutation,
+    isMultiSpecies,
+    multiSpecies,
+    queryClient,
+    diaryId,
     navigation,
     handleMutateError,
     validateForm,
     commitPhotos,
     observationWithParsedDate?.id,
-  ]);
-
-  const handleSaveAndAddAnother = useCallback(() => {
-    if (!validateForm()) return;
-    if (speciesValue === null || !territoryValue || !formData.date_time) return;
-
-    const payload = buildObservationPayload({
-      ...formData,
-      species: speciesValue,
-      territory: territoryValue,
-      place: placeValue,
-    });
-
-    createObservationMutation.mutate(
-      { payload, speciesData, placeData },
-      {
-        onSuccess: async (item) => {
-          await commitPhotos(item.id);
-          setPhotos([]);
-          queryClient.invalidateQueries({
-            queryKey: ["DiarySpecies", diaryId],
-          });
-          setJustSaved(true);
-          setTimeout(() => setJustSaved(false), 1500);
-          setSpeciesValue(null);
-          setSpeciesData(null);
-          setOpenSpeciesSignal((prev) => prev + 1);
-          setFormData((prev) => ({
-            ...prev,
-            species: null,
-            time: null,
-            quantity: null,
-            notes: null,
-          }));
-          setErrors({});
-        },
-        onError: handleMutateError,
-      },
-    );
-  }, [
-    formData,
-    speciesValue,
-    territoryValue,
-    placeValue,
-    speciesData,
-    placeData,
-    queryClient,
-    diaryId,
-    validateForm,
-    commitPhotos,
   ]);
 
   const handleAddNewPlace = useCallback(() => {
@@ -483,7 +471,8 @@ const ObservationEditorScreen = () => {
         tintColor: Colors.main100,
         disabled: isEditMode
           ? updateObservationMutation.isPending
-          : createObservationMutation.isPending,
+          : createObservationMutation.isPending ||
+            createObservationsMutation.isPending,
         testID: "observation-save-button",
       },
     ],
@@ -491,6 +480,7 @@ const ObservationEditorScreen = () => {
       handleSaveObservation,
       isEditMode,
       createObservationMutation.isPending,
+      createObservationsMutation.isPending,
       updateObservationMutation.isPending,
       Colors.main100,
     ],
@@ -508,25 +498,14 @@ const ObservationEditorScreen = () => {
   if (
     isEditMode
       ? updateObservationMutation.isPending
-      : createObservationMutation.isPending
+      : createObservationMutation.isPending ||
+        createObservationsMutation.isPending
   ) {
     return <LoadingOverlay />;
   }
 
-  const bottomEl = !!diaryId && !isEditMode && (
-    <FlatButtonBottom
-      onPress={handleSaveAndAddAnother}
-      icon="add-outline"
-      loading={createObservationMutation.isPending}
-      savedLabel={justSaved ? t("observation_added") : undefined}
-      testID="observation-save-add-another-button"
-    >
-      {t("save_and_add_another")}
-    </FlatButtonBottom>
-  );
-
   return (
-    <Layout withKeyboard={true} bottom={bottomEl}>
+    <Layout withKeyboard={true}>
       <ObservationForm
         formData={formData}
         setFormData={
@@ -554,6 +533,8 @@ const ObservationEditorScreen = () => {
         onPickPhotos={handlePickPhotos}
         onRemovePhoto={handleRemovePhoto}
         openSpeciesSignal={openSpeciesSignal}
+        multiSpecies={multiSpecies}
+        setMultiSpecies={!!diaryId && !isEditMode ? setMultiSpecies : undefined}
       />
     </Layout>
   );

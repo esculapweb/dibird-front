@@ -8,6 +8,7 @@ import DefaultOptionRow from "./DefaultOptionRow";
 import SearchInput from "./SearchInput";
 import { sortOptionsList } from "../../util/sortOptionsList";
 import RadioGroup from "./RadioGroup";
+import FlatButtonBottom from "./FlatButtonBottom";
 import { QueryType, DropdownItem } from "../../types";
 
 const ItemHeight = 52;
@@ -27,12 +28,22 @@ interface SelectListModalProps {
     onSelect: (value: string | number | null) => void;
     onClose: () => void;
     index: number;
+    multiple?: boolean;
+    checked?: boolean;
+    onToggle?: (value: string | number) => void;
   }) => ReactElement | null;
   type?: string;
   sort?: string | null;
   onSortChange?: (newSort: string | null) => void;
   locationAvailable?: boolean;
   onLocationUnavailable?: () => void;
+  // Turns the list into multi-select: rows are checked instead of picked, and
+  // "Done" hands the whole set to onConfirmMultiple. Only rows rendered
+  // through `renderOption` know how to show a check mark (see
+  // SpeciesOptionRow).
+  allowMultiple?: boolean;
+  selectedValues?: (string | number)[];
+  onConfirmMultiple?: (values: (string | number)[]) => void;
 }
 
 const SelectListModal = ({
@@ -50,6 +61,9 @@ const SelectListModal = ({
   onSortChange,
   locationAvailable = true,
   onLocationUnavailable,
+  allowMultiple = false,
+  selectedValues,
+  onConfirmMultiple,
 }: SelectListModalProps) => {
   const flatListRef = useRef<FlatList<DropdownItem>>(null);
   const [hasScrolled, setHasScrolled] = useState(false);
@@ -59,6 +73,29 @@ const SelectListModal = ({
   const sortOptions = type ? sortOptionsList(type) : [];
   const [sortOrder, setSortOrder] = useState(sort ?? null);
   const [sortMenuVisible, setSortMenuVisible] = useState(false);
+  // An array, not a Set: the selection order is the order the form shows the
+  // chosen species in.
+  const [draft, setDraft] = useState<(string | number)[]>([]);
+
+  // Every opening starts from what the form currently holds, so closing the
+  // list without "Done" discards the checks made in it.
+  useEffect(() => {
+    if (!visible) return;
+    const current = selectedValues?.length
+      ? selectedValues
+      : selected != null
+        ? [selected]
+        : [];
+    setDraft(current);
+    // Dependencies are curated: only an opening reseeds the draft.
+  }, [visible]);
+
+  const toggleValue = (value: string | number) =>
+    setDraft((prev) =>
+      prev.includes(value)
+        ? prev.filter((v) => v !== value)
+        : [...prev, value],
+    );
 
   const disabledSortValues = !locationAvailable
     ? sortOptions
@@ -167,7 +204,16 @@ const SelectListModal = ({
               })}
               renderItem={({ item, index }) =>
                 renderOption ? (
-                  renderOption({ item, selected, onSelect, onClose, index })
+                  renderOption({
+                    item,
+                    selected,
+                    onSelect,
+                    onClose,
+                    index,
+                    multiple: allowMultiple,
+                    checked: allowMultiple && draft.includes(item.value),
+                    onToggle: toggleValue,
+                  })
                 ) : (
                   <DefaultOptionRow
                     item={item}
@@ -180,6 +226,17 @@ const SelectListModal = ({
                 )
               }
             />
+          )}
+
+          {allowMultiple && (
+            <FlatButtonBottom
+              onPress={() => onConfirmMultiple?.(draft)}
+              icon="checkmark-outline"
+              disabled={draft.length === 0}
+              testID="select-multiple-done"
+            >
+              {t("done_count", { count: draft.length })}
+            </FlatButtonBottom>
           )}
         </View>
       )}

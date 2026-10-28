@@ -229,6 +229,47 @@ describe("openSignal", () => {
     await render(<DropdownInput value={null} setValue={mockSetValue} query={baseQuery()} disabled openSignal={1} />);
     expect(modalProps().visible).toBe(false);
   });
+
+  it("opens once the query finishes loading when the signal came in before it", async () => {
+    // A freshly mounted editor (just-created diary) raises the signal before
+    // the species query has anything to show.
+    const view = await render(
+      <DropdownInput value={null} setValue={mockSetValue} query={baseQuery({ isLoading: true })} openSignal={1} />,
+    );
+    expect(modalProps().visible).toBe(false);
+
+    await view.rerender(
+      <DropdownInput value={null} setValue={mockSetValue} query={baseQuery()} openSignal={1} />,
+    );
+    expect(modalProps().visible).toBe(true);
+  });
+
+  it("opens a pending signal only once", async () => {
+    const view = await render(
+      <DropdownInput value={null} setValue={mockSetValue} query={baseQuery()} openSignal={1} />,
+    );
+    await act(async () => modalProps().onClose());
+    expect(modalProps().visible).toBe(false);
+
+    // Loading flips (a refetch) — the already handled signal must not reopen.
+    await view.rerender(
+      <DropdownInput value={null} setValue={mockSetValue} query={baseQuery({ isLoading: true })} openSignal={1} />,
+    );
+    await view.rerender(
+      <DropdownInput value={null} setValue={mockSetValue} query={baseQuery()} openSignal={1} />,
+    );
+    expect(modalProps().visible).toBe(false);
+  });
+
+  it("drops a signal that hit a failed query instead of opening after a later refetch", async () => {
+    const view = await render(
+      <DropdownInput value={null} setValue={mockSetValue} query={baseQuery({ isError: true })} openSignal={1} />,
+    );
+    await view.rerender(
+      <DropdownInput value={null} setValue={mockSetValue} query={baseQuery()} openSignal={1} />,
+    );
+    expect(modalProps().visible).toBe(false);
+  });
 });
 
 describe("selecting from the modal", () => {

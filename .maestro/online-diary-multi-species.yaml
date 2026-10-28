@@ -1,19 +1,16 @@
-# "Save & add another" — the chained way of filling a Diary, online.
+# Several species at once — the way a Diary is filled, online.
 #
-# Logging a morning's twenty species one by one is the workload this button
-# exists for, and the part of it that unit tests cannot see is what happens
-# right after the save: the species list has to open by itself, on an
-# otherwise reset form (ObservationEditorScreen's openSpeciesSignal ->
-# ObservationForm -> DropdownInput). Jest can assert that the signal was
-# bumped and nothing more — whether a modal really appears on top of a screen
-# that unmounts into LoadingOverlay and remounts around the pending mutation
-# is a device question, and the remount is exactly why the dropdown has to
-# open on mount rather than on a prop change.
+# In a diary the species list is always multi-select: rows are checked, and
+# "Done" hands the set to the form, which shows it as a summary of chips
+# (multi-species-summary). One press of the header save then creates one
+# observation per species. Unit tests cover each half of that chain with the
+# other half mocked; this flow is the only place both meet on a device —
+# that the check marks, the Done button and the summary really render, and
+# that a single save files every species under the diary.
 #
 # online-nested-observation.yaml already covers the diary-scoped editor
 # itself (the observation is filed under the diary it was opened from, the
-# save returns to the diary). This flow takes that as given and only presses
-# the header save once, for the second observation.
+# save returns to the diary). This flow takes that as given.
 #
 # Create and delete net to zero: both observations and the diary holding them
 # are removed at the end, and MainScreen's counters are asserted back to
@@ -46,7 +43,7 @@ tags:
 # A distinctive note so this diary can be found by text later — list rows
 # carry no testID, and online there is no pending icon to grab either.
 - tapOn: ".*Add a note.*"
-- setClipboard: "Add Another E2E Diary"
+- setClipboard: "Multi Species E2E Diary"
 - pasteText
 # Defocus without navigating — tapping a static label on the same form, the
 # same technique common/credential-entry.yaml uses.
@@ -60,70 +57,42 @@ tags:
       - runFlow: common/back.yaml
       - tapOn:
           id: "diary-save-button"
-- extendedWaitUntil:
-    visible:
-      id: "diary-edit-button"
-    timeout: 8000
 
-# ---- FIRST observation: picked by hand, saved with "save & add another" ----
-- tapOn:
-    id: "list-add-button"
-- extendedWaitUntil:
-    visible:
-      id: "species-dropdown-trigger"
-    timeout: 8000
-- tapOn:
-    id: "species-dropdown-trigger"
+# ---- TWO species checked in one go ----
+# Creating a diary goes straight on to its first observation, with the
+# species list already open (DiaryDetailScreen's addObservation param).
 - extendedWaitUntil:
     visible:
       id: "option-row-0"
-    timeout: 6000
+    timeout: 14000
 # Remember which species the dropdown happened to offer (contents are
 # backend/seed-data dependent): it is how each row is recognised on the diary
 # screen below, and how each observation is reopened for cleanup.
-- copyTextFrom:
-    id: "option-row-0"
 # Just the common name: the dropdown row reads "Common name, Scientific name"
 # (and on iOS the accessibility node keeps the trailing space), while the
 # observation row on the diary shows the common name alone.
-- evalScript: ${output.firstSpecies = maestro.copiedText.split(",")[0]}
-- tapOn:
+- copyTextFrom:
     id: "option-row-0"
-
-# The list must be gone before the button is pressed, or the assertion below
-# would pass on a modal that never closed instead of on the one the save
-# reopened.
-- extendedWaitUntil:
-    notVisible:
-      id: "option-row-0"
-    timeout: 5000
-- tapOn:
-    id: "observation-save-add-another-button"
-
-# ---- the point of this flow: the list is open again, nobody tapped it ----
-# Generous timeout: this waits out the create mutation's round-trip, the
-# LoadingOverlay the screen shows while it is pending, and the remount of the
-# form underneath.
-- extendedWaitUntil:
-    visible:
-      id: "option-row-0"
-    timeout: 20000
-
-# ---- SECOND observation: a different species, saved from the header ----
-# Not option-row-0: the species just saved is in this diary now, and
-# ObservationForm disables the rows of species the diary already has
-# (existingSpecies), so tapping it would select nothing at all.
-- extendedWaitUntil:
-    visible:
-      id: "option-row-1"
-    timeout: 6000
+- evalScript: ${output.firstSpecies = maestro.copiedText.split(",")[0]}
 - copyTextFrom:
     id: "option-row-1"
 - evalScript: ${output.secondSpecies = maestro.copiedText.split(",")[0]}
+# A tap only checks a row — the list stays open until Done.
+- tapOn:
+    id: "option-row-0"
+- assertVisible:
+    id: "option-row-0"
 - tapOn:
     id: "option-row-1"
-# The form underneath really was reset and re-filled, not left holding the
-# first species — the trigger shows what was just picked.
+- tapOn:
+    id: "select-multiple-done"
+
+# The form shows the whole set, not just the first species.
+- extendedWaitUntil:
+    visible:
+      id: "multi-species-summary"
+    timeout: 5000
+- assertVisible: ".*${output.firstSpecies}.*"
 - assertVisible: ".*${output.secondSpecies}.*"
 - tapOn:
     id: "observation-save-button"

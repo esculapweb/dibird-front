@@ -38,6 +38,7 @@ jest.mock("@tanstack/react-query", () => ({
 }));
 jest.mock("../../hooks/Observation/useOfflineObservation", () => ({
   useCreateObservation: jest.fn(),
+  useCreateObservations: jest.fn(),
   useUpdateObservation: jest.fn(),
 }));
 jest.mock("../../store/profile-context", () => ({
@@ -120,13 +121,29 @@ jest.mock("../../components/Observation/ObservationForm", () => {
       onEditDiary,
       existingSpecies,
       openSpeciesSignal,
+      setMultiSpecies,
     }: {
       onAddNewPlace: () => void;
       onEditDiary: () => void;
       existingSpecies: Set<string | number>;
       openSpeciesSignal?: number;
+      setMultiSpecies?: (items: { value: number; label: string }[]) => void;
     }) => (
       <>
+        <Text testID="multi-species-enabled">{String(!!setMultiSpecies)}</Text>
+        {setMultiSpecies && (
+          <TouchableOpacity
+            testID="pick-multi-species"
+            onPress={() =>
+              setMultiSpecies([
+                { value: 42, label: "Tit" },
+                { value: 43, label: "Wren" },
+              ])
+            }
+          >
+            <Text>pick several</Text>
+          </TouchableOpacity>
+        )}
         <Text testID="open-species-signal">{String(openSpeciesSignal)}</Text>
         <TouchableOpacity testID="add-new-place" onPress={onAddNewPlace}>
           <Text>add place</Text>
@@ -147,6 +164,7 @@ import Toast from "react-native-toast-message";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   useCreateObservation,
+  useCreateObservations,
   useUpdateObservation,
 } from "../../hooks/Observation/useOfflineObservation";
 import { useProfile } from "../../store/profile-context";
@@ -163,6 +181,7 @@ const mockNavigation = createNavigationMock();
 let mockRoute: ReturnType<typeof createRouteMock>;
 
 const mockCreateMutate = jest.fn();
+const mockCreateManyMutate = jest.fn();
 const mockUpdateMutate = jest.fn();
 const mockSetErrors = jest.fn();
 const mockSetSpeciesValue = jest.fn();
@@ -207,6 +226,7 @@ beforeEach(() => {
   (useDefaultTerritory as jest.Mock).mockReturnValue(12);
   (useQueryClient as jest.Mock).mockReturnValue({ invalidateQueries: mockInvalidateQueries });
   (useCreateObservation as jest.Mock).mockReturnValue({ mutate: mockCreateMutate, isPending: false });
+  (useCreateObservations as jest.Mock).mockReturnValue({ mutate: mockCreateManyMutate, isPending: false });
   (useUpdateObservation as jest.Mock).mockReturnValue({ mutate: mockUpdateMutate, isPending: false });
   mockValidateForm.mockReturnValue(true);
   mockEditorForm();
@@ -397,51 +417,17 @@ describe("save error handling", () => {
   });
 });
 
-describe("save and add another (diary mode)", () => {
-  beforeEach(() => {
-    mockRoute = createRouteMock("ObservationEditor", { diaryId: 11 });
-  });
-
-  it("shows the bottom button and resets species/time/quantity/notes on success", async () => {
-    // handleSaveAndAddAnother's onSuccess does setJustSaved(true) followed
-    // by a real 1500ms setTimeout to flip it back — fake timers so that
-    // timer doesn't leak past this test as an open handle.
-    jest.useFakeTimers();
+describe("openSpecies param", () => {
+  it("starts with the species list requested when the caller asks for it", async () => {
+    mockRoute = createRouteMock("ObservationEditor", { diaryId: 11, openSpecies: true });
     await render(<ObservationEditorScreen />);
-    await fireEvent.press(screen.getByText("save_and_add_another"));
-
-    const { onSuccess } = mockCreateMutate.mock.calls[0][1];
-    await act(async () => {
-      onSuccess({ id: 1 });
-    });
-
-    expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ["DiarySpecies", 11] });
-    expect(mockSetSpeciesValue).toHaveBeenCalledWith(null);
-    expect(mockSetSpeciesData).toHaveBeenCalledWith(null);
-    // Picking the next species is the whole point of the button — the form
-    // gets a bumped signal and opens the species list without another tap.
     expect(screen.getByTestId("open-species-signal")).toHaveTextContent("1");
-    expect(mockSetErrors).toHaveBeenCalledWith({});
-    const formUpdater = mockSetFormData.mock.calls[0][0];
-    expect(formUpdater({ date_time: "2026-01-01", territory: 5 })).toEqual({
-      date_time: "2026-01-01",
-      territory: 5,
-      species: null,
-      time: null,
-      quantity: null,
-      notes: null,
-    });
-
-    await act(async () => {
-      jest.runOnlyPendingTimers();
-    });
-    jest.useRealTimers();
   });
 
-  it("is not shown in edit mode even with a diaryId", async () => {
-    mockRoute = createRouteMock("ObservationEditor", { diaryId: 11, observation: { id: 5 } });
+  it("leaves the list closed otherwise", async () => {
+    mockRoute = createRouteMock("ObservationEditor", { diaryId: 11 });
     await render(<ObservationEditorScreen />);
-    expect(screen.queryByText("save_and_add_another")).not.toBeOnTheScreen();
+    expect(screen.getByTestId("open-species-signal")).toHaveTextContent("0");
   });
 });
 
@@ -640,5 +626,49 @@ describe("the payload built in diary mode", () => {
       }),
       expect.anything(),
     );
+  });
+});
+
+describe("several species picked at once (diary mode)", () => {
+  beforeEach(() => {
+    mockRoute = createRouteMock("ObservationEditor", { diaryId: 11 });
+    mockEditorForm({
+      formData: { species: 42, diary: 11, time: "08:00", quantity: 2, notes: "Flock", date_time: "2026-01-01", territory: 5 },
+    });
+  });
+
+  it("is offered only when creating inside a diary", async () => {
+    await render(<ObservationEditorScreen />);
+    expect(screen.getByTestId("multi-species-enabled")).toHaveTextContent("true");
+
+    mockRoute = createRouteMock("ObservationEditor", { diaryId: 11, observation: { id: 5 } });
+    await render(<ObservationEditorScreen />);
+    expect(screen.getByTestId("multi-species-enabled")).toHaveTextContent("false");
+
+    mockRoute = createRouteMock("ObservationEditor", {});
+    await render(<ObservationEditorScreen />);
+    expect(screen.getByTestId("multi-species-enabled")).toHaveTextContent("false");
+  });
+
+  it("saves one observation per species with the shared fields and returns to the diary", async () => {
+    await render(<ObservationEditorScreen />);
+    await fireEvent.press(screen.getByTestId("pick-multi-species"));
+
+    await pressSave();
+
+    expect(mockCreateMutate).not.toHaveBeenCalled();
+    const [vars, { onSuccess }] = mockCreateManyMutate.mock.calls[0];
+    // quantity and notes are per species, so the form's values are dropped for the set.
+    const shared = { diary: 11, time: "08:00", quantity: null, notes: "", location_private: true };
+    expect(vars.items).toEqual([
+      { payload: { ...shared, species: 42 }, speciesData: { value: 42, label: "Tit" } },
+      { payload: { ...shared, species: 43 }, speciesData: { value: 43, label: "Wren" } },
+    ]);
+
+    await act(async () => {
+      onSuccess([{ id: -1 }, { id: -2 }]);
+    });
+    expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ["DiarySpecies", 11] });
+    expect(mockNavigation.goBack).toHaveBeenCalled();
   });
 });
