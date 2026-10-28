@@ -138,8 +138,13 @@ const DiaryEditorScreen = () => {
             // diary just created for a country is the strongest hint about
             // where the next record belongs (see useDefaultTerritory).
             setSession("lastTerritory", diaryData.territory);
+            // A new diary is almost always opened to record birds in it, so
+            // skip the FAB + "select species" taps and go straight on.
             requestAnimationFrame(() =>
-              navigation.replace("DiaryDetail", { diaryId: item.id }),
+              navigation.replace("DiaryDetail", {
+                diaryId: item.id,
+                addObservation: true,
+              }),
             );
           },
           onError: handleMutateError,

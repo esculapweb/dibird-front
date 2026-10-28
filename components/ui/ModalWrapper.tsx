@@ -56,6 +56,7 @@ const ModalWrapper = ({
           <View style={styles.header}>
             <IconButton
               onPress={onClose}
+              testID="modal-close-button"
               icon="close-circle"
               size={BUTTON_SIZE}
               tintColor={Colors.radioBorder}

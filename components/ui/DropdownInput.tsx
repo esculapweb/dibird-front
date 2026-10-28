@@ -1,4 +1,4 @@
-import { useState, useEffect, ReactElement } from "react";
+import { useState, useEffect, useRef, ReactElement } from "react";
 import {
   Pressable,
   Text,
@@ -52,14 +52,13 @@ interface DropdownInputProps<T extends string | number | null = string | number 
   useDefault?: boolean;
   // Opens the list without a tap when the number changes. 0 (the default)
   // means "never asked", so a fresh mount stays closed — see the species
-  // dropdown in ObservationForm, reopened right after "save & add another".
+  // dropdown in ObservationForm, opened on arrival for a just-created diary.
   openSignal?: number;
   // Multi-select, see SelectListModal. The single `value`/`setValue` pair keeps
   // working as before; a confirmed set arrives through onConfirmMultiple.
   allowMultiple?: boolean;
   selectedValues?: (string | number)[];
   onConfirmMultiple?: (values: (string | number)[]) => void;
-  multipleLabel?: string;
   // Replaces the built-in field with a custom one that opens the same list.
   renderTrigger?: (open: () => void) => ReactElement;
 }
@@ -88,7 +87,6 @@ const DropdownInput = <T extends string | number | null>({
   allowMultiple = false,
   selectedValues,
   onConfirmMultiple,
-  multipleLabel,
   renderTrigger,
 }: DropdownInputProps<T>) => {
   const { t } = useTranslation();
@@ -124,12 +122,24 @@ const DropdownInput = <T extends string | number | null>({
     setModalVisible(true);
   };
 
+  // A signal that arrives while the list can't open yet (e.g. right on mount,
+  // before the options query has loaded) is kept pending and honored once it
+  // can — otherwise openModal's early return would swallow it. The ref makes
+  // each signal open the list at most once; a failed query drops it, so a
+  // later successful refetch doesn't pop the list up out of nowhere.
+  const handledSignal = useRef(0);
   useEffect(() => {
-    if (!openSignal) return;
+    if (!openSignal || openSignal === handledSignal.current) return;
+    if (query.isError) {
+      handledSignal.current = openSignal;
+      return;
+    }
+    if (disabled || query.isLoading || isLocating) return;
+    handledSignal.current = openSignal;
     openModal();
-    // Dependencies are curated: only a new signal reopens the list, the rest
-    // of openModal's closure must not.
-  }, [openSignal]);
+    // Dependencies are curated: only a new signal, or a pending one becoming
+    // openable, opens the list — the rest of openModal's closure must not.
+  }, [openSignal, disabled, query.isLoading, query.isError, isLocating]);
 
   const clearValue = () => {
     setValue(null as T);
@@ -328,7 +338,6 @@ const DropdownInput = <T extends string | number | null>({
         locationAvailable={locationAvailable}
         onLocationUnavailable={onLocationUnavailable}
         allowMultiple={allowMultiple}
-        multipleLabel={multipleLabel}
         selectedValues={selectedValues}
         onConfirmMultiple={(values) => {
           onConfirmMultiple?.(values);

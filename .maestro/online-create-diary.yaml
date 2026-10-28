@@ -38,6 +38,16 @@ tags:
       - runFlow: common/back.yaml
       - tapOn:
           id: "diary-save-button"
+# Creating a diary goes straight on to its first observation, with the
+# species list already open (DiaryDetailScreen's addObservation param). Close
+# the list and step back to the diary — this flow is about the diary itself.
+- extendedWaitUntil:
+    visible:
+      id: "modal-close-button"
+    timeout: 8000
+- tapOn:
+    id: "modal-close-button"
+- runFlow: common/back.yaml
 - extendedWaitUntil:
     visible:
       id: "diary-edit-button"

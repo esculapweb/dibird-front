@@ -58,12 +58,13 @@ interface ObservationFormProps {
   photos: ObservationPhoto[];
   onPickPhotos: (uris: string[]) => void;
   onRemovePhoto: (photo: ObservationPhoto) => void;
-  // Bumped by the editor after "save & add another": the next observation
-  // always starts with picking a species, so the list opens by itself.
+  // Raised by the editor for a just-created diary: its first observation
+  // starts with picking species, so the list opens by itself.
   openSpeciesSignal?: number;
   // Species chosen in the picker's multi-select mode. Holds two or more items
   // or is empty — a single pick goes through speciesValue as before. Passing
-  // the setter is what enables the mode (only for a new diary observation).
+  // the setter is what enables the mode (only for a new diary observation,
+  // where the list is always multi-select).
   // Whole items, not ids: the editor needs each one's speciesData to show the
   // offline-created observations before they sync.
   multiSpecies?: SpeciesDropdownItem[];
@@ -243,7 +244,7 @@ const ObservationForm = ({
         })}
       </View>
       <Text style={[styles.multiSpeciesHint, { color: Colors.textSecondary }]}>
-        {t("multi_species_photos_hint")}
+        {t("multi_species_after_save_hint")}
       </Text>
     </Pressable>
   );
@@ -421,7 +422,6 @@ const ObservationForm = ({
             />
           )}
           allowMultiple={allowMultiSpecies}
-          multipleLabel={t("select_multiple_species")}
           selectedValues={isMultiSpecies ? multiSpeciesIds : undefined}
           onConfirmMultiple={applySpeciesSelection}
           renderTrigger={isMultiSpecies ? renderMultiSpecies : undefined}
@@ -530,38 +530,44 @@ const ObservationForm = ({
         </Section>
       )}
 
-      <Section
-        title={t("section_details")}
-        hint={t("optional")}
-        collapsible={true}
-        collapsed={formData.quantity == null && !formData.notes}
-      >
-        <Input
-          value={formData?.quantity != null ? formData.quantity.toString() : ""}
-          keyboardType="numeric"
-          onUpdateValue={(val) =>
-            setFormData((prev) => ({
-              ...prev,
-              quantity: val?.trim() === "" ? null : Number(val.trim()),
-            }))
-          }
-          error={errors.quantity}
-          isInvalid={!!errors.quantity}
-          placeholder={t("quantity_placeholder")}
-          birdSvg
-        />
-        <Input
-          value={formData.notes ?? ""}
-          onUpdateValue={(val) =>
-            setFormData((prev) => ({ ...prev, notes: val }))
-          }
-          error={errors.notes}
-          isInvalid={!!errors.notes}
-          icon="document-text-outline"
-          placeholder={t("add_a_note")}
-          multiline
-        />
-      </Section>
+      {/* Count and notes are per species too: one value copied into every
+          observation of the set would be wrong for all but one of them. */}
+      {!isMultiSpecies && (
+        <Section
+          title={t("section_details")}
+          hint={t("optional")}
+          collapsible={true}
+          collapsed={formData.quantity == null && !formData.notes}
+        >
+          <Input
+            value={
+              formData?.quantity != null ? formData.quantity.toString() : ""
+            }
+            keyboardType="numeric"
+            onUpdateValue={(val) =>
+              setFormData((prev) => ({
+                ...prev,
+                quantity: val?.trim() === "" ? null : Number(val.trim()),
+              }))
+            }
+            error={errors.quantity}
+            isInvalid={!!errors.quantity}
+            placeholder={t("quantity_placeholder")}
+            birdSvg
+          />
+          <Input
+            value={formData.notes ?? ""}
+            onUpdateValue={(val) =>
+              setFormData((prev) => ({ ...prev, notes: val }))
+            }
+            error={errors.notes}
+            isInvalid={!!errors.notes}
+            icon="document-text-outline"
+            placeholder={t("add_a_note")}
+            multiline
+          />
+        </Section>
+      )}
       {isDiaryEdit && <DiaryBanner />}
     </View>
   );

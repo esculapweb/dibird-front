@@ -60,27 +60,22 @@ tags:
       - tapOn:
           id: "diary-save-button"
 
-# Local-first create lands on the (temp-id) detail screen even offline.
-- extendedWaitUntil:
-    visible:
-      id: "diary-edit-button"
-    timeout: 6000
-
 # ---- CREATE Observation nested inside that (still unsynced) Diary ----
-# DiaryDetailScreen's own "add observation" action (list-add-button, same
-# testID ListScreen's generic onAdd uses elsewhere) opens ObservationEditor
-# pre-filled with this diary's id/territory — payload.data.diary carries the
-# diary's temp negative id at this point.
-- tapOn:
-    id: "list-add-button"
-- tapOn:
-    id: "species-dropdown-trigger"
+# Local-first create lands on the (temp-id) detail screen even offline.
+# Creating a diary goes straight on to its first observation, with the
+# species list already open (DiaryDetailScreen's addObservation param).
+# ObservationEditor is pre-filled with this diary's id/territory —
+# payload.data.diary carries the diary's temp negative id at this point.
 - extendedWaitUntil:
     visible:
       id: "option-row-0"
-    timeout: 6000
+    timeout: 12000
 - tapOn:
     id: "option-row-0"
+# The diary's species list is always multi-select: a tap only checks the
+# row, "Done" hands the selection to the form.
+- tapOn:
+    id: "select-multiple-done"
 - tapOn:
     id: "observation-save-button"
 - runFlow:

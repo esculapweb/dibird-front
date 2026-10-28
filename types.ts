@@ -1257,9 +1257,17 @@ export type AppStackParamList = CatalogParamList & {
     defaultPlace?: number | null;
     defaultSpecies?: number | null;
     returnMode?: string;
+    // Opens the species list right away (a freshly created diary).
+    openSpecies?: boolean;
   };
   Diaries: ScreenWithFilters | undefined;
-  DiaryDetail: ScreenWithFilters & { diaryId: number; initialDiary?: DiaryListItem };
+  DiaryDetail: ScreenWithFilters & {
+    diaryId: number;
+    initialDiary?: DiaryListItem;
+    // One-shot: go straight on to adding the first observation (set by
+    // DiaryEditorScreen after a create, cleared by DiaryDetailScreen).
+    addObservation?: boolean;
+  };
   DiaryEditor: {
     diary?: DiaryItem;
     defaultTerritory?: number | null;

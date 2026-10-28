@@ -316,21 +316,8 @@ describe("multi-select mode", () => {
       ...overrides,
     });
 
-  it("has no toggle unless allowed", async () => {
-    await render(<SelectListModal {...baseProps()} />);
-    expect(screen.queryByTestId("select-multiple-toggle")).toBeNull();
-  });
-
-  it("shows the switch row with the caller's label and switches back when turned off", async () => {
-    await render(<SelectListModal {...multiProps({ multipleLabel: "Pick several" })} />);
-    expect(screen.getByText("Pick several")).toBeTruthy();
-    expect(screen.getByTestId("select-multiple-switch").props.value).toBe(false);
-
-    await act(async () => fireEvent(screen.getByTestId("select-multiple-switch"), "valueChange", true));
-    expect(screen.getByTestId("select-multiple-switch").props.value).toBe(true);
-    expect(screen.getByTestId("select-multiple-done")).toBeTruthy();
-
-    await act(async () => fireEvent.press(screen.getByTestId("select-multiple-toggle")));
+  it("picks a single row and shows no Done button unless allowed", async () => {
+    await render(<SelectListModal {...baseProps({ renderOption })} />);
     expect(screen.queryByTestId("select-multiple-done")).toBeNull();
     await act(async () => fireEvent.press(screen.getByTestId("row-2")));
     expect(mockOnSelect).toHaveBeenCalledWith(2);
@@ -339,7 +326,6 @@ describe("multi-select mode", () => {
   it("checks rows instead of picking them and confirms the set in tap order", async () => {
     await render(<SelectListModal {...multiProps()} />);
 
-    await act(async () => fireEvent.press(screen.getByTestId("select-multiple-toggle")));
     await act(async () => fireEvent.press(screen.getByTestId("row-2")));
     await act(async () => fireEvent.press(screen.getByTestId("row-1")));
 
@@ -354,7 +340,6 @@ describe("multi-select mode", () => {
   it("unchecks a row on a second tap", async () => {
     await render(<SelectListModal {...multiProps()} />);
 
-    await act(async () => fireEvent.press(screen.getByTestId("select-multiple-toggle")));
     await act(async () => fireEvent.press(screen.getByTestId("row-1")));
     await act(async () => fireEvent.press(screen.getByTestId("row-2")));
     await act(async () => fireEvent.press(screen.getByTestId("row-1")));

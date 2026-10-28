@@ -201,7 +201,7 @@ it("does not call mutate when validateForm reports invalid", async () => {
 });
 
 describe("save navigation branching", () => {
-  it("create navigates (via replace) to the new diary's detail screen on success", async () => {
+  it("create navigates (via replace) to the new diary's detail screen, asking it to add an observation", async () => {
     await render(<DiaryEditorScreen />);
     await pressSave();
 
@@ -211,7 +211,11 @@ describe("save navigation branching", () => {
     expect(setSession).toHaveBeenCalledWith("lastDate", "2026-01-01");
     // Seeds the fallback the next diary/observation opens on.
     expect(setSession).toHaveBeenCalledWith("lastTerritory", 5);
-    expect(mockNavigation.replace).toHaveBeenCalledWith("DiaryDetail", { diaryId: 123 });
+    // Straight on to the first observation, not just the diary itself.
+    expect(mockNavigation.replace).toHaveBeenCalledWith("DiaryDetail", {
+      diaryId: 123,
+      addObservation: true,
+    });
   });
 
   it("update navigates back on success", async () => {

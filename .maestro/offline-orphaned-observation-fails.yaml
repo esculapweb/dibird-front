@@ -67,26 +67,21 @@ tags:
       - tapOn:
           id: "diary-save-button"
 
-# DiaryDetailScreen is a ListScreen and paints nothing until its observations
-# query settles — hence the wide budget, same as offline-create-diary.yaml.
-- extendedWaitUntil:
-    visible:
-      id: "diary-edit-button"
-    timeout: 25000
-
 # ---- CREATE an Observation inside that still-unsynced Diary ----
-# The diary-scoped add button pre-fills the editor with this diary's id, so
-# payload.data.diary carries its temp negative id.
-- tapOn:
-    id: "list-add-button"
-- tapOn:
-    id: "species-dropdown-trigger"
+# Creating a diary goes straight on to its first observation, with the
+# species list already open (DiaryDetailScreen's addObservation param). The
+# editor is pre-filled with this diary's id, so payload.data.diary carries
+# its temp negative id. Wide budget, same as offline-create-diary.yaml.
 - extendedWaitUntil:
     visible:
       id: "option-row-0"
-    timeout: 6000
+    timeout: 25000
 - tapOn:
     id: "option-row-0"
+# The diary's species list is always multi-select: a tap only checks the
+# row, "Done" hands the selection to the form.
+- tapOn:
+    id: "select-multiple-done"
 - tapOn:
     id: "observation-save-button"
 - runFlow:
