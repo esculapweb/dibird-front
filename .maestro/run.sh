@@ -196,7 +196,7 @@ if [ "$PLATFORM" = "android" ]; then
   # loopback (unlike wifi/cellular) stays up in airplane mode, so reloads
   # keep working while offline. Verified with `toybox nc` inside the
   # emulator with airplane mode ON: 127.0.0.1:8081 answers 200, while
-  # 192.168.0.103:8081 and the API on :8000 both give "Network is
+  # 192.168.0.102:8081 and the API on :8000 both give "Network is
   # unreachable" — i.e. only Metro moves off the radio, the offline test
   # semantics (EXPO_PUBLIC_BASE_URL is a LAN address) are untouched.
   # Paired with the localhost URL in common/android-bootstrap.yaml.
