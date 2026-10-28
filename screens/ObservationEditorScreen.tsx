@@ -19,6 +19,7 @@ import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ObservationForm from "../components/Observation/ObservationForm";
 import {
   useCreateObservation,
+  useCreateObservations,
   useUpdateObservation,
 } from "../hooks/Observation/useOfflineObservation";
 import { useProfile } from "../store/profile-context";
@@ -43,6 +44,7 @@ import {
   ObservationFormData,
   ObservationPhoto,
   PlaceData,
+  SpeciesDropdownItem,
 } from "../types";
 
 const FORM_FIELDS = [
@@ -70,6 +72,10 @@ const ObservationEditorScreen = () => {
   // Reopens the species list after "save & add another" — the field the user
   // has to fill in next is always the species (see ObservationForm).
   const [openSpeciesSignal, setOpenSpeciesSignal] = useState(0);
+  // Two or more species picked at once in a diary (see ObservationForm);
+  // empty in the ordinary single-species flow.
+  const [multiSpecies, setMultiSpecies] = useState<SpeciesDropdownItem[]>([]);
+  const isMultiSpecies = multiSpecies.length > 1;
   const queryClient = useQueryClient();
   const navigation = useNavigation<AppStackNavigationProp>();
   const route = useRoute<AppStackRouteProp<"ObservationEditor">>();
@@ -270,6 +276,7 @@ const ObservationEditorScreen = () => {
   };
 
   const createObservationMutation = useCreateObservation();
+  const createObservationsMutation = useCreateObservations();
   const updateObservationMutation = useUpdateObservation(
     observationWithParsedDate?.id,
   );
@@ -324,7 +331,26 @@ const ObservationEditorScreen = () => {
       place: placeValue,
     });
 
-    if (isEditMode) {
+    if (isMultiSpecies) {
+      createObservationsMutation.mutate(
+        {
+          items: multiSpecies.map((item) => ({
+            payload: { ...payload, species: item.value as number },
+            speciesData: item,
+          })),
+        },
+        {
+          onSuccess: () => {
+            queryClient.invalidateQueries({
+              queryKey: ["DiarySpecies", diaryId],
+            });
+            Keyboard.dismiss();
+            navigation.goBack();
+          },
+          onError: handleMutateError,
+        },
+      );
+    } else if (isEditMode) {
       updateObservationMutation.mutate(
         { payload, speciesData, placeData },
         {
@@ -375,6 +401,11 @@ const ObservationEditorScreen = () => {
     returnMode,
     updateObservationMutation,
     createObservationMutation,
+    createObservationsMutation,
+    isMultiSpecies,
+    multiSpecies,
+    queryClient,
+    diaryId,
     navigation,
     handleMutateError,
     validateForm,
@@ -483,7 +514,8 @@ const ObservationEditorScreen = () => {
         tintColor: Colors.main100,
         disabled: isEditMode
           ? updateObservationMutation.isPending
-          : createObservationMutation.isPending,
+          : createObservationMutation.isPending ||
+            createObservationsMutation.isPending,
         testID: "observation-save-button",
       },
     ],
@@ -491,6 +523,7 @@ const ObservationEditorScreen = () => {
       handleSaveObservation,
       isEditMode,
       createObservationMutation.isPending,
+      createObservationsMutation.isPending,
       updateObservationMutation.isPending,
       Colors.main100,
     ],
@@ -508,12 +541,14 @@ const ObservationEditorScreen = () => {
   if (
     isEditMode
       ? updateObservationMutation.isPending
-      : createObservationMutation.isPending
+      : createObservationMutation.isPending ||
+        createObservationsMutation.isPending
   ) {
     return <LoadingOverlay />;
   }
 
-  const bottomEl = !!diaryId && !isEditMode && (
+  // Hidden for several species: the header check mark already saves them all.
+  const bottomEl = !!diaryId && !isEditMode && !isMultiSpecies && (
     <FlatButtonBottom
       onPress={handleSaveAndAddAnother}
       icon="add-outline"
@@ -554,6 +589,8 @@ const ObservationEditorScreen = () => {
         onPickPhotos={handlePickPhotos}
         onRemovePhoto={handleRemovePhoto}
         openSpeciesSignal={openSpeciesSignal}
+        multiSpecies={multiSpecies}
+        setMultiSpecies={!!diaryId && !isEditMode ? setMultiSpecies : undefined}
       />
     </Layout>
   );

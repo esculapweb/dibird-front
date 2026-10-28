@@ -23,6 +23,7 @@ jest.mock("../../repositories/observationRepository", () => ({
   upsertFromServer: jest.fn(),
   makeClientRequestId: jest.fn(() => "client-request-id"),
   createLocal: jest.fn(),
+  createLocalMany: jest.fn(),
   updateLocal: jest.fn(),
   removeLocal: jest.fn(),
   deleteLocal: jest.fn(),
@@ -45,6 +46,7 @@ import * as diaryRepository from "../../repositories/diaryRepository";
 import {
   useObservationItem,
   useCreateObservation,
+  useCreateObservations,
   useUpdateObservation,
   useDeleteObservation,
 } from "../useOfflineObservation";
@@ -221,6 +223,52 @@ describe("useCreateObservation", () => {
     expect(invalidatedKeys).toEqual(
       expect.arrayContaining([["Observations"], ["Observation"], ["Diaries"], ["Stat"], ["Checklist"]]),
     );
+  });
+});
+
+describe("useCreateObservations", () => {
+  it("queues every species locally even when online, without a live POST", async () => {
+    (observationRepository.createLocalMany as jest.Mock).mockReturnValue([{ id: -1 }, { id: -2 }]);
+    const { result } = await renderHook(() => useCreateObservations(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        items: [
+          { payload: { diary: 3, species: 100 } as never, speciesData: { value: 100 } as never },
+          { payload: { diary: 3, species: 101 } as never, speciesData: { value: 101 } as never },
+        ],
+      });
+    });
+
+    expect(api.post).not.toHaveBeenCalled();
+    expect(observationRepository.createLocalMany).toHaveBeenCalledTimes(1);
+    const [inputs] = (observationRepository.createLocalMany as jest.Mock).mock.calls[0];
+    expect(inputs.map((input: { payload: { species: number } }) => input.payload.species)).toEqual([100, 101]);
+    expect(inputs[1].extras.speciesData).toEqual({ value: 101 });
+    expect(runObservationSync).toHaveBeenCalledTimes(1);
+  });
+
+  it("resolves the shared diary once and applies it to every item", async () => {
+    (diaryRepository.resolveDiaryId as jest.Mock).mockReturnValue(30);
+    (diaryRepository.getDiary as jest.Mock).mockReturnValue({ territory: 7 });
+    (observationRepository.createLocalMany as jest.Mock).mockReturnValue([]);
+    const { result } = await renderHook(() => useCreateObservations(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        items: [
+          { payload: { diary: -3, species: 100 } as never },
+          { payload: { diary: -3, species: 101 } as never },
+        ],
+      });
+    });
+
+    expect(diaryRepository.resolveDiaryId).toHaveBeenCalledTimes(1);
+    const [inputs] = (observationRepository.createLocalMany as jest.Mock).mock.calls[0];
+    inputs.forEach((input: { payload: { diary: number }; extras: { diaryTerritory: number } }) => {
+      expect(input.payload.diary).toBe(30);
+      expect(input.extras.diaryTerritory).toBe(7);
+    });
   });
 });
 

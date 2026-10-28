@@ -37,6 +37,9 @@ interface DropdownInputProps<T extends string | number | null = string | number 
     onSelect: (value: string | number | null) => void;
     onClose: () => void;
     index: number;
+    multiple?: boolean;
+    checked?: boolean;
+    onToggle?: (value: string | number) => void;
   }) => ReactElement | null;
   speciesData?: SpeciesDropdownItem;
   placeData?: PlaceDropdownItem | null;
@@ -51,6 +54,14 @@ interface DropdownInputProps<T extends string | number | null = string | number 
   // means "never asked", so a fresh mount stays closed — see the species
   // dropdown in ObservationForm, reopened right after "save & add another".
   openSignal?: number;
+  // Multi-select, see SelectListModal. The single `value`/`setValue` pair keeps
+  // working as before; a confirmed set arrives through onConfirmMultiple.
+  allowMultiple?: boolean;
+  selectedValues?: (string | number)[];
+  onConfirmMultiple?: (values: (string | number)[]) => void;
+  multipleLabel?: string;
+  // Replaces the built-in field with a custom one that opens the same list.
+  renderTrigger?: (open: () => void) => ReactElement;
 }
 
 const DropdownInput = <T extends string | number | null>({
@@ -74,6 +85,11 @@ const DropdownInput = <T extends string | number | null>({
   onLocationUnavailable,
   useDefault = false,
   openSignal = 0,
+  allowMultiple = false,
+  selectedValues,
+  onConfirmMultiple,
+  multipleLabel,
+  renderTrigger,
 }: DropdownInputProps<T>) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -147,7 +163,9 @@ const DropdownInput = <T extends string | number | null>({
 
   return (
     <>
-      {(type === "SpeciesDropdown" && !useDefault) ? (
+      {renderTrigger ? (
+        renderTrigger(openModal)
+      ) : (type === "SpeciesDropdown" && !useDefault) ? (
         <SpeciesDropdown
           speciesData={speciesData}
           value={value}
@@ -309,6 +327,13 @@ const DropdownInput = <T extends string | number | null>({
         onSortChange={onSortChange}
         locationAvailable={locationAvailable}
         onLocationUnavailable={onLocationUnavailable}
+        allowMultiple={allowMultiple}
+        multipleLabel={multipleLabel}
+        selectedValues={selectedValues}
+        onConfirmMultiple={(values) => {
+          onConfirmMultiple?.(values);
+          setModalVisible(false);
+        }}
       />
     </>
   );

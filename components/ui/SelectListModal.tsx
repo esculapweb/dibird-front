@@ -1,6 +1,7 @@
-import { FlatList, View, StyleSheet, Text } from "react-native";
+import { FlatList, View, StyleSheet, Text, Pressable, Switch } from "react-native";
 import { useEffect, useRef, useState, useMemo, ReactElement } from "react";
 import { useTranslation } from "react-i18next";
+import { Ionicons } from "@expo/vector-icons";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import ModalWrapper from "./ModalWrapper";
@@ -8,6 +9,7 @@ import DefaultOptionRow from "./DefaultOptionRow";
 import SearchInput from "./SearchInput";
 import { sortOptionsList } from "../../util/sortOptionsList";
 import RadioGroup from "./RadioGroup";
+import FlatButtonBottom from "./FlatButtonBottom";
 import { QueryType, DropdownItem } from "../../types";
 
 const ItemHeight = 52;
@@ -27,12 +29,24 @@ interface SelectListModalProps {
     onSelect: (value: string | number | null) => void;
     onClose: () => void;
     index: number;
+    multiple?: boolean;
+    checked?: boolean;
+    onToggle?: (value: string | number) => void;
   }) => ReactElement | null;
   type?: string;
   sort?: string | null;
   onSortChange?: (newSort: string | null) => void;
   locationAvailable?: boolean;
   onLocationUnavailable?: () => void;
+  // Shows a switch row under the search that turns the list into multi-select: rows are
+  // checked instead of picked, and "Done" hands the whole set to
+  // onConfirmMultiple. Only rows rendered through `renderOption` know how to
+  // show a check mark (see SpeciesOptionRow).
+  allowMultiple?: boolean;
+  selectedValues?: (string | number)[];
+  onConfirmMultiple?: (values: (string | number)[]) => void;
+  // Label of that switch row, e.g. "Select multiple species".
+  multipleLabel?: string;
 }
 
 const SelectListModal = ({
@@ -50,6 +64,10 @@ const SelectListModal = ({
   onSortChange,
   locationAvailable = true,
   onLocationUnavailable,
+  allowMultiple = false,
+  selectedValues,
+  onConfirmMultiple,
+  multipleLabel,
 }: SelectListModalProps) => {
   const flatListRef = useRef<FlatList<DropdownItem>>(null);
   const [hasScrolled, setHasScrolled] = useState(false);
@@ -59,6 +77,31 @@ const SelectListModal = ({
   const sortOptions = type ? sortOptionsList(type) : [];
   const [sortOrder, setSortOrder] = useState(sort ?? null);
   const [sortMenuVisible, setSortMenuVisible] = useState(false);
+  const [multiple, setMultiple] = useState(false);
+  // An array, not a Set: the selection order is the order the form shows the
+  // chosen species in.
+  const [draft, setDraft] = useState<(string | number)[]>([]);
+
+  // Every opening starts from what the form currently holds, so closing the
+  // list without "Done" discards the checks made in it.
+  useEffect(() => {
+    if (!visible) return;
+    const current = selectedValues?.length
+      ? selectedValues
+      : selected != null
+        ? [selected]
+        : [];
+    setDraft(current);
+    setMultiple(allowMultiple && current.length > 1);
+    // Dependencies are curated: only an opening reseeds the draft.
+  }, [visible]);
+
+  const toggleValue = (value: string | number) =>
+    setDraft((prev) =>
+      prev.includes(value)
+        ? prev.filter((v) => v !== value)
+        : [...prev, value],
+    );
 
   const disabledSortValues = !locationAvailable
     ? sortOptions
@@ -133,6 +176,32 @@ const SelectListModal = ({
             style={{ marginBottom: 8 }}
           />
 
+          {/* A switch, not a header button: neither an icon nor a text button
+              there read as "this changes how the list behaves". */}
+          {allowMultiple && (
+            <Pressable
+              onPress={() => setMultiple((prev) => !prev)}
+              style={styles.multipleRow}
+              testID="select-multiple-toggle"
+            >
+              <Ionicons
+                name="checkbox-outline"
+                size={20}
+                color={multiple ? Colors.main100 : Colors.textSecondary}
+              />
+              <Text style={styles.multipleText} numberOfLines={1}>
+                {multipleLabel ?? t("select_multiple")}
+              </Text>
+              <Switch
+                value={multiple}
+                onValueChange={setMultiple}
+                trackColor={{ false: Colors.border, true: Colors.main100 }}
+                thumbColor={Colors.primary100}
+                testID="select-multiple-switch"
+              />
+            </Pressable>
+          )}
+
           {sortMenuVisible && (
             <View style={styles.sortMenu}>
               <RadioGroup
@@ -167,7 +236,16 @@ const SelectListModal = ({
               })}
               renderItem={({ item, index }) =>
                 renderOption ? (
-                  renderOption({ item, selected, onSelect, onClose, index })
+                  renderOption({
+                    item,
+                    selected,
+                    onSelect,
+                    onClose,
+                    index,
+                    multiple,
+                    checked: multiple && draft.includes(item.value),
+                    onToggle: toggleValue,
+                  })
                 ) : (
                   <DefaultOptionRow
                     item={item}
@@ -180,6 +258,17 @@ const SelectListModal = ({
                 )
               }
             />
+          )}
+
+          {multiple && (
+            <FlatButtonBottom
+              onPress={() => onConfirmMultiple?.(draft)}
+              icon="checkmark-outline"
+              disabled={draft.length === 0}
+              testID="select-multiple-done"
+            >
+              {t("done_count", { count: draft.length })}
+            </FlatButtonBottom>
           )}
         </View>
       )}
@@ -214,6 +303,18 @@ const stylesFn = (Colors: ThemeColors) =>
       shadowRadius: 4,
       shadowOffset: { width: 0, height: 2 },
       elevation: 2,
+    },
+    multipleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      marginHorizontal: 12,
+      marginBottom: 8,
+    },
+    multipleText: {
+      flex: 1,
+      fontSize: 15,
+      color: Colors.textMain,
     },
     content: {
       flex: 1,

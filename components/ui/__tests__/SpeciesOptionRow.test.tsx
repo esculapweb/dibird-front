@@ -136,3 +136,49 @@ it("sets a testID from the index when given", async () => {
   );
   expect(screen.getByTestId("option-row-4")).toBeOnTheScreen();
 });
+
+describe("multi-select mode", () => {
+  const mockOnToggle = jest.fn();
+
+  it("toggles instead of picking, keeps the list open and shows the check state", async () => {
+    await render(
+      <SpeciesOptionRow
+        item={baseItem()}
+        selected={null}
+        onSelect={mockOnSelect}
+        onClose={mockOnClose}
+        index={0}
+        multiple
+        checked
+        onToggle={mockOnToggle}
+      />,
+    );
+
+    fireEvent.press(screen.getByTestId("option-row-0"));
+
+    expect(mockOnToggle).toHaveBeenCalledWith(3);
+    expect(mockOnSelect).not.toHaveBeenCalled();
+    expect(mockOnClose).not.toHaveBeenCalled();
+    expect(screen.getByTestId("option-row-check-0")).toHaveTextContent("checkbox");
+  });
+
+  it("does not toggle or offer a check mark for a species already in the diary", async () => {
+    await render(
+      <SpeciesOptionRow
+        item={baseItem()}
+        selected={null}
+        onSelect={mockOnSelect}
+        onClose={mockOnClose}
+        index={0}
+        multiple
+        disabled
+        onToggle={mockOnToggle}
+      />,
+    );
+
+    fireEvent.press(screen.getByTestId("option-row-0"));
+
+    expect(mockOnToggle).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("option-row-check-0")).toBeNull();
+  });
+});

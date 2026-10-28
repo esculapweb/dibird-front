@@ -250,6 +250,56 @@ export const useCreateObservation = () => {
   });
 };
 
+interface CreateManyVars {
+  // All items belong to the same diary and differ only in species — see the
+  // multi-species picker in ObservationEditorScreen.
+  items: { payload: ObservationFormData; speciesData?: SpeciesDropdownItem | null }[];
+}
+
+export const useCreateObservations = () => {
+  const queryClient = useQueryClient();
+  const { profile } = useProfile();
+
+  return useMutationWithTranslation<ObservationItem[], AppError, CreateManyVars>({
+    mutationFn: async ({ items }) => {
+      if (items.length === 0) return [];
+      // One diary for the whole batch, so it is resolved once.
+      const {
+        payload: resolved,
+        diaryTerritory,
+        diaryPlace,
+        diaryPlaceData,
+        diaryDateTime,
+        diaryPrivate,
+      } = resolveObservationDiary(items[0].payload);
+
+      // Unlike useCreateObservation, there is no live POST here even when
+      // online: a checklist of a hundred species would keep the editor waiting
+      // on a hundred sequential requests. Writing everything to the outbox
+      // returns at once, the diary list shows the rows through its overlay, and
+      // each row's own client_request_id keeps the queued retries idempotent.
+      const created = observationRepository.createLocalMany(
+        items.map(({ payload, speciesData }) => ({
+          payload: { ...payload, diary: resolved.diary },
+          extras: { speciesData, diaryTerritory, diaryPlace, diaryPlaceData, diaryDateTime, diaryPrivate },
+          clientRequestId: observationRepository.makeClientRequestId(),
+        })),
+        profile,
+      );
+      runObservationSync();
+      return created;
+    },
+    // Counted per observation so the metric stays comparable with one-by-one adds.
+    onSuccess: async (created) => {
+      created.forEach(() => track("observation_created"));
+      if (created.length > 0 && (await markFirstObservationTracked())) {
+        track("first_observation_created");
+      }
+    },
+    onSettled: () => invalidateObservationCaches(queryClient),
+  });
+};
+
 export const useUpdateObservation = (id: number | null | undefined) => {
   const queryClient = useQueryClient();
   const { profile } = useProfile();
