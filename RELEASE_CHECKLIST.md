@@ -464,7 +464,7 @@ npm run e2e:android -- --reset .maestro/<flow>.yaml   # со сбросом со
   **Исправлено 27.08.2026 переносом media мимо Django.** В `docker/dibird_local`
   бэкенда появился сервис `media` (nginx, порт 8080), отдающий `/media/` прямо
   с диска, а `EXPO_PUBLIC_MEDIA_URL` в `.env.development.local` переехал на
-  `http://192.168.02:8080`. Локальная схема стала такой же, как на проде,
+  `http://192.168.0.102:8080`. Локальная схема стала такой же, как на проде,
   где media и так живёт на отдельном хосте (`s.dibird.com`), а `/media/` с
   основного домена отдаёт 410. Тот же файл: nginx — 5 мс, Django — 42 мс.
   После правки связка `guest-deeplink-no-session` → `list-filters` проходит
