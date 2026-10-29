@@ -99,6 +99,8 @@ interface ListScreenProps<T, RouteName extends ScreenWithFiltersOnly> {
   ) => ReactNode;
   fabBottomOffset?: number;
   onFirstPageData?: (page: StatPaginatedResponse<T>) => void;
+  // Lays the items out as a grid — see ItemsList.
+  numColumns?: number;
 }
 
 const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
@@ -134,6 +136,7 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
   renderContent,
   fabBottomOffset = 0,
   onFirstPageData,
+  numColumns,
 }: ListScreenProps<T, RouteName>) => {
   const screenName = route.name;
   const { t } = useTranslation();
@@ -457,6 +460,7 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
           listHeader={listHeader}
           onRefresh={handlePullRefresh}
           isRefreshing={isPullRefreshing}
+          numColumns={numColumns}
         />
       )}
     </Layout>

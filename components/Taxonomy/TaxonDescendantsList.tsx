@@ -1,6 +1,7 @@
 import { ReactNode, useMemo, useState } from "react";
 import {
   SectionList,
+  View,
   Text,
   StyleSheet,
   Pressable,
@@ -11,10 +12,13 @@ import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 
 import { useOpenSpecies } from "../../hooks/useOpenSpecies";
+import { SpeciesLayout } from "../../hooks/useSpeciesViewMode";
 
 import SearchInput from "../ui/SearchInput";
 import EmptyState from "../Empty/EmptyState";
 import TaxonRow from "./TaxonRow";
+import SpeciesTile, { PHOTO_GRID_COLUMNS } from "./SpeciesTile";
+import { GRID_GAP } from "../ui/ItemsList";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { latinPart } from "../../util/taxonomy";
 import { AppStackNavigationProp, TaxonDescendant } from "../../types";
@@ -41,7 +45,23 @@ interface TaxonDescendantsListProps {
   // that screen's job — this just wires up the gesture.
   onRefresh?: () => void;
   isRefreshing?: boolean;
+  // Rows or the photo grid (useSpeciesViewMode).
+  layout?: SpeciesLayout;
+  showCaptions?: boolean;
 }
+
+// SectionList has no numColumns, so the grid is built by hand: the species
+// are cut into rows of tiles. The plain list goes through the same path with
+// rows of one, which keeps a single SectionList for both layouts.
+const toRows = (
+  species: TaxonDescendant[],
+  size: number,
+): TaxonDescendant[][] => {
+  const rows: TaxonDescendant[][] = [];
+  for (let i = 0; i < species.length; i += size)
+    rows.push(species.slice(i, i + size));
+  return rows;
+};
 
 const sortSections = (
   sections: GenusSection[],
@@ -92,6 +112,8 @@ const TaxonDescendantsList = ({
   listHeader,
   onRefresh,
   isRefreshing,
+  layout = "list",
+  showCaptions = true,
 }: TaxonDescendantsListProps) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -125,11 +147,57 @@ const TaxonDescendantsList = ({
       .filter((section) => section.data.length > 0);
   }, [descendants, search, sort]);
 
+  const isPhotos = layout === "photos";
+  // The genus grouping belongs to the list only, the way the checklist's
+  // grid drops its order/family headers: the grid is one run of birds. A
+  // section without a genus draws no header (see renderSectionHeader).
+  // Flattened after filtering, and re-sorted as a whole by name — sorted per
+  // genus, the gallery would read A–Z several times over. Taxonomic order
+  // needs nothing: the sections already follow one another in it.
+  const rowSections = useMemo(() => {
+    if (!isPhotos)
+      return sections.map((section) => ({
+        genus: section.genus,
+        count: section.data.length,
+        data: toRows(section.data, 1),
+      }));
+
+    const species = sections.flatMap((section) => section.data);
+    if (sort === "name" || sort === "-name") {
+      const direction = sort === "name" ? 1 : -1;
+      species.sort(
+        (a, b) => direction * a.d_name_lang.localeCompare(b.d_name_lang),
+      );
+    }
+    if (species.length === 0) return [];
+    return [
+      {
+        genus: null,
+        count: species.length,
+        data: toRows(species, PHOTO_GRID_COLUMNS),
+      },
+    ];
+  }, [sections, isPhotos, sort]);
+
+  const renderTile = (item: TaxonDescendant) => (
+    <SpeciesTile
+      title={item.d_name_lang}
+      thumb={item.thumb}
+      statusCode={item.d_status}
+      showCaption={showCaptions}
+      onPress={() => openSpecies(item.d_segment, "taxon_group")}
+      testID={`species-tile-${item.d_segment}`}
+    />
+  );
+
   return (
     <SectionList
       testID="items-list"
-      sections={sections}
-      keyExtractor={(item) => item.d_segment}
+      // Same reason as ItemsList's key: a list that changes shape under
+      // mounted rows is better remounted than recycled.
+      key={layout}
+      sections={rowSections}
+      keyExtractor={(row) => row[0].d_segment}
       stickySectionHeadersEnabled={false}
       contentContainerStyle={[
         styles.list,
@@ -165,7 +233,7 @@ const TaxonDescendantsList = ({
             <Text style={styles.genusName} numberOfLines={1}>
               {genus.d_name}
             </Text>
-            <Text style={styles.genusCount}>{section.data.length}</Text>
+            <Text style={styles.genusCount}>{section.count}</Text>
             <Ionicons
               name="chevron-forward"
               size={16}
@@ -174,15 +242,35 @@ const TaxonDescendantsList = ({
           </Pressable>
         );
       }}
-      renderItem={({ item }) => (
-        <TaxonRow
-          title={item.d_name_lang}
-          latin={latinPart(item.d_name, item.d_name_lang)}
-          thumb={item.thumb}
-          statusCode={item.d_status}
-          onPress={() => openSpecies(item.d_segment, "taxon_group")}
-        />
-      )}
+      renderItem={({ item: row }) => {
+        if (isPhotos)
+          return (
+            <View style={styles.gridRow}>
+              {row.map((item) => (
+                <View
+                  key={item.d_segment}
+                  style={[
+                    styles.cell,
+                    { width: `${100 / PHOTO_GRID_COLUMNS}%` },
+                  ]}
+                >
+                  {renderTile(item)}
+                </View>
+              ))}
+            </View>
+          );
+
+        const item = row[0];
+        return (
+          <TaxonRow
+            title={item.d_name_lang}
+            latin={latinPart(item.d_name, item.d_name_lang)}
+            thumb={item.thumb}
+            statusCode={item.d_status}
+            onPress={() => openSpecies(item.d_segment, "taxon_group")}
+          />
+        );
+      }}
       ListEmptyComponent={
         search ? (
           <EmptyState
@@ -217,6 +305,9 @@ export default TaxonDescendantsList;
 const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     list: { paddingHorizontal: 12, paddingVertical: 8 },
+    // The same cell geometry as ItemsList's grid — see there.
+    gridRow: { flexDirection: "row", marginHorizontal: -GRID_GAP / 2 },
+    cell: { padding: GRID_GAP / 2 },
     genusHeader: {
       flexDirection: "row",
       alignItems: "center",

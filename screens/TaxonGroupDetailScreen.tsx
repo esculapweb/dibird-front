@@ -13,9 +13,11 @@ import { overflowButton } from "../components/ui/overflowMenu";
 import TaxonChildrenList from "../components/Taxonomy/TaxonChildrenList";
 import TaxonDescendantsList from "../components/Taxonomy/TaxonDescendantsList";
 import TaxonBreadcrumbs from "../components/Taxonomy/TaxonBreadcrumbs";
+import SpeciesViewSwitch from "../components/Taxonomy/SpeciesViewSwitch";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import { useTaxonomySort } from "../hooks/useTaxonomySort";
+import { useSpeciesViewMode } from "../hooks/useSpeciesViewMode";
 import { fetchTaxonDetail } from "../util/fetches";
 import { buildShareUrl } from "../util/helpers";
 import { resolveTaxonImage } from "../util/taxonomy";
@@ -49,6 +51,7 @@ const TaxonGroupDetailScreen = () => {
   const { segment, rank, initialSort } = route.params;
   const styles = stylesFn(Colors);
   const { sort, openSortSheet } = useTaxonomySort(initialSort);
+  const speciesView = useSpeciesViewMode();
 
   const { data, isLoading, isError, isRefetching, error, refetch } =
     useQuery<TaxonGroupDetail>({
@@ -118,7 +121,10 @@ const TaxonGroupDetailScreen = () => {
       />
     );
 
-  if (isLoading || !data || data.redirect) return <LoadingOverlay />;
+  // Waiting on the stored layout too, so a gallery user doesn't get the rows
+  // for a frame first.
+  if (isLoading || !data || data.redirect || !speciesView.ready)
+    return <LoadingOverlay />;
 
   // Genera carry no illustration of their own, so borrow the first species
   // photo in the subtree rather than showing an empty frame.
@@ -172,6 +178,23 @@ const TaxonGroupDetailScreen = () => {
     </View>
   );
 
+  // Over an order's families as much as over a family's species: both come
+  // with photos, and it is one stored preference either way.
+  const listHeader = (
+    <>
+      {header}
+      <SpeciesViewSwitch
+        options={speciesView.options}
+        value={speciesView.layout}
+        onChange={speciesView.changeLayout}
+        testIDPrefix="species-view"
+        isPhotos={speciesView.isPhotos}
+        showCaptions={speciesView.showCaptions}
+        onToggleCaptions={speciesView.toggleCaptions}
+      />
+    </>
+  );
+
   return (
     <Layout>
       {/* An order's families come from the paginated list endpoint; family and
@@ -185,7 +208,9 @@ const TaxonGroupDetailScreen = () => {
           sort={sort}
           errorTitle={t("taxonomy_unavailable")}
           emptyMessage={t("no_families_found")}
-          listHeader={header}
+          listHeader={listHeader}
+          layout={speciesView.layout}
+          showCaptions={speciesView.showCaptions}
         />
       ) : (
         <TaxonDescendantsList
@@ -193,9 +218,11 @@ const TaxonGroupDetailScreen = () => {
           showGroupHeaders={rank === 3}
           sort={sort}
           emptyMessage={t("no_species_found")}
-          listHeader={header}
+          listHeader={listHeader}
           onRefresh={refetch}
           isRefreshing={isRefetching}
+          layout={speciesView.layout}
+          showCaptions={speciesView.showCaptions}
         />
       )}
     </Layout>

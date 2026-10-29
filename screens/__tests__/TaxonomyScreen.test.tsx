@@ -60,6 +60,8 @@ jest.mock("../../hooks/useTaxonomySort", () => ({
 }));
 
 import { Share } from "react-native";
+import { BottomSheet } from "../../services/bottomSheet";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import {
   createNavigationMock,
@@ -82,8 +84,10 @@ const headerProps = (): Record<string, unknown> => {
   return options.headerRight().props;
 };
 
-beforeEach(() => {
+beforeEach(async () => {
   jest.clearAllMocks();
+  // The species layout is a stored preference shared by every species list.
+  await AsyncStorage.clear();
   mockRoute = createRouteMock("Taxonomy", { rank: 2 });
 });
 
@@ -304,4 +308,91 @@ it("autofocuses and relabels the search on the species list", async () => {
 
   expect(mockListProps.autoFocusSearch).toBe(true);
   expect(mockListProps.searchPlaceholder).toBe("search_species_hint");
+});
+
+describe("photo grid", () => {
+  it("offers the grid on a species list and hands the choice to the list", async () => {
+    mockRoute = createRouteMock("Taxonomy", { rank: 5, extinct: true });
+
+    await render(<TaxonomyScreen />);
+    expect(mockListProps.layout).toBe("list");
+    expect(screen.queryByTestId("species-captions-toggle")).toBeNull();
+
+    await fireEvent.press(await screen.findByTestId("species-view-photos"));
+
+    expect(mockListProps.layout).toBe("photos");
+    expect(mockListProps.showCaptions).toBe(true);
+    expect(screen.getByTestId("species-captions-toggle")).toBeOnTheScreen();
+  });
+
+  it("passes the captions toggle through to the tiles", async () => {
+    mockRoute = createRouteMock("Taxonomy", { rank: 5 });
+
+    await render(<TaxonomyScreen />);
+    await fireEvent.press(await screen.findByTestId("species-view-photos"));
+    await fireEvent.press(screen.getByTestId("species-captions-toggle"));
+
+    expect(mockListProps.showCaptions).toBe(false);
+  });
+
+  it("offers the grid on the order list too", async () => {
+    await render(<TaxonomyScreen />);
+
+    await fireEvent.press(await screen.findByTestId("species-view-photos"));
+
+    expect(mockListProps.rank).toBe(2);
+    expect(mockListProps.layout).toBe("photos");
+  });
+
+  it("has no grid on a genus list — genera have no photos", async () => {
+    mockRoute = createRouteMock("Taxonomy", {
+      rank: 4,
+      parentSegment: "pandionidae",
+      parentRank: 3,
+    });
+
+    await render(<TaxonomyScreen />);
+
+    expect(screen.queryByTestId("species-view-photos")).toBeNull();
+    expect(mockListProps.layout).toBe("list");
+  });
+
+  it("has no grid in picker mode — a bird is picked there by name", async () => {
+    mockRoute = createRouteMock("Taxonomy", { rank: 5, pickerKey: "x" });
+
+    await render(<TaxonomyScreen />);
+
+    expect(screen.queryByTestId("species-view-photos")).toBeNull();
+    expect(mockListProps.layout).toBe("list");
+  });
+});
+
+describe("taxonomic group filter", () => {
+  const sheetProps = () => {
+    const { renderContent } = (BottomSheet.showContent as jest.Mock).mock
+      .calls.at(-1)![0];
+    return renderContent(() => {}).props as Record<string, unknown>;
+  };
+
+  it("offers the group dropdowns on the catalogue's species list", async () => {
+    mockRoute = createRouteMock("Taxonomy", { rank: 5 });
+    await render(<TaxonomyScreen />);
+
+    (headerProps().onFilterPress as () => void)();
+
+    expect(sheetProps().showGroup).toBe(true);
+  });
+
+  it("leaves them out under a parent — the list is that group's own", async () => {
+    mockRoute = createRouteMock("Taxonomy", {
+      rank: 5,
+      parentSegment: "pitangus",
+      parentRank: 4,
+    });
+    await render(<TaxonomyScreen />);
+
+    (headerProps().onFilterPress as () => void)();
+
+    expect(sheetProps().showGroup).toBe(false);
+  });
 });

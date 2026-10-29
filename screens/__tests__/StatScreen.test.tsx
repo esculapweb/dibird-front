@@ -1,7 +1,40 @@
+jest.mock("../../store/theme-context", () => ({
+  useTheme: () => require("../mockTheme").mockUseTheme(),
+}));
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
   initReactI18next: { type: "3rdParty", init: () => {} },
 }));
+// The real hook reads the stored layout asynchronously and holds the screen
+// back until it lands; that is covered in its own test. Here it is plain
+// state, ready from the first render, so each test starts on rows.
+jest.mock("../../hooks/useSpeciesViewMode", () => {
+  const { useState } = require("react");
+  const photosOption = {
+    value: "photos",
+    label: "view_photos",
+    icon: "images-outline",
+  };
+  return {
+    useSpeciesViewMode: () => {
+      const [layout, setLayout] = useState("list");
+      const [showCaptions, setShowCaptions] = useState(true);
+      return {
+        layout,
+        isPhotos: layout === "photos",
+        ready: true,
+        changeLayout: setLayout,
+        showCaptions,
+        toggleCaptions: () => setShowCaptions((v: boolean) => !v),
+        options: [
+          { value: "list", label: "view_list", icon: "list-outline" },
+          photosOption,
+        ],
+        photosOption,
+      };
+    },
+  };
+});
 jest.mock("react-native-toast-message", () => ({ show: jest.fn() }));
 jest.mock("@react-navigation/native", () => ({
   useNavigation: () => mockNavigation,
@@ -212,13 +245,16 @@ describe("checklist layout switch", () => {
     return render(<StatScreen />);
   };
 
-  it("offers the switch on the checklist and nowhere else", async () => {
-    await renderChecklist();
-    expect(latestProps().listHeader).toBeTruthy();
+  it("offers tree, list and photos on the checklist, list and photos on the stats", async () => {
+    const checklist = await renderChecklist();
+    expect(checklist.getByTestId("checklist-view-tree")).toBeOnTheScreen();
+    expect(checklist.getByTestId("checklist-view-flat")).toBeOnTheScreen();
+    expect(checklist.getByTestId("checklist-view-photos")).toBeOnTheScreen();
 
     mockRoute = createRouteMock("Stat", {});
-    await render(<StatScreen />);
-    expect(latestProps().listHeader).toBeUndefined();
+    const stats = await render(<StatScreen />);
+    expect(stats.getByTestId("stat-view-list")).toBeOnTheScreen();
+    expect(stats.getByTestId("stat-view-photos")).toBeOnTheScreen();
   });
 
   it("opens on the tree, group headers and all", async () => {
@@ -275,6 +311,94 @@ describe("checklist layout switch", () => {
 
     await fireEvent.press(screen.getByTestId("checklist-view-tree"));
     expect(latestProps().allowSort).toBe(false);
+  });
+
+  it("draws the photo grid from the plain list's rows, under the plain list's key", async () => {
+    // Same data as "as a list", so the switch between the two shouldn't
+    // fetch the checklist again.
+    const screen = await renderChecklist();
+    await fireEvent.press(screen.getByTestId("checklist-view-photos"));
+
+    expect(latestProps().queryKeyExtra).toBe("flat");
+    expect(latestProps().numColumns).toBe(3);
+    expect(latestProps().allowSort).toBe(true);
+    expect(screen.getByText("view:photos")).toBeOnTheScreen();
+
+    const rows = await latestProps().fetchFunction({ territory: 1 }, null, "", 1);
+    expect(rows.results.map((r: { type: string }) => r.type)).toEqual([
+      "species",
+      "species",
+    ]);
+  });
+
+  it("goes back to rows when another layout is picked", async () => {
+    const screen = await renderChecklist();
+    await fireEvent.press(screen.getByTestId("checklist-view-photos"));
+    await fireEvent.press(screen.getByTestId("checklist-view-tree"));
+
+    expect(latestProps().numColumns).toBe(1);
+    expect(latestProps().queryKeyExtra).toBe("tree");
+  });
+});
+
+describe("photo grid", () => {
+  const SPECIES = {
+    species_id: 10,
+    sp_name_lang: "Robin",
+    sp_thumb: null,
+    seen: false,
+    status: null,
+  };
+
+  // The list itself is mocked, so a tile is drawn by rendering what the
+  // screen's renderItem returns — as its own tree, which is why it comes last
+  // in each test: a second render takes over the queries.
+  const openGrid = async () => {
+    mockRoute = createRouteMock("Stat", {});
+    const screen = await render(<StatScreen />);
+    await fireEvent.press(screen.getByTestId("stat-view-photos"));
+    return screen;
+  };
+  const renderTile = () =>
+    render(latestProps().renderItem({ item: SPECIES, index: 0 }));
+
+  it("lays the stats out three to a row, with the captions toggle beside the switch", async () => {
+    const screen = await openGrid();
+
+    expect(latestProps().numColumns).toBe(3);
+    expect(screen.getByTestId("species-captions-toggle")).toBeOnTheScreen();
+  });
+
+  it("opens the row's menu from the tile and toggles seen from its corner mark", async () => {
+    await openGrid();
+    const tile = await renderTile();
+
+    await fireEvent.press(tile.getByTestId("stat-species-tile-10"));
+    expect(BottomSheet.showMenu).toHaveBeenCalled();
+
+    // Unseen: the mark is the way to record it, same as the row's checkbox.
+    await fireEvent.press(tile.getByTestId("stat-species-tile-10-seen"));
+    expect(mockNavigation.navigate).toHaveBeenCalledWith(
+      "ObservationEditor",
+      expect.objectContaining({ defaultSpecies: 10 }),
+    );
+  });
+
+  it("shows the species names by default", async () => {
+    await openGrid();
+    const tile = await renderTile();
+
+    expect(tile.getByText("Robin")).toBeOnTheScreen();
+  });
+
+  it("hides the species names once the captions toggle is off", async () => {
+    const screen = await openGrid();
+    await fireEvent.press(screen.getByTestId("species-captions-toggle"));
+    const tile = await renderTile();
+
+    expect(tile.queryByText("Robin")).toBeNull();
+    // Still findable by name — the label stays when the caption goes.
+    expect(tile.getByLabelText("Robin")).toBeOnTheScreen();
   });
 });
 

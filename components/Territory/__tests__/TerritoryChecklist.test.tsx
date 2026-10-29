@@ -84,6 +84,7 @@ import { ChecklistItem } from "../../../types";
 
 let mockItemsListProps: Record<string, unknown>;
 const mockNavigation = createNavigationMock();
+const mockOnGroupPress = jest.fn();
 const mockUseQuery = useQuery as jest.Mock;
 const mockFetchTerritoryTree = fetchTerritoryTree as jest.Mock;
 
@@ -162,7 +163,7 @@ beforeEach(() => {
 // The public endpoint, not /myapi/checklist2/: the country page is open to
 // guests, and its personal half is off anyway (see fetchTerritoryTree).
 it("asks the public catalogue endpoint for that country", async () => {
-  await render(<TerritoryChecklist idAvibase={52} />);
+  await render(<TerritoryChecklist idAvibase={52} onGroupPress={mockOnGroupPress} />);
   await (mockUseQuery.mock.calls.at(-1)![0].queryFn as () => unknown)();
 
   expect(mockUseQuery.mock.calls.at(-1)![0].queryKey).toEqual([
@@ -174,7 +175,7 @@ it("asks the public catalogue endpoint for that country", async () => {
 });
 
 it("keeps the order and family headers with the species under them", async () => {
-  await render(<TerritoryChecklist idAvibase={52} />);
+  await render(<TerritoryChecklist idAvibase={52} onGroupPress={mockOnGroupPress} />);
 
   expect(rows().map((r) => r.type)).toEqual([
     "order",
@@ -190,7 +191,7 @@ it("keeps the order and family headers with the species under them", async () =>
 it("leaves the personal half of the checklist card switched off", async () => {
   // The country page is the catalogue: a "seen" checkbox here would answer
   // "seen" without saying over what period.
-  await render(<TerritoryChecklist idAvibase={52} />);
+  await render(<TerritoryChecklist idAvibase={52} onGroupPress={mockOnGroupPress} />);
   await renderRow(ROWS[2]);
 
   expect(screen.getByTestId("personal-Greater Rhea")).toHaveTextContent("false");
@@ -198,7 +199,7 @@ it("leaves the personal half of the checklist card switched off", async () => {
 
 it("filters locally and drops the headers left with nothing under them", async () => {
   // The whole country arrives in one page, so search never hits the network.
-  await render(<TerritoryChecklist idAvibase={52} />);
+  await render(<TerritoryChecklist idAvibase={52} onGroupPress={mockOnGroupPress} />);
 
   await fireEvent.changeText(screen.getByTestId("search-input"), "condor");
 
@@ -210,7 +211,7 @@ it("filters locally and drops the headers left with nothing under them", async (
 });
 
 it("matches the latin name too", async () => {
-  await render(<TerritoryChecklist idAvibase={52} />);
+  await render(<TerritoryChecklist idAvibase={52} onGroupPress={mockOnGroupPress} />);
 
   await fireEvent.changeText(screen.getByTestId("search-input"), "pennata");
 
@@ -222,7 +223,7 @@ it("matches the latin name too", async () => {
 });
 
 it("drops every header when nothing matches at all", async () => {
-  await render(<TerritoryChecklist idAvibase={52} />);
+  await render(<TerritoryChecklist idAvibase={52} onGroupPress={mockOnGroupPress} />);
 
   await fireEvent.changeText(screen.getByTestId("search-input"), "penguin");
 
@@ -231,7 +232,7 @@ it("drops every header when nothing matches at all", async () => {
 });
 
 it("opens the species page from a row", async () => {
-  await render(<TerritoryChecklist idAvibase={52} />);
+  await render(<TerritoryChecklist idAvibase={52} onGroupPress={mockOnGroupPress} />);
   await renderRow(ROWS[2]);
 
   await fireEvent.press(screen.getByTestId("row-species"));
@@ -243,7 +244,7 @@ it("opens the species page from a row", async () => {
 });
 
 it("keys the rows so a group and a species can share an id", async () => {
-  await render(<TerritoryChecklist idAvibase={52} />);
+  await render(<TerritoryChecklist idAvibase={52} onGroupPress={mockOnGroupPress} />);
   const keyOf = mockItemsListProps.keyExtractor as (
     item: ChecklistItem,
     index: number,
@@ -260,7 +261,7 @@ it("offers a retry when the checklist could not be loaded", async () => {
   });
   mockUseQuery.mockReturnValue(result);
 
-  await render(<TerritoryChecklist idAvibase={52} />);
+  await render(<TerritoryChecklist idAvibase={52} onGroupPress={mockOnGroupPress} />);
   expect(screen.getByText("checklist_unavailable")).toBeOnTheScreen();
 
   await fireEvent.press(screen.getByText("try_again"));
@@ -282,7 +283,7 @@ it("keeps an order whose other family still has matches", async () => {
     }),
   );
 
-  await render(<TerritoryChecklist idAvibase={52} />);
+  await render(<TerritoryChecklist idAvibase={52} onGroupPress={mockOnGroupPress} />);
   await fireEvent.changeText(screen.getByTestId("search-input"), "eagle");
 
   expect(rows().map((r) => r.name_lang)).toEqual([
@@ -293,26 +294,52 @@ it("keeps an order whose other family still has matches", async () => {
 });
 
 // The country tree's headers are real taxa — the public endpoint sends their
-// segments — so the reader can go up into the order or family instead of only
-// down into a bird. The personal checklist has no such segments and passes no
-// handler, which is why the destination is the host's business, not the card's.
-it.each([
-  ["order", 2],
-  ["family", 3],
-] as const)("opens a %s header at its own rank", async (type, rank) => {
-  await render(<TerritoryChecklist idAvibase={52} />);
-  await renderRow(ROWS[type === "order" ? 0 : 1]);
+// segments — so a header narrows the country's list to that group. The card
+// only reports the tap; the tree knows where the header sits.
+it("narrows to an order's birds in this country from its header", async () => {
+  await render(<TerritoryChecklist idAvibase={52} onGroupPress={mockOnGroupPress} />);
+  await renderRow(ROWS[0]);
 
-  await fireEvent.press(screen.getByTestId(`group-${type}`));
+  await fireEvent.press(screen.getByTestId("group-order"));
 
-  expect(mockNavigation.navigate).toHaveBeenCalledWith("TaxonGroupDetail", {
-    segment: type === "order" ? "rheas-order" : "rheas-family",
-    rank,
+  expect(mockOnGroupPress).toHaveBeenCalledWith({ order: "rheas-order" });
+  // Not the order's worldwide page any more.
+  expect(mockNavigation.navigate).not.toHaveBeenCalled();
+});
+
+it("hands a family over with the order above it", async () => {
+  await render(<TerritoryChecklist idAvibase={52} onGroupPress={mockOnGroupPress} />);
+  await renderRow(ROWS[5]);
+
+  await fireEvent.press(screen.getByTestId("group-family"));
+
+  expect(mockOnGroupPress).toHaveBeenCalledWith({
+    order: "condors-order",
+    family: "condors-family",
+  });
+});
+
+it("hands a genus over with its family and order", async () => {
+  const withGenus = [
+    ...ROWS.slice(0, 2),
+    group("genus", 5, "Rhea genus"),
+    ...ROWS.slice(2),
+  ];
+  mockUseQuery.mockReturnValue(queryResult({ data: withGenus }));
+
+  await render(<TerritoryChecklist idAvibase={52} onGroupPress={mockOnGroupPress} />);
+  await renderRow(withGenus[2]);
+  await fireEvent.press(screen.getByTestId("group-genus"));
+
+  expect(mockOnGroupPress).toHaveBeenCalledWith({
+    order: "rheas-order",
+    family: "rheas-family",
+    genus: "rhea-genus",
   });
 });
 
 it("opens the species page from a row's thumbnail too", async () => {
-  await render(<TerritoryChecklist idAvibase={52} />);
+  await render(<TerritoryChecklist idAvibase={52} onGroupPress={mockOnGroupPress} />);
   await renderRow(ROWS[2]);
 
   await fireEvent.press(screen.getByTestId("thumb-species"));

@@ -6,6 +6,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { useLanguage } from "../../store/language-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
+import {
+  useTaxonGroupOptions,
+  groupLabel,
+} from "../../hooks/useTaxonGroupOptions";
 import { fetchTraitFilters, fetchMyCountries } from "../../util/fetches";
 import { StaleTime } from "../../constants/staleTime";
 import { GROUPS, matchesBucket, vocabLabels } from "./taxonTraitConfig";
@@ -57,6 +61,9 @@ const TaxonFilterChips = ({
     mapResult: true,
   });
 
+  const hasGroup = !!(traits.order || traits.family || traits.genus);
+  const groupOptions = useTaxonGroupOptions(traits, hasGroup);
+
   const chips: Chip[] = [];
 
   if (traits.territory != null) {
@@ -65,6 +72,33 @@ const TaxonFilterChips = ({
       name: t("country"),
       value: countriesQuery.data?.get(traits.territory) ?? "…",
       clear: ({ territory: _territory, ...rest }) => rest,
+    });
+  }
+
+  // One chip per level, so each can go on its own. Dropping a level leaves
+  // the ones below it: a family alone still says which birds these are.
+  if (traits.order) {
+    chips.push({
+      id: "order",
+      name: t("order"),
+      value: groupLabel(groupOptions.orders.data, traits.order),
+      clear: ({ order: _order, ...rest }) => rest,
+    });
+  }
+  if (traits.family) {
+    chips.push({
+      id: "family",
+      name: t("family"),
+      value: groupLabel(groupOptions.families.data, traits.family),
+      clear: ({ family: _family, ...rest }) => rest,
+    });
+  }
+  if (traits.genus) {
+    chips.push({
+      id: "genus",
+      name: t("genus"),
+      value: groupLabel(groupOptions.genera.data, traits.genus),
+      clear: ({ genus: _genus, ...rest }) => rest,
     });
   }
 

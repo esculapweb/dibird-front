@@ -84,7 +84,8 @@ jest.mock("../../components/Taxonomy/TaxonDescendantsList", () => {
   };
 });
 
-import { render, screen } from "@testing-library/react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { fireEvent, render, screen } from "@testing-library/react-native";
 import { useQuery } from "@tanstack/react-query";
 import { createNavigationMock, createRouteMock } from "../test-utils";
 import TaxonGroupDetailScreen from "../TaxonGroupDetailScreen";
@@ -155,8 +156,10 @@ const mockDetail = (overrides: Record<string, unknown> = {}) =>
     ...overrides,
   });
 
-beforeEach(() => {
+beforeEach(async () => {
   jest.clearAllMocks();
+  // The species layout is a stored preference shared by every species list.
+  await AsyncStorage.clear();
   mockRoute = createRouteMock("TaxonGroupDetail", {
     segment: "ospreys",
     rank: 3,
@@ -255,4 +258,31 @@ it("redirects to the canonical segment via setParams when the API returns a redi
     segment: "skopinye",
   });
   expect(screen.getByTestId("loading-overlay")).toBeOnTheScreen();
+});
+
+describe("photo grid", () => {
+  it("offers the grid over a family's species and hands the choice to the list", async () => {
+    await render(<TaxonGroupDetailScreen />);
+    expect(mockDescendantsListProps.layout).toBe("list");
+
+    await fireEvent.press(await screen.findByTestId("species-view-photos"));
+
+    expect(mockDescendantsListProps.layout).toBe("photos");
+    expect(screen.getByTestId("species-captions-toggle")).toBeOnTheScreen();
+  });
+
+  it("offers the grid over an order's families too", async () => {
+    mockRoute = createRouteMock("TaxonGroupDetail", {
+      segment: "hawks-and-relatives",
+      rank: 2,
+    });
+
+    await render(<TaxonGroupDetailScreen />);
+    expect(mockChildrenListProps.layout).toBe("list");
+
+    await fireEvent.press(await screen.findByTestId("species-view-photos"));
+
+    expect(mockChildrenListProps.layout).toBe("photos");
+    expect(mockChildrenListProps.showCaptions).toBe(true);
+  });
 });

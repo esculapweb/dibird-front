@@ -56,9 +56,20 @@ const renderChips = (traits: TaxonTraitFilters, onEdit?: jest.Mock) =>
     />,
   );
 
+// The group lists, by rank, as useTaxonGroupOptions asks for them.
+const GROUP_OPTIONS: Record<number, { value: string; label: string }[]> = {
+  2: [{ value: "perching-birds", label: "Perching birds" }],
+  3: [{ value: "tyrant-flycatchers", label: "Tyrant flycatchers" }],
+  4: [{ value: "pitangus", label: "Pitangus" }],
+};
+
 beforeEach(() => {
   jest.clearAllMocks();
-  mockUseQuery.mockReturnValue({ data: OPTIONS });
+  mockUseQuery.mockImplementation(({ queryKey }: { queryKey: unknown[] }) =>
+    queryKey[0] === "TaxonGroupOptions"
+      ? { data: GROUP_OPTIONS[queryKey[1] as number] }
+      : { data: OPTIONS },
+  );
   mockUseDropdownQuery.mockReturnValue({
     query: { data: new Map<number, string>([[5, "France"]]) },
     sort: "name",
@@ -115,4 +126,42 @@ it("removes rather than edits when the close icon is pressed", async () => {
 
   expect(mockOnChange).toHaveBeenCalledWith({ mass_min: 1000 });
   expect(mockOnEdit).not.toHaveBeenCalled();
+});
+
+describe("taxonomic group", () => {
+  const GROUP = {
+    order: "perching-birds",
+    family: "tyrant-flycatchers",
+    genus: "pitangus",
+  };
+
+  it("names each picked level on a chip of its own", async () => {
+    await renderChips(GROUP);
+
+    expect(screen.getByText("Perching birds")).toBeOnTheScreen();
+    expect(screen.getByText("Tyrant flycatchers")).toBeOnTheScreen();
+    expect(screen.getByText("Pitangus")).toBeOnTheScreen();
+  });
+
+  it("drops just that level when its chip is removed", async () => {
+    // The family alone still says which birds these are.
+    await renderChips(GROUP);
+
+    await fireEvent.press(screen.getByTestId("remove-taxon-filter-order"));
+
+    expect(mockOnChange).toHaveBeenCalledWith({
+      family: "tyrant-flycatchers",
+      genus: "pitangus",
+    });
+  });
+
+  it("holds a placeholder until the group's list is in", async () => {
+    mockUseQuery.mockImplementation(({ queryKey }: { queryKey: unknown[] }) =>
+      queryKey[0] === "TaxonGroupOptions" ? { data: undefined } : { data: OPTIONS },
+    );
+
+    await renderChips({ order: "perching-birds" });
+
+    expect(screen.getByText("…")).toBeOnTheScreen();
+  });
 });

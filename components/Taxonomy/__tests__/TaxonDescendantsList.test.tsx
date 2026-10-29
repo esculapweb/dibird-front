@@ -176,3 +176,75 @@ it("shows the empty message when the taxon has no species at all", async () => {
 
   expect(screen.getByText("no_species_found")).toBeOnTheScreen();
 });
+
+describe("photo grid", () => {
+  it("lays all the species out as one run of tiles, without the genus headers", async () => {
+    // The grouping is the list's, as on the checklist: its grid drops the
+    // order/family headers too.
+    await renderList({ layout: "photos" });
+
+    expect(screen.queryByText("Pandion")).toBeNull();
+    expect(screen.queryByText("Aquila")).toBeNull();
+    const tiles = screen
+      .getAllByRole("button")
+      .map((tile) => tile.props.testID)
+      .filter(Boolean);
+    expect(tiles).toEqual([
+      "species-tile-osprey",
+      "species-tile-golden-eagle",
+      "species-tile-spanish-imperial-eagle",
+    ]);
+    // Three tiles, one row: osprey shares it with the eagles of another genus.
+    expect(screen.getByTestId("species-tile-osprey").parent!.parent!.parent).toBe(
+      screen.getByTestId("species-tile-golden-eagle").parent!.parent!.parent,
+    );
+  });
+
+  it("sorts the grid by name across genera, not genus by genus", async () => {
+    await renderList({ layout: "photos", sort: "name" });
+
+    const tiles = screen
+      .getAllByRole("button")
+      .map((tile) => tile.props.testID)
+      .filter(Boolean);
+    expect(tiles).toEqual([
+      "species-tile-golden-eagle",
+      "species-tile-osprey",
+      "species-tile-spanish-imperial-eagle",
+    ]);
+  });
+
+  it("brings the genus headers back with the list", async () => {
+    await renderList({ layout: "list" });
+
+    expect(screen.getByText("Pandion")).toBeOnTheScreen();
+    expect(screen.getByText("Aquila")).toBeOnTheScreen();
+  });
+
+  it("opens the species from its tile", async () => {
+    await renderList({ layout: "photos" });
+
+    await fireEvent.press(screen.getByTestId("species-tile-osprey"));
+
+    expect(mockNavigation.navigate).toHaveBeenCalledWith("SpeciesDetail", {
+      segment: "osprey",
+      source: "taxon_group",
+    });
+  });
+
+  it("drops the names from the tiles when captions are off", async () => {
+    await renderList({ layout: "photos", showCaptions: false });
+
+    expect(screen.queryByText("Osprey")).toBeNull();
+    expect(screen.getByLabelText("Osprey")).toBeOnTheScreen();
+  });
+
+  it("still filters by name before laying the tiles out", async () => {
+    await renderList({ layout: "photos" });
+
+    await fireEvent.changeText(screen.getByPlaceholderText("search"), "golden");
+
+    expect(screen.getByTestId("species-tile-golden-eagle")).toBeOnTheScreen();
+    expect(screen.queryByTestId("species-tile-osprey")).toBeNull();
+  });
+});

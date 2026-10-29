@@ -87,6 +87,7 @@ import {
   ChecklistItem,
   PlaceItemBase,
   TerritoryDropdownItem,
+  DropdownItem,
   PlaceDropdownItem,
   SpeciesDropdownItem,
   ObservationItem,
@@ -111,6 +112,7 @@ import {
   TaxonRank,
   TaxonListItem,
   TaxonTraitFilters,
+  TaxonGroupKey,
   TraitFilterOptions,
   TaxonGroupDetail,
   TaxonSpeciesDetail,
@@ -242,9 +244,11 @@ export const fetchTaxonList = (
       page,
       {
         rank,
-        ...(parent && { parent: parent.segment, parent_rank: parent.rank }),
         ...(extinct && { extinct: true }),
         ...traitParams(traits),
+        // After the traits: a list that is already a group's children keeps
+        // its own parent over a group filter.
+        ...(parent && { parent: parent.segment, parent_rank: parent.rank }),
       },
       100,
       { table: taxonListCacheTable, maxEntries: MAX_ENTRIES },
@@ -253,12 +257,30 @@ export const fetchTaxonList = (
 
 // Trait filters go in extraParams (they change what is being asked for, so
 // they belong in the cache key); the multi-selects travel comma-separated.
+// The group filter's three keys, deepest first, with the rank each stands for.
+const GROUP_PARENT: [TaxonGroupKey, TaxonRank][] = [
+  ["genus", 4],
+  ["family", 3],
+  ["order", 2],
+];
+
 const traitParams = (traits?: TaxonTraitFilters | null) => {
   const params: Record<string, string | number> = {};
   if (!traits) return params;
 
+  // The API takes one parent; the deepest group set is the narrowest, and
+  // the ones above it add nothing.
+  for (const [key, rank] of GROUP_PARENT) {
+    const segment = traits[key];
+    if (!segment) continue;
+    params.parent = segment;
+    params.parent_rank = rank;
+    break;
+  }
+
   for (const [key, value] of Object.entries(traits)) {
     if (value == null) continue;
+    if (GROUP_PARENT.some(([groupKey]) => groupKey === key)) continue;
     if (Array.isArray(value)) {
       if (value.length > 0) params[key] = value.join(",");
     } else {
@@ -267,6 +289,34 @@ const traitParams = (traits?: TaxonTraitFilters | null) => {
   }
   return params;
 };
+
+// The choices for the group filter's dropdowns: every order, a level's
+// families or genera (all of them when nothing above is picked), in taxonomic
+// order. One page — the widest, all families, is ~250 rows. Genera come back
+// with their Latin `name` only (the list endpoint has no localized name for
+// them), which is what a genus is called anyway.
+export const fetchTaxonGroupOptions = (
+  rank: 2 | 3 | 4,
+  parent?: { segment: string; rank: TaxonRank } | null,
+): Promise<DropdownItem[]> =>
+  fetchAbstract<PaginatedResponse<TaxonListItem>>(
+    "/api/taxon/",
+    {},
+    "ioc_id",
+    "",
+    1,
+    {
+      rank,
+      ...(parent && { parent: parent.segment, parent_rank: parent.rank }),
+    },
+    500,
+    { table: taxonListCacheTable, maxEntries: MAX_ENTRIES },
+  ).then((res) =>
+    res.results.map((item) => ({
+      value: item.segment,
+      label: item.name_lang ?? item.name,
+    })),
+  );
 
 // Just the total for the catalogue card — per_page=1 so the server counts
 // without sending a page of species.
