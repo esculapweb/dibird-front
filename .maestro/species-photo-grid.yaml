@@ -1,0 +1,115 @@
+# The photo grid is one preference for every species list, and it survives a
+# restart.
+#
+# useSpeciesViewMode keeps the layout and the captions switch in AsyncStorage
+# under one key for the catalogue, a country's species tab and the stats
+# (hooks/useSpeciesViewMode.ts). The hook is unit-tested; what only a device
+# shows is the round trip through real storage and a real relaunch, and that
+# a second screen actually reads the choice made on the first — the same gap
+# list-sort-persist.yaml closes for the sort order.
+#
+# It also checks the exception: a shared country link names its own layout
+# (`?view=flat`), and that wins over the stored gallery until the reader
+# touches the switch (`linkPinned` in TerritoryDetailScreen).
+#
+# The grid is told apart from the rows by the tiles' testIDs
+# (`species-tile-<segment>`): rows carry none, so "no tile on screen" is the
+# list layout. The captions switch is asserted on its accessibility label,
+# which names the action it would take ("Show species names" while the
+# names are hidden) — the tile's own label is the bird's name either way.
+#
+# The preference is shared with every other flow that opens a species list, so
+# the defaults are restored by common/reset-species-layout.yaml from
+# onFlowComplete — on failure too, not only at the end of a green run. The
+# same file runs at the start, so a leftover from a run whose cleanup itself
+# died doesn't fail this one on its first assertion.
+#
+# appId comes from run.sh (--env APP_ID).
+appId: ${APP_ID}
+tags:
+  - ios
+  - android
+onFlowComplete:
+  - runFlow: common/reset-species-layout.yaml
+---
+- launchApp
+
+- runFlow: common/bootstrap.yaml
+
+# ---- the catalogue: from rows to the grid ----
+- scrollUntilVisible:
+    element: ".*Birds of the world.*"
+    direction: DOWN
+    timeout: 10000
+- tapOn: ".*Birds of the world.*"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "species-view-photos"
+    timeout: 15000
+# Rows and names on, whatever an earlier run left behind.
+- runFlow: common/reset-species-layout.yaml
+
+- tapOn:
+    id: "species-view-photos"
+- extendedWaitUntil:
+    visible:
+      id: "species-tile-.*"
+    timeout: 15000
+
+# Names on by default; turn them off so the relaunch has two choices to keep.
+- assertVisible: "Hide species names"
+- tapOn:
+    id: "species-captions-toggle"
+- extendedWaitUntil:
+    visible: "Show species names"
+    timeout: 6000
+
+# ---- another species list reads the same choice ----
+# A country's species tab, reached by link so the flow doesn't depend on the
+# account's own country.
+- openLink: "dibird://territory/austria/"
+# iOS 26 puts an `Open in "DiBird (Dev)"?` prompt in front of a custom-scheme
+# link handed to an app that is already in the foreground.
+- tapOn:
+    text: "Open"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "species-tile-.*"
+    timeout: 30000
+- assertVisible: "Show species names"
+
+# ---- ...unless a link names its own layout ----
+- openLink: "dibird://territory/austria/?view=flat"
+- tapOn:
+    text: "Open"
+    optional: true
+- waitForAnimationToEnd
+# The switch is part of the list's header, which TaxonChildrenList renders
+# only once the species are in (a LoadingOverlay until then) — so with it on
+# screen, "no tile" below means rows, not a list still loading.
+- extendedWaitUntil:
+    visible:
+      id: "species-view-flat"
+    timeout: 30000
+- extendedWaitUntil:
+    notVisible:
+      id: "species-tile-.*"
+    timeout: 15000
+
+# ---- and now the part that needs a real restart ----
+- launchApp
+- runFlow: common/bootstrap.yaml
+- scrollUntilVisible:
+    element: ".*Birds of the world.*"
+    direction: DOWN
+    timeout: 10000
+- tapOn: ".*Birds of the world.*"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "species-tile-.*"
+    timeout: 15000
+- assertVisible: "Show species names"
+# Defaults are put back by onFlowComplete (see the header).

@@ -14,6 +14,10 @@
 # all pressables, so labels are enough. What the filter actually did is then
 # asserted *outside* the sheet, on the chips row, where testIDs work again.
 #
+# The group filter (order -> family) is the one part driven by testIDs inside
+# the sheet: its dropdown triggers carry no label of their own beyond the
+# current value, and the choices open in a modal outside the sheet anyway.
+#
 # Body mass is the group it opens: its chips come from a static bucket list
 # (components/Taxonomy/taxonTraitConfig.ts), unlike habitat/migration/etc.,
 # whose contents come from the backend vocabulary and can legitimately be
@@ -86,6 +90,72 @@ tags:
 - extendedWaitUntil:
     notVisible:
       id: "remove-taxon-filter-mass"
+    timeout: 6000
+
+# ---- group filter: order -> family ----
+# The sheet's three group dropdowns (TaxonFilterSheet) load their choices from
+# the backend (useTaxonGroupOptions), the family list keyed by the picked
+# order. Emu and cassowaries is the order to pick because its answer is tiny
+# and settled: one family, four species. A single row in the family list is
+# what proves the narrowing — with no order picked it lists all ~250.
+- tapOn:
+    id: "filter-button"
+- extendedWaitUntil:
+    visible:
+      id: "taxon-filter-apply-button"
+    timeout: 6000
+- tapOn:
+    id: "dropdown-trigger-TaxonOrderDropdown"
+- extendedWaitUntil:
+    visible: "Emu and cassowaries"
+    timeout: 15000
+- tapOn: "Emu and cassowaries"
+- waitForAnimationToEnd
+- tapOn:
+    id: "dropdown-trigger-TaxonFamilyDropdown"
+- extendedWaitUntil:
+    visible:
+      id: "option-row-0"
+    timeout: 15000
+- assertNotVisible:
+    id: "option-row-1"
+- tapOn: "Cassowaries, Emu"
+- waitForAnimationToEnd
+- tapOn:
+    id: "taxon-filter-apply-button"
+- waitForAnimationToEnd
+
+# One chip per level, each with the group's name rather than the "…" it
+# shows until the options are in. Partial match: on iOS the chip's label also
+# carries the remove icon's glyph ("Order: Emu and cassowaries, ").
+- extendedWaitUntil:
+    visible: ".*Order: Emu and cassowaries.*"
+    timeout: 10000
+- assertVisible: ".*Family: Cassowaries, Emu.*"
+- extendedWaitUntil:
+    visible: "Found: 4"
+    timeout: 15000
+
+# Dropping the order leaves the family (TaxonFilterChips): a family alone
+# still says which birds these are, so the list stays the same four.
+- tapOn:
+    id: "remove-taxon-filter-order"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    notVisible:
+      id: "remove-taxon-filter-order"
+    timeout: 6000
+- assertVisible:
+    id: "remove-taxon-filter-family"
+- extendedWaitUntil:
+    visible: "Found: 4"
+    timeout: 15000
+- tapOn:
+    id: "remove-taxon-filter-family"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    notVisible:
+      id: "remove-taxon-filter-family"
     timeout: 6000
 
 # ---- species comparison ----

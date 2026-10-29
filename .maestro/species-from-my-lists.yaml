@@ -67,19 +67,16 @@ tags:
 # The row itself keeps its own menu — "my observations" / "mark as seen" are
 # what the personal checklist is for — so it must not open the species page.
 #
-# What can be asserted about that menu differs by platform, measured rather
-# than assumed (scratch probe, 2026-08-26): on Android its rows are reachable
-# by label, on iOS the sheet collapses into a single accessibility element and
-# *nothing* inside it is reachable — not the labels, not the testIDs. This is
-# the same gorhom limitation that keeps list-filters/list-sort-persist
-# Android-only (§1); the exception noted there for the catalogue's filter sheet
-# does not apply, since that one is a showContent with a `title` and this is a
-# showMenu without.
+# Until 2026-10-29 the menu's rows were reachable on Android only: gorhom made
+# the whole sheet one accessibility element on iOS. UniversalBottomSheet now
+# passes accessible={false}, so the menu is asserted on both platforms.
 #
-# So the cross-platform half of the check is the negative — the row did not
-# open the species page — and Android additionally pins down what it did open.
 # The menu has no cancel button (that testID belongs to the sheet's confirm
-# mode), so it is dismissed the way a user does it: a swipe down.
+# mode), so it is dismissed by a tap on the backdrop, which closes it
+# (pressBehavior="close"). Not a swipe down: started from the middle of the
+# screen it lands on the backdrop rather than the sheet, and on iOS that left
+# the menu open — which the old assertion below only missed because the
+# collapsed sheet hid nothing from it.
 - tapOn:
     id: "checklist-species-row-.*"
 - waitForAnimationToEnd
@@ -89,15 +86,14 @@ tags:
 # species thumbnail on the screen behind the sheet, so it would pass whether or
 # not the menu opened. The other row is the menu's own, and which of the two it
 # is depends on whether that bird is already ticked off.
-- runFlow:
-    when:
-      platform: Android
-    commands:
-      - assertVisible: ".*(View species observations|Add observation).*"
-- swipe:
-    direction: DOWN
-    duration: 400
+- extendedWaitUntil:
+    visible: ".*(View species observations|Add observation).*"
+    timeout: 6000
+- tapOn: "Bottom sheet backdrop"
 - waitForAnimationToEnd
+- extendedWaitUntil:
+    notVisible: ".*(View species observations|Add observation).*"
+    timeout: 6000
 - extendedWaitUntil:
     visible:
       id: "items-list"

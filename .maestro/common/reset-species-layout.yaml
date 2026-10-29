@@ -1,0 +1,57 @@
+# Puts the species-list preference back to its defaults: rows, names on.
+#
+# useSpeciesViewMode keeps one layout for every species list — the catalogue,
+# a country's species tab, the stats and the checklist — so a flow that leaves
+# the grid on hands every later flow tiles where it expects rows
+# (species-from-my-lists taps checklist rows by testID, and the grid has
+# none). species-photo-grid.yaml runs this from onFlowComplete, i.e. also when
+# it fails halfway — which it did on 2026-10-29, when the app crashed on the
+# relaunch in its middle and left the grid on for the rest of the batch.
+#
+# Starts from wherever the flow left off: a species list with the layout
+# switch on screen is used as is, anything else — the dashboard, a dead app —
+# goes through a relaunch first.
+#
+# appId is inert here — see back.yaml.
+appId: ${APP_ID}
+---
+- runFlow:
+    when:
+      notVisible:
+        id: "species-view-photos"
+    commands:
+      - launchApp
+      - runFlow: bootstrap.yaml
+      - scrollUntilVisible:
+          element: ".*Birds of the world.*"
+          direction: DOWN
+          timeout: 10000
+      - tapOn: ".*Birds of the world.*"
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible:
+            id: "species-view-photos"
+          timeout: 15000
+
+# The names switch exists only over the grid, so the grid goes on first.
+- tapOn:
+    id: "species-view-photos"
+- extendedWaitUntil:
+    visible:
+      id: "species-captions-toggle"
+    timeout: 15000
+- runFlow:
+    when:
+      visible: "Show species names"
+    commands:
+      - tapOn:
+          id: "species-captions-toggle"
+- extendedWaitUntil:
+    visible: "Hide species names"
+    timeout: 6000
+- tapOn:
+    id: "species-view-list"
+- extendedWaitUntil:
+    notVisible:
+      id: "species-tile-.*"
+    timeout: 15000
