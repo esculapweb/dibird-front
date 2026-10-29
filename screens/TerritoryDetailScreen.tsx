@@ -19,7 +19,6 @@ import { track } from "../services/analytics";
 import Layout from "../components/ui/Layout";
 import Section from "../components/ui/Section";
 import Tabs from "../components/ui/Tabs";
-import ViewSwitch from "../components/ui/ViewSwitch";
 import IconsHeader from "../components/ui/IconsHeader";
 import { overflowButton } from "../components/ui/overflowMenu";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
@@ -27,11 +26,13 @@ import LoadingOverlay from "../components/ui/LoadingOverlay";
 import EmptyState from "../components/Empty/EmptyState";
 import TerritoryChecklist from "../components/Territory/TerritoryChecklist";
 import TaxonChildrenList from "../components/Taxonomy/TaxonChildrenList";
+import SpeciesViewSwitch from "../components/Taxonomy/SpeciesViewSwitch";
 import TaxonFilterSheet, {
   hasTraitFilters,
 } from "../components/Taxonomy/TaxonFilterSheet";
 import { BottomSheet } from "../services/bottomSheet";
 import { useTaxonomySort } from "../hooks/useTaxonomySort";
+import { useSpeciesViewMode } from "../hooks/useSpeciesViewMode";
 import { useContentWidth } from "../hooks/useContentWidth";
 import { fetchTerritoryDetail } from "../util/fetches";
 import { buildTerritoryDetailUrl } from "../util/taxonShareLink";
@@ -71,6 +72,16 @@ const TerritoryDetailScreen = () => {
     route.params;
   const [tab, setTab] = useState<territoryTab>(initialTab ?? "species");
   const [view, setView] = useState<territoryView>(initialView ?? "tree");
+  // The photo grid is a third way to lay the birds out, but not a third
+  // `territoryView`: it shows the flat list's data, and the preference is
+  // shared with every other species list (useSpeciesViewMode). A shared link
+  // names its own layout, so the stored gallery preference waits until the
+  // reader touches the switch.
+  const speciesView = useSpeciesViewMode();
+  const [linkPinned, setLinkPinned] = useState(initialView != null);
+  const isPhotos = speciesView.isPhotos && !linkPinned;
+  // The grid is the flat list drawn as tiles: same endpoint, sort and filters.
+  const isFlatData = view === "flat" || isPhotos;
   // The country is not one of these — it is the page (see fixedTraits below),
   // so the sheet opens without its country dropdown.
   const [filters, setFilters] = useState<TaxonTraitFilters>(
@@ -116,13 +127,13 @@ const TerritoryDetailScreen = () => {
         <IconsHeader
 
           onSortPress={
-            tab === "species" && view === "flat" ? openSortSheet : undefined
+            tab === "species" && isFlatData ? openSortSheet : undefined
           }
           hasActiveFilters={hasTraitFilters(filters)}
           onFilterPress={
             // The tree comes from the checklist endpoint, which takes no
             // trait filters — only the flat list can be narrowed.
-            tab === "species" && view === "flat"
+            tab === "species" && isFlatData
               ? () => openTraitSheet()
               : undefined
           }
@@ -144,9 +155,11 @@ const TerritoryDetailScreen = () => {
                   // Reopens on the same tab and layout, with the flat list's
                   // sort and filters — see buildTerritoryDetailUrl /
                   // linking.ts.
+                  // The website has no photo layout of its own, so the grid
+                  // shares as the flat list it is drawn from.
                   const url = buildTerritoryDetailUrl(segment, {
                     tab,
-                    view,
+                    view: isFlatData ? "flat" : "tree",
                     sort,
                     traits: filters,
                   });
@@ -168,7 +181,7 @@ const TerritoryDetailScreen = () => {
     t,
     openSortSheet,
     tab,
-    view,
+    isFlatData,
     filters,
     sort,
   ]);
@@ -318,18 +331,34 @@ const TerritoryDetailScreen = () => {
   const viewSwitch = (
     // Not "species" for the flat view — that is the name of the tab this
     // switch already lives in. It picks how the birds are laid out.
-    <ViewSwitch
+    <SpeciesViewSwitch
       options={[
         { value: "tree", label: t("by_groups"), icon: "git-branch-outline" },
         { value: "flat", label: t("as_list"), icon: "list-outline" },
+        speciesView.photosOption,
       ]}
-      value={view}
-      onChange={setView}
+      value={isPhotos ? "photos" : view}
+      onChange={(next) => {
+        setLinkPinned(false);
+        if (next === "photos") {
+          speciesView.changeLayout("photos");
+          return;
+        }
+        speciesView.changeLayout("list");
+        setView(next);
+      }}
       testIDPrefix="species-view"
+      isPhotos={isPhotos}
+      showCaptions={speciesView.showCaptions}
+      onToggleCaptions={speciesView.toggleCaptions}
     />
   );
 
-  const speciesContent =
+  const speciesContent = !speciesView.ready ? (
+    // The tree and the grid load different endpoints — wait for the stored
+    // layout instead of fetching the tree only to drop it a frame later.
+    <LoadingOverlay />
+  ) : (
     // An offline-cached response from before the backend started sending
     // territory_id has the country page but nothing to key the species list
     // with.
@@ -344,12 +373,22 @@ const TerritoryDetailScreen = () => {
           ]}
         />
       </>
-    ) : view === "tree" ? (
+    ) : !isFlatData ? (
       // The tree is keyed by the Avibase id, the flat list by our Territory.pk:
       // these are two different endpoints (see fetchTerritoryTree and /api/taxon/).
       <TerritoryChecklist
         idAvibase={data.id_avibase}
         listHeader={viewSwitch}
+        // A header narrows the flat list to its group, keeping whatever else
+        // is filtered: "this order, in this country" with the list's own
+        // sort, chips and grid, where the tree can only scroll to it.
+        onGroupPress={(group) => {
+          setFilters(({ order: _o, family: _f, genus: _g, ...rest }) => ({
+            ...rest,
+            ...group,
+          }));
+          setView("flat");
+        }}
       />
     ) : (
       <TaxonChildrenList
@@ -365,8 +404,11 @@ const TerritoryDetailScreen = () => {
         emptyMessage={t("no_species_found")}
         searchPlaceholder={t("search_species_hint")}
         listHeader={viewSwitch}
+        layout={isPhotos ? "photos" : "list"}
+        showCaptions={speciesView.showCaptions}
       />
-    );
+    )
+  );
 
   return (
     <Layout

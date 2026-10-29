@@ -482,3 +482,75 @@ it("lets the screen own the search when it has to build a share link with it", a
   await fireEvent.changeText(screen.getByTestId("search-input"), "osprey");
   expect(onChangeSearch).toHaveBeenCalledWith("osprey");
 });
+
+describe("photo grid", () => {
+  const renderGrid = (rank: 2 | 3 | 4 | 5 = 5, showCaptions = true) =>
+    render(
+      <TaxonChildrenList
+        speciesSource="catalog"
+        rank={rank}
+        errorTitle="taxonomy_unavailable"
+        emptyMessage="no_species_found"
+        layout="photos"
+        showCaptions={showCaptions}
+      />,
+    );
+
+  it("lays the species out three to a row, as tiles that open the species", async () => {
+    mockUseList.mockReturnValue(loadedWith(SPECIES));
+
+    await renderGrid();
+    expect(mockItemsListProps.numColumns).toBe(3);
+
+    await renderRow(SPECIES[0]);
+    await fireEvent.press(screen.getByTestId("species-tile-osprey"));
+
+    expect(mockNavigation.navigate).toHaveBeenCalledWith("SpeciesDetail", {
+      segment: "osprey",
+      source: "catalog",
+    });
+  });
+
+  it("drops the name from the tiles when captions are off", async () => {
+    mockUseList.mockReturnValue(loadedWith(SPECIES));
+
+    await renderGrid(5, false);
+    await renderRow(SPECIES[0]);
+
+    expect(screen.queryByText("Osprey")).toBeNull();
+    expect(screen.getByLabelText("Osprey")).toBeOnTheScreen();
+  });
+
+  it("lays families out as tiles too, each opening its group", async () => {
+    const family: TaxonListItem = {
+      segment: "pandionidae",
+      name: "Pandionidae",
+      name_lang: "Ospreys",
+      thumb: "taxon/1a/2e/27921210917.jpg",
+    };
+    mockUseList.mockReturnValue(loadedWith([family]));
+
+    await renderGrid(3);
+    expect(mockItemsListProps.numColumns).toBe(3);
+
+    await renderRow(family);
+    await fireEvent.press(screen.getByTestId("taxon-tile-pandionidae"));
+
+    expect(mockNavigation.navigate).toHaveBeenCalledWith("TaxonGroupDetail", {
+      segment: "pandionidae",
+      rank: 3,
+    });
+  });
+
+  it("lays orders out as tiles too", async () => {
+    await renderGrid(2);
+
+    expect(mockItemsListProps.numColumns).toBe(3);
+  });
+
+  it("keeps genera as rows — they have no photo at all", async () => {
+    await renderGrid(4);
+
+    expect(mockItemsListProps.numColumns).toBe(1);
+  });
+});

@@ -1297,11 +1297,83 @@ describe("taxonomy catalogue", () => {
       expect(params).toMatchObject({ trophic_level: "carnivore" });
     });
 
+    it("sends the deepest picked group as the one parent the API takes", async () => {
+      expect(await withTraits({ order: "perching-birds" })).toMatchObject({
+        parent: "perching-birds",
+        parent_rank: 2,
+      });
+
+      const params = await withTraits({
+        order: "perching-birds",
+        family: "tyrant-flycatchers",
+        genus: "pitangus",
+      });
+      expect(params).toMatchObject({ parent: "pitangus", parent_rank: 4 });
+      // Not as filters of their own — the API has no such params.
+      expect(params.order).toBeUndefined();
+      expect(params.family).toBeUndefined();
+      expect(params.genus).toBeUndefined();
+    });
+
+    it("keeps a list's own parent over a group filter", async () => {
+      (api.get as jest.Mock).mockResolvedValue({ data: emptyPage });
+      await fetches.fetchTaxonList(5, { segment: "corvidae", rank: 3 }, false, {
+        order: "perching-birds",
+      })({}, null, "", 1);
+
+      expect(paramsOfLastGet()).toMatchObject({
+        parent: "corvidae",
+        parent_rank: 3,
+      });
+    });
+
     it("sends nothing extra when there are no traits at all", async () => {
       const params = await withTraits(null);
 
       expect(params).toMatchObject({ rank: 5 });
       expect(params.habitat).toBeUndefined();
+    });
+  });
+
+  describe("fetchTaxonGroupOptions", () => {
+    it("lists a level in taxonomic order, in one page, as dropdown items", async () => {
+      (api.get as jest.Mock).mockResolvedValue({
+        data: {
+          ...emptyPage,
+          results: [
+            { segment: "tyrant-flycatchers", name: "Tyrannidae", name_lang: "Tyrant flycatchers" },
+          ],
+        },
+      });
+
+      const items = await fetches.fetchTaxonGroupOptions(3, {
+        segment: "perching-birds",
+        rank: 2,
+      });
+
+      expect(paramsOfLastGet()).toMatchObject({
+        rank: 3,
+        parent: "perching-birds",
+        parent_rank: 2,
+        o: "ioc_id",
+        per_page: 500,
+      });
+      expect(items).toEqual([
+        { value: "tyrant-flycatchers", label: "Tyrant flycatchers" },
+      ]);
+    });
+
+    it("names genera by their Latin name — the list has nothing else for them", async () => {
+      (api.get as jest.Mock).mockResolvedValue({
+        data: { ...emptyPage, results: [{ segment: "pitangus", name: "Pitangus" }] },
+      });
+
+      const items = await fetches.fetchTaxonGroupOptions(4, {
+        segment: "tyrant-flycatchers",
+        rank: 3,
+      });
+
+      expect(items).toEqual([{ value: "pitangus", label: "Pitangus" }]);
     });
   });
 

@@ -26,6 +26,13 @@ jest.mock("../../../util/fetches", () => ({
 jest.mock("../../../store/language-context", () => ({
   useLanguage: () => ({ language: "en" }),
 }));
+jest.mock("../../../hooks/useTaxonGroupOptions", () => ({
+  useTaxonGroupOptions: () => ({
+    orders: { data: [] },
+    families: { data: [] },
+    genera: { data: [] },
+  }),
+}));
 // The country dropdown carries its own react-query/AsyncStorage machinery
 // (useDropdownQuery → useSavedSort, networkStatus); stub it and the input so
 // the sheet's own logic is what's under test.
@@ -37,16 +44,24 @@ jest.mock("../../ui/DropdownInput", () => {
   const { Text, Pressable } = require("react-native");
   return {
     __esModule: true,
+    // The country dropdown picks 5; the group ones pick "<type>-pick".
     default: (props: {
-      value: number | null;
-      setValue: (v: number | null) => void;
+      value: number | string | null;
+      setValue: (v: number | string | null) => void;
       placeholder: string;
+      type: string;
     }) => {
       mockDropdownCapture(props);
-      const { value, setValue, placeholder } = props;
+      const { value, setValue, placeholder, type } = props;
+      const isCountry = type === "CountriesDropdown";
       return (
-        <Pressable testID="country-dropdown" onPress={() => setValue(5)}>
-          <Text>{value == null ? placeholder : `country-${value}`}</Text>
+        <Pressable
+          testID={isCountry ? "country-dropdown" : `dropdown-${type}`}
+          onPress={() => setValue(isCountry ? 5 : `${type}-pick`)}
+        >
+          <Text>
+            {value == null ? placeholder : isCountry ? `country-${value}` : String(value)}
+          </Text>
         </Pressable>
       );
     },
@@ -95,9 +110,15 @@ const renderSheet = (
     />,
   );
 
+// The props a dropdown got on its latest render — the sheet has four now.
+const dropdownProps = (type: string) =>
+  mockDropdownCapture.mock.calls
+    .map(([props]) => props as Record<string, unknown>)
+    .filter((props) => props.type === type)
+    .at(-1)!;
+
 const countryOpenSignal = () =>
-  (mockDropdownCapture.mock.calls.at(-1)![0] as { openSignal?: number })
-    .openSignal;
+  dropdownProps("CountriesDropdown").openSignal as number | undefined;
 
 // Groups start folded away, so a test that wants the chips has to open one.
 const openGroup = (id: string) =>
@@ -327,5 +348,61 @@ describe("focusGroup — the chip a tap asked to edit", () => {
     await renderSheet({ territory: 5 }, true, "territory");
 
     expect(countryOpenSignal()).toBe(0);
+  });
+});
+
+describe("taxonomic group", () => {
+  it("offers order, family and genus — the genus only once a family is picked", async () => {
+    await renderSheet();
+
+    expect(screen.getByTestId("dropdown-TaxonOrderDropdown")).toBeOnTheScreen();
+    expect(screen.getByTestId("dropdown-TaxonFamilyDropdown")).toBeOnTheScreen();
+    // ~2500 genera by Latin name alone is no list to pick from.
+    expect(dropdownProps("TaxonGenusDropdown").disabled).toBe(true);
+
+    await fireEvent.press(screen.getByTestId("dropdown-TaxonFamilyDropdown"));
+
+    expect(dropdownProps("TaxonGenusDropdown").disabled).toBe(false);
+  });
+
+  it("clears the levels below when an order is picked", async () => {
+    // A family left over from another order would quietly empty the list.
+    await renderSheet({ family: "old-family", genus: "old-genus" });
+
+    await fireEvent.press(screen.getByTestId("dropdown-TaxonOrderDropdown"));
+    await fireEvent.press(screen.getByText("apply"));
+
+    expect(mockOnApply).toHaveBeenCalledWith({
+      order: "TaxonOrderDropdown-pick",
+      family: null,
+      genus: null,
+    });
+  });
+
+  it("clears the genus when the family changes, and keeps the order", async () => {
+    await renderSheet({ order: "perching-birds", genus: "old-genus" });
+
+    await fireEvent.press(screen.getByTestId("dropdown-TaxonFamilyDropdown"));
+    await fireEvent.press(screen.getByText("apply"));
+
+    expect(mockOnApply).toHaveBeenCalledWith({
+      order: "perching-birds",
+      family: "TaxonFamilyDropdown-pick",
+      genus: null,
+    });
+  });
+
+  it("has no group dropdowns where the list is already one group's own", async () => {
+    await render(
+      <TaxonFilterSheet
+        value={{}}
+        onApply={mockOnApply}
+        dismiss={mockDismiss}
+        showGroup={false}
+      />,
+    );
+
+    expect(screen.queryByTestId("dropdown-TaxonOrderDropdown")).toBeNull();
+    expect(screen.queryByTestId("dropdown-TaxonFamilyDropdown")).toBeNull();
   });
 });

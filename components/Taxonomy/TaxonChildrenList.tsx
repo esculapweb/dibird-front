@@ -8,6 +8,7 @@ import SearchInput from "../ui/SearchInput";
 import ErrorOverlay from "../Error/ErrorOverlay";
 import LoadingOverlay from "../ui/LoadingOverlay";
 import TaxonRow from "./TaxonRow";
+import SpeciesTile, { PHOTO_GRID_COLUMNS } from "./SpeciesTile";
 import TaxonFilterChips from "./TaxonFilterChips";
 import { useTheme } from "../../store/theme-context";
 import { useList } from "../../hooks/useList";
@@ -17,6 +18,7 @@ import { fetchTaxonList } from "../../util/fetches";
 import { stableStringify } from "../../util/helpers";
 import { latinPart, territoryStatusNote } from "../../util/taxonomy";
 import { useOpenSpecies } from "../../hooks/useOpenSpecies";
+import { SpeciesLayout } from "../../hooks/useSpeciesViewMode";
 import {
   AppStackNavigationProp,
   SpeciesEntryPoint,
@@ -61,6 +63,10 @@ interface TaxonChildrenListProps {
   // serves the catalogue root, a taxon group and a country's species tab, and
   // only the host knows which.
   speciesSource: SpeciesEntryPoint;
+  // Rows or the photo grid (useSpeciesViewMode) — same data either way, so
+  // switching costs no fetch.
+  layout?: SpeciesLayout;
+  showCaptions?: boolean;
 }
 
 const TaxonChildrenList = ({
@@ -83,6 +89,8 @@ const TaxonChildrenList = ({
   search: controlledSearch,
   onChangeSearch,
   speciesSource,
+  layout = "list",
+  showCaptions = true,
 }: TaxonChildrenListProps) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -124,6 +132,9 @@ const TaxonChildrenList = ({
   });
 
   const items = data?.pages.flatMap((page) => page.results) ?? [];
+  // Species, families and orders carry a cover photo of their own (a group's
+  // is one of its birds); genera have none at all, so they stay rows.
+  const isPhotos = layout === "photos" && rank !== 4;
   const total = data?.pages[0]?.pagination?.count;
 
   const handlePress = (item: TaxonListItem) => {
@@ -164,7 +175,20 @@ const TaxonChildrenList = ({
       data={items}
       onEndReached={handleLoadMore}
       isLoadingMore={isFetchingNextPage}
+      numColumns={isPhotos ? PHOTO_GRID_COLUMNS : 1}
       renderItem={({ item }) => {
+        if (isPhotos)
+          return (
+            <SpeciesTile
+              title={item.name_lang}
+              thumb={item.thumb}
+              statusCode={item.status}
+              showCaption={showCaptions}
+              onPress={() => handlePress(item)}
+              testID={`${rank === 5 ? "species" : "taxon"}-tile-${item.segment}`}
+            />
+          );
+
         // Only the occurrence half of the country status earns a line — the
         // rest just spells out the IUCN category the badge already shows
         // (same rule as the checklist tree).

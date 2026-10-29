@@ -19,15 +19,17 @@ const mockInnerDismiss = jest.fn();
 const mockInnerSnapToIndex = jest.fn();
 let capturedOnDismiss: (() => void) | undefined;
 let capturedOnChange: ((index: number) => void) | undefined;
+let capturedAccessible: boolean | undefined;
 
 jest.mock("@gorhom/bottom-sheet", () => {
   const React = require("react");
   const { View, TextInput } = require("react-native");
   return {
     __esModule: true,
-    BottomSheetModal: React.forwardRef((props: { children?: React.ReactNode; onDismiss?: () => void; onChange?: (index: number) => void }, ref: React.Ref<unknown>) => {
+    BottomSheetModal: React.forwardRef((props: { children?: React.ReactNode; onDismiss?: () => void; onChange?: (index: number) => void; accessible?: boolean }, ref: React.Ref<unknown>) => {
       capturedOnDismiss = props.onDismiss;
       capturedOnChange = props.onChange;
+      capturedAccessible = props.accessible;
       React.useImperativeHandle(ref, () => ({
         present: mockInnerPresent,
         dismiss: mockInnerDismiss,
@@ -688,5 +690,15 @@ describe("re-present over an open sheet", () => {
       capturedOnDismiss?.();
     });
     expect(screen.queryByText("Only item")).not.toBeOnTheScreen();
+  });
+});
+
+// gorhom defaults the content container to accessible={true}, which on iOS
+// folds the whole sheet into one "Bottom Sheet" element: VoiceOver, XCUITest
+// and Maestro then see none of the rows, inputs or buttons inside it.
+describe("accessibility", () => {
+  it("keeps the sheet's contents reachable as their own elements", async () => {
+    await renderSheet();
+    expect(capturedAccessible).toBe(false);
   });
 });

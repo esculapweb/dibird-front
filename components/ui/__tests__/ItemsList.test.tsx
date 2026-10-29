@@ -14,7 +14,7 @@ jest.mock("../../Empty/EmptyState", () => {
 });
 
 import { render, screen } from "@testing-library/react-native";
-import { Text } from "react-native";
+import { StyleSheet, Text } from "react-native";
 import ItemsList from "../ItemsList";
 
 const renderList = (props: Record<string, unknown> = {}) =>
@@ -68,4 +68,34 @@ it("shows the spinner only while the refresh is running", async () => {
   await renderList({ onRefresh });
 
   expect(listProps().refreshControl.props.refreshing).toBe(false);
+});
+
+describe("as a grid", () => {
+  const ITEMS = [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }];
+  // Host tree: Text → cell View → row View (FlatList's own, per row).
+  const cellOf = (text: string) => screen.getByText(text).parent!;
+  const rowOf = (text: string) => cellOf(text).parent!;
+
+  it("puts as many items in a row as there are columns", async () => {
+    await renderList({ data: ITEMS, numColumns: 3 });
+
+    expect(rowOf("row 1")).toBe(rowOf("row 3"));
+    expect(rowOf("row 4")).not.toBe(rowOf("row 1"));
+  });
+
+  it("gives each item a cell of an equal share of the row", async () => {
+    // A fixed width, not flex: 1 — a half-empty last row keeps its tiles the
+    // size of every other row's.
+    await renderList({ data: ITEMS, numColumns: 4 });
+
+    expect(StyleSheet.flatten(cellOf("row 1").props.style).width).toBe("25%");
+  });
+
+  it("leaves the rows unwrapped by default", async () => {
+    await renderList();
+
+    expect(
+      StyleSheet.flatten(cellOf("row 1").props.style)?.width,
+    ).toBeUndefined();
+  });
 });

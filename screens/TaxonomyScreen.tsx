@@ -10,12 +10,15 @@ import Layout from "../components/ui/Layout";
 import IconsHeader from "../components/ui/IconsHeader";
 import { overflowButton } from "../components/ui/overflowMenu";
 import TaxonChildrenList from "../components/Taxonomy/TaxonChildrenList";
+import SpeciesViewSwitch from "../components/Taxonomy/SpeciesViewSwitch";
+import LoadingOverlay from "../components/ui/LoadingOverlay";
 import TaxonFilterSheet, {
   hasTraitFilters,
 } from "../components/Taxonomy/TaxonFilterSheet";
 import { BottomSheet } from "../services/bottomSheet";
 import { callNavigationCallback } from "../util/navigationCallbacks";
 import { useTaxonomySort } from "../hooks/useTaxonomySort";
+import { useSpeciesViewMode } from "../hooks/useSpeciesViewMode";
 import {
   buildTaxonCatalogUrl,
   taxonListSharePath,
@@ -71,6 +74,10 @@ const TaxonomyScreen = () => {
   // Owned here (not inside TaxonChildrenList) so the share button can encode
   // the current name search into the link, like traits and sort.
   const [search, setSearch] = useState(initialSearch ?? "");
+  const speciesView = useSpeciesViewMode();
+  // Genera have no photos (see TaxonChildrenList), and a picker is there to
+  // choose a bird by name, not to browse a gallery.
+  const canShowPhotos = rank !== 4 && !pickerKey;
 
   // Traits are only recorded for species, so the filter button would come
   // back empty-handed on any other rank.
@@ -95,6 +102,8 @@ const TaxonomyScreen = () => {
           onApply={setTraits}
           dismiss={dismiss}
           focusGroup={focusGroup}
+          // Under a parent the list is that group's own already.
+          showGroup={!parentSegment}
         />
       ),
     });
@@ -166,6 +175,22 @@ const TaxonomyScreen = () => {
     </Pressable>
   );
 
+  const viewSwitch = canShowPhotos ? (
+    <SpeciesViewSwitch
+      options={speciesView.options}
+      value={speciesView.layout}
+      onChange={speciesView.changeLayout}
+      testIDPrefix="species-view"
+      isPhotos={speciesView.isPhotos}
+      showCaptions={speciesView.showCaptions}
+      onToggleCaptions={speciesView.toggleCaptions}
+    />
+  ) : null;
+
+  // Held back until the stored layout is known, so a gallery user doesn't
+  // see the rows for a frame before the grid replaces them.
+  if (canShowPhotos && !speciesView.ready) return <LoadingOverlay />;
+
   return (
     <Layout>
       <TaxonChildrenList
@@ -196,37 +221,42 @@ const TaxonomyScreen = () => {
         autoFocusSearch={focusSearch}
         errorTitle={t("taxonomy_unavailable")}
         emptyMessage={t(RANK_EMPTY_KEY[rank])}
+        layout={canShowPhotos ? speciesView.layout : "list"}
+        showCaptions={speciesView.showCaptions}
         listHeader={
-          isOrderRoot || isSpeciesRoot ? (
-            <View style={styles.shortcuts}>
-              {isSpeciesRoot &&
-                shortcut(t("browse_by_groups"), "git-branch-outline", () =>
-                  navigation.push("Taxonomy", { rank: 2 }),
-                )}
-              {isOrderRoot &&
-                shortcut(t("all_species"), "search-outline", () =>
+          <>
+            {(isOrderRoot || isSpeciesRoot) && (
+              <View style={styles.shortcuts}>
+                {isSpeciesRoot &&
+                  shortcut(t("browse_by_groups"), "git-branch-outline", () =>
+                    navigation.push("Taxonomy", { rank: 2 }),
+                  )}
+                {isOrderRoot &&
+                  shortcut(t("all_species"), "search-outline", () =>
+                    navigation.push("Taxonomy", {
+                      rank: 5,
+                      title: t("species_catalog"),
+                    }),
+                  )}
+                {shortcut(t("extinct_species"), "skull-outline", () =>
                   navigation.push("Taxonomy", {
                     rank: 5,
-                    title: t("species_catalog"),
+                    extinct: true,
+                    title: t("extinct_species"),
                   }),
                 )}
-              {shortcut(t("extinct_species"), "skull-outline", () =>
-                navigation.push("Taxonomy", {
-                  rank: 5,
-                  extinct: true,
-                  title: t("extinct_species"),
-                }),
-              )}
-              {shortcut(t("compare_species"), "git-compare-outline", () =>
-                navigation.navigate("SpeciesCompare", undefined),
-              )}
-              {/* The other way into the catalogue: by place rather than by
+                {shortcut(t("compare_species"), "git-compare-outline", () =>
+                  navigation.navigate("SpeciesCompare", undefined),
+                )}
+                {/* The other way into the catalogue: by place rather than by
                   taxon — a country's checklist. */}
-              {shortcut(t("birds_by_country"), "globe-outline", () =>
-                navigation.navigate("TerritoryList", undefined),
-              )}
-            </View>
-          ) : undefined
+                {shortcut(t("birds_by_country"), "globe-outline", () =>
+                  navigation.navigate("TerritoryList", undefined),
+                )}
+              </View>
+            )}
+            {viewSwitch}
+          </>
         }
       />
     </Layout>

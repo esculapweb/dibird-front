@@ -20,6 +20,10 @@ const NUMBER_KEYS = [
   "clutch_max",
 ] as const;
 
+// The group filter's segments (see TaxonTraitFilters.order). App-only in the
+// link: the website's lists don't read them, and ignore them.
+const STRING_KEYS = ["order", "family", "genus"] as const;
+
 const LIST_KEYS = [
   "habitat",
   "migration",
@@ -36,6 +40,10 @@ export const taxonFiltersToParams = (
   for (const key of NUMBER_KEYS) {
     const value = traits[key];
     if (value != null) params[key] = String(value);
+  }
+  for (const key of STRING_KEYS) {
+    const value = traits[key];
+    if (value) params[key] = value;
   }
   for (const key of LIST_KEYS) {
     const value = traits[key];
@@ -54,6 +62,10 @@ export const paramsToTaxonFilters = (
     if (raw == null || raw === "") continue;
     const num = Number(raw);
     if (!Number.isNaN(num)) traits[key] = num;
+  }
+  for (const key of STRING_KEYS) {
+    const raw = params.get(key);
+    if (raw) traits[key] = raw;
   }
   for (const key of LIST_KEYS) {
     const raw = params.get(key);

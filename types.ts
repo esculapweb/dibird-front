@@ -606,7 +606,16 @@ export interface TaxonTraitFilters {
   // Distribution filter: api.Territory id from the country dropdown; the
   // catalogue keeps only species that occur in this territory.
   territory?: number | null;
+  // Taxonomic group, by segment: only the species under this order, family
+  // or genus. Three cascading picks rather than one, because a segment is
+  // unique only within its rank — the deepest one set goes to the API as
+  // parent/parent_rank (see traitParams).
+  order?: string | null;
+  family?: string | null;
+  genus?: string | null;
 }
+
+export type TaxonGroupKey = "order" | "family" | "genus";
 
 export type TaxonTraitFilterKey = keyof TaxonTraitFilters;
 

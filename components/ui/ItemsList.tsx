@@ -1,5 +1,6 @@
 import {
   FlatList,
+  View,
   StyleSheet,
   ActivityIndicator,
   FlatListProps,
@@ -26,7 +27,13 @@ interface ItemsListProps<T> {
   // their own schedule; this is the way to ask for fresh data right now.
   onRefresh?: () => void;
   isRefreshing?: boolean;
+  // A grid instead of rows (the species photo layout). Each item gets an
+  // equal-width cell, so renderItem only has to fill the width it is given.
+  numColumns?: number;
 }
+
+// Space between grid cells, in both directions.
+export const GRID_GAP = 6;
 
 const ItemsList = <T,>({
   data,
@@ -40,9 +47,19 @@ const ItemsList = <T,>({
   listHeader,
   onRefresh,
   isRefreshing,
+  numColumns = 1,
 }: ItemsListProps<T>) => {
   const { Colors } = useTheme();
   const { t } = useTranslation();
+  const isGrid = numColumns > 1;
+
+  // Fixed-width cells rather than flex: 1 items, so a half-empty last row
+  // keeps its tiles the size of every other row's instead of stretching them.
+  const gridRenderItem: ListRenderItem<T> = (info) => (
+    <View style={[styles.cell, { width: `${100 / numColumns}%` }]}>
+      {renderItem(info)}
+    </View>
+  );
 
   const getEmptyProps = (): EmptyStateProps | null => {
     if (!emptyType) return null;
@@ -66,9 +83,16 @@ const ItemsList = <T,>({
     <>
       <FlatList
         testID="items-list"
+        // FlatList can't change numColumns on a mounted list (it throws), so
+        // switching rows ↔ grid has to mount a fresh one.
+        key={`columns-${numColumns}`}
         data={data}
         keyExtractor={keyExtractor}
-        renderItem={renderItem}
+        renderItem={isGrid ? gridRenderItem : renderItem}
+        numColumns={numColumns}
+        // The cells' padding makes the gaps; pulling each row out by half a
+        // gap keeps the outer tiles flush with the header above them.
+        columnWrapperStyle={isGrid ? styles.gridRow : undefined}
         contentContainerStyle={[
           styles.list,
           data.length === 0 && { flexGrow: 1 },
@@ -125,4 +149,6 @@ export default ItemsList;
 
 const styles = StyleSheet.create({
     list: { paddingHorizontal: 12, paddingVertical: 8 },
+    gridRow: { marginHorizontal: -GRID_GAP / 2 },
+    cell: { padding: GRID_GAP / 2 },
   });

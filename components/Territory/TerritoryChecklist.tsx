@@ -1,7 +1,6 @@
 import { ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigation } from "@react-navigation/native";
 
 import ItemsList from "../ui/ItemsList";
 import SearchInput from "../ui/SearchInput";
@@ -12,19 +11,26 @@ import { fetchTerritoryTree } from "../../util/fetches";
 import { StaleTime } from "../../constants/staleTime";
 import { useLanguage } from "../../store/language-context";
 import { useOpenSpecies } from "../../hooks/useOpenSpecies";
-import { CatalogNavigationProp, ChecklistItem } from "../../types";
+import { ChecklistItem, TaxonTraitFilters } from "../../types";
 
 // How deeply each kind of group header nests, so the search filter knows
 // which pending headers a new one replaces.
 const GROUP_LEVEL: Record<string, number> = { order: 0, family: 1, genus: 2 };
 
-// The taxon rank behind each header, for the group page it opens.
-const GROUP_RANK: Record<string, 2 | 3 | 4> = { order: 2, family: 3, genus: 4 };
+// The group filter a header stands for: its own segment and those of the
+// headers above it (a family under its order, a genus under both).
+export type ChecklistGroupFilter = Pick<
+  TaxonTraitFilters,
+  "order" | "family" | "genus"
+>;
 
 interface TerritoryChecklistProps {
   // Avibase's own territory id — what the public /api/checklist/ is keyed by.
   idAvibase: number;
   listHeader?: ReactNode;
+  // A tap on an order/family/genus header: the host shows that group's birds
+  // in this country (see TerritoryDetailScreen).
+  onGroupPress: (group: ChecklistGroupFilter) => void;
 }
 
 // A country's birds in taxonomic order — order, family, species — laid out
@@ -36,10 +42,10 @@ interface TerritoryChecklistProps {
 const TerritoryChecklist = ({
   idAvibase,
   listHeader,
+  onGroupPress,
 }: TerritoryChecklistProps) => {
   const { t } = useTranslation();
   const { language } = useLanguage();
-  const navigation = useNavigation<CatalogNavigationProp>();
   const openSpecies = useOpenSpecies();
   const [search, setSearch] = useState("");
 
@@ -50,6 +56,23 @@ const TerritoryChecklist = ({
     queryFn: () => fetchTerritoryTree(idAvibase),
     staleTime: StaleTime.ONE_DAY,
   });
+
+  // Each header's place in the tree, worked out once over the full rows (the
+  // searched ones are the same objects, so the lookup holds for them too).
+  const groupFilters = useMemo(() => {
+    const filters = new Map<ChecklistItem, ChecklistGroupFilter>();
+    let current: ChecklistGroupFilter = {};
+    for (const row of data ?? []) {
+      if (row.type === "order") current = { order: row.segment };
+      else if (row.type === "family")
+        current = { order: current.order, family: row.segment };
+      else if (row.type === "genus")
+        current = { ...current, genus: row.segment };
+      else continue;
+      filters.set(row, current);
+    }
+    return filters;
+  }, [data]);
 
   // Filtering has to keep a group header only while something under it
   // survives. Headers are held back as a pending chain (order, then family)
@@ -117,14 +140,12 @@ const TerritoryChecklist = ({
             openSpecies(item.segment, "territory_checklist")
           }
           // The tree's headers are real taxa here (the country endpoint sends
-          // their segments), so the reader can go up into the order or family
-          // instead of only down into a bird.
-          onGroupPress={(group) =>
-            navigation.navigate("TaxonGroupDetail", {
-              segment: group.segment,
-              rank: GROUP_RANK[group.type] ?? 3,
-            })
-          }
+          // their segments), so a header opens that group's birds — still in
+          // this country, not the group's worldwide page.
+          onGroupPress={(group) => {
+            const filter = groupFilters.get(group);
+            if (filter) onGroupPress(filter);
+          }}
         />
       )}
       keyExtractor={(item: ChecklistItem, index: number) =>

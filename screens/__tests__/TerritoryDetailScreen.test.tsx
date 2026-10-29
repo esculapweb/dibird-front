@@ -123,6 +123,7 @@ jest.mock("../../components/Taxonomy/TaxonChildrenList", () => {
 
 import { ReactElement } from "react";
 import { Share } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -180,8 +181,11 @@ const headerProps = (): Record<string, unknown> => {
   return options.headerRight().props;
 };
 
-beforeEach(() => {
+beforeEach(async () => {
   jest.clearAllMocks();
+  // The species layout is a stored, app-wide preference: a test that picks
+  // the photo grid must not open the next one on it.
+  await AsyncStorage.clear();
   mockSheetContent = null;
   mockRoute = createRouteMock("TerritoryDetail", { segment: "argentina" });
   mockDetail();
@@ -433,4 +437,116 @@ it("shares the open tab and layout", async () => {
   expect(arg.url ?? arg.message ?? "").toContain(
     "/territory/argentina/?tab=info",
   );
+});
+
+describe("photo grid", () => {
+  // useSpeciesViewMode's storage: one JSON object of per-key view modes.
+  const storeGalleryPreference = () =>
+    AsyncStorage.setItem("viewMode", JSON.stringify({ SpeciesLayout: "photos" }));
+
+  it("draws the flat list as tiles, with its sort, filters and captions toggle", async () => {
+    await render(<TerritoryDetailScreen />);
+
+    await fireEvent.press(screen.getByTestId("species-view-photos"));
+
+    expect(screen.getByTestId("flat-species-list")).toBeOnTheScreen();
+    expect(mockFlatListProps.layout).toBe("photos");
+    expect(mockFlatListProps.fixedTraits).toEqual({ territory: 52 });
+    expect(headerProps().onSortPress).toEqual(expect.any(Function));
+    expect(headerProps().onFilterPress).toEqual(expect.any(Function));
+    expect(screen.getByTestId("species-captions-toggle")).toBeOnTheScreen();
+  });
+
+  it("goes back to rows on either of the other layouts", async () => {
+    await render(<TerritoryDetailScreen />);
+    await fireEvent.press(screen.getByTestId("species-view-photos"));
+
+    await fireEvent.press(screen.getByTestId("species-view-flat"));
+    expect(mockFlatListProps.layout).toBe("list");
+    expect(screen.queryByTestId("species-captions-toggle")).toBeNull();
+
+    await fireEvent.press(screen.getByTestId("species-view-photos"));
+    await fireEvent.press(screen.getByTestId("species-view-tree"));
+    expect(screen.getByTestId("territory-checklist")).toBeOnTheScreen();
+  });
+
+  it("shares the grid as the flat list it is drawn from", async () => {
+    // The website has no photo layout to land on.
+    const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({
+      action: "sharedAction",
+    } as never);
+
+    await render(<TerritoryDetailScreen />);
+    await fireEvent.press(screen.getByTestId("species-view-photos"));
+    overflowRow(
+      openOverflow(headerProps().headerRightEnd, mockShowMenu),
+      "share",
+    ).onPress();
+
+    const arg = shareSpy.mock.calls[0][0] as { url?: string; message?: string };
+    expect(arg.url ?? arg.message ?? "").toContain("view=flat");
+  });
+
+  it("opens on the grid when that is the stored preference", async () => {
+    await storeGalleryPreference();
+
+    await render(<TerritoryDetailScreen />);
+
+    expect(await screen.findByTestId("flat-species-list")).toBeOnTheScreen();
+    expect(mockFlatListProps.layout).toBe("photos");
+  });
+
+  it("keeps a shared link's layout over the stored grid until the reader switches", async () => {
+    await storeGalleryPreference();
+    mockRoute = createRouteMock("TerritoryDetail", {
+      segment: "argentina",
+      initialView: "tree",
+    });
+
+    await render(<TerritoryDetailScreen />);
+
+    expect(await screen.findByTestId("territory-checklist")).toBeOnTheScreen();
+    expect(screen.queryByTestId("flat-species-list")).toBeNull();
+  });
+});
+
+describe("a group header in the tree", () => {
+  const pressGroup = (group: Record<string, string>) =>
+    act(async () =>
+      (mockChecklistProps.onGroupPress as (g: object) => void)(group),
+    );
+
+  it("opens the country's list narrowed to that group", async () => {
+    await render(<TerritoryDetailScreen />);
+
+    await pressGroup({ order: "perching-birds", family: "tyrant-flycatchers" });
+
+    expect(screen.getByTestId("flat-species-list")).toBeOnTheScreen();
+    expect(mockFlatListProps.traits).toEqual({
+      order: "perching-birds",
+      family: "tyrant-flycatchers",
+    });
+    // Still this country's birds.
+    expect(mockFlatListProps.fixedTraits).toEqual({ territory: 52 });
+    expect(headerProps().hasActiveFilters).toBe(true);
+  });
+
+  it("replaces an earlier group but keeps the other filters", async () => {
+    mockRoute = createRouteMock("TerritoryDetail", {
+      segment: "argentina",
+      initialTraits: {
+        status: ["EN"],
+        order: "parrots",
+        family: "old-world-parrots",
+      },
+    });
+    await render(<TerritoryDetailScreen />);
+
+    await pressGroup({ order: "perching-birds" });
+
+    expect(mockFlatListProps.traits).toEqual({
+      status: ["EN"],
+      order: "perching-birds",
+    });
+  });
 });

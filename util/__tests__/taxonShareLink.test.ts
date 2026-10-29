@@ -178,3 +178,18 @@ it("maps only the flat roots to a shareable path", () => {
   expect(taxonListSharePath(3)).toBeNull();
   expect(taxonListSharePath(4)).toBeNull();
 });
+
+it("carries the taxonomic group, so a shared link opens the same birds", () => {
+  const group: TaxonTraitFilters = {
+    territory: 52,
+    order: "perching-birds",
+    family: "tyrant-flycatchers",
+  };
+  const params = taxonFiltersToParams(group);
+
+  expect(params).toMatchObject({
+    order: "perching-birds",
+    family: "tyrant-flycatchers",
+  });
+  expect(paramsToTaxonFilters(new URLSearchParams(params))).toEqual(group);
+});

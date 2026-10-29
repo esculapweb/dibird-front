@@ -13,12 +13,17 @@ import {
 } from "../util/fetches";
 import StatCard from "../components/Stats/StatCard";
 import ChecklistCard from "../components/Stats/ChecklistCard";
+import SpeciesTile, {
+  PHOTO_GRID_COLUMNS,
+} from "../components/Taxonomy/SpeciesTile";
+import SpeciesViewSwitch from "../components/Taxonomy/SpeciesViewSwitch";
+import LoadingOverlay from "../components/ui/LoadingOverlay";
 import Tabs from "../components/ui/Tabs";
-import ViewSwitch from "../components/ui/ViewSwitch";
 import { useFilters } from "../store/filters-context";
 import { useProfile } from "../store/profile-context";
 import { buildShareUrl } from "../util/helpers";
 import { useOpenSpecies } from "../hooks/useOpenSpecies";
+import { useSpeciesViewMode } from "../hooks/useSpeciesViewMode";
 import { track } from "../services/analytics";
 import { parseDeepLinkParams } from "../util/parseDeepLinkParams";
 import { BottomSheet } from "../services/bottomSheet";
@@ -70,7 +75,12 @@ const StatScreen = () => {
   // How the checklist is laid out: the taxonomic tree it has always been, or
   // a plain list of species. Same switch as the country page's species tab.
   const [checklistView, setChecklistView] = useState<"tree" | "flat">("tree");
-  const isFlatChecklist = viewMode === "checklist" && checklistView === "flat";
+  // The photo grid, shared with every other species list. In the checklist it
+  // is a third layout next to the two above, drawn from the flat list's data.
+  const speciesView = useSpeciesViewMode();
+  const isPhotos = speciesView.isPhotos;
+  const isFlatChecklist =
+    viewMode === "checklist" && (checklistView === "flat" || isPhotos);
 
   const MODE_CONFIG = useMemo(
     () => ({
@@ -304,6 +314,41 @@ const StatScreen = () => {
 
   const renderItem = useCallback(
     ({ item, index }: { item: SpeciesItem | ChecklistItem; index: number }) => {
+      // Same split as the rows: the tile opens the menu, its corner mark is
+      // the seen checkbox.
+      if (isPhotos) {
+        if (viewMode === "checklist") {
+          const row = item as ChecklistItem;
+          // The flat data has no group headers; this only guards the grid
+          // against a stray one.
+          if (row.type !== "species") return null;
+          return (
+            <SpeciesTile
+              title={row.name_lang}
+              thumb={row.thumb}
+              statusCode={row.status}
+              showCaption={speciesView.showCaptions}
+              seen={row.seen}
+              onPress={() => handleBottomSheetMenu(item)}
+              onToggleSeen={() => handleStatCardPress(item)}
+              testID={`checklist-species-tile-${row.species_id ?? row.id}`}
+            />
+          );
+        }
+        const species = item as SpeciesItem;
+        return (
+          <SpeciesTile
+            title={species.sp_name_lang}
+            thumb={species.sp_thumb}
+            statusCode={species.status}
+            showCaption={speciesView.showCaptions}
+            seen={species.seen}
+            onPress={() => handleBottomSheetMenu(item)}
+            onToggleSeen={() => handleStatCardPress(item)}
+            testID={`stat-species-tile-${species.species_id}`}
+          />
+        );
+      }
       if (viewMode === "checklist") {
         return (
           <ChecklistCard
@@ -330,7 +375,15 @@ const StatScreen = () => {
         />
       );
     },
-    [seenMode, handleStatCardPress, handleBottomSheetMenu, viewMode, openSpecies],
+    [
+      seenMode,
+      handleStatCardPress,
+      handleBottomSheetMenu,
+      viewMode,
+      openSpecies,
+      isPhotos,
+      speciesView.showCaptions,
+    ],
   );
 
   const handleShare = useCallback(async () => {
@@ -416,6 +469,16 @@ const StatScreen = () => {
     },
   ];
 
+  // The tree and the flat list behind the grid are cached under different
+  // keys — wait for the stored layout rather than fetch the wrong one first.
+  if (!speciesView.ready) return <LoadingOverlay />;
+
+  const viewSwitchProps = {
+    isPhotos,
+    showCaptions: speciesView.showCaptions,
+    onToggleCaptions: speciesView.toggleCaptions,
+  };
+
   return (
     <>
       <ListScreen
@@ -432,7 +495,10 @@ const StatScreen = () => {
         allowSort={config.allowSort || isFlatChecklist}
         // The layout lives in fetchData's closure, so without it in the key
         // the switch would keep showing the pages fetched for the tree.
-        queryKeyExtra={viewMode === "checklist" ? checklistView : null}
+        queryKeyExtra={
+          viewMode === "checklist" ? (isFlatChecklist ? "flat" : "tree") : null
+        }
+        numColumns={isPhotos ? PHOTO_GRID_COLUMNS : 1}
         staleTime={config.staleTime}
         headerRightEnd={headerRightEnd}
         onOpenFilterModal={(fn) => {
@@ -442,7 +508,7 @@ const StatScreen = () => {
         onFirstPageData={handleFirstPageData}
         listHeader={
           viewMode === "checklist" ? (
-            <ViewSwitch
+            <SpeciesViewSwitch
               options={[
                 {
                   value: "tree",
@@ -450,12 +516,29 @@ const StatScreen = () => {
                   icon: "git-branch-outline",
                 },
                 { value: "flat", label: t("as_list"), icon: "list-outline" },
+                speciesView.photosOption,
               ]}
-              value={checklistView}
-              onChange={setChecklistView}
+              value={isPhotos ? "photos" : checklistView}
+              onChange={(next) => {
+                if (next === "photos") {
+                  speciesView.changeLayout("photos");
+                  return;
+                }
+                speciesView.changeLayout("list");
+                setChecklistView(next);
+              }}
               testIDPrefix="checklist-view"
+              {...viewSwitchProps}
             />
-          ) : undefined
+          ) : (
+            <SpeciesViewSwitch
+              options={speciesView.options}
+              value={speciesView.layout}
+              onChange={speciesView.changeLayout}
+              testIDPrefix="stat-view"
+              {...viewSwitchProps}
+            />
+          )
         }
         bottomEl={
           <Tabs

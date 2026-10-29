@@ -11,6 +11,7 @@ import DropdownInput from "../ui/DropdownInput";
 import { fetchTraitFilters, fetchMyCountries } from "../../util/fetches";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 import { useFocusScroll } from "../../hooks/useFocusScroll";
+import { useTaxonGroupOptions } from "../../hooks/useTaxonGroupOptions";
 import { StaleTime } from "../../constants/staleTime";
 import { useLanguage } from "../../store/language-context";
 import { useTheme, ThemeColors } from "../../store/theme-context";
@@ -40,6 +41,9 @@ interface TaxonFilterSheetProps {
   // species list): picking another one there would quietly turn it into a
   // different page's list.
   showCountry?: boolean;
+  // Off where the list is already one group's own (a family's species under
+  // that family): another group there would contradict the page.
+  showGroup?: boolean;
   // The chip a tap asked to edit: that group opens expanded and scrolled to,
   // and "territory" opens the country list outright.
   focusGroup?: string | null;
@@ -58,6 +62,7 @@ const TaxonFilterSheet = ({
   onApply,
   dismiss,
   showCountry = true,
+  showGroup = true,
   focusGroup,
 }: TaxonFilterSheetProps) => {
   const { t } = useTranslation();
@@ -87,6 +92,9 @@ const TaxonFilterSheet = ({
     queryFn: (sort) => fetchMyCountries(false, sort),
     params: [language],
   });
+
+  // Keyed by the draft, so picking an order narrows the family list at once.
+  const groupOptions = useTaxonGroupOptions(draft, showGroup);
 
   // Straight into the country list when its own chip was tapped, but only
   // once the query is settled: DropdownInput refuses to open while it loads.
@@ -207,6 +215,59 @@ const TaxonFilterSheet = ({
             openSignal={countryOpenSignal}
           />
         </View>
+      )}
+
+      {/* Order → family → genus. A pick clears the levels below it: a family
+          left over from another order would quietly empty the list. */}
+      {showGroup && (
+        <>
+          <View onLayout={onSectionLayout("order")}>
+            <DropdownInput
+              title={t("order")}
+              placeholder={t("all_orders")}
+              value={draft.order ?? null}
+              setValue={(value) =>
+                setDraft((prev) => ({
+                  ...prev,
+                  order: value,
+                  family: null,
+                  genus: null,
+                }))
+              }
+              query={groupOptions.orders}
+              type="TaxonOrderDropdown"
+              allowReset
+            />
+          </View>
+          <View onLayout={onSectionLayout("family")}>
+            <DropdownInput
+              title={t("family")}
+              placeholder={t("all_families")}
+              value={draft.family ?? null}
+              setValue={(value) =>
+                setDraft((prev) => ({ ...prev, family: value, genus: null }))
+              }
+              query={groupOptions.families}
+              type="TaxonFamilyDropdown"
+              allowReset
+            />
+          </View>
+          <View onLayout={onSectionLayout("genus")}>
+            <DropdownInput
+              title={t("genus")}
+              placeholder={t("all_genera")}
+              value={draft.genus ?? null}
+              setValue={(value) =>
+                setDraft((prev) => ({ ...prev, genus: value }))
+              }
+              query={groupOptions.genera}
+              type="TaxonGenusDropdown"
+              allowReset
+              disabled={!draft.family}
+              disabledMessage={t("pick_family_first")}
+            />
+          </View>
+        </>
       )}
 
       {GROUPS.map((group) => {

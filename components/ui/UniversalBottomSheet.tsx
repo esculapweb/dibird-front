@@ -291,6 +291,12 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
   return (
     <BottomSheetModal
       ref={bottomSheetRef}
+      // gorhom renders the content container with accessible={true} by
+      // default. On iOS that makes the whole sheet one accessibility element
+      // ("Bottom Sheet") and hides everything inside it — from VoiceOver and
+      // from XCUITest/Maestro alike. The rows and buttons inside are the
+      // elements, not the container.
+      accessible={false}
       stackBehavior="replace"
       enableDynamicSizing
       maxDynamicContentSize={screenHeight * 0.9}
