@@ -24,8 +24,8 @@ import type {
   AuthStackNavigationProp,
   AuthStackParamList,
 } from "../types";
-import { openSupportEmail } from "../util/openSupportEmail";
 import StaticScreen from "../screens/StaticScreen";
+import ContactScreen from "../screens/ContactScreen";
 import { catalogScreens } from "./catalogScreens";
 import { track } from "../services/analytics";
 
@@ -88,7 +88,10 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
         <DrawerItem
           label={t("settings_send_feedback")}
           labelStyle={{ color: Colors.textMain }}
-          onPress={openSupportEmail}
+          onPress={() => {
+            navigation.closeDrawer();
+            stackNav?.navigate("Contact", undefined);
+          }}
           icon={({ color, size }) => (
             <Ionicons name="chatbubble-outline" color={color} size={size} />
           )}
@@ -154,6 +157,11 @@ const AuthNavigator = () => {
         name="Terms"
         component={StaticScreen}
         options={{ title: t("terms_of_service") }}
+      />
+      <Stack.Screen
+        name="Contact"
+        component={ContactScreen}
+        options={{ title: t("settings_send_feedback") }}
       />
 
       <Stack.Screen

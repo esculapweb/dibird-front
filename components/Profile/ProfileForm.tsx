@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
 import { StyleSheet, View, Text } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useNavigation } from "@react-navigation/native";
 
 import Input from "../ui/Input";
-import AnimatedLoadingButton from "../ui/AnimatedLoadingButton";
+import IconsHeader from "../ui/IconsHeader";
 import DropdownInput from "../ui/DropdownInput";
 import PrivacyToggle from "../ui/PrivacyToggle";
 import { useProfile } from "../../store/profile-context";
@@ -11,17 +12,16 @@ import { fetchTimezones, fetchMyCountries } from "../../util/fetches";
 import { useLanguage } from "../../store/language-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 import { useTheme, ThemeColors } from "../../store/theme-context";
-import { ProfileFormData } from "../../types";
+import { AppStackNavigationProp, ProfileFormData } from "../../types";
 
 const ProfileForm = ({
   submitHandler,
   loading,
-  success,
 }: {
   submitHandler: (data: ProfileFormData) => void;
   loading: boolean;
-  success: boolean;
 }) => {
+  const navigation = useNavigation<AppStackNavigationProp>();
   const { language } = useLanguage();
   const { t } = useTranslation();
   const { profile } = useProfile();
@@ -104,6 +104,30 @@ const ProfileForm = ({
     setInitialValues();
   }, [profile]);
 
+  // Save lives in the header, like on the diary/observation/place editors.
+  // The form owns the field state, so it sets the header itself; onSubmit is
+  // a fresh closure every render, hence no deps array.
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <IconsHeader
+          headerRightBeginning={[
+            {
+              condition: true,
+              onPress: onSubmit,
+              icon: "checkmark-circle",
+              size: 36,
+              tintColor: Colors.main100,
+              disabled: loading,
+              loading,
+              testID: "profile-save-button",
+            },
+          ]}
+        />
+      ),
+    });
+  });
+
   return (
     <View style={styles.outer}>
       <View style={styles.row}>
@@ -172,16 +196,6 @@ const ProfileForm = ({
         onChange={setPrivateDiaries}
         descriptionType="multiple"
       />
-
-      <View style={styles.buttonContainer}>
-        <AnimatedLoadingButton
-          onPress={onSubmit}
-          loading={loading}
-          success={success}
-        >
-          {t("save")}
-        </AnimatedLoadingButton>
-      </View>
     </View>
   );
 };
@@ -209,10 +223,6 @@ const stylesFn = (Colors: ThemeColors) =>
     },
     divider: {
       marginBottom: 12,
-    },
-    buttonContainer: {
-      marginTop: 24,
-      borderRadius: 16,
     },
     privacyLabel: {
       marginBottom: 8,

@@ -19,6 +19,7 @@ import PlaceDetailScreen from "../screens/PlaceDetailScreen";
 import PlaceEditorScreen from "../screens/PlaceEditorScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import ObservationsScreen from "../screens/ObservationsScreen";
+import ActivityScreen from "../screens/ActivityScreen";
 import ObservationDetailScreen from "../screens/ObservationDetailScreen";
 import ObservationEditorScreen from "../screens/ObservationEditorScreen";
 import DiariesScreen from "../screens/DiariesScreen";
@@ -41,6 +42,7 @@ import CommunityScreen from "../screens/CommunityScreen";
 import CommunityDetailScreen from "../screens/CommunityDetailScreen";
 import OnboardingScreen from "../screens/OnboardingScreen";
 import AboutScreen from "../screens/AboutScreen";
+import ContactScreen from "../screens/ContactScreen";
 
 import { useAuth, setOnLogout } from "../store/auth-context";
 import { useProfile } from "../store/profile-context";
@@ -298,6 +300,11 @@ const AppNavigator = () => {
         component={StaticScreen}
         options={{ title: t("terms_of_service") }}
       />
+      <Stack.Screen
+        name="Contact"
+        component={ContactScreen}
+        options={{ title: t("settings_send_feedback") }}
+      />
 
       <Stack.Screen
         name="BlockedUsers"
@@ -396,6 +403,12 @@ const AppNavigator = () => {
         name="Observations"
         component={ObservationsScreen}
         options={{ title: t("observations") }}
+      />
+
+      <Stack.Screen
+        name="Activity"
+        component={ActivityScreen}
+        options={{ title: t("activity") }}
       />
 
       <Stack.Screen

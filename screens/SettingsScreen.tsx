@@ -17,6 +17,7 @@ import {
 } from "../types";
 import { useExportProfile } from "../hooks/Profile/useExportProfile";
 import { useBiometricSetting } from "../hooks/useBiometricSetting";
+import { requestPushPermission } from "../hooks/usePushNotifications";
 import { canUseBiometrics } from "../services/bio";
 import { BottomSheet } from "../services/bottomSheet";
 import { deleteMyProfile } from "../util/fetches";
@@ -38,7 +39,12 @@ const SettingsScreen = () => {
   const { logout } = useAuth();
   const { profile } = useProfile();
   const navigation = useNavigation<AppDrawerNavigationProp>();
-  const { state: exportState, triggerExport, cleanup } = useExportProfile();
+  const {
+    state: exportState,
+    triggerExport,
+    download: downloadExport,
+    cleanup,
+  } = useExportProfile();
 
   const { status: onboardingStatus, restart: restartOnboarding } =
     useOnboarding();
@@ -120,8 +126,22 @@ const SettingsScreen = () => {
       onError: (e) => showErrorToast(e, "deleteMyProfile", extractDeleteError),
     });
 
-  const isExporting = exportState === "pending" || exportState === "processing";
+  const isExporting =
+    exportState === "pending" ||
+    exportState === "processing" ||
+    exportState === "downloading";
   useEffect(() => () => cleanup(), []);
+
+  // The export can take long enough that the user leaves; its result arrives
+  // as a push (myapi/services/export.py). Asking for the permission right here
+  // is the kind of moment requestPushPermission is meant for — the user has
+  // just asked for the very thing the push is about. Not awaited, and after
+  // the request rather than before it: the export must not wait on a dialog,
+  // and a refusal still leaves the notification in the bell.
+  const handleExportConfirmed = async () => {
+    await triggerExport();
+    requestPushPermission();
+  };
 
   const handleExportPress = () =>
     BottomSheet.show({
@@ -129,7 +149,7 @@ const SettingsScreen = () => {
       description: t("export_data_confirm_description"),
       confirmText: t("export_data_confirm_button"),
       cancelText: t("cancel"),
-      onConfirm: triggerExport,
+      onConfirm: handleExportConfirmed,
     });
 
   return (
@@ -203,12 +223,18 @@ const SettingsScreen = () => {
             isExporting
               ? t("export_data_in_progress")
               : exportState === "completed"
-                ? t("export_data_done")
+                ? t("export_data_ready")
                 : exportState === "failed"
                   ? t("export_data_failed")
                   : t("export_data")
           }
-          onPress={isExporting ? undefined : handleExportPress}
+          onPress={
+            isExporting
+              ? undefined
+              : exportState === "completed"
+                ? downloadExport
+                : handleExportPress
+          }
           disabled={isExporting}
           hideChevron
         />

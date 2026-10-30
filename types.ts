@@ -297,7 +297,8 @@ export type AllowedFilterKey =
   | "private"
   | "radius"
   | "source"
-  | "has_photo";
+  | "has_photo"
+  | "first_seen";
 
 export interface Filters {
   date?: DateFilter | null;
@@ -344,6 +345,11 @@ export interface Filters {
   // on both the own list and the community feed (see
   // ObservationFilterSet.filter_has_photo on the backend).
   has_photo?: boolean | null;
+  // Species list (stat2) only: species first seen between these dates
+  // (inclusive) *within the date filter's period* — how a column of the
+  // "new species" activity chart opens, so the list matches the number on it.
+  // Not editable in the filter sheet; it shows as a removable chip.
+  first_seen?: { from: string; to: string } | null;
 }
 
 export type AllFiltersKey = keyof Filters;
@@ -1063,6 +1069,10 @@ export interface RatingItem {
   username: string;
   native_territory: number | null;
   profile_id: number;
+  // Place by species count, independent of the list's sort order — with
+  // "-last_update" the row position is not a place. Optional for the same
+  // reason as avatar_thumbnail: an older offline cache or backend lacks it.
+  rank?: number;
   seen_qty: number;
   territory_code: string | null;
   territory_name: string | null;
@@ -1105,16 +1115,29 @@ export interface DashboardStat {
   total: number;
 }
 
+export type ActivityMode = "newSpecies" | "observations";
+
+export type ActivityGroup = "hour" | "day" | "week" | "month" | "year";
+
 export interface ActivityResponse {
   data: number[];
+  // Start of each data column, same length: an ISO date, or a local
+  // datetime with offset for hourly groups. The first one is clipped to
+  // meta.from. Optional: missing from older backends and from offline
+  // cache entries written before the field existed.
+  periods?: string[];
   meta: {
-    group: string;
+    group: ActivityGroup;
     from: string;
     to: string;
     points: number;
     total: number;
     delta: number;
     delta_label: string;
+    // The span the delta compares: the last n days (hours) against the n
+    // before them. null — too short a history to compare anything; missing —
+    // a response from before the field existed (fall back to delta_label_key).
+    delta_window?: { unit: "days" | "hours"; n: number } | null;
     recent_threshold: number;
     recent_window: number;
     period_label_key: string;
@@ -1210,6 +1233,7 @@ export type AuthStackParamList = CatalogParamList & {
   ResetPassword: { uid: string; token: string };
   Privacy: undefined;
   Terms: undefined;
+  Contact: ContactScreenParams;
 };
 
 /**
@@ -1218,6 +1242,19 @@ export type AuthStackParamList = CatalogParamList & {
  * link — the wording and the resend endpoint differ, the screen does not.
  */
 export type CheckEmailMode = "signup" | "reset";
+
+// The contact form is open to guests too, so it is declared in both stacks.
+// `prefillEmail` comes from CheckEmail: the person there has no account yet,
+// but the address the letter did not reach is exactly the one to answer.
+export type ContactScreenParams = { prefillEmail?: string } | undefined;
+
+/** Body of `POST /api/contact/` — the same form the website posts. */
+export interface ContactMessage {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}
 
 export interface ScreenWithFilters {
   filtersOverride?: Filters;
@@ -1248,8 +1285,17 @@ export type AppStackParamList = CatalogParamList & {
   Checklist: ScreenWithFilters | undefined;
   Places: ScreenWithFilters | undefined;
   PlaceDetail: { placeId: number; initialPlace?: PlaceItem };
-  PlaceEditor: { place?: PlaceItem; returnToScreen?: string } | undefined;
+  PlaceEditor:
+    | {
+        place?: PlaceItem;
+        returnToScreen?: string;
+        // Create mode only: a point picked on the place picker's map, used
+        // instead of a fresh GPS fix.
+        initialCoords?: Coords;
+      }
+    | undefined;
   Observations: ScreenWithFilters | undefined;
+  Activity: { filters: Filters; mode: ActivityMode };
   ObservationDetail: {
     observationId: number;
     initialObservation?: ObservationItem;
@@ -1295,6 +1341,7 @@ export type AppStackParamList = CatalogParamList & {
   Achievements: { highlightId?: string } | undefined;
   Privacy: undefined;
   Terms: undefined;
+  Contact: ContactScreenParams;
   BlockedUsers: undefined;
   ChangePassword: undefined;
   Emails: undefined;
@@ -1461,6 +1508,8 @@ export type NotificationPayload = (
   | { screen: "Achievements"; achievementId?: string }
   | { screen: "Notifications" }
   | { screen: "Checklist" }
+  // A data export that failed: Settings is where it is started again.
+  | { screen: "Settings" }
 ) & { id?: number };
 
 /**
@@ -1483,6 +1532,22 @@ export const getAppUpdateStage = (
     ? data.stage
     : null;
 };
+
+/**
+ * "Your data export is ready" (myapi/services/export.py in the backend repo).
+ *
+ * Recognised by `kind` rather than routed through util/notificationRoute for
+ * the same reason as the app-update ones: the tap does not navigate anywhere,
+ * it downloads the file (util/exportDownload).
+ */
+export type ExportReadyPayload = { kind: "gdpr_export"; id?: number };
+
+export const isExportReadyNotification = (
+  data: unknown,
+): data is ExportReadyPayload =>
+  typeof data === "object" &&
+  data !== null &&
+  (data as Record<string, unknown>).kind === "gdpr_export";
 
 /**
  * The screens a notification can point at.

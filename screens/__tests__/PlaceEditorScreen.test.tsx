@@ -229,6 +229,26 @@ describe("initial location", () => {
     expect(mockLocateMe).toHaveBeenCalledTimes(1);
   });
 
+  it("create mode with a point picked on the map: starts there, no GPS fix", async () => {
+    mockRoute = createRouteMock("PlaceEditor", {
+      returnToScreen: "ObservationEditor",
+      initialCoords: [2.351234, 48.861234],
+    });
+    await render(<PlaceEditorScreen />);
+
+    expect(mockLocateMe).not.toHaveBeenCalled();
+    expect(mockUpdateCoords).toHaveBeenCalledWith([2.3512, 48.8612], {
+      fromManual: true,
+      latText: "48.8612",
+      lngText: "2.3512",
+      withGeocode: true,
+    });
+    // A GPS fix asked for by the form must not move the picked pin.
+    expect(usePlaceLocation).toHaveBeenCalledWith(
+      expect.objectContaining({ followLocation: false }),
+    );
+  });
+
   it("edit mode: seeds coords/lat/lngText from the place's saved location instead of locating", async () => {
     mockRoute = createRouteMock("PlaceEditor", {
       place: { id: 1, location: { coordinates: [2.35, 48.86] } },

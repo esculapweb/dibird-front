@@ -1,15 +1,14 @@
 jest.mock("../../../util/fetches", () => ({
   pollExportStatus: jest.fn(),
   exportProfileData: jest.fn(),
-  downloadExportFile: jest.fn(),
 }));
-jest.mock("expo-sharing", () => ({ shareAsync: jest.fn() }));
-jest.mock("../../../store/auth-context", () => ({ useAuth: jest.fn() }));
+jest.mock("../../../util/exportDownload", () => ({
+  downloadAndShareExport: jest.fn(),
+}));
 
 import { act, renderHook } from "@testing-library/react-native";
-import * as Sharing from "expo-sharing";
-import { pollExportStatus, exportProfileData, downloadExportFile } from "../../../util/fetches";
-import { useAuth } from "../../../store/auth-context";
+import { pollExportStatus, exportProfileData } from "../../../util/fetches";
+import { downloadAndShareExport } from "../../../util/exportDownload";
 import { useExportProfile } from "../useExportProfile";
 import { GdprExport } from "../../../types";
 
@@ -31,7 +30,6 @@ const advance = async (ms: number) => {
 beforeEach(() => {
   jest.clearAllMocks();
   jest.useFakeTimers();
-  (useAuth as jest.Mock).mockReturnValue({ token: "tok" });
   (exportProfileData as jest.Mock).mockResolvedValue(undefined);
   (pollExportStatus as jest.Mock).mockResolvedValue(gdprExport());
 });
@@ -133,41 +131,23 @@ describe("polling loop", () => {
 });
 
 describe("on completed", () => {
-  it("downloads, shares, and returns to idle when the file has a uri", async () => {
+  // The export can outlast the screen; the file is fetched by a tap on the
+  // push, or on this row — never by the polling itself.
+  it("stops polling and offers the download without starting it", async () => {
     (pollExportStatus as jest.Mock).mockResolvedValue(
       gdprExport({ status: "completed", download_token: "dl-token" }),
     );
-    (downloadExportFile as jest.Mock).mockResolvedValue({ uri: "file:///export.zip" });
 
     const { result } = await renderHook(() => useExportProfile());
     await act(async () => {
       await result.current.triggerExport();
     });
 
-    expect(downloadExportFile).toHaveBeenCalledWith(
-      expect.objectContaining({ status: "completed", download_token: "dl-token" }),
-      "tok",
-    );
-    expect(Sharing.shareAsync).toHaveBeenCalledWith("file:///export.zip");
-    expect(result.current.state).toBe("idle");
+    expect(result.current.state).toBe("completed");
+    expect(downloadAndShareExport).not.toHaveBeenCalled();
 
     await advance(5000);
     expect(pollExportStatus).toHaveBeenCalledTimes(1);
-  });
-
-  it("sets failed when the downloaded file has no uri", async () => {
-    (pollExportStatus as jest.Mock).mockResolvedValue(
-      gdprExport({ status: "completed", download_token: "dl-token" }),
-    );
-    (downloadExportFile as jest.Mock).mockResolvedValue({});
-
-    const { result } = await renderHook(() => useExportProfile());
-    await act(async () => {
-      await result.current.triggerExport();
-    });
-
-    expect(Sharing.shareAsync).not.toHaveBeenCalled();
-    expect(result.current.state).toBe("failed");
   });
 
   it("does not stop polling on 'completed' without a download_token yet", async () => {
@@ -176,10 +156,39 @@ describe("on completed", () => {
     await act(async () => {
       await result.current.triggerExport();
     });
-    expect(downloadExportFile).not.toHaveBeenCalled();
+    expect(result.current.state).not.toBe("completed");
 
     await advance(5000);
     expect(pollExportStatus).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("download", () => {
+  it.each([
+    ["shared", "idle"],
+    ["expired", "expired"],
+    ["not_ready", "processing"],
+  ])("maps a %s download to the %s state", async (outcome, state) => {
+    (downloadAndShareExport as jest.Mock).mockResolvedValue(outcome);
+    const { result } = await renderHook(() => useExportProfile());
+
+    await act(async () => {
+      await result.current.download();
+    });
+
+    expect(downloadAndShareExport).toHaveBeenCalledTimes(1);
+    expect(result.current.state).toBe(state);
+  });
+
+  it("sets failed when the download throws", async () => {
+    (downloadAndShareExport as jest.Mock).mockRejectedValue(new Error("404"));
+    const { result } = await renderHook(() => useExportProfile());
+
+    await act(async () => {
+      await result.current.download();
+    });
+
+    expect(result.current.state).toBe("failed");
   });
 });
 

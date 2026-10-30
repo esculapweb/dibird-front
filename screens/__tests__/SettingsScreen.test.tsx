@@ -46,6 +46,7 @@ jest.mock("../../store/auth-context", () => ({ useAuth: jest.fn() }));
 jest.mock("../../store/onboarding-context", () => ({ useOnboarding: jest.fn() }));
 jest.mock("../../hooks/Profile/useExportProfile", () => ({ useExportProfile: jest.fn() }));
 jest.mock("../../hooks/useBiometricSetting", () => ({ useBiometricSetting: jest.fn() }));
+jest.mock("../../hooks/usePushNotifications", () => ({ requestPushPermission: jest.fn() }));
 jest.mock("../../services/bio", () => ({ canUseBiometrics: jest.fn() }));
 jest.mock("../../services/bottomSheet", () => ({ BottomSheet: { show: jest.fn(), hide: jest.fn() } }));
 jest.mock("../../util/fetches", () => ({ deleteMyProfile: jest.fn() }));
@@ -59,6 +60,7 @@ import { useProfile } from "../../store/profile-context";
 import { useAuth } from "../../store/auth-context";
 import { useOnboarding } from "../../store/onboarding-context";
 import { useExportProfile } from "../../hooks/Profile/useExportProfile";
+import { requestPushPermission } from "../../hooks/usePushNotifications";
 import { useBiometricSetting } from "../../hooks/useBiometricSetting";
 import { canUseBiometrics } from "../../services/bio";
 import { BottomSheet } from "../../services/bottomSheet";
@@ -76,6 +78,7 @@ const mockLogout = jest.fn();
 const mockToggleBiometric = jest.fn();
 const mockTriggerExport = jest.fn();
 const mockCleanup = jest.fn();
+const mockDownload = jest.fn();
 const mockRestartOnboarding = jest.fn();
 const originalOS = Platform.OS;
 
@@ -97,6 +100,7 @@ const mockExport = (overrides: Record<string, unknown> = {}) => {
   (useExportProfile as jest.Mock).mockReturnValue({
     state: "idle",
     triggerExport: mockTriggerExport,
+    download: mockDownload,
     cleanup: mockCleanup,
     ...overrides,
   });
@@ -250,21 +254,36 @@ describe("biometric section", () => {
 });
 
 describe("export data row", () => {
-  it("shows in-progress / done / failed labels and disables the row while exporting", async () => {
+  it("shows in-progress / ready / failed labels and disables the row while exporting", async () => {
     mockExport({ state: "pending" });
+    await render(<SettingsScreen />);
+    expect(screen.getByText("export_data_in_progress")).toBeOnTheScreen();
+
+    mockExport({ state: "downloading" });
     await render(<SettingsScreen />);
     expect(screen.getByText("export_data_in_progress")).toBeOnTheScreen();
 
     mockExport({ state: "completed" });
     await render(<SettingsScreen />);
-    expect(screen.getByText("export_data_done")).toBeOnTheScreen();
+    expect(screen.getByText("export_data_ready")).toBeOnTheScreen();
 
     mockExport({ state: "failed" });
     await render(<SettingsScreen />);
     expect(screen.getByText("export_data_failed")).toBeOnTheScreen();
   });
 
-  it("opens a confirm sheet that triggers the export on confirm", async () => {
+  // Reaching `completed` no longer downloads by itself — the row offers it.
+  it("downloads a ready export on tap instead of starting a new one", async () => {
+    mockExport({ state: "completed" });
+    await render(<SettingsScreen />);
+
+    await fireEvent.press(screen.getByText("export_data_ready"));
+
+    expect(mockDownload).toHaveBeenCalledTimes(1);
+    expect(BottomSheet.show).not.toHaveBeenCalled();
+  });
+
+  it("triggers the export on confirm, then asks for push to deliver the result", async () => {
     await render(<SettingsScreen />);
     await fireEvent.press(screen.getByText("export_data"));
 
@@ -272,8 +291,12 @@ describe("export data row", () => {
       expect.objectContaining({ title: "export_data" }),
     );
     const { onConfirm } = (BottomSheet.show as jest.Mock).mock.calls[0][0];
-    onConfirm();
+    await onConfirm();
     expect(mockTriggerExport).toHaveBeenCalledTimes(1);
+    expect(requestPushPermission).toHaveBeenCalledTimes(1);
+    expect(mockTriggerExport.mock.invocationCallOrder[0]).toBeLessThan(
+      (requestPushPermission as jest.Mock).mock.invocationCallOrder[0],
+    );
   });
 });
 

@@ -5,6 +5,8 @@ import { useNavigation } from "@react-navigation/native";
 
 import WidgetError from "./WidgetError";
 import { useTheme, ThemeColors } from "../../store/theme-context";
+import SpeciesRowsSkeleton from "./SpeciesRowsSkeleton";
+import { Bone } from "../ui/Skeleton";
 import { useList } from "../../hooks/useList";
 import SpeciesThumb from "../Taxonomy/SpeciesThumb";
 import { useOpenSpecies } from "../../hooks/useOpenSpecies";
@@ -95,57 +97,13 @@ const RareNearby: FC<NewSpeciesProps> = ({ filters }) => {
                 height: without it the title sat 20px lower and jumped up the
                 moment the list arrived. */}
             <View style={styles.scopeRow}>
-              <View
-                style={styles.scopeSkeleton}
-                testID="rare-nearby-scope-skeleton"
-              />
+              <View testID="rare-nearby-scope-skeleton">
+                <Bone height={14} width={130} radius={4} />
+              </View>
             </View>
           </View>
         </View>
-        <View style={styles.nsList}>
-          {[0, 1, 2].map((i) => (
-            <View
-              key={i}
-              style={[styles.nsRow, i < 2 ? styles.nsRowDivider : null]}
-            >
-              <View
-                style={[
-                  styles.image,
-                  { opacity: 0.2, backgroundColor: Colors.textMain },
-                ]}
-              />
-              <View style={[styles.nsNames, { gap: 6 }]}>
-                <View
-                  style={{
-                    height: 15,
-                    width: "60%",
-                    borderRadius: 4,
-                    backgroundColor: Colors.textMain,
-                    opacity: 0.2,
-                  }}
-                />
-                <View
-                  style={{
-                    height: 13,
-                    width: "40%",
-                    borderRadius: 4,
-                    backgroundColor: Colors.textMain,
-                    opacity: 0.1,
-                  }}
-                />
-              </View>
-              <View
-                style={{
-                  height: 13,
-                  width: 40,
-                  borderRadius: 4,
-                  backgroundColor: Colors.textMain,
-                  opacity: 0.2,
-                }}
-              />
-            </View>
-          ))}
-        </View>
+        <SpeciesRowsSkeleton imageSize={IMAGE_SIZE} />
       </>
     );
   }
@@ -307,13 +265,6 @@ const stylesFn = (Colors: ThemeColors) =>
       color: Colors.textSecondary,
       flexShrink: 1,
     },
-    scopeSkeleton: {
-      height: 14,
-      width: 130,
-      borderRadius: 4,
-      backgroundColor: Colors.textMain,
-      opacity: 0.15,
-    },
     // A long country name is truncated instead of taking "change" down with it.
     scopeAction: {
       fontSize: 12,
@@ -343,12 +294,6 @@ const stylesFn = (Colors: ThemeColors) =>
     nsRowDivider: {
       borderBottomWidth: 0.5,
       borderBottomColor: Colors.divider,
-    },
-    image: {
-      width: IMAGE_SIZE,
-      height: IMAGE_SIZE,
-      borderRadius: 12,
-      backgroundColor: Colors.imageBg,
     },
     nsNames: { flex: 1 },
     nsCommon: {

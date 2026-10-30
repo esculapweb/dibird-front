@@ -108,6 +108,49 @@ jest.mock("../DefaultOptionRow", () => {
   };
 });
 
+// The real map pulls in MapL's native modules; the picker only needs to know
+// what it was handed and to fire its two callbacks.
+const mockPlacesMapCapture = jest.fn();
+jest.mock("../../Map/PlacesMap", () => {
+  const { TouchableOpacity, Text, View } = require("react-native");
+  return {
+    __esModule: true,
+    default: (props: {
+      featureCollection: { features: { properties: { id: number } }[] };
+      onSelectPlace: (p: { id: number }) => void;
+      onPressEmpty?: (c: [number, number]) => void;
+    }) => {
+      mockPlacesMapCapture(props);
+      return (
+        <View testID="places-map">
+          {props.featureCollection.features.map((f) => (
+            <TouchableOpacity
+              key={f.properties.id}
+              testID={`map-place-${f.properties.id}`}
+              onPress={() => props.onSelectPlace(f.properties)}
+            >
+              <Text>pin</Text>
+            </TouchableOpacity>
+          ))}
+          {props.onPressEmpty && (
+            <TouchableOpacity
+              testID="map-empty"
+              onPress={() => props.onPressEmpty!([2.35, 48.86])}
+            >
+              <Text>empty</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      );
+    },
+  };
+});
+
+let mockOnline = true;
+jest.mock("../../../hooks/useIsOnline", () => ({
+  useIsOnline: () => mockOnline,
+}));
+
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import SelectListModal from "../SelectListModal";
 import { DropdownItem } from "../../../types";
@@ -139,6 +182,7 @@ const radioProps = () => mockRadioGroupCapture.mock.calls.at(-1)![0];
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockOnline = true;
 });
 
 it("shows nothing when not visible", async () => {
@@ -354,5 +398,110 @@ describe("multi-select mode", () => {
     expect(screen.getByText("France [x]")).toBeTruthy();
     expect(screen.getByText("Ёлочная [x]")).toBeTruthy();
     expect(screen.getByText("Germany")).toBeTruthy();
+  });
+});
+
+describe("place map view", () => {
+  const PLACES = [
+    {
+      value: 7,
+      label: "Pond",
+      location: { type: "Point", coordinates: [2.3, 48.8] },
+    },
+    {
+      value: 8,
+      label: "Garden",
+      location: { type: "Point", coordinates: [2.4, 48.9] },
+    },
+    // No coordinates: listed, but nothing to plot.
+    { value: 9, label: "Nowhere" },
+  ];
+  const mockOnPickPoint = jest.fn();
+  const mapProps = (overrides: Record<string, unknown> = {}) =>
+    baseProps({ options: PLACES, mapEnabled: true, type: "PlacesDropdown", ...overrides });
+  const renderOnMap = async (overrides: Record<string, unknown> = {}) => {
+    await render(<SelectListModal {...mapProps(overrides)} />);
+    await act(async () => fireEvent.press(screen.getByTestId("place-picker-view-map")));
+  };
+
+  it("offers no switch unless the map is enabled", async () => {
+    await render(<SelectListModal {...baseProps()} />);
+    expect(screen.queryByTestId("place-picker-view-map")).not.toBeOnTheScreen();
+  });
+
+  it("opens on the list and switches to the map with the plottable places", async () => {
+    await render(<SelectListModal {...mapProps()} />);
+    expect(screen.getByText("Pond")).toBeOnTheScreen();
+    expect(screen.queryByTestId("places-map")).not.toBeOnTheScreen();
+
+    await act(async () => fireEvent.press(screen.getByTestId("place-picker-view-map")));
+
+    expect(screen.getByTestId("places-map")).toBeOnTheScreen();
+    expect(screen.getByTestId("map-place-7")).toBeOnTheScreen();
+    expect(screen.queryByTestId("map-place-9")).not.toBeOnTheScreen();
+    // Sorting has no meaning for points on a map.
+    expect(mockModalWrapperCapture.mock.calls.at(-1)![0].showSortIcon).toBe(false);
+  });
+
+  it("rings the current place and picks another from the map", async () => {
+    await renderOnMap({ selected: 8 });
+
+    expect(mockPlacesMapCapture.mock.calls.at(-1)![0].selectedId).toBe(8);
+    await act(async () => fireEvent.press(screen.getByTestId("map-place-7")));
+    expect(mockOnSelect).toHaveBeenCalledWith(7);
+  });
+
+  it("narrows the map with the search, like the list", async () => {
+    await renderOnMap({ search: "gar" });
+    expect(screen.getByTestId("map-place-8")).toBeOnTheScreen();
+    expect(screen.queryByTestId("map-place-7")).not.toBeOnTheScreen();
+  });
+
+  it("hands an empty-ground tap to onPickPoint after closing", async () => {
+    await renderOnMap({ onPickPoint: mockOnPickPoint });
+    expect(screen.getByText("place_picker_map_hint")).toBeOnTheScreen();
+
+    await act(async () => fireEvent.press(screen.getByTestId("map-empty")));
+    expect(mockOnClose).toHaveBeenCalled();
+    expect(mockOnPickPoint).toHaveBeenCalledWith([2.35, 48.86]);
+  });
+
+  it("ignores empty-ground taps without onPickPoint (the filter)", async () => {
+    await renderOnMap();
+    expect(screen.getByText("place_picker_map_hint_select_only")).toBeOnTheScreen();
+    expect(screen.queryByTestId("map-empty")).not.toBeOnTheScreen();
+  });
+
+  it("keeps the map for a first place when there are none yet", async () => {
+    await renderOnMap({ options: [], onPickPoint: mockOnPickPoint });
+    expect(screen.queryByText("no_options_available")).not.toBeOnTheScreen();
+    expect(screen.getByTestId("places-map")).toBeOnTheScreen();
+  });
+
+  it("offline: no switch, only the list", async () => {
+    mockOnline = false;
+    await render(<SelectListModal {...mapProps()} />);
+
+    expect(screen.queryByTestId("place-picker-view-map")).not.toBeOnTheScreen();
+    expect(screen.queryByTestId("places-map")).not.toBeOnTheScreen();
+    expect(screen.getByText("Pond")).toBeOnTheScreen();
+  });
+
+  it("reopens on the list even if it was closed on the map", async () => {
+    await renderOnMap();
+    expect(screen.getByTestId("places-map")).toBeOnTheScreen();
+
+    await screen.rerender(<SelectListModal {...mapProps({ visible: false })} />);
+    await screen.rerender(<SelectListModal {...mapProps()} />);
+    expect(screen.queryByTestId("places-map")).not.toBeOnTheScreen();
+    expect(screen.getByText("Pond")).toBeOnTheScreen();
+  });
+
+  it("falls back to the list when the connection drops with the map open", async () => {
+    await renderOnMap();
+    mockOnline = false;
+    await screen.rerender(<SelectListModal {...mapProps()} />);
+    expect(screen.queryByTestId("places-map")).not.toBeOnTheScreen();
+    expect(screen.getByText("Pond")).toBeOnTheScreen();
   });
 });

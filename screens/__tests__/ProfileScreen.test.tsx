@@ -32,24 +32,18 @@ jest.mock("../../components/ui/Layout", () => {
 // ProfileForm's own tree (dropdowns, species/place pickers, SVG icon inputs)
 // is a large, separately-testable surface unrelated to ProfileScreen's own
 // orchestration logic (gating/banner-wiring/submit handling) — stub it down
-// to just enough to trigger submitHandler and observe loading/success.
-const mockFormMount = jest.fn();
+// to just enough to trigger submitHandler and observe loading.
 jest.mock("../../components/Profile/ProfileForm", () => {
   const { View, Text, TouchableOpacity } = require("react-native");
-  const ReactActual = require("react");
   return {
     __esModule: true,
-    default: ({ submitHandler, loading, success }: {
+    default: ({ submitHandler, loading }: {
       submitHandler: (data: unknown) => void;
       loading: boolean;
-      success: boolean;
     }) => {
-      ReactActual.useEffect(() => {
-        mockFormMount();
-      }, []);
       return (
         <View>
-          <Text>{loading ? "form-loading" : success ? "form-success" : "form-idle"}</Text>
+          <Text>{loading ? "form-loading" : "form-idle"}</Text>
           <TouchableOpacity
             testID="submit-profile-form"
             onPress={() => submitHandler({ first_name: "Janet" })}
@@ -61,6 +55,10 @@ jest.mock("../../components/Profile/ProfileForm", () => {
     },
   };
 });
+jest.mock("react-native-toast-message", () => ({
+  __esModule: true,
+  default: { show: jest.fn() },
+}));
 jest.mock("../../store/profile-context", () => ({
   useProfile: jest.fn(),
 }));
@@ -71,7 +69,8 @@ jest.mock("../../hooks/useApiError", () => ({
   useApiError: jest.fn(),
 }));
 
-import { act, fireEvent, render, screen } from "@testing-library/react-native";
+import { fireEvent, render, screen } from "@testing-library/react-native";
+import Toast from "react-native-toast-message";
 import { useProfile } from "../../store/profile-context";
 import { useInvalidateProfile } from "../../hooks/Profile/useUpdateProfile";
 import { useApiError } from "../../hooks/useApiError";
@@ -105,10 +104,10 @@ beforeEach(() => {
   mockProfileContext();
 });
 
-it("shows a loading overlay while the profile is loading", async () => {
+it("shows a skeleton while the profile is loading", async () => {
   mockProfileContext({ profile: null, profileLoading: true });
   await render(<ProfileScreen />);
-  expect(screen.getByTestId("loading-overlay")).toBeOnTheScreen();
+  expect(screen.getByTestId("profile-skeleton")).toBeOnTheScreen();
 });
 
 it("shows an error overlay with retry when there is no profile and loading finished", async () => {
@@ -136,23 +135,15 @@ it("renders FailedEditBanner wired to the context's retry/discard when a failed 
   expect(mockDiscardFailedEdit).toHaveBeenCalledTimes(1);
 });
 
-it("submit success calls updateProfile then invalidateProfile and shows the success state", async () => {
-  // ProfileScreen's own submitHandler does setSuccess(true) followed by a
-  // real 1500ms setTimeout to flip it back — fake timers so that timer
-  // doesn't leak past this test as an open handle.
-  jest.useFakeTimers();
+it("submit success calls updateProfile then invalidateProfile and confirms with a toast", async () => {
   await render(<ProfileScreen />);
 
   await fireEvent.press(screen.getByTestId("submit-profile-form"));
 
   expect(mockUpdateProfile).toHaveBeenCalledWith({ first_name: "Janet" });
   expect(mockInvalidateProfile).toHaveBeenCalledTimes(1);
-  expect(screen.getByText("form-success")).toBeOnTheScreen();
-
-  await act(async () => {
-    jest.runOnlyPendingTimers();
-  });
-  jest.useRealTimers();
+  expect(Toast.show).toHaveBeenCalledWith({ type: "success", text1: "profile_saved" });
+  expect(screen.getByText("form-idle")).toBeOnTheScreen();
 });
 
 it("submit failure shows an error toast via useApiError, passing the field-error extractor", async () => {
@@ -163,6 +154,7 @@ it("submit failure shows an error toast via useApiError, passing the field-error
   await fireEvent.press(screen.getByTestId("submit-profile-form"));
 
   expect(mockShowErrorToast).toHaveBeenCalledWith(apiError, "updateProfile", expect.any(Function));
+  expect(Toast.show).not.toHaveBeenCalled();
 });
 
 describe("the extractor passed to showErrorToast", () => {
@@ -208,13 +200,4 @@ describe("the extractor passed to showErrorToast", () => {
     const result = await extract(undefined);
     expect(result).toEqual({ title: "update_failed", message: "could_not_update_profile" });
   });
-});
-
-it("resets the form (remounts ProfileForm) when the bottom reset button is pressed", async () => {
-  await render(<ProfileScreen />);
-  expect(mockFormMount).toHaveBeenCalledTimes(1);
-
-  await fireEvent.press(screen.getByText("reset_form"));
-
-  expect(mockFormMount).toHaveBeenCalledTimes(2);
 });

@@ -98,10 +98,9 @@ const RatingScreen = () => {
     actions: [{ label: t("add_first_observation"), onPress: handleAdd }],
   };
 
-  const renderItem = ({ item, index }: { item: RatingItem; index: number }) => (
+  const renderItem = ({ item }: { item: RatingItem }) => (
     <RatingCard
       item={item}
-      index={index}
       isSelected={selectedIds.includes(item.profile_id)}
       onToggle={() => handleToggle(item.profile_id)}
       profile={profile}

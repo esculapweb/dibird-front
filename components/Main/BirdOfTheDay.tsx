@@ -11,7 +11,7 @@ import { BirdSVG } from "../ui/Svgs";
 import WidgetError from "./WidgetError";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { Config } from "../../constants/config";
-import BirdOfTheDaySkeleton from "./BirdOfTheDaySceleton";
+import BirdOfTheDaySkeleton from "./BirdOfTheDaySkeleton";
 import { useProfile } from "../../store/profile-context";
 import { useLanguage } from "../../store/language-context";
 import { useOpenSpecies } from "../../hooks/useOpenSpecies";

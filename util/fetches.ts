@@ -4,6 +4,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import api from "../services/api";
 import {
   isoToFlagEmoji,
+  getFullVersion,
   buildDateParams,
   cleanFilters,
   roundCoords,
@@ -128,6 +129,7 @@ import {
   BlockedUser,
   ReportReason,
   ReportTarget,
+  ContactMessage,
 } from "../types";
 
 export const exportProfileData = async (): Promise<void> => {
@@ -845,6 +847,22 @@ export const deleteObservationPhoto = (id: number) =>
 // that only reached the local database would leave the user believing the
 // content is gone while nobody has been told, and a block is what the feed's
 // own queryset is filtered by — it has to reach the server to mean anything.
+// Public on the backend (no app key, no auth): the website posts the same
+// form. The hidden `phone` honeypot of the web form is not sent — there is no
+// bot filling the app UI, and a non-empty value would be silently dropped.
+// The version and platform go along for bug reports; the website leaves them
+// empty. A signed-in sender is linked to the message by the Bearer token the
+// interceptor adds anyway.
+export const sendContactMessage = async (
+  data: ContactMessage,
+): Promise<void> => {
+  await api.post("/api/contact/", {
+    ...data,
+    app_version: getFullVersion(),
+    platform: `${Platform.OS} ${Platform.Version}`,
+  });
+};
+
 export const reportContent = async (
   target: ReportTarget,
   reason: ReportReason,
@@ -1586,8 +1604,20 @@ export const fetchStat = (
   search: string,
   page?: number,
 ) => {
-  filters = { ...filters };
+  const { first_seen, ...rest } = filters;
+  filters = rest;
   const targetSeen = filters.seen ?? null;
+  // Sent as first_seen_min/max with the same exclusive upper day as the date
+  // filter. In extraParams, so it is part of the cache key as well.
+  const firstSeenParams: Record<string, unknown> = {};
+  if (first_seen) {
+    const { date_time_min, date_time_max } = buildDateParams({
+      type: "range",
+      ...first_seen,
+    });
+    firstSeenParams.first_seen_min = date_time_min;
+    firstSeenParams.first_seen_max = date_time_max;
+  }
 
   return fetchAbstract<StatPaginatedResponse<SpeciesItem>>(
     "/myapi/stat2/",
@@ -1595,7 +1625,7 @@ export const fetchStat = (
     order,
     search,
     page,
-    {},
+    firstSeenParams,
     undefined,
     {
       table: statCacheTable,
@@ -1616,7 +1646,7 @@ export const fetchStat = (
                 { ...filters, seen: null },
                 search ?? "",
                 page ?? 1,
-                {},
+                firstSeenParams,
               );
               const allData = getCachedListResponseByPrefix<
                 StatPaginatedResponse<SpeciesItem>

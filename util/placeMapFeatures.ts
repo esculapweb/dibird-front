@@ -1,4 +1,4 @@
-import { Coords, LocationType, PlaceItem } from "../types";
+import { Coords, LocationType, PlaceDropdownItem, PlaceItem } from "../types";
 
 // [west, south, east, north] — the shape MapLibre's Camera `bounds` and
 // CameraRef.fitBounds take.
@@ -84,6 +84,35 @@ export const placesToFeatureCollection = (
       type: "Feature",
       geometry: { type: "Point", coordinates },
       properties,
+    });
+    return features;
+  }, []),
+});
+
+/**
+ * The place picker's map: the same dropdown items the list shows, so the two
+ * views always agree (country scope, offline-created places, search). The
+ * dropdown carries no counts, so every place is plotted as an empty one and
+ * draws at the smallest size.
+ */
+export const dropdownItemsToFeatureCollection = (
+  items: PlaceDropdownItem[] | undefined,
+): PlaceFeatureCollection => ({
+  type: "FeatureCollection",
+  features: (items ?? []).reduce<PlaceFeature[]>((features, item) => {
+    const coordinates = pointOf(item.location);
+    if (!coordinates || typeof item.value !== "number") return features;
+
+    features.push({
+      type: "Feature",
+      geometry: { type: "Point", coordinates },
+      properties: {
+        id: item.value,
+        name: item.name ?? item.label,
+        observation_count: 0,
+        species_count: 0,
+        diary_place_count: 0,
+      },
     });
     return features;
   }, []),

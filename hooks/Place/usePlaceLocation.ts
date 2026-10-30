@@ -65,10 +65,21 @@ export const normalizeCoords = (
   return { lng: roundedLng, lat: roundedLat, lngText, latText };
 };
 
-export const usePlaceLocation = () => {
+interface UsePlaceLocationOptions {
+  // Off when the pin was already chosen by hand before the screen opened (a
+  // tap on the place picker's map): a GPS fix the previous screen asked for
+  // can land after the navigation and would silently move that pin.
+  followLocation?: boolean;
+  initialZoom?: number;
+}
+
+export const usePlaceLocation = ({
+  followLocation = true,
+  initialZoom = 12,
+}: UsePlaceLocationOptions = {}) => {
   const [coords, setCoords] = useState<Coords | null>(null);
   const [roundedCoords, setRoundedCoords] = useState<Coords | null>(null);
-  const [zoom, setZoom] = useState(12);
+  const [zoom, setZoom] = useState(initialZoom);
   const [accuracy, setAccuracy] = useState(0);
   const [latText, setLatText] = useState("");
   const [lngText, setLngText] = useState("");
@@ -145,7 +156,7 @@ export const usePlaceLocation = () => {
   );
 
   useEffect(() => {
-    if (locationCoords) {
+    if (followLocation && locationCoords) {
       updateCoords(locationCoords);
     }
   }, [locationCoords]);

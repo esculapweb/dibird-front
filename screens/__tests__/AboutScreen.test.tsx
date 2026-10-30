@@ -30,7 +30,6 @@ jest.mock("../../components/ui/Layout", () => {
 jest.mock("@react-navigation/native", () => ({
   useNavigation: () => mockNavigation,
 }));
-jest.mock("../../util/openSupportEmail", () => ({ openSupportEmail: jest.fn() }));
 jest.mock("../../util/openDonatePage", () => ({ openDonatePage: jest.fn() }));
 jest.mock("../../services/analytics", () => ({ track: jest.fn() }));
 jest.mock("../../util/helpers", () => ({
@@ -40,7 +39,6 @@ jest.mock("../../util/helpers", () => ({
 
 import { Share, Platform } from "react-native";
 import { fireEvent, render, screen } from "@testing-library/react-native";
-import { openSupportEmail } from "../../util/openSupportEmail";
 import { openDonatePage } from "../../util/openDonatePage";
 import { track } from "../../services/analytics";
 import { createNavigationMock } from "../test-utils";
@@ -83,10 +81,10 @@ it("tells a friend with a platform-appropriate share payload", async () => {
   expect(shareSpy).toHaveBeenCalledWith({ message: "tell_a_friend_message" });
 });
 
-it("send feedback opens the support email composer", async () => {
+it("send feedback opens the in-app contact form", async () => {
   await render(<AboutScreen />);
   await fireEvent.press(screen.getByText("settings_send_feedback"));
-  expect(openSupportEmail).toHaveBeenCalledTimes(1);
+  expect(mockNavigation.navigate).toHaveBeenCalledWith("Contact", undefined);
 });
 
 // The source is what the donation page reports back — it stays "settings" even

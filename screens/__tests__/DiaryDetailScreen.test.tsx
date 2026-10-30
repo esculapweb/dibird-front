@@ -159,10 +159,10 @@ it("retries the diary sync queue on focus", async () => {
   expect(runDiarySync).toHaveBeenCalledTimes(1);
 });
 
-it("shows a loading overlay while there's no diary yet", async () => {
+it("shows a skeleton while there's no diary yet", async () => {
   mockDiaryItem({ data: undefined, isLoading: true });
   await render(<DiaryDetailScreen />);
-  expect(screen.getByTestId("loading-overlay")).toBeOnTheScreen();
+  expect(screen.getByTestId("list-skeleton")).toBeOnTheScreen();
 });
 
 it("shows an error overlay with retry when there's an error and no cached diary", async () => {

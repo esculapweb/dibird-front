@@ -101,11 +101,20 @@ const SpeciesTile = memo(
             style={styles.seenMark}
             testID={testID ? `${testID}-seen` : undefined}
           >
-            <Ionicons
-              name={seen ? "checkmark-circle" : "ellipse-outline"}
-              size={24}
-              color={seen ? Colors.main100 : "#fff"}
-            />
+            {seen ? (
+              // A filled disc with a separate tick, not "checkmark-circle":
+              // that icon's tick is a cutout, so a dark photo shows through it
+              // and the mark disappears.
+              <View style={styles.seenDisc}>
+                <Ionicons
+                  name="checkmark"
+                  size={16}
+                  color={Colors.textOpposite}
+                />
+              </View>
+            ) : (
+              <Ionicons name="ellipse-outline" size={24} color="#fff" />
+            )}
           </Pressable>
         )}
       </View>
@@ -165,5 +174,13 @@ const stylesFn = (Colors: ThemeColors) =>
       right: 3,
       borderRadius: 12,
       backgroundColor: "rgba(0, 0, 0, 0.25)",
+    },
+    seenDisc: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: Colors.main100,
     },
   });

@@ -27,10 +27,7 @@ import { Config } from "../../constants/config";
 import { SYMBOL_STROKE_WIDTH } from "../../constants/mapSymbolScale";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { Coords, PolygonGeometry } from "../../types";
-import {
-  isConnected,
-  subscribeToConnectionChange,
-} from "../../services/sync/networkStatus";
+import { useIsOnline } from "../../hooks/useIsOnline";
 
 const EMPTY_MAP_STYLE = JSON.stringify({
   version: 8,
@@ -122,16 +119,11 @@ const MapL = ({
   const lng = currentCoords?.[0];
   const lat = currentCoords?.[1];
 
-  const [offline, setOffline] = useState(!isConnected());
+  const offline = !useIsOnline();
   const [mapLoaded, setMapLoaded] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(
-    () => subscribeToConnectionChange((connected) => setOffline(!connected)),
-    [],
-  );
 
   // Deliberately NOT keyed on lng/lat: those change on every marker
   // drag/tap/"use my location" while the underlying native <Map> stays

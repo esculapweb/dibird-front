@@ -17,7 +17,7 @@ import { useTheme, ThemeColors } from "../store/theme-context";
 import { formatDateLong } from "../util/helpers";
 import { Config } from "../constants/config";
 import FlatButtonBottom from "../components/ui/FlatButtonBottom";
-import LoadingOverlay from "../components/ui/LoadingOverlay";
+import ObservationDetailSkeleton from "../components/Observation/ObservationDetailSkeleton";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import { useItem } from "../hooks/useItem";
 import { BirdSVG } from "../components/ui/Svgs";
@@ -184,7 +184,11 @@ const CommunityDetailScreen = () => {
   // is_owner holds the screen on the overlay rather than rendering a card the
   // effect above is about to replace anyway.
   if (isLoading || !observation || observation.is_owner)
-    return <LoadingOverlay />;
+    return (
+      <Layout>
+        <ObservationDetailSkeleton mapHeight={mapHeight} />
+      </Layout>
+    );
 
   const name =
     observation.species_data.name_lang || observation.species_data.name;

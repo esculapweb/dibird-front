@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import ItemsList from "../ui/ItemsList";
 import SearchInput from "../ui/SearchInput";
 import ErrorOverlay from "../Error/ErrorOverlay";
-import LoadingOverlay from "../ui/LoadingOverlay";
+import { ListSkeleton } from "../ui/Skeleton";
 import ChecklistCard from "../Stats/ChecklistCard";
 import { fetchTerritoryTree } from "../../util/fetches";
 import { StaleTime } from "../../constants/staleTime";
@@ -121,7 +121,7 @@ const TerritoryChecklist = ({
       />
     );
 
-  if (isLoading || !data) return <LoadingOverlay />;
+  if (isLoading || !data) return <ListSkeleton />;
 
   return (
     <ItemsList

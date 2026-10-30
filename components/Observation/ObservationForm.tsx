@@ -30,6 +30,7 @@ import {
   PlaceDropdownItem,
   SpeciesDropdownItem,
   Errors,
+  Coords,
 } from "../../types";
 
 interface ObservationFormProps {
@@ -41,7 +42,7 @@ interface ObservationFormProps {
   setTerritoryValue: (value: number | null) => void;
   placeValue: number | null;
   setPlaceValue: (value: number | null) => void;
-  onAddNewPlace: () => void;
+  onAddNewPlace: (coords?: Coords) => void;
   placeData: PlaceDropdownItem | null;
   setPlaceData: Dispatch<SetStateAction<PlaceDropdownItem | null>>;
   isEditMode?: boolean;

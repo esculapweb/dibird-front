@@ -66,5 +66,10 @@ export const routeNotification = (
     case "Checklist":
       navigate("Checklist", undefined);
       break;
+
+    // A data export that failed — Settings is where it is retried.
+    case "Settings":
+      navigate("Settings", undefined);
+      break;
   }
 };

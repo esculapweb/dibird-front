@@ -16,6 +16,11 @@ jest.mock("@sentry/react-native", () => ({
   init: jest.fn(),
 }));
 
+// A TurboModule with no JS fallback: importing it at all throws under jest.
+// MapL uses it, and MapL now sits behind every place dropdown (the picker's map
+// view in SelectListModal), so any screen with one would need a local mock.
+jest.mock("@react-native-clipboard/clipboard", () => ({ setString: jest.fn() }));
+
 jest.mock("./services/db/client", () => ({
   db: {},
   sqliteDb: {},

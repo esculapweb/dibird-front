@@ -50,6 +50,12 @@ describe("routeNotification", () => {
     expect(navigate).toHaveBeenCalledWith("Checklist", undefined);
   });
 
+  it("opens Settings for a failed data export", () => {
+    route({ screen: "Settings" });
+
+    expect(navigate).toHaveBeenCalledWith("Settings", undefined);
+  });
+
   it("opens the in-app notification list", () => {
     route({ screen: "Notifications" });
 
@@ -66,6 +72,7 @@ describe("routeNotification", () => {
     ["Achievements"],
     ["Notifications"],
     ["Checklist"],
+    ["Settings"],
   ])("has a branch for the %s payload", (screen) => {
     route({ screen, obsId: 1, speciesId: 1 } as never);
 

@@ -12,7 +12,8 @@ import { StaleTime } from "../constants/staleTime";
 import PlaceCard from "../components/Place/PlaceCard";
 import PlacesMap from "../components/Map/PlacesMap";
 import EmptyState from "../components/Empty/EmptyState";
-import LoadingOverlay from "../components/ui/LoadingOverlay";
+import { ListSkeleton } from "../components/ui/Skeleton";
+import Layout from "../components/ui/Layout";
 import ViewSwitch from "../components/ui/ViewSwitch";
 import { useLocation } from "../store/location-context";
 import { useLocationUnavailable } from "../hooks/useLocationUnavailable";
@@ -162,7 +163,14 @@ const PlacesScreen = () => {
     />
   );
 
-  if (!viewModeReady) return <LoadingOverlay />;
+  // The stored list/map choice is a quick AsyncStorage read; the same
+  // skeleton ListScreen shows next keeps it from flashing a spinner first.
+  if (!viewModeReady)
+    return (
+      <Layout>
+        <ListSkeleton />
+      </Layout>
+    );
 
   if (viewMode === "map") {
     return (

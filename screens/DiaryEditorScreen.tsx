@@ -31,6 +31,7 @@ import {
   DiaryFormData,
   ErrorExtractor,
   PlaceData,
+  Coords,
 } from "../types";
 
 const FORM_FIELDS = ["territory", "place", "date_time", "private", "name"];
@@ -153,7 +154,7 @@ const DiaryEditorScreen = () => {
     }
   }, [formData, territoryValue, placeValue, placeData, isEditMode]);
 
-  const handleAddNewPlace = useCallback(() => {
+  const handleAddNewPlace = useCallback((initialCoords?: Coords) => {
     setNavigationCallback("onPlaceCreated", null);
     setTypedNavigationCallback<[number, number, PlaceData]>(
       "onPlaceCreated",
@@ -187,7 +188,10 @@ const DiaryEditorScreen = () => {
         }
       },
     );
-    navigation.navigate("PlaceEditor", { returnToScreen: "DiaryEditor" });
+    navigation.navigate("PlaceEditor", {
+      returnToScreen: "DiaryEditor",
+      initialCoords,
+    });
   }, [navigation, territoryValue]);
 
   const headerRightBeginning = useMemo(

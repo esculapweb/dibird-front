@@ -1,10 +1,12 @@
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
+import Toast from "react-native-toast-message";
 
 import ProfileForm from "../components/Profile/ProfileForm";
 import FailedEditBanner from "../components/Profile/FailedEditBanner";
 import { useProfile } from "../store/profile-context";
-import LoadingOverlay from "../components/ui/LoadingOverlay";
+import ProfileSkeleton from "../components/Profile/ProfileSkeleton";
+import Layout from "../components/ui/Layout";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import FormWrapper from "../components/ui/FormWrapper";
 import { useInvalidateProfile } from "../hooks/Profile/useUpdateProfile";
@@ -13,8 +15,6 @@ import { useApiError } from "../hooks/useApiError";
 
 const ProfileScreen = () => {
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [formKey, setFormKey] = useState(0);
   const {
     profile,
     profileLoading,
@@ -51,13 +51,14 @@ const extractApiError = useCallback<ErrorExtractor>(
     if (loading) return;
 
     setLoading(true);
-    setSuccess(false);
 
     try {
       await updateProfile(updatedData);
       invalidateProfile();
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 1500);
+      // The header icon has no success state of its own (the bottom button
+      // used to animate one), and the screen stays open after saving — so the
+      // confirmation is a toast.
+      Toast.show({ type: "success", text1: t("profile_saved") });
     } catch (e) {
       showErrorToast(e as AppError, "updateProfile", extractApiError);
     } finally {
@@ -65,7 +66,12 @@ const extractApiError = useCallback<ErrorExtractor>(
     }
   };
 
-  if (profileLoading) return <LoadingOverlay />;
+  if (profileLoading)
+    return (
+      <Layout>
+        <ProfileSkeleton />
+      </Layout>
+    );
 
   if (!profile)
     return (
@@ -77,11 +83,7 @@ const extractApiError = useCallback<ErrorExtractor>(
     );
 
   return (
-    <FormWrapper
-      bottomButtonLabel={t("reset_form")}
-      bottomButtonHandler={() => setFormKey((k) => k + 1)}
-      style={{ paddingTop: 24 }}
-    >
+    <FormWrapper style={{ paddingTop: 24 }}>
       {failedEdit && (
         <FailedEditBanner
           failedEdit={failedEdit}
@@ -89,12 +91,7 @@ const extractApiError = useCallback<ErrorExtractor>(
           onDiscard={discardFailedEdit}
         />
       )}
-      <ProfileForm
-        key={formKey}
-        submitHandler={submitHandler}
-        loading={loading}
-        success={success}
-      />
+      <ProfileForm submitHandler={submitHandler} loading={loading} />
     </FormWrapper>
   );
 };

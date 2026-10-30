@@ -6,7 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { useTheme, ThemeColors } from "../store/theme-context";
 import { isoToFlagEmoji, formatDate, formatDateTime } from "../util/helpers";
-import LoadingOverlay from "../components/ui/LoadingOverlay";
+import PlaceDetailSkeleton from "../components/Place/PlaceDetailSkeleton";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import IconsHeader from "../components/ui/IconsHeader";
 import { overflowButton } from "../components/ui/overflowMenu";
@@ -249,7 +249,11 @@ const PlaceDetailScreen = () => {
   }
 
   if (isLoading || !place) {
-    return <LoadingOverlay />;
+    return (
+      <Layout>
+        <PlaceDetailSkeleton />
+      </Layout>
+    );
   }
 
   const [lng, lat] = place.location.coordinates;

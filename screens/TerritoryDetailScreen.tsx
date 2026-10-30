@@ -22,7 +22,8 @@ import Tabs from "../components/ui/Tabs";
 import IconsHeader from "../components/ui/IconsHeader";
 import { overflowButton } from "../components/ui/overflowMenu";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
-import LoadingOverlay from "../components/ui/LoadingOverlay";
+import { ListSkeleton } from "../components/ui/Skeleton";
+import TerritoryDetailSkeleton from "../components/Territory/TerritoryDetailSkeleton";
 import EmptyState from "../components/Empty/EmptyState";
 import TerritoryChecklist from "../components/Territory/TerritoryChecklist";
 import TaxonChildrenList from "../components/Taxonomy/TaxonChildrenList";
@@ -219,7 +220,12 @@ const TerritoryDetailScreen = () => {
       />
     );
 
-  if (detailQuery.isLoading || !data || data.redirect) return <LoadingOverlay />;
+  if (detailQuery.isLoading || !data || data.redirect)
+    return (
+      <Layout>
+        <TerritoryDetailSkeleton tab={tab} />
+      </Layout>
+    );
 
   const goToTerritory = (target: string) =>
     navigation.push("TerritoryDetail", { segment: target });
@@ -357,7 +363,7 @@ const TerritoryDetailScreen = () => {
   const speciesContent = !speciesView.ready ? (
     // The tree and the grid load different endpoints — wait for the stored
     // layout instead of fetching the tree only to drop it a frame later.
-    <LoadingOverlay />
+    <ListSkeleton />
   ) : (
     // An offline-cached response from before the backend started sending
     // territory_id has the country page but nothing to key the species list

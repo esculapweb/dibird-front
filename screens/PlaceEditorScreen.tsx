@@ -51,6 +51,10 @@ type FormErrors = {
 // lat-lng entry both already work as the correction path).
 const LOW_ACCURACY_THRESHOLD_M = 100;
 
+// A point picked on a map is meant at street level, not the default
+// city-wide view the GPS path starts from before it knows the accuracy.
+const PICKED_POINT_ZOOM = 16;
+
 const PlaceEditorScreen = () => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -61,7 +65,8 @@ const PlaceEditorScreen = () => {
 
   const FORM_FIELDS = ["name", "territory", "latitude", "longitude"];
 
-  const { place, returnToScreen } = route.params || {};
+  const { place, returnToScreen, initialCoords: pickedCoords } =
+    route.params || {};
   const isEditMode = !!place;
 
   const {
@@ -76,7 +81,10 @@ const PlaceEditorScreen = () => {
     isLocating,
     updateCoords,
     locateMe,
-  } = usePlaceLocation();
+  } = usePlaceLocation({
+    followLocation: !pickedCoords,
+    initialZoom: pickedCoords ? PICKED_POINT_ZOOM : undefined,
+  });
 
   const createPlaceMutation = useCreatePlace();
   const updatePlaceMutation = useUpdatePlace(place?.id);
@@ -195,6 +203,22 @@ const PlaceEditorScreen = () => {
   );
 
   useEffect(() => {
+    if (!isEditMode && pickedCoords) {
+      // A point tapped on the place picker's map: the user already said where
+      // the place is, so no GPS fix. Same path as a tap on this screen's own
+      // map — the reverse geocode fills in the name and the country.
+      const normalized = normalizeCoords(pickedCoords[0], pickedCoords[1]);
+      if (normalized) {
+        const { lngText, latText, lng, lat } = normalized;
+        updateCoords([lng, lat], {
+          fromManual: true,
+          latText,
+          lngText,
+          withGeocode: true,
+        });
+        return;
+      }
+    }
     if (!isEditMode) {
       locateMe();
     } else {

@@ -5,7 +5,9 @@ import { useNavigation } from "@react-navigation/native";
 
 import WidgetError from "./WidgetError";
 import { useTheme, ThemeColors } from "../../store/theme-context";
+import SpeciesRowsSkeleton from "./SpeciesRowsSkeleton";
 import { useList } from "../../hooks/useList";
+import { useActivity } from "../../hooks/useActivity";
 import SpeciesThumb from "../Taxonomy/SpeciesThumb";
 import { useOpenSpecies } from "../../hooks/useOpenSpecies";
 import { formatDateShort } from "../../util/helpers";
@@ -61,6 +63,13 @@ const NewSpecies: FC<NewSpeciesProps> = ({ filters, filtersLoaded }) => {
     staleTime: StaleTime.FIVE_MINUTES,
   });
 
+  // How many species are new for the period — the activity chart's total in
+  // its "new species" mode. Same query key as the Sparkline, so it is served
+  // from that cache. The list below shows only the three latest of them, and
+  // "all" opens exactly this many.
+  const { data: activity } = useActivity(filters, "newSpecies");
+  const newTotal = activity?.meta?.total ?? 0;
+
   const isYearFilter =
     filters?.date?.type === "year" || filters?.date?.type === "this_year";
 
@@ -84,50 +93,7 @@ const NewSpecies: FC<NewSpeciesProps> = ({ filters, filtersLoaded }) => {
         <View style={styles.sectionHeader}>
           <Text style={styles.groupLabel}>{t("new_species")}</Text>
         </View>
-        <View style={styles.nsList}>
-          {[0, 1, 2].map((i) => (
-            <View
-              key={i}
-              style={[styles.nsRow, i < 2 ? styles.nsRowDivider : null]}
-            >
-              <View
-                style={[
-                  styles.image,
-                  { opacity: 0.2, backgroundColor: Colors.textMain },
-                ]}
-              />
-              <View style={[styles.nsNames, { gap: 6 }]}>
-                <View
-                  style={{
-                    height: 15,
-                    width: "60%",
-                    borderRadius: 4,
-                    backgroundColor: Colors.textMain,
-                    opacity: 0.2,
-                  }}
-                />
-                <View
-                  style={{
-                    height: 13,
-                    width: "40%",
-                    borderRadius: 4,
-                    backgroundColor: Colors.textMain,
-                    opacity: 0.1,
-                  }}
-                />
-              </View>
-              <View
-                style={{
-                  height: 13,
-                  width: 40,
-                  borderRadius: 4,
-                  backgroundColor: Colors.textMain,
-                  opacity: 0.2,
-                }}
-              />
-            </View>
-          ))}
-        </View>
+        <SpeciesRowsSkeleton imageSize={IMAGE_SIZE} />
       </>
     );
   }
@@ -139,7 +105,10 @@ const NewSpecies: FC<NewSpeciesProps> = ({ filters, filtersLoaded }) => {
   return (
     <>
       <View style={styles.sectionHeader}>
-        <Text style={styles.groupLabel}>{t("new_species")}</Text>
+        <Text style={styles.groupLabel} testID="new-species-title">
+          {t("new_species")}
+          {newTotal > 0 ? ` · ${newTotal}` : ""}
+        </Text>
         <TouchableOpacity
           onPress={() =>
             navigation.navigate("Stat", {
@@ -241,12 +210,6 @@ const stylesFn = (Colors: ThemeColors) =>
     nsRowDivider: {
       borderBottomWidth: 0.5,
       borderBottomColor: Colors.divider,
-    },
-    image: {
-      width: IMAGE_SIZE,
-      height: IMAGE_SIZE,
-      borderRadius: 12,
-      backgroundColor: Colors.imageBg,
     },
     nsNames: { flex: 1 },
     nsCommon: {

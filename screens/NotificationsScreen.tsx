@@ -7,7 +7,7 @@ import Toast from "react-native-toast-message";
 
 import ItemsList from "../components/ui/ItemsList";
 import NotificationCard from "../components/Notification/NotificationCard";
-import LoadingOverlay from "../components/ui/LoadingOverlay";
+import { ListSkeleton } from "../components/ui/Skeleton";
 import Layout from "../components/ui/Layout";
 import IconsHeader from "../components/ui/IconsHeader";
 import { overflowButton } from "../components/ui/overflowMenu";
@@ -16,8 +16,10 @@ import {
   AppNotification,
   getAppUpdateStage,
   isNotificationPayload,
+  isExportReadyNotification,
 } from "../types";
 import { routeNotification } from "../util/notificationRoute";
+import { downloadExportFromNotification } from "../util/exportDownload";
 import { UNREAD_COUNT_KEY } from "../hooks/useUnreadCount";
 import { AppStackNavigationProp } from "../types";
 
@@ -109,6 +111,13 @@ export default function NotificationsScreen() {
         return;
       }
 
+      // "Export is ready" downloads the file — the same tap as on its push
+      // (util/exportDownload).
+      if (isExportReadyNotification(item.data)) {
+        await downloadExportFromNotification();
+        return;
+      }
+
       // The same payload that arrives as a push, routed by the same switch —
       // this screen used to hold a copy of it, and the copies drifted (see
       // util/notificationRoute).
@@ -132,7 +141,12 @@ export default function NotificationsScreen() {
     <NotificationCard item={item} onPress={handlePress} />
   );
 
-  if (isLoading) return <LoadingOverlay />;
+  if (isLoading)
+    return (
+      <Layout>
+        <ListSkeleton thumb="circle" thumbSize={40} />
+      </Layout>
+    );
 
   return (
     <Layout>

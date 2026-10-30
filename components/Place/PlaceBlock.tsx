@@ -9,7 +9,7 @@ import DropdownInput from "../ui/DropdownInput";
 import { useLocation } from "../../store/location-context";
 import { useNearbyPlaces } from "../../hooks/Place/useNearbyPlaces";
 import NearbyPlaceSuggestion from "./NearbyPlaceSuggestion";
-import { PlaceDropdownItem, AppError } from "../../types";
+import { PlaceDropdownItem, AppError, Coords } from "../../types";
 import PrivacyToggle  from "../ui/PrivacyToggle";
 
 interface PlaceBlockProps<T extends { place?: number | null }> {
@@ -17,7 +17,9 @@ interface PlaceBlockProps<T extends { place?: number | null }> {
   placeValue: number | null;
   setPlaceValue: (value: number | null) => void;
   setFormData: (updater: (prev: T) => T) => void;
-  onAddNewPlace: (callback: (newPlace: number) => void) => void;
+  // Coordinates come from a tap on the picker's map: the new place starts
+  // there instead of at the GPS fix.
+  onAddNewPlace: (coords?: Coords) => void;
   queryPlaces: UseQueryResult<PlaceDropdownItem[], AppError>;
   isLocating?: boolean;
   sort: string;
@@ -114,6 +116,7 @@ const PlaceBlock = <T extends { place?: number | null }>({
         placeData={placeData}
         locationAvailable={locationAvailable}
         onLocationUnavailable={onLocationUnavailable}
+        onPickPoint={(coords) => onAddNewPlace(coords)}
       />
       {showLocationPrivacy &&
       <View style={styles.privacyWrapper}>
@@ -135,7 +138,7 @@ const PlaceBlock = <T extends { place?: number | null }>({
           styles.addBtn,
           pressed && styles.addBtnPressed,
         ]}
-        onPress={() => onAddNewPlace((newPlace) => setPlaceValue(newPlace))}
+        onPress={() => onAddNewPlace()}
       >
         <View style={styles.addBtnIcon}>
           <Ionicons name="add" size={18} color={Colors.textMain} />

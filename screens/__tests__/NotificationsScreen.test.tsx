@@ -45,6 +45,9 @@ jest.mock("../../util/fetches", () => ({
   markNotificationsRead: jest.fn(),
 }));
 jest.mock("expo-updates", () => ({ reloadAsync: jest.fn() }));
+jest.mock("../../util/exportDownload", () => ({
+  downloadExportFromNotification: jest.fn(),
+}));
 jest.mock("react-native-toast-message", () => ({ show: jest.fn() }));
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
@@ -52,6 +55,7 @@ import * as Updates from "expo-updates";
 import Toast from "react-native-toast-message";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { markNotificationsRead } from "../../util/fetches";
+import { downloadExportFromNotification } from "../../util/exportDownload";
 import { UNREAD_COUNT_KEY } from "../../hooks/useUnreadCount";
 import { AppNotification } from "../../types";
 import {
@@ -93,10 +97,10 @@ beforeEach(() => {
   mockQuery();
 });
 
-it("shows a loading indicator while the first page is loading", async () => {
+it("shows a skeleton while the first page is loading", async () => {
   mockQuery({ isLoading: true });
   await render(<NotificationsScreen />);
-  expect(screen.getByTestId("loading-overlay")).toBeOnTheScreen();
+  expect(screen.getByTestId("list-skeleton")).toBeOnTheScreen();
 });
 
 it("renders notifications flattened from all pages", async () => {
@@ -173,6 +177,8 @@ describe("tap routing", () => {
     // to the shared util/notificationRoute — same navigation either way.
     [{ screen: "Checklist" }, ["Checklist", undefined]],
     [{ screen: "Notifications" }, ["Notifications", undefined]],
+    // A data export that failed.
+    [{ screen: "Settings" }, ["Settings", undefined]],
   ];
 
   it.each(cases)("routes %o to navigate(%p)", async (data, expectedArgs) => {
@@ -265,6 +271,28 @@ describe("an update waiting to be applied", () => {
     expect(Updates.reloadAsync).not.toHaveBeenCalled();
     expect(mockNavigation.navigate).not.toHaveBeenCalled();
   });
+});
+
+// The same tap as on its push: the file is downloaded, nothing is navigated to.
+it("downloads the export when its ready card is tapped", async () => {
+  mockQuery({
+    data: {
+      pages: [
+        {
+          results: [
+            notification({ id: 1, title: "Item", data: { kind: "gdpr_export" } }),
+          ],
+        },
+      ],
+    },
+  });
+  await render(<NotificationsScreen />);
+
+  await fireEvent.press(screen.getByText("Item"));
+
+  expect(markNotificationsRead).toHaveBeenCalledWith([1]);
+  expect(downloadExportFromNotification).toHaveBeenCalledTimes(1);
+  expect(mockNavigation.navigate).not.toHaveBeenCalled();
 });
 
 it("does not fetch the next page when none is available", async () => {

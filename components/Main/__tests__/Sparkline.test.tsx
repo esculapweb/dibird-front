@@ -19,6 +19,10 @@ jest.mock("../SparklineSkeleton", () => {
   return { SparklineSkeleton: () => <View testID="sparkline-skeleton" /> };
 });
 jest.mock("../../../util/fetches", () => ({ fetchMyActivity: jest.fn() }));
+const mockNavigate = jest.fn();
+jest.mock("@react-navigation/native", () => ({
+  useNavigation: () => ({ navigate: mockNavigate }),
+}));
 
 import { QueryClient, QueryClientProvider, notifyManager } from "@tanstack/react-query";
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
@@ -141,4 +145,52 @@ describe("mode dropdown", () => {
 it("does not throw with chartType='dot'", async () => {
   await renderWithClient({}, "dot");
   expect(screen.getByText("new_species")).toBeOnTheScreen();
+});
+
+describe("opening the full chart", () => {
+  it("navigates to Activity with the filters and the current mode", async () => {
+    await renderWithClient({ territory: 5 });
+    await fireEvent.press(screen.getByTestId("sparkline-card"));
+    expect(mockNavigate).toHaveBeenCalledWith("Activity", {
+      filters: { territory: 5 },
+      mode: "newSpecies",
+    });
+  });
+
+  it("carries a switched mode over", async () => {
+    await renderWithClient({});
+    await fireEvent.press(screen.getByText("chevron-down"));
+    await act(async () => {
+      fireEvent.press(screen.getByText("observations"));
+    });
+    await fireEvent.press(screen.getByTestId("sparkline-card"));
+    expect(mockNavigate).toHaveBeenCalledWith("Activity", {
+      filters: {},
+      mode: "observations",
+    });
+  });
+
+  it("opening the mode dropdown does not navigate", async () => {
+    await renderWithClient({});
+    await fireEvent.press(screen.getByText("chevron-down"));
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+});
+
+describe("delta window", () => {
+  it("labels the delta with the window the server compared", async () => {
+    (fetchMyActivity as jest.Mock).mockResolvedValue(
+      ACTIVITY({ meta: { ...ACTIVITY().meta, delta_window: { unit: "days", n: 7 } } }),
+    );
+    await renderWithClient({});
+    expect(screen.getByText("+3 activity_delta_days", { exact: false })).toBeOnTheScreen();
+  });
+
+  it("hides the delta when the history is too short to compare", async () => {
+    (fetchMyActivity as jest.Mock).mockResolvedValue(
+      ACTIVITY({ meta: { ...ACTIVITY().meta, delta_window: null } }),
+    );
+    await renderWithClient({});
+    expect(screen.queryByText("+3", { exact: false })).not.toBeOnTheScreen();
+  });
 });

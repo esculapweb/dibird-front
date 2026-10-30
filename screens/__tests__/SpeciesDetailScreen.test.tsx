@@ -217,9 +217,9 @@ it("can pull to refetch, since species data is cached for a day", async () => {
   expect(refetch).toHaveBeenCalledTimes(1);
 });
 
-it("shows the loading overlay while there is no data yet", async () => {
+it("shows the skeleton while there is no data yet", async () => {
   await render(<SpeciesDetailScreen />);
-  expect(screen.getByTestId("loading-overlay")).toBeOnTheScreen();
+  expect(screen.getByTestId("species-detail-skeleton")).toBeOnTheScreen();
 });
 
 it("shows an error overlay with retry when the id→segment lookup fails", async () => {
@@ -254,7 +254,7 @@ it("redirects to the canonical segment via setParams when the API returns a redi
 
   await render(<SpeciesDetailScreen />);
   expect(mockNavigation.setParams).toHaveBeenCalledWith({ segment: "eurasian-blue-tit" });
-  expect(screen.getByTestId("loading-overlay")).toBeOnTheScreen();
+  expect(screen.getByTestId("species-detail-skeleton")).toBeOnTheScreen();
 });
 
 it("renders the species name, status, description, breeding range, countries and subspecies", async () => {
