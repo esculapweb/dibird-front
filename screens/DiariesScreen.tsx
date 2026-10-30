@@ -9,7 +9,7 @@ import {
   fetchOnlyDiaryAtPlace,
 } from "../util/fetches";
 import { StaleTime } from "../constants/staleTime";
-import DiaryCard from "../components/Diary/DiaryCard";
+import SwipeableDiaryCard from "../components/Diary/SwipeableDiaryCard";
 import PlacesMap from "../components/Map/PlacesMap";
 import EmptyState from "../components/Empty/EmptyState";
 import { ListSkeleton } from "../components/ui/Skeleton";
@@ -149,7 +149,7 @@ const DiariesScreen = () => {
   }: {
     item: DiaryListItem;
     index: number;
-  }) => <DiaryCard item={item} index={index} />;
+  }) => <SwipeableDiaryCard item={item} index={index} />;
 
   const viewSwitch = (
     <ViewSwitch

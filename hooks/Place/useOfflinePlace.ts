@@ -8,6 +8,7 @@ import { useLanguage } from "../../store/language-context";
 import { isConnected } from "../../services/sync/networkStatus";
 import { cachedRead } from "../../services/cacheFallback";
 import { runPlaceSync } from "../../services/sync/placeSync";
+import { schedulePlaceReminder, cancelPlaceReminder } from "../../services/placeReminders";
 import * as placeRepository from "../repositories/placeRepository";
 import { fetchDiaries } from "../../util/fetches";
 import { INVALIDATION_MAP } from "../../util/invalidationMap";
@@ -144,6 +145,9 @@ export const useCreatePlace = () => {
       runPlaceSync();
       return item;
     },
+    // A reminder picked in the create form, scheduled on either path — same
+    // as useUpdatePlace below.
+    onSuccess: (item) => schedulePlaceReminder(item),
     onSettled: () => invalidatePlaceCaches(queryClient),
   });
 };
@@ -176,6 +180,9 @@ export const useUpdatePlace = (id: number | null | undefined) => {
       if (id > 0) runPlaceSync();
       return item;
     },
+    // Both paths above, online and queued, end here — so a reminder set
+    // offline is scheduled right away, and a rename reaches the reminder text.
+    onSuccess: (item) => schedulePlaceReminder(item),
     onSettled: () => invalidatePlaceCaches(queryClient),
   });
 };
@@ -199,6 +206,7 @@ export const useDeletePlace = () => {
       placeRepository.deleteLocal(id);
       if (id > 0) runPlaceSync();
     },
+    onSuccess: (_data, id) => cancelPlaceReminder(id),
     onSettled: () => invalidatePlaceCaches(queryClient),
   });
 };

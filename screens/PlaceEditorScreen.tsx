@@ -10,11 +10,17 @@ import { Keyboard, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import type { PressEvent } from "@maplibre/maplibre-react-native";
+import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
 
 import { useTheme, ThemeColors } from "../store/theme-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import { useCreatePlace, useUpdatePlace } from "../hooks/Place/useOfflinePlace";
 import PlaceForm from "../components/Place/PlaceForm";
+import WantToVisitSection from "../components/Place/WantToVisitSection";
+import { requestPushPermission } from "../hooks/usePushNotifications";
+import { combineReminder, splitReminder } from "../util/reminderDateTime";
 import NearbyPlaceSuggestion from "../components/Place/NearbyPlaceSuggestion";
 import {
   usePlaceLocation,
@@ -27,7 +33,6 @@ import { fetchMyPlaces } from "../util/fetches";
 import { roundCoords } from "../util/helpers";
 import { callNavigationCallback } from "../util/navigationCallbacks";
 import IconsHeader from "../components/ui/IconsHeader";
-import Layout from "../components/ui/Layout";
 import { useApiError } from "../hooks/useApiError";
 import {
   AppStackNavigationProp,
@@ -44,6 +49,7 @@ type FormErrors = {
   territory?: string;
   latitude?: string;
   longitude?: string;
+  reminder?: string;
 };
 
 // Above this, a GPS fix is unreliable enough that the dropped pin may be
@@ -55,6 +61,12 @@ const LOW_ACCURACY_THRESHOLD_M = 100;
 // city-wide view the GPS path starts from before it knows the accuracy.
 const PICKED_POINT_ZOOM = 16;
 
+// The form sheet's resting height: the map keeps the top half for picking
+// the point, the sheet shows name, coordinates and country without a drag.
+// The second point is for the rest of the form (want to visit, reminder).
+const SHEET_COLLAPSED_SHARE = 0.5;
+const SHEET_SNAP_POINTS = [`${SHEET_COLLAPSED_SHARE * 100}%`, "92%"];
+
 const PlaceEditorScreen = () => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -65,9 +77,14 @@ const PlaceEditorScreen = () => {
 
   const FORM_FIELDS = ["name", "territory", "latitude", "longitude"];
 
-  const { place, returnToScreen, initialCoords: pickedCoords } =
-    route.params || {};
+  const {
+    place,
+    returnToScreen,
+    initialCoords: pickedCoords,
+    initialWantToVisit,
+  } = route.params || {};
   const isEditMode = !!place;
+  const insets = useSafeAreaInsets();
 
   const {
     coords,
@@ -95,6 +112,30 @@ const PlaceEditorScreen = () => {
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [suggestionDismissed, setSuggestionDismissed] = useState(false);
+
+  const [wantToVisit, setWantToVisit] = useState(
+    place ? !!place.want_to_visit : !!initialWantToVisit,
+  );
+  const [reminderDate, setReminderDate] = useState(
+    () => splitReminder(place?.visit_reminder_at).date,
+  );
+  const [reminderTime, setReminderTime] = useState(
+    () => splitReminder(place?.visit_reminder_at).time,
+  );
+  const pickedReminder = combineReminder(reminderDate, reminderTime);
+  const storedReminderMs = place?.visit_reminder_at
+    ? new Date(place.visit_reminder_at).getTime()
+    : null;
+  // A reminder this save actually sets, as opposed to one already stored
+  // (even one already past, which an unrelated edit must not trip over).
+  const isNewReminder =
+    wantToVisit &&
+    !!pickedReminder &&
+    pickedReminder.getTime() !== storedReminderMs;
+
+  // Height of the screen under the header, for the sheet's share of it.
+  const [containerHeight, setContainerHeight] = useState(0);
+  const collapsedSheetHeight = containerHeight * SHEET_COLLAPSED_SHARE;
   const initialCoords = place?.location?.coordinates;
 
   const { locationCoords, locationAvailable, permissionStatus, requestLocation } =
@@ -132,6 +173,8 @@ const PlaceEditorScreen = () => {
       name: data.name.trim(),
       favourite: data.favourite ?? false,
       territory: data.territory,
+      want_to_visit: data.want_to_visit ?? false,
+      visit_reminder_at: data.visit_reminder_at ?? null,
     };
 
     if (data.location?.coordinates) {
@@ -272,9 +315,26 @@ const PlaceEditorScreen = () => {
       if (isNaN(lng) || lng < -180 || lng > 180)
         newErrors.longitude = t("invalid_longitude");
     }
+    // The reminder is optional, but half of one (a day with no time, or the
+    // other way round) is more likely a slip than "no reminder".
+    if (wantToVisit && (reminderDate || reminderTime)) {
+      if (!pickedReminder) newErrors.reminder = t("reminder_incomplete");
+      else if (isNewReminder && pickedReminder.getTime() <= Date.now())
+        newErrors.reminder = t("reminder_in_past");
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [formData, latText, lngText, t]);
+  }, [
+    formData,
+    latText,
+    lngText,
+    t,
+    wantToVisit,
+    reminderDate,
+    reminderTime,
+    pickedReminder,
+    isNewReminder,
+  ]);
 
   const extractApiError = useCallback<ErrorExtractor>(
     (err) => ({
@@ -346,8 +406,36 @@ const PlaceEditorScreen = () => {
     [updateCoords, setLatText, setLngText, t],
   );
 
-  const handleSavePlace = useCallback(() => {
+  const handleWantToVisitChange = useCallback((value: boolean) => {
+    setWantToVisit(value);
+    setErrors((prev) => ({ ...prev, reminder: undefined }));
+  }, []);
+
+  const handleReminderDateChange = useCallback((value: string | null) => {
+    setReminderDate(value);
+    setErrors((prev) => ({ ...prev, reminder: undefined }));
+  }, []);
+
+  const handleReminderTimeChange = useCallback((value: string | null) => {
+    setReminderTime(value);
+    setErrors((prev) => ({ ...prev, reminder: undefined }));
+  }, []);
+
+  const handleSavePlace = useCallback(async () => {
     if (!validateForm()) return;
+
+    // Asked here, when the user has just picked a reminder — the same rule as
+    // requestPushPermission's other callers. A refusal still saves the place
+    // and its moment: it reaches the user's other devices, and is scheduled
+    // here once notifications are allowed in the OS settings.
+    if (isNewReminder && !(await requestPushPermission())) {
+      Toast.show({
+        type: "info",
+        text1: t("reminder_permission_denied"),
+        text2: t("reminder_permission_denied_hint"),
+      });
+    }
+
     const normalized = normalizeCoords(lngText, latText, 4);
     if (!normalized) return;
     const { lng, lat, lngText: newLngText, latText: newLatText } = normalized;
@@ -362,6 +450,11 @@ const PlaceEditorScreen = () => {
     const placeData = buildPlacePayload({
       ...formData,
       favourite: place?.favourite ?? false,
+      want_to_visit: wantToVisit,
+      // Leaving the list takes the reminder with it, as on PlaceDetailScreen.
+      visit_reminder_at: wantToVisit
+        ? (pickedReminder?.toISOString() ?? null)
+        : null,
       location: { type: "Point", coordinates: [lng, lat] },
       territory: formData.territory,
     });
@@ -398,13 +491,27 @@ const PlaceEditorScreen = () => {
         onError: (e) => handleMutateError(e),
       });
     }
-  }, [formData, lngText, latText, isEditMode, place, returnToScreen]);
+  }, [
+    formData,
+    lngText,
+    latText,
+    isEditMode,
+    place,
+    returnToScreen,
+    wantToVisit,
+    pickedReminder,
+    isNewReminder,
+    validateForm,
+    t,
+  ]);
 
   const headerRightBeginning = useMemo(
     () => [
       {
         condition: true,
-        onPress: handleSavePlace,
+        onPress: () => {
+          handleSavePlace();
+        },
         icon: "checkmark-circle" as const,
         size: 36,
         tintColor: Colors.main100,
@@ -441,8 +548,14 @@ const PlaceEditorScreen = () => {
     return <LoadingOverlay />;
   }
 
+  // The map runs under the whole screen; the form is a sheet over its lower
+  // part. The camera and the "Update GPS" button are lifted by the sheet's
+  // resting height so the pin and the button stay in the part left visible.
   return (
-    <Layout withKeyboard={true}>
+    <View
+      style={styles.screen}
+      onLayout={(e) => setContainerHeight(e.nativeEvent.layout.height)}
+    >
       <MapL
         onPress={handleMapPress}
         currentCoords={coords}
@@ -450,37 +563,65 @@ const PlaceEditorScreen = () => {
         accuracy={accuracy}
         onUseMyLocation={locateMe}
         isLocating={isLocating}
+        bottomInset={collapsedSheetHeight}
+        centerBottomPadding={collapsedSheetHeight}
       />
-      {!isLocating && accuracy > LOW_ACCURACY_THRESHOLD_M && (
-        <Text style={styles.lowAccuracyHint}>
-          {t("gps_low_accuracy_hint")}
-        </Text>
-      )}
-      {showSuggestion && (
-        <View style={styles.suggestionWrapper}>
-          <NearbyPlaceSuggestion
-            {...nearby}
-            variant="editor"
-            onSelect={handleUseExistingPlace}
-            onDismiss={() => setSuggestionDismissed(true)}
+      <BottomSheet
+        index={0}
+        snapPoints={SHEET_SNAP_POINTS}
+        enableDynamicSizing={false}
+        keyboardBehavior="extend"
+        keyboardBlurBehavior="restore"
+        android_keyboardInputMode="adjustResize"
+        backgroundStyle={styles.sheetBackground}
+        handleIndicatorStyle={styles.sheetHandle}
+      >
+        <BottomSheetScrollView
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+          testID="place-editor-sheet"
+        >
+          {!isLocating && accuracy > LOW_ACCURACY_THRESHOLD_M && (
+            <Text style={styles.lowAccuracyHint}>
+              {t("gps_low_accuracy_hint")}
+            </Text>
+          )}
+          {showSuggestion && (
+            <View style={styles.suggestionWrapper}>
+              <NearbyPlaceSuggestion
+                {...nearby}
+                variant="editor"
+                onSelect={handleUseExistingPlace}
+                onDismiss={() => setSuggestionDismissed(true)}
+              />
+            </View>
+          )}
+          <PlaceForm
+            onCoordsChange={handleCoordsChange}
+            formData={formData}
+            coords={coords}
+            latText={latText}
+            setLatText={setLatText}
+            lngText={lngText}
+            setLngText={setLngText}
+            setFormData={setFormData}
+            errors={errors}
+            setErrors={setErrors}
+            locationDetails={details}
+            isEditMode={isEditMode}
           />
-        </View>
-      )}
-      <PlaceForm
-        onCoordsChange={handleCoordsChange}
-        formData={formData}
-        coords={coords}
-        latText={latText}
-        setLatText={setLatText}
-        lngText={lngText}
-        setLngText={setLngText}
-        setFormData={setFormData}
-        errors={errors}
-        setErrors={setErrors}
-        locationDetails={details}
-        isEditMode={isEditMode}
-      />
-    </Layout>
+          <WantToVisitSection
+            value={wantToVisit}
+            onChange={handleWantToVisitChange}
+            reminderDate={reminderDate}
+            reminderTime={reminderTime}
+            onReminderDateChange={handleReminderDateChange}
+            onReminderTimeChange={handleReminderTimeChange}
+            reminderError={errors.reminder}
+          />
+        </BottomSheetScrollView>
+      </BottomSheet>
+    </View>
   );
 };
 
@@ -488,6 +629,17 @@ export default PlaceEditorScreen;
 
 const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
+    screen: { flex: 1, backgroundColor: Colors.primary100 },
+    sheetBackground: {
+      backgroundColor: Colors.primary100,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+    },
+    sheetHandle: {
+      backgroundColor: Colors.textSecondary,
+      width: 40,
+      height: 4,
+    },
     lowAccuracyHint: {
       fontSize: 12,
       color: Colors.error600,

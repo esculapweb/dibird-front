@@ -3,6 +3,7 @@ import { AppState } from "react-native";
 
 import { runPlaceSync, stopPlaceSyncRetries } from "../../services/sync/placeSync";
 import { subscribeToReconnect } from "../../services/sync/networkStatus";
+import { reconcilePlaceReminders } from "../../services/placeReminders";
 
 // Verbatim mirror of hooks/Diary/useDiarySync.ts — drains the place mutation
 // queue regardless of which screen is mounted.
@@ -15,9 +16,11 @@ export const usePlaceSync = (isAuthenticated: boolean) => {
       return;
     }
 
+    // Reconciled after the queue drains, so a place created offline is already
+    // under its server id and its reminder is not cancelled as unknown.
     const trigger = () => {
       lastRunRef.current = Date.now();
-      runPlaceSync();
+      runPlaceSync().then(reconcilePlaceReminders);
     };
 
     trigger();

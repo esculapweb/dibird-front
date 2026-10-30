@@ -71,5 +71,11 @@ export const routeNotification = (
     case "Settings":
       navigate("Settings", undefined);
       break;
+
+    // A local "want to visit" reminder (services/placeReminders.ts).
+    case "PlaceDetail":
+      if (typeof payload.placeId !== "number") break;
+      navigate("PlaceDetail", { placeId: payload.placeId });
+      break;
   }
 };

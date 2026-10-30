@@ -18,6 +18,7 @@ import i18n from "../services/i18n";
 import { shouldUseBiometrics } from "../services/bio";
 import { unregisterPushToken } from "../util/fetches";
 import { logError } from "../services/errors";
+import { cancelAllPlaceReminders } from "../services/placeReminders";
 
 interface AuthContextType {
   token: string | null;
@@ -53,6 +54,8 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
     } catch (e) {
       logError(e, "Unregister push token");
     }
+
+    await cancelAllPlaceReminders();
 
     try {
       await Logout(() => {

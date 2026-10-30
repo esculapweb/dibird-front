@@ -8,10 +8,21 @@ import { isoToFlagEmoji, normalizeDistance } from "../../util/helpers";
 import { BirdSVG } from "../ui/Svgs";
 import StatItem from "../ui/StatItem";
 import { AppStackNavigationProp, PlaceItem } from "../../types";
+import type { SwipeA11yProps } from "../ui/SwipeableRow";
 
 const useStyles = (Colors: ThemeColors) => useMemo(() => stylesFn(Colors), [Colors]);
 
-const PlaceCard = memo(({ item, index }: {item: PlaceItem, index: number}) => {
+// `accessibility`: the swipe actions of the row this card sits in, offered to
+// screen readers as custom actions (see swipeA11yProps).
+const PlaceCard = memo(({
+  item,
+  index,
+  accessibility,
+}: {
+  item: PlaceItem;
+  index: number;
+  accessibility?: SwipeA11yProps;
+}) => {
   const { Colors } = useTheme();
   const styles = useStyles(Colors);
   const navigation = useNavigation<AppStackNavigationProp>();
@@ -30,13 +41,22 @@ const PlaceCard = memo(({ item, index }: {item: PlaceItem, index: number}) => {
     <Pressable
       style={({ pressed }) => [styles.card, pressed && styles.pressedCard]}
       onPress={handlePlacePress}
+      {...accessibility}
     >
       <View style={styles.main}>
         <View style={styles.titleRow}>
           <View style={styles.titleLeft}>
             <Text style={styles.index}>{index + 1}.</Text>
             {item.favourite && (
-              <Ionicons name="star" size={18} color={Colors.yellow} />
+              <Ionicons name="star" size={18} color={Colors.favourite} />
+            )}
+            {item.want_to_visit && (
+              <Ionicons
+                name="flag"
+                size={16}
+                color={Colors.wantToVisit}
+                testID="place-want-to-visit-icon"
+              />
             )}
             <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
               {item.name}

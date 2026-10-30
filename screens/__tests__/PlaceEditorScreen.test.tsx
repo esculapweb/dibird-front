@@ -75,6 +75,42 @@ jest.mock("../../components/ui/IconsHeader", () => {
     ),
   };
 });
+jest.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}));
+jest.mock("@gorhom/bottom-sheet", () => {
+  const { View, ScrollView } = require("react-native");
+  return { __esModule: true, default: View, BottomSheetScrollView: ScrollView };
+});
+jest.mock("react-native-toast-message", () => ({ __esModule: true, default: { show: jest.fn() } }));
+jest.mock("../../hooks/usePushNotifications", () => ({ requestPushPermission: jest.fn() }));
+jest.mock("../../components/Place/WantToVisitSection", () => {
+  const { View, TouchableOpacity, Text } = require("react-native");
+  return {
+    __esModule: true,
+    default: ({ value, onChange, onReminderDateChange, onReminderTimeChange, reminderError }: {
+      value: boolean;
+      onChange: (v: boolean) => void;
+      onReminderDateChange: (v: string | null) => void;
+      onReminderTimeChange: (v: string | null) => void;
+      reminderError?: string | null;
+    }) => (
+      <View>
+        <Text testID="want-to-visit-value">{String(value)}</Text>
+        {reminderError ? <Text testID="reminder-error">{reminderError}</Text> : null}
+        <TouchableOpacity testID="toggle-want-to-visit" onPress={() => onChange(!value)}>
+          <Text>toggle</Text>
+        </TouchableOpacity>
+        <TouchableOpacity testID="pick-reminder-date" onPress={() => onReminderDateChange("2099-05-01")}>
+          <Text>date</Text>
+        </TouchableOpacity>
+        <TouchableOpacity testID="pick-reminder-time" onPress={() => onReminderTimeChange("07:30:00")}>
+          <Text>time</Text>
+        </TouchableOpacity>
+      </View>
+    ),
+  };
+});
 jest.mock("../../components/Map/MapL", () => {
   const { TouchableOpacity, Text } = require("react-native");
   return {
@@ -136,6 +172,8 @@ import { usePlaceLocation } from "../../hooks/Place/usePlaceLocation";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 import { useLocation } from "../../store/location-context";
 import { callNavigationCallback } from "../../util/navigationCallbacks";
+import { requestPushPermission } from "../../hooks/usePushNotifications";
+import Toast from "react-native-toast-message";
 import { PlaceDropdownItem } from "../../types";
 import { createNavigationMock, createRouteMock } from "../test-utils";
 import PlaceEditorScreen from "../PlaceEditorScreen";
@@ -668,5 +706,129 @@ describe("nearby place suggestion", () => {
     expect(mockNavigation.replace).toHaveBeenCalledWith("PlaceDetail", {
       placeId: 12,
     });
+  });
+});
+
+describe("want to visit and reminder", () => {
+  it("starts off by default, and on when the Places list was filtered to it", async () => {
+    await render(<PlaceEditorScreen />);
+    expect(screen.getByTestId("want-to-visit-value").props.children).toBe("false");
+
+    mockRoute = createRouteMock("PlaceEditor", { initialWantToVisit: true });
+    await render(<PlaceEditorScreen />);
+    expect(screen.getByTestId("want-to-visit-value").props.children).toBe("true");
+  });
+
+  it("creates the place with the flag and no reminder when none was picked", async () => {
+    await render(<PlaceEditorScreen />);
+    await fillNameAndTerritory();
+    await fireEvent.press(screen.getByTestId("toggle-want-to-visit"));
+
+    await pressSave();
+
+    expect(requestPushPermission).not.toHaveBeenCalled();
+    expect(mockCreateMutate.mock.calls[0][0]).toEqual(
+      expect.objectContaining({ want_to_visit: true, visit_reminder_at: null }),
+    );
+  });
+
+  it("asks for notifications, then creates the place with the picked moment", async () => {
+    (requestPushPermission as jest.Mock).mockResolvedValue(true);
+    await render(<PlaceEditorScreen />);
+    await fillNameAndTerritory();
+    await fireEvent.press(screen.getByTestId("toggle-want-to-visit"));
+    await fireEvent.press(screen.getByTestId("pick-reminder-date"));
+    await fireEvent.press(screen.getByTestId("pick-reminder-time"));
+
+    await pressSave();
+    await act(async () => {});
+
+    expect(requestPushPermission).toHaveBeenCalledTimes(1);
+    expect(Toast.show).not.toHaveBeenCalled();
+    expect(mockCreateMutate.mock.calls[0][0]).toEqual(
+      expect.objectContaining({
+        want_to_visit: true,
+        visit_reminder_at: new Date(2099, 4, 1, 7, 30).toISOString(),
+      }),
+    );
+  });
+
+  // The moment still reaches the server: another device, or this one once
+  // notifications are allowed, schedules it from there.
+  it("still saves the reminder when notifications are refused, and says why it will not show", async () => {
+    (requestPushPermission as jest.Mock).mockResolvedValue(false);
+    await render(<PlaceEditorScreen />);
+    await fillNameAndTerritory();
+    await fireEvent.press(screen.getByTestId("toggle-want-to-visit"));
+    await fireEvent.press(screen.getByTestId("pick-reminder-date"));
+    await fireEvent.press(screen.getByTestId("pick-reminder-time"));
+
+    await pressSave();
+    await act(async () => {});
+
+    expect(Toast.show).toHaveBeenCalledWith(
+      expect.objectContaining({ text1: "reminder_permission_denied" }),
+    );
+    expect(mockCreateMutate).toHaveBeenCalledTimes(1);
+  });
+
+  it("blocks save on a date without a time", async () => {
+    await render(<PlaceEditorScreen />);
+    await fillNameAndTerritory();
+    await fireEvent.press(screen.getByTestId("toggle-want-to-visit"));
+    await fireEvent.press(screen.getByTestId("pick-reminder-date"));
+
+    await pressSave();
+
+    expect(mockCreateMutate).not.toHaveBeenCalled();
+  });
+
+  it("clears the flag and the reminder together when the switch is turned off on edit", async () => {
+    mockRoute = createRouteMock("PlaceEditor", {
+      place: {
+        id: 7,
+        name: "Lake",
+        territory: 5,
+        favourite: false,
+        want_to_visit: true,
+        visit_reminder_at: "2099-05-01T07:30:00.000Z",
+        location: { type: "Point", coordinates: [2.35, 48.86] },
+      },
+    });
+    await render(<PlaceEditorScreen />);
+    await fireEvent.press(screen.getByTestId("toggle-want-to-visit"));
+
+    await pressSave();
+
+    expect(mockUpdateMutate.mock.calls[0][0]).toEqual(
+      expect.objectContaining({ want_to_visit: false, visit_reminder_at: null }),
+    );
+  });
+
+  // An unrelated edit of a place whose reminder already went off must not
+  // be blocked as "pick a moment in the future".
+  it("keeps an already-past reminder untouched on an unrelated edit", async () => {
+    mockRoute = createRouteMock("PlaceEditor", {
+      place: {
+        id: 7,
+        name: "Lake",
+        territory: 5,
+        favourite: false,
+        want_to_visit: true,
+        visit_reminder_at: "2000-05-01T07:30:00.000Z",
+        location: { type: "Point", coordinates: [2.35, 48.86] },
+      },
+    });
+    await render(<PlaceEditorScreen />);
+
+    await pressSave();
+
+    expect(requestPushPermission).not.toHaveBeenCalled();
+    expect(mockUpdateMutate.mock.calls[0][0]).toEqual(
+      expect.objectContaining({
+        want_to_visit: true,
+        visit_reminder_at: "2000-05-01T07:30:00.000Z",
+      }),
+    );
   });
 });

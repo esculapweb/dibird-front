@@ -4,13 +4,10 @@ import {
   Text,
   StyleSheet,
   Pressable,
-  Share,
-  Platform,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
-import Toast from "react-native-toast-message";
 import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 
 import { useTheme, ThemeColors } from "../store/theme-context";
@@ -30,7 +27,8 @@ import { queryClient } from "../services/queryClient";
 import FailedEditBanner from "../components/Profile/FailedEditBanner";
 import { BirdSVG } from "../components/ui/Svgs";
 import { formatTimeString } from "../util/timeHelpers";
-import { isoToFlagEmoji, buildShareUrl } from "../util/helpers";
+import { isoToFlagEmoji } from "../util/helpers";
+import { shareObservation } from "../util/share";
 import { useOpenSpecies } from "../hooks/useOpenSpecies";
 import Section from "../components/ui/Section";
 import PrivacyToggle from "../components/ui/PrivacyToggle";
@@ -41,9 +39,7 @@ import IconsHeader from "../components/ui/IconsHeader";
 import { overflowButton } from "../components/ui/overflowMenu";
 import Layout from "../components/ui/Layout";
 import { AppStackNavigationProp, AppStackRouteProp } from "../types";
-import { BottomSheet } from "../services/bottomSheet";
-import { track } from "../services/analytics";
-import { useApiError } from "../hooks/useApiError";
+import { useConfirmDelete } from "../hooks/useConfirmDelete";
 import MapL from "../components/Map/MapL";
 
 const ObservationDetailScreen = () => {
@@ -51,7 +47,6 @@ const ObservationDetailScreen = () => {
   const openSpecies = useOpenSpecies();
   const route = useRoute<AppStackRouteProp<"ObservationDetail">>();
   const { observationId, initialObservation } = route.params;
-  const { showErrorToast } = useApiError();
 
   // Same defensive retry as ObservationsScreen: NetInfo's reconnect event can
   // be missed/racy, so opportunistically retry the queue whenever this
@@ -74,6 +69,7 @@ const ObservationDetailScreen = () => {
   } = useObservationItem(observationId, initialObservation);
 
   const updateMutation = useUpdateObservation(observationId);
+  const confirmDelete = useConfirmDelete();
   const deleteMutation = useDeleteObservation();
 
   // An offline create resolves to a real server id in the background; once that
@@ -123,36 +119,19 @@ const ObservationDetailScreen = () => {
 
   const handleDelete = useCallback(() => {
     if (!observation) return;
-
-    BottomSheet.show({
-      title: t("delete_title"),
-      description: t("delete_observation_message"),
-      confirmText: t("delete"),
-      cancelText: t("cancel"),
-      danger: true,
-      // Resolved rather than fired and forgotten: the sheet keeps its spinner
-      // until the mutation settles, which is the progress the red button at
-      // the bottom of the screen used to show before deleting moved into the
-      // header menu. Resolving on failure too — the error is already reported
-      // by the toast below, and the sheet has nothing left to wait for.
-      onConfirm: () =>
-        new Promise<void>((resolve) => {
-          deleteMutation.mutate(observationId, {
-            onSuccess: () => {
-              navigation.goBack();
-              resolve();
-            },
-            onError: (e) => {
-              showErrorToast(
-                e,
-                `ObservationDetailScreen:deleteObservation:${observationId}`,
-              );
-              resolve();
-            },
-          });
+    confirmDelete({
+      message: t("delete_observation_message"),
+      runDelete: ({ onSuccess, onError }) =>
+        deleteMutation.mutate(observationId, {
+          onSuccess: () => {
+            navigation.goBack();
+            onSuccess();
+          },
+          onError,
         }),
+      tag: `ObservationDetailScreen:deleteObservation:${observationId}`,
     });
-  }, [observation, observationId]);
+  }, [observation, observationId, confirmDelete]);
 
   const headerRightBeginning = useMemo(
     () => [
@@ -180,21 +159,11 @@ const ObservationDetailScreen = () => {
     [observation, updateMutation.isPending, navigation],
   );
 
-  const handleShare = useCallback(async () => {
-    if (observation?.private) {
-      Toast.show({
-        type: "info",
-        text1: t("observation_private"),
-        text2: t("observation_private_share_hint"),
-      });
-      return;
-    }
-
-    const url = buildShareUrl(`my/community/${observationId}/`);
-
-    track("share_tapped", { type: "observation" });
-    await Share.share(Platform.OS === "ios" ? { url } : { message: url });
-  }, [observation, observationId]);
+  const handleShare = useCallback(
+    () =>
+      shareObservation({ id: observationId, private: observation?.private }, t),
+    [observation, observationId],
+  );
 
   // Editing stays an icon — it is what the owner comes here for. Sharing and
   // deleting move into the menu: one is occasional, the other destructive, and

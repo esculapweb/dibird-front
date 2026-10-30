@@ -14,8 +14,11 @@ jest.mock("../../services/sync/observationPhotoSync", () => ({
   stopObservationPhotoSyncRetries: jest.fn(),
 }));
 jest.mock("../../services/sync/placeSync", () => ({
-  runPlaceSync: jest.fn(),
+  runPlaceSync: jest.fn(() => Promise.resolve()),
   stopPlaceSyncRetries: jest.fn(),
+}));
+jest.mock("../../services/placeReminders", () => ({
+  reconcilePlaceReminders: jest.fn(),
 }));
 jest.mock("../../services/sync/notificationSync", () => ({
   runNotificationSync: jest.fn(),
@@ -157,5 +160,21 @@ describe.each(cases)("$name", ({ useHook, run, stop }) => {
 
     networkStatusMock.__emitReconnect();
     expect(run).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("usePlaceSync reminders", () => {
+  // After the queue drains, not alongside it: a place created offline has to
+  // be under its server id first, or its reminder looks unknown and is dropped.
+  it("reconciles the place reminders once the sync pass settles", async () => {
+    const { reconcilePlaceReminders } = jest.requireMock("../../services/placeReminders") as {
+      reconcilePlaceReminders: jest.Mock;
+    };
+
+    await renderHook(() => usePlaceSync(true));
+    await Promise.resolve();
+
+    expect(runPlaceSync).toHaveBeenCalledTimes(1);
+    expect(reconcilePlaceReminders).toHaveBeenCalledTimes(1);
   });
 });

@@ -9,11 +9,22 @@ import { formatDateLong, isoToFlagEmoji } from "../../util/helpers";
 import { Config } from "../../constants/config";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { AppStackNavigationProp, DiaryListItem } from "../../types";
+import type { SwipeA11yProps } from "../ui/SwipeableRow";
 
 const useStyles = (Colors: ThemeColors) =>
   useMemo(() => stylesFn(Colors), [Colors]);
 
-const DiaryCard = ({ item, index }: { item: DiaryListItem; index: number }) => {
+// `accessibility`: the swipe actions of the row this card sits in, offered to
+// screen readers as custom actions (see swipeA11yProps).
+const DiaryCard = ({
+  item,
+  index,
+  accessibility,
+}: {
+  item: DiaryListItem;
+  index: number;
+  accessibility?: SwipeA11yProps;
+}) => {
   const { Colors } = useTheme();
   const styles = useStyles(Colors);
   const navigation = useNavigation<AppStackNavigationProp>();
@@ -32,6 +43,7 @@ const DiaryCard = ({ item, index }: { item: DiaryListItem; index: number }) => {
     <Pressable
       style={({ pressed }) => [styles.card, pressed && styles.pressedCard]}
       onPress={handlePress}
+      {...accessibility}
     >
       <View style={styles.main}>
         <View style={styles.titleRow}>

@@ -101,6 +101,12 @@ const FilterSheetContent = ({
     { label: t("non_favourites_only"), value: false },
   ];
 
+  const wantToVisitOptions: { label: string; value: boolean | null }[] = [
+    { label: t("all"), value: null },
+    { label: t("want_to_visit_only"), value: true },
+    { label: t("not_want_to_visit_only"), value: false },
+  ];
+
   const unsyncedOptions: { label: string; value: boolean | null }[] = [
     { label: t("all"), value: null },
     { label: t("unsynced_only"), value: true },
@@ -150,6 +156,9 @@ const FilterSheetContent = ({
   );
   const [favouriteValue, setFavouriteValue] = useState(
     filters?.favourite ?? null,
+  );
+  const [wantToVisitValue, setWantToVisitValue] = useState(
+    filters?.want_to_visit ?? null,
   );
   const [unsyncedValue, setUnsyncedValue] = useState(
     filters?.unsynced ?? null,
@@ -296,6 +305,7 @@ const FilterSheetContent = ({
     if (allowed.includes("date"))
       res.date = isDateFilterActive(dateFilter) ? dateFilter : undefined;
     if (allowed.includes("favourite")) res.favourite = favouriteValue;
+    if (allowed.includes("want_to_visit")) res.want_to_visit = wantToVisitValue;
     if (allowed.includes("unsynced")) res.unsynced = unsyncedValue;
     if (allowed.includes("private")) res.private = privateValue;
     if (allowed.includes("has_photo")) res.has_photo = hasPhotoValue;
@@ -427,6 +437,21 @@ const FilterSheetContent = ({
               onChange={(value) => setFavouriteValue(value as boolean | null)}
               direction="column"
               options={favouriteOptions}
+              disabled={unsyncedOnly}
+            />
+          </View>
+        )}
+        {allowed.includes("want_to_visit") && (
+          <View
+            style={{ marginTop: 12 }}
+            onLayout={onSectionLayout("want_to_visit")}
+          >
+            <RadioGroup
+              label={`${t("want_to_visit")}:`}
+              value={wantToVisitValue}
+              onChange={(value) => setWantToVisitValue(value as boolean | null)}
+              direction="column"
+              options={wantToVisitOptions}
               disabled={unsyncedOnly}
             />
           </View>

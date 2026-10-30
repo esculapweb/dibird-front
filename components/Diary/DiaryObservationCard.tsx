@@ -9,19 +9,24 @@ import { useOpenSpecies } from "../../hooks/useOpenSpecies";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { formatTimeString } from "../../util/timeHelpers";
 import { AppStackNavigationProp, DiaryObservationItem } from "../../types";
+import type { SwipeA11yProps } from "../ui/SwipeableRow";
 
 const useStyles = (Colors: ThemeColors) =>
   useMemo(() => stylesFn(Colors), [Colors]);
 
+// `accessibility`: the swipe actions of the row this card sits in, offered to
+// screen readers as custom actions (see swipeA11yProps).
 const DiaryObservationCard = memo(
   ({
     item,
     index,
     owner,
+    accessibility,
   }: {
     item: DiaryObservationItem;
     index: number;
     owner: boolean;
+    accessibility?: SwipeA11yProps;
   }) => {
     const { Colors } = useTheme();
     const styles = useStyles(Colors);
@@ -40,6 +45,7 @@ const DiaryObservationCard = memo(
       <Pressable
         style={({ pressed }) => [styles.card, pressed && styles.pressedCard]}
         onPress={handlePress}
+        {...accessibility}
       >
         <View style={styles.row}>
           <SpeciesThumb

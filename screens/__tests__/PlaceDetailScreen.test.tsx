@@ -49,6 +49,9 @@ jest.mock("../../hooks/repositories/placeRepository", () => ({
 jest.mock("../../services/sync/placeSync", () => ({
   runPlaceSync: jest.fn(),
 }));
+jest.mock("../../hooks/usePushNotifications", () => ({
+  requestPushPermission: jest.fn(),
+}));
 jest.mock("../../store/filters-context", () => ({
   useFilters: jest.fn(),
 }));
@@ -270,14 +273,25 @@ describe("favourite toggle", () => {
     expect((await menuRow("remove_from_favourites")).icon).toBe("star");
   });
 
-  it("reports an error via showErrorToast on failure", async () => {
+  // useUpdatePlace's wrapper has already toasted an ordinary failure.
+  it("leaves an ordinary failure to the mutation's own toast", async () => {
     await render(<PlaceDetailScreen />);
 
     (await menuRow("add_to_favourites")).onPress();
 
     const call = mockUpdateMutate.mock.calls.at(-1)![1];
     call.onError({ message: "boom" });
-    expect(mockShowErrorToast).toHaveBeenCalledWith({ message: "boom" }, "PlaceDetailScreen:toggleFavourite:1");
+    expect(mockShowErrorToast).not.toHaveBeenCalled();
+  });
+
+  it("reports a validation error, which the wrapper leaves to the caller", async () => {
+    await render(<PlaceDetailScreen />);
+
+    (await menuRow("add_to_favourites")).onPress();
+
+    const error = { status: 400, response: { data: { favourite: ["bad"] } } };
+    mockUpdateMutate.mock.calls.at(-1)![1].onError(error);
+    expect(mockShowErrorToast).toHaveBeenCalledWith(error, "PlaceDetailScreen:toggleFavourite:1");
   });
 });
 

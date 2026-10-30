@@ -60,6 +60,9 @@ interface DateInputProps {
   // width: the iOS panel below it holds a three-wheel spinner that a half-width
   // column would squeeze.
   trailing?: ReactNode;
+  // Every other caller records something that already happened, hence the
+  // default cap at today; a reminder picks a day ahead and passes false.
+  capAtToday?: boolean;
 }
 
 const DateInput = ({
@@ -74,12 +77,14 @@ const DateInput = ({
   style,
   testID,
   trailing,
+  capAtToday = true,
 }: DateInputProps) => {
   const { t, i18n } = useTranslation();
   const { Colors, theme } = useTheme();
   const styles = stylesFn(Colors);
 
   const today = getTodayEnd();
+  const maximumDate = capAtToday ? today : undefined;
 
   const [androidPickerOpen, setAndroidPickerOpen] = useState(false);
   const [iosOpen, setIosOpen] = useState(false);
@@ -222,7 +227,7 @@ const DateInput = ({
           value={toPickerDate(value)}
           mode="date"
           display="default"
-          maximumDate={today}
+          maximumDate={maximumDate}
           onChange={handleAndroidChange}
           {...(minDateObj ? { minimumDate: minDateObj } : {})}
         />
@@ -250,7 +255,7 @@ const DateInput = ({
               value={tempDate}
               mode="date"
               display="spinner"
-              maximumDate={today}
+              maximumDate={maximumDate}
               themeVariant={theme === "dark" ? "dark" : "light"}
               onChange={handleIosChange}
               style={styles.picker}

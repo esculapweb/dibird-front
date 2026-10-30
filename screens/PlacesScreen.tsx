@@ -9,7 +9,7 @@ import {
   fetchPlacesForMap,
 } from "../util/fetches";
 import { StaleTime } from "../constants/staleTime";
-import PlaceCard from "../components/Place/PlaceCard";
+import SwipeablePlaceCard from "../components/Place/SwipeablePlaceCard";
 import PlacesMap from "../components/Map/PlacesMap";
 import EmptyState from "../components/Empty/EmptyState";
 import { ListSkeleton } from "../components/ui/Skeleton";
@@ -32,13 +32,19 @@ const LIST_FILTERS: AllowedFilterKey[] = [
   "territory",
   "date",
   "favourite",
+  "want_to_visit",
   "radius",
   "unsynced",
 ];
 
 // A place queued locally has no server row to aggregate, and a radius needs a
 // GPS fix the map does not ask for — neither has a meaning here.
-const MAP_FILTERS: AllowedFilterKey[] = ["territory", "date", "favourite"];
+const MAP_FILTERS: AllowedFilterKey[] = [
+  "territory",
+  "date",
+  "favourite",
+  "want_to_visit",
+];
 
 const PlacesScreen = () => {
   const { t } = useTranslation();
@@ -52,21 +58,25 @@ const PlacesScreen = () => {
     options: viewModeOptions,
   } = useMapViewMode(route.name);
 
-  // Lifted out of the map's ListScreen so the sheet can hand the date the user
-  // is looking at to the screen it opens. Only the map instance reports: the
-  // sheet exists nowhere else.
-  const [mapFilters, setMapFilters] = useState<Filters | null>({});
+  // Lifted out of the ListScreens: the map's sheet hands the date the user is
+  // looking at to the screen it opens, and the add button carries the
+  // "want to visit" filter into the new place (both modes report).
+  const [currentFilters, setCurrentFilters] = useState<Filters | null>({});
 
   const handleLocationUnavailable = useLocationUnavailable();
 
-  const handleAdd = () => navigation.navigate("PlaceEditor");
+  const handleAdd = () =>
+    navigation.navigate(
+      "PlaceEditor",
+      currentFilters?.want_to_visit ? { initialWantToVisit: true } : undefined,
+    );
 
   // Only the date travels with the tap: the place itself already pins the
   // territory, and "favourite" is a places-only filter neither destination
   // knows how to show or clear.
   const carriedFilters: Filters = useMemo(
-    () => (mapFilters?.date ? { date: mapFilters.date } : {}),
-    [mapFilters?.date],
+    () => (currentFilters?.date ? { date: currentFilters.date } : {}),
+    [currentFilters?.date],
   );
 
   // Opening the place is the point of this screen, so it leads. Its
@@ -151,7 +161,7 @@ const PlacesScreen = () => {
   };
 
   const renderItem = ({ item, index }: { item: PlaceItem; index: number }) => (
-    <PlaceCard item={item} index={index} />
+    <SwipeablePlaceCard item={item} index={index} />
   );
 
   const viewSwitch = (
@@ -194,7 +204,7 @@ const PlacesScreen = () => {
         topEl={viewSwitch}
         showSearch
         noItems={noItems}
-        onFiltersChange={async (val) => setMapFilters(val)}
+        onFiltersChange={async (val) => setCurrentFilters(val)}
         // Never called — renderContent takes over from the list entirely.
         renderItem={() => null}
         renderContent={(places, empty) =>
@@ -232,6 +242,7 @@ const PlacesScreen = () => {
       allowedFilters={LIST_FILTERS}
       errorTitle={t("places_unavailable")}
       onAdd={handleAdd}
+      onFiltersChange={async (val) => setCurrentFilters(val)}
       renderItem={renderItem}
       noItems={noItems}
       title={t("places")}

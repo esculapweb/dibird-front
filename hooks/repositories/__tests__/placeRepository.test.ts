@@ -114,7 +114,23 @@ describe("updateLocal", () => {
     expect(updated.location).toEqual({ type: "Point", coordinates: [1, 2] });
   });
 
-  it("amends an unsynced draft in place, rewriting the pending create's payload to the reduced {name,territory,favourite,location} shape", () => {
+  // The reminder is cleared with an explicit null, so for it "absent" and
+  // "null" must not collapse the way `??` would collapse them.
+  it("keeps the stored reminder on an unrelated patch, and clears it on an explicit null", () => {
+    placeRepository.upsertFromServer(
+      serverPlace({ want_to_visit: true, visit_reminder_at: "2099-01-01T08:00:00Z" }),
+    );
+
+    const renamed = placeRepository.updateLocal(555, { name: "Renamed" }, null);
+    expect(renamed.want_to_visit).toBe(true);
+    expect(renamed.visit_reminder_at).toBe("2099-01-01T08:00:00Z");
+
+    const cleared = placeRepository.updateLocal(555, { visit_reminder_at: null }, renamed);
+    expect(cleared.want_to_visit).toBe(true);
+    expect(cleared.visit_reminder_at).toBeNull();
+  });
+
+  it("amends an unsynced draft in place, rewriting the pending create's payload to the reduced {name,territory,favourite,want_to_visit,visit_reminder_at,location} shape", () => {
     const created = placeRepository.createLocal(placePayload(), "req-1");
 
     placeRepository.updateLocal(created.id, { favourite: true }, created);
@@ -131,6 +147,8 @@ describe("updateLocal", () => {
         name: "My Place",
         territory: 5,
         favourite: true,
+        want_to_visit: false,
+        visit_reminder_at: null,
         location: { type: "Point", coordinates: [1, 2] },
       },
       clientRequestId: "req-1",

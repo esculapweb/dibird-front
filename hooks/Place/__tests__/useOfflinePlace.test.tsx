@@ -11,6 +11,10 @@ jest.mock("../../../services/api", () => ({
 jest.mock("../../../store/language-context", () => ({ useLanguage: jest.fn() }));
 jest.mock("../../../services/sync/networkStatus", () => ({ isConnected: jest.fn() }));
 jest.mock("../../../services/sync/placeSync", () => ({ runPlaceSync: jest.fn() }));
+jest.mock("../../../services/placeReminders", () => ({
+  schedulePlaceReminder: jest.fn(),
+  cancelPlaceReminder: jest.fn(),
+}));
 jest.mock("../../repositories/placeRepository", () => ({
   getPlace: jest.fn(),
   upsertFromServer: jest.fn(),
@@ -30,6 +34,7 @@ import { useLanguage } from "../../../store/language-context";
 import { isConnected } from "../../../services/sync/networkStatus";
 import { runPlaceSync } from "../../../services/sync/placeSync";
 import * as placeRepository from "../../repositories/placeRepository";
+import { schedulePlaceReminder, cancelPlaceReminder } from "../../../services/placeReminders";
 import { usePlaceItem, useCreatePlace, useUpdatePlace, useDeletePlace } from "../useOfflinePlace";
 
 // See useOfflineDiary.test.tsx's comment on this — keeps state updates
@@ -277,7 +282,48 @@ describe("useUpdatePlace", () => {
   });
 });
 
+describe("useUpdatePlace reminders", () => {
+  it("reschedules the reminder from the server's copy when online", async () => {
+    const saved = { id: 5, name: "P", want_to_visit: true, visit_reminder_at: "2099-01-01T08:00:00Z" };
+    (api.patch as jest.Mock).mockResolvedValue({ data: saved });
+    const { result } = await renderHook(() => useUpdatePlace(5), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ visit_reminder_at: saved.visit_reminder_at });
+    });
+
+    expect(schedulePlaceReminder).toHaveBeenCalledWith(saved);
+  });
+
+  // The point of a local notification: a reminder set in the field, with no
+  // signal, must not wait for the sync to be scheduled.
+  it("schedules from the local merge when the edit is queued offline", async () => {
+    (isConnected as jest.Mock).mockReturnValue(false);
+    const merged = { id: 5, name: "P", want_to_visit: true, visit_reminder_at: "2099-01-01T08:00:00Z" };
+    (placeRepository.updateLocal as jest.Mock).mockReturnValue(merged);
+    const { result } = await renderHook(() => useUpdatePlace(5), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ visit_reminder_at: merged.visit_reminder_at });
+    });
+
+    expect(api.patch).not.toHaveBeenCalled();
+    expect(schedulePlaceReminder).toHaveBeenCalledWith(merged);
+  });
+});
+
 describe("useDeletePlace", () => {
+  it("cancels the place's reminder", async () => {
+    (isConnected as jest.Mock).mockReturnValue(false);
+    const { result } = await renderHook(() => useDeletePlace(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync(7);
+    });
+
+    expect(cancelPlaceReminder).toHaveBeenCalledWith(7);
+  });
+
   it("deletes on the server for an already-synced place when online", async () => {
     (api.delete as jest.Mock).mockResolvedValue({});
     const { result } = await renderHook(() => useDeletePlace(), { wrapper });

@@ -127,6 +127,8 @@ export const useSyncedFilters = <RouteName extends ScreenWithFiltersOnly>({
         return { ...filters, species: null };
       case "favourite":
         return { ...filters, favourite: null };
+      case "want_to_visit":
+        return { ...filters, want_to_visit: null };
       case "unsynced":
         return { ...filters, unsynced: null };
       case "private":

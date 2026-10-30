@@ -33,6 +33,7 @@ interface PlaceFormProps {
   isEditMode?: boolean;
 }
 
+// Lives in PlaceEditorScreen's form sheet, hence the sheet-aware inputs.
 const PlaceForm = ({
   onCoordsChange,
   formData,
@@ -124,6 +125,7 @@ const PlaceForm = ({
         isInvalid={!!errors.name}
         error={errors.name}
         testID="place-name-input"
+        inBottomSheet
       />
 
       <View style={styles.coordsContainer}>
@@ -136,6 +138,7 @@ const PlaceForm = ({
             isInvalid={!!errors.latitude}
             error={errors.latitude}
             testID="latitude-input"
+            inBottomSheet
           />
         </View>
         <View style={styles.coordInputWrapper}>
@@ -147,6 +150,7 @@ const PlaceForm = ({
             isInvalid={!!errors.longitude}
             error={errors.longitude}
             testID="longitude-input"
+            inBottomSheet
           />
         </View>
       </View>

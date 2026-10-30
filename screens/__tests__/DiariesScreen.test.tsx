@@ -56,7 +56,7 @@ jest.mock("../../components/Map/PlacesMap", () => {
 // DiaryCard is a separately-testable widget (its own useNavigation, image,
 // sync-status icon) — this screen's own job is just picking which item type
 // renders it and with what props.
-jest.mock("../../components/Diary/DiaryCard", () => {
+jest.mock("../../components/Diary/SwipeableDiaryCard", () => {
   const { Text } = require("react-native");
   return {
     __esModule: true,

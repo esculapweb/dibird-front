@@ -9,7 +9,7 @@ import {
   fetchOnlyObservationAtPlace,
 } from "../util/fetches";
 import { StaleTime } from "../constants/staleTime";
-import ObservationCard from "../components/Observation/ObservationCard";
+import SwipeableObservationCard from "../components/Observation/SwipeableObservationCard";
 import PlacesMap from "../components/Map/PlacesMap";
 import NoPlaceObservationsNote from "../components/Observation/NoPlaceObservationsNote";
 import EmptyState from "../components/Empty/EmptyState";
@@ -177,7 +177,7 @@ const ObservationsScreen = () => {
   }: {
     item: ObservationItem;
     index: number;
-  }) => <ObservationCard item={item} index={index} />;
+  }) => <SwipeableObservationCard item={item} index={index} />;
 
   // The stored list/map choice is a quick AsyncStorage read; the same
   // skeleton ListScreen shows next keeps it from flashing a spinner first.
