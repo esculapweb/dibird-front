@@ -1063,6 +1063,10 @@ export interface RatingItem {
   username: string;
   native_territory: number | null;
   profile_id: number;
+  // Place by species count, independent of the list's sort order — with
+  // "-last_update" the row position is not a place. Optional for the same
+  // reason as avatar_thumbnail: an older offline cache or backend lacks it.
+  rank?: number;
   seen_qty: number;
   territory_code: string | null;
   territory_name: string | null;

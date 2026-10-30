@@ -55,6 +55,7 @@ const RATING_ITEM = {
   last_name: "Doe",
   username: "jdoe",
   avatar: null,
+  rank: 5,
   territory_code: "FR",
   seen_qty: 42,
   last_update: "2026-01-01T08:00:00Z",
@@ -64,9 +65,9 @@ beforeEach(() => {
   jest.clearAllMocks();
 });
 
-it("renders the index, territory flag, full name and seen count", async () => {
+it("renders the server rank, territory flag, full name and seen count", async () => {
   await render(
-    <RatingCard item={RATING_ITEM as never} index={4} isSelected={false} onToggle={mockOnToggle} profile={null} />,
+    <RatingCard item={RATING_ITEM as never} isSelected={false} onToggle={mockOnToggle} profile={null} />,
   );
   expect(screen.getByText("5.")).toBeOnTheScreen();
   expect(screen.getByText("🇫🇷")).toBeOnTheScreen();
@@ -74,11 +75,24 @@ it("renders the index, territory flag, full name and seen count", async () => {
   expect(screen.getByText("42")).toBeOnTheScreen();
 });
 
+it("shows no number for a cached row that predates the server rank", async () => {
+  await render(
+    <RatingCard
+      item={{ ...RATING_ITEM, rank: undefined } as never}
+      isSelected={false}
+      onToggle={mockOnToggle}
+      profile={null}
+    />,
+  );
+  expect(screen.queryByText(/^\d+\.$/)).toBeNull();
+  expect(screen.getByText("Jane Doe")).toBeOnTheScreen();
+});
+
 it("omits the flag when there's no territory code", async () => {
   await render(
     <RatingCard
       item={{ ...RATING_ITEM, territory_code: null } as never}
-      index={0}
+     
       isSelected={false}
       onToggle={mockOnToggle}
       profile={null}
@@ -92,7 +106,7 @@ describe("navigation on press", () => {
     await render(
       <RatingCard
         item={RATING_ITEM as never}
-        index={0}
+       
         isSelected={false}
         onToggle={mockOnToggle}
         profile={{ user: 9 } as never}
@@ -106,7 +120,7 @@ describe("navigation on press", () => {
     await render(
       <RatingCard
         item={RATING_ITEM as never}
-        index={0}
+       
         isSelected={false}
         onToggle={mockOnToggle}
         profile={{ user: 1 } as never}
@@ -118,7 +132,7 @@ describe("navigation on press", () => {
 
   it("goes to UserStat when there's no logged-in profile at all", async () => {
     await render(
-      <RatingCard item={RATING_ITEM as never} index={0} isSelected={false} onToggle={mockOnToggle} profile={null} />,
+      <RatingCard item={RATING_ITEM as never} isSelected={false} onToggle={mockOnToggle} profile={null} />,
     );
     await fireEvent.press(screen.getByText("Jane Doe"));
     expect(mockNavigation.navigate).toHaveBeenCalledWith("UserStat", { profileId: 9 });
@@ -128,12 +142,12 @@ describe("navigation on press", () => {
 describe("selection checkbox", () => {
   it("shows an empty checkbox when not selected, a checked one when selected", async () => {
     await render(
-      <RatingCard item={RATING_ITEM as never} index={0} isSelected={false} onToggle={mockOnToggle} profile={null} />,
+      <RatingCard item={RATING_ITEM as never} isSelected={false} onToggle={mockOnToggle} profile={null} />,
     );
     expect(screen.getByTestId("icon-square-outline")).toBeOnTheScreen();
 
     await render(
-      <RatingCard item={RATING_ITEM as never} index={0} isSelected={true} onToggle={mockOnToggle} profile={null} />,
+      <RatingCard item={RATING_ITEM as never} isSelected={true} onToggle={mockOnToggle} profile={null} />,
     );
     expect(screen.getByTestId("icon-checkbox")).toBeOnTheScreen();
   });
@@ -142,7 +156,7 @@ describe("selection checkbox", () => {
     await render(
       <RatingCard
         item={RATING_ITEM as never}
-        index={0}
+       
         isSelected={false}
         onToggle={mockOnToggle}
         profile={null}
@@ -162,7 +176,7 @@ describe("avatar source", () => {
     await render(
       <RatingCard
         item={{ ...RATING_ITEM, avatar: "profile/aa/bb/9-1.jpg", avatar_thumbnail: "profile/aa/bb/9-1.jpg.150x150_q85_crop.jpg" } as never}
-        index={0}
+       
         isSelected={false}
         onToggle={mockOnToggle}
         profile={null}
@@ -178,7 +192,7 @@ describe("avatar source", () => {
     await render(
       <RatingCard
         item={{ ...RATING_ITEM, avatar: "profile/aa/bb/9-1.jpg" } as never}
-        index={0}
+       
         isSelected={false}
         onToggle={mockOnToggle}
         profile={null}

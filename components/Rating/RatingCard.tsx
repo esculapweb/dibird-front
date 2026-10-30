@@ -16,7 +16,6 @@ const useStyles = (Colors: ThemeColors) =>
 
 interface RatingCardProps {
   item: RatingItem;
-  index: number;
   isSelected: boolean;
   onToggle: () => void;
   profile: Profile | null;
@@ -24,7 +23,6 @@ interface RatingCardProps {
 
 const RatingCard = ({
   item,
-  index,
   isSelected,
   onToggle,
   profile,
@@ -79,7 +77,12 @@ const RatingCard = ({
         <View style={styles.content}>
           <View style={styles.titleRow}>
             <View style={styles.titleLeft}>
-              <Text style={styles.index}>{index + 1}.</Text>
+              {/* The server's place, not index + 1: under any sort other
+                  than species count the row position is not a place. Rows
+                  from a cache predating the field show no number. */}
+              {item.rank != null && (
+                <Text style={styles.index}>{item.rank}.</Text>
+              )}
               {territoryFlag && (
                 <Text style={styles.flag}>{territoryFlag}</Text>
               )}
