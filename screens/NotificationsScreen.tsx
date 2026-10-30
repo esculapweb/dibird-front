@@ -16,8 +16,10 @@ import {
   AppNotification,
   getAppUpdateStage,
   isNotificationPayload,
+  isExportReadyNotification,
 } from "../types";
 import { routeNotification } from "../util/notificationRoute";
+import { downloadExportFromNotification } from "../util/exportDownload";
 import { UNREAD_COUNT_KEY } from "../hooks/useUnreadCount";
 import { AppStackNavigationProp } from "../types";
 
@@ -106,6 +108,13 @@ export default function NotificationsScreen() {
         }
 
         await Updates.reloadAsync();
+        return;
+      }
+
+      // "Export is ready" downloads the file — the same tap as on its push
+      // (util/exportDownload).
+      if (isExportReadyNotification(item.data)) {
+        await downloadExportFromNotification();
         return;
       }
 

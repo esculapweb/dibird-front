@@ -12,16 +12,23 @@ import { registerPushToken, markNotificationsRead } from "../util/fetches";
 import { UNREAD_COUNT_KEY } from "../hooks/useUnreadCount";
 import { navigateFromNotification } from "../services/navigationRef";
 import { routeNotification } from "../util/notificationRoute";
+import { downloadExportFromNotification } from "../util/exportDownload";
 import { setUserProps, track } from "../services/analytics";
 import { logError, reportWarning } from "../services/errors";
 import { subscribeToReconnect } from "../services/sync/networkStatus";
-import { isNotificationPayload, NotificationPayload, AppError } from "../types";
+import {
+  isNotificationPayload,
+  isExportReadyNotification,
+  ExportReadyPayload,
+  NotificationPayload,
+  AppError,
+} from "../types";
 
 // Tapping a push should mark its underlying notification read, same as
 // tapping it in the in-app list (NotificationsScreen.handlePress) — otherwise
 // it stays unread and keeps counting toward the badge.
 const handleNotificationTap = (
-  raw: NotificationPayload,
+  raw: NotificationPayload | ExportReadyPayload,
   queryClient: QueryClient,
 ) => {
   if (raw.id != null) {
@@ -32,10 +39,21 @@ const handleNotificationTap = (
       })
       .catch((e) => logError(e as AppError, "markNotificationsRead from push tap"));
   }
+  // "Export is ready" carries no screen: the tap downloads the file instead
+  // of navigating (types.ts, isExportReadyNotification).
+  if (isExportReadyNotification(raw)) {
+    downloadExportFromNotification();
+    return;
+  }
   // Shared with the in-app list so the two cannot lead to different screens —
   // see util/notificationRoute.
   routeNotification(raw, navigateFromNotification);
 };
+
+const isTappable = (
+  data: unknown,
+): data is NotificationPayload | ExportReadyPayload =>
+  isNotificationPayload(data) || isExportReadyNotification(data);
 
 type PermissionStatus = "granted" | "denied" | "undetermined";
 
@@ -222,7 +240,7 @@ export const usePushNotifications = (isAuthenticated: boolean) => {
       if (lastResponse) {
         Notifications.clearLastNotificationResponse();
         const raw = lastResponse.notification.request.content.data;
-        if (isNotificationPayload(raw)) handleNotificationTap(raw, queryClient);
+        if (isTappable(raw)) handleNotificationTap(raw, queryClient);
       }
     } catch (e) {
       reportWarning(e, "getLastNotificationResponse");
@@ -236,7 +254,7 @@ export const usePushNotifications = (isAuthenticated: boolean) => {
     const responseSub = Notifications.addNotificationResponseReceivedListener(
       (response) => {
         const raw = response.notification.request.content.data;
-        if (!isNotificationPayload(raw)) return;
+        if (!isTappable(raw)) return;
         handleNotificationTap(raw, queryClient);
       },
     );

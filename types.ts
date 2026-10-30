@@ -1461,6 +1461,8 @@ export type NotificationPayload = (
   | { screen: "Achievements"; achievementId?: string }
   | { screen: "Notifications" }
   | { screen: "Checklist" }
+  // A data export that failed: Settings is where it is started again.
+  | { screen: "Settings" }
 ) & { id?: number };
 
 /**
@@ -1483,6 +1485,22 @@ export const getAppUpdateStage = (
     ? data.stage
     : null;
 };
+
+/**
+ * "Your data export is ready" (myapi/services/export.py in the backend repo).
+ *
+ * Recognised by `kind` rather than routed through util/notificationRoute for
+ * the same reason as the app-update ones: the tap does not navigate anywhere,
+ * it downloads the file (util/exportDownload).
+ */
+export type ExportReadyPayload = { kind: "gdpr_export"; id?: number };
+
+export const isExportReadyNotification = (
+  data: unknown,
+): data is ExportReadyPayload =>
+  typeof data === "object" &&
+  data !== null &&
+  (data as Record<string, unknown>).kind === "gdpr_export";
 
 /**
  * The screens a notification can point at.

@@ -19,6 +19,9 @@ jest.mock("../../util/fetches", () => ({
   registerPushToken: jest.fn(),
   markNotificationsRead: jest.fn(),
 }));
+jest.mock("../../util/exportDownload", () => ({
+  downloadExportFromNotification: jest.fn(),
+}));
 jest.mock("../../services/navigationRef", () => ({
   navigateFromNotification: jest.fn(),
 }));
@@ -56,6 +59,7 @@ import { act, renderHook } from "@testing-library/react-native";
 import { registerPushToken, markNotificationsRead } from "../../util/fetches";
 import { reportWarning } from "../../services/errors";
 import { navigateFromNotification } from "../../services/navigationRef";
+import { downloadExportFromNotification } from "../../util/exportDownload";
 import { UNREAD_COUNT_KEY } from "../useUnreadCount";
 import { setUserProps, track } from "../../services/analytics";
 import {
@@ -307,6 +311,34 @@ describe("usePushNotifications", () => {
     expect(Notifications.clearLastNotificationResponse).toHaveBeenCalled();
     expect(navigateFromNotification).toHaveBeenCalledWith("Checklist", undefined);
     expect(markNotificationsRead).toHaveBeenCalledWith([9]);
+  });
+
+  // "Export is ready" has no screen — the tap downloads the file instead.
+  it("downloads the export instead of navigating when its push is tapped", async () => {
+    await renderHook(() => usePushNotifications(true));
+    await flush();
+
+    const onResponse = addNotificationResponseReceivedListener.mock.calls[0][0] as (r: unknown) => void;
+    onResponse({
+      notification: { request: { content: { data: { kind: "gdpr_export", id: 11 } } } },
+    });
+    await flush();
+
+    expect(downloadExportFromNotification).toHaveBeenCalledTimes(1);
+    expect(navigateFromNotification).not.toHaveBeenCalled();
+    expect(markNotificationsRead).toHaveBeenCalledWith([11]);
+  });
+
+  it("downloads the export when its push cold-launched the app", async () => {
+    (Notifications.getLastNotificationResponse as jest.Mock).mockReturnValue({
+      notification: { request: { content: { data: { kind: "gdpr_export" } } } },
+    });
+
+    await renderHook(() => usePushNotifications(true));
+    await flush();
+
+    expect(downloadExportFromNotification).toHaveBeenCalledTimes(1);
+    expect(navigateFromNotification).not.toHaveBeenCalled();
   });
 
   // Both calls throw an UnavailabilityError when the native module does not

@@ -1,18 +1,24 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import * as Sharing from "expo-sharing";
 
-import {
-  pollExportStatus,
-  exportProfileData,
-  downloadExportFile,
-} from "../../util/fetches";
+import { pollExportStatus, exportProfileData } from "../../util/fetches";
+import { downloadAndShareExport } from "../../util/exportDownload";
 import { ExportStatus, AppError } from "../../types";
-import { useAuth } from "../../store/auth-context";
 
+export type ExportState = ExportStatus | "downloading";
+
+/**
+ * Starting the data export, and its status for the row in Settings.
+ *
+ * The export can take long enough that nobody should have to sit on this
+ * screen for it: the backend sends a notification when it is done
+ * (myapi/services/export.py), and tapping it is what downloads the file
+ * (util/exportDownload). The polling here only keeps the row's label honest
+ * while the screen happens to be open — reaching `completed` no longer
+ * downloads anything on its own, it offers the download instead.
+ */
 export const useExportProfile = () => {
-  const [state, setState] = useState<ExportStatus>("idle");
+  const [state, setState] = useState<ExportState>("idle");
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const { token } = useAuth();
 
   const stopPolling = useCallback(() => {
     if (intervalRef.current) {
@@ -25,20 +31,18 @@ export const useExportProfile = () => {
     const check = async () => {
       try {
         const data = await pollExportStatus();
+
+        // `completed` without a token is not done yet as far as a download is
+        // concerned — keep polling until the token is there.
+        if (data.status === "completed" && !data.download_token) return;
+
         setState(data.status);
 
-        if (data.status === "completed" && data.download_token) {
-          stopPolling();
-
-          const result = await downloadExportFile(data, token);
-
-          if (result?.uri) {
-            await Sharing.shareAsync(result.uri);
-            setState("idle");
-          } else {
-            setState("failed");
-          }
-        } else if (data.status === "failed" || data.status === "expired") {
+        if (
+          data.status === "completed" ||
+          data.status === "failed" ||
+          data.status === "expired"
+        ) {
           stopPolling();
         }
       } catch {
@@ -49,7 +53,7 @@ export const useExportProfile = () => {
 
     check();
     intervalRef.current = setInterval(check, 5000);
-  }, [stopPolling, token]);
+  }, [stopPolling]);
 
   const triggerExport = useCallback(async () => {
     try {
@@ -66,9 +70,25 @@ export const useExportProfile = () => {
     }
   }, [startPolling]);
 
+  const download = useCallback(async () => {
+    setState("downloading");
+    try {
+      const result = await downloadAndShareExport();
+      setState(
+        result === "shared"
+          ? "idle"
+          : result === "expired"
+            ? "expired"
+            : "processing",
+      );
+    } catch {
+      setState("failed");
+    }
+  }, []);
+
   const cleanup = useCallback(() => stopPolling(), []);
 
   useEffect(() => stopPolling, [stopPolling]);
 
-  return { state, triggerExport, cleanup };
+  return { state, triggerExport, download, cleanup };
 };
