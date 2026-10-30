@@ -19,6 +19,7 @@ import PlaceDetailScreen from "../screens/PlaceDetailScreen";
 import PlaceEditorScreen from "../screens/PlaceEditorScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import ObservationsScreen from "../screens/ObservationsScreen";
+import ActivityScreen from "../screens/ActivityScreen";
 import ObservationDetailScreen from "../screens/ObservationDetailScreen";
 import ObservationEditorScreen from "../screens/ObservationEditorScreen";
 import DiariesScreen from "../screens/DiariesScreen";
@@ -402,6 +403,12 @@ const AppNavigator = () => {
         name="Observations"
         component={ObservationsScreen}
         options={{ title: t("observations") }}
+      />
+
+      <Stack.Screen
+        name="Activity"
+        component={ActivityScreen}
+        options={{ title: t("activity") }}
       />
 
       <Stack.Screen

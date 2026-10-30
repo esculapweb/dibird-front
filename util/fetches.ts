@@ -1604,8 +1604,20 @@ export const fetchStat = (
   search: string,
   page?: number,
 ) => {
-  filters = { ...filters };
+  const { first_seen, ...rest } = filters;
+  filters = rest;
   const targetSeen = filters.seen ?? null;
+  // Sent as first_seen_min/max with the same exclusive upper day as the date
+  // filter. In extraParams, so it is part of the cache key as well.
+  const firstSeenParams: Record<string, unknown> = {};
+  if (first_seen) {
+    const { date_time_min, date_time_max } = buildDateParams({
+      type: "range",
+      ...first_seen,
+    });
+    firstSeenParams.first_seen_min = date_time_min;
+    firstSeenParams.first_seen_max = date_time_max;
+  }
 
   return fetchAbstract<StatPaginatedResponse<SpeciesItem>>(
     "/myapi/stat2/",
@@ -1613,7 +1625,7 @@ export const fetchStat = (
     order,
     search,
     page,
-    {},
+    firstSeenParams,
     undefined,
     {
       table: statCacheTable,
@@ -1634,7 +1646,7 @@ export const fetchStat = (
                 { ...filters, seen: null },
                 search ?? "",
                 page ?? 1,
-                {},
+                firstSeenParams,
               );
               const allData = getCachedListResponseByPrefix<
                 StatPaginatedResponse<SpeciesItem>

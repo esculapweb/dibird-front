@@ -1,15 +1,20 @@
 import { useState } from "react";
 import { StyleSheet, Text, View, Pressable } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
+import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 
 import WidgetError from "./WidgetError";
 import { useTheme, ThemeColors } from "../../store/theme-context";
-import { fetchMyActivity } from "../../util/fetches";
-import { StaleTime } from "../../constants/staleTime";
+import { useActivity } from "../../hooks/useActivity";
 import { SparklineSkeleton } from "./SparklineSkeleton";
-import { ActivityResponse, Filters } from "../../types";
+import { deltaWindowLabel } from "../../util/activityPeriods";
+import {
+  ActivityMode,
+  ActivityResponse,
+  AppStackNavigationProp,
+  Filters,
+} from "../../types";
 import { useContentWidth } from "../../hooks/useContentWidth";
 
 const H_PAD = 16;
@@ -23,9 +28,10 @@ const Sparkline = ({
   chartType?: "bar" | "dot";
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [mode, setMode] = useState("newSpecies");
+  const [mode, setMode] = useState<ActivityMode>("newSpecies");
 
   const { t } = useTranslation();
+  const navigation = useNavigation<AppStackNavigationProp>();
   const width = useContentWidth();
   const { Colors } = useTheme();
 
@@ -33,25 +39,10 @@ const Sparkline = ({
   const mutedColor = Colors.main300;
   const styles = stylesFn(Colors, mainColor, mutedColor);
 
-  const { data: activity, isLoading, isError, refetch } = useQuery({
-    queryKey: [
-      "Activity",
-      filters?.territory ?? null,
-      filters?.date?.type ?? null,
-      filters?.date?.year ?? null,
-      filters?.date?.from ?? null,
-      filters?.date?.to ?? null,
-      mode,
-    ],
-    queryFn: () =>
-      fetchMyActivity({
-        ...filters,
-        ...(mode === "newSpecies" && { new: true }),
-      }),
-
-    enabled: !!filters,
-    staleTime: StaleTime.FIVE_MINUTES,
-  });
+  const { data: activity, isLoading, isError, refetch } = useActivity(
+    filters,
+    mode,
+  );
 
   const data = activity?.data ?? [];
   const meta = activity?.meta ?? ({} as ActivityResponse["meta"]);
@@ -64,9 +55,9 @@ const Sparkline = ({
   const max = data.length ? Math.max(...data) : 1;
   const RECENT = meta.recent_threshold ?? 0;
   const sparkDelta = meta.delta_label ?? "0";
-  const deltaLabelKey = meta.delta_label_key ?? "this_week";
+  const deltaLabel = deltaWindowLabel(t, meta);
 
-  const OPTIONS = [
+  const OPTIONS: { key: ActivityMode; label: string }[] = [
     { key: "newSpecies", label: t("new_species") },
     { key: "observations", label: t("observations") },
   ];
@@ -103,7 +94,13 @@ const Sparkline = ({
   if (!data.length || allZero) return null;
 
   return (
-    <View style={styles.card}>
+    // The whole card opens the full chart; the mode dropdown inside is its
+    // own Pressable and takes the touch first.
+    <Pressable
+      style={styles.card}
+      onPress={() => navigation.navigate("Activity", { filters, mode })}
+      testID="sparkline-card"
+    >
       <View style={styles.sparkHead}>
         <View style={styles.dropdownWrapper}>
           <Pressable
@@ -144,7 +141,7 @@ const Sparkline = ({
                         active && styles.dropdownItemTextActive,
                       ]}
                     >
-                      {t(opt.label)}
+                      {opt.label}
                     </Text>
                   </Pressable>
                 );
@@ -153,11 +150,18 @@ const Sparkline = ({
           )}
         </View>
 
-        {meta.delta !== 0 && (
-          <Text style={styles.sparkValue}>
-            {sparkDelta} {t(deltaLabelKey, { n: meta.recent_window })}
-          </Text>
-        )}
+        <View style={styles.sparkRight}>
+          {meta.delta !== 0 && !!deltaLabel && (
+            <Text style={styles.sparkValue}>
+              {sparkDelta} {deltaLabel}
+            </Text>
+          )}
+          <Ionicons
+            name="chevron-forward"
+            size={14}
+            color={Colors.textSecondary}
+          />
+        </View>
       </View>
 
       <View style={styles.barsContainer}>
@@ -170,7 +174,7 @@ const Sparkline = ({
           return <BarItem key={i} h={h} mb={mb} bg={bg} />;
         })}
       </View>
-    </View>
+    </Pressable>
   );
 };
 
@@ -192,6 +196,11 @@ const stylesFn = (Colors: ThemeColors, mainColor: string, mutedColor: string) =>
       flexDirection: "row",
       justifyContent: "space-between",
       marginBottom: 12,
+    },
+    sparkRight: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
     },
     sparkLabel: {
       fontSize: 13,
@@ -278,6 +287,7 @@ const stylesFn = (Colors: ThemeColors, mainColor: string, mutedColor: string) =>
 // t("activity_very_long_range")
 // t("activity_multi_year")
 // t("activity_30d")
+// t("activity_all_time")
 // t("last_hours")
 // t("this_week")
 // t("this_month")

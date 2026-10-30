@@ -274,6 +274,23 @@ describe("fetchStat (resort + seen-split deriveFallback)", () => {
     expect(result.pagination.count).toBe(1);
   });
 
+  it("sends first_seen as first_seen_min/max with an exclusive upper day", async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: { results: [] } });
+    await fetches.fetchStat(
+      { territory: 5, seen: true, first_seen: { from: "2026-05-04", to: "2026-05-10" } },
+      null,
+      "",
+      1,
+    );
+    const { params } = (api.get as jest.Mock).mock.calls.at(-1)[1];
+    expect(params).toMatchObject({
+      territory: 5,
+      first_seen_min: "2026-05-04",
+      first_seen_max: "2026-05-11",
+    });
+    expect(params).not.toHaveProperty("first_seen");
+  });
+
   it("does not attempt to derive from the 'all' tab when the target tab already is 'all'", async () => {
     const err = new Error("boom");
     (api.get as jest.Mock).mockRejectedValue(err);

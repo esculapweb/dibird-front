@@ -297,7 +297,8 @@ export type AllowedFilterKey =
   | "private"
   | "radius"
   | "source"
-  | "has_photo";
+  | "has_photo"
+  | "first_seen";
 
 export interface Filters {
   date?: DateFilter | null;
@@ -344,6 +345,11 @@ export interface Filters {
   // on both the own list and the community feed (see
   // ObservationFilterSet.filter_has_photo on the backend).
   has_photo?: boolean | null;
+  // Species list (stat2) only: species first seen between these dates
+  // (inclusive) *within the date filter's period* — how a column of the
+  // "new species" activity chart opens, so the list matches the number on it.
+  // Not editable in the filter sheet; it shows as a removable chip.
+  first_seen?: { from: string; to: string } | null;
 }
 
 export type AllFiltersKey = keyof Filters;
@@ -1109,16 +1115,29 @@ export interface DashboardStat {
   total: number;
 }
 
+export type ActivityMode = "newSpecies" | "observations";
+
+export type ActivityGroup = "hour" | "day" | "week" | "month" | "year";
+
 export interface ActivityResponse {
   data: number[];
+  // Start of each data column, same length: an ISO date, or a local
+  // datetime with offset for hourly groups. The first one is clipped to
+  // meta.from. Optional: missing from older backends and from offline
+  // cache entries written before the field existed.
+  periods?: string[];
   meta: {
-    group: string;
+    group: ActivityGroup;
     from: string;
     to: string;
     points: number;
     total: number;
     delta: number;
     delta_label: string;
+    // The span the delta compares: the last n days (hours) against the n
+    // before them. null — too short a history to compare anything; missing —
+    // a response from before the field existed (fall back to delta_label_key).
+    delta_window?: { unit: "days" | "hours"; n: number } | null;
     recent_threshold: number;
     recent_window: number;
     period_label_key: string;
@@ -1268,6 +1287,7 @@ export type AppStackParamList = CatalogParamList & {
   PlaceDetail: { placeId: number; initialPlace?: PlaceItem };
   PlaceEditor: { place?: PlaceItem; returnToScreen?: string } | undefined;
   Observations: ScreenWithFilters | undefined;
+  Activity: { filters: Filters; mode: ActivityMode };
   ObservationDetail: {
     observationId: number;
     initialObservation?: ObservationItem;

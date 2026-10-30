@@ -6,7 +6,7 @@ import { formatDate, roundCoords } from "../util/helpers";
 import { fetchMyCountries, fetchMyPlaces, fetchSpecies } from "../util/fetches";
 import { useLocation } from "../store/location-context";
 
-import { DateFilter, AllFiltersKey } from "../types";
+import { DateFilter, AllFiltersKey, Filters } from "../types";
 
 interface FilterHints {
   speciesName?: string;
@@ -97,6 +97,16 @@ export const useFilterLabels = (
 
       case "date":
         return formatDateFilter(value as DateFilter, t);
+
+      case "first_seen": {
+        const { from, to } = value as NonNullable<Filters["first_seen"]>;
+        return [
+          t("filter_first_seen"),
+          from === to
+            ? formatDate(from)
+            : `${formatDate(from)} – ${formatDate(to)}`,
+        ];
+      }
 
       default:
         if (Array.isArray(value)) return value.join(", ");

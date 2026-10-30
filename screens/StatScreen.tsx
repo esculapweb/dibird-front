@@ -489,6 +489,9 @@ const StatScreen = () => {
     <>
       <ListScreen
         route={route}
+        // first_seen only ever arrives from the activity chart (see
+        // ActivityScreen) — listed so that it shows as a removable chip.
+        allowedFilters={["territory", "place", "date", "species", "first_seen"]}
         fetchFunction={fetchData}
         title={config.title}
         errorTitle={config.errorTitle}

@@ -7,6 +7,7 @@ import WidgetError from "./WidgetError";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import SpeciesRowsSkeleton from "./SpeciesRowsSkeleton";
 import { useList } from "../../hooks/useList";
+import { useActivity } from "../../hooks/useActivity";
 import SpeciesThumb from "../Taxonomy/SpeciesThumb";
 import { useOpenSpecies } from "../../hooks/useOpenSpecies";
 import { formatDateShort } from "../../util/helpers";
@@ -62,6 +63,13 @@ const NewSpecies: FC<NewSpeciesProps> = ({ filters, filtersLoaded }) => {
     staleTime: StaleTime.FIVE_MINUTES,
   });
 
+  // How many species are new for the period — the activity chart's total in
+  // its "new species" mode. Same query key as the Sparkline, so it is served
+  // from that cache. The list below shows only the three latest of them, and
+  // "all" opens exactly this many.
+  const { data: activity } = useActivity(filters, "newSpecies");
+  const newTotal = activity?.meta?.total ?? 0;
+
   const isYearFilter =
     filters?.date?.type === "year" || filters?.date?.type === "this_year";
 
@@ -97,7 +105,10 @@ const NewSpecies: FC<NewSpeciesProps> = ({ filters, filtersLoaded }) => {
   return (
     <>
       <View style={styles.sectionHeader}>
-        <Text style={styles.groupLabel}>{t("new_species")}</Text>
+        <Text style={styles.groupLabel} testID="new-species-title">
+          {t("new_species")}
+          {newTotal > 0 ? ` · ${newTotal}` : ""}
+        </Text>
         <TouchableOpacity
           onPress={() =>
             navigation.navigate("Stat", {

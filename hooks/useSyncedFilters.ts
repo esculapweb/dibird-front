@@ -135,6 +135,8 @@ export const useSyncedFilters = <RouteName extends ScreenWithFiltersOnly>({
         return { ...filters, source: null };
       case "has_photo":
         return { ...filters, has_photo: null };
+      case "first_seen":
+        return { ...filters, first_seen: null };
       case "radius":
         return { ...filters, radius: null };
       default:

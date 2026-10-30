@@ -22,11 +22,15 @@ jest.mock("../../ui/Svgs", () => {
   return { BirdSVG: () => <View testID="ns-image-placeholder" /> };
 });
 jest.mock("../../../hooks/useList", () => ({ useList: jest.fn() }));
+jest.mock("../../../hooks/useActivity", () => ({
+  useActivity: jest.fn(() => ({ data: undefined })),
+}));
 jest.mock("../../../util/fetches", () => ({ fetchStat: jest.fn() }));
 
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { createNavigationMock } from "../../../screens/test-utils";
 import { useList } from "../../../hooks/useList";
+import { useActivity } from "../../../hooks/useActivity";
 import { fetchStat } from "../../../util/fetches";
 import { formatDateShort } from "../../../util/helpers";
 import NewSpecies from "../NewSpecies";
@@ -200,4 +204,21 @@ it("opens the species page from the thumbnail, the row still opening the observa
 
   expect(mockOpenSpecies).toHaveBeenCalledWith("blue-tit", "new_species");
   expect(mockNavigation.navigate).not.toHaveBeenCalled();
+});
+
+describe("new species count", () => {
+  it("shows the period's total from the activity query next to the title", async () => {
+    (useActivity as jest.Mock).mockReturnValue({ data: { data: [], meta: { total: 12 } } });
+    await render(<NewSpecies filters={{ territory: 5 }} filtersLoaded />);
+
+    expect(useActivity).toHaveBeenCalledWith({ territory: 5 }, "newSpecies");
+    expect(screen.getByTestId("new-species-title")).toHaveTextContent("new_species · 12");
+  });
+
+  it("shows the bare title while the count is unknown", async () => {
+    (useActivity as jest.Mock).mockReturnValue({ data: undefined });
+    await render(<NewSpecies filters={{}} filtersLoaded />);
+
+    expect(screen.getByTestId("new-species-title")).toHaveTextContent("new_species");
+  });
 });

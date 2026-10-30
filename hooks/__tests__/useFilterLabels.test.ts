@@ -113,6 +113,16 @@ describe("private/source/radius", () => {
     expect(result.current.getFilterLabel("has_photo", false)).toEqual(["section_photos", "no"]);
   });
 
+  it("labels the first-seen window from the activity chart", async () => {
+    const { result } = await renderHook(() => useFilterLabels(5));
+    expect(
+      result.current.getFilterLabel("first_seen", { from: "2026-05-04", to: "2026-05-10" }),
+    ).toEqual(["filter_first_seen", "5/4/2026 – 5/10/2026"]);
+    expect(
+      result.current.getFilterLabel("first_seen", { from: "2026-05-04", to: "2026-05-04" }),
+    ).toEqual(["filter_first_seen", "5/4/2026"]);
+  });
+
   it("spells the radius out in kilometres", async () => {
     const { result } = await renderHook(() => useFilterLabels(5));
     expect(result.current.getFilterLabel("radius", 50)).toEqual(["radius", "50 km"]);

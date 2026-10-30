@@ -94,7 +94,7 @@ describe("on the personal lists", () => {
 
   it("marks a seen bird and dims an unseen one", async () => {
     await renderTile({ seen: true, onToggleSeen: jest.fn() });
-    expect(screen.getByText("checkmark-circle")).toBeOnTheScreen();
+    expect(screen.getByText("checkmark")).toBeOnTheScreen();
     expect(
       StyleSheet.flatten(screen.getByTestId("tile").props.style).opacity,
     ).toBeUndefined();
