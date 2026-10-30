@@ -4,6 +4,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import api from "../services/api";
 import {
   isoToFlagEmoji,
+  getFullVersion,
   buildDateParams,
   cleanFilters,
   roundCoords,
@@ -128,6 +129,7 @@ import {
   BlockedUser,
   ReportReason,
   ReportTarget,
+  ContactMessage,
 } from "../types";
 
 export const exportProfileData = async (): Promise<void> => {
@@ -845,6 +847,22 @@ export const deleteObservationPhoto = (id: number) =>
 // that only reached the local database would leave the user believing the
 // content is gone while nobody has been told, and a block is what the feed's
 // own queryset is filtered by — it has to reach the server to mean anything.
+// Public on the backend (no app key, no auth): the website posts the same
+// form. The hidden `phone` honeypot of the web form is not sent — there is no
+// bot filling the app UI, and a non-empty value would be silently dropped.
+// The version and platform go along for bug reports; the website leaves them
+// empty. A signed-in sender is linked to the message by the Bearer token the
+// interceptor adds anyway.
+export const sendContactMessage = async (
+  data: ContactMessage,
+): Promise<void> => {
+  await api.post("/api/contact/", {
+    ...data,
+    app_version: getFullVersion(),
+    platform: `${Platform.OS} ${Platform.Version}`,
+  });
+};
+
 export const reportContent = async (
   target: ReportTarget,
   reason: ReportReason,

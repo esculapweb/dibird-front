@@ -1467,3 +1467,25 @@ describe("taxonomy catalogue", () => {
     });
   });
 });
+
+// The backend keeps the version and platform with the message and prints them
+// in the letter — that is what makes a bug report from the app actionable.
+describe("sendContactMessage", () => {
+  it("posts the form with the app version and platform", async () => {
+    (api.post as jest.Mock).mockResolvedValue({});
+    const message = {
+      name: "Jane",
+      email: "jane@example.com",
+      subject: "Hi",
+      message: "Hello",
+    };
+
+    await fetches.sendContactMessage(message);
+
+    expect(api.post).toHaveBeenCalledWith("/api/contact/", {
+      ...message,
+      app_version: expect.any(String),
+      platform: `${Platform.OS} ${Platform.Version}`,
+    });
+  });
+});

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import Toast from "react-native-toast-message";
 
 import { useTheme, ThemeColors } from "../store/theme-context";
@@ -9,8 +9,7 @@ import Layout from "../components/ui/Layout";
 import Logo from "../components/ui/Logo";
 import AnimatedLoadingButton from "../components/ui/AnimatedLoadingButton";
 import { useApiError } from "../hooks/useApiError";
-import { AuthStackRouteProp } from "../types";
-import { openSupportEmail } from "../util/openSupportEmail";
+import { AuthStackNavigationProp, AuthStackRouteProp } from "../types";
 import { requestPasswordReset, resendVerificationEmail } from "../util/auth";
 
 /**
@@ -23,6 +22,7 @@ import { requestPasswordReset, resendVerificationEmail } from "../util/auth";
 const CheckEmailScreen = () => {
   const { Colors } = useTheme();
   const { t } = useTranslation();
+  const navigation = useNavigation<AuthStackNavigationProp>();
   const route = useRoute<AuthStackRouteProp<"CheckEmail">>();
   const { showErrorToast } = useApiError();
   const styles = stylesFn(Colors);
@@ -67,7 +67,9 @@ const CheckEmailScreen = () => {
           {t("verification_sent_before")}
           <Text
             style={{ color: Colors.main100, textDecorationLine: "underline" }}
-            onPress={openSupportEmail}
+            onPress={() =>
+              navigation.navigate("Contact", { prefillEmail: email })
+            }
           >
             {t("verification_sent_link")}
           </Text>

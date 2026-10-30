@@ -41,6 +41,7 @@ import CommunityScreen from "../screens/CommunityScreen";
 import CommunityDetailScreen from "../screens/CommunityDetailScreen";
 import OnboardingScreen from "../screens/OnboardingScreen";
 import AboutScreen from "../screens/AboutScreen";
+import ContactScreen from "../screens/ContactScreen";
 
 import { useAuth, setOnLogout } from "../store/auth-context";
 import { useProfile } from "../store/profile-context";
@@ -297,6 +298,11 @@ const AppNavigator = () => {
         name="Terms"
         component={StaticScreen}
         options={{ title: t("terms_of_service") }}
+      />
+      <Stack.Screen
+        name="Contact"
+        component={ContactScreen}
+        options={{ title: t("settings_send_feedback") }}
       />
 
       <Stack.Screen

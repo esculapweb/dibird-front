@@ -8,7 +8,6 @@ import { Row, Section } from "../components/Settings/SettingsList";
 import { useTheme } from "../store/theme-context";
 import { AppDrawerNavigationProp } from "../types";
 import { Config } from "../constants/config";
-import { openSupportEmail } from "../util/openSupportEmail";
 import { openDonatePage } from "../util/openDonatePage";
 import { getFullVersion } from "../util/helpers";
 import { track } from "../services/analytics";
@@ -54,7 +53,7 @@ const AboutScreen = () => {
         <Row
           icon="chatbubble-outline"
           label={t("settings_send_feedback")}
-          onPress={openSupportEmail}
+          onPress={() => navigation.navigate("Contact", undefined)}
           hideChevron
         />
         {/* Opens the site in the browser — see openDonatePage on why the wallets

@@ -1214,6 +1214,7 @@ export type AuthStackParamList = CatalogParamList & {
   ResetPassword: { uid: string; token: string };
   Privacy: undefined;
   Terms: undefined;
+  Contact: ContactScreenParams;
 };
 
 /**
@@ -1222,6 +1223,19 @@ export type AuthStackParamList = CatalogParamList & {
  * link — the wording and the resend endpoint differ, the screen does not.
  */
 export type CheckEmailMode = "signup" | "reset";
+
+// The contact form is open to guests too, so it is declared in both stacks.
+// `prefillEmail` comes from CheckEmail: the person there has no account yet,
+// but the address the letter did not reach is exactly the one to answer.
+export type ContactScreenParams = { prefillEmail?: string } | undefined;
+
+/** Body of `POST /api/contact/` — the same form the website posts. */
+export interface ContactMessage {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}
 
 export interface ScreenWithFilters {
   filtersOverride?: Filters;
@@ -1299,6 +1313,7 @@ export type AppStackParamList = CatalogParamList & {
   Achievements: { highlightId?: string } | undefined;
   Privacy: undefined;
   Terms: undefined;
+  Contact: ContactScreenParams;
   BlockedUsers: undefined;
   ChangePassword: undefined;
   Emails: undefined;

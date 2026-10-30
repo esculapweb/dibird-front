@@ -28,6 +28,12 @@ interface InputProps {
   placeholder?: string;
   textContentType?: TextInputProps["textContentType"];
   autoComplete?: TextInputProps["autoComplete"];
+  // Off by default: most inputs here are emails, usernames and passwords.
+  // Free text (a message, a note) wants the keyboard's usual help back.
+  autoCapitalize?: TextInputProps["autoCapitalize"];
+  autoCorrect?: boolean;
+  maxLength?: number;
+  minHeight?: number;
   testID?: string;
 }
 
@@ -45,6 +51,10 @@ const Input = ({
   placeholder,
   textContentType,
   autoComplete,
+  autoCapitalize = "none",
+  autoCorrect = false,
+  maxLength,
+  minHeight,
   testID,
 }: InputProps) => {
   const { Colors } = useTheme();
@@ -65,9 +75,14 @@ const Input = ({
       <View style={[styles.inputWrapper, isInvalid && styles.inputInvalid]}>
         <TextInput
           testID={testID}
-          style={[styles.input, isInvalid && styles.inputInvalid]}
-          autoCapitalize="none"
-          autoCorrect={false}
+          style={[
+            styles.input,
+            isInvalid && styles.inputInvalid,
+            minHeight !== undefined && { minHeight, textAlignVertical: "top" },
+          ]}
+          autoCapitalize={autoCapitalize}
+          autoCorrect={autoCorrect}
+          maxLength={maxLength}
           keyboardType={keyboardType}
           secureTextEntry={isSecure}
           onChangeText={onUpdateValue}

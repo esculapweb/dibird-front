@@ -16,9 +16,7 @@ jest.mock("../../components/ui/Layout", () => {
 });
 jest.mock("@react-navigation/native", () => ({
   useRoute: () => mockRoute,
-}));
-jest.mock("../../util/openSupportEmail", () => ({
-  openSupportEmail: jest.fn(),
+  useNavigation: () => mockNavigation,
 }));
 jest.mock("../../util/auth", () => ({
   requestPasswordReset: jest.fn(),
@@ -35,15 +33,15 @@ jest.mock("react-native-toast-message", () => ({
 }));
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
-import { openSupportEmail } from "../../util/openSupportEmail";
 import {
   requestPasswordReset,
   resendVerificationEmail,
 } from "../../util/auth";
-import { createRouteMock } from "../test-utils";
+import { createNavigationMock, createRouteMock } from "../test-utils";
 import CheckEmailScreen from "../CheckEmailScreen";
 
 const mockShowErrorToast = jest.fn();
+const mockNavigation = createNavigationMock();
 let mockRoute: ReturnType<typeof createRouteMock>;
 
 beforeEach(() => {
@@ -56,7 +54,9 @@ it("renders nothing when no email param was passed", async () => {
   expect(result.toJSON()).toBeNull();
 });
 
-it("shows the confirmation message with the email and opens support on tap", async () => {
+// The address the letter did not reach is the one we can still answer at, so
+// the contact form starts with it filled in.
+it("shows the confirmation message with the email and opens the contact form on tap", async () => {
   mockRoute = createRouteMock("CheckEmail", { email: "jane@example.com" });
   await render(<CheckEmailScreen />);
 
@@ -65,7 +65,9 @@ it("shows the confirmation message with the email and opens support on tap", asy
   ).toBeOnTheScreen();
 
   await fireEvent.press(screen.getByText("verification_sent_link"));
-  expect(openSupportEmail).toHaveBeenCalledTimes(1);
+  expect(mockNavigation.navigate).toHaveBeenCalledWith("Contact", {
+    prefillEmail: "jane@example.com",
+  });
 });
 
 // The screen serves both letters the app can cause, and "send it again" has to
