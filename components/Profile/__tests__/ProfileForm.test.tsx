@@ -37,23 +37,14 @@ jest.mock("../../ui/PrivacyToggle", () => ({
     return null;
   },
 }));
-const mockButtonCapture = jest.fn();
-jest.mock("../../ui/AnimatedLoadingButton", () => {
-  const { TouchableOpacity, Text } = require("react-native");
-  return {
-    __esModule: true,
-    default: (props: { onPress: () => void; loading: boolean; success?: boolean; children: import("react").ReactNode }) => {
-      mockButtonCapture(props);
-      return (
-        <TouchableOpacity testID="submit-button" onPress={props.onPress}>
-          <Text>{props.children}</Text>
-        </TouchableOpacity>
-      );
-    },
-  };
-});
+// Save is a header button now: capture what the form hands to setOptions and
+// read the save button's config straight off the IconsHeader element.
+const mockSetOptions = jest.fn();
+jest.mock("@react-navigation/native", () => ({
+  useNavigation: () => ({ setOptions: mockSetOptions }),
+}));
 
-import { act, fireEvent, render, screen } from "@testing-library/react-native";
+import { act, render } from "@testing-library/react-native";
 import { useProfile } from "../../../store/profile-context";
 import { useDropdownQuery } from "../../../hooks/useDropdownQuery";
 import ProfileForm from "../ProfileForm";
@@ -69,6 +60,16 @@ const dropdownProps = (title: string) =>
   mockDropdownCapture.mock.calls.map((c) => c[0]).reverse().find((p) => p.title === title);
 const privacyProps = (index: number) =>
   mockPrivacyToggleCapture.mock.calls.filter((_, i) => i % 2 === index).at(-1)![0];
+
+const saveButton = () => {
+  const { headerRight } = mockSetOptions.mock.calls.at(-1)![0];
+  return headerRight().props.headerRightBeginning[0];
+};
+const pressSave = async () => {
+  await act(async () => {
+    saveButton().onPress();
+  });
+};
 
 const PROFILE = {
   user_data: { first_name: "Jane", last_name: "Doe", username: "jdoe" },
@@ -92,7 +93,7 @@ beforeEach(() => {
 
 describe("initial values", () => {
   it("starts blank/unset without a loaded profile", async () => {
-    await render(<ProfileForm submitHandler={mockSubmitHandler} loading={false} success={false} />);
+    await render(<ProfileForm submitHandler={mockSubmitHandler} loading={false} />);
     expect(inputProps("first_name").value).toBe("");
     expect(inputProps("last_name").value).toBe("");
     expect(inputProps("username").value).toBe("");
@@ -104,7 +105,7 @@ describe("initial values", () => {
 
   it("seeds every field from the profile once it loads", async () => {
     (useProfile as jest.Mock).mockReturnValue({ profile: PROFILE });
-    await render(<ProfileForm submitHandler={mockSubmitHandler} loading={false} success={false} />);
+    await render(<ProfileForm submitHandler={mockSubmitHandler} loading={false} />);
 
     expect(inputProps("first_name").value).toBe("Jane");
     expect(inputProps("last_name").value).toBe("Doe");
@@ -117,7 +118,7 @@ describe("initial values", () => {
 
   it("does not seed anything while the profile is present but its user_data hasn't loaded yet", async () => {
     (useProfile as jest.Mock).mockReturnValue({ profile: { user_data: undefined } });
-    await render(<ProfileForm submitHandler={mockSubmitHandler} loading={false} success={false} />);
+    await render(<ProfileForm submitHandler={mockSubmitHandler} loading={false} />);
     expect(inputProps("first_name").value).toBe("");
   });
 });
@@ -132,8 +133,8 @@ describe("submit", () => {
   };
 
   it("blocks submission and flags missing required fields (username/territory/timezone)", async () => {
-    await render(<ProfileForm submitHandler={mockSubmitHandler} loading={false} success={false} />);
-    await fireEvent.press(screen.getByTestId("submit-button"));
+    await render(<ProfileForm submitHandler={mockSubmitHandler} loading={false} />);
+    await pressSave();
 
     expect(mockSubmitHandler).not.toHaveBeenCalled();
     expect(inputProps("username").isInvalid).toBe(true);
@@ -142,8 +143,8 @@ describe("submit", () => {
   });
 
   it("clears the dropdown errors once required fields are filled and resubmitted", async () => {
-    await render(<ProfileForm submitHandler={mockSubmitHandler} loading={false} success={false} />);
-    await fireEvent.press(screen.getByTestId("submit-button"));
+    await render(<ProfileForm submitHandler={mockSubmitHandler} loading={false} />);
+    await pressSave();
     expect(dropdownProps("my_country").error).toBe("territory_required");
 
     await fillRequiredFields();
@@ -151,21 +152,21 @@ describe("submit", () => {
       inputProps("first_name").onUpdateValue("Jane");
       inputProps("last_name").onUpdateValue("Doe");
     });
-    await fireEvent.press(screen.getByTestId("submit-button"));
+    await pressSave();
 
     expect(dropdownProps("my_country").error).toBeUndefined();
     expect(dropdownProps("timezone").error).toBeUndefined();
   });
 
   it("never flags first/last name as invalid even when empty", async () => {
-    await render(<ProfileForm submitHandler={mockSubmitHandler} loading={false} success={false} />);
-    await fireEvent.press(screen.getByTestId("submit-button"));
+    await render(<ProfileForm submitHandler={mockSubmitHandler} loading={false} />);
+    await pressSave();
     expect(inputProps("first_name").isInvalid).toBe(false);
     expect(inputProps("last_name").isInvalid).toBe(false);
   });
 
   it("submits a well-formed payload once all required fields are filled", async () => {
-    await render(<ProfileForm submitHandler={mockSubmitHandler} loading={false} success={false} />);
+    await render(<ProfileForm submitHandler={mockSubmitHandler} loading={false} />);
 
     await fillRequiredFields();
     await act(async () => {
@@ -174,7 +175,7 @@ describe("submit", () => {
       privacyProps(0).onChange(true);
     });
 
-    await fireEvent.press(screen.getByTestId("submit-button"));
+    await pressSave();
 
     expect(mockSubmitHandler).toHaveBeenCalledWith({
       first_name: "Jane",
@@ -188,21 +189,25 @@ describe("submit", () => {
   });
 
   it("nulls out the territory when the dropdown value is somehow left as a string", async () => {
-    await render(<ProfileForm submitHandler={mockSubmitHandler} loading={false} success={false} />);
+    await render(<ProfileForm submitHandler={mockSubmitHandler} loading={false} />);
     await act(async () => {
       dropdownProps("my_country").setValue("placeholder" as never);
       dropdownProps("timezone").setValue("UTC");
       inputProps("username").onUpdateValue("jdoe");
     });
 
-    await fireEvent.press(screen.getByTestId("submit-button"));
+    await pressSave();
     expect(mockSubmitHandler).toHaveBeenCalledWith(expect.objectContaining({ territory: null }));
   });
 
-  it("forwards loading/success straight through to the submit button", async () => {
-    await render(<ProfileForm submitHandler={mockSubmitHandler} loading success />);
-    expect(mockButtonCapture).toHaveBeenCalledWith(
-      expect.objectContaining({ loading: true, success: true }),
+  it("puts the save button in the header, disabled with a spinner while loading", async () => {
+    await render(<ProfileForm submitHandler={mockSubmitHandler} loading />);
+    expect(saveButton()).toEqual(
+      expect.objectContaining({
+        testID: "profile-save-button",
+        loading: true,
+        disabled: true,
+      }),
     );
   });
 });
