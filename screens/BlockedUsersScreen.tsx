@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 
 import Layout from "../components/ui/Layout";
-import LoadingOverlay from "../components/ui/LoadingOverlay";
+import { ListSkeleton } from "../components/ui/Skeleton";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
@@ -77,7 +77,12 @@ const BlockedUsersScreen = () => {
     staleTime: StaleTime.TEN_MINUTES,
   });
 
-  if (isLoading) return <LoadingOverlay />;
+  if (isLoading)
+    return (
+      <Layout>
+        <ListSkeleton thumb="circle" thumbSize={40} lines={1} count={4} />
+      </Layout>
+    );
 
   if (isError && !data) {
     return (

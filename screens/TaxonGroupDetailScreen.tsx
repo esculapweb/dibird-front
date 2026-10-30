@@ -15,7 +15,7 @@ import TaxonDescendantsList from "../components/Taxonomy/TaxonDescendantsList";
 import TaxonBreadcrumbs from "../components/Taxonomy/TaxonBreadcrumbs";
 import SpeciesViewSwitch from "../components/Taxonomy/SpeciesViewSwitch";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
-import LoadingOverlay from "../components/ui/LoadingOverlay";
+import TaxonGroupDetailSkeleton from "../components/Taxonomy/TaxonGroupDetailSkeleton";
 import { useTaxonomySort } from "../hooks/useTaxonomySort";
 import { useSpeciesViewMode } from "../hooks/useSpeciesViewMode";
 import { fetchTaxonDetail } from "../util/fetches";
@@ -124,7 +124,11 @@ const TaxonGroupDetailScreen = () => {
   // Waiting on the stored layout too, so a gallery user doesn't get the rows
   // for a frame first.
   if (isLoading || !data || data.redirect || !speciesView.ready)
-    return <LoadingOverlay />;
+    return (
+      <Layout>
+        <TaxonGroupDetailSkeleton />
+      </Layout>
+    );
 
   // Genera carry no illustration of their own, so borrow the first species
   // photo in the subtree rather than showing an empty frame.

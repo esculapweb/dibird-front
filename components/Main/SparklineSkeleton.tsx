@@ -1,72 +1,64 @@
 import { View, StyleSheet } from "react-native";
-import { useTheme } from "../../store/theme-context";
+
+import { useTheme, ThemeColors } from "../../store/theme-context";
+import { Bone, SkeletonGroup } from "../ui/Skeleton";
 
 const H_PAD = 16;
 const SPARK_H = 52;
 const BAR_COUNT = 20;
 
+// A fixed wave so the placeholder reads as a chart, not a row of equal bars.
+const BAR_HEIGHTS = Array.from({ length: BAR_COUNT }, (_, i) =>
+  Math.abs(22 + Math.sin(i * 0.8) * 18),
+);
+
 export const SparklineSkeleton = () => {
   const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
 
   return (
-    <View
-      style={[
-        styles.card,
-        { backgroundColor: Colors.primary100, borderColor: Colors.border },
-      ]}
-    >
+    <SkeletonGroup style={styles.card}>
       <View style={styles.head}>
-        <View
-          style={[styles.pill, { width: 120, backgroundColor: Colors.border }]}
-        />
-        <View
-          style={[styles.pill, { width: 80, backgroundColor: Colors.border }]}
-        />
+        <Bone width={120} height={13} />
+        <Bone width={80} height={13} />
       </View>
 
-      {/* bars */}
       <View style={styles.bars}>
-        {Array.from({ length: BAR_COUNT }).map((_, i) => {
-          const h = 8 + Math.sin(i * 0.8) * 18 + 14;
-          return (
-            <View
-              key={i}
-              style={{
-                flex: 1,
-                height: Math.abs(h),
-                borderRadius: 3,
-                backgroundColor: Colors.border,
-                opacity: 0.5 + (i / BAR_COUNT) * 0.5,
-              }}
-            />
-          );
-        })}
+        {BAR_HEIGHTS.map((h, i) => (
+          <Bone
+            key={i}
+            height={h}
+            radius={3}
+            baseOpacity={0.5 + (i / BAR_COUNT) * 0.5}
+            style={styles.bar}
+          />
+        ))}
       </View>
-    </View>
+    </SkeletonGroup>
   );
 };
 
-const styles = StyleSheet.create({
-  card: {
-    marginHorizontal: H_PAD,
-    marginBottom: 12,
-    borderRadius: 14,
-    borderWidth: 0.5,
-    padding: 16,
-  },
-  head: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
-  pill: {
-    height: 13,
-    borderRadius: 6,
-  },
-  bars: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    height: SPARK_H,
-    gap: 2,
-  },
-});
+const stylesFn = (Colors: ThemeColors) =>
+  StyleSheet.create({
+    card: {
+      marginHorizontal: H_PAD,
+      marginBottom: 12,
+      borderRadius: 14,
+      borderWidth: 0.5,
+      padding: 16,
+      backgroundColor: Colors.primary100,
+      borderColor: Colors.border,
+    },
+    head: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: 12,
+    },
+    bars: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      height: SPARK_H,
+      gap: 2,
+    },
+    bar: { flex: 1, width: undefined },
+  });

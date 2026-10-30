@@ -173,10 +173,10 @@ afterEach(() => {
   Platform.OS = originalOS;
 });
 
-it("shows a loading overlay while there's no observation yet", async () => {
+it("shows a skeleton while there's no observation yet", async () => {
   mockItem({ data: undefined, isLoading: true });
   await render(<CommunityDetailScreen />);
-  expect(screen.getByTestId("loading-overlay")).toBeOnTheScreen();
+  expect(screen.getByTestId("observation-detail-skeleton")).toBeOnTheScreen();
   expect(mockNavigation.setOptions).not.toHaveBeenCalled();
 });
 
@@ -264,7 +264,7 @@ describe("own record", () => {
     expect(mockNavigation.replace).toHaveBeenCalledWith("ObservationDetail", {
       observationId: 1,
     });
-    expect(screen.getByTestId("loading-overlay")).toBeOnTheScreen();
+    expect(screen.getByTestId("observation-detail-skeleton")).toBeOnTheScreen();
     expect(screen.queryByText("Blackbird")).not.toBeOnTheScreen();
   });
 

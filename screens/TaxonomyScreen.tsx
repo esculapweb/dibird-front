@@ -11,7 +11,7 @@ import IconsHeader from "../components/ui/IconsHeader";
 import { overflowButton } from "../components/ui/overflowMenu";
 import TaxonChildrenList from "../components/Taxonomy/TaxonChildrenList";
 import SpeciesViewSwitch from "../components/Taxonomy/SpeciesViewSwitch";
-import LoadingOverlay from "../components/ui/LoadingOverlay";
+import { ListSkeleton } from "../components/ui/Skeleton";
 import TaxonFilterSheet, {
   hasTraitFilters,
 } from "../components/Taxonomy/TaxonFilterSheet";
@@ -189,7 +189,12 @@ const TaxonomyScreen = () => {
 
   // Held back until the stored layout is known, so a gallery user doesn't
   // see the rows for a frame before the grid replaces them.
-  if (canShowPhotos && !speciesView.ready) return <LoadingOverlay />;
+  if (canShowPhotos && !speciesView.ready)
+    return (
+      <Layout>
+        <ListSkeleton />
+      </Layout>
+    );
 
   return (
     <Layout>

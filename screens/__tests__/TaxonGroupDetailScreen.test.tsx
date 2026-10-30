@@ -257,7 +257,7 @@ it("redirects to the canonical segment via setParams when the API returns a redi
   expect(mockNavigation.setParams).toHaveBeenCalledWith({
     segment: "skopinye",
   });
-  expect(screen.getByTestId("loading-overlay")).toBeOnTheScreen();
+  expect(screen.getByTestId("taxon-group-detail-skeleton")).toBeOnTheScreen();
 });
 
 describe("photo grid", () => {

@@ -20,7 +20,7 @@ import { track } from "../services/analytics";
 
 import Layout from "../components/ui/Layout";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
-import LoadingOverlay from "../components/ui/LoadingOverlay";
+import SpeciesDetailSkeleton from "../components/Taxonomy/SpeciesDetailSkeleton";
 import PhotoViewerModal from "../components/ui/PhotoViewerModal";
 import Section from "../components/ui/Section";
 import IconsHeader from "../components/ui/IconsHeader";
@@ -306,7 +306,12 @@ const SpeciesDetailScreen = () => {
       />
     );
 
-  if (isLoading || !data || data.redirect) return <LoadingOverlay />;
+  if (isLoading || !data || data.redirect)
+    return (
+      <Layout>
+        <SpeciesDetailSkeleton />
+      </Layout>
+    );
 
   // Down into another bird: a new page on top of this one, so "back" returns
   // to the bird it was reached from.

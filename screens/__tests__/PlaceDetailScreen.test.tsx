@@ -169,10 +169,10 @@ it("retries the place sync queue on focus", async () => {
   expect(runPlaceSync).toHaveBeenCalledTimes(1);
 });
 
-it("shows a loading overlay while there's no place yet", async () => {
+it("shows a skeleton while there's no place yet", async () => {
   mockPlaceItem({ data: undefined, isLoading: true });
   await render(<PlaceDetailScreen />);
-  expect(screen.getByTestId("loading-overlay")).toBeOnTheScreen();
+  expect(screen.getByTestId("place-detail-skeleton")).toBeOnTheScreen();
 });
 
 it("shows an error overlay with retry when there's an error and no cached place", async () => {

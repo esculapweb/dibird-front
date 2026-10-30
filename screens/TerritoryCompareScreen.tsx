@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 
 import { track } from "../services/analytics";
 
+import { ListSkeleton } from "../components/ui/Skeleton";
 import Layout from "../components/ui/Layout";
 import Tabs from "../components/ui/Tabs";
 import ItemsList from "../components/ui/ItemsList";
@@ -318,7 +319,7 @@ const TerritoryCompareScreen = () => {
       message={t("compare_territories_hint")}
     />
   ) : isLoading ? (
-    <EmptyState icon="hourglass-outline" message={t("loading")} />
+    <ListSkeleton thumbSize={44} count={6} padded={false} />
   ) : isError ? (
     <EmptyState
       icon="alert-circle-outline"

@@ -208,10 +208,19 @@ const renderHeaderTitle = async () => {
   await render(headerTitle());
 };
 
-it("shows a loading overlay while there's no data yet", async () => {
+it("shows a skeleton while there's no data yet", async () => {
   mockListQuery({ data: undefined, isLoading: true });
   await render(<ListScreen {...defaultProps()} />);
-  expect(screen.getByTestId("loading-overlay")).toBeOnTheScreen();
+  expect(screen.getByTestId("list-skeleton")).toBeOnTheScreen();
+});
+
+it("keeps topEl in place while the first page loads, so it doesn't jump", async () => {
+  mockListQuery({ data: undefined, isLoading: true });
+  await render(
+    <ListScreen {...defaultProps()} topEl={<Text>view-switch</Text>} />,
+  );
+  expect(screen.getByText("view-switch")).toBeOnTheScreen();
+  expect(screen.queryByTestId("items-list")).not.toBeOnTheScreen();
 });
 
 it("shows an error overlay with retry when the first page fails and there's no data yet", async () => {

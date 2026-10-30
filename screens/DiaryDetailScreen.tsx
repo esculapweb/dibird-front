@@ -19,7 +19,8 @@ import {
   isoToFlagEmoji,
   toDateOnly,
 } from "../util/helpers";
-import LoadingOverlay from "../components/ui/LoadingOverlay";
+import { ListSkeleton } from "../components/ui/Skeleton";
+import Layout from "../components/ui/Layout";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import {
   useDiaryItem,
@@ -441,7 +442,12 @@ const DiaryDetailScreen = () => {
     );
   }
 
-  if (isLoading || !diary) return <LoadingOverlay />;
+  if (isLoading || !diary)
+    return (
+      <Layout>
+        <ListSkeleton />
+      </Layout>
+    );
 
   return (
     <ListScreen

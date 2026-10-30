@@ -17,7 +17,8 @@ import SpeciesTile, {
   PHOTO_GRID_COLUMNS,
 } from "../components/Taxonomy/SpeciesTile";
 import SpeciesViewSwitch from "../components/Taxonomy/SpeciesViewSwitch";
-import LoadingOverlay from "../components/ui/LoadingOverlay";
+import { ListSkeleton } from "../components/ui/Skeleton";
+import Layout from "../components/ui/Layout";
 import Tabs from "../components/ui/Tabs";
 import { useFilters } from "../store/filters-context";
 import { useProfile } from "../store/profile-context";
@@ -471,7 +472,12 @@ const StatScreen = () => {
 
   // The tree and the flat list behind the grid are cached under different
   // keys — wait for the stored layout rather than fetch the wrong one first.
-  if (!speciesView.ready) return <LoadingOverlay />;
+  if (!speciesView.ready)
+    return (
+      <Layout>
+        <ListSkeleton />
+      </Layout>
+    );
 
   const viewSwitchProps = {
     isPhotos,

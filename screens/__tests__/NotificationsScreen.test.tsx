@@ -93,10 +93,10 @@ beforeEach(() => {
   mockQuery();
 });
 
-it("shows a loading indicator while the first page is loading", async () => {
+it("shows a skeleton while the first page is loading", async () => {
   mockQuery({ isLoading: true });
   await render(<NotificationsScreen />);
-  expect(screen.getByTestId("loading-overlay")).toBeOnTheScreen();
+  expect(screen.getByTestId("list-skeleton")).toBeOnTheScreen();
 });
 
 it("renders notifications flattened from all pages", async () => {

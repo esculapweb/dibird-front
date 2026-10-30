@@ -346,7 +346,7 @@ it("redirects to the canonical segment via setParams when the API returns a redi
   expect(mockNavigation.setParams).toHaveBeenCalledWith({
     segment: "argentina",
   });
-  expect(screen.getByTestId("loading-overlay")).toBeOnTheScreen();
+  expect(screen.getByTestId("territory-detail-skeleton")).toBeOnTheScreen();
 });
 
 it("shares the country at the site's own path", async () => {

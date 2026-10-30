@@ -19,7 +19,7 @@ import { useNavigation, RouteProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import LoadingOverlay from "../components/ui/LoadingOverlay";
+import { Bone, ListSkeleton, SkeletonGroup } from "../components/ui/Skeleton";
 import FilterSheetContent from "../components/Filters/FilterSheetContent";
 import SortSheetContent from "../components/Sort/SortSheetContent";
 import IconsHeader from "../components/ui/IconsHeader";
@@ -404,7 +404,17 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
         logo
       />
     );
-  if (isLoading || !data) return <LoadingOverlay />;
+  // The first page renders inside the normal layout rather than replacing it,
+  // so the view switch, filter chips and FAB stay put when the items arrive.
+  const isInitialLoading = isLoading || !data;
+  // A custom body (the map) gets a plain block rather than rows.
+  const loadingContent = renderContent ? (
+    <SkeletonGroup style={styles.blockSkeleton} testID="list-skeleton">
+      <Bone height="100%" radius={0} />
+    </SkeletonGroup>
+  ) : (
+    <ListSkeleton numColumns={numColumns} />
+  );
 
   return (
     <Layout
@@ -442,7 +452,9 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
           allowed={allowedFilters}
         />
       )}
-      {renderContent ? (
+      {isInitialLoading ? (
+        loadingContent
+      ) : renderContent ? (
         renderContent(items, {
           type: emptyType,
           onClear: handleClearFiltersSearch,
@@ -472,6 +484,7 @@ export default ListScreen;
 const stylesFn = (Colors: ThemeColors, fabBottomOffset: number) =>
   StyleSheet.create({
     topEl: { paddingTop: 8 },
+    blockSkeleton: { flex: 1 },
     fab: {
       position: "absolute",
       bottom: fabBottomOffset,

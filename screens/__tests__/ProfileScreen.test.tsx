@@ -105,10 +105,10 @@ beforeEach(() => {
   mockProfileContext();
 });
 
-it("shows a loading overlay while the profile is loading", async () => {
+it("shows a skeleton while the profile is loading", async () => {
   mockProfileContext({ profile: null, profileLoading: true });
   await render(<ProfileScreen />);
-  expect(screen.getByTestId("loading-overlay")).toBeOnTheScreen();
+  expect(screen.getByTestId("profile-skeleton")).toBeOnTheScreen();
 });
 
 it("shows an error overlay with retry when there is no profile and loading finished", async () => {

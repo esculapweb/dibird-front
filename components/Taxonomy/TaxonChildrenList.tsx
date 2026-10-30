@@ -6,7 +6,7 @@ import { useNavigation } from "@react-navigation/native";
 import ItemsList from "../ui/ItemsList";
 import SearchInput from "../ui/SearchInput";
 import ErrorOverlay from "../Error/ErrorOverlay";
-import LoadingOverlay from "../ui/LoadingOverlay";
+import { ListSkeleton } from "../ui/Skeleton";
 import TaxonRow from "./TaxonRow";
 import SpeciesTile, { PHOTO_GRID_COLUMNS } from "./SpeciesTile";
 import TaxonFilterChips from "./TaxonFilterChips";
@@ -168,7 +168,8 @@ const TaxonChildrenList = ({
       />
     );
 
-  if (isLoading || !data) return <LoadingOverlay />;
+  if (isLoading || !data)
+    return <ListSkeleton numColumns={isPhotos ? PHOTO_GRID_COLUMNS : 1} />;
 
   return (
     <ItemsList

@@ -12,7 +12,7 @@ import { overflowButton } from "../components/ui/overflowMenu";
 import ItemsList from "../components/ui/ItemsList";
 import SearchInput from "../components/ui/SearchInput";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
-import LoadingOverlay from "../components/ui/LoadingOverlay";
+import { ListSkeleton } from "../components/ui/Skeleton";
 import TerritoryRow from "../components/Territory/TerritoryRow";
 import RegionFilterChips from "../components/Territory/RegionFilterChips";
 import { useList } from "../hooks/useList";
@@ -154,7 +154,12 @@ const TerritoryListScreen = () => {
       />
     );
 
-  if (isLoading || !data) return <LoadingOverlay />;
+  if (isLoading || !data)
+    return (
+      <Layout>
+        <ListSkeleton thumbSize={40} lines={1} />
+      </Layout>
+    );
 
   return (
     <Layout>

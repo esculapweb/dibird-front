@@ -4,7 +4,8 @@ import { useTranslation } from "react-i18next";
 import ProfileForm from "../components/Profile/ProfileForm";
 import FailedEditBanner from "../components/Profile/FailedEditBanner";
 import { useProfile } from "../store/profile-context";
-import LoadingOverlay from "../components/ui/LoadingOverlay";
+import ProfileSkeleton from "../components/Profile/ProfileSkeleton";
+import Layout from "../components/ui/Layout";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import FormWrapper from "../components/ui/FormWrapper";
 import { useInvalidateProfile } from "../hooks/Profile/useUpdateProfile";
@@ -65,7 +66,12 @@ const extractApiError = useCallback<ErrorExtractor>(
     }
   };
 
-  if (profileLoading) return <LoadingOverlay />;
+  if (profileLoading)
+    return (
+      <Layout>
+        <ProfileSkeleton />
+      </Layout>
+    );
 
   if (!profile)
     return (

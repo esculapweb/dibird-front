@@ -5,6 +5,7 @@ import { useNavigation } from "@react-navigation/native";
 
 import WidgetError from "./WidgetError";
 import { useTheme, ThemeColors } from "../../store/theme-context";
+import SpeciesRowsSkeleton from "./SpeciesRowsSkeleton";
 import { useList } from "../../hooks/useList";
 import SpeciesThumb from "../Taxonomy/SpeciesThumb";
 import { useOpenSpecies } from "../../hooks/useOpenSpecies";
@@ -84,50 +85,7 @@ const NewSpecies: FC<NewSpeciesProps> = ({ filters, filtersLoaded }) => {
         <View style={styles.sectionHeader}>
           <Text style={styles.groupLabel}>{t("new_species")}</Text>
         </View>
-        <View style={styles.nsList}>
-          {[0, 1, 2].map((i) => (
-            <View
-              key={i}
-              style={[styles.nsRow, i < 2 ? styles.nsRowDivider : null]}
-            >
-              <View
-                style={[
-                  styles.image,
-                  { opacity: 0.2, backgroundColor: Colors.textMain },
-                ]}
-              />
-              <View style={[styles.nsNames, { gap: 6 }]}>
-                <View
-                  style={{
-                    height: 15,
-                    width: "60%",
-                    borderRadius: 4,
-                    backgroundColor: Colors.textMain,
-                    opacity: 0.2,
-                  }}
-                />
-                <View
-                  style={{
-                    height: 13,
-                    width: "40%",
-                    borderRadius: 4,
-                    backgroundColor: Colors.textMain,
-                    opacity: 0.1,
-                  }}
-                />
-              </View>
-              <View
-                style={{
-                  height: 13,
-                  width: 40,
-                  borderRadius: 4,
-                  backgroundColor: Colors.textMain,
-                  opacity: 0.2,
-                }}
-              />
-            </View>
-          ))}
-        </View>
+        <SpeciesRowsSkeleton imageSize={IMAGE_SIZE} />
       </>
     );
   }
@@ -241,12 +199,6 @@ const stylesFn = (Colors: ThemeColors) =>
     nsRowDivider: {
       borderBottomWidth: 0.5,
       borderBottomColor: Colors.divider,
-    },
-    image: {
-      width: IMAGE_SIZE,
-      height: IMAGE_SIZE,
-      borderRadius: 12,
-      backgroundColor: Colors.imageBg,
     },
     nsNames: { flex: 1 },
     nsCommon: {

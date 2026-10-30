@@ -1,36 +1,30 @@
 import { StyleSheet, View } from "react-native";
+
 import { useTheme, ThemeColors } from "../../store/theme-context";
+import { Bone, SkeletonGroup } from "../ui/Skeleton";
 
 const H_PAD = 16;
+const CARDS = 4;
 
 const StatsSkeleton = () => {
-  const styles = stylesFn();
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
 
   return (
-    <View style={styles.statsRow}>
-      <StatCardSkeleton />
-      <StatCardSkeleton />
-      <StatCardSkeleton />
-      <StatCardSkeleton />
-    </View>
+    <SkeletonGroup style={styles.statsRow}>
+      {Array.from({ length: CARDS }).map((_, i) => (
+        <View key={i} style={styles.statCard}>
+          <Bone width={68} height={26} radius={8} style={styles.num} />
+          <Bone width={52} height={13} radius={4} baseOpacity={0.7} />
+        </View>
+      ))}
+    </SkeletonGroup>
   );
 };
 
 export default StatsSkeleton;
 
-const StatCardSkeleton = () => {
-  const { Colors } = useTheme();
-  const styles = cardStylesFn(Colors);
-
-  return (
-    <View style={styles.statCard}>
-      <View style={styles.statNumSkeleton} />
-      <View style={styles.statLabelSkeleton} />
-    </View>
-  );
-};
-
-const stylesFn = () =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
     statsRow: {
       flexDirection: "row",
@@ -38,10 +32,6 @@ const stylesFn = () =>
       paddingHorizontal: H_PAD,
       paddingBottom: 12,
     },
-  });
-
-const cardStylesFn = (Colors: ThemeColors) =>
-  StyleSheet.create({
     statCard: {
       flex: 1,
       backgroundColor: Colors.primary100,
@@ -52,19 +42,6 @@ const cardStylesFn = (Colors: ThemeColors) =>
       paddingHorizontal: 4,
       alignItems: "center",
     },
-    statNumSkeleton: {
-      width: 68,
-      height: 26,
-      backgroundColor: Colors.textMain,
-      borderRadius: 8,
-      marginBottom: 6,
-      opacity: 0.2,
-    },
-    statLabelSkeleton: {
-      width: 52,
-      height: 13,
-      backgroundColor: Colors.textMain,
-      borderRadius: 4,
-      opacity: 0.1,
-    },
+    // The bone is wider than a narrow card on small phones; let it shrink.
+    num: { maxWidth: "100%", marginBottom: 6 },
   });

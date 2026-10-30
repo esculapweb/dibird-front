@@ -32,7 +32,7 @@ jest.mock("../../ui/Svgs", () => {
   const { View } = require("react-native");
   return { BirdSVG: () => <View testID="botd-image-placeholder" /> };
 });
-jest.mock("../BirdOfTheDaySceleton", () => {
+jest.mock("../BirdOfTheDaySkeleton", () => {
   const { View } = require("react-native");
   return { __esModule: true, default: () => <View testID="botd-skeleton" /> };
 });

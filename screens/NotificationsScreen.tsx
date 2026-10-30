@@ -7,7 +7,7 @@ import Toast from "react-native-toast-message";
 
 import ItemsList from "../components/ui/ItemsList";
 import NotificationCard from "../components/Notification/NotificationCard";
-import LoadingOverlay from "../components/ui/LoadingOverlay";
+import { ListSkeleton } from "../components/ui/Skeleton";
 import Layout from "../components/ui/Layout";
 import IconsHeader from "../components/ui/IconsHeader";
 import { overflowButton } from "../components/ui/overflowMenu";
@@ -132,7 +132,12 @@ export default function NotificationsScreen() {
     <NotificationCard item={item} onPress={handlePress} />
   );
 
-  if (isLoading) return <LoadingOverlay />;
+  if (isLoading)
+    return (
+      <Layout>
+        <ListSkeleton thumb="circle" thumbSize={40} />
+      </Layout>
+    );
 
   return (
     <Layout>

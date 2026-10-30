@@ -195,10 +195,10 @@ it("retries the observation sync queue on focus", async () => {
   expect(runObservationSync).toHaveBeenCalledTimes(1);
 });
 
-it("shows a loading overlay while there's no observation yet", async () => {
+it("shows a skeleton while there's no observation yet", async () => {
   mockItem({ data: undefined, isLoading: true });
   await render(<ObservationDetailScreen />);
-  expect(screen.getByTestId("loading-overlay")).toBeOnTheScreen();
+  expect(screen.getByTestId("observation-detail-skeleton")).toBeOnTheScreen();
 });
 
 it("shows an error overlay with retry when there's an error and no cached observation", async () => {

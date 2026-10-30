@@ -16,7 +16,7 @@ import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/nativ
 import { useTheme, ThemeColors } from "../store/theme-context";
 import { formatDate, formatDateTime, formatDateLong } from "../util/helpers";
 import { Config } from "../constants/config";
-import LoadingOverlay from "../components/ui/LoadingOverlay";
+import ObservationDetailSkeleton from "../components/Observation/ObservationDetailSkeleton";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import {
   useObservationItem,
@@ -253,7 +253,12 @@ const ObservationDetailScreen = () => {
     );
   }
 
-  if (isLoading || !observation) return <LoadingOverlay />;
+  if (isLoading || !observation)
+    return (
+      <Layout>
+        <ObservationDetailSkeleton />
+      </Layout>
+    );
 
   const name =
     observation.species_data.name_lang || observation.species_data.name;

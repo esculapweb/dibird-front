@@ -1,25 +1,26 @@
 import { StyleSheet, View } from "react-native";
+
 import { useTheme, ThemeColors } from "../../store/theme-context";
+import { Bone, SkeletonGroup } from "../ui/Skeleton";
 
 const H_PAD = 16;
 
 const ChecklistHeroSkeleton = () => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
+  // The card is accent-coloured, so the bones are faint white rather than
+  // the neutral grey used on plain cards.
+  const bone = { color: Colors.primary100, baseOpacity: 0.2 };
 
   return (
-    <View style={styles.clCard}>
-      <View style={styles.clTagSkeleton} />
-
-      <View style={styles.clRow}>
-        <View style={styles.clNumRow}>
-          <View style={styles.clNumSkeleton} />
-          <View style={styles.clOfSkeleton} />
-        </View>
+    <SkeletonGroup style={styles.clCard}>
+      <Bone width="68%" height={16} {...bone} style={styles.tag} />
+      <View style={styles.clNumRow}>
+        <Bone width={92} height={42} radius={10} {...bone} />
+        <Bone width={78} height={18} {...bone} style={styles.of} />
       </View>
-
-      <View style={styles.clBarBg}></View>
-    </View>
+      <View style={styles.clBarBg} />
+    </SkeletonGroup>
   );
 };
 
@@ -34,51 +35,17 @@ const stylesFn = (Colors: ThemeColors) =>
       borderRadius: 14,
       padding: 18,
     },
-
-    clTagSkeleton: {
-      width: "68%",
-      height: 16,
-      backgroundColor: Colors.primary100,
-      borderRadius: 6,
-      marginBottom: 12,
-      opacity: 0.2,
-    },
-
-    clRow: {
-      flexDirection: "row",
-      alignItems: "flex-end",
-      justifyContent: "space-between",
-    },
-
+    tag: { marginBottom: 12 },
     clNumRow: {
       flexDirection: "row",
-      alignItems: "baseline",
+      alignItems: "flex-end",
       gap: 8,
     },
-
-    clNumSkeleton: {
-      width: 92,
-      height: 42,
-      backgroundColor: Colors.primary100,
-      borderRadius: 10,
-      opacity: 0.2,
-    },
-
-    clOfSkeleton: {
-      width: 78,
-      height: 18,
-      backgroundColor: Colors.primary100,
-      borderRadius: 6,
-      marginBottom: 4,
-      opacity: 0.2,
-    },
-
+    of: { marginBottom: 4 },
     clBarBg: {
       marginTop: 16,
       height: 5,
       borderRadius: 3,
-      overflow: "hidden",
       backgroundColor: Colors.mainProgressBg,
     },
-
   });
