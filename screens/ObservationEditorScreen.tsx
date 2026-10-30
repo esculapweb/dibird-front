@@ -44,6 +44,7 @@ import {
   ObservationPhoto,
   PlaceData,
   SpeciesDropdownItem,
+  Coords,
 } from "../types";
 
 const FORM_FIELDS = [
@@ -420,7 +421,7 @@ const ObservationEditorScreen = () => {
     observationWithParsedDate?.id,
   ]);
 
-  const handleAddNewPlace = useCallback(() => {
+  const handleAddNewPlace = useCallback((initialCoords?: Coords) => {
     setTypedNavigationCallback<[number, number, PlaceData]>(
       "onPlaceCreated",
       (newPlaceId, newPlaceTerritory, newPlaceData) => {
@@ -453,7 +454,10 @@ const ObservationEditorScreen = () => {
         }
       },
     );
-    navigation.navigate("PlaceEditor", { returnToScreen: "ObservationEditor" });
+    navigation.navigate("PlaceEditor", {
+      returnToScreen: "ObservationEditor",
+      initialCoords,
+    });
   }, [navigation, territoryValue]);
 
   const handleEditDiary = useCallback(() => {

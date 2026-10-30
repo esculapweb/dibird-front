@@ -71,6 +71,8 @@ const mockSourceCapture = jest.fn();
 const mockLayerCapture = jest.fn();
 const mockFlyTo = jest.fn();
 const mockProject = jest.fn();
+const mockQueryRenderedFeatures = jest.fn();
+const mockMapCapture = jest.fn();
 const mockGetClusterExpansionZoom = jest.fn();
 jest.mock("@maplibre/maplibre-react-native", () => {
   const { View } = require("react-native");
@@ -80,7 +82,12 @@ jest.mock("@maplibre/maplibre-react-native", () => {
       ref?: { current: unknown };
       children?: React.ReactNode;
     }) => {
-      if (props.ref) props.ref.current = { project: mockProject };
+      mockMapCapture(props);
+      if (props.ref)
+        props.ref.current = {
+          project: mockProject,
+          queryRenderedFeatures: mockQueryRenderedFeatures,
+        };
       return <View testID="map-view">{props.children}</View>;
     },
     Camera: (props: { ref?: { current: unknown } }) => {
@@ -449,5 +456,99 @@ describe("PlacesMap", () => {
 
     expect(onSelectPlace).not.toHaveBeenCalled();
     expect(mockFlyTo).not.toHaveBeenCalled();
+  });
+});
+
+describe("picker mode", () => {
+  const FC = {
+    type: "FeatureCollection" as const,
+    features: [
+      {
+        type: "Feature" as const,
+        geometry: { type: "Point" as const, coordinates: [2.3, 48.8] as [number, number] },
+        properties: {
+          id: 7,
+          name: "Pond",
+          observation_count: 0,
+          species_count: 0,
+          diary_place_count: 0,
+        },
+      },
+    ],
+  };
+  const mockOnPressEmpty = jest.fn();
+  const pressMap = async () => {
+    const { onPress } = mockMapCapture.mock.calls.at(-1)![0] as {
+      onPress: (e: { nativeEvent: unknown }) => void;
+    };
+    await act(async () =>
+      onPress({ nativeEvent: { lngLat: [2.5, 48.9], point: [100, 200] } }),
+    );
+  };
+
+  it("plots a ready-made collection instead of places", async () => {
+    await render(<PlacesMap featureCollection={FC} onSelectPlace={jest.fn()} />);
+    expect(mockSourceCapture.mock.calls.at(-1)![0].data).toBe(FC);
+  });
+
+  it("rings the selected place and hides the legend on request", async () => {
+    await render(
+      <PlacesMap
+        featureCollection={FC}
+        onSelectPlace={jest.fn()}
+        selectedId={7}
+        showLegend={false}
+      />,
+    );
+    const ring = mockLayerCapture.mock.calls
+      .map((c) => c[0])
+      .find((p) => p.id === "placePickerSelected");
+    expect(ring.filter).toEqual([
+      "all",
+      ["!", ["has", "point_count"]],
+      ["==", ["get", "id"], 7],
+    ]);
+    expect(screen.queryByText("legend-closed")).not.toBeOnTheScreen();
+  });
+
+  it("reports a tap on empty ground with its coordinates", async () => {
+    mockQueryRenderedFeatures.mockResolvedValue([]);
+    await render(
+      <PlacesMap featureCollection={FC} onSelectPlace={jest.fn()} onPressEmpty={mockOnPressEmpty} />,
+    );
+    await pressMap();
+
+    expect(mockQueryRenderedFeatures).toHaveBeenCalledWith(
+      [
+        [78, 178],
+        [122, 222],
+      ],
+      { layers: ["obsClusters", "obsPlaceDots"] },
+    );
+    expect(mockOnPressEmpty).toHaveBeenCalledWith([2.5, 48.9]);
+  });
+
+  it("does not treat a tap on a place as empty ground", async () => {
+    mockQueryRenderedFeatures.mockResolvedValue([{ properties: { id: 7 } }]);
+    await render(
+      <PlacesMap featureCollection={FC} onSelectPlace={jest.fn()} onPressEmpty={mockOnPressEmpty} />,
+    );
+    await pressMap();
+    expect(mockOnPressEmpty).not.toHaveBeenCalled();
+  });
+
+  it("drops the tap when the map can't say what is under it", async () => {
+    mockQueryRenderedFeatures.mockRejectedValue(new Error("no native map"));
+    await render(
+      <PlacesMap featureCollection={FC} onSelectPlace={jest.fn()} onPressEmpty={mockOnPressEmpty} />,
+    );
+    await pressMap();
+    expect(mockOnPressEmpty).not.toHaveBeenCalled();
+  });
+
+  it("without onPressEmpty never asks the map at all", async () => {
+    await render(<PlacesMap featureCollection={FC} onSelectPlace={jest.fn()} />);
+    await pressMap();
+    expect(mockQueryRenderedFeatures).not.toHaveBeenCalled();
   });
 });

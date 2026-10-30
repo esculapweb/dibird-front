@@ -1285,7 +1285,15 @@ export type AppStackParamList = CatalogParamList & {
   Checklist: ScreenWithFilters | undefined;
   Places: ScreenWithFilters | undefined;
   PlaceDetail: { placeId: number; initialPlace?: PlaceItem };
-  PlaceEditor: { place?: PlaceItem; returnToScreen?: string } | undefined;
+  PlaceEditor:
+    | {
+        place?: PlaceItem;
+        returnToScreen?: string;
+        // Create mode only: a point picked on the place picker's map, used
+        // instead of a fresh GPS fix.
+        initialCoords?: Coords;
+      }
+    | undefined;
   Observations: ScreenWithFilters | undefined;
   Activity: { filters: Filters; mode: ActivityMode };
   ObservationDetail: {

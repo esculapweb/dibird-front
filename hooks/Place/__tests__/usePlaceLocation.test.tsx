@@ -109,6 +109,16 @@ describe("locationCoords effect", () => {
     });
     expect(reverseGeocoding).toHaveBeenCalledWith(48, 2);
   });
+
+  it("leaves the pin alone when told not to follow the location", async () => {
+    mockLocationCtx({ locationCoords: [2, 48] });
+    const { result } = await renderHook(() =>
+      usePlaceLocation({ followLocation: false, initialZoom: 16 }),
+    );
+
+    expect(result.current.coords).toBeNull();
+    expect(result.current.zoom).toBe(16);
+  });
 });
 
 describe("updateCoords", () => {

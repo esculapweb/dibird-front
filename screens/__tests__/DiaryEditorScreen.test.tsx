@@ -67,10 +67,22 @@ jest.mock("../../components/Diary/DiaryForm", () => {
   const { TouchableOpacity, Text } = require("react-native");
   return {
     __esModule: true,
-    default: ({ onAddNewPlace }: { onAddNewPlace: () => void }) => (
-      <TouchableOpacity testID="add-new-place" onPress={onAddNewPlace}>
-        <Text>add place</Text>
-      </TouchableOpacity>
+    default: ({
+      onAddNewPlace,
+    }: {
+      onAddNewPlace: (coords?: [number, number]) => void;
+    }) => (
+      <>
+        <TouchableOpacity testID="add-new-place" onPress={() => onAddNewPlace()}>
+          <Text>add place</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          testID="add-place-at-point"
+          onPress={() => onAddNewPlace([2.35, 48.86])}
+        >
+          <Text>add place here</Text>
+        </TouchableOpacity>
+      </>
     ),
   };
 });
@@ -267,6 +279,17 @@ it("adding a new place clears any stale callback first, then registers a fresh o
   expect(setTypedNavigationCallback).toHaveBeenCalledWith("onPlaceCreated", expect.any(Function));
   expect(mockNavigation.navigate).toHaveBeenCalledWith("PlaceEditor", {
     returnToScreen: "DiaryEditor",
+  });
+});
+
+it("adding a place at a point picked on the map hands that point to PlaceEditor", async () => {
+  await render(<DiaryEditorScreen />);
+  await fireEvent.press(screen.getByTestId("add-place-at-point"));
+
+  expect(setTypedNavigationCallback).toHaveBeenCalledWith("onPlaceCreated", expect.any(Function));
+  expect(mockNavigation.navigate).toHaveBeenCalledWith("PlaceEditor", {
+    returnToScreen: "DiaryEditor",
+    initialCoords: [2.35, 48.86],
   });
 });
 

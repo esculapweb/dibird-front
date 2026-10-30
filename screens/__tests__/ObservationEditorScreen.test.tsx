@@ -123,7 +123,7 @@ jest.mock("../../components/Observation/ObservationForm", () => {
       openSpeciesSignal,
       setMultiSpecies,
     }: {
-      onAddNewPlace: () => void;
+      onAddNewPlace: (coords?: [number, number]) => void;
       onEditDiary: () => void;
       existingSpecies: Set<string | number>;
       openSpeciesSignal?: number;
@@ -145,8 +145,14 @@ jest.mock("../../components/Observation/ObservationForm", () => {
           </TouchableOpacity>
         )}
         <Text testID="open-species-signal">{String(openSpeciesSignal)}</Text>
-        <TouchableOpacity testID="add-new-place" onPress={onAddNewPlace}>
+        <TouchableOpacity testID="add-new-place" onPress={() => onAddNewPlace()}>
           <Text>add place</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          testID="add-place-at-point"
+          onPress={() => onAddNewPlace([2.35, 48.86])}
+        >
+          <Text>add place here</Text>
         </TouchableOpacity>
         <TouchableOpacity testID="edit-diary" onPress={onEditDiary}>
           <Text>edit diary</Text>
@@ -438,6 +444,17 @@ it("adding a new place registers a typed navigation callback and navigates to Pl
   expect(setTypedNavigationCallback).toHaveBeenCalledWith("onPlaceCreated", expect.any(Function));
   expect(mockNavigation.navigate).toHaveBeenCalledWith("PlaceEditor", {
     returnToScreen: "ObservationEditor",
+  });
+});
+
+it("adding a place at a point picked on the map hands that point to PlaceEditor", async () => {
+  await render(<ObservationEditorScreen />);
+  await fireEvent.press(screen.getByTestId("add-place-at-point"));
+
+  expect(setTypedNavigationCallback).toHaveBeenCalledWith("onPlaceCreated", expect.any(Function));
+  expect(mockNavigation.navigate).toHaveBeenCalledWith("PlaceEditor", {
+    returnToScreen: "ObservationEditor",
+    initialCoords: [2.35, 48.86],
   });
 });
 

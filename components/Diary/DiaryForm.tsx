@@ -13,7 +13,7 @@ import PlaceBlock from "../Place/PlaceBlock";
 import { useLocation } from "../../store/location-context";
 import { useDropdownQuery } from "../../hooks/useDropdownQuery";
 import { useLocationUnavailable } from "../../hooks/useLocationUnavailable";
-import { DiaryFormData, PlaceDropdownItem, Errors } from "../../types";
+import { Coords, DiaryFormData, PlaceDropdownItem, Errors } from "../../types";
 
 interface DiaryFormProps {
   formData: DiaryFormData;
@@ -24,7 +24,7 @@ interface DiaryFormProps {
   setTerritoryValue: (value: number | null) => void;
   placeValue: number | null;
   setPlaceValue: (value: number | null) => void;
-  onAddNewPlace: () => void;
+  onAddNewPlace: (coords?: Coords) => void;
   placeData: PlaceDropdownItem | null;
   setPlaceData: Dispatch<SetStateAction<PlaceDropdownItem | null>>;
   isEditMode?: boolean;

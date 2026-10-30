@@ -14,6 +14,7 @@ import { useTheme, ThemeColors } from "../../store/theme-context";
 import SpeciesDropdown from "./SpeciesDropdown";
 import PlaceDropdown from "./PlaceDropdown";
 import {
+  Coords,
   DropdownItem,
   IconType,
   PlaceDropdownItem,
@@ -61,6 +62,8 @@ interface DropdownInputProps<T extends string | number | null = string | number 
   onConfirmMultiple?: (values: (string | number)[]) => void;
   // Replaces the built-in field with a custom one that opens the same list.
   renderTrigger?: (open: () => void) => ReactElement;
+  // Places only: a map tap on empty ground, see SelectListModal.
+  onPickPoint?: (coords: Coords) => void;
 }
 
 const DropdownInput = <T extends string | number | null>({
@@ -88,6 +91,7 @@ const DropdownInput = <T extends string | number | null>({
   selectedValues,
   onConfirmMultiple,
   renderTrigger,
+  onPickPoint,
 }: DropdownInputProps<T>) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
@@ -343,6 +347,8 @@ const DropdownInput = <T extends string | number | null>({
           onConfirmMultiple?.(values);
           setModalVisible(false);
         }}
+        mapEnabled={type === "PlacesDropdown"}
+        onPickPoint={onPickPoint}
       />
     </>
   );

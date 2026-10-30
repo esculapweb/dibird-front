@@ -2,6 +2,7 @@ import {
   boundsFromFeatures,
   centerOfBounds,
   countTotal,
+  dropdownItemsToFeatureCollection,
   isSinglePoint,
   placesToFeatureCollection,
 } from "../placeMapFeatures";
@@ -206,5 +207,61 @@ describe("boundsFromFeatures", () => {
     ]);
 
     expect(isSinglePoint(boundsFromFeatures(fc)!)).toBe(false);
+  });
+});
+
+describe("dropdownItemsToFeatureCollection", () => {
+  it("plots a dropdown place as an empty point named after it", () => {
+    const fc = dropdownItemsToFeatureCollection([
+      {
+        value: 7,
+        label: "Pond",
+        location: { type: "Point", coordinates: [2.3, 48.8] },
+      },
+    ]);
+    expect(fc.features).toEqual([
+      {
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [2.3, 48.8] },
+        properties: {
+          id: 7,
+          name: "Pond",
+          observation_count: 0,
+          species_count: 0,
+          diary_place_count: 0,
+        },
+      },
+    ]);
+  });
+
+  it("uses the centre of a private location's bbox", () => {
+    const fc = dropdownItemsToFeatureCollection([
+      {
+        value: 7,
+        label: "Pond",
+        location: {
+          type: "Polygon",
+          coordinates: [2, 48] as never,
+          center: [2.5, 48.5],
+        },
+      },
+    ]);
+    expect(fc.features[0].geometry.coordinates).toEqual([2.5, 48.5]);
+  });
+
+  it("drops an item without coordinates or with a non-numeric value", () => {
+    const fc = dropdownItemsToFeatureCollection([
+      { value: 7, label: "Nowhere" },
+      {
+        value: "reset",
+        label: "All",
+        location: { type: "Point", coordinates: [1, 1] },
+      },
+    ]);
+    expect(fc.features).toEqual([]);
+  });
+
+  it("is empty for no items", () => {
+    expect(dropdownItemsToFeatureCollection(undefined).features).toEqual([]);
   });
 });

@@ -502,6 +502,8 @@
   "pick_species": "Pick a species",
   "place": "Location",
   "place_name": "Location Name",
+  "place_picker_map_hint": "Tap your place to pick it, or tap anywhere to add a new one",
+  "place_picker_map_hint_select_only": "Tap a place to pick it",
   "place_tap_hint": "Tap to select location",
   "places": "Locations",
   "places_unavailable": "Locations are unavailable",

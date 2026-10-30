@@ -164,14 +164,24 @@ describe("location privacy toggle", () => {
 });
 
 describe("add new place", () => {
-  it("invokes onAddNewPlace with a callback that sets the new place value", async () => {
+  // The new place comes back through the editor's onPlaceCreated navigation
+  // callback, not through anything PlaceBlock hands over.
+  it("invokes onAddNewPlace without coordinates", async () => {
     await render(<PlaceBlock {...baseProps()} />);
     await fireEvent.press(screen.getByText("add_new_location"));
 
-    expect(mockOnAddNewPlace).toHaveBeenCalledWith(expect.any(Function));
-    const callback = (mockOnAddNewPlace.mock.calls[0][0] as (v: number) => void);
-    callback(42);
-    expect(mockSetPlaceValue).toHaveBeenCalledWith(42);
+    expect(mockOnAddNewPlace).toHaveBeenCalledWith();
+  });
+});
+
+describe("picking a point on the map", () => {
+  it("turns a tap on empty ground into a new place at that point", async () => {
+    await render(<PlaceBlock {...baseProps()} />);
+    const { onPickPoint } = mockDropdownCapture.mock.calls.at(-1)![0] as {
+      onPickPoint: (coords: [number, number]) => void;
+    };
+    onPickPoint([2.35, 48.86]);
+    expect(mockOnAddNewPlace).toHaveBeenCalledWith([2.35, 48.86]);
   });
 });
 

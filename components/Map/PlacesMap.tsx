@@ -7,6 +7,7 @@ import {
   Layer,
   MapRef,
   PixelPoint,
+  PressEvent,
   PressEventWithFeatures,
 } from "@maplibre/maplibre-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -30,13 +31,14 @@ import {
   radiusStepExpression,
 } from "../../constants/mapSymbolScale";
 import {
+  PlaceFeatureCollection,
   PlaceFeatureProperties,
   boundsFromFeatures,
   centerOfBounds,
   isSinglePoint,
   placesToFeatureCollection,
 } from "../../util/placeMapFeatures";
-import { PlaceItem } from "../../types";
+import { Coords, PlaceItem } from "../../types";
 
 // `paint` is typed as a union across every layer kind, so a circle paint built
 // from a computed expression has to be pointed at the circle member.
@@ -46,6 +48,15 @@ type CirclePaint = Extract<
 >["paint"];
 
 const SOURCE_ID = "obsPlaces";
+const CLUSTER_LAYER_ID = "obsClusters";
+const DOT_LAYER_ID = "obsPlaceDots";
+// Half the side of the box an empty-spot tap is checked against. MapLibre
+// hit-tests symbol taps with a finger-sized box too, so a tap at a dot's edge
+// that selects it must not also count as a tap on empty ground.
+const EMPTY_TAP_SLOP = 22;
+// Ring around the picked place, a little wider than the largest dot it can
+// sit on in the picker, where every place draws at the smallest size.
+const SELECTED_RING_RADIUS = 12;
 // Roughly a finger's width: closer dots merge rather than overlap.
 const CLUSTER_RADIUS = 60;
 // Past this the map is close enough that places stand apart on their own.
@@ -66,8 +77,17 @@ const USER_DOT_RADIUS = 6;
 const FAB_CLEARANCE = 20 + 56 + 10 - 12;
 
 interface PlacesMapProps {
-  places: PlaceItem[];
+  places?: PlaceItem[];
+  /** Ready-made points instead of `places` — the place picker's dropdown items. */
+  featureCollection?: PlaceFeatureCollection;
   onSelectPlace: (place: PlaceFeatureProperties) => void;
+  /** Ringed on the map: the place the picker currently holds. */
+  selectedId?: number | null;
+  /** A tap that lands on no place. Without it such a tap does nothing. */
+  onPressEmpty?: (coords: Coords) => void;
+  showLegend?: boolean;
+  /** Defaults to clearing the list screens' add button, see FAB_CLEARANCE. */
+  myLocationRightOffset?: number;
   /** Keep places whose count is zero — see the util of the same name. */
   includeEmpty?: boolean;
   /** What the symbol sizes count. Defaults to observations. */
@@ -76,7 +96,12 @@ interface PlacesMapProps {
 
 const PlacesMap = ({
   places,
+  featureCollection,
   onSelectPlace,
+  selectedId,
+  onPressEmpty,
+  showLegend = true,
+  myLocationRightOffset = FAB_CLEARANCE,
   includeEmpty = false,
   scale = OBSERVATION_SCALE,
 }: PlacesMapProps) => {
@@ -95,11 +120,12 @@ const PlacesMap = ({
 
   const features = useMemo(
     () =>
+      featureCollection ??
       placesToFeatureCollection(places, {
         includeEmpty,
         countProperty: scale.countProperty as never,
       }),
-    [places, includeEmpty, scale.countProperty],
+    [featureCollection, places, includeEmpty, scale.countProperty],
   );
   const bounds = useMemo(() => boundsFromFeatures(features), [features]);
 
@@ -107,6 +133,11 @@ const PlacesMap = ({
   // fitBounds snap to max zoom, which lands the user inside a building. Centre
   // on the point at a sane zoom instead.
   const singlePoint = bounds && isSinglePoint(bounds);
+
+  // A picker with nothing to frame (no places in this country yet) would open
+  // on the whole world; the user's own position is where a new place most
+  // likely goes. The list screens never get here: they show an empty state.
+  const pickerCenter = onPressEmpty ? locationCoords : null;
 
   // Balanced, not High: this only has to put a dot on a map showing places
   // kilometres apart, and the extra seconds a tight GPS fix costs would be
@@ -237,25 +268,57 @@ const PlacesMap = ({
     [onSelectPlace, featureAt],
   );
 
+  // The map's own onPress fires for a tap on a symbol as well, so emptiness
+  // has to be asked of the rendered layers. When the query can't answer (no
+  // native map yet, or it threw) the tap is dropped: creating a place the user
+  // didn't ask for is worse than a tap that does nothing.
+  const handleMapPress = useCallback(
+    async (event: PressEvent) => {
+      setLegendOpen(false);
+      if (!onPressEmpty || !event?.point || !event.lngLat) return;
+
+      const [x, y] = event.point;
+      const hits = await mapRef.current
+        ?.queryRenderedFeatures(
+          [
+            [x - EMPTY_TAP_SLOP, y - EMPTY_TAP_SLOP],
+            [x + EMPTY_TAP_SLOP, y + EMPTY_TAP_SLOP],
+          ],
+          { layers: [CLUSTER_LAYER_ID, DOT_LAYER_ID] },
+        )
+        .catch(() => null);
+      if (!hits || hits.length > 0) return;
+
+      onPressEmpty(event.lngLat as Coords);
+    },
+    [onPressEmpty],
+  );
+
   return (
     <View style={styles.container}>
       <MapL
-        currentCoords={singlePoint ? centerOfBounds(bounds) : null}
-        currentZoom={SINGLE_POINT_ZOOM}
+        currentCoords={
+          singlePoint
+            ? centerOfBounds(bounds)
+            : !bounds && pickerCenter
+              ? pickerCenter
+              : null
+        }
+        currentZoom={singlePoint ? SINGLE_POINT_ZOOM : MY_LOCATION_ZOOM}
         bounds={singlePoint ? undefined : (bounds ?? undefined)}
         cameraRef={cameraRef}
         mapRef={mapRef}
         onUseMyLocation={handleLocateMe}
         isLocating={isLocating}
         myLocationLabel={t("map_my_location")}
-        myLocationRightOffset={FAB_CLEARANCE}
+        myLocationRightOffset={myLocationRightOffset}
         myLocationCompact
         bottomInset={insets.bottom}
         // Reference material, read once — the next touch anywhere on the map
         // is as good a signal as any that it has been read. A tap on a symbol
         // bubbles up here too, which is harmless: that opens the sheet, and
         // the legend has no business staying up behind it.
-        onPress={() => setLegendOpen(false)}
+        onPress={handleMapPress}
       >
         <GeoJSONSource
           ref={sourceRef}
@@ -311,7 +374,7 @@ const PlacesMap = ({
             }
           />
           <Layer
-            id="obsClusters"
+            id={CLUSTER_LAYER_ID}
             type="circle"
             filter={["has", "point_count"]}
             paint={
@@ -324,7 +387,7 @@ const PlacesMap = ({
             }
           />
           <Layer
-            id="obsPlaceDots"
+            id={DOT_LAYER_ID}
             type="circle"
             filter={["!", ["has", "point_count"]]}
             paint={
@@ -336,6 +399,25 @@ const PlacesMap = ({
               } as CirclePaint
             }
           />
+          {selectedId != null && (
+            <Layer
+              id="placePickerSelected"
+              type="circle"
+              filter={[
+                "all",
+                ["!", ["has", "point_count"]],
+                ["==", ["get", "id"], selectedId],
+              ]}
+              paint={
+                {
+                  "circle-radius": SELECTED_RING_RADIUS,
+                  "circle-opacity": 0,
+                  "circle-stroke-color": Colors.main100,
+                  "circle-stroke-width": 3,
+                } as CirclePaint
+              }
+            />
+          )}
         </GeoJSONSource>
 
         {/* Last, so the dot stays visible over a place symbol it lands on. */}
@@ -364,11 +446,13 @@ const PlacesMap = ({
         )}
       </MapL>
 
-      <PlacesMapLegend
-        scale={scale}
-        expanded={legendOpen}
-        onToggle={() => setLegendOpen((open) => !open)}
-      />
+      {showLegend && (
+        <PlacesMapLegend
+          scale={scale}
+          expanded={legendOpen}
+          onToggle={() => setLegendOpen((open) => !open)}
+        />
+      )}
     </View>
   );
 };
