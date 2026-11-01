@@ -78,9 +78,21 @@ jest.mock("../../components/ui/IconsHeader", () => {
 jest.mock("react-native-safe-area-context", () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
+const mockSheetExpand = jest.fn();
+const mockSheetSnapToIndex = jest.fn();
 jest.mock("@gorhom/bottom-sheet", () => {
+  const { forwardRef, useImperativeHandle } = require("react");
   const { View, ScrollView } = require("react-native");
-  return { __esModule: true, default: View, BottomSheetScrollView: ScrollView };
+  const BottomSheet = forwardRef(
+    (props: Record<string, unknown>, ref: unknown) => {
+      useImperativeHandle(ref, () => ({
+        expand: mockSheetExpand,
+        snapToIndex: mockSheetSnapToIndex,
+      }));
+      return <View {...props} />;
+    },
+  );
+  return { __esModule: true, default: BottomSheet, BottomSheetScrollView: ScrollView };
 });
 jest.mock("react-native-toast-message", () => ({ __esModule: true, default: { show: jest.fn() } }));
 jest.mock("../../hooks/usePushNotifications", () => ({ requestPushPermission: jest.fn() }));
@@ -126,8 +138,9 @@ jest.mock("../../components/Place/PlaceForm", () => {
   const { View, TouchableOpacity, Text } = require("react-native");
   return {
     __esModule: true,
-    default: ({ onCoordsChange, setFormData }: {
+    default: ({ onCoordsChange, onCoordsExpand, setFormData }: {
       onCoordsChange: (c: [string, string], o?: { fromManual?: boolean }) => void;
+      onCoordsExpand?: () => void;
       setFormData: (updater: (prev: { name: string; territory: number }) => { name: string; territory: number }) => void;
     }) => (
       <View>
@@ -139,6 +152,9 @@ jest.mock("../../components/Place/PlaceForm", () => {
           onPress={() => onCoordsChange(["abc", ""], { fromManual: true })}
         >
           <Text>bad coords</Text>
+        </TouchableOpacity>
+        <TouchableOpacity testID="expand-coords" onPress={() => onCoordsExpand?.()}>
+          <Text>expand coords</Text>
         </TouchableOpacity>
         <TouchableOpacity
           testID="fill-long-name"
@@ -672,6 +688,38 @@ describe("nearby place suggestion", () => {
     });
 
     expect(screen.queryByTestId("nearby-suggestion")).toBeNull();
+  });
+
+  it("raises the sheet while it is up and lowers it back once dismissed", async () => {
+    await renderWithNearbyPlace();
+    expect(mockSheetExpand).toHaveBeenCalledTimes(1);
+    expect(mockSheetSnapToIndex).not.toHaveBeenCalled();
+
+    const { onDismiss } = mockNearbyCapture.mock.calls.at(-1)![0];
+    await act(async () => {
+      onDismiss();
+    });
+    expect(mockSheetSnapToIndex).toHaveBeenCalledWith(0);
+  });
+
+  it("keeps the sheet raised when the coordinates were opened meanwhile", async () => {
+    await renderWithNearbyPlace();
+    await fireEvent.press(screen.getByTestId("expand-coords"));
+    const { onDismiss } = mockNearbyCapture.mock.calls.at(-1)![0];
+    await act(async () => {
+      onDismiss();
+    });
+
+    expect(mockSheetSnapToIndex).not.toHaveBeenCalled();
+  });
+
+  it("leaves the sheet alone when there is nothing to suggest", async () => {
+    mockPlaces([]);
+    await render(<PlaceEditorScreen />);
+    await fireEvent.press(screen.getByTestId("fill-territory"));
+
+    expect(mockSheetExpand).not.toHaveBeenCalled();
+    expect(mockSheetSnapToIndex).not.toHaveBeenCalled();
   });
 
   it("is dismissable, and stays dismissed", async () => {

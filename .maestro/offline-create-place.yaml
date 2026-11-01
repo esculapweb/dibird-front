@@ -77,22 +77,21 @@ tags:
 - tapOn:
     id: "list-add-button"
 
-# latitude-input is visible on mount regardless of whether locateMe() has
-# resolved — the text assertion after it is what actually confirms the
-# mocked coordinate landed while offline.
+# The coordinates row is visible on mount regardless of whether locateMe()
+# has resolved — the summary text assertion after it is what actually
+# confirms the mocked coordinate landed while offline.
 - extendedWaitUntil:
     visible:
-      id: "latitude-input"
+      id: "place-coords-toggle"
     timeout: 6000
-- assertVisible:
-    id: "latitude-input"
-    text: "48.8566"
-- assertVisible:
-    id: "longitude-input"
-    text: "2.3522"
+- assertVisible: ".*48.8566, 2.3522.*"
 - waitForAnimationToEnd:
     timeout: 4000
 
+# The coordinates are one folded summary row by default (PlaceForm) — open
+# them for the lat/lng inputs and the "Latitude" label tapped below.
+- tapOn:
+    id: "place-coords-toggle"
 - tapOn:
     id: "place-name-input"
 # Pre-filled with the reverse-geocoded address when that resolves in
@@ -166,6 +165,10 @@ tags:
 # string lives on a separate child node with no id of its own), so
 # id+text together is unmatchable here by construction.
 - assertVisible: "France"
+# The coordinates are one folded summary row by default (PlaceForm) — open
+# them for the lat/lng inputs and the "Latitude" label tapped below.
+- tapOn:
+    id: "place-coords-toggle"
 - tapOn:
     id: "place-name-input"
 - eraseText: 50

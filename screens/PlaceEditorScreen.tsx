@@ -61,10 +61,11 @@ const LOW_ACCURACY_THRESHOLD_M = 100;
 // city-wide view the GPS path starts from before it knows the accuracy.
 const PICKED_POINT_ZOOM = 16;
 
-// The form sheet's resting height: the map keeps the top half for picking
-// the point, the sheet shows name, coordinates and country without a drag.
-// The second point is for the rest of the form (want to visit, reminder).
-const SHEET_COLLAPSED_SHARE = 0.5;
+// The form sheet's resting height: the map keeps the top 60% for picking
+// the point, the sheet shows name, country, the folded coordinates row and
+// "want to visit" without a drag. The second point is for the rest of the
+// form (the opened lat/lng inputs, the reminder).
+const SHEET_COLLAPSED_SHARE = 0.4;
 const SHEET_SNAP_POINTS = [`${SHEET_COLLAPSED_SHARE * 100}%`, "92%"];
 
 const PlaceEditorScreen = () => {
@@ -136,6 +137,7 @@ const PlaceEditorScreen = () => {
   // Height of the screen under the header, for the sheet's share of it.
   const [containerHeight, setContainerHeight] = useState(0);
   const collapsedSheetHeight = containerHeight * SHEET_COLLAPSED_SHARE;
+  const sheetRef = useRef<BottomSheet>(null);
   const initialCoords = place?.location?.coordinates;
 
   const { locationCoords, locationAvailable, permissionStatus, requestLocation } =
@@ -167,6 +169,26 @@ const PlaceEditorScreen = () => {
 
   const showSuggestion =
     !isEditMode && !isLocating && !suggestionDismissed && !!nearby.nearest;
+
+  // The suggestion card goes on top of the form and, at the sheet's resting
+  // height, pushes everything but the name field below its edge — so the
+  // sheet is raised while the card is up. Lowered back only if it was the
+  // card that raised it: opened coordinates still want the room.
+  const sheetRaisedForSuggestionRef = useRef(false);
+  useEffect(() => {
+    if (showSuggestion) {
+      sheetRaisedForSuggestionRef.current = true;
+      sheetRef.current?.expand();
+    } else if (sheetRaisedForSuggestionRef.current) {
+      sheetRaisedForSuggestionRef.current = false;
+      sheetRef.current?.snapToIndex(0);
+    }
+  }, [showSuggestion]);
+
+  const handleCoordsExpand = useCallback(() => {
+    sheetRaisedForSuggestionRef.current = false;
+    sheetRef.current?.expand();
+  }, []);
 
   const buildPlacePayload = (data: PlaceFormData): PlaceFormData => {
     const payload: PlaceFormData = {
@@ -567,6 +589,7 @@ const PlaceEditorScreen = () => {
         centerBottomPadding={collapsedSheetHeight}
       />
       <BottomSheet
+        ref={sheetRef}
         index={0}
         snapPoints={SHEET_SNAP_POINTS}
         enableDynamicSizing={false}
@@ -598,6 +621,8 @@ const PlaceEditorScreen = () => {
           )}
           <PlaceForm
             onCoordsChange={handleCoordsChange}
+            // The opened lat/lng inputs land below the resting sheet's edge.
+            onCoordsExpand={handleCoordsExpand}
             formData={formData}
             coords={coords}
             latText={latText}

@@ -78,9 +78,12 @@ tags:
     direction: DOWN
     timeout: 10000
 - tapOn: ".*Add new location.*"
+# The name input, not the coordinates row: a leftover anchor (see below) puts
+# the suggestion card on top of the form, and the sheet is still rising to
+# make room for it when this check runs.
 - extendedWaitUntil:
     visible:
-      id: "latitude-input"
+      id: "place-name-input"
     timeout: 8000
 - waitForAnimationToEnd:
     timeout: 4000
@@ -93,6 +96,10 @@ tags:
     id: "nearby-place-dismiss"
     optional: true
 
+# The coordinates are one folded summary row by default (PlaceForm) — open
+# them for the lat/lng inputs and the "Latitude" label tapped below.
+- tapOn:
+    id: "place-coords-toggle"
 - tapOn:
     id: "place-name-input"
 # Pre-filled by the reverse geocode — erase first or pasteText appends.
@@ -152,9 +159,11 @@ tags:
     direction: DOWN
     timeout: 10000
 - tapOn: ".*Add new location.*"
+# The name input, not the coordinates row: the suggestion card goes on top of
+# the form, and the sheet is still rising to make room for it at this point.
 - extendedWaitUntil:
     visible:
-      id: "latitude-input"
+      id: "place-name-input"
     timeout: 8000
 - extendedWaitUntil:
     visible:
@@ -172,7 +181,7 @@ tags:
 # cleanup below finds exactly one anchor to delete.
 - extendedWaitUntil:
     notVisible:
-      id: "latitude-input"
+      id: "place-name-input"
     timeout: 8000
 - assertVisible:
     id: "place-dropdown-clear"

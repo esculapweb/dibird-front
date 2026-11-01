@@ -2,6 +2,9 @@ jest.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
   initReactI18next: { type: "3rdParty", init: () => {} },
 }));
+jest.mock("../../../store/theme-context", () => ({
+  useTheme: () => require("../../../screens/mockTheme").mockUseTheme(),
+}));
 jest.mock("../../../util/fetches", () => ({ fetchMyCountries: jest.fn() }));
 jest.mock("../../../store/language-context", () => ({ useLanguage: () => ({ language: "en" }) }));
 jest.mock("../../../hooks/useDropdownQuery", () => ({ useDropdownQuery: jest.fn() }));
@@ -23,7 +26,7 @@ jest.mock("../../ui/DropdownInput", () => ({
   },
 }));
 
-import { act, render } from "@testing-library/react-native";
+import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { useDropdownQuery } from "../../../hooks/useDropdownQuery";
 import PlaceForm from "../PlaceForm";
 
@@ -77,9 +80,60 @@ describe("name input", () => {
   });
 });
 
-describe("lat/lng inputs", () => {
+describe("coordinates row", () => {
+  const expand = () => fireEvent.press(screen.getByTestId("place-coords-toggle"));
+
+  it("is collapsed by default: a summary of both coords, no lat/lng inputs", async () => {
+    await render(<PlaceForm {...baseProps()} latText="48.8566" lngText="2.3522" />);
+
+    expect(screen.getByTestId("place-coords-summary")).toHaveTextContent("48.8566, 2.3522");
+    expect(inputProps("latitude-input")).toBeUndefined();
+    expect(inputProps("longitude-input")).toBeUndefined();
+  });
+
+  it("shows the placeholder while there are no coords yet", async () => {
+    await render(<PlaceForm {...baseProps()} />);
+    expect(screen.getByTestId("place-coords-summary")).toHaveTextContent("coordinates");
+  });
+
+  it("opens the lat/lng inputs on tap and folds them back on a second tap", async () => {
+    await render(<PlaceForm {...baseProps()} />);
+    await act(async () => expand());
+    expect(inputProps("latitude-input")).toBeDefined();
+
+    mockInputCapture.mockClear();
+    await act(async () => expand());
+    expect(inputProps("latitude-input")).toBeUndefined();
+  });
+
+  it("reports the opening (to unfold the sheet), but not the folding", async () => {
+    const onCoordsExpand = jest.fn();
+    await render(<PlaceForm {...baseProps()} onCoordsExpand={onCoordsExpand} />);
+    await act(async () => expand());
+    await act(async () => expand());
+    expect(onCoordsExpand).toHaveBeenCalledTimes(1);
+  });
+
+  it("opens by itself on a coordinate error and stays open once the error clears", async () => {
+    const onCoordsExpand = jest.fn();
+    const { rerender } = await render(
+      <PlaceForm
+        {...baseProps()}
+        errors={{ latitude: "invalid_latitude" }}
+        onCoordsExpand={onCoordsExpand}
+      />,
+    );
+    expect(inputProps("latitude-input")).toBeDefined();
+    expect(onCoordsExpand).toHaveBeenCalledTimes(1);
+
+    mockInputCapture.mockClear();
+    await rerender(<PlaceForm {...baseProps()} errors={{}} />);
+    expect(inputProps("latitude-input")).toBeDefined();
+  });
+
   it("replaces a comma with a dot and reports both coords as manual on latitude change", async () => {
     await render(<PlaceForm {...baseProps()} lngText="2.5" />);
+    await act(async () => expand());
     inputProps("latitude-input").onUpdateValue("48,5");
 
     expect(mockSetLatText).toHaveBeenCalledWith("48.5");
@@ -88,6 +142,7 @@ describe("lat/lng inputs", () => {
 
   it("replaces a comma with a dot and reports both coords as manual on longitude change", async () => {
     await render(<PlaceForm {...baseProps()} latText="48.5" />);
+    await act(async () => expand());
     inputProps("longitude-input").onUpdateValue("2,5");
 
     expect(mockSetLngText).toHaveBeenCalledWith("2.5");
