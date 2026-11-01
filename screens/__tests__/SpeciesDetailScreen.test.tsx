@@ -84,9 +84,29 @@ jest.mock("react-native-render-html", () => {
 });
 
 jest.mock("../../services/analytics", () => ({ track: jest.fn() }));
+// Both are tested on their own; here only what the screen hands them.
+jest.mock("../../components/ui/PhotoViewerModal", () => ({
+  __esModule: true,
+  default: (props: Record<string, unknown>) => {
+    mockPhotoViewerProps(props);
+    return null;
+  },
+}));
+jest.mock("../../components/Taxonomy/TaxonSoundRow", () => {
+  const { Pressable, Text } = require("react-native");
+  return {
+    __esModule: true,
+    default: ({ sound, isActive, onPlay }: { sound: { xeno_id: number }; isActive: boolean; onPlay: () => void }) => (
+      <Pressable testID={`sound-${sound.xeno_id}`} onPress={onPlay}>
+        <Text>{`sound-${sound.xeno_id}:${isActive ? "active" : "idle"}`}</Text>
+      </Pressable>
+    ),
+  };
+});
 
 import { Share } from "react-native";
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { act, fireEvent, render, screen } from "@testing-library/react-native";
+import { fetchTaxonDetail, fetchTaxonSegmentById } from "../../util/fetches";
 import { useQuery } from "@tanstack/react-query";
 import {
   createNavigationMock,
@@ -100,6 +120,7 @@ import SpeciesDetailScreen from "../SpeciesDetailScreen";
 import { TaxonSpeciesDetail } from "../../types";
 
 let mockRoute: ReturnType<typeof createRouteMock>;
+const mockPhotoViewerProps = jest.fn();
 const mockNavigation = createNavigationMock();
 const mockUseQuery = useQuery as jest.Mock;
 const mockProfile: {
@@ -798,4 +819,89 @@ it("follows a tab that arrives after the screen is already open", async () => {
   await rerender(<SpeciesDetailScreen />);
 
   expect(screen.getByText("🇬🇧 United Kingdom")).toBeOnTheScreen();
+});
+
+it("fetches the segment by id and the detail by segment", async () => {
+  mockRoute = createRouteMock("SpeciesDetail", { id: 42 });
+  mockQueries({ segment: segmentResult({ data: "blue-tit" }) });
+  await render(<SpeciesDetailScreen />);
+
+  const queryFn = (key: string) =>
+    mockUseQuery.mock.calls.find((c) => c[0].queryKey[0] === key)[0].queryFn;
+
+  queryFn("TaxonSegmentById")();
+  expect(fetchTaxonSegmentById).toHaveBeenCalledWith(42);
+
+  queryFn("TaxonSpeciesDetail")();
+  expect(fetchTaxonDetail).toHaveBeenCalledWith("blue-tit", 5);
+});
+
+it("opens the comparison with this species on the left", async () => {
+  mockQueries({ detail: detailResult({ data: baseDetail }) });
+  await render(<SpeciesDetailScreen />);
+
+  const options = (mockNavigation.setOptions as jest.Mock).mock.calls.at(-1)![0];
+  overflowRow(
+    openOverflow(options.headerRight().props.headerRightEnd, mockShowMenu),
+    "compare_species",
+  ).onPress();
+
+  expect(mockNavigation.navigate).toHaveBeenCalledWith("SpeciesCompare", { segmentA: "blue-tit" });
+});
+
+it("replaces the screen with the previous species from the paging strip", async () => {
+  mockQueries({
+    detail: detailResult({
+      data: {
+        ...baseDetail,
+        paging: { prev: { segment: "coal-tit", name: "Periparus ater", name_lang: "Coal Tit" }, next: null },
+      },
+    }),
+  });
+
+  await render(<SpeciesDetailScreen />);
+  await fireEvent.press(screen.getByText("Coal Tit"));
+  expect(mockNavigation.replace).toHaveBeenCalledWith("SpeciesDetail", {
+    segment: "coal-tit",
+    source: "species_paging",
+  });
+});
+
+describe("photo gallery", () => {
+  const PHOTOS = [
+    { thumb: "t1.jpg", url: "p1.jpg", ownername: "Ann" },
+    { thumb: "t2.jpg", url: "p2.jpg", ownername: "" },
+  ];
+
+  it("opens the viewer on the tapped photo, with every photo's credit, and closes it", async () => {
+    mockQueries({ detail: detailResult({ data: { ...baseDetail, photos: PHOTOS } }) });
+    await render(<SpeciesDetailScreen />);
+
+    expect(mockPhotoViewerProps.mock.calls.at(-1)[0].visible).toBe(false);
+    await fireEvent.press(screen.getByText("Ann"));
+
+    const props = mockPhotoViewerProps.mock.calls.at(-1)[0];
+    expect(props.visible).toBe(true);
+    expect(props.initialIndex).toBe(0);
+    expect(props.photos).toEqual([
+      { uri: expect.stringContaining("p1.jpg"), credit: "Ann" },
+      { uri: expect.stringContaining("p2.jpg"), credit: "" },
+    ]);
+
+    await act(async () => props.onClose());
+    expect(mockPhotoViewerProps.mock.calls.at(-1)[0].visible).toBe(false);
+  });
+});
+
+// Only one recording plays at a time; the last one played keeps its scrub bar.
+it("makes the recording that was played the active one", async () => {
+  const sound = (xeno_id: number) => ({ xeno_id, type: "song", recorder: "R", country: "UK", license: null });
+  mockRoute = createRouteMock("SpeciesDetail", { segment: "blue-tit", initialTab: "sounds" });
+  mockQueries({ detail: detailResult({ data: { ...baseDetail, sounds: [sound(1), sound(2)] } }) });
+  await render(<SpeciesDetailScreen />);
+
+  expect(screen.getByText("sound-1:idle")).toBeOnTheScreen();
+  await fireEvent.press(screen.getByTestId("sound-2"));
+  expect(screen.getByText("sound-2:active")).toBeOnTheScreen();
+  expect(screen.getByText("sound-1:idle")).toBeOnTheScreen();
 });

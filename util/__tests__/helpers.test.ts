@@ -1,4 +1,11 @@
+jest.mock("expo-application", () => ({
+  nativeApplicationVersion: "1.2.3",
+  nativeBuildVersion: "45",
+}));
+
+import * as Application from "expo-application";
 import i18n from "../../services/i18n";
+import { Config } from "../../constants/config";
 import {
   isoToFlagEmoji,
   normalizeValue,
@@ -14,6 +21,12 @@ import {
   buildDateParams,
   roundCoords,
   distanceKm,
+  formatDateFilterMain,
+  formatDateFilterCheckboxHero,
+  langBaseUrl,
+  buildShareUrl,
+  getFullVersion,
+  normalizeDistance,
 } from "../helpers";
 
 const FIXED_DATE = "2024-01-15T12:00:00.000Z";
@@ -259,5 +272,117 @@ describe("roundCoords", () => {
     expect(roundCoords([27.12413523716059, 53.67784851150585], 2)).toEqual([
       27.12, 53.68,
     ]);
+  });
+});
+
+describe("date filter labels", () => {
+  const originalLanguage = i18n.language;
+
+  beforeEach(() => {
+    i18n.language = "en";
+  });
+  afterEach(() => {
+    i18n.language = originalLanguage;
+  });
+
+  const range = (from: string | null, to: string | null) => ({ type: "range" as const, from, to });
+
+  it.each([
+    ["formatDateFilterMain", formatDateFilterMain],
+    ["formatDateFilterCheckboxHero", formatDateFilterCheckboxHero],
+  ])("%s labels a range by whichever ends it has", (_name, format) => {
+    expect(format(range("2024-01-15", "2024-02-01"))).toBe(
+      `${formatDate("2024-01-15")} – ${formatDate("2024-02-01")}`,
+    );
+    expect(format(range("2024-01-15", null))).toBe(`${i18n.t("from")} ${formatDate("2024-01-15")}`);
+    expect(format(range(null, "2024-02-01"))).toBe(`${i18n.t("to")} ${formatDate("2024-02-01")}`);
+    expect(format(range(null, null))).toBe(i18n.t("all_period"));
+  });
+
+  it.each([
+    ["formatDateFilterMain", formatDateFilterMain],
+    ["formatDateFilterCheckboxHero", formatDateFilterCheckboxHero],
+  ])("%s labels a year, today, and falls back to the whole period", (_name, format) => {
+    expect(format({ type: "year", year: 2023 })).toBe("2023");
+    expect(format({ type: "year" } as never)).toBe(i18n.t("all_period"));
+    expect(format({ type: "today" })).toBe(i18n.t("today"));
+    expect(format({ type: "all" })).toBe(i18n.t("all_period"));
+  });
+
+  // The two differ only in what they say for "no filter" and "this year".
+  it("formatDateFilterMain names the whole period and this year in words", () => {
+    expect(formatDateFilterMain(null)).toBe(i18n.t("all_period"));
+    expect(formatDateFilterMain(undefined)).toBe(i18n.t("all_period"));
+    expect(formatDateFilterMain({ type: "this_year" })).toBe(i18n.t("this_year"));
+  });
+
+  it("formatDateFilterCheckboxHero says nothing without a filter and shows this year as a number", () => {
+    expect(formatDateFilterCheckboxHero(null)).toBe("");
+    expect(formatDateFilterCheckboxHero({ type: "this_year" })).toBe(String(new Date().getFullYear()));
+  });
+});
+
+describe("Date instances", () => {
+  it("formatDate and formatDateTime take a Date as well as a string", () => {
+    const d = new Date(FIXED_DATE);
+    expect(formatDate(d)).toBe(formatDate(FIXED_DATE));
+    expect(formatDateTime(d)).toBe(formatDateTime(FIXED_DATE));
+    expect(formatDateTime(null)).toBe("");
+  });
+});
+
+describe("share urls", () => {
+  const originalLanguage = i18n.language;
+
+  afterEach(() => {
+    i18n.language = originalLanguage;
+  });
+
+  // English is the site's default language and has no prefix in the path.
+  it("langBaseUrl prefixes every language but English", () => {
+    i18n.language = "en";
+    expect(langBaseUrl()).toBe(Config.baseUrl);
+    i18n.language = "ru";
+    expect(langBaseUrl()).toBe(`${Config.baseUrl}/ru`);
+  });
+
+  it("buildShareUrl returns the bare page without filters or sort", () => {
+    i18n.language = "en";
+    expect(buildShareUrl("my/community/5/")).toBe(`${Config.baseUrl}/my/community/5/`);
+  });
+
+  it("buildShareUrl carries the filters and sort, marked as a share", () => {
+    i18n.language = "en";
+    const url = new URL(buildShareUrl("stat/", { territory: 5, species: null }, "-seen"));
+
+    expect(url.pathname).toBe("/stat/");
+    expect(Object.fromEntries(url.searchParams)).toEqual({ territory: "5", o: "-seen", share: "1" });
+  });
+});
+
+describe("getFullVersion", () => {
+  const app = Application as { nativeApplicationVersion: string | null; nativeBuildVersion: string | null };
+
+  afterEach(() => {
+    app.nativeApplicationVersion = "1.2.3";
+    app.nativeBuildVersion = "45";
+  });
+
+  it("appends the build number to the version", () => {
+    expect(getFullVersion()).toBe("1.2.3 (45)");
+  });
+
+  it("shows the version alone without a build, and a dash without either", () => {
+    app.nativeBuildVersion = null;
+    expect(getFullVersion()).toBe("1.2.3");
+    app.nativeApplicationVersion = null;
+    expect(getFullVersion()).toBe("—");
+  });
+});
+
+describe("normalizeDistance", () => {
+  it("rounds to tenths of a km from 1000 m, metres below", () => {
+    expect(normalizeDistance(1250)).toBe(`~1.3 ${i18n.t("km")}`);
+    expect(normalizeDistance(999)).toBe(`~999 ${i18n.t("m")}`);
   });
 });

@@ -64,6 +64,7 @@ import { useLanguage } from "../../../store/language-context";
 import { useLocation } from "../../../store/location-context";
 import { useFilters } from "../../../store/filters-context";
 import { useDropdownQuery } from "../../../hooks/useDropdownQuery";
+import { fetchMyCountries, fetchMyPlaces, fetchSpecies } from "../../../util/fetches";
 import FilterSheetContent from "../FilterSheetContent";
 import { AllowedFilterKey, Filters } from "../../../types";
 
@@ -586,5 +587,116 @@ describe("focusKey — the chip a tap asked to edit", () => {
 
     expect(dropdownPropsByType("CountriesDropdown").openSignal).toBe(0);
     expect(dropdownPropsByType("SpeciesDropdown").openSignal).toBe(0);
+  });
+});
+
+describe("useDropdownQuery queryFn wiring", () => {
+  it("fetches countries, places and species for the chosen territory, coords and date", async () => {
+    (useLocation as jest.Mock).mockReturnValue({
+      locationCoords: [1, 2],
+      locationAvailable: true,
+      permissionStatus: "granted",
+      requestLocation: mockRequestLocation,
+    });
+    (useFilters as jest.Mock).mockReturnValue({
+      setTerritory: mockSetTerritory,
+      date: { type: "all" },
+      setDate: mockSetDate,
+      setPlace: mockSetPlace,
+      setSpecies: mockSetSpecies,
+    });
+    await render(<FilterSheetContent {...baseProps({ filters: { territory: 5 } })} />);
+
+    const queryFn = (type: string) =>
+      (useDropdownQuery as jest.Mock).mock.calls.map((c) => c[0]).find((o) => o.type === type).queryFn;
+
+    queryFn("CountriesDropdown")("name");
+    expect(fetchMyCountries).toHaveBeenCalledWith(false, "name");
+
+    queryFn("PlacesDropdown")("distance");
+    expect(fetchMyPlaces).toHaveBeenCalledWith(5, [1, 2], "distance");
+
+    queryFn("SpeciesDropdown")("-seen");
+    expect(fetchSpecies).toHaveBeenCalledWith(5, "-seen", { type: "all" });
+  });
+});
+
+describe("picked values reach the applied filters", () => {
+  const radioGroupPropsByLabel = (label: string) =>
+    mockRadioGroupCapture.mock.calls
+      .map((c) => c[0] as { label: string; onChange: (v: unknown) => void })
+      .filter((p) => p.label === label)
+      .at(-1)!;
+
+  it("applies the place, species, favourite and want-to-visit picked in the sheet", async () => {
+    await render(
+      <FilterSheetContent
+        {...baseProps({
+          allowed: ["territory", "place", "species", "favourite", "want_to_visit"] as AllowedFilterKey[],
+          filters: { territory: 5 },
+        })}
+      />,
+    );
+
+    await act(async () => {
+      dropdownPropsByType("PlacesDropdown").setValue(9);
+      dropdownPropsByType("SpeciesDropdown").setValue(3);
+      radioGroupPropsByLabel("favourites:").onChange(true);
+      radioGroupPropsByLabel("want_to_visit:").onChange(false);
+    });
+    await fireEvent.press(screen.getByText("apply"));
+
+    expect(mockSetFilters).toHaveBeenCalledWith({
+      territory: 5,
+      place: 9,
+      species: 3,
+      favourite: true,
+      want_to_visit: false,
+    });
+  });
+
+  it("applies the unsynced and privacy values picked in the sheet", async () => {
+    await render(
+      <FilterSheetContent {...baseProps({ allowed: ["unsynced", "private"] as AllowedFilterKey[] })} />,
+    );
+
+    await act(async () => {
+      radioGroupPropsByTestID("private-filter").onChange(true);
+      radioGroupPropsByTestID("unsynced-filter").onChange(true);
+    });
+    await fireEvent.press(screen.getByText("apply"));
+
+    expect(mockSetFilters).toHaveBeenCalledWith({ unsynced: true, private: true });
+  });
+
+  it("renders the species options as species rows", async () => {
+    await render(<FilterSheetContent {...baseProps({ filters: { territory: 5 } })} />);
+    const { renderOption } = dropdownPropsByType("SpeciesDropdown") as unknown as {
+      renderOption: (args: Record<string, unknown>) => React.ReactElement;
+    };
+
+    const row = renderOption({ item: { value: 3 }, selected: null, onSelect: jest.fn(), onClose: jest.fn() });
+    expect(row.props).toMatchObject({ item: { value: 3 } });
+  });
+});
+
+describe("focusKey waits for the query of the dropdown it opens", () => {
+  it.each([
+    ["place", "PlacesDropdown"],
+    ["territory", "CountriesDropdown"],
+  ])("%s", async (focusKey, type) => {
+    (useDropdownQuery as jest.Mock).mockImplementation(({ type: t }: { type: string }) => ({
+      query: t === type ? { data: undefined, isError: true } : queriesByType[t],
+      sort: `${t}-sort`,
+      onSortChange: onSortChangeByType[t],
+    }));
+
+    await render(<FilterSheetContent {...baseProps({ filters: { territory: 5 }, focusKey })} />);
+    expect(dropdownPropsByType(type).openSignal).toBe(0);
+  });
+
+  it("opens the place list once its query is there", async () => {
+    await render(<FilterSheetContent {...baseProps({ filters: { territory: 5 }, focusKey: "place" })} />);
+    expect(dropdownPropsByType("PlacesDropdown").openSignal).toBe(1);
   });
 });

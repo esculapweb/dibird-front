@@ -138,14 +138,35 @@ jest.mock("../../components/Observation/ObservationForm", () => {
       existingSpecies,
       openSpeciesSignal,
       setMultiSpecies,
+      photos,
+      onPickPhotos,
+      onRemovePhoto,
     }: {
       onAddNewPlace: (coords?: [number, number]) => void;
       onEditDiary: () => void;
       existingSpecies: Set<string | number>;
       openSpeciesSignal?: number;
       setMultiSpecies?: (items: { value: number; label: string }[]) => void;
+      photos: { id: number; local_uri?: string }[];
+      onPickPhotos: (uris: string[]) => void;
+      onRemovePhoto: (photo: { id: number }) => void;
     }) => (
       <>
+        <TouchableOpacity
+          testID="pick-photos"
+          onPress={() => onPickPhotos(["file:///cache/a.jpg"])}
+        >
+          <Text>pick photos</Text>
+        </TouchableOpacity>
+        {photos.map((photo, i) => (
+          <TouchableOpacity
+            key={photo.id}
+            testID={`remove-photo-${i}`}
+            onPress={() => onRemovePhoto(photo)}
+          >
+            <Text>{photo.local_uri ?? `photo-${photo.id}`}</Text>
+          </TouchableOpacity>
+        ))}
         <Text testID="multi-species-enabled">{String(!!setMultiSpecies)}</Text>
         {setMultiSpecies && (
           <TouchableOpacity
@@ -196,6 +217,9 @@ import { setTypedNavigationCallback } from "../../util/navigationCallbacks";
 import { useEditorForm } from "../../hooks/useEditorForm";
 import { useDefaultTerritory } from "../../hooks/useDefaultTerritory";
 import * as observationRepository from "../../hooks/repositories/observationRepository";
+import * as observationPhotoRepository from "../../hooks/repositories/observationPhotoRepository";
+import { runObservationPhotoSync } from "../../services/sync/observationPhotoSync";
+import { deleteLocalPhotos, persistPickedPhoto } from "../../util/photoFiles";
 import { createNavigationMock, createRouteMock } from "../test-utils";
 import ObservationEditorScreen from "../ObservationEditorScreen";
 
@@ -766,5 +790,76 @@ describe("several species picked at once (diary mode)", () => {
     });
     expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ["DiarySpecies", 11] });
     expect(mockNavigation.goBack).toHaveBeenCalled();
+  });
+});
+
+// Photos are staged and applied only on save — leaving the form must not
+// upload anything, exactly like every other field.
+describe("staged photos", () => {
+  const EXISTING = { id: 7, image: "a.jpg", thumbnail: "a_t.jpg", sort_order: 0, created_at: "" };
+
+  it("shows a picked photo right away and uploads it only once the observation is created", async () => {
+    await render(<ObservationEditorScreen />);
+    await fireEvent.press(screen.getByTestId("pick-photos"));
+    expect(screen.getByText("file:///cache/a.jpg")).toBeOnTheScreen();
+    expect(observationPhotoRepository.queueUploads).not.toHaveBeenCalled();
+
+    await pressSave();
+    const { onSuccess } = mockCreateMutate.mock.calls[0][1];
+    await act(async () => {
+      await onSuccess({ id: -5, date_time: "2026-01-01" });
+    });
+
+    expect(persistPickedPhoto).toHaveBeenCalledWith("file:///cache/a.jpg");
+    expect(observationPhotoRepository.queueUploads).toHaveBeenCalledWith(-5, [
+      { uri: "persisted:file:///cache/a.jpg" },
+    ]);
+    expect(runObservationPhotoSync).toHaveBeenCalledTimes(1);
+  });
+
+  it("drops the cache file of a photo removed before saving, and has nothing to sync", async () => {
+    await render(<ObservationEditorScreen />);
+    await fireEvent.press(screen.getByTestId("pick-photos"));
+    await fireEvent.press(screen.getByTestId("remove-photo-0"));
+
+    expect(screen.queryByText("file:///cache/a.jpg")).toBeNull();
+    expect(deleteLocalPhotos).toHaveBeenCalledWith(["file:///cache/a.jpg"]);
+
+    await pressSave();
+    await act(async () => {
+      await mockCreateMutate.mock.calls[0][1].onSuccess({ id: 1, date_time: "2026-01-01" });
+    });
+    expect(observationPhotoRepository.queueUploads).not.toHaveBeenCalled();
+    expect(runObservationPhotoSync).not.toHaveBeenCalled();
+  });
+
+  it("queues the delete of an already-saved photo only on save", async () => {
+    mockRoute = createRouteMock("ObservationEditor", {
+      observation: { id: 99, photos: [EXISTING] },
+    });
+    mockEditorForm({ itemWithParsedDate: { id: 99, date_time: "2026-01-01" } });
+    await render(<ObservationEditorScreen />);
+
+    await fireEvent.press(screen.getByTestId("remove-photo-0"));
+    expect(screen.queryByText("photo-7")).toBeNull();
+    expect(observationPhotoRepository.queueDelete).not.toHaveBeenCalled();
+
+    await pressSave();
+    await act(async () => {
+      await mockUpdateMutate.mock.calls[0][1].onSuccess();
+    });
+    expect(observationPhotoRepository.queueDelete).toHaveBeenCalledWith(99, EXISTING);
+    expect(observationPhotoRepository.queueUploads).not.toHaveBeenCalled();
+    expect(runObservationPhotoSync).toHaveBeenCalledTimes(1);
+    expect(mockNavigation.goBack).toHaveBeenCalled();
+  });
+
+  it("deletes the cache files of photos never saved when the screen goes away", async () => {
+    await render(<ObservationEditorScreen />);
+    await fireEvent.press(screen.getByTestId("pick-photos"));
+    (deleteLocalPhotos as jest.Mock).mockClear();
+
+    await screen.unmount();
+    expect(deleteLocalPhotos).toHaveBeenCalledWith(["file:///cache/a.jpg"]);
   });
 });

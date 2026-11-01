@@ -83,6 +83,18 @@ jest.mock("../../components/Map/MapL", () => {
   const { Text } = require("react-native");
   return { __esModule: true, default: () => <Text>map</Text> };
 });
+jest.mock("react-native-toast-message", () => ({ show: jest.fn() }));
+// PlaceReminderBlock is tested on its own; here only what the screen does with a save.
+jest.mock("../../components/Place/PlaceReminderBlock", () => {
+  const { Text } = require("react-native");
+  return {
+    __esModule: true,
+    default: (props: { onSave: (iso: string | null) => void }) => {
+      mockReminderBlockProps(props);
+      return <Text>reminder-block</Text>;
+    },
+  };
+});
 jest.mock("../../components/Filters/FilterChips", () => {
   const { Text } = require("react-native");
   return { __esModule: true, default: () => <Text>filter-chips</Text> };
@@ -101,9 +113,12 @@ import { runPlaceSync } from "../../services/sync/placeSync";
 import { useFilters } from "../../store/filters-context";
 import { BottomSheet } from "../../services/bottomSheet";
 import { createNavigationMock, createRouteMock } from "../test-utils";
+import Toast from "react-native-toast-message";
+import { requestPushPermission } from "../../hooks/usePushNotifications";
 import PlaceDetailScreen from "../PlaceDetailScreen";
 
 const mockShowErrorToast = jest.fn();
+const mockReminderBlockProps = jest.fn();
 const mockNavigation = createNavigationMock();
 const mockRoute = createRouteMock("PlaceDetail", { placeId: 1 });
 const mockRefetch = jest.fn();
@@ -353,4 +368,113 @@ it("invalidates this place's queries when the global date filter changes", async
   });
 
   expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ["Place", 1], exact: false });
+});
+
+describe("want-to-visit toggle", () => {
+  it("adds the place to the list without touching the reminder", async () => {
+    await render(<PlaceDetailScreen />);
+
+    const row = await menuRow("add_to_want_to_visit");
+    expect(row.icon).toBe("flag-outline");
+    row.onPress();
+
+    expect(mockUpdateMutate).toHaveBeenCalledWith({ want_to_visit: true }, expect.any(Object));
+  });
+
+  // A reminder for a place the user no longer plans to visit would only be noise.
+  it("clears the reminder when taking the place off the list", async () => {
+    mockPlaceItem({ data: { ...PLACE, want_to_visit: true } });
+    await render(<PlaceDetailScreen />);
+
+    const row = await menuRow("remove_from_want_to_visit");
+    expect(row.icon).toBe("flag");
+    row.onPress();
+
+    expect(mockUpdateMutate).toHaveBeenCalledWith(
+      { want_to_visit: false, visit_reminder_at: null },
+      expect.any(Object),
+    );
+  });
+
+  it("reports only a validation error", async () => {
+    await render(<PlaceDetailScreen />);
+    (await menuRow("add_to_want_to_visit")).onPress();
+    const { onError } = mockUpdateMutate.mock.calls.at(-1)![1];
+
+    onError({ message: "boom" });
+    expect(mockShowErrorToast).not.toHaveBeenCalled();
+
+    const error = { status: 400, response: { data: { want_to_visit: ["bad"] } } };
+    onError(error);
+    expect(mockShowErrorToast).toHaveBeenCalledWith(error, "PlaceDetailScreen:toggleWantToVisit:1");
+  });
+});
+
+describe("visit reminder", () => {
+  const ISO = "2099-05-01T10:00:00.000Z";
+
+  const saveReminder = async (iso: string | null) => {
+    const { onSave } = mockReminderBlockProps.mock.calls.at(-1)![0];
+    await act(async () => {
+      await onSave(iso);
+    });
+  };
+
+  beforeEach(() => {
+    mockPlaceItem({ data: { ...PLACE, want_to_visit: true, visit_reminder_at: null } });
+  });
+
+  it("is offered only for a place on the want-to-visit list", async () => {
+    mockPlaceItem();
+    await render(<PlaceDetailScreen />);
+    expect(screen.queryByText("reminder-block")).toBeNull();
+
+    mockPlaceItem({ data: { ...PLACE, want_to_visit: true } });
+    await render(<PlaceDetailScreen />);
+    expect(screen.getByText("reminder-block")).toBeOnTheScreen();
+  });
+
+  it("asks for the notification permission and saves the moment", async () => {
+    (requestPushPermission as jest.Mock).mockResolvedValue(true);
+    await render(<PlaceDetailScreen />);
+    await saveReminder(ISO);
+
+    expect(requestPushPermission).toHaveBeenCalled();
+    expect(Toast.show).not.toHaveBeenCalled();
+    expect(mockUpdateMutate).toHaveBeenCalledWith({ visit_reminder_at: ISO }, expect.any(Object));
+  });
+
+  // The moment still reaches the user's other devices, and fires here once
+  // the permission is granted in the OS settings.
+  it("still saves after a refused permission, and says why it won't fire", async () => {
+    (requestPushPermission as jest.Mock).mockResolvedValue(false);
+    await render(<PlaceDetailScreen />);
+    await saveReminder(ISO);
+
+    expect(Toast.show).toHaveBeenCalledWith(
+      expect.objectContaining({ text1: "reminder_permission_denied" }),
+    );
+    expect(mockUpdateMutate).toHaveBeenCalledWith({ visit_reminder_at: ISO }, expect.any(Object));
+  });
+
+  it("deletes the reminder without asking for the permission", async () => {
+    await render(<PlaceDetailScreen />);
+    await saveReminder(null);
+
+    expect(requestPushPermission).not.toHaveBeenCalled();
+    expect(mockUpdateMutate).toHaveBeenCalledWith({ visit_reminder_at: null }, expect.any(Object));
+  });
+
+  it("reports only a validation error", async () => {
+    await render(<PlaceDetailScreen />);
+    await saveReminder(null);
+    const { onError } = mockUpdateMutate.mock.calls.at(-1)![1];
+
+    onError({ message: "boom" });
+    expect(mockShowErrorToast).not.toHaveBeenCalled();
+
+    const error = { status: 400, response: { data: { visit_reminder_at: ["bad"] } } };
+    onError(error);
+    expect(mockShowErrorToast).toHaveBeenCalledWith(error, "PlaceDetailScreen:saveReminder:1");
+  });
 });

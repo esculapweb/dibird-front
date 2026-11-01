@@ -1,3 +1,7 @@
+// Factories only declare the mocks; their default behaviour is set in
+// beforeEach, after jest.resetAllMocks(). clearAllMocks alone would keep the
+// mockReturnValue/*Once a previous test left behind, so tests silently
+// depended on the order they ran in.
 jest.mock("../../services/api", () => ({
   get: jest.fn(),
   post: jest.fn(),
@@ -14,9 +18,9 @@ jest.mock("expo-file-system/legacy", () => ({
 }));
 jest.mock("../../hooks/repositories/referenceRepository", () => ({
   cacheCountries: jest.fn(),
-  getCachedCountries: jest.fn(() => []),
+  getCachedCountries: jest.fn(),
   cacheTimezones: jest.fn(),
-  getCachedTimezones: jest.fn(() => []),
+  getCachedTimezones: jest.fn(),
 }));
 jest.mock("../../hooks/repositories/listCacheRepository", () => ({
   cacheListResponse: jest.fn(),
@@ -24,26 +28,26 @@ jest.mock("../../hooks/repositories/listCacheRepository", () => ({
   getCachedListResponseByPrefix: jest.fn(),
 }));
 jest.mock("../../hooks/repositories/observationRepository", () => ({
-  getOverlay: jest.fn(() => ({ pendingCreates: [], patchesById: new Map(), deletedIds: new Set() })),
-  applyOverlay: jest.fn((data) => data),
-  applyDiaryOverlay: jest.fn((data) => data),
-  getUnsyncedItems: jest.fn(() => []),
+  getOverlay: jest.fn(),
+  applyOverlay: jest.fn(),
+  applyDiaryOverlay: jest.fn(),
+  getUnsyncedItems: jest.fn(),
 }));
 jest.mock("../../hooks/repositories/diaryRepository", () => ({
-  getOverlay: jest.fn(() => ({ pendingCreates: [], patchesById: new Map(), deletedIds: new Set() })),
-  applyOverlay: jest.fn((data) => data),
+  getOverlay: jest.fn(),
+  applyOverlay: jest.fn(),
   getDiary: jest.fn(),
-  getUnsyncedItems: jest.fn(() => []),
+  getUnsyncedItems: jest.fn(),
 }));
 jest.mock("../../hooks/repositories/placeRepository", () => ({
-  getOverlay: jest.fn(() => ({ pendingCreates: [], patchesById: new Map(), deletedIds: new Set() })),
-  applyOverlay: jest.fn((data) => data),
-  applyDropdownOverlay: jest.fn((items) => items),
-  getUnsyncedItems: jest.fn(() => []),
+  getOverlay: jest.fn(),
+  applyOverlay: jest.fn(),
+  applyDropdownOverlay: jest.fn(),
+  getUnsyncedItems: jest.fn(),
 }));
 jest.mock("../../hooks/repositories/notificationRepository", () => ({
-  applyOverlay: jest.fn((data) => data),
-  applyPendingUnreadAdjustment: jest.fn((count) => count),
+  applyOverlay: jest.fn(),
+  applyPendingUnreadAdjustment: jest.fn(),
   markIdsReadLocal: jest.fn(),
   markAllReadLocal: jest.fn(),
 }));
@@ -65,9 +69,26 @@ import * as fetches from "../fetches";
 
 const networkError = () => Object.assign(new Error("network down"), { isNetworkError: true });
 
+const emptyOverlay = () => ({ pendingCreates: [], patchesById: new Map(), deletedIds: new Set() });
+const passThrough = <T,>(data: T) => data;
+
 beforeEach(() => {
-  jest.clearAllMocks();
+  jest.resetAllMocks();
   (isConnected as jest.Mock).mockReturnValue(true);
+
+  (referenceRepository.getCachedCountries as jest.Mock).mockReturnValue([]);
+  (referenceRepository.getCachedTimezones as jest.Mock).mockReturnValue([]);
+
+  for (const repo of [observationRepository, diaryRepository, placeRepository]) {
+    (repo.getOverlay as jest.Mock).mockImplementation(emptyOverlay);
+    (repo.applyOverlay as jest.Mock).mockImplementation(passThrough);
+    (repo.getUnsyncedItems as jest.Mock).mockReturnValue([]);
+  }
+  (observationRepository.applyDiaryOverlay as jest.Mock).mockImplementation(passThrough);
+  (placeRepository.applyDropdownOverlay as jest.Mock).mockImplementation(passThrough);
+
+  (notificationRepository.applyOverlay as jest.Mock).mockImplementation(passThrough);
+  (notificationRepository.applyPendingUnreadAdjustment as jest.Mock).mockImplementation(passThrough);
 });
 
 describe("sortChecklistSpecies", () => {
@@ -404,7 +425,6 @@ describe("fetchDiaryObservations (diary-scoped deriveFallback)", () => {
     (listCacheRepository.getCachedListResponse as jest.Mock).mockReturnValue(undefined);
     (listCacheRepository.getCachedListResponseByPrefix as jest.Mock).mockReturnValue(undefined);
     (diaryRepository.getDiary as jest.Mock).mockReturnValue({ observation_count: 0 });
-    (observationRepository.applyDiaryOverlay as jest.Mock).mockImplementation((data) => data);
 
     const result = await fetches.fetchDiaryObservations({ diary: 5 } as never, null, "", 1);
     expect(result.results).toEqual([]);
@@ -1504,5 +1524,204 @@ describe("sendContactMessage", () => {
       app_version: expect.any(String),
       platform: `${Platform.OS} ${Platform.Version}`,
     });
+  });
+});
+
+describe("observation photos", () => {
+  it("uploadObservationPhoto posts the file as multipart with its order and request id", async () => {
+    (api.post as jest.Mock).mockResolvedValue({ data: { id: 70 } });
+    // jest's FormData is Node's, which would stringify RN's file object.
+    const append = jest.spyOn(FormData.prototype, "append").mockImplementation(() => {});
+
+    const result = await fetches.uploadObservationPhoto(5, "file:///p.jpg", 2, "req-1");
+
+    const [url, body, config] = (api.post as jest.Mock).mock.calls[0];
+    expect(url).toBe("/myapi/observation-photo/");
+    expect(body).toBeInstanceOf(FormData);
+    const fields = Object.fromEntries(append.mock.calls);
+    append.mockRestore();
+    expect(fields).toEqual({
+      image: { uri: "file:///p.jpg", name: "photo.jpg", type: "image/jpeg" },
+      observation: "5",
+      sort_order: "2",
+      client_request_id: "req-1",
+    });
+    expect(config).toEqual({
+      headers: { "Content-Type": "multipart/form-data" },
+      timeout: 60000,
+    });
+    expect(result).toEqual({ id: 70 });
+  });
+
+  it("deleteObservationPhoto deletes by photo id", async () => {
+    (api.delete as jest.Mock).mockResolvedValue({});
+    await fetches.deleteObservationPhoto(70);
+    expect(api.delete).toHaveBeenCalledWith("/myapi/observation-photo/70/");
+  });
+});
+
+describe("moderation", () => {
+  it("reportContent sends the target and reason, and the comment only when given", async () => {
+    (api.post as jest.Mock).mockResolvedValue({});
+    const target = { observation: 9 } as never;
+
+    await fetches.reportContent(target, "spam" as never);
+    expect(api.post).toHaveBeenLastCalledWith("/myapi/reports/", { observation: 9, reason: "spam" });
+
+    await fetches.reportContent(target, "spam" as never, "fake photo");
+    expect(api.post).toHaveBeenLastCalledWith("/myapi/reports/", {
+      observation: 9,
+      reason: "spam",
+      comment: "fake photo",
+    });
+  });
+
+  it("fetchBlockedUsers returns the page's rows", async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: { results: [{ id: 1 }] } });
+    await expect(fetches.fetchBlockedUsers()).resolves.toEqual([{ id: 1 }]);
+    expect(api.get).toHaveBeenCalledWith("/myapi/blocks/");
+  });
+
+  // Unblocking is addressed by profile id, the same id blocking sends.
+  it("blockUser / unblockUser address the profile", async () => {
+    (api.post as jest.Mock).mockResolvedValue({});
+    (api.delete as jest.Mock).mockResolvedValue({});
+
+    await fetches.blockUser(42);
+    expect(api.post).toHaveBeenCalledWith("/myapi/blocks/", { blocked: 42 });
+
+    await fetches.unblockUser(42);
+    expect(api.delete).toHaveBeenCalledWith("/myapi/blocks/42/");
+  });
+});
+
+describe("fetchNoPlaceObservationCount", () => {
+  it("counts place-less observations, ignoring the place and unsynced filters", async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: { pagination: { count: 3 } } });
+
+    const count = await fetches.fetchNoPlaceObservationCount({
+      place: 4,
+      unsynced: true,
+      species: 7,
+    } as never);
+
+    expect(count).toBe(3);
+    const [url, { params }] = (api.get as jest.Mock).mock.calls[0];
+    expect(url).toBe("/myapi/observation2/");
+    expect(params).toMatchObject({ species: 7, has_place: false, per_page: 1 });
+    expect(params).not.toHaveProperty("place");
+    expect(params).not.toHaveProperty("unsynced");
+  });
+});
+
+describe.each([
+  ["fetchOnlyObservationAtPlace", fetches.fetchOnlyObservationAtPlace],
+  ["fetchOnlyDiaryAtPlace", fetches.fetchOnlyDiaryAtPlace],
+])("%s", (_name, fetchOnly) => {
+  it("returns the single item at the place, scoped by the place filter", async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: { results: [{ id: 1 }] } });
+
+    await expect(fetchOnly({}, 8)).resolves.toEqual({ id: 1 });
+    expect((api.get as jest.Mock).mock.calls[0][1].params.place).toBe(8);
+  });
+
+  it("returns null when there is more than one item", async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: { results: [{ id: 1 }, { id: 2 }] } });
+    await expect(fetchOnly({}, 8)).resolves.toBeNull();
+  });
+
+  // A miss only costs the user the filtered list instead of the item.
+  it("returns null instead of throwing when the request fails", async () => {
+    (api.get as jest.Mock).mockRejectedValue(new Error("boom"));
+    await expect(fetchOnly({}, 8)).resolves.toBeNull();
+  });
+});
+
+describe("fetchWantToVisitPlaces", () => {
+  it("requests every want-to-visit place in one page", async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: { results: [{ id: 3 }] } });
+
+    await expect(fetches.fetchWantToVisitPlaces()).resolves.toEqual([{ id: 3 }]);
+    expect((api.get as jest.Mock).mock.calls[0]).toEqual([
+      "/myapi/place2/",
+      { params: expect.objectContaining({ want_to_visit: true, o: "name", page: 1 }) },
+    ]);
+  });
+
+  it("returns an empty list for a response without results", async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: {} });
+    await expect(fetches.fetchWantToVisitPlaces()).resolves.toEqual([]);
+  });
+});
+
+describe("reportAppUpdate", () => {
+  const params = { kind: "ota", stage: "applied", revision: "abc" } as never;
+
+  it("sends the release with the platform and language", async () => {
+    (api.post as jest.Mock).mockResolvedValue({ status: 201 });
+
+    await expect(fetches.reportAppUpdate(params)).resolves.toBe(true);
+    expect(api.post).toHaveBeenCalledWith("/myapi/notifications/app-update/", {
+      kind: "ota",
+      stage: "applied",
+      revision: "abc",
+      platform: Platform.OS,
+      language: "en",
+    });
+  });
+
+  // 204 = no release notes yet; the caller must be free to ask again later.
+  it("reports no notification on 204", async () => {
+    (api.post as jest.Mock).mockResolvedValue({ status: 204 });
+    await expect(fetches.reportAppUpdate(params)).resolves.toBe(false);
+  });
+});
+
+describe("account e-mails and social accounts", () => {
+  it("fetchMyEmails / addMyEmail return the server's data", async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: [{ id: 1 }] });
+    await expect(fetches.fetchMyEmails()).resolves.toEqual([{ id: 1 }]);
+    expect(api.get).toHaveBeenCalledWith("/myapi/emails/");
+
+    (api.post as jest.Mock).mockResolvedValue({ data: { id: 2 } });
+    await expect(fetches.addMyEmail("a@b.c")).resolves.toEqual({ id: 2 });
+    expect(api.post).toHaveBeenCalledWith("/myapi/emails/", { email: "a@b.c" });
+  });
+
+  it("deleteMyEmail / setMyPrimaryEmail / resendMyEmailConfirmation address the e-mail", async () => {
+    (api.delete as jest.Mock).mockResolvedValue({});
+    (api.post as jest.Mock).mockResolvedValue({ data: [{ id: 2, primary: true }] });
+
+    await fetches.deleteMyEmail(2);
+    expect(api.delete).toHaveBeenCalledWith("/myapi/emails/2/");
+
+    await expect(fetches.setMyPrimaryEmail(2)).resolves.toEqual([{ id: 2, primary: true }]);
+    expect(api.post).toHaveBeenCalledWith("/myapi/emails/2/set-primary/");
+
+    await fetches.resendMyEmailConfirmation(2);
+    expect(api.post).toHaveBeenLastCalledWith("/myapi/emails/2/resend/");
+  });
+
+  it("fetchMySocialAccounts / disconnectSocialAccount", async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: [{ id: 5 }] });
+    await expect(fetches.fetchMySocialAccounts()).resolves.toEqual([{ id: 5 }]);
+    expect(api.get).toHaveBeenCalledWith("/myapi/profile/social/");
+
+    (api.post as jest.Mock).mockResolvedValue({});
+    await fetches.disconnectSocialAccount(5);
+    expect(api.post).toHaveBeenCalledWith("/myapi/social-accounts/5/disconnect/");
+  });
+});
+
+describe("resortObservationItems by distance", () => {
+  it("sorts when every row carries a distance", () => {
+    const items = [{ id: 1, distance: 5 }, { id: 2, distance: 1 }] as never[];
+    expect(fetches.resortObservationItems(items, "distance").map((i: { id: number }) => i.id)).toEqual([2, 1]);
+  });
+
+  // A row without a distance (a local create) can't be placed — keep the server order.
+  it("leaves the order alone when a row has no distance", () => {
+    const items = [{ id: 1, distance: 5 }, { id: 2 }] as never[];
+    expect(fetches.resortObservationItems(items, "distance")).toBe(items);
   });
 });
