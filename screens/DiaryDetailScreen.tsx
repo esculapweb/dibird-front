@@ -4,18 +4,14 @@ import {
   Text,
   StyleSheet,
   Pressable,
-  Share,
-  Platform,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
-import Toast from "react-native-toast-message";
 import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 
 import { useTheme, ThemeColors } from "../store/theme-context";
 import {
   formatDateLong,
-  buildShareUrl,
   isoToFlagEmoji,
   toDateOnly,
 } from "../util/helpers";
@@ -38,12 +34,11 @@ import ListScreen from "./ListScreen";
 import { overflowButton } from "../components/ui/overflowMenu";
 import { fetchDiaryObservations } from "../util/fetches";
 import { StaleTime } from "../constants/staleTime";
-import DiaryObservationCard from "../components/Diary/DiaryObservationCard";
+import SwipeableDiaryObservationCard from "../components/Diary/SwipeableDiaryObservationCard";
 import ProfileAvatar from "../components/Profile/ProfileAvatar";
 import { useProfileDisplay } from "../hooks/Profile/useProfileDisplay";
-import { BottomSheet } from "../services/bottomSheet";
-import { track } from "../services/analytics";
-import { useApiError } from "../hooks/useApiError";
+import { shareDiary } from "../util/share";
+import { useConfirmDelete } from "../hooks/useConfirmDelete";
 import FailedEditBanner from "../components/Profile/FailedEditBanner";
 
 import {
@@ -58,7 +53,6 @@ const DiaryDetailScreen = () => {
   const navigation = useNavigation<AppStackNavigationProp>();
   const route = useRoute<AppStackRouteProp<"DiaryDetail">>();
   const { diaryId, initialDiary, addObservation } = route.params;
-  const { showErrorToast } = useApiError();
 
   // Same defensive retry as ObservationDetailScreen: NetInfo's reconnect event
   // can be missed/racy, so opportunistically retry the queue whenever this
@@ -81,6 +75,7 @@ const DiaryDetailScreen = () => {
   } = useDiaryItem(diaryId, initialDiary);
 
   const updateMutation = useUpdateDiary(diaryId);
+  const confirmDelete = useConfirmDelete();
   const deleteMutation = useDeleteDiary();
 
   // An offline create resolves to a real server id in the background; once
@@ -309,25 +304,16 @@ const DiaryDetailScreen = () => {
     openObservationEditor(true);
   }, [addObservation, diary, navigation, openObservationEditor]);
 
-  const handleShare = useCallback(async () => {
-    if (diary?.private) {
-      Toast.show({
-        type: "info",
-        text1: t("diary_private"),
-        text2: t("diary_private_share_hint"),
-      });
-      return;
-    }
-
-    const url = buildShareUrl(
-      `my/diary/${diaryId}/`,
-      currentFilters,
-      currentSort,
-    );
-
-    track("share_tapped", { type: "diary" });
-    await Share.share(Platform.OS === "ios" ? { url } : { message: url });
-  }, [diary, diaryId, currentFilters, currentSort]);
+  const handleShare = useCallback(
+    () =>
+      shareDiary(
+        { id: diaryId, private: diary?.private },
+        t,
+        currentFilters,
+        currentSort,
+      ),
+    [diary, diaryId, currentFilters, currentSort],
+  );
 
   const noItems = {
     icon: "binoculars-outline" as const,
@@ -341,34 +327,29 @@ const DiaryDetailScreen = () => {
   }: {
     item: DiaryObservationItem;
     index: number;
-  }) => <DiaryObservationCard item={item} index={index} owner={diary.is_owner} />;
+  }) => <SwipeableDiaryObservationCard
+      item={item}
+      index={index}
+      owner={diary.is_owner}
+      diaryId={diaryId}
+      territoryValue={diary.territory}
+    />;
 
   const handleDelete = useCallback(() => {
     if (!diary) return;
-
-    BottomSheet.show({
-      title: t("delete_title"),
-      description: t("delete_diary_message"),
-      confirmText: t("delete"),
-      cancelText: t("cancel"),
-      danger: true,
-      // See ObservationDetailScreen: the promise is what keeps the confirm
-      // sheet showing progress until the delete settles.
-      onConfirm: () =>
-        new Promise<void>((resolve) => {
-          deleteMutation.mutate(diaryId, {
-            onSuccess: () => {
-              navigation.goBack();
-              resolve();
-            },
-            onError: (e) => {
-              showErrorToast(e, `DiaryDetailScreen:deleteDiary:${diaryId}`);
-              resolve();
-            },
-          });
+    confirmDelete({
+      message: t("delete_diary_message"),
+      runDelete: ({ onSuccess, onError }) =>
+        deleteMutation.mutate(diaryId, {
+          onSuccess: () => {
+            navigation.goBack();
+            onSuccess();
+          },
+          onError,
         }),
+      tag: `DiaryDetailScreen:deleteDiary:${diaryId}`,
     });
-  }, [diary, diaryId]);
+  }, [diary, diaryId, confirmDelete]);
 
   const handleOpenEdit = useCallback(
     () =>

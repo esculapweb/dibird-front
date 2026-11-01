@@ -11,6 +11,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { BirdSVG } from "./Svgs";
 
+import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { IconType } from "../../types";
 
@@ -35,6 +36,9 @@ interface InputProps {
   maxLength?: number;
   minHeight?: number;
   testID?: string;
+  // Inside a @gorhom/bottom-sheet the plain TextInput is invisible to the
+  // sheet's keyboard handling — it would stay put under the keyboard.
+  inBottomSheet?: boolean;
 }
 
 const Input = ({
@@ -56,10 +60,12 @@ const Input = ({
   maxLength,
   minHeight,
   testID,
+  inBottomSheet = false,
 }: InputProps) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
   const [isSecure, setIsSecure] = useState(secure);
+  const TextInputComponent = inBottomSheet ? BottomSheetTextInput : TextInput;
 
   const toggleSecure = () => {
     setIsSecure((prev) => !prev);
@@ -73,7 +79,7 @@ const Input = ({
         </Text>
       )}
       <View style={[styles.inputWrapper, isInvalid && styles.inputInvalid]}>
-        <TextInput
+        <TextInputComponent
           testID={testID}
           style={[
             styles.input,

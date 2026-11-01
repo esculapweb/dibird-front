@@ -2276,6 +2276,18 @@ export const markNotificationsRead = async (ids?: number[]): Promise<void> => {
   runNotificationSync();
 };
 
+// Every "want to visit" place, for services/placeReminders' reconcile. A plain
+// request, deliberately past the offline cache: reconciling against a stale
+// cached page could cancel a reminder set since then, so offline the caller
+// skips the pass instead. One page under the server's per_page cap, same as
+// the maps (MAP_PLACES_PER_PAGE).
+export const fetchWantToVisitPlaces = async (): Promise<PlaceItem[]> => {
+  const res = await api.get<PaginatedResponse<PlaceItem>>("/myapi/place2/", {
+    params: { want_to_visit: true, o: "name", page: 1, per_page: MAP_PLACES_PER_PAGE },
+  });
+  return res.data.results ?? [];
+};
+
 export const registerPushToken = async (token: string): Promise<void> => {
   await api.post("/myapi/push-token/", {
     token,

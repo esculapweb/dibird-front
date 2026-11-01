@@ -3,6 +3,7 @@ import { AppError } from "../../types";
 import * as placeRepository from "../../hooks/repositories/placeRepository";
 import { PlaceMutationPayload } from "../../hooks/repositories/placeRepository";
 import { isConnected } from "./networkStatus";
+import { cancelPlaceReminder, schedulePlaceReminder } from "../placeReminders";
 import { runObservationSync } from "./observationSync";
 import { runDiarySync } from "./diarySync";
 import { INVALIDATION_MAP } from "../../util/invalidationMap";
@@ -90,6 +91,10 @@ const runPlaceSyncInternal = async () => {
         });
         placeRepository.replaceLocalWithServer(payload.localId, res.data);
         invalidatePlaceQueries(payload.localId, res.data.id);
+        // A reminder set on the offline draft is scheduled under its temp id —
+        // move it to the server one, which is what the tap has to open.
+        cancelPlaceReminder(payload.localId);
+        schedulePlaceReminder(res.data);
         // Any observation/diary queued against this place's temp id while it
         // was still pending can now resolve it — wake both queues
         // immediately instead of leaving them to their own retry timers.

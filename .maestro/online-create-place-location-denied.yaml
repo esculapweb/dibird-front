@@ -8,7 +8,8 @@
 # usePlaceLocation's locateMe() checks permissionStatus === "denied" and
 # calls useLocationUnavailable() instead of requesting a GPS fix (see
 # usePlaceLocation.ts) — a bottom sheet, not a crash or a blocked screen.
-# latitude-input/longitude-input start genuinely empty in this path (no GPS
+# latitude-input/longitude-input (behind the folded coordinates row) start
+# genuinely empty in this path (no GPS
 # fix means no reverse-geocode autofill either) — but this flow's own manual
 # lat/lng entry below still triggers a reverse-geocode (this variant is
 # online, unlike offline-create-place.yaml), which can suggest a name into
@@ -110,8 +111,12 @@ tags:
 
 - extendedWaitUntil:
     visible:
-      id: "latitude-input"
+      id: "place-coords-toggle"
     timeout: 8000
+# The coordinates are one folded summary row by default (PlaceForm) — open
+# them for the lat/lng inputs and the "Latitude" label tapped below.
+- tapOn:
+    id: "place-coords-toggle"
 # Genuinely empty — no GPS fix ever arrived to autofill these, unlike
 # every other Place flow (which erases pre-filled text first).
 - assertVisible:

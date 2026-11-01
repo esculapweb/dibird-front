@@ -7,6 +7,7 @@ import {
   Profile,
   EditorItem,
   DiaryItem,
+  DiaryListItem,
   ObservationItem,
   SpeciesDropdownItem,
   PlaceDropdownItem,
@@ -18,7 +19,7 @@ import {
 } from "../types";
 
 interface UseEditorFormParams {
-  item: EditorItem | DiaryItem | ObservationItem | null;
+  item: EditorItem | DiaryItem | DiaryListItem | ObservationItem | null;
   defaultTerritory?: number | null;
   defaultPlace?: number | null;
   defaultSpecies?: number | null;
@@ -63,7 +64,7 @@ export const useEditorForm = ({
 
   const itemWithParsedDate: ParsedEditorItem | undefined = item
     ? {
-        ...(item as DiaryItem | ObservationItem | EditorItem),
+        ...(item as DiaryItem | DiaryListItem | ObservationItem | EditorItem),
         date_time: item.date_time ? toDateOnly(item.date_time) : undefined,
       }
     : undefined;

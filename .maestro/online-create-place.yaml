@@ -84,22 +84,26 @@ tags:
 # and then fails looking for a "+" button that is no longer on screen.
 - extendedWaitUntil:
     visible:
-      id: "latitude-input"
+      id: "place-coords-toggle"
     timeout: 8000
     optional: true
 - runFlow:
     when:
       notVisible:
-        id: "latitude-input"
+        id: "place-coords-toggle"
     commands:
       - tapOn:
           id: "list-add-button"
 - extendedWaitUntil:
     visible:
-      id: "latitude-input"
+      id: "place-coords-toggle"
     timeout: 8000
 - waitForAnimationToEnd:
     timeout: 4000
+# The coordinates are one folded summary row by default (PlaceForm) — open
+# them for the lat/lng inputs and the "Latitude" label tapped below.
+- tapOn:
+    id: "place-coords-toggle"
 - tapOn:
     id: "place-name-input"
 # Pre-filled with the reverse-geocoded address — erase first or pasteText
@@ -111,6 +115,11 @@ tags:
 # offline-create-place.yaml's CREATE section for why plain `back` is
 # unreliable here.
 - tapOn: ".*Latitude.*"
+# Flagged "want to visit" right in the form (WantToVisitSection), checked on
+# the detail screen below. The reminder is left alone: it is a local
+# notification, and push is a manual checklist item (RELEASE_CHECKLIST.md §6).
+- tapOn:
+    id: "place-want-to-visit-toggle"
 - tapOn:
     id: "place-save-button"
 - runFlow:
@@ -130,11 +139,22 @@ tags:
       id: "place-edit-button"
     timeout: 10000
 - assertVisible: ".*Online Test Place.*"
+# Only a flagged place shows the reminder block — so its presence is the
+# saved want_to_visit, read back from the server's answer.
+- scrollUntilVisible:
+    element:
+      id: "place-reminder-block"
+    direction: DOWN
+    timeout: 10000
 
 # ---- UPDATE, online ----
 - tapOn:
     id: "place-edit-button"
 - waitForAnimationToEnd
+# The coordinates are one folded summary row by default (PlaceForm) — open
+# them for the lat/lng inputs and the "Latitude" label tapped below.
+- tapOn:
+    id: "place-coords-toggle"
 - tapOn:
     id: "place-name-input"
 - eraseText: 50

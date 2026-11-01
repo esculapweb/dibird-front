@@ -363,7 +363,9 @@ describe("delete", () => {
     expect(settled).toBe(true);
   });
 
-  it("stops waiting when the delete fails, after reporting it", async () => {
+  // The delete mutation's wrapper (useMutationWithTranslation) has already
+  // toasted an ordinary failure — a second toast from here only doubled it.
+  it("stops waiting when the delete fails, leaving the toast to the mutation", async () => {
     await render(<ObservationDetailScreen />);
     (await menuRow("delete_observation")).onPress();
     const { onConfirm } = (BottomSheet.show as jest.Mock).mock.calls[0][0];
@@ -372,7 +374,25 @@ describe("delete", () => {
     mockDeleteMutate.mock.calls[0][1].onError({ message: "boom" });
 
     await expect(pending).resolves.toBeUndefined();
-    expect(mockShowErrorToast).toHaveBeenCalled();
+    expect(mockShowErrorToast).not.toHaveBeenCalled();
+    expect(mockNavigation.goBack).not.toHaveBeenCalled();
+  });
+
+  // ...except a validation error, which the wrapper leaves to the caller.
+  it("reports a validation error itself", async () => {
+    await render(<ObservationDetailScreen />);
+    (await menuRow("delete_observation")).onPress();
+    const { onConfirm } = (BottomSheet.show as jest.Mock).mock.calls[0][0];
+
+    const pending = onConfirm();
+    const error = { status: 400, response: { data: { detail: "nope" } } };
+    mockDeleteMutate.mock.calls[0][1].onError(error);
+
+    await expect(pending).resolves.toBeUndefined();
+    expect(mockShowErrorToast).toHaveBeenCalledWith(
+      error,
+      "ObservationDetailScreen:deleteObservation:1",
+    );
   });
 });
 

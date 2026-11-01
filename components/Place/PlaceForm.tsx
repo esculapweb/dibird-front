@@ -1,6 +1,8 @@
 import { useState, useEffect, Dispatch, SetStateAction } from "react";
-import { StyleSheet, View } from "react-native";
+import { LayoutAnimation, Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+import { useTheme, ThemeColors } from "../../store/theme-context";
 import Input from "../ui/Input";
 import DropdownInput from "../ui/DropdownInput";
 import { fetchMyCountries } from "../../util/fetches";
@@ -31,8 +33,15 @@ interface PlaceFormProps {
   setErrors: Dispatch<SetStateAction<Errors>>;
   locationDetails?: ReverseGeocode | null;
   isEditMode?: boolean;
+  // Fired when the lat/lng inputs open, by a tap or by a coordinate error.
+  onCoordsExpand?: () => void;
 }
 
+// Lives in PlaceEditorScreen's form sheet, hence the sheet-aware inputs.
+// Placeholders instead of labels, as in the observation/diary forms, so the
+// whole form fits the sheet's resting height. The coordinates are usually set
+// by a tap on the map, so by default they are one summary row; the lat/lng
+// inputs open on a tap on it (or on a coordinate validation error).
 const PlaceForm = ({
   onCoordsChange,
   formData,
@@ -46,12 +55,35 @@ const PlaceForm = ({
   setErrors,
   locationDetails,
   isEditMode,
+  onCoordsExpand,
 }: PlaceFormProps) => {
   const { t } = useTranslation();
-  const styles = stylesFn();
+  const { Colors } = useTheme();
+  const styles = stylesFn(Colors);
   const { language } = useLanguage();
 
   const [territory, setTerritory] = useState<string | number | null>(null);
+  const [coordsExpanded, setCoordsExpanded] = useState(false);
+
+  const hasCoordsError = !!errors.latitude || !!errors.longitude;
+
+  // Opened by the error, not kept open by it: deriving visibility from the
+  // error would fold the inputs away mid-typing, the moment a keystroke
+  // makes the value valid and clears the error.
+  useEffect(() => {
+    if (!hasCoordsError) return;
+    setCoordsExpanded(true);
+    onCoordsExpand?.();
+  }, [hasCoordsError]);
+
+  const toggleCoords = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    if (!coordsExpanded) onCoordsExpand?.();
+    setCoordsExpanded(!coordsExpanded);
+  };
+
+  const coordsSummary =
+    latText && lngText ? `${latText}, ${lngText}` : null;
 
   const {
     query: queryMyCountries,
@@ -118,41 +150,16 @@ const PlaceForm = ({
   return (
     <View style={styles.formSection}>
       <Input
-        label={t("place_name")}
+        placeholder={t("place_name")}
         value={formData.name}
         onUpdateValue={onChangeName}
         isInvalid={!!errors.name}
         error={errors.name}
         testID="place-name-input"
+        inBottomSheet
       />
 
-      <View style={styles.coordsContainer}>
-        <View style={styles.coordInputWrapper}>
-          <Input
-            label={t("latitude")}
-            value={latText}
-            onUpdateValue={onChangeLat}
-            keyboardType="numbers-and-punctuation"
-            isInvalid={!!errors.latitude}
-            error={errors.latitude}
-            testID="latitude-input"
-          />
-        </View>
-        <View style={styles.coordInputWrapper}>
-          <Input
-            label={t("longitude")}
-            value={lngText}
-            onUpdateValue={onChangeLng}
-            keyboardType="numbers-and-punctuation"
-            isInvalid={!!errors.longitude}
-            error={errors.longitude}
-            testID="longitude-input"
-          />
-        </View>
-      </View>
-
       <DropdownInput
-        title={t("country")}
         placeholder={t("select_country")}
         value={territory}
         setValue={onChangeTerritory}
@@ -162,15 +169,86 @@ const PlaceForm = ({
         sort={countriesSort}
         onSortChange={onCountriesSortChange}
       />
+
+      <Pressable
+        onPress={toggleCoords}
+        style={[styles.coordsRow, hasCoordsError && styles.coordsRowInvalid]}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: coordsExpanded }}
+        testID="place-coords-toggle"
+      >
+        <Ionicons
+          name="location-outline"
+          size={16}
+          color={Colors.textSecondary}
+        />
+        <Text
+          style={[styles.coordsText, !coordsSummary && styles.coordsPlaceholder]}
+          numberOfLines={1}
+          testID="place-coords-summary"
+        >
+          {coordsSummary ?? t("coordinates")}
+        </Text>
+        <Ionicons
+          name={coordsExpanded ? "chevron-up" : "create-outline"}
+          size={18}
+          color={Colors.main100}
+        />
+      </Pressable>
+
+      {coordsExpanded && (
+        <View style={styles.coordsContainer}>
+          <View style={styles.coordInputWrapper}>
+            <Input
+              label={t("latitude")}
+              value={latText}
+              onUpdateValue={onChangeLat}
+              keyboardType="numbers-and-punctuation"
+              isInvalid={!!errors.latitude}
+              error={errors.latitude}
+              testID="latitude-input"
+              inBottomSheet
+            />
+          </View>
+          <View style={styles.coordInputWrapper}>
+            <Input
+              label={t("longitude")}
+              value={lngText}
+              onUpdateValue={onChangeLng}
+              keyboardType="numbers-and-punctuation"
+              isInvalid={!!errors.longitude}
+              error={errors.longitude}
+              testID="longitude-input"
+              inBottomSheet
+            />
+          </View>
+        </View>
+      )}
     </View>
   );
 };
 
 export default PlaceForm;
 
-const stylesFn = () =>
+const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
-    formSection: { padding: 16, marginBottom: 8 },
+    formSection: { paddingHorizontal: 16, paddingTop: 12 },
+    // Same box as the Input/DropdownInput triggers above it.
+    coordsRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      height: 40,
+      marginBottom: 16,
+      paddingHorizontal: 8,
+      borderWidth: 1,
+      borderRadius: 4,
+      borderColor: Colors.border,
+      backgroundColor: Colors.primary100,
+    },
+    coordsRowInvalid: { borderColor: Colors.error500 },
+    coordsText: { flex: 1, fontSize: 16, color: Colors.textMain },
+    coordsPlaceholder: { color: Colors.textSecondary },
     coordsContainer: { flexDirection: "row", gap: 12 },
     coordInputWrapper: { flex: 1 },
   });

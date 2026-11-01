@@ -23,6 +23,23 @@ export const DarkColors = {
   yellow: "#F0C24B",
   star: "#E8D8B0",
 
+  // Place flags, wherever a card or a row shows them. Their own keys rather
+  // than yellow/main100: in the dark theme those two are the same colour, and
+  // a favourite star and a want-to-visit flag side by side became one blob.
+  favourite: "#F0C24B",
+  wantToVisit: "#34D399",
+
+  // Swipe-action buttons of the list rows. Each carries its icon and label in
+  // onAction, so every one is picked for >= 4.5:1 against white (the small
+  // 11px label needs it) — the brand and status colours above fall short.
+  // Same in both themes: the button sits on its own fill, not on the page.
+  onAction: "#ffffff",
+  actionEdit: "#2563EB",
+  actionShare: "#475569",
+  actionDelete: "#DC2626",
+  actionFavourite: "#B45309",
+  actionWantToVisit: "#047857",
+
   primary100: "#1b1b1b",
   primary200: "#1e293b",
   primary300: "#1f2937",

@@ -73,8 +73,9 @@ describe("routeNotification", () => {
     ["Notifications"],
     ["Checklist"],
     ["Settings"],
+    ["PlaceDetail"],
   ])("has a branch for the %s payload", (screen) => {
-    route({ screen, obsId: 1, speciesId: 1 } as never);
+    route({ screen, obsId: 1, speciesId: 1, placeId: 1 } as never);
 
     expect(navigate).toHaveBeenCalled();
   });
@@ -85,10 +86,17 @@ describe("routeNotification", () => {
   it.each([
     ["CommunityDetail", "obsId"],
     ["SpeciesDetail", "speciesId"],
+    ["PlaceDetail", "placeId"],
   ])("stays put when %s arrives without its %s", (screen) => {
     route({ screen } as never);
 
     expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it("opens the place a local reminder points at", () => {
+    route({ screen: "PlaceDetail", placeId: 42 });
+
+    expect(navigate).toHaveBeenCalledWith("PlaceDetail", { placeId: 42 });
   });
 
   it("ignores a screen it has never heard of", () => {

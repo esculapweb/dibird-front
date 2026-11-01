@@ -37,7 +37,7 @@ jest.mock("../../util/storageHelper", () => ({
 jest.mock("../../services/bottomSheet", () => ({
   BottomSheet: { showMenu: jest.fn(), hide: jest.fn() },
 }));
-jest.mock("../../components/Observation/ObservationCard", () => {
+jest.mock("../../components/Observation/SwipeableObservationCard", () => {
   const { Text } = require("react-native");
   return {
     __esModule: true,

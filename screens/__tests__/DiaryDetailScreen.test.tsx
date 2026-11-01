@@ -64,7 +64,7 @@ jest.mock("../../components/Map/MapL", () => {
   const { Text } = require("react-native");
   return { __esModule: true, default: () => <Text>map</Text> };
 });
-jest.mock("../../components/Diary/DiaryObservationCard", () => {
+jest.mock("../../components/Diary/SwipeableDiaryObservationCard", () => {
   const { Text } = require("react-native");
   return {
     __esModule: true,

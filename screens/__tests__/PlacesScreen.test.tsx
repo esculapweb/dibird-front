@@ -43,7 +43,7 @@ jest.mock("../../components/Map/PlacesMap", () => {
     }) => <Text>{`map-${places.length}-${includeEmpty ? "all" : "nonempty"}`}</Text>,
   };
 });
-jest.mock("../../components/Place/PlaceCard", () => {
+jest.mock("../../components/Place/SwipeablePlaceCard", () => {
   const { Text } = require("react-native");
   return {
     __esModule: true,
@@ -98,6 +98,7 @@ it("passes fetchPlaces, restricted filters, search, and location props through t
     "territory",
     "date",
     "favourite",
+    "want_to_visit",
     "radius",
     "unsynced",
   ]);
@@ -120,8 +121,23 @@ it("handleAdd navigates to PlaceEditor with no params, wired the same way for on
 
   onAdd();
 
-  expect(mockNavigation.navigate).toHaveBeenCalledWith("PlaceEditor");
+  expect(mockNavigation.navigate).toHaveBeenCalledWith("PlaceEditor", undefined);
   expect(noItems.actions[0].onPress).toBe(onAdd);
+});
+
+// Filtered to "want to visit", a new place without the flag would vanish from
+// the very list it was added from.
+it("starts the new place as 'want to visit' when the list is filtered to it", async () => {
+  await render(<PlacesScreen />);
+  await act(async () => {
+    await lastProps().onFiltersChange({ want_to_visit: true });
+  });
+
+  lastProps().onAdd();
+
+  expect(mockNavigation.navigate).toHaveBeenCalledWith("PlaceEditor", {
+    initialWantToVisit: true,
+  });
 });
 
 describe("map mode", () => {

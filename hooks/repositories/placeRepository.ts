@@ -95,6 +95,12 @@ const synthesize = (
     id,
     name: payload.name ?? base?.name ?? "",
     favourite: payload.favourite ?? base?.favourite ?? false,
+    want_to_visit: payload.want_to_visit ?? base?.want_to_visit ?? false,
+    // `!== undefined`, not `??`: null is how the reminder is cleared.
+    visit_reminder_at:
+      payload.visit_reminder_at !== undefined
+        ? payload.visit_reminder_at
+        : (base?.visit_reminder_at ?? null),
     location: payload.location ?? base?.location ?? { type: "Point", coordinates: [0, 0] },
     distance: base?.distance ?? null,
     preview: base?.preview ?? null,
@@ -183,7 +189,14 @@ export const updateLocal = (
             payload: {
               op: "create",
               localId: id,
-              data: { name: merged.name, territory: merged.territory, favourite: merged.favourite, location: merged.location },
+              data: {
+                name: merged.name,
+                territory: merged.territory,
+                favourite: merged.favourite,
+                want_to_visit: merged.want_to_visit,
+                visit_reminder_at: merged.visit_reminder_at,
+                location: merged.location,
+              },
               clientRequestId,
             } satisfies PlaceMutationPayload,
           })

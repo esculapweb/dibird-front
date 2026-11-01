@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
+import Toast from "react-native-toast-message";
 
 import { useTheme, ThemeColors } from "../store/theme-context";
 import { isoToFlagEmoji, formatDate, formatDateTime } from "../util/helpers";
@@ -14,6 +15,8 @@ import Layout from "../components/ui/Layout";
 import StatCard from "../components/ui/StatCard";
 import FilterChips from "../components/Filters/FilterChips";
 import FailedEditBanner from "../components/Profile/FailedEditBanner";
+import PlaceReminderBlock from "../components/Place/PlaceReminderBlock";
+import { requestPushPermission } from "../hooks/usePushNotifications";
 
 import {
   usePlaceItem,
@@ -25,9 +28,10 @@ import * as placeRepository from "../hooks/repositories/placeRepository";
 import { runPlaceSync } from "../services/sync/placeSync";
 import { useFilters } from "../store/filters-context";
 import { AppStackNavigationProp, AppStackRouteProp } from "../types";
-import { BottomSheet } from "../services/bottomSheet";
 import { buildDateParams } from "../util/helpers";
 import { useApiError } from "../hooks/useApiError";
+import { isValidationError } from "../hooks/useMutationWithTranslation";
+import { useConfirmDelete } from "../hooks/useConfirmDelete";
 import MapL from "../components/Map/MapL";
 
 const H_PAD = 12;
@@ -49,6 +53,7 @@ const PlaceDetailScreen = () => {
   );
 
   const updateMutation = useUpdatePlace(placeId);
+  const confirmDelete = useConfirmDelete();
   const deleteMutation = useDeletePlace();
   const { Colors } = useTheme();
   const { t } = useTranslation();
@@ -99,15 +104,68 @@ const PlaceDetailScreen = () => {
     refetch();
   }, [failedMutation, placeId, refetch]);
 
+  // useUpdatePlace already toasts every failure but a validation error (see
+  // isValidationError) — the onErrors below report only that one, instead of
+  // showing the same toast a second time.
   const handleFavourite = useCallback(() => {
     if (!place) return;
     updateMutation.mutate(
       { favourite: !place.favourite },
       {
-        onError: (e) => showErrorToast(e, `PlaceDetailScreen:toggleFavourite:${placeId}`),
+        onError: (e) => {
+          if (isValidationError(e)) {
+            showErrorToast(e, `PlaceDetailScreen:toggleFavourite:${placeId}`);
+          }
+        },
       },
     );
   }, [place, updateMutation.mutate]);
+
+  // Leaving the list takes the reminder with it: a reminder for a place the
+  // user no longer plans to visit would only be noise.
+  const handleWantToVisit = useCallback(() => {
+    if (!place) return;
+    const wantToVisit = !place.want_to_visit;
+    updateMutation.mutate(
+      wantToVisit
+        ? { want_to_visit: true }
+        : { want_to_visit: false, visit_reminder_at: null },
+      {
+        onError: (e) => {
+          if (isValidationError(e)) {
+            showErrorToast(e, `PlaceDetailScreen:toggleWantToVisit:${placeId}`);
+          }
+        },
+      },
+    );
+  }, [place, updateMutation.mutate]);
+
+  // The OS dialog is asked for here, at the moment the user wants the
+  // reminder — the same rule as requestPushPermission's other callers. A
+  // refusal still saves the moment: it reaches the user's other devices and
+  // is scheduled here once the permission is granted in the OS settings.
+  const handleSaveReminder = useCallback(
+    async (iso: string | null) => {
+      if (iso && !(await requestPushPermission())) {
+        Toast.show({
+          type: "info",
+          text1: t("reminder_permission_denied"),
+          text2: t("reminder_permission_denied_hint"),
+        });
+      }
+      updateMutation.mutate(
+        { visit_reminder_at: iso },
+        {
+          onError: (e) => {
+            if (isValidationError(e)) {
+              showErrorToast(e, `PlaceDetailScreen:saveReminder:${placeId}`);
+            }
+          },
+        },
+      );
+    },
+    [updateMutation.mutate, t],
+  );
 
   const headerRightBeginning = useMemo(
     () => [
@@ -130,29 +188,19 @@ const PlaceDetailScreen = () => {
 
   const handleDelete = useCallback(() => {
     if (!place) return;
-    BottomSheet.show({
-      title: t("delete_title"),
-      description: t("delete_place_message"),
-      confirmText: t("delete"),
-      cancelText: t("cancel"),
-      danger: true,
-      // See ObservationDetailScreen: the promise is what keeps the confirm
-      // sheet showing progress until the delete settles.
-      onConfirm: () =>
-        new Promise<void>((resolve) => {
-          deleteMutation.mutate(placeId, {
-            onSuccess: () => {
-              navigation.goBack();
-              resolve();
-            },
-            onError: (e) => {
-              showErrorToast(e, `PlaceDetailScreen:deletePlace:${placeId}`);
-              resolve();
-            },
-          });
+    confirmDelete({
+      message: t("delete_place_message"),
+      runDelete: ({ onSuccess, onError }) =>
+        deleteMutation.mutate(placeId, {
+          onSuccess: () => {
+            navigation.goBack();
+            onSuccess();
+          },
+          onError,
         }),
+      tag: `PlaceDetailScreen:deletePlace:${placeId}`,
     });
-  }, [place, placeId, deleteMutation, navigation]);
+  }, [place, placeId, deleteMutation, navigation, confirmDelete]);
 
   const filtersOverride = useMemo(() => {
     if (!place) return null;
@@ -210,6 +258,15 @@ const PlaceDetailScreen = () => {
           onPress: handleFavourite,
         },
         {
+          condition: !!place,
+          label: place?.want_to_visit
+            ? t("remove_from_want_to_visit")
+            : t("add_to_want_to_visit"),
+          icon: place?.want_to_visit ? "flag" : "flag-outline",
+          testID: "place-want-to-visit-button",
+          onPress: handleWantToVisit,
+        },
+        {
           label: t("delete_place"),
           icon: "trash-outline",
           danger: true,
@@ -219,7 +276,7 @@ const PlaceDetailScreen = () => {
         },
       ]),
     ],
-    [t, place, handleFavourite, handleDelete],
+    [t, place, handleFavourite, handleWantToVisit, handleDelete],
   );
 
   useLayoutEffect(() => {
@@ -309,6 +366,14 @@ const PlaceDetailScreen = () => {
           onPress={handleDiariesPress}
         />
       </View>
+
+      {place.want_to_visit && (
+        <PlaceReminderBlock
+          reminderAt={place.visit_reminder_at}
+          onSave={handleSaveReminder}
+          disabled={updateMutation.isPending}
+        />
+      )}
 
       <View style={styles.meta}>
         <Text style={styles.metaText}>

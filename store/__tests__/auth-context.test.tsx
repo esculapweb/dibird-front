@@ -9,6 +9,7 @@ jest.mock("../../services/i18n", () => ({ __esModule: true, default: { t: (key: 
 jest.mock("../../services/bio", () => ({ shouldUseBiometrics: jest.fn() }));
 jest.mock("../../util/fetches", () => ({ unregisterPushToken: jest.fn() }));
 jest.mock("../../services/errors", () => ({ logError: jest.fn() }));
+jest.mock("../../services/placeReminders", () => ({ cancelAllPlaceReminders: jest.fn() }));
 
 import * as LocalAuthentication from "expo-local-authentication";
 import * as SecureStore from "expo-secure-store";
@@ -20,6 +21,7 @@ import { setOnUnauthorized } from "../../services/api";
 import { shouldUseBiometrics } from "../../services/bio";
 import { unregisterPushToken } from "../../util/fetches";
 import { logError } from "../../services/errors";
+import { cancelAllPlaceReminders } from "../../services/placeReminders";
 import { AuthContextProvider, useAuth, setOnLogout } from "../auth-context";
 
 const mockOnLogoutCallback = jest.fn();
@@ -140,6 +142,19 @@ describe("logout", () => {
     expect(Logout).toHaveBeenCalledWith(expect.any(Function));
     await waitFor(() => expect(result.current.token).toBeNull());
     expect(mockOnLogoutCallback).toHaveBeenCalledTimes(1);
+  });
+
+  // The next account on this device must not get the previous one's
+  // "want to visit" reminders — they are local, the server cannot recall them.
+  it("cancels the scheduled place reminders", async () => {
+    const { result } = await renderHook(() => useAuth(), { wrapper: AuthContextProvider });
+    await waitFor(() => expect(result.current.isInitializing).toBe(false));
+
+    await act(async () => {
+      await result.current.logout();
+    });
+
+    expect(cancelAllPlaceReminders).toHaveBeenCalledTimes(1);
   });
 
   it("still proceeds to Logout even when unregistering the push token fails", async () => {

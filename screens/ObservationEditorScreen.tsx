@@ -16,10 +16,12 @@ import { useRoute, useNavigation } from "@react-navigation/native";
 
 import { useTheme } from "../store/theme-context";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
+import ErrorOverlay from "../components/Error/ErrorOverlay";
 import ObservationForm from "../components/Observation/ObservationForm";
 import {
   useCreateObservation,
   useCreateObservations,
+  useObservationItem,
   useUpdateObservation,
 } from "../hooks/Observation/useOfflineObservation";
 import { useProfile } from "../store/profile-context";
@@ -41,6 +43,7 @@ import {
   AppStackRouteProp,
   ErrorExtractor,
   ObservationFormData,
+  ObservationItem,
   ObservationPhoto,
   PlaceData,
   SpeciesDropdownItem,
@@ -64,7 +67,13 @@ const FORM_FIELDS = [
 let stagedIdCounter = 0;
 const nextStagedId = () => -(Date.now() * 1000 + (stagedIdCounter++ % 1000));
 
-const ObservationEditorScreen = () => {
+// The form itself. `observation` comes from the route when the caller has the
+// full item, or from ObservationEditorScreen below once it has loaded one by id.
+const ObservationEditor = ({
+  observation,
+}: {
+  observation: ObservationItem | undefined;
+}) => {
   const { t } = useTranslation();
   const { Colors } = useTheme();
   const { profile } = useProfile();
@@ -83,7 +92,6 @@ const ObservationEditorScreen = () => {
   const { showErrorToast } = useApiError();
 
   const {
-    observation,
     defaultTerritory,
     defaultPlace,
     defaultSpecies,
@@ -542,6 +550,51 @@ const ObservationEditorScreen = () => {
       />
     </Layout>
   );
+};
+
+/**
+ * Edit mode takes either the full `observation` or just its `observationId` —
+ * the latter from a row that has only a trimmed shape (a diary's observation
+ * list), which the form can't be filled from. The item is then loaded the way
+ * ObservationDetailScreen loads it (query cache → local mirror → GET, so an
+ * observation already on this device opens offline too), and the form is
+ * mounted only once it is there: useEditorForm reads its item once, on mount.
+ */
+const ObservationEditorScreen = () => {
+  const { t } = useTranslation();
+  const navigation = useNavigation<AppStackNavigationProp>();
+  const route = useRoute<AppStackRouteProp<"ObservationEditor">>();
+  const { observation, observationId } = route.params || {};
+  const loadById = !observation && observationId != null;
+
+  const { data, isError, error, refetch } = useObservationItem(
+    loadById ? observationId : null,
+  );
+
+  // The form sets the real title once mounted; until then the header would
+  // show the bare route name.
+  useLayoutEffect(() => {
+    if (loadById) navigation.setOptions({ title: t("edit_observation") });
+  }, [navigation, loadById, t]);
+
+  if (!loadById) return <ObservationEditor observation={observation} />;
+
+  if (data) return <ObservationEditor observation={data as ObservationItem} />;
+
+  if (isError) {
+    return (
+      <ErrorOverlay
+        title={t("observations_unavailable")}
+        message={error.message}
+        onPress={async () => {
+          await refetch();
+        }}
+        logo
+      />
+    );
+  }
+
+  return <LoadingOverlay />;
 };
 
 export default ObservationEditorScreen;

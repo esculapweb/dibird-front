@@ -293,6 +293,7 @@ export type AllowedFilterKey =
   | "place"
   | "species"
   | "favourite"
+  | "want_to_visit"
   | "unsynced"
   | "private"
   | "radius"
@@ -306,6 +307,7 @@ export interface Filters {
   date_time_min?: string | null;
   diary?: number | null;
   favourite?: boolean | null;
+  want_to_visit?: boolean | null;
   new?: boolean;
   o?: string | null;
   place?: number | null;
@@ -847,6 +849,8 @@ export interface PlaceFormData {
   name: string;
   territory: number | null;
   favourite?: boolean;
+  want_to_visit?: boolean;
+  visit_reminder_at?: string | null;
   location?: LocationType | null;
 }
 
@@ -1019,6 +1023,12 @@ export interface PlaceItemBase {
   id: number;
   name: string;
   favourite: boolean;
+  // "Places I'd like to visit" list plus its reminder moment (ISO). Optional
+  // because a page cached before these fields shipped predates them. The
+  // reminder is a local notification (services/placeReminders.ts); the server
+  // only keeps the moment so another device or a reinstall can reschedule it.
+  want_to_visit?: boolean;
+  visit_reminder_at?: string | null;
   location: LocationType;
   distance?: number | null;
   preview?: string | null;
@@ -1292,6 +1302,10 @@ export type AppStackParamList = CatalogParamList & {
         // Create mode only: a point picked on the place picker's map, used
         // instead of a fresh GPS fix.
         initialCoords?: Coords;
+        // Create mode only: start with "want to visit" on — the Places list
+        // is filtered to it, and a new place without the flag would vanish
+        // from that list right after saving.
+        initialWantToVisit?: boolean;
       }
     | undefined;
   Observations: ScreenWithFilters | undefined;
@@ -1324,7 +1338,9 @@ export type AppStackParamList = CatalogParamList & {
     addObservation?: boolean;
   };
   DiaryEditor: {
-    diary?: DiaryItem;
+    // A list row (DiaryListItem) is enough to edit from: the editor reads only
+    // the DiaryBase fields both shapes share.
+    diary?: DiaryItem | DiaryListItem;
     defaultTerritory?: number | null;
     defaultPlace?: number | null;
     returnMode?: string;
@@ -1510,6 +1526,9 @@ export type NotificationPayload = (
   | { screen: "Checklist" }
   // A data export that failed: Settings is where it is started again.
   | { screen: "Settings" }
+  // A local "want to visit" reminder (services/placeReminders.ts) — never
+  // comes from the backend, so it carries no `id` to mark read.
+  | { screen: "PlaceDetail"; placeId: number }
 ) & { id?: number };
 
 /**

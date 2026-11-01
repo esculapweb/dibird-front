@@ -90,6 +90,12 @@ interface MapProps {
   cameraRef?: Ref<CameraRef>;
   /** For callers that need to project coordinates to screen pixels. */
   mapRef?: Ref<MapRef>;
+  /**
+   * Space at the bottom covered by something drawn over the map (the place
+   * editor's form sheet): the single point is centred in what stays visible
+   * above it instead of disappearing under it.
+   */
+  centerBottomPadding?: number;
 }
 
 const MapL = ({
@@ -111,6 +117,7 @@ const MapL = ({
   boundsPadding = 48,
   cameraRef,
   mapRef,
+  centerBottomPadding,
 }: MapProps) => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors, mapHeight, bottomInset, myLocationRightOffset);
@@ -247,6 +254,9 @@ const MapL = ({
                 <Camera
                   ref={cameraRef}
                   center={[lng!, lat!]}
+                  {...(centerBottomPadding
+                    ? { padding: { bottom: centerBottomPadding } }
+                    : {})}
                   zoom={Math.min(currentZoom, 19)}
                   minZoom={1}
                   maxZoom={19}

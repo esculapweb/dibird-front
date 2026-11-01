@@ -1,0 +1,154 @@
+# Device-level online test: deleting a Place by swiping its card on the
+# Locations list — SwipeableRow (gesture-handler + reanimated) is exactly the
+# part jest cannot drive: the open threshold, the gesture winning over the
+# list's own scroll, the buttons mounting only once the row opens.
+#
+# One flow for all three lists on purpose: diaries and observations sit on the
+# very same SwipeableRow, only the actions differ.
+#
+# The place is created through the form first, with a unique name, so the
+# swipe always lands on this run's own card and never on a real one.
+#
+# Runs on both platforms; text selectors are `.*regex.*` throughout because
+# iOS merges icon+label elements into one accessibility node — see
+# online-create-observation.yaml.
+#
+# appId comes from run.sh (--env APP_ID): the iOS build is the dev client,
+# Android has one package for every variant.
+appId: ${APP_ID}
+tags:
+  - ios
+  - android
+---
+# Same permission spelling split as online-create-place.yaml.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - launchApp:
+          permissions:
+            location: allow
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - launchApp:
+          permissions:
+            location: inuse
+
+# Paris: the test account's default territory, so the new place passes the
+# list's territory filter and shows up on it.
+- setLocation:
+    latitude: 48.8566
+    longitude: 2.3522
+
+- runFlow: common/bootstrap.yaml
+
+- evalScript: ${output.swipeName = "Swipe Delete " + Date.now()}
+
+# See online-create-place.yaml for why this scrolls first.
+- scrollUntilVisible:
+    element:
+      id: "section-Places"
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: "section-Places"
+- extendedWaitUntil:
+    visible:
+      id: "list-header-badge-count"
+    timeout: 10000
+- copyTextFrom:
+    id: "list-header-badge-count"
+- evalScript: ${output.placeBaselineCount = maestro.copiedText}
+
+# ---- SETUP: a place of this run's own ----
+- tapOn:
+    id: "list-add-button"
+# Same one-shot FAB retry as online-create-place.yaml — see the comment there.
+- extendedWaitUntil:
+    visible:
+      id: "place-coords-toggle"
+    timeout: 8000
+    optional: true
+- runFlow:
+    when:
+      notVisible:
+        id: "place-coords-toggle"
+    commands:
+      - tapOn:
+          id: "list-add-button"
+- extendedWaitUntil:
+    visible:
+      id: "place-coords-toggle"
+    timeout: 8000
+- waitForAnimationToEnd:
+    timeout: 4000
+# Opened only for the "Latitude" label below, the keyboard's safe dismiss.
+- tapOn:
+    id: "place-coords-toggle"
+- tapOn:
+    id: "place-name-input"
+- eraseText: 50
+- setClipboard: ${output.swipeName}
+- pasteText
+- tapOn: ".*Latitude.*"
+- tapOn:
+    id: "place-save-button"
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - runFlow: common/back.yaml
+      - tapOn:
+          id: "place-save-button"
+- extendedWaitUntil:
+    visible:
+      id: "place-edit-button"
+    timeout: 10000
+
+# Create replaces the editor with the detail screen, so one back is the list.
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: "list-header-badge-count"
+    timeout: 10000
+
+# ---- DELETE by swipe ----
+- scrollUntilVisible:
+    element:
+      text: ".*${output.swipeName}.*"
+    direction: DOWN
+    timeout: 15000
+- swipe:
+    from:
+      text: ".*${output.swipeName}.*"
+    direction: LEFT
+# Only an open row mounts its buttons (SwipeableRow), so the prefix is enough:
+# whatever matches is this card's own.
+- extendedWaitUntil:
+    visible:
+      id: "place-swipe-delete-.*"
+    timeout: 4000
+- tapOn:
+    id: "place-swipe-delete-.*"
+- extendedWaitUntil:
+    visible:
+      id: "bottom-sheet-confirm-button"
+    timeout: 4000
+- tapOn:
+    id: "bottom-sheet-confirm-button"
+
+- extendedWaitUntil:
+    notVisible:
+      text: ".*${output.swipeName}.*"
+    timeout: 10000
+# Still on the list — a swipe action, unlike the detail screen's delete, has
+# nowhere to navigate back from.
+# Waited for, not asserted: the badge follows the list's refetch after the
+# delete's invalidation, a beat after the card itself is gone.
+- extendedWaitUntil:
+    visible:
+      id: "list-header-badge-count"
+      text: ${output.placeBaselineCount}
+    timeout: 10000

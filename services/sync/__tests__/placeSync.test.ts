@@ -22,6 +22,10 @@ jest.mock("../observationSync", () => ({
 jest.mock("../diarySync", () => ({
   runDiarySync: jest.fn(),
 }));
+jest.mock("../../placeReminders", () => ({
+  cancelPlaceReminder: jest.fn(),
+  schedulePlaceReminder: jest.fn(),
+}));
 jest.mock("../../../util/invalidationMap", () => ({
   INVALIDATION_MAP: { Place: { update: [["Places"]] } },
 }));
@@ -33,6 +37,7 @@ import { isConnected } from "../networkStatus";
 import { runObservationSync } from "../observationSync";
 import { runDiarySync } from "../diarySync";
 import { runPlaceSync, stopPlaceSyncRetries } from "../placeSync";
+import { cancelPlaceReminder, schedulePlaceReminder } from "../../placeReminders";
 
 const claimNextMutation = placeRepository.claimNextMutation as jest.Mock;
 const replaceLocalWithServer = placeRepository.replaceLocalWithServer as jest.Mock;
@@ -84,6 +89,9 @@ describe("create", () => {
       client_request_id: "r1",
     });
     expect(replaceLocalWithServer).toHaveBeenCalledWith(-1, { id: 55, name: "My spot" });
+    // A reminder set on the offline draft moves from its temp id to the server one.
+    expect(cancelPlaceReminder).toHaveBeenCalledWith(-1);
+    expect(schedulePlaceReminder).toHaveBeenCalledWith({ id: 55, name: "My spot" });
     expect(queryClient.invalidateQueries).toHaveBeenCalled();
     expect(runObservationSync).toHaveBeenCalled();
     expect(runDiarySync).toHaveBeenCalled();

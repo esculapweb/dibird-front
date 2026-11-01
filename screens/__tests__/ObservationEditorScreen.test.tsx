@@ -40,7 +40,23 @@ jest.mock("../../hooks/Observation/useOfflineObservation", () => ({
   useCreateObservation: jest.fn(),
   useCreateObservations: jest.fn(),
   useUpdateObservation: jest.fn(),
+  useObservationItem: jest.fn(),
 }));
+jest.mock("../../components/Error/ErrorOverlay", () => {
+  const { Pressable, Text } = require("react-native");
+  return {
+    __esModule: true,
+    default: ({ title, onPress }: { title: string; onPress: () => void }) => (
+      <Pressable testID="error-overlay" onPress={onPress}>
+        <Text>{title}</Text>
+      </Pressable>
+    ),
+  };
+});
+jest.mock("../../components/ui/LoadingOverlay", () => {
+  const { Text } = require("react-native");
+  return { __esModule: true, default: () => <Text>loading-overlay</Text> };
+});
 jest.mock("../../store/profile-context", () => ({
   useProfile: jest.fn(),
 }));
@@ -171,6 +187,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   useCreateObservation,
   useCreateObservations,
+  useObservationItem,
   useUpdateObservation,
 } from "../../hooks/Observation/useOfflineObservation";
 import { useProfile } from "../../store/profile-context";
@@ -234,6 +251,7 @@ beforeEach(() => {
   (useCreateObservation as jest.Mock).mockReturnValue({ mutate: mockCreateMutate, isPending: false });
   (useCreateObservations as jest.Mock).mockReturnValue({ mutate: mockCreateManyMutate, isPending: false });
   (useUpdateObservation as jest.Mock).mockReturnValue({ mutate: mockUpdateMutate, isPending: false });
+  (useObservationItem as jest.Mock).mockReturnValue({ data: undefined, isError: false });
   mockValidateForm.mockReturnValue(true);
   mockEditorForm();
 });
@@ -247,6 +265,67 @@ const pressSave = async () => {
   await render(headerRight());
   await fireEvent.press(screen.getByTestId("observation-save-button"));
 };
+
+// A diary's observation list has only a trimmed row, so its edit action hands
+// over the id and lets the editor load the full observation.
+describe("edit by id", () => {
+  const LOADED = { id: 77, date_time: "2026-02-03", diary: 11, territory: 5 };
+
+  beforeEach(() => {
+    mockRoute = createRouteMock("ObservationEditor", {
+      observationId: 77,
+      diaryId: 11,
+      territoryValue: 5,
+    });
+  });
+
+  it("loads the observation and waits for it before mounting the form", async () => {
+    await render(<ObservationEditorScreen />);
+
+    expect(useObservationItem).toHaveBeenCalledWith(77);
+    expect(screen.getByText("loading-overlay")).toBeOnTheScreen();
+    expect(useEditorForm).not.toHaveBeenCalled();
+    expect(mockNavigation.setOptions).toHaveBeenCalledWith({ title: "edit_observation" });
+  });
+
+  it("fills the form from the loaded observation, in edit mode", async () => {
+    (useObservationItem as jest.Mock).mockReturnValue({ data: LOADED, isError: false });
+    await render(<ObservationEditorScreen />);
+
+    expect(useEditorForm).toHaveBeenCalledWith(
+      expect.objectContaining({ item: LOADED, diaryId: 11 }),
+    );
+    expect(mockNavigation.setOptions).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "edit_observation" }),
+    );
+  });
+
+  it("offers a retry when the observation can't be loaded", async () => {
+    const refetch = jest.fn();
+    (useObservationItem as jest.Mock).mockReturnValue({
+      data: undefined,
+      isError: true,
+      error: new Error("offline"),
+      refetch,
+    });
+    await render(<ObservationEditorScreen />);
+
+    expect(useEditorForm).not.toHaveBeenCalled();
+    await fireEvent.press(screen.getByTestId("error-overlay"));
+    expect(refetch).toHaveBeenCalled();
+  });
+
+  it("doesn't load anything when the caller passed the full observation", async () => {
+    mockRoute = createRouteMock("ObservationEditor", {
+      observation: LOADED as never,
+      observationId: 77,
+    });
+    await render(<ObservationEditorScreen />);
+
+    expect(useObservationItem).toHaveBeenCalledWith(null);
+    expect(useEditorForm).toHaveBeenCalledWith(expect.objectContaining({ item: LOADED }));
+  });
+});
 
 describe("mode setup", () => {
   it("create mode: calls useEditorForm with no item and defaults sourced from route params, and titles the header accordingly", async () => {

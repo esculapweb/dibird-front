@@ -77,6 +77,9 @@ export const useFilterLabels = (
       case "favourite":
         return [t("favourite"), value ? t("yes") : t("no")];
 
+      case "want_to_visit":
+        return [t("want_to_visit"), value ? t("yes") : t("no")];
+
       case "unsynced":
         return [t("sync_status"), t("unsynced_only")];
 
