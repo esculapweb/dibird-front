@@ -174,7 +174,7 @@ const ObservationEditor = ({
       setRemovedPhotos([]);
 
       if (staged.length > 0) {
-        const persisted = await Promise.all(staged.map(persistPickedPhoto));
+        const persisted = await Promise.all(staged.map((uri) => persistPickedPhoto(uri)));
         observationPhotoRepository.queueUploads(
           observationId,
           persisted.map((uri) => ({ uri })),
@@ -280,7 +280,7 @@ const ObservationEditor = ({
       private: data.private ?? false,
       quantity: data.quantity ?? null,
       notes: data.notes ?? "",
-      location_private: data.location_private ?? true, 
+      location_private: data.location_private ?? true,
     };
   };
 

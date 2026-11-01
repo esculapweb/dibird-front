@@ -163,3 +163,91 @@ describe("error resilience", () => {
     await expect(storageHelper.clearSort("Observations")).resolves.toBeUndefined();
   });
 });
+
+describe("onboarding flag", () => {
+  it("is not pending until marked, and is cleared again", async () => {
+    expect(await storageHelper.isOnboardingPending()).toBe(false);
+
+    await storageHelper.markOnboardingPending();
+    expect(await storageHelper.isOnboardingPending()).toBe(true);
+
+    await storageHelper.clearOnboardingPending();
+    expect(await storageHelper.isOnboardingPending()).toBe(false);
+  });
+
+  // A repeated onboarding annoys more than a missed one.
+  it("reads as not pending when the disk can't be read", async () => {
+    await storageHelper.markOnboardingPending();
+    jest.spyOn(AsyncStorage, "getItem").mockRejectedValueOnce(new Error("disk error"));
+    expect(await storageHelper.isOnboardingPending()).toBe(false);
+  });
+
+  it("mark/clear swallow an AsyncStorage failure", async () => {
+    jest.spyOn(AsyncStorage, "setItem").mockRejectedValueOnce(new Error("disk full"));
+    await expect(storageHelper.markOnboardingPending()).resolves.toBeUndefined();
+
+    jest.spyOn(AsyncStorage, "removeItem").mockRejectedValueOnce(new Error("disk error"));
+    await expect(storageHelper.clearOnboardingPending()).resolves.toBeUndefined();
+  });
+});
+
+describe("markFirstObservationTracked", () => {
+  // The activation event must go out exactly once per install.
+  it("reports true the first time only", async () => {
+    expect(await storageHelper.markFirstObservationTracked()).toBe(true);
+    expect(await storageHelper.markFirstObservationTracked()).toBe(false);
+  });
+
+  it("reports false when the flag can't be saved", async () => {
+    jest.spyOn(AsyncStorage, "setItem").mockRejectedValueOnce(new Error("disk full"));
+    expect(await storageHelper.markFirstObservationTracked()).toBe(false);
+  });
+});
+
+describe("loadReportedRelease / saveReportedRelease", () => {
+  it("round-trips a release per slot", async () => {
+    const release = { revision: "abc", done: true, firstAskedAt: 1000 };
+    await storageHelper.saveReportedRelease("build", release);
+
+    expect(await storageHelper.loadReportedRelease("build")).toEqual(release);
+    expect(await storageHelper.loadReportedRelease("ota_applied")).toBeNull();
+  });
+
+  // Stored by an older build, or tampered with: only a revision is required.
+  it("fills in what an older entry lacks, and rejects one without a revision", async () => {
+    jest.spyOn(Date, "now").mockReturnValue(5000);
+    await storageHelper.saveReportedRelease("ota_pending", { revision: "r1" } as never);
+    expect(await storageHelper.loadReportedRelease("ota_pending")).toEqual({
+      revision: "r1",
+      done: false,
+      firstAskedAt: 5000,
+    });
+
+    await storageHelper.saveReportedRelease("ota_pending", { done: true } as never);
+    expect(await storageHelper.loadReportedRelease("ota_pending")).toBeNull();
+
+    await storageHelper.saveReportedRelease("ota_pending", "r1" as never);
+    expect(await storageHelper.loadReportedRelease("ota_pending")).toBeNull();
+  });
+});
+
+describe("more error resilience", () => {
+  it("getLastLoggedInUserId / setLastLoggedInUserId swallow an AsyncStorage failure", async () => {
+    jest.spyOn(AsyncStorage, "getItem").mockRejectedValueOnce(new Error("disk error"));
+    expect(await storageHelper.getLastLoggedInUserId()).toBeNull();
+
+    jest.spyOn(AsyncStorage, "setItem").mockRejectedValueOnce(new Error("disk full"));
+    await expect(storageHelper.setLastLoggedInUserId(3)).resolves.toBeUndefined();
+  });
+
+  it("clearSort swallows a failed write", async () => {
+    jest.spyOn(AsyncStorage, "setItem").mockRejectedValueOnce(new Error("disk full"));
+    await expect(storageHelper.clearSort("Observations")).resolves.toBeUndefined();
+  });
+
+  it("saveViewMode / loadViewMode round-trip per screen", async () => {
+    await storageHelper.saveViewMode("Places", "map");
+    expect(await storageHelper.loadViewMode("Places")).toBe("map");
+    expect(await storageHelper.loadViewMode("Diaries")).toBeNull();
+  });
+});

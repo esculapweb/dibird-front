@@ -109,6 +109,7 @@ import { useLanguage } from "../../../store/language-context";
 import { useLocation } from "../../../store/location-context";
 import { useFilters } from "../../../store/filters-context";
 import { useDropdownQuery } from "../../../hooks/useDropdownQuery";
+import { fetchMyCountries, fetchMyPlaces, fetchSpecies } from "../../../util/fetches";
 import ObservationForm from "../ObservationForm";
 
 const mockHandleLocationUnavailable = jest.fn();
@@ -457,5 +458,125 @@ describe("useDropdownQuery wiring", () => {
     await render(<ObservationForm {...baseProps()} territoryValue={5} />);
     const calls = (useDropdownQuery as jest.Mock).mock.calls.map((c) => c[0]);
     expect(calls.find((c) => c.type === "SpeciesDropdown").enabled).toBe(true);
+  });
+});
+
+describe("useDropdownQuery queryFn wiring", () => {
+  it("fetches countries, places and species with the form's territory, coords and date", async () => {
+    (useLocation as jest.Mock).mockReturnValue({
+      locationCoords: [1, 2],
+      locationAvailable: true,
+      permissionStatus: "granted",
+      requestLocation: mockRequestLocation,
+    });
+    (useFilters as jest.Mock).mockReturnValue({ date: { type: "all" } });
+    await render(<ObservationForm {...baseProps()} />);
+
+    const queryFn = (type: string) =>
+      (useDropdownQuery as jest.Mock).mock.calls.map((c) => c[0]).find((o) => o.type === type).queryFn;
+
+    queryFn("CountriesDropdown")("name");
+    expect(fetchMyCountries).toHaveBeenCalledWith(false, "name");
+
+    queryFn("PlacesDropdown")("distance");
+    expect(fetchMyPlaces).toHaveBeenCalledWith(5, [1, 2], "distance");
+
+    queryFn("SpeciesDropdown")("-seen");
+    expect(fetchSpecies).toHaveBeenCalledWith(5, "-seen", { type: "all" });
+  });
+});
+
+describe("place block wiring", () => {
+  it("updates formData.location_private from the block's privacy switch", async () => {
+    await render(<ObservationForm {...baseProps()} />);
+    mockPlaceBlockCapture.mock.calls.at(-1)[0].setPrivateLocation(false);
+
+    expect(mockSetFormData.mock.calls[0][0]({ location_private: true })).toEqual({
+      location_private: false,
+    });
+  });
+});
+
+describe("multi-species selection (diary create)", () => {
+  const ROBIN = { value: 9, label: "Robin" };
+  const WREN = { value: 10, label: "Wren", name_lang: "Wren (en)" };
+  const mockSetMultiSpecies = jest.fn();
+
+  beforeEach(() => {
+    queriesByType.SpeciesDropdown = { data: [ROBIN, WREN] };
+  });
+
+  const renderMulti = (multiSpecies: (typeof ROBIN)[] = []) =>
+    render(
+      <ObservationForm
+        {...baseProps()}
+        isDiaryMode
+        multiSpecies={multiSpecies}
+        setMultiSpecies={mockSetMultiSpecies}
+      />,
+    );
+
+  // A diary that already exists gets species one at a time, from its own screen.
+  it("is offered only when creating inside a diary", async () => {
+    await render(
+      <ObservationForm {...baseProps()} isDiaryMode isEditMode setMultiSpecies={mockSetMultiSpecies} />,
+    );
+    expect(dropdownProps("SpeciesDropdown").allowMultiple).toBe(false);
+
+    await renderMulti();
+    expect(dropdownProps("SpeciesDropdown").allowMultiple).toBe(true);
+  });
+
+  it("keeps the first species as the single value and the whole set for the editor", async () => {
+    await renderMulti();
+    dropdownProps("SpeciesDropdown").onConfirmMultiple([10, 9, 404]);
+
+    expect(mockSetMultiSpecies).toHaveBeenCalledWith([WREN, ROBIN]);
+    expect(mockSetSpeciesValue).toHaveBeenCalledWith(10);
+    expect(mockSetSpeciesData).toHaveBeenCalledWith(WREN);
+    expect(mockSetFormData.mock.calls[0][0]({ species: null })).toEqual({ species: 10 });
+    expect(mockSetErrors.mock.calls[0][0]({ species: "required" })).toEqual({ species: undefined });
+  });
+
+  it("falls back to a single species when only one is confirmed", async () => {
+    await renderMulti();
+    dropdownProps("SpeciesDropdown").onConfirmMultiple([9]);
+
+    expect(mockSetMultiSpecies).toHaveBeenCalledWith([]);
+    expect(mockSetSpeciesValue).toHaveBeenCalledWith(9);
+  });
+
+  it("clears the species when nothing is confirmed", async () => {
+    await renderMulti();
+    dropdownProps("SpeciesDropdown").onConfirmMultiple([]);
+
+    expect(mockSetSpeciesValue).toHaveBeenCalledWith(null);
+    expect(mockSetSpeciesData).toHaveBeenCalledWith(null);
+  });
+
+  it("drops the multi-selection when a single species is picked", async () => {
+    await renderMulti([ROBIN, WREN]);
+    dropdownProps("SpeciesDropdown").setValue(9);
+    expect(mockSetMultiSpecies).toHaveBeenCalledWith([]);
+  });
+
+  // A photo belongs to one observation, so it can't be shared across species.
+  it("shows the chosen species as chips instead of the photo picker", async () => {
+    await renderMulti([ROBIN, WREN]);
+    const props = dropdownProps("SpeciesDropdown");
+    expect(props.selectedValues).toEqual([9, 10]);
+    expect(mockPhotoPickerCapture).not.toHaveBeenCalled();
+
+    const open = jest.fn();
+    await render(props.renderTrigger(open));
+    expect(screen.getByText("Robin")).toBeOnTheScreen();
+    expect(screen.getByText("Wren (en)")).toBeOnTheScreen();
+
+    await fireEvent.press(screen.getByTestId("multi-species-summary"));
+    expect(open).toHaveBeenCalled();
+
+    await fireEvent.press(screen.getByTestId("multi-species-remove-9"));
+    expect(mockSetMultiSpecies).toHaveBeenCalledWith([]);
+    expect(mockSetSpeciesValue).toHaveBeenCalledWith(10);
   });
 });

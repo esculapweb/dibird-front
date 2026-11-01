@@ -42,9 +42,9 @@ module.exports = {
     "!index.ts",
     "!App.tsx",
   ],
-  // A floor, not a target: measured at 94.62 / 87.01 / 92.32 / 95.69 when this
-  // was last raised (from 90 / 83 / 87 / 91, set at 91.81 / 84.73 / 88.87 /
-  // 92.97), and each number is rounded down with a point of slack so that
+  // A floor, not a target: measured at 96.15 / 88.36 / 95.00 / 97.15 when this
+  // was last raised (from 93 / 86 / 91 / 94, set at 94.62 / 87.01 / 92.32 /
+  // 95.69), and each number is rounded down with a point of slack so that
   // ordinary churn does not turn CI red. It only applies to a run with
   // `--coverage` (CI, `npm run test:coverage`) — a plain `npm test` collects
   // nothing and is not affected.
@@ -55,10 +55,10 @@ module.exports = {
   // be made deliberately, not a way to get a build green.
   coverageThreshold: {
     global: {
-      statements: 93,
-      branches: 86,
-      functions: 91,
-      lines: 94,
+      statements: 95,
+      branches: 87,
+      functions: 94,
+      lines: 96,
     },
   },
 };

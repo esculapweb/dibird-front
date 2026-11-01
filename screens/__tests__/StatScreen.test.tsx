@@ -142,11 +142,22 @@ jest.mock("../../components/ui/ViewSwitch", () => {
   };
 });
 jest.mock("../../components/ui/Tabs", () => {
-  const { Text } = require("react-native");
+  const { Pressable, Text } = require("react-native");
   return {
     __esModule: true,
-    default: ({ tabOptions }: { tabOptions: Array<{ value: string; count?: number }> }) => (
-      <Text>{tabOptions.map((o) => `${o.value}:${o.count ?? "none"}`).join(",")}</Text>
+    default: ({
+      tabOptions,
+      setTabsMode,
+    }: {
+      tabOptions: Array<{ value: string; count?: number }>;
+      setTabsMode: (value: string) => void;
+    }) => (
+      <>
+        <Text>{tabOptions.map((o) => `${o.value}:${o.count ?? "none"}`).join(",")}</Text>
+        {tabOptions.map((o) => (
+          <Pressable key={o.value} testID={`tab-${o.value}`} onPress={() => setTabsMode(o.value)} />
+        ))}
+      </>
     ),
   };
 });
@@ -163,7 +174,7 @@ jest.mock("../ListScreen", () => ({
 }));
 
 import { Share, Platform } from "react-native";
-import { render, fireEvent } from "@testing-library/react-native";
+import { act, render, fireEvent } from "@testing-library/react-native";
 import Toast from "react-native-toast-message";
 import { fetchStat, fetchChecklist } from "../../util/fetches";
 import { useFilters } from "../../store/filters-context";
@@ -588,4 +599,168 @@ describe("handleShare", () => {
     ).onPress();
     expect(shareSpy).toHaveBeenCalledWith({ url: expect.stringContaining("users/stat/1/") });
   });
+});
+
+describe("seen tabs", () => {
+  it("carry the counts of the first page, and none before it arrives", async () => {
+    await render(<StatScreen />);
+    const before = await render(latestProps().bottomEl);
+    expect(before.getByText("seen:none,all:none,unseen:none")).toBeOnTheScreen();
+
+    await act(async () => {
+      latestProps().onFirstPageData({ seen_species: 4, total_species: 9 });
+    });
+    const after = await render(latestProps().bottomEl);
+    expect(after.getByText("seen:4,all:9,unseen:5")).toBeOnTheScreen();
+  });
+
+  // A page without the counts (an older cached response) reads as zero.
+  it("count a page without totals as zero", async () => {
+    await render(<StatScreen />);
+    await act(async () => {
+      latestProps().onFirstPageData({});
+    });
+    const tabs = await render(latestProps().bottomEl);
+    expect(tabs.getByText("seen:0,all:0,unseen:0")).toBeOnTheScreen();
+  });
+
+  it("switch the seen mode", async () => {
+    await render(<StatScreen />);
+    const tabs = await render(latestProps().bottomEl);
+    await fireEvent.press(tabs.getByTestId("tab-unseen"));
+    expect(mockSetSeenMode).toHaveBeenCalledWith("unseen");
+  });
+});
+
+describe("getItemId", () => {
+  it("keys stats rows by species", async () => {
+    await render(<StatScreen />);
+    expect(latestProps().getItemId({ species_id: 7 })).toBe(7);
+  });
+
+  // Group headers in the tree have no species, only their own id.
+  it("keys checklist rows by species, group headers by their id", async () => {
+    mockRoute = createRouteMock("Checklist", {});
+    await render(<StatScreen />);
+    expect(latestProps().getItemId({ species_id: 7, id: 1 })).toBe(7);
+    expect(latestProps().getItemId({ type: "family", id: 2 })).toBe(2);
+  });
+});
+
+describe("adding the first observation", () => {
+  beforeEach(() => {
+    mockFiltersCtx({ seenMode: "seen" });
+  });
+
+  it("opens the editor on the screen's country", async () => {
+    await render(<StatScreen />);
+    latestProps().noItems.actions[0].onPress();
+
+    expect(mockNavigation.navigate).toHaveBeenCalledWith("ObservationEditor", {
+      defaultTerritory: 5,
+      defaultPlace: null,
+      returnMode: "back",
+    });
+  });
+
+  it("follows the list's own filters once they arrive", async () => {
+    await render(<StatScreen />);
+    await act(async () => {
+      await latestProps().onFiltersChange({ territory: 8, place: 3 });
+    });
+    latestProps().noItems.actions[0].onPress();
+
+    expect(mockNavigation.navigate).toHaveBeenCalledWith("ObservationEditor", {
+      defaultTerritory: 8,
+      defaultPlace: 3,
+      returnMode: "back",
+    });
+  });
+
+  // undefined lets the editor fall back to the last saved/profile country.
+  it("leaves the country to the editor when there is none at all", async () => {
+    mockFiltersCtx({ seenMode: "seen", territory: null });
+    await render(<StatScreen />);
+    latestProps().noItems.actions[0].onPress();
+
+    expect(mockNavigation.navigate).toHaveBeenCalledWith(
+      "ObservationEditor",
+      expect.objectContaining({ defaultTerritory: undefined }),
+    );
+  });
+});
+
+it("the seen item's menu closes the sheet before opening its observations", async () => {
+  await render(<StatScreen />);
+  const { getByTestId } = await render(
+    latestProps().renderItem({ item: { species_id: 1, seen: true, segment: "sparrow" }, index: 0 }),
+  );
+  await fireEvent.press(getByTestId("menu-1"));
+
+  const { items } = (BottomSheet.showMenu as jest.Mock).mock.calls[0][0];
+  items[0].onPress();
+  expect(BottomSheet.hide).toHaveBeenCalled();
+  expect(mockNavigation.navigate).toHaveBeenCalledWith(
+    "Observations",
+    expect.objectContaining({ filtersOverride: expect.objectContaining({ species: 1 }) }),
+  );
+});
+
+describe("checklist rows and tiles", () => {
+  const ROW = { type: "species", species_id: 10, name_lang: "Robin", seen: false, thumb: null, status: null };
+
+  beforeEach(() => {
+    mockRoute = createRouteMock("Checklist", {});
+  });
+
+  it("opens the menu from the row and records an unseen species from its checkbox", async () => {
+    await render(<StatScreen />);
+    const row = await render(latestProps().renderItem({ item: ROW, index: 0 }));
+
+    await fireEvent.press(row.getByTestId("menu-10"));
+    expect(BottomSheet.showMenu).toHaveBeenCalled();
+
+    await fireEvent.press(row.getByTestId("toggle-10"));
+    expect(mockNavigation.navigate).toHaveBeenCalledWith(
+      "ObservationEditor",
+      expect.objectContaining({ defaultSpecies: 10 }),
+    );
+  });
+
+  it("does the same from a photo tile", async () => {
+    const screen = await render(<StatScreen />);
+    await fireEvent.press(screen.getByTestId("checklist-view-photos"));
+    const tile = await render(latestProps().renderItem({ item: ROW, index: 0 }));
+
+    await fireEvent.press(tile.getByTestId("checklist-species-tile-10"));
+    expect(BottomSheet.showMenu).toHaveBeenCalled();
+
+    await fireEvent.press(tile.getByTestId("checklist-species-tile-10-seen"));
+    expect(mockNavigation.navigate).toHaveBeenCalledWith(
+      "ObservationEditor",
+      expect.objectContaining({ defaultSpecies: 10 }),
+    );
+  });
+
+  // The flat data has no group headers; a stray one is not drawn as a tile.
+  it("draws no tile for a group header", async () => {
+    const screen = await render(<StatScreen />);
+    await fireEvent.press(screen.getByTestId("checklist-view-photos"));
+    expect(latestProps().renderItem({ item: { type: "family", id: 2 }, index: 0 })).toBeNull();
+  });
+});
+
+it("shares the list with the sort it is shown in", async () => {
+  const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction" } as never);
+  Platform.OS = "android";
+  await render(<StatScreen />);
+  await act(async () => {
+    await latestProps().onSortChange("-seen");
+  });
+  overflowRow(
+    openOverflow(latestProps().headerRightEnd, (BottomSheet.showMenu as jest.Mock)),
+    "share",
+  ).onPress();
+
+  expect(shareSpy).toHaveBeenCalledWith({ message: expect.stringContaining("o=-seen") });
 });
