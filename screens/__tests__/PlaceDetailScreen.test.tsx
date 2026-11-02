@@ -12,6 +12,14 @@ jest.mock("@expo/vector-icons", () => {
 jest.mock("react-native-safe-area-context", () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
+jest.mock("@gorhom/bottom-sheet", () => {
+  const { forwardRef } = require("react");
+  const { View, ScrollView } = require("react-native");
+  const BottomSheet = forwardRef((props: Record<string, unknown>, _ref: unknown) => (
+    <View {...props} />
+  ));
+  return { __esModule: true, default: BottomSheet, BottomSheetScrollView: ScrollView };
+});
 jest.mock("../../components/ui/Layout", () => {
   const { View } = require("react-native");
   return {

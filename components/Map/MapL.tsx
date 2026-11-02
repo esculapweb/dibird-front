@@ -43,7 +43,7 @@ const MAP_LOAD_TIMEOUT_MS = 8000;
 // since a single point encodes no count.
 const POINT_RADIUS = 10;
 
-interface MapProps {
+export interface MapProps {
   currentCoords: Coords | null;
   mapHeight?: number;
   showCoords?: boolean;
@@ -92,8 +92,8 @@ interface MapProps {
   mapRef?: Ref<MapRef>;
   /**
    * Space at the bottom covered by something drawn over the map (the place
-   * editor's form sheet): the single point is centred in what stays visible
-   * above it instead of disappearing under it.
+   * screens' sheet, see MapSheetLayout): the single point is centred in what
+   * stays visible above it instead of disappearing under it.
    */
   centerBottomPadding?: number;
 }
