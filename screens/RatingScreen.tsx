@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Share, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import Toast from "react-native-toast-message";
@@ -26,6 +26,10 @@ const RatingScreen = () => {
   const { Colors } = useTheme();
   const navigation = useNavigation<AppStackNavigationProp>();
   const route = useRoute<AppStackRouteProp<"Rating">>();
+
+  useEffect(() => {
+    track("rating_viewed");
+  }, []);
 
   const { territory } = useFilters();
   const [currentFilters, setCurrentFilters] = useState<Filters | null>(null);

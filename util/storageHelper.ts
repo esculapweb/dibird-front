@@ -151,6 +151,41 @@ export const clearOnboardingPending = async (): Promise<void> => {
 };
 
 /**
+ * "Check your profile" after the first sign-in (#149): a new account comes with
+ * fields filled for the person — the name from Google/Apple, the country by IP —
+ * and with privacy defaults they never chose. Set together with
+ * ONBOARDING_KEY and kept out of Logout()'s multiRemove for the same reason:
+ * an email signup comes back through the Login screen.
+ */
+const PROFILE_REVIEW_KEY = "profile_review_pending";
+
+export const isProfileReviewPending = async (): Promise<boolean> => {
+  try {
+    return !!(await AsyncStorage.getItem(PROFILE_REVIEW_KEY));
+  } catch (e) {
+    if (__DEV__) console.warn(`Failed to load ${PROFILE_REVIEW_KEY}`, e);
+    // Same choice as isOnboardingPending: a missed hint beats a repeated one.
+    return false;
+  }
+};
+
+export const markProfileReviewPending = async (): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(PROFILE_REVIEW_KEY, "true");
+  } catch (e) {
+    if (__DEV__) console.warn(`Failed to save ${PROFILE_REVIEW_KEY}`, e);
+  }
+};
+
+export const clearProfileReviewPending = async (): Promise<void> => {
+  try {
+    await AsyncStorage.removeItem(PROFILE_REVIEW_KEY);
+  } catch (e) {
+    if (__DEV__) console.warn(`Failed to clear ${PROFILE_REVIEW_KEY}`, e);
+  }
+};
+
+/**
  * Which release the app has already reported to the backend, per slot — so the
  * same "what's new" is not announced on every launch.
  *

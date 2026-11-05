@@ -32,7 +32,7 @@ import {
 import { BottomSheet } from "../services/bottomSheet";
 import { lifelistBucket, setUserProps } from "../services/analytics";
 import { useTheme } from "../store/theme-context";
-import { useTranslation } from "react-i18next";
+import { useProfileReviewPrompt } from "../hooks/useProfileReviewPrompt";
 
 // Offline, react-query pauses refetches and never settles their promise, so
 // the wait for a refresh has to be capped or the spinner spins forever.
@@ -40,7 +40,7 @@ const REFRESH_TIMEOUT = 15000;
 
 const MainScreen = () => {
   const { language } = useLanguage();
-  const { t } = useTranslation();
+  useProfileReviewPrompt();
   const { Colors } = useTheme();
   const insets = useSafeAreaInsets();
   const NAVBAR_HEIGHT = insets.top + 60;
@@ -130,10 +130,11 @@ const MainScreen = () => {
 
   const openFilters = () => {
     BottomSheet.showContent({
-      title: t("filters"),
-      onReset: handleClearFilters,
+      // No `title`/`onReset` here: FilterSheetContent draws its own header
+      // inside its scroll view, one measured node (#478).
       renderContent: (dismiss: () => void) => (
         <FilterSheetContent
+          onReset={handleClearFilters}
           filters={filters}
           allowed={allowedFilters}
           setFilters={handleFiltersApplied}

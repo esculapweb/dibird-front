@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { loadViewMode, saveViewMode } from "../util/storageHelper";
 import { ViewSwitchOption } from "../components/ui/ViewSwitch";
+import { track } from "../services/analytics";
 
 export type MapViewMode = "list" | "map";
 
@@ -33,6 +34,9 @@ export const useMapViewMode = (screenName: string) => {
 
   const changeViewMode = useCallback(
     (next: MapViewMode) => {
+      // Only a switch the user made: a map mode restored from storage on
+      // mount goes through setViewMode directly and is not an "open".
+      if (next === "map") track("map_opened", { screen: screenName });
       setViewMode(next);
       saveViewMode(screenName, next);
     },

@@ -180,6 +180,34 @@ type EventParams = {
    * because a photo and a person are different problems.
    */
   report_opened: { target: ReportTargetKind };
+  // #90. Creation is counted like observation_created: a record saved offline
+  // is the same place/diary to the user, it is simply still in the sync queue.
+  place_created: undefined;
+  diary_created: undefined;
+  /**
+   * The detail card of an observation. `kind` splits one's own records from
+   * someone else's in the community feed — different questions ("do people
+   * come back to their notes" vs "does the feed lead anywhere").
+   */
+  observation_viewed: { kind: "own" | "community" };
+  place_viewed: undefined;
+  /**
+   * A list search went from empty to non-empty. The query itself is not sent:
+   * lists are searched by notes and place names, and free text typed by the
+   * user does not belong in analytics (Firebase forbids PII in parameters).
+   */
+  search_used: { screen: string };
+  /** Apply in the filter sheet; the count of filters set after applying. */
+  filters_applied: { filters_count: number };
+  rating_viewed: undefined;
+  rating_compared: undefined;
+  /** The user switched a list to the map — not a restored map mode. */
+  map_opened: { screen: string };
+  /**
+   * An error toast reached the user. `error_code` is the normalized code
+   * (services/errors.ts), never the message: messages can carry server text.
+   */
+  error_shown: { screen: string; error_code: string };
 };
 
 export type AnalyticsEventName = keyof EventParams;

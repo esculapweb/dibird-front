@@ -19,6 +19,7 @@ import {
   DiaryListItem,
   PlaceDropdownItem,
 } from "../../types";
+import { track } from "../../services/analytics";
 
 const DIARY_URL = "/myapi/diary2/";
 
@@ -159,6 +160,7 @@ export const useCreateDiary = () => {
       runDiarySync();
       return item;
     },
+    onSuccess: () => track("diary_created"),
     onSettled: () => invalidateDiaryCaches(queryClient),
   });
 };

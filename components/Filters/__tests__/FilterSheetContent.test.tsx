@@ -66,6 +66,7 @@ import { useFilters } from "../../../store/filters-context";
 import { useDropdownQuery } from "../../../hooks/useDropdownQuery";
 import { fetchMyCountries, fetchMyPlaces, fetchSpecies } from "../../../util/fetches";
 import FilterSheetContent from "../FilterSheetContent";
+import { SheetFooterProvider } from "../../ui/SheetFooter";
 import { AllowedFilterKey, Filters } from "../../../types";
 
 const mockHandleLocationUnavailable = jest.fn();
@@ -699,4 +700,64 @@ describe("focusKey waits for the query of the dropdown it opens", () => {
     await render(<FilterSheetContent {...baseProps({ filters: { territory: 5 }, focusKey: "place" })} />);
     expect(dropdownPropsByType("PlacesDropdown").openSignal).toBe(1);
   });
+});
+
+// #478: the sheet's own `title` block and a plain footer view were separate
+// nodes for gorhom's dynamic sizing, made up for with hard-coded paddings.
+// The header now lives inside the scroll view and Apply is a pinned footer.
+describe("header and pinned footer", () => {
+  it("draws its own header, and its Reset clears the filters and closes", async () => {
+    const onReset = jest.fn();
+    await render(<FilterSheetContent {...baseProps()} onReset={onReset} />);
+
+    expect(screen.getByText("filters")).toBeTruthy();
+    await fireEvent.press(screen.getByTestId("filter-reset-button"));
+
+    expect(onReset).toHaveBeenCalledTimes(1);
+    expect(mockDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  it("has no Reset when nobody handles it", async () => {
+    await render(<FilterSheetContent {...baseProps()} />);
+    expect(screen.queryByTestId("filter-reset-button")).toBeNull();
+  });
+
+  it("renders Apply in place when there is no sheet around", async () => {
+    await render(<FilterSheetContent {...baseProps()} />);
+    expect(screen.getByTestId("filter-apply-button")).toBeTruthy();
+  });
+
+  it("hands Apply to the sheet and reserves exactly the footer's height", async () => {
+    const setFooter = jest.fn();
+    await render(
+      <SheetFooterProvider value={{ setFooter, footerHeight: 80 }}>
+        <FilterSheetContent {...baseProps()} />
+      </SheetFooterProvider>,
+    );
+
+    // Not in the tree: the sheet places it through gorhom's footerComponent.
+    expect(screen.queryByTestId("filter-apply-button")).toBeNull();
+    expect(setFooter).toHaveBeenCalledTimes(1);
+
+    const scroll = screen.getByTestId("filter-sheet-scroll");
+    const style = Object.assign({}, ...[scroll.props.contentContainerStyle].flat());
+    expect(style.paddingBottom).toBe(80 + 16);
+    expect(style.paddingTop).toBe(4);
+
+    // The registered node is the real Apply button.
+    await render(<>{setFooter.mock.calls[0][0]}</>);
+    expect(screen.getByTestId("filter-apply-button")).toBeTruthy();
+  });
+});
+
+// #90
+it("tracks filters_applied with the number of filters set", async () => {
+  const { logEvent } = jest.requireMock("@react-native-firebase/analytics");
+  await render(<FilterSheetContent {...baseProps({ filters: { territory: 5, place: 9 } })} />);
+
+  await fireEvent.press(screen.getByTestId("filter-apply-button"));
+
+  const call = (logEvent as jest.Mock).mock.calls.find(([, name]) => name === "filters_applied");
+  expect(call?.[2]).toEqual({ filters_count: expect.any(Number) });
+  expect(call?.[2].filters_count).toBeGreaterThanOrEqual(2);
 });

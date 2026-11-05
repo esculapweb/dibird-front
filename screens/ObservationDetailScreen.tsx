@@ -41,12 +41,18 @@ import Layout from "../components/ui/Layout";
 import { AppStackNavigationProp, AppStackRouteProp } from "../types";
 import { useConfirmDelete } from "../hooks/useConfirmDelete";
 import MapL from "../components/Map/MapL";
+import { track } from "../services/analytics";
 
 const ObservationDetailScreen = () => {
   const navigation = useNavigation<AppStackNavigationProp>();
   const openSpecies = useOpenSpecies();
   const route = useRoute<AppStackRouteProp<"ObservationDetail">>();
   const { observationId, initialObservation } = route.params;
+
+  // #90: once per observation, like species_viewed.
+  useEffect(() => {
+    track("observation_viewed", { kind: "own" });
+  }, [observationId]);
 
   // Same defensive retry as ObservationsScreen: NetInfo's reconnect event can
   // be missed/racy, so opportunistically retry the queue whenever this

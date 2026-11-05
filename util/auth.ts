@@ -5,7 +5,7 @@ import * as Sentry from "@sentry/react-native";
 
 import api, { saveTokens, clearTokens, getRefreshToken } from "../services/api";
 import { track } from "../services/analytics";
-import { markOnboardingPending } from "./storageHelper";
+import { markOnboardingPending, markProfileReviewPending } from "./storageHelper";
 import { Config } from "../constants/config";
 import { AppError } from "../types";
 import { logError } from "../services/errors";
@@ -53,6 +53,7 @@ export const CreateUser = async (
   // AsyncStorage and survives this path — otherwise the onboarding would only
   // reach Apple/Google users.
   await markOnboardingPending();
+  await markProfileReviewPending();
   track("sign_up", { method: "email" });
   return data;
 };
@@ -267,7 +268,10 @@ export const LoginWithGoogle = async () => {
     // `OnboardingProvider` reads the flag on `isAuthenticated` turning true and
     // makes no second attempt. Written afterwards, it would not reach the disk by
     // the time of the read, and the newcomer would land straight on the dashboard.
-    if (is_new_user) await markOnboardingPending();
+    if (is_new_user) {
+      await markOnboardingPending();
+      await markProfileReviewPending();
+    }
 
     await saveTokens({ access, refresh });
 
@@ -318,7 +322,10 @@ export const LoginWithApple = async () => {
 
   // See the comment in LoginWithGoogle: the flag has to reach the disk before
   // saveTokens switches the auth context.
-  if (is_new_user) await markOnboardingPending();
+  if (is_new_user) {
+    await markOnboardingPending();
+    await markProfileReviewPending();
+  }
   await saveTokens({ access, refresh });
   const eventName = is_new_user ? "sign_up" : "login";
   track(eventName, { method: "apple" });

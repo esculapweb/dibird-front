@@ -283,10 +283,11 @@ const ListScreen = <T, RouteName extends ScreenWithFiltersOnly>({
   // filter rather than at the top of the list.
   const openFilterSheet = (focusKey?: AllFiltersKey) =>
     BottomSheet.showContent({
-      title: t("filters"),
-      onReset: handleClearFilters,
+      // No `title`/`onReset` here: FilterSheetContent draws its own header
+      // inside its scroll view, one measured node (#478).
       renderContent: (dismiss: () => void) => (
         <FilterSheetContent
+          onReset={handleClearFilters}
           filters={filters}
           allowed={allowedFilters}
           setFilters={handleFiltersApplied}

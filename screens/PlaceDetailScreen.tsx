@@ -32,6 +32,7 @@ import { useApiError } from "../hooks/useApiError";
 import { isValidationError } from "../hooks/useMutationWithTranslation";
 import { useConfirmDelete } from "../hooks/useConfirmDelete";
 import MapSheetLayout from "../components/Map/MapSheetLayout";
+import { track } from "../services/analytics";
 
 const H_PAD = 12;
 
@@ -39,6 +40,10 @@ const PlaceDetailScreen = () => {
   const navigation = useNavigation<AppStackNavigationProp>();
   const route = useRoute<AppStackRouteProp<"PlaceDetail">>();
   const { placeId, initialPlace } = route.params;
+
+  useEffect(() => {
+    track("place_viewed");
+  }, [placeId]);
   const type = "Place";
 
   // Same defensive retry as PlacesScreen/DiaryDetailScreen: NetInfo's

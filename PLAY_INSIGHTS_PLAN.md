@@ -125,6 +125,9 @@ reanimated, worklets, svg, Firebase, Google Sign-In. Их **нет** у
 
 ## Часть 3. `<img>` из серверного HTML через `expo-image` → [Notion #479](https://app.notion.com/p/40e550193423819a9fdcfa4be159cb7e)
 
+**СДЕЛАНО (05.11.2026):** `components/ui/HtmlImage.tsx` (`htmlRenderers`) подключён в
+трёх экранах, тест `components/ui/__tests__/HtmlImage.test.tsx`. JS-only, едет OTA.
+
 `react-native-render-html@6.3.4` рендерит `<img>` своим `IMGElement` поверх
 `Image` из `react-native` — то есть мимо дискового кэша `expo-image`, которым
 пользуется весь остальной проект. Такие картинки не переживают офлайн и не
