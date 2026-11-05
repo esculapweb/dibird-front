@@ -25,6 +25,29 @@ import * as avatarSync from "../../services/sync/avatarSync";
 
 const AVATAR_SIZE = 100;
 
+// The avatar is shown at most AVATAR_SIZE pt (~300 px at @3x) and the backend
+// crops its thumbnails to a square, so the shorter side is what matters.
+export const AVATAR_UPLOAD_MIN_SIDE = 512;
+
+// Scale the shorter side down to AVATAR_UPLOAD_MIN_SIDE, never up: a photo
+// that is already small is left as is. Width and height of 0 mean the picker
+// did not report them — then do not guess.
+export const avatarResize = (
+  width: number,
+  height: number,
+): ImageManipulator.Action[] => {
+  const shorter = Math.min(width, height);
+  if (!shorter || shorter <= AVATAR_UPLOAD_MIN_SIDE) return [];
+  return [
+    {
+      resize:
+        width <= height
+          ? { width: AVATAR_UPLOAD_MIN_SIDE }
+          : { height: AVATAR_UPLOAD_MIN_SIDE },
+    },
+  ];
+};
+
 const Avatar = () => {
   const [avatar, setAvatar] = useState<string | null>();
   const [loading, setLoading] = useState(false);
@@ -116,16 +139,20 @@ const Avatar = () => {
         // after the system picker, so there the editing step is free.
         allowsEditing: Platform.OS !== "ios",
         aspect: [1, 1],
-        quality: 0.8,
+        // Full quality here: the one JPEG compression happens below, after the
+        // resize. Compressing in both places re-encoded the photo twice and
+        // still uploaded it at full camera resolution (#471).
+        quality: 1,
       });
 
       if (result.canceled || !result.assets || result.assets.length === 0) {
         return;
       }
 
+      const asset = result.assets[0];
       const manipulated = await ImageManipulator.manipulateAsync(
-        result.assets[0].uri,
-        [],
+        asset.uri,
+        avatarResize(asset.width, asset.height),
         { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG },
       );
 

@@ -233,5 +233,10 @@ unzip -o -q <новый>.aab 'base/dex/classes.dex' -d /tmp/r8 && \
 3. → [Notion #471](https://app.notion.com/p/40e55019342381709687d598fb874058) `components/Profile/Avatar.tsx:117-121` — `manipulateAsync(uri, [], { compress: 0.8 })`
    с пустым списком операций поверх уже сжатого picker'ом (`quality: 0.8`) файла:
    двойное JPEG-пережатие без ресайза, на сервер уходит полноразмерное фото.
+   **СДЕЛАНО (05.11.2026):** picker `quality: 1`, одно сжатие после ресайза
+   короткой стороны до 512 px (`avatarResize`, только вниз).
 4. → [Notion #471](https://app.notion.com/p/40e55019342381709687d598fb874058) `components/Profile/Avatar.tsx:126` — файлы `pending-avatar-*.jpg` в
    `documentDirectory` не удаляются после успешного синка (`services/sync/avatarSync.ts`).
+   **СДЕЛАНО (05.11.2026):** файл удаляется после `resolvePendingAvatar` (при ошибке
+   остаётся для повтора); `sweepOrphanAvatarFiles` подчищает старые сироты (старше часа
+   и без строки в очереди).

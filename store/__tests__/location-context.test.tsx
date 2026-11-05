@@ -3,6 +3,7 @@ jest.mock("expo-location", () => ({
   getForegroundPermissionsAsync: jest.fn(),
   requestForegroundPermissionsAsync: jest.fn(),
   getCurrentPositionAsync: jest.fn(),
+  getLastKnownPositionAsync: jest.fn(),
 }));
 
 jest.mock("../../services/analytics", () => ({ track: jest.fn() }));
@@ -10,7 +11,12 @@ jest.mock("../../services/analytics", () => ({ track: jest.fn() }));
 import * as Location from "expo-location";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import { track } from "../../services/analytics";
-import { LocationProvider, useLocation } from "../location-context";
+import {
+  LAST_KNOWN_MAX_AGE_MS,
+  LOCATION_FIX_TIMEOUT_MS,
+  LocationProvider,
+  useLocation,
+} from "../location-context";
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -381,5 +387,74 @@ describe("location_permission", () => {
     });
 
     expect(track).not.toHaveBeenCalled();
+  });
+});
+
+// Regression (#411): getCurrentPositionAsync has no timeout of its own, and a
+// High-accuracy fix indoors could stay pending for minutes — PlaceEditor kept
+// its save button disabled the whole time.
+describe("fix timeout", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    (Location.getForegroundPermissionsAsync as jest.Mock).mockResolvedValue({ status: "granted" });
+    (Location.getCurrentPositionAsync as jest.Mock).mockReturnValue(new Promise(() => {}));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  const requestAndTimeOut = async () => {
+    const { result } = await renderHook(() => useLocation(), { wrapper: LocationProvider });
+    let pending!: Promise<unknown>;
+    await act(async () => {
+      pending = result.current.requestLocation(Location.Accuracy.High);
+    });
+    expect(result.current.isRequesting).toBe(true);
+    let returned: unknown;
+    await act(async () => {
+      jest.advanceTimersByTime(LOCATION_FIX_TIMEOUT_MS);
+      returned = await pending;
+    });
+    return { result, returned };
+  };
+
+  it("falls back to a recent cached fix when the fresh one never arrives", async () => {
+    (Location.getLastKnownPositionAsync as jest.Mock).mockResolvedValue({
+      coords: { latitude: 48.85, longitude: 2.35, accuracy: 900 },
+    });
+
+    const { result, returned } = await requestAndTimeOut();
+
+    expect(Location.getLastKnownPositionAsync).toHaveBeenCalledWith({
+      maxAge: LAST_KNOWN_MAX_AGE_MS,
+    });
+    // The cached fix's own accuracy is passed on, so a coarse one still
+    // triggers PlaceEditor's low-accuracy warning.
+    expect(returned).toEqual({ coords: [2.35, 48.85], accuracy: 900 });
+    expect(result.current.isRequesting).toBe(false);
+  });
+
+  it("gives up with null when there is no recent cached fix either", async () => {
+    (Location.getLastKnownPositionAsync as jest.Mock).mockResolvedValue(null);
+
+    const { result, returned } = await requestAndTimeOut();
+
+    expect(returned).toBeNull();
+    expect(result.current.locationCoords).toBeNull();
+    expect(result.current.isRequesting).toBe(false);
+  });
+
+  it("does not touch the cache when the fresh fix arrives in time", async () => {
+    (Location.getCurrentPositionAsync as jest.Mock).mockResolvedValue({
+      coords: { latitude: 1, longitude: 2, accuracy: 5 },
+    });
+
+    const { result } = await renderHook(() => useLocation(), { wrapper: LocationProvider });
+    await act(async () => {
+      await result.current.requestLocation(Location.Accuracy.High);
+    });
+
+    expect(Location.getLastKnownPositionAsync).not.toHaveBeenCalled();
   });
 });

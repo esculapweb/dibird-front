@@ -59,7 +59,7 @@ import { useProfile } from "../../../store/profile-context";
 import { BottomSheet } from "../../../services/bottomSheet";
 import * as profileRepository from "../../../hooks/repositories/profileRepository";
 import * as avatarSync from "../../../services/sync/avatarSync";
-import Avatar from "../Avatar";
+import Avatar, { AVATAR_UPLOAD_MIN_SIDE, avatarResize } from "../Avatar";
 
 const mockInvalidateProfile = jest.fn();
 const mockShowErrorToast = jest.fn();
@@ -277,6 +277,29 @@ describe("pickAvatar result handling", () => {
     expect(mockInvalidateProfile).toHaveBeenCalledTimes(1);
   });
 
+  // Regression (#471): the picker compressed (quality 0.8) and then the
+  // manipulator compressed again with no resize, so a full camera-resolution
+  // photo was re-encoded twice and uploaded as is.
+  it("compresses once, after scaling a large photo down", async () => {
+    (ImagePicker.launchImageLibraryAsync as jest.Mock).mockResolvedValue({
+      canceled: false,
+      assets: [{ uri: "file:///picked.jpg", width: 4000, height: 3000 }],
+    });
+    await render(<Avatar />);
+    await fireEvent.press(screen.getByTestId("icon-pencil"));
+    await act(async () => Promise.resolve());
+    await act(async () => Promise.resolve());
+
+    expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledWith(
+      expect.objectContaining({ quality: 1 }),
+    );
+    expect(ImageManipulator.manipulateAsync).toHaveBeenCalledWith(
+      "file:///picked.jpg",
+      [{ resize: { height: AVATAR_UPLOAD_MIN_SIDE } }],
+      { compress: 0.8, format: "jpeg" },
+    );
+  });
+
   it("shows an error toast when something in the pipeline throws", async () => {
     (ImageManipulator.manipulateAsync as jest.Mock).mockRejectedValue(new Error("boom"));
     await render(<Avatar />);
@@ -285,5 +308,21 @@ describe("pickAvatar result handling", () => {
     await act(async () => Promise.resolve());
 
     expect(mockShowErrorToast).toHaveBeenCalledWith(expect.any(Error), "AvatarUpload");
+  });
+});
+
+describe("avatarResize", () => {
+  it("scales the shorter side down to the upload size", () => {
+    expect(avatarResize(3000, 4000)).toEqual([{ resize: { width: AVATAR_UPLOAD_MIN_SIDE } }]);
+    expect(avatarResize(4000, 3000)).toEqual([{ resize: { height: AVATAR_UPLOAD_MIN_SIDE } }]);
+  });
+
+  it("never scales a small photo up", () => {
+    expect(avatarResize(AVATAR_UPLOAD_MIN_SIDE, 2000)).toEqual([]);
+    expect(avatarResize(300, 300)).toEqual([]);
+  });
+
+  it("leaves the photo alone when the picker reports no size", () => {
+    expect(avatarResize(0, 0)).toEqual([]);
   });
 });
