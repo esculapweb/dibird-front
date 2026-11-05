@@ -406,6 +406,39 @@ describe("search", () => {
     expect(result.current.isSearchActive).toBe(true);
   });
 
+  // #90: one event per search, not per pause while typing; the query stays out.
+  it("counts a search once when it starts, without the query", async () => {
+    const { logEvent } = jest.requireMock("@react-native-firebase/analytics");
+    const { result } = await renderSyncedFilters();
+    const searches = () =>
+      (logEvent as jest.Mock).mock.calls.filter(([, name]) => name === "search_used");
+
+    for (const q of ["rob", "robin"]) {
+      await act(async () => {
+        result.current.setSearch(q);
+      });
+      await act(async () => {
+        jest.advanceTimersByTime(600);
+      });
+    }
+    expect(searches()).toHaveLength(1);
+    expect(searches()[0][2]).toEqual({ screen: expect.any(String) });
+
+    await act(async () => {
+      result.current.setSearch("");
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(600);
+    });
+    await act(async () => {
+      result.current.setSearch("wren");
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(600);
+    });
+    expect(searches()).toHaveLength(2);
+  });
+
   it("handleClearSearch resets the search field immediately", async () => {
     const { result } = await renderSyncedFilters();
     await act(async () => {

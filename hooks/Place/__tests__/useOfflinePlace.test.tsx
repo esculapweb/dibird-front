@@ -155,6 +155,19 @@ describe("usePlaceItem", () => {
 });
 
 describe("useCreatePlace", () => {
+  // #90, counted like observation_created.
+  it("tracks place_created once the record is saved", async () => {
+    const { logEvent } = jest.requireMock("@react-native-firebase/analytics");
+    (api.post as jest.Mock).mockResolvedValue({ data: { id: 5 } });
+    const { result } = await renderHook(() => useCreatePlace(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ name: "New place" } as never);
+    });
+
+    expect(logEvent).toHaveBeenCalledWith(expect.anything(), "place_created", undefined);
+  });
+
   it("posts to the server and caches the result when online", async () => {
     (api.post as jest.Mock).mockResolvedValue({ data: { id: 5, name: "New place" } });
     const { result } = await renderHook(() => useCreatePlace(), { wrapper });

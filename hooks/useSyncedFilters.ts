@@ -7,6 +7,7 @@ import { parseDeepLinkParams } from "../util/parseDeepLinkParams";
 import { useFilters } from "../store/filters-context";
 import { sortOptionsList } from "../util/sortOptionsList";
 import { useDebounce } from "./useDebounce";
+import { track } from "../services/analytics";
 import { useLocation } from "../store/location-context";
 import {
   Filters,
@@ -75,6 +76,17 @@ export const useSyncedFilters = <RouteName extends ScreenWithFiltersOnly>({
     : false;
 
   const isSearchActive: boolean = debouncedSearch.length > 0;
+
+  // #90: one event per search, not per pause while typing — only the switch
+  // from no search to a search counts. The query itself stays out (see
+  // search_used in services/analytics.ts).
+  const wasSearchActiveRef = useRef(false);
+  useEffect(() => {
+    if (isSearchActive && !wasSearchActiveRef.current) {
+      track("search_used", { screen: screenName });
+    }
+    wasSearchActiveRef.current = isSearchActive;
+  }, [isSearchActive]);
   const isDistanceSort = (val: string | null): boolean =>
     val === "distance" || val === "-distance";
 

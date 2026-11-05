@@ -13,6 +13,7 @@ import * as placeRepository from "../repositories/placeRepository";
 import { fetchDiaries } from "../../util/fetches";
 import { INVALIDATION_MAP } from "../../util/invalidationMap";
 import { AppError, Filters, PlaceFormData, PlaceItem } from "../../types";
+import { track } from "../../services/analytics";
 
 const PLACE_URL = "/myapi/place2/";
 
@@ -147,7 +148,10 @@ export const useCreatePlace = () => {
     },
     // A reminder picked in the create form, scheduled on either path — same
     // as useUpdatePlace below.
-    onSuccess: (item) => schedulePlaceReminder(item),
+    onSuccess: (item) => {
+      track("place_created");
+      return schedulePlaceReminder(item);
+    },
     onSettled: () => invalidatePlaceCaches(queryClient),
   });
 };

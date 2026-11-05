@@ -54,7 +54,7 @@ includes `-dontoptimize`, which should be avoided»*
 
 ---
 
-## Часть 1. Включить оптимизацию R8
+## Часть 1. Включить оптимизацию R8 → [Notion #470](https://app.notion.com/p/40e5501934238119a786d1cf47996f6b)
 
 ### 1.1 Новый config-плагин `plugins/withAndroidR8Optimization.js`
 
@@ -123,7 +123,10 @@ reanimated, worklets, svg, Firebase, Google Sign-In. Их **нет** у
 
 ---
 
-## Часть 3. `<img>` из серверного HTML через `expo-image`
+## Часть 3. `<img>` из серверного HTML через `expo-image` → [Notion #479](https://app.notion.com/p/40e550193423819a9fdcfa4be159cb7e)
+
+**СДЕЛАНО (05.11.2026):** `components/ui/HtmlImage.tsx` (`htmlRenderers`) подключён в
+трёх экранах, тест `components/ui/__tests__/HtmlImage.test.tsx`. JS-only, едет OTA.
 
 `react-native-render-html@6.3.4` рендерит `<img>` своим `IMGElement` поверх
 `Image` из `react-native` — то есть мимо дискового кэша `expo-image`, которым
@@ -223,15 +226,20 @@ unzip -o -q <новый>.aab 'base/dex/classes.dex' -d /tmp/r8 && \
 
 ## Что осталось за рамками (найдено попутно, молча не правлю)
 
-1. **Sentry не заливает proguard-mapping.** `app.config.js:168-175` передаёт
+1. → [Notion #470](https://app.notion.com/p/40e5501934238119a786d1cf47996f6b) **Sentry не заливает proguard-mapping.** `app.config.js:168-175` передаёт
    `@sentry/react-native/expo` без `experimental_android.enableAndroidGradlePlugin`,
    поэтому применяется только legacy `sentry.gradle` (JS-сорсмапы). Нативные
    Android-стектрейсы в Sentry обфусцированы — и после включения оптимизации
    R8 станут ещё менее читаемыми.
 2. `components/Diary/DiaryCard.tsx:85-92` — единственный `expo-image` без явного
    `cachePolicy="disk"` (дефолт совпадает, но выбивается из стиля остальных 18 мест).
-3. `components/Profile/Avatar.tsx:117-121` — `manipulateAsync(uri, [], { compress: 0.8 })`
+3. → [Notion #471](https://app.notion.com/p/40e55019342381709687d598fb874058) `components/Profile/Avatar.tsx:117-121` — `manipulateAsync(uri, [], { compress: 0.8 })`
    с пустым списком операций поверх уже сжатого picker'ом (`quality: 0.8`) файла:
    двойное JPEG-пережатие без ресайза, на сервер уходит полноразмерное фото.
-4. `components/Profile/Avatar.tsx:126` — файлы `pending-avatar-*.jpg` в
+   **СДЕЛАНО (05.11.2026):** picker `quality: 1`, одно сжатие после ресайза
+   короткой стороны до 512 px (`avatarResize`, только вниз).
+4. → [Notion #471](https://app.notion.com/p/40e55019342381709687d598fb874058) `components/Profile/Avatar.tsx:126` — файлы `pending-avatar-*.jpg` в
    `documentDirectory` не удаляются после успешного синка (`services/sync/avatarSync.ts`).
+   **СДЕЛАНО (05.11.2026):** файл удаляется после `resolvePendingAvatar` (при ошибке
+   остаётся для повтора); `sweepOrphanAvatarFiles` подчищает старые сироты (старше часа
+   и без строки в очереди).

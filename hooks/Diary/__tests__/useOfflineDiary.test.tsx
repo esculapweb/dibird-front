@@ -183,6 +183,19 @@ describe("useDiaryItem", () => {
 });
 
 describe("useCreateDiary", () => {
+  // #90, counted like observation_created.
+  it("tracks diary_created once the record is saved", async () => {
+    const { logEvent } = jest.requireMock("@react-native-firebase/analytics");
+    (api.post as jest.Mock).mockResolvedValue({ data: { id: 5 } });
+    const { result } = await renderHook(() => useCreateDiary(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ payload: { name: "New diary" } as never });
+    });
+
+    expect(logEvent).toHaveBeenCalledWith(expect.anything(), "diary_created", undefined);
+  });
+
   it("posts to the server and caches the result when online", async () => {
     (api.post as jest.Mock).mockResolvedValue({ data: { id: 5, name: "New diary" } });
     const { result } = await renderHook(() => useCreateDiary(), { wrapper });

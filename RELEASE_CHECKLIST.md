@@ -121,7 +121,8 @@ reverse` из `run.sh`). Reap залипших `maestro.cli.AppKt` от прош
 | `taxonomy-tree-filters` | ✅ | ✅ |
 | `species-from-my-lists` | ✅ | ✅ |
 | `species-photo-grid` | ✅ | ✅ |
-| `list-sort-persist`, `list-filters` | — | ✅ |
+| `list-filters` | ✅ | ✅ |
+| `list-sort-persist` | — | ✅ |
 | `account-forgot-password`, `account-change-password`, `account-linked-accounts` | ✅ | ✅ |
 | `account-emails` | — | ✅ |
 | `offline-*` (8 флоу) | — | ✅ |
@@ -266,12 +267,14 @@ iOS меню не закрывал — прежняя проверка этог�
 Почему не всё общее:
 
 - `offline-*` — `toggleAirplaneMode` есть только на Android (раздел 6);
-- `account-emails`, `list-sort-persist`, `list-filters` — стали Android-only
-  из-за того, что iOS схлопывал содержимое gorhom-шторок в один
-  accessibility-элемент. С 29.10.2026 это исправлено в `UniversalBottomSheet`
-  (`accessible={false}`, см. выше), так что препятствие снято, но на iOS эти
-  три флоу **ещё не переносились и не прогонялись** — перед тем как добавить
-  им тег `ios`, снять селекторы `.maestro/ui.sh` и прогнать поодиночке;
+- `account-emails`, `list-sort-persist` — стали Android-only из-за того, что
+  iOS схлопывал содержимое gorhom-шторок в один accessibility-элемент. С
+  29.10.2026 это исправлено в `UniversalBottomSheet` (`accessible={false}`,
+  см. выше), так что препятствие снято, но на iOS эти два флоу **ещё не
+  переносились и не прогонялись** — перед тем как добавить им тег `ios`, снять
+  селекторы `.maestro/ui.sh` и прогнать поодиночке. Третий из этой группы,
+  `list-filters`, перенесён 05.11.2026: прогнан на iOS поодиночке без правок
+  селекторов, тег `ios` добавлен;
 - гостевые `guest-browse` / `guest-login-return` пока iOS-only просто
   потому, что не переносились в этом батче, а не из-за платформы.
 
@@ -1010,7 +1013,7 @@ OS-level `toggleAirplaneMode`, полный цикл create → update → delet
   релизом остаётся дополнительной подстраховкой, а не единственной линией
   защиты.
 
-### Очередь следующих e2e-флоу
+### Очередь следующих e2e-флоу → [Notion #476](https://app.notion.com/p/40e5501934238135ba4ace9d4db4530d)
 
 Порядок — по риску потери пользовательских данных. Первые два риска из этого
 списка уже закрыты (`offline-diary-survives-relogin.yaml`,
@@ -1047,10 +1050,10 @@ OS-level `toggleAirplaneMode`, полный цикл create → update → delet
 
 Разведка обходов платформенных ограничений (не сделана, оценки грубые):
 
-- **Шторки на iOS** (`list-filters`, `list-sort-persist`, `account-emails` —
-  сейчас Android-only): причина найдена и исправлена 29.10.2026
+- **Шторки на iOS** (`list-sort-persist`, `account-emails` — сейчас
+  Android-only): причина найдена и исправлена 29.10.2026
   (`accessible={false}` в `UniversalBottomSheet`, см. §1). Осталось
-  перенести сами флоу на iOS.
+  перенести сами флоу на iOS; `list-filters` уже перенесён (05.11.2026).
 - **iOS-офлайн** (6 флоу Android-only): `toggleAirplaneMode` на симуляторе
   не существует. Единственный реальный обход — dev-only флаг «форсировать
   офлайн» в `services/sync/networkStatus.ts`. Цена: код в проде ради теста

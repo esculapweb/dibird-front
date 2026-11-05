@@ -263,6 +263,14 @@ it("shows the empty state, switching message type based on active filters/search
   expect(screen.getByText("no_items")).toBeOnTheScreen();
 });
 
+
+// The filter sheet draws its own header inside its scroll view (#478): the
+// sheet gets no `title`, and "Reset" is wired through FilterSheetContent.
+const filterSheetPayload = () => {
+  const payload = (BottomSheet.showContent as jest.Mock).mock.calls.at(-1)[0];
+  return { payload, content: payload.renderContent(jest.fn()) };
+};
+
 describe("FAB", () => {
   it("renders and wires onAdd when provided", async () => {
     const onAdd = jest.fn();
@@ -323,9 +331,9 @@ describe("header actions", () => {
     await render(<ListScreen {...defaultProps()} />);
     await renderHeaderRight();
     await fireEvent.press(screen.getByTestId("filter-btn"));
-    expect(BottomSheet.showContent).toHaveBeenCalledWith(
-      expect.objectContaining({ title: "filters", onReset: mockHandleClearFilters }),
-    );
+    const { payload, content } = filterSheetPayload();
+    expect(payload.title).toBeUndefined();
+    expect(content.props.onReset).toBe(mockHandleClearFilters);
   });
 
   // The header used to be handed to setOptions again on every render (its
@@ -445,9 +453,7 @@ it("registers an onOpenFilterModal callback that opens the same filter sheet", a
   const registeredOpener = onOpenFilterModal.mock.calls[0][0];
   registeredOpener();
 
-  expect(BottomSheet.showContent).toHaveBeenCalledWith(
-    expect.objectContaining({ title: "filters" }),
-  );
+  expect(filterSheetPayload().content.props.onReset).toBe(mockHandleClearFilters);
 });
 
 // Saving an observation invalidates the list with `refetchType: "all"`, so the

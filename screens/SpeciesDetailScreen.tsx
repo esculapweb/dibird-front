@@ -39,6 +39,7 @@ import {
   countryStatusKey,
 } from "../util/taxonomy";
 import { htmlBaseStyle, htmlTagsStyles } from "../util/htmlStyles";
+import { htmlRenderers } from "../components/ui/HtmlImage";
 import { useLanguage } from "../store/language-context";
 import { useTheme, ThemeColors } from "../store/theme-context";
 import { useContentWidth } from "../hooks/useContentWidth";
@@ -564,6 +565,7 @@ const SpeciesDetailScreen = () => {
                   source={{ html: data.metadata.short }}
                   baseStyle={htmlBaseStyle(Colors)}
                   tagsStyles={htmlTagsStyles(Colors)}
+                  renderers={htmlRenderers}
                 />
               </Section>
             )}

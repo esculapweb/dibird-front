@@ -46,6 +46,25 @@ interface LocationContextType {
 
 const LocationContext = createContext<LocationContextType | null>(null);
 
+// expo-location has no timeout of its own: indoors or with a cold GPS a
+// High-accuracy getCurrentPositionAsync can stay pending for minutes, and
+// PlaceEditor keeps its save button disabled while a fix is pending (#411).
+export const LOCATION_FIX_TIMEOUT_MS = 10_000;
+// On timeout we settle for the OS's cached fix, but only a recent one: an hour-
+// old position from another city is worse than none. Its real accuracy comes
+// with it, so PlaceEditor's low-accuracy warning still shows when it is coarse.
+export const LAST_KNOWN_MAX_AGE_MS = 5 * 60_000;
+
+const TIMED_OUT = Symbol("location-timeout");
+
+const withTimeout = <T,>(promise: Promise<T>, ms: number) => {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<typeof TIMED_OUT>((resolve) => {
+    timer = setTimeout(() => resolve(TIMED_OUT), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+};
+
 export const LocationProvider = ({ children }: { children: ReactNode }) => {
   const [locationCoords, setLocationCoords] = useState<Coords | null>(null);
   const [permissionStatus, setPermissionStatusState] = useState<string | null>(
@@ -114,7 +133,7 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
         if (status !== "granted") return null;
       }
 
-      const loc = await Location.getCurrentPositionAsync({
+      const fix = Location.getCurrentPositionAsync({
         accuracy: desiredAccuracy,
         // Android only, and nothing to do with the runtime permission above:
         // with the default (true) expo-location asks Play Services to resolve
@@ -129,6 +148,20 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
         // must stay silent and make do with whatever provider is on.
         mayShowUserSettingsDialog: prompt,
       });
+
+      const fresh = await withTimeout(fix, LOCATION_FIX_TIMEOUT_MS);
+      let loc: Location.LocationObject | null;
+      if (fresh === TIMED_OUT) {
+        // The abandoned native request may still reject later; nobody awaits
+        // it any more, so keep that from surfacing as an unhandled rejection.
+        fix.catch(() => {});
+        loc = await Location.getLastKnownPositionAsync({
+          maxAge: LAST_KNOWN_MAX_AGE_MS,
+        });
+      } else {
+        loc = fresh;
+      }
+      if (!loc) return null;
 
       const { latitude, longitude, accuracy } = loc.coords;
       // Round raw GPS output (15-17 significant digits) down to ~1m

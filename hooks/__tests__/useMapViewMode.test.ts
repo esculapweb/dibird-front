@@ -5,11 +5,13 @@ jest.mock("../../util/storageHelper", () => ({
   loadViewMode: jest.fn(),
   saveViewMode: jest.fn(),
 }));
+jest.mock("../../services/analytics", () => ({ track: jest.fn() }));
 
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 
 import { useMapViewMode } from "../useMapViewMode";
 import { loadViewMode, saveViewMode } from "../../util/storageHelper";
+import { track } from "../../services/analytics";
 
 /** Lets a test hold the stored-mode read open. */
 const pendingRead = () => {
@@ -102,4 +104,19 @@ it("does not set state after the screen is gone", async () => {
 
   expect(consoleError).not.toHaveBeenCalled();
   consoleError.mockRestore();
+});
+
+// #90: map_opened is a user's switch, not the mode restored on mount.
+it("counts a switch to the map, but not a restored map or a switch back", async () => {
+  (loadViewMode as jest.Mock).mockResolvedValue("map");
+  const { result } = await renderHook(() => useMapViewMode("Places"));
+  await waitFor(() => expect(result.current.viewMode).toBe("map"));
+  expect(track).not.toHaveBeenCalled();
+
+  await act(async () => result.current.changeViewMode("list"));
+  expect(track).not.toHaveBeenCalled();
+
+  await act(async () => result.current.changeViewMode("map"));
+  expect(track).toHaveBeenCalledWith("map_opened", { screen: "Places" });
+  expect(track).toHaveBeenCalledTimes(1);
 });

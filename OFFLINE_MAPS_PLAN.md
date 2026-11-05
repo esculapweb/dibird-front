@@ -1,5 +1,7 @@
 # Офлайн-карты в DiBird
 
+Задача: [Notion #431](https://app.notion.com/p/3c355019342380ec88b5fccea3dbdd93).
+
 ## Контекст
 
 Промо-блок на сайте (`app/web/templates/web/includes/app_promo.html`) обещал «Дневники, наблюдения и карты офлайн», но офлайн-карт в приложении нет: [MapL.tsx:139](components/Map/MapL.tsx#L139) при отсутствии сети вообще не монтирует `<Map>` и показывает заглушку `map_unavailable_offline`. Тайлы берутся напрямую с публичного `tile.openstreetmap.org` ([constants/config.ts:30](constants/config.ts#L30)) — источника, чья usage policy запрещает систематическую выкачку, то есть кнопку «скачать регион» на нём делать нельзя.

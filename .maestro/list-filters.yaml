@@ -24,15 +24,12 @@
 # dropdown that is disabled in exactly this state, so nothing happened at
 # all and the flow failed further down, on the empty state that never came.
 #
-# tags: android only. On iOS *nothing* inside this particular sheet reaches
-# the accessibility hierarchy — not the options, not even its Apply button —
-# while the taxonomy filter sheet right next door is fully addressable
-# (taxonomy-tree-filters.yaml drives it on both platforms). The difference
-# between them is the shared title block: this one is opened with a `title`,
-# which wraps the content in UniversalBottomSheet's own header container. It
-# is worth knowing that this is not only a testing problem — content that
-# Maestro cannot see through the accessibility tree is content VoiceOver
-# cannot read either. Flagged, not worked around here.
+# tags: both platforms. It used to be Android-only: iOS folded the whole
+# gorhom sheet into one accessibility element, so nothing inside it — not the
+# options, not even Apply — was addressable (and VoiceOver could not read it
+# either). Fixed on 29.10.2026 by `accessible={false}` in
+# UniversalBottomSheet; this flow first passed on iOS on 05.11.2026, run on
+# its own, after the filter sheet's header moved inside its scroll view (#478).
 #
 # Cleared through the sheet, not through the empty state's "Reset filters"
 # button: that one resets *every* filter, including the global country and
@@ -43,6 +40,7 @@
 appId: ${APP_ID}
 tags:
   - android
+  - ios
 ---
 - launchApp
 

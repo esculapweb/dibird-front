@@ -19,12 +19,15 @@ import {
   BottomSheetView,
   BottomSheetTextInput,
   BottomSheetBackdrop,
+  BottomSheetFooter,
+  BottomSheetFooterProps,
 } from "@gorhom/bottom-sheet";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 
 import { useTheme, ThemeColors } from "../../store/theme-context";
 import { navigationRef } from "../../services/navigationRef";
+import { SheetFooterProvider, useSheetFooterHost } from "./SheetFooter";
 import {
   SheetPayload,
   ConfirmSheetPayload,
@@ -68,6 +71,9 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
   const didOpenRef = useRef(false);
   const openTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const unwatchRouteRef = useRef<(() => void) | null>(null);
+  // A content sheet's pinned footer (see SheetFooter.tsx): the content
+  // registers it, gorhom's footerComponent places it.
+  const sheetFooter = useSheetFooterHost();
 
   const confirm =
     payload?.mode === "confirm"
@@ -299,6 +305,15 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
       accessible={false}
       stackBehavior="replace"
       enableDynamicSizing
+      footerComponent={
+        sheetFooter.footer
+          ? (props: BottomSheetFooterProps) => (
+              <BottomSheetFooter {...props}>
+                {sheetFooter.renderMeasured()}
+              </BottomSheetFooter>
+            )
+          : undefined
+      }
       maxDynamicContentSize={screenHeight * 0.9}
       enablePanDownToClose
       enableContentPanningGesture={!content?.disableContentPanning}
@@ -523,7 +538,14 @@ const UniversalBottomSheet = forwardRef<BottomSheetRef>((_, ref) => {
                 </View>
               </BottomSheetView>
             ) : null}
-            {content.renderContent(dismiss)}
+            <SheetFooterProvider
+              value={{
+                setFooter: sheetFooter.setFooter,
+                footerHeight: sheetFooter.footerHeight,
+              }}
+            >
+              {content.renderContent(dismiss)}
+            </SheetFooterProvider>
           </>
         )}
       </>

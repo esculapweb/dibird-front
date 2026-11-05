@@ -39,6 +39,7 @@ import { fetchTerritoryDetail } from "../util/fetches";
 import { buildTerritoryDetailUrl } from "../util/taxonShareLink";
 import { isoToFlagEmoji } from "../util/helpers";
 import { htmlBaseStyle, htmlTagsStyles } from "../util/htmlStyles";
+import { htmlRenderers } from "../components/ui/HtmlImage";
 import { StaleTime } from "../constants/staleTime";
 import { useLanguage } from "../store/language-context";
 import { useTheme, ThemeColors } from "../store/theme-context";
@@ -282,6 +283,7 @@ const TerritoryDetailScreen = () => {
             source={{ html: description }}
             baseStyle={htmlBaseStyle(Colors)}
             tagsStyles={htmlTagsStyles(Colors)}
+            renderers={htmlRenderers}
           />
         </Section>
       )}

@@ -11,7 +11,6 @@ import PlaceDetailSkeleton from "../components/Place/PlaceDetailSkeleton";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import IconsHeader from "../components/ui/IconsHeader";
 import { overflowButton } from "../components/ui/overflowMenu";
-import Layout from "../components/ui/Layout";
 import StatCard from "../components/ui/StatCard";
 import FilterChips from "../components/Filters/FilterChips";
 import FailedEditBanner from "../components/Profile/FailedEditBanner";
@@ -32,7 +31,8 @@ import { buildDateParams } from "../util/helpers";
 import { useApiError } from "../hooks/useApiError";
 import { isValidationError } from "../hooks/useMutationWithTranslation";
 import { useConfirmDelete } from "../hooks/useConfirmDelete";
-import MapL from "../components/Map/MapL";
+import MapSheetLayout from "../components/Map/MapSheetLayout";
+import { track } from "../services/analytics";
 
 const H_PAD = 12;
 
@@ -40,6 +40,10 @@ const PlaceDetailScreen = () => {
   const navigation = useNavigation<AppStackNavigationProp>();
   const route = useRoute<AppStackRouteProp<"PlaceDetail">>();
   const { placeId, initialPlace } = route.params;
+
+  useEffect(() => {
+    track("place_viewed");
+  }, [placeId]);
   const type = "Place";
 
   // Same defensive retry as PlacesScreen/DiaryDetailScreen: NetInfo's
@@ -69,7 +73,6 @@ const PlaceDetailScreen = () => {
     data: place,
     isLoading,
     isError,
-    isRefetching,
     error,
     refetch,
   } = usePlaceItem(
@@ -306,24 +309,33 @@ const PlaceDetailScreen = () => {
   }
 
   if (isLoading || !place) {
-    return (
-      <Layout>
-        <PlaceDetailSkeleton />
-      </Layout>
-    );
+    return <PlaceDetailSkeleton />;
   }
 
   const [lng, lat] = place.location.coordinates;
 
+  // No pull-to-refresh here: a downward drag folds the sheet.
   return (
-    <Layout
-      withScroll={true}
-      style={{ paddingBottom: 40 }}
-      onRefresh={refetch}
-      isRefreshing={isRefetching}
+    <MapSheetLayout
+      testID="place-detail-sheet"
+      fitContent
+      mapProps={{ currentCoords: [lng, lat], showCoords: true }}
     >
+      {/* First, so the folded sheet still says which place this is. */}
+      <View style={styles.header}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title} numberOfLines={1}>
+            {place.name}
+          </Text>
+          <Text style={styles.subtitle} numberOfLines={1}>
+            {isoToFlagEmoji(place.territory_data.code)}{" "}
+            {place.territory_data.name}
+          </Text>
+        </View>
+      </View>
+
       {place._syncError && failedMutation && (
-        <View style={{ paddingHorizontal: H_PAD, paddingTop: H_PAD }}>
+        <View style={{ paddingHorizontal: H_PAD }}>
           <FailedEditBanner
             failedEdit={{ message: place._syncError, createdAt: Date.now() }}
             onRetry={handleRetrySync}
@@ -331,17 +343,6 @@ const PlaceDetailScreen = () => {
           />
         </View>
       )}
-      <View style={styles.header}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title}>{place.name}</Text>
-          <Text style={styles.subtitle}>
-            {isoToFlagEmoji(place.territory_data.code)}{" "}
-            {place.territory_data.name}
-          </Text>
-        </View>
-      </View>
-
-      <MapL currentCoords={[lng, lat]} mapHeight={410} showCoords={true} />
       <FilterChips
         filters={{ date: date ?? null }}
         onRemove={() => setDate(null)}
@@ -349,7 +350,6 @@ const PlaceDetailScreen = () => {
         hints={{}}
       />
       <View style={styles.statsRow}>
-
         <StatCard
           value={place.species_count}
           label={t("species")}
@@ -385,7 +385,7 @@ const PlaceDetailScreen = () => {
           </Text>
         )}
       </View>
-    </Layout>
+    </MapSheetLayout>
   );
 };
 
@@ -396,7 +396,8 @@ const stylesFn = (Colors: ThemeColors) =>
     header: {
       flexDirection: "row",
       alignItems: "center",
-      padding: H_PAD,
+      paddingHorizontal: H_PAD,
+      paddingBottom: H_PAD,
     },
     title: {
       fontSize: 18,

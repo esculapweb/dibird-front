@@ -36,6 +36,20 @@ describe("showErrorToast", () => {
     expect(showError).toHaveBeenCalledWith(expect.any(Error), extractor);
   });
 
+  // #90: the normalized code only, never the message.
+  it("reports the shown error to analytics by its code", async () => {
+    const { logEvent } = jest.requireMock("@react-native-firebase/analytics");
+    const { result } = await renderHook(() => useApiError());
+
+    result.current.showErrorToast(Object.assign(new Error("secret server text"), { code: "NETWORK_ERROR" }));
+
+    expect(logEvent).toHaveBeenCalledWith(expect.anything(), "error_shown", {
+      screen: "unknown",
+      error_code: "NETWORK_ERROR",
+    });
+    expect(JSON.stringify((logEvent as jest.Mock).mock.calls)).not.toContain("secret server text");
+  });
+
   it("does nothing for a falsy error", async () => {
     const { result } = await renderHook(() => useApiError());
     result.current.showErrorToast(null);

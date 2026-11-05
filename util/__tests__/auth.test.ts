@@ -18,6 +18,7 @@ jest.mock("../../services/errors", () => ({
 }));
 jest.mock("../storageHelper", () => ({
   markOnboardingPending: jest.fn(async () => {}),
+  markProfileReviewPending: jest.fn(async () => {}),
 }));
 jest.mock("@react-native-google-signin/google-signin", () => ({
   GoogleSignin: {
@@ -47,7 +48,7 @@ import * as Sentry from "@sentry/react-native";
 import { logEvent } from "@react-native-firebase/analytics";
 import api, { saveTokens, clearTokens, getRefreshToken } from "../../services/api";
 import { logError } from "../../services/errors";
-import { markOnboardingPending } from "../storageHelper";
+import { markOnboardingPending, markProfileReviewPending } from "../storageHelper";
 import {
   Login,
   CreateUser,
@@ -64,6 +65,8 @@ import {
 
 const apiPost = api.post as jest.Mock;
 const markPending = markOnboardingPending as jest.Mock;
+// #149: set alongside the onboarding flag, wherever that one is.
+const markReview = markProfileReviewPending as jest.Mock;
 
 // The "flag → tokens" order is checked by jest's global invocation counter. The
 // point is that saveTokens itself switches the auth context (notifyTokenUpdate →
@@ -118,6 +121,7 @@ describe("CreateUser", () => {
     // set right away and survives leaving the app — the sign-in comes back through
     // the Login screen.
     expect(markPending).toHaveBeenCalledTimes(1);
+    expect(markReview).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -294,6 +298,7 @@ describe("LoginWithGoogle", () => {
     await LoginWithGoogle();
 
     expect(markPending).toHaveBeenCalledTimes(1);
+    expect(markReview).toHaveBeenCalledTimes(1);
     expect(flagCallOrder()).toBeLessThan(tokensCallOrder());
   });
 
@@ -308,6 +313,7 @@ describe("LoginWithGoogle", () => {
 
     expect(logEvent).toHaveBeenCalledWith(expect.anything(), "login", { method: "google" });
     expect(markPending).not.toHaveBeenCalled();
+    expect(markReview).not.toHaveBeenCalled();
   });
 
   // The key is missing from the response — exactly what the backend returned while
@@ -321,6 +327,7 @@ describe("LoginWithGoogle", () => {
     await LoginWithGoogle();
 
     expect(markPending).not.toHaveBeenCalled();
+    expect(markReview).not.toHaveBeenCalled();
     expect(logEvent).toHaveBeenCalledWith(expect.anything(), "login", { method: "google" });
   });
 });
@@ -375,6 +382,7 @@ describe("LoginWithApple", () => {
     await LoginWithApple();
 
     expect(markPending).toHaveBeenCalledTimes(1);
+    expect(markReview).toHaveBeenCalledTimes(1);
     expect(flagCallOrder()).toBeLessThan(tokensCallOrder());
   });
 
@@ -391,6 +399,7 @@ describe("LoginWithApple", () => {
 
     expect(logEvent).toHaveBeenCalledWith(expect.anything(), "login", { method: "apple" });
     expect(markPending).not.toHaveBeenCalled();
+    expect(markReview).not.toHaveBeenCalled();
   });
 });
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Text, View, StyleSheet, Pressable } from "react-native";
 import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
@@ -22,6 +22,7 @@ import { useFilters } from "../../store/filters-context";
 import { useFocusScroll } from "../../hooks/useFocusScroll";
 import { useLocationUnavailable } from "../../hooks/useLocationUnavailable";
 import SearchInput from "../../components/ui/SearchInput";
+import { useSheetFooter } from "../ui/SheetFooter";
 import { RADIUS_OPTIONS_KM } from "../../constants/radiusOptions";
 import {
   Filters,
@@ -31,6 +32,7 @@ import {
   ObservationSource,
 } from "../../types";
 import { ThemeColors } from "../../store/theme-context";
+import { track } from "../../services/analytics";
 
 interface FilterSheetContentProps {
   filters: Filters;
@@ -38,6 +40,9 @@ interface FilterSheetContentProps {
   setFilters: (filters: Filters) => void;
   extraTerritory?: number | null;
   dismiss: () => void;
+  // "Reset" in the sheet's own header. The header lives inside the scroll view
+  // rather than in the sheet's `title` (see the comment above the return).
+  onReset?: () => void;
   showSearch?: boolean;
   initialSearch?: string;
   onSearchChange?: (value: string) => void;
@@ -63,6 +68,7 @@ const FilterSheetContent = ({
   setFilters,
   extraTerritory,
   dismiss,
+  onReset,
   showSearch,
   initialSearch = "",
   onSearchChange,
@@ -316,6 +322,11 @@ const FilterSheetContent = ({
 
   const applyHandler = async () => {
     const newFilters = getNewFilters();
+    track("filters_applied", {
+      filters_count: Object.values(newFilters).filter(
+        (v) => v != null && v !== "",
+      ).length,
+    });
     setFilters(newFilters);
     dismiss();
 
@@ -336,14 +347,65 @@ const FilterSheetContent = ({
     }
   };
 
+  // The footer is registered once (see useSheetFooter) and reads the latest
+  // handler through this ref.
+  const applyRef = useRef(applyHandler);
+  applyRef.current = applyHandler;
+  const footer = useMemo(
+    () => (
+      <View style={styles.footer}>
+        {/* Has to be reachable by id: its own label is the word "apply", which
+            also ends the unsynced hint ("...the other filters do not apply")
+            shown right above it, so a text selector picks the hint first. */}
+        <Pressable
+          style={styles.primaryButton}
+          onPress={() => applyRef.current()}
+          testID="filter-apply-button"
+        >
+          <Text style={styles.primaryText}>{t("apply")}</Text>
+        </Pressable>
+      </View>
+    ),
+    [],
+  );
+  const { inline: footerInline, footerHeight } = useSheetFooter(footer);
+
+  // One measured node (#478). With `enableDynamicSizing` every
+  // BottomSheetView/ScrollView writes the same contentHeight and the last
+  // writer wins, so the sheet's own `title` block plus this scroll view sized
+  // the sheet by whichever reported last; a plain footer view was not counted
+  // at all. Hard-coded paddings (56 on top, 96 at the bottom) papered over
+  // both. Now the header is part of the scroll content, the Apply button is a
+  // gorhom footer pinned to the bottom, and the content reserves exactly the
+  // footer's measured height for it — the same fix as TaxonFilterSheet, minus
+  // the footer scrolling away.
   return (
     <>
       <BottomSheetScrollView
         ref={scrollRef}
         style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: (footerInline ? 0 : footerHeight) + 16 },
+        ]}
         keyboardShouldPersistTaps="handled"
+        testID="filter-sheet-scroll"
       >
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>{t("filters")}</Text>
+          {onReset && (
+            <Pressable
+              onPress={() => {
+                onReset();
+                dismiss();
+              }}
+              hitSlop={8}
+              testID="filter-reset-button"
+            >
+              <Text style={styles.reset}>{t("reset")}</Text>
+            </Pressable>
+          )}
+        </View>
         {showSearch && (
           <SearchInput
             value={localSearch}
@@ -554,18 +616,7 @@ const FilterSheetContent = ({
         )}
       </BottomSheetScrollView>
 
-      <View style={styles.footer}>
-        {/* Has to be reachable by id: its own label is the word "apply", which
-            also ends the unsynced hint ("...the other filters do not apply")
-            shown right above it, so a text selector picks the hint first. */}
-        <Pressable
-          style={styles.primaryButton}
-          onPress={applyHandler}
-          testID="filter-apply-button"
-        >
-          <Text style={styles.primaryText}>{t("apply")}</Text>
-        </Pressable>
-      </View>
+      {footerInline && footer}
     </>
   );
 };
@@ -581,9 +632,23 @@ const stylesFn = (Colors: ThemeColors, insets: EdgeInsets) =>
     },
     scrollContent: {
       paddingHorizontal: 16,
-      paddingTop: 56,
-      paddingBottom: 96,
+      paddingTop: 4,
     },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingBottom: 12,
+      marginBottom: 4,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: Colors.border,
+    },
+    headerTitle: {
+      fontSize: 17,
+      fontWeight: "600",
+      color: Colors.textMain,
+    },
+    reset: { fontSize: 14, color: Colors.main100 },
     hint: {
       fontSize: 12,
       lineHeight: 16,
@@ -599,6 +664,8 @@ const stylesFn = (Colors: ThemeColors, insets: EdgeInsets) =>
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: Colors.border,
       alignItems: "center",
+      // Pinned over the content now, so it needs its own background.
+      backgroundColor: Colors.primary100,
     },
     primaryButton: {
       alignItems: "center",

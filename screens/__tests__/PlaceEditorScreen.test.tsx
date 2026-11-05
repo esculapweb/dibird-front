@@ -699,7 +699,8 @@ describe("nearby place suggestion", () => {
     await act(async () => {
       onDismiss();
     });
-    expect(mockSheetSnapToIndex).toHaveBeenCalledWith(0);
+    // Back to the resting height, not folded down to the peek (index 0).
+    expect(mockSheetSnapToIndex).toHaveBeenCalledWith(1);
   });
 
   it("keeps the sheet raised when the coordinates were opened meanwhile", async () => {

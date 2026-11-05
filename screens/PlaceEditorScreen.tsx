@@ -10,8 +10,7 @@ import { Keyboard, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import type { PressEvent } from "@maplibre/maplibre-react-native";
-import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import BottomSheet from "@gorhom/bottom-sheet";
 import Toast from "react-native-toast-message";
 
 import { useTheme, ThemeColors } from "../store/theme-context";
@@ -42,7 +41,9 @@ import {
   PlaceFormData,
   ErrorExtractor,
 } from "../types";
-import MapL from "../components/Map/MapL";
+import MapSheetLayout, {
+  SHEET_REST_INDEX,
+} from "../components/Map/MapSheetLayout";
 
 type FormErrors = {
   name?: string;
@@ -61,13 +62,6 @@ const LOW_ACCURACY_THRESHOLD_M = 100;
 // city-wide view the GPS path starts from before it knows the accuracy.
 const PICKED_POINT_ZOOM = 16;
 
-// The form sheet's resting height: the map keeps the top 60% for picking
-// the point, the sheet shows name, country, the folded coordinates row and
-// "want to visit" without a drag. The second point is for the rest of the
-// form (the opened lat/lng inputs, the reminder).
-const SHEET_COLLAPSED_SHARE = 0.4;
-const SHEET_SNAP_POINTS = [`${SHEET_COLLAPSED_SHARE * 100}%`, "92%"];
-
 const PlaceEditorScreen = () => {
   const { Colors } = useTheme();
   const styles = stylesFn(Colors);
@@ -85,7 +79,6 @@ const PlaceEditorScreen = () => {
     initialWantToVisit,
   } = route.params || {};
   const isEditMode = !!place;
-  const insets = useSafeAreaInsets();
 
   const {
     coords,
@@ -134,9 +127,6 @@ const PlaceEditorScreen = () => {
     !!pickedReminder &&
     pickedReminder.getTime() !== storedReminderMs;
 
-  // Height of the screen under the header, for the sheet's share of it.
-  const [containerHeight, setContainerHeight] = useState(0);
-  const collapsedSheetHeight = containerHeight * SHEET_COLLAPSED_SHARE;
   const sheetRef = useRef<BottomSheet>(null);
   const initialCoords = place?.location?.coordinates;
 
@@ -181,7 +171,7 @@ const PlaceEditorScreen = () => {
       sheetRef.current?.expand();
     } else if (sheetRaisedForSuggestionRef.current) {
       sheetRaisedForSuggestionRef.current = false;
-      sheetRef.current?.snapToIndex(0);
+      sheetRef.current?.snapToIndex(SHEET_REST_INDEX);
     }
   }, [showSuggestion]);
 
@@ -570,83 +560,63 @@ const PlaceEditorScreen = () => {
     return <LoadingOverlay />;
   }
 
-  // The map runs under the whole screen; the form is a sheet over its lower
-  // part. The camera and the "Update GPS" button are lifted by the sheet's
-  // resting height so the pin and the button stay in the part left visible.
+  // At the resting height the sheet shows name, country, the folded
+  // coordinates row and "want to visit"; the opened lat/lng inputs and the
+  // reminder want it raised.
   return (
-    <View
-      style={styles.screen}
-      onLayout={(e) => setContainerHeight(e.nativeEvent.layout.height)}
+    <MapSheetLayout
+      sheetRef={sheetRef}
+      testID="place-editor-sheet"
+      mapProps={{
+        onPress: handleMapPress,
+        currentCoords: coords,
+        currentZoom: zoom,
+        accuracy,
+        onUseMyLocation: locateMe,
+        isLocating,
+      }}
     >
-      <MapL
-        onPress={handleMapPress}
-        currentCoords={coords}
-        currentZoom={zoom}
-        accuracy={accuracy}
-        onUseMyLocation={locateMe}
-        isLocating={isLocating}
-        bottomInset={collapsedSheetHeight}
-        centerBottomPadding={collapsedSheetHeight}
+      {!isLocating && accuracy > LOW_ACCURACY_THRESHOLD_M && (
+        <Text style={styles.lowAccuracyHint}>
+          {t("gps_low_accuracy_hint")}
+        </Text>
+      )}
+      {showSuggestion && (
+        <View style={styles.suggestionWrapper}>
+          <NearbyPlaceSuggestion
+            {...nearby}
+            variant="editor"
+            onSelect={handleUseExistingPlace}
+            onDismiss={() => setSuggestionDismissed(true)}
+          />
+        </View>
+      )}
+      <PlaceForm
+        onCoordsChange={handleCoordsChange}
+        // The opened lat/lng inputs land below the resting sheet's edge.
+        onCoordsExpand={handleCoordsExpand}
+        formData={formData}
+        coords={coords}
+        latText={latText}
+        setLatText={setLatText}
+        lngText={lngText}
+        setLngText={setLngText}
+        setFormData={setFormData}
+        errors={errors}
+        setErrors={setErrors}
+        locationDetails={details}
+        isEditMode={isEditMode}
       />
-      <BottomSheet
-        ref={sheetRef}
-        index={0}
-        snapPoints={SHEET_SNAP_POINTS}
-        enableDynamicSizing={false}
-        keyboardBehavior="extend"
-        keyboardBlurBehavior="restore"
-        android_keyboardInputMode="adjustResize"
-        backgroundStyle={styles.sheetBackground}
-        handleIndicatorStyle={styles.sheetHandle}
-      >
-        <BottomSheetScrollView
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
-          testID="place-editor-sheet"
-        >
-          {!isLocating && accuracy > LOW_ACCURACY_THRESHOLD_M && (
-            <Text style={styles.lowAccuracyHint}>
-              {t("gps_low_accuracy_hint")}
-            </Text>
-          )}
-          {showSuggestion && (
-            <View style={styles.suggestionWrapper}>
-              <NearbyPlaceSuggestion
-                {...nearby}
-                variant="editor"
-                onSelect={handleUseExistingPlace}
-                onDismiss={() => setSuggestionDismissed(true)}
-              />
-            </View>
-          )}
-          <PlaceForm
-            onCoordsChange={handleCoordsChange}
-            // The opened lat/lng inputs land below the resting sheet's edge.
-            onCoordsExpand={handleCoordsExpand}
-            formData={formData}
-            coords={coords}
-            latText={latText}
-            setLatText={setLatText}
-            lngText={lngText}
-            setLngText={setLngText}
-            setFormData={setFormData}
-            errors={errors}
-            setErrors={setErrors}
-            locationDetails={details}
-            isEditMode={isEditMode}
-          />
-          <WantToVisitSection
-            value={wantToVisit}
-            onChange={handleWantToVisitChange}
-            reminderDate={reminderDate}
-            reminderTime={reminderTime}
-            onReminderDateChange={handleReminderDateChange}
-            onReminderTimeChange={handleReminderTimeChange}
-            reminderError={errors.reminder}
-          />
-        </BottomSheetScrollView>
-      </BottomSheet>
-    </View>
+      <WantToVisitSection
+        value={wantToVisit}
+        onChange={handleWantToVisitChange}
+        reminderDate={reminderDate}
+        reminderTime={reminderTime}
+        onReminderDateChange={handleReminderDateChange}
+        onReminderTimeChange={handleReminderTimeChange}
+        reminderError={errors.reminder}
+      />
+    </MapSheetLayout>
   );
 };
 
@@ -654,17 +624,6 @@ export default PlaceEditorScreen;
 
 const stylesFn = (Colors: ThemeColors) =>
   StyleSheet.create({
-    screen: { flex: 1, backgroundColor: Colors.primary100 },
-    sheetBackground: {
-      backgroundColor: Colors.primary100,
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
-    },
-    sheetHandle: {
-      backgroundColor: Colors.textSecondary,
-      width: 40,
-      height: 4,
-    },
     lowAccuracyHint: {
       fontSize: 12,
       color: Colors.error600,

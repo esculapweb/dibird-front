@@ -12,6 +12,7 @@ import Layout from "../components/ui/Layout";
 import ErrorOverlay from "../components/Error/ErrorOverlay";
 import { fetchPage } from "../util/fetches";
 import { htmlBaseStyle, htmlTagsStyles } from "../util/htmlStyles";
+import { htmlRenderers } from "../components/ui/HtmlImage";
 import { StaleTime } from "../constants/staleTime";
 import { useLanguage } from "../store/language-context";
 import { useTheme, ThemeColors } from "../store/theme-context";
@@ -74,6 +75,7 @@ const StaticScreen = () => {
         source={{ html: data }}
         baseStyle={htmlBaseStyle(Colors)}
         tagsStyles={htmlTagsStyles(Colors)}
+        renderers={htmlRenderers}
       />
     </Layout>
   );

@@ -139,6 +139,17 @@ export const getPendingAvatarMutation = (): MutationRow | null => {
   return rows[0] ?? null;
 };
 
+// Local files still owned by the avatar queue, whatever the status: an
+// "error" row keeps its file so that retryMutation can upload it again.
+export const getQueuedAvatarUris = (): string[] =>
+  db
+    .select()
+    .from(mutationQueueTable)
+    .where(eq(mutationQueueTable.entity, AVATAR_ENTITY))
+    .all()
+    .map((row) => (row.payload as { uri?: string | null } | null)?.uri)
+    .filter((uri): uri is string => !!uri);
+
 export const resolvePendingAvatar = (
   id: number,
   data: { avatar: string; avatarThumbnail: string },

@@ -46,6 +46,12 @@ const CommunityDetailScreen = () => {
   const openSpecies = useOpenSpecies();
   const route = useRoute<AppStackRouteProp<"ObservationDetail">>();
   const { observationId } = route.params;
+
+  // #90: someone else's observation; own ones are tracked by
+  // ObservationDetailScreen with kind "own".
+  useEffect(() => {
+    track("observation_viewed", { kind: "community" });
+  }, [observationId]);
   const type = "Community";
 
   const {

@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { Share, Platform } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -29,6 +29,11 @@ const RatingsCompareScreen = () => {
   const openSpecies = useOpenSpecies();
   const route = useRoute<AppStackRouteProp<"RatingsCompare">>();
   const { profile1, profile2 } = route.params;
+
+  // Once per pair compared.
+  useEffect(() => {
+    track("rating_compared");
+  }, [profile1, profile2]);
   const [tabMode, setTabMode] = useState<seenMode | compareMode>("all");
   const [currentFilters, setCurrentFilters] = useState<Filters | null>(null);
   const [currentSort, setCurrentSort] = useState<string | null>(null);

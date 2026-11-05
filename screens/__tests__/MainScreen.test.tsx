@@ -47,6 +47,8 @@ jest.mock("../../services/bottomSheet", () => ({
 }));
 // FilterSheetContent is only ever passed as a renderContent callback to the
 // mocked BottomSheet.showContent below, never actually mounted here.
+// Covered by its own test (hooks/__tests__/useProfileReviewPrompt.test.ts).
+jest.mock("../../hooks/useProfileReviewPrompt", () => ({ useProfileReviewPrompt: jest.fn() }));
 jest.mock("../../components/Filters/FilterSheetContent", () => ({
   __esModule: true,
   default: () => null,
@@ -189,13 +191,20 @@ it("queries the dashboard stat with fetchMyDashboardStat(filters) and passes dat
   expect(screen.getByText(/^Stats:.*"data":\{"total":10\}/)).toBeOnTheScreen();
 });
 
+// The filter sheet draws its own header inside its scroll view (#478): the
+// sheet gets no `title`, and "Reset" is wired through FilterSheetContent.
+const filterSheetPayload = () => {
+  const payload = (BottomSheet.showContent as jest.Mock).mock.calls.at(-1)[0];
+  return { payload, content: payload.renderContent(jest.fn()) };
+};
+
 it("tapping the navbar opens the filter sheet wired to handleClearFilters", async () => {
   await render(<MainScreen />);
   await fireEvent.press(screen.getByTestId("floating-navbar"));
 
-  expect(BottomSheet.showContent).toHaveBeenCalledWith(
-    expect.objectContaining({ title: "filters", onReset: mockHandleClearFilters }),
-  );
+  const { payload, content } = filterSheetPayload();
+  expect(payload.title).toBeUndefined();
+  expect(content.props.onReset).toBe(mockHandleClearFilters);
 });
 
 // The dashboard scroll view has no testID; walk up from a widget inside it.
