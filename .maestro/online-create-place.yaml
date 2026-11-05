@@ -64,6 +64,12 @@ tags:
 - copyTextFrom:
     id: "list-header-badge-count"
 - evalScript: ${output.placeBaselineCount = maestro.copiedText}
+# Per-run name, as in online-nearby-place.yaml: the backend keeps place names
+# unique per profile, so with a fixed name one run that died before its DELETE
+# leaves a place behind that makes every later save fail (the uniqueness
+# error is not a field error, so it is only a toast that is gone by the time
+# the next step looks) — seen on iOS 2026-11-05.
+- evalScript: ${output.placeName = "Online Test Place " + Date.now()}
 
 # ---- CREATE, online ----
 - tapOn:
@@ -82,24 +88,35 @@ tags:
 # The optional wait in front is load-bearing: `when: notVisible` is evaluated
 # immediately, so without it the retry fires while the editor is still opening
 # and then fails looking for a "+" button that is no longer on screen.
+#
+# Waited on the name input, not the coordinates row: a leftover place at the
+# mock fix puts the nearby-place card on top of the form and pushes the
+# coordinates row below the fold — the editor is open, but "not visible" fires
+# the retry anyway (same reasoning as online-nearby-place.yaml).
 - extendedWaitUntil:
     visible:
-      id: "place-coords-toggle"
+      id: "place-name-input"
     timeout: 8000
     optional: true
 - runFlow:
     when:
       notVisible:
-        id: "place-coords-toggle"
+        id: "place-name-input"
     commands:
       - tapOn:
           id: "list-add-button"
 - extendedWaitUntil:
     visible:
-      id: "place-coords-toggle"
+      id: "place-name-input"
     timeout: 8000
 - waitForAnimationToEnd:
     timeout: 4000
+# A leftover place at the mock fix (a run that died before its DELETE) puts
+# the "you already have a place here" card on top of the form. Optional: on a
+# clean account there is nothing to dismiss.
+- tapOn:
+    id: "nearby-place-dismiss"
+    optional: true
 # The coordinates are one folded summary row by default (PlaceForm) — open
 # them for the lat/lng inputs and the "Latitude" label tapped below.
 - tapOn:
@@ -109,7 +126,7 @@ tags:
 # Pre-filled with the reverse-geocoded address — erase first or pasteText
 # just appends after it.
 - eraseText: 50
-- setClipboard: "Online Test Place"
+- setClipboard: ${output.placeName}
 - pasteText
 # Dismiss the soft keyboard without navigating — see
 # offline-create-place.yaml's CREATE section for why plain `back` is
@@ -138,14 +155,19 @@ tags:
     visible:
       id: "place-edit-button"
     timeout: 10000
-- assertVisible: ".*Online Test Place.*"
+- assertVisible: ".*${output.placeName}.*"
 # Only a flagged place shows the reminder block — so its presence is the
 # saved want_to_visit, read back from the server's answer.
+# visibilityPercentage: the check is presence, not layout. On iOS the block
+# sits a few points past the bottom edge of the detail sheet's first snap
+# (bounds [857..965] on a 956pt screen, 2026-11-05), and the default 100%
+# never comes true: swiping does not bring it any higher.
 - scrollUntilVisible:
     element:
       id: "place-reminder-block"
     direction: DOWN
     timeout: 10000
+    visibilityPercentage: 50
 
 # ---- UPDATE, online ----
 - tapOn:
@@ -158,7 +180,7 @@ tags:
 - tapOn:
     id: "place-name-input"
 - eraseText: 50
-- setClipboard: "Online Test Place Updated"
+- setClipboard: "${output.placeName} Updated"
 - pasteText
 - tapOn: ".*Latitude.*"
 - tapOn:
@@ -174,7 +196,7 @@ tags:
     visible:
       id: "place-edit-button"
     timeout: 10000
-- assertVisible: ".*Online Test Place Updated.*"
+- assertVisible: ".*${output.placeName} Updated.*"
 
 # ---- DELETE, online ----
 - tapOn:
