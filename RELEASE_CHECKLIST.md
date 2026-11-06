@@ -111,6 +111,7 @@ reverse` из `run.sh`). Reap залипших `maestro.cli.AppKt` от прош
 | `logout`, `settings-language-switch` | ✅ | ✅ |
 | `onboarding` | ✅ | ✅ |
 | `guest-deeplink-no-session` | ✅ | ✅ |
+| `deeplink-active-session` | ✅ | ✅ |
 | `online-create-{observation,diary,place}` | ✅ | ✅ |
 | `online-create-place-location-denied` | ✅ | ✅ |
 | `online-nested-observation` | ✅ | ✅ |
@@ -126,6 +127,25 @@ reverse` из `run.sh`). Reap залипших `maestro.cli.AppKt` от прош
 | `account-forgot-password`, `account-change-password`, `account-linked-accounts` | ✅ | ✅ |
 | `account-emails` | — | ✅ |
 | `offline-*` (8 флоу) | — | ✅ |
+
+`deeplink-active-session` (05.11.2026) — ссылки, пришедшие в запущенное
+приложение при активной сессии: вид из каталога (под ним Main, кнопка
+«добавить наблюдение» открывает форму, а не шторку входа), `accounts/login/`
+(остаёмся на Main), ключ сброса пароля (Change password), запись сообщества по
+id (под ней список, под списком Main), `ru/`-ссылка (префикс снят, интерфейс
+остался английским) и профиль. Юнит-тест `linking.deeplinks.test.ts` проверяет
+только state из `getStateFromPath`; флоу проверяет, что синтетическая история
+под целью переживает применение к живому навигатору и Back ведёт куда надо.
+Id записи берёт `common/first-community-observation.js` — первый флоу,
+который ходит в API сам (`runScript`, выполняется на хосте, поэтому бэкенд —
+`localhost:8000` на обеих платформах). Запись сообщества, а не своя: свои
+`--reset` стирает. Ничего не создаёт. Прогнан на обеих платформах, зелёный.
+
+Ссылка на запись, пришедшая не с Main, а с более глубокого экрана, **заменяет
+стек целиком** — экран, с которого пришёл пользователь, из истории пропадает
+(iOS, 05.11.2026: с карточки вида `my/community/<id>/` → Back → список → Back →
+Main, карточки вида уже нет). Это ожидаемое поведение (решение 05.11.2026), не
+баг; флоу открывает ссылки с Main и этот случай не проверяет.
 
 `online-observation-time` (08.09.2026) покрывает необязательное время
 наблюдения — чип в одной строке с датой и его bottom-sheet
@@ -1028,10 +1048,8 @@ OS-level `toggleAirplaneMode`, полный цикл create → update → delet
    sentinel id `-1` и `applyPendingUnreadAdjustment`. Через force-quit +
    relaunch, а не просто уход с экрана — по той же причине, что и
    `offline-alert-settings.yaml` (провайдер общий на приложение).
-3. **Deep links при активной сессии.** Есть только
-   `guest-deeplink-no-session`. Состав ссылок брать из
-   `linking.deeplinks.test.ts` — это источник истины, не QA-страница бэка.
-   Дешёвый флоу на обе платформы.
+3. ~~**Deep links при активной сессии.**~~ СДЕЛАНО (05.11.2026) —
+   `deeplink-active-session.yaml`, см. §1.
 4. **Фото наблюдения офлайн.** `ObservationPhotoPicker`/
    `observationPhotoSync` — отдельная очередь мутаций
    (`entity: "observationPhoto"`), фото уезжает только после того, как

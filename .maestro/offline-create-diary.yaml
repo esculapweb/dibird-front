@@ -60,6 +60,16 @@ tags:
     timeout: 25000
 - tapOn:
     id: "modal-close-button"
+# The list is a RN <Modal animationType="slide"> (components/ui/ModalWrapper),
+# i.e. its own Android Dialog window, and that window stays up for the length
+# of the slide-out. A `back` fired inside it goes to the Modal's
+# onRequestClose — already closing, so a no-op — not to the navigator, and
+# the flow stays on the observation form (2026-11-06, batch run). Wait for the
+# window to be gone first.
+- extendedWaitUntil:
+    notVisible:
+      id: "modal-close-button"
+    timeout: 4000
 - back
 
 # Local-first create lands on the (temp-id) detail screen even offline —

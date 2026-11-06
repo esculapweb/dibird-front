@@ -36,6 +36,19 @@ tags:
   - ios
   - android
 ---
+# Clear the mock fix (below) of every place the account already has there —
+# leftovers of any Place flow that died before its cleanup. The card offers
+# the *nearest* place, so one of those at ~0 m takes it from this flow's own
+# anchor, and every assertion on the anchor's name fails (2026-11-06). Before
+# launchApp: the deletion only becomes visible in the app through the place
+# list's refetch after the anchor is created (see the script's header).
+# Coordinates must match setLocation below.
+- runScript:
+    file: common/clear-places-at-fix.js
+    env:
+      FIX_LAT: "48.8566"
+      FIX_LNG: "2.3522"
+
 # iOS has no "allow" — location is granted as `inuse` there. Same split as
 # online-create-place.yaml.
 - runFlow:

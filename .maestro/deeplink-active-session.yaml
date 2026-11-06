@@ -1,0 +1,164 @@
+# Links arriving while someone is signed in and the app is already running —
+# the everyday case, as opposed to guest-deeplink-no-session.yaml.
+#
+# linking.deeplinks.test.ts proves which screen every link resolves to, but
+# only as a state object handed to getStateFromPath. What it cannot show is
+# what the running navigator does with that state when the link lands on top
+# of an existing stack: linking.ts builds a synthetic history under the target
+# ([Main, Community, CommunityDetail], [Main, ChangePassword], [Main, Species])
+# so that Back leads somewhere sensible, and only a device shows whether that
+# history survives being applied to a live app. Every link below is therefore
+# checked twice: that it opened the right screen, and where Back goes from it.
+#
+# Covered, one branch of linking.ts each:
+#   - a catalogue link: Main is under it (not Welcome, as for a guest), and
+#     the "add observation" button opens the form instead of the auth gate;
+#   - auth links: login keeps the user on Main, a password-reset key opens
+#     Change password — a signed-in user never lands on an auth screen;
+#   - a protected record link with an id: the detail opens with its list under
+#     it, and the list with Main under it;
+#   - a /ru/ link: the prefix is stripped, and the interface stays English;
+#   - the profile link.
+#
+# Every link is opened from MainScreen on purpose. A record link that arrives
+# on a deeper screen replaces the whole stack (the screen the user was on is
+# gone from the history, verified on iOS 2026-11-05). That is accepted
+# behaviour, not a bug, and this flow does not check it.
+#
+# Creates nothing and changes nothing on the account: the form is left
+# without saving, the password form without submitting, and the record link
+# points at someone else's public observation (common/first-community-
+# observation.js says why not at one of our own).
+#
+# appId comes from run.sh (--env APP_ID).
+appId: ${APP_ID}
+tags:
+  - ios
+  - android
+---
+- launchApp
+
+- runFlow: common/bootstrap.yaml
+
+# ---- a catalogue link ----
+- openLink: "dibird://species/osprey/"
+# iOS 26 puts an `Open in "DiBird (Dev)"?` prompt in front of a custom-scheme
+# link handed to an app that is already in the foreground.
+- tapOn:
+    text: "Open"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "species-scroll"
+    timeout: 30000
+- extendedWaitUntil:
+    visible: ".*Pandion haliaetus.*"
+    timeout: 15000
+
+# Signed in, the same button that shows a guest the auth gate opens the form,
+# with the linked bird already picked.
+- tapOn:
+    id: "add-observation-fab"
+- extendedWaitUntil:
+    visible:
+      id: "observation-save-button"
+    timeout: 10000
+- assertNotVisible:
+    id: "auth-option-email"
+- assertVisible:
+    id: "species-dropdown-trigger"
+    text: ".*Osprey.*"
+# Leaving an unsaved new observation asks nothing — straight back.
+- runFlow: common/back.yaml
+- assertVisible:
+    id: "species-scroll"
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: "quick-action-observation"
+    timeout: 10000
+
+# ---- auth links ----
+- openLink: "dibird://accounts/login/"
+- tapOn:
+    text: "Open"
+    optional: true
+- waitForAnimationToEnd
+- assertVisible:
+    id: "quick-action-observation"
+- assertNotVisible:
+    id: "login-submit-button"
+
+# A reset key is useless to someone who is already inside; they get the form
+# that does not need one.
+- openLink: "dibird://accounts/password/reset/key/687-de75v1-de5817b3b216c8dc/"
+- tapOn:
+    text: "Open"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "current-password-input"
+    timeout: 15000
+- assertNotVisible:
+    id: "reset-password-input"
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: "quick-action-observation"
+    timeout: 10000
+
+# ---- a record link with an id ----
+- runScript: common/first-community-observation.js
+- openLink: "dibird://my/community/${output.communityId}/"
+- tapOn:
+    text: "Open"
+    optional: true
+- extendedWaitUntil:
+    visible: ".*${output.communitySpecies}.*"
+    timeout: 20000
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible: ".*Community observations.*"
+    timeout: 10000
+- assertNotVisible:
+    id: "quick-action-observation"
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: "quick-action-observation"
+    timeout: 10000
+
+# ---- a /ru/ link ----
+# linking.ts strips the locale prefix to find the screen; it must not switch
+# the interface language on the way. "Locations" is the English list title.
+- openLink: "dibird://ru/my/place/"
+- tapOn:
+    text: "Open"
+    optional: true
+# "Locations" is also a section title on MainScreen, so the title alone would
+# pass without the link going anywhere; MainScreen has to be gone first.
+- extendedWaitUntil:
+    notVisible:
+      id: "quick-action-observation"
+    timeout: 15000
+- assertVisible: ".*Locations.*"
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: "quick-action-observation"
+    timeout: 10000
+
+# ---- the profile ----
+- openLink: "dibird://my/profile/"
+- tapOn:
+    text: "Open"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "profile-save-button"
+    timeout: 15000
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: "quick-action-observation"
+    timeout: 10000
