@@ -28,7 +28,7 @@
   3. Нашёл по пути новый открытый пункт и записываешь его в md — в ответе предложи карточку (название, статус, место в приоритете). После моего «да» заведи её и поставь маркер; без согласия в Notion ничего не создавай.
   4. Детали реализации пиши в md, а не в карточку; в карточке — суть и ссылка на источник.
   5. Карточку закрыли, склеили или перенесли — обнови маркер в md.
-- **Проверка рассинхрона** (обязательна при правке md-планов и при разборе бэклога): `grep -rn --include='*.md' "Notion #" . /Users/esculapweb/Py/dibird/docs` — все маркеры, их статусы сверить одним SQL-запросом к data source по `"userDefined:ID"`; `grep -rn --include='*.md' -e '- \[ \]' . /Users/esculapweb/Py/dibird/docs | grep -v "Notion #" | grep -v RELEASE_CHECKLIST.md` — открытые чекбоксы без маркера. Чекбоксы `RELEASE_CHECKLIST.md` — ручной чек-лист на каждый релиз, а не задачи, маркеры им не нужны. Бэкендовые планы лежат в `/Users/esculapweb/Py/dibird/docs/` и размечаются так же.
+- **Проверка рассинхрона** (обязательна при правке md-планов и при разборе бэклога): `grep -rn --include='*.md' "Notion #" . /Users/esculapweb/Py/dibird/docs /Users/esculapweb/Py/dibird/docker` — все маркеры, их статусы сверить одним SQL-запросом к data source по `"userDefined:ID"`; `grep -rn --include='*.md' -e '- \[ \]' . /Users/esculapweb/Py/dibird/docs /Users/esculapweb/Py/dibird/docker | grep -v "Notion #" | grep -v RELEASE_CHECKLIST.md` — открытые чекбоксы без маркера. Чекбоксы `RELEASE_CHECKLIST.md` — ручной чек-лист на каждый релиз, а не задачи, маркеры им не нужны. Бэкендовые планы лежат в `/Users/esculapweb/Py/dibird/docs/` и размечаются так же; инфраструктурные (переезды VPS, storage) — в README наборов скриптов в `/Users/esculapweb/Py/dibird/docker/`.
 
 ## Команды
 
