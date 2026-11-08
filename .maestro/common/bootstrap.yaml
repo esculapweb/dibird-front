@@ -16,6 +16,19 @@ appId: ${APP_ID}
 ---
 - runFlow: connect.yaml
 
+# Every step below decides what to do from what is on screen, so none of them
+# may run before the JS has drawn anything: on a slow start the budget of the
+# app was unwound before it existed (Notion #491, 2026-11-08; see the MainScreen
+# wait further down). toast-container is mounted at the root of App.tsx on every
+# screen, signed in or not, so it means "JS is running" and nothing about where.
+# Optional: an app that never starts still fails below, on the assertion that
+# names MainScreen. The long timeout is only paid when something is broken.
+- extendedWaitUntil:
+    visible:
+      id: "toast-container"
+    timeout: 120000
+    optional: true
+
 # A run that died on the Login form — or a session left there by hand — puts
 # the app inside AuthStack but *past* its root, and the sign-in guard below
 # recognises only Welcome, by its "Continue with email" button. Nothing then
@@ -92,17 +105,24 @@ appId: ${APP_ID}
 # to tap. optional: true on the first wait so a cold start (JS thread not
 # painted yet) falls through to the unwind steps instead of hard-failing.
 #
-# 25s, not the 10s this used to allow: a cold start on a loaded emulator can
-# take longer than that, and then the unwind below runs against an app that
-# was already *on* MainScreen — three `back`s from the stack root walk out of
-# the app and onto the Android launcher, where nothing can recover. Seen in a
-# full batch on list-sort-persist.yaml (which relaunches a second time, so it
-# pays the cold start twice) while every single-launch flow passed. The cost
-# of the higher bound is paid only when something is genuinely stuck.
+# The wait must not end before the app has settled on some screen: otherwise
+# the unwind below runs against an app that is about to show MainScreen, and
+# three `back`s from the stack root walk out of the app and onto the Android
+# launcher, where nothing can recover.
+#
+# The timeout looks far too long, and is not: Maestro counts it from the last
+# interaction (the deep link in connect.yaml), not from the start of this wait,
+# so everything above has already spent it. A 25s bound had expired before the
+# app existed and returned in 0.4s (Notion #491). It must stay above the
+# toast-container bound plus the time MainScreen needs after that.
+#
+# It is still quick on a leftover screen, because it accepts any state the steps
+# below know how to handle: MainScreen ("+ Observation", in either language),
+# Welcome, or a pushed screen's "Navigate up" (Android; on iOS a leftover screen
+# has nothing to match, and costs the full wait).
 - extendedWaitUntil:
-    visible:
-      id: "quick-action-observation"
-    timeout: 25000
+    visible: ".*\\+ (Observation|Наблюдение).*|Navigate up|.*Continue with email.*"
+    timeout: 150000
     optional: true
 - runFlow:
     when:
