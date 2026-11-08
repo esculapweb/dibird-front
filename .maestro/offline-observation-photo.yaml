@@ -1,0 +1,164 @@
+# Device-level offline test: a photo attached to an observation created in
+# airplane mode survives a force-quit and is uploaded after the observation has
+# got its server id (RELEASE_CHECKLIST.md §6, queue item 4).
+#
+# observationPhotoSync is a separate mutation queue from the observation's own,
+# with a one-way dependency on it. The unit tests cover both halves; only this
+# flow drives the real order: system picker → local file → offline save →
+# relaunch → observation create → photo upload.
+#
+# Goes through the real Android photo picker. It lists whatever is in the
+# gallery, so the flow takes the first tile without caring which image it is;
+# common/offline-observation-photo.pre.sh guarantees there is one, so run this
+# through `npm run e2e:android`, not bare `maestro test`.
+#
+# Server-side checks go through common/new-observation-photo.js; see its header
+# for why the strip on screen cannot answer them. The created observation is
+# deleted from onFlowComplete, on failure too.
+#
+# After reconnecting, the app is restarted before the upload is checked: on the
+# AVD an airplane cycle leaves the process's HTTP stack dead (RELEASE_CHECKLIST.md
+# §1 "Эмулятор и сеть"; offline-profile-edit.yaml does the same).
+#
+# appId is the single Android package for every build variant.
+# tags: android — toggleAirplaneMode is Android-only, see login.yaml.
+appId: com.dibird.app
+tags:
+  - android
+onFlowComplete:
+  - runScript:
+      file: common/new-observation-photo.js
+      env:
+        ACTION: "cleanup"
+---
+- runScript:
+    file: common/new-observation-photo.js
+    env:
+      ACTION: "read"
+
+# No clearState: session reuse — see offline-create-observation.yaml.
+- launchApp
+- runFlow: common/android-bootstrap.yaml
+
+# ---- Create an observation with a photo while offline ----
+- toggleAirplaneMode
+
+- tapOn:
+    id: "quick-action-observation"
+- tapOn:
+    id: "species-dropdown-trigger"
+- extendedWaitUntil:
+    visible:
+      id: "option-row-0"
+    timeout: 6000
+- tapOn:
+    id: "option-row-0"
+
+# The section is collapsed until it is opened, and sits below the fold.
+- scrollUntilVisible:
+    element:
+      text: "PHOTOS"
+    direction: DOWN
+    timeout: 10000
+- tapOn: "PHOTOS"
+- scrollUntilVisible:
+    element:
+      id: "observation-photo-add"
+    direction: DOWN
+    timeout: 8000
+- tapOn:
+    id: "observation-photo-add"
+
+# ---- The system picker (com.google.android.photopicker) ----
+- extendedWaitUntil:
+    visible: "Photo taken on .*"
+    timeout: 15000
+# A first-run banner above the grid; it only appears on some runs.
+- tapOn:
+    text: "Dismiss"
+    optional: true
+- tapOn:
+    text: "Photo taken on .*"
+    index: 0
+- tapOn: "Done"
+
+# Back in the form once the picked file has been re-encoded.
+- extendedWaitUntil:
+    visible:
+      id: "observation-photo-tile-0"
+    timeout: 15000
+
+- tapOn:
+    id: "observation-save-button"
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - back
+      - tapOn:
+          id: "observation-save-button"
+
+# Local-first create lands on the temp-id detail screen even offline.
+- extendedWaitUntil:
+    visible:
+      id: "observation-edit-button"
+    timeout: 8000
+
+- runScript:
+    file: common/new-observation-photo.js
+    env:
+      ACTION: "none"
+
+# ---- Still offline, fresh process: the record and its photo are durable ----
+- stopApp
+- launchApp
+- runFlow: common/android-bootstrap.yaml
+
+- scrollUntilVisible:
+    element:
+      id: "section-Observations"
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: "section-Observations"
+- extendedWaitUntil:
+    visible:
+      id: "observation-sync-pending-icon"
+    timeout: 10000
+- tapOn:
+    id: "observation-sync-pending-icon"
+- extendedWaitUntil:
+    visible:
+      id: "observation-edit-button"
+    timeout: 8000
+- scrollUntilVisible:
+    element:
+      id: "observation-photo-tile-0"
+    direction: DOWN
+    timeout: 8000
+
+- runScript:
+    file: common/new-observation-photo.js
+    env:
+      ACTION: "none"
+
+# ---- Back online, fresh process: observation first, then its photo ----
+- toggleAirplaneMode
+- stopApp
+- launchApp
+- runFlow: common/android-bootstrap.yaml
+
+# Two queues drain one after the other in the background of the launch; give
+# them a few attempts rather than one fixed sleep. The optional wait on an
+# element that never exists is the pause between attempts.
+- retry:
+    maxRetries: 3
+    commands:
+      - extendedWaitUntil:
+          visible: "__never_rendered__"
+          timeout: 5000
+          optional: true
+      - runScript:
+          file: common/new-observation-photo.js
+          env:
+            ACTION: "photo"

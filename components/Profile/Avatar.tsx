@@ -190,7 +190,12 @@ const Avatar = () => {
 
   return (
     <>
-      <Pressable style={styles.container} onPress={onPress} disabled={loading}>
+      <Pressable
+        style={styles.container}
+        onPress={onPress}
+        disabled={loading}
+        testID="profile-avatar-button"
+      >
         <ProfileAvatar
           avatar={avatar}
           firstName={firstName}

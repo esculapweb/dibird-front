@@ -183,10 +183,11 @@ Self-hosted (NudeNet, opennsfw2 в том же воркере) бесплате�
 - **Жалоба и блокировка требуют сети.** Осознанно: обе — про состояние на
   сервере, и очередь мутаций дала бы ложное «готово». Если понадобится офлайн
   — это отдельный сценарий с явным «отправим, когда появится сеть».
-- **e2e.** Флоу на жалобу из ленты в `.maestro/` нет; `testID` проставлены —
-  `overflow-button` (кнопка меню), `report-observation-button`,
-  `block-author-button`, `report-user-button`, `block-user-button`,
-  `photo-viewer-more`, `report-photo-button`, `unblock-<id>`. → [Notion #476](https://app.notion.com/p/40e5501934238135ba4ace9d4db4530d)
+- **e2e.** → [Notion #476](https://app.notion.com/p/40e5501934238135ba4ace9d4db4530d) **СДЕЛАНО (08.11.2026)**: `moderation-report-block.yaml`,
+  см. `RELEASE_CHECKLIST.md` §1 — жалоба на наблюдение и блокировка автора из
+  ленты, разблокировка в настройках. Жалобы на профиль и на фото флоу не
+  проверяет; `testID` для них есть: `report-user-button`, `block-user-button`,
+  `photo-viewer-more`, `report-photo-button`.
 - **Заблокированный остаётся виден в рейтингах и сравнении профилей.** Решение
   осознанное (блокировка — про ленту), но если появятся жалобы «он всё равно
   везде», расширять придётся `rating2`, `rating-compare2` и `user-profile`.

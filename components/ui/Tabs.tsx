@@ -25,6 +25,7 @@ const Tabs = <T extends string>({ tabOptions, tabsMode, setTabsMode }: TabsProps
           <Pressable
             key={value}
             style={[styles.tab, isActive && styles.activeTab]}
+            testID={`tab-${value}`}
             onPress={() => {
               Haptics.selectionAsync();
               setTabsMode(value);

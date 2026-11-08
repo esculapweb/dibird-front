@@ -12,22 +12,13 @@
 # marker comes from RadioGroup's testID, wired up in SortSheetContent for
 # exactly this flow.
 #
-# tags: android only, and not for want of trying — iOS collapses a gorhom
-# sheet's contents into the container's own accessibility element, so the
-# options inside it reach Maestro as buttons carrying a label and nothing
-# else: their testIDs are gone, and the checked marker (a bare View with no
-# text) doesn't reach the hierarchy at all. Same limitation guest-browse.yaml
-# works around by asserting on the auth sheet's buttons instead of its title
-# — but here the marker *is* the assertion, so there is nothing to swap in.
-# The sort logic itself is unit-tested (hooks/useSavedSort); what's covered
-# only here, on Android, is the storage round trip across a relaunch.
-#
 # Restores the default order at the end — the preference is shared with every
 # other flow that opens this list.
 #
 # appId comes from run.sh (--env APP_ID).
 appId: ${APP_ID}
 tags:
+  - ios
   - android
 ---
 - launchApp

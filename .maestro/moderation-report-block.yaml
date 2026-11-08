@@ -1,0 +1,167 @@
+# Reporting an observation and blocking its author from the community feed
+# (RELEASE_CHECKLIST.md §6 queue, MODERATION_PLAN.md §6). These are the controls
+# Apple Guideline 1.2 asks for, and until this flow nothing exercised the real
+# path menu → sheet → server → feed.
+#
+# The three observations (A, B, C — one author) come from
+# common/moderation-report-block.pre.sh, which run.sh calls before this flow —
+# so run it through `npm run e2e:android` / `e2e:ios`, not bare `maestro test`.
+#
+# Why three: A is reported, and only A leaves the feed. B is used to block the
+# author, and C — never opened — shows a block takes everything of theirs, not
+# just the record it was made from. After the unblock B and C come back while A
+# stays away: the block and the report are independent rules on the server
+# (myapi/services/moderation.py), and a shared code path would show up here.
+#
+# Every step is checked on the server as well (common/moderation-feed-state.js
+# says why the screen alone is not enough).
+#
+# Leaves nothing behind that matters: the last step undoes the block, and the
+# next run's seed deletes the observations, which cascades to the report.
+#
+# appId comes from run.sh (--env APP_ID).
+appId: ${APP_ID}
+tags:
+  - ios
+  - android
+---
+- runScript:
+    file: common/moderation-feed-state.js
+    env:
+      ACTION: "read"
+
+# No clearState: session reuse — see offline-create-observation.yaml.
+- launchApp
+- runFlow: common/bootstrap.yaml
+
+# ---- Into the feed: a record link puts the list underneath the card ----
+- openLink: dibird://my/community/${output.feed.a}/
+- tapOn:
+    text: "Open"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "overflow-button"
+    timeout: 15000
+- runFlow: common/back.yaml
+
+# The default tab is rare records only, and the seeded ones are not rare.
+- tapOn:
+    id: "tab-all"
+- extendedWaitUntil:
+    visible:
+      id: community-card-${output.feed.a}
+    timeout: 15000
+- assertVisible:
+    id: community-card-${output.feed.b}
+- assertVisible:
+    id: community-card-${output.feed.c}
+
+# ---- Report A ----
+- tapOn:
+    id: community-card-${output.feed.a}
+- extendedWaitUntil:
+    visible:
+      id: "overflow-button"
+    timeout: 15000
+- tapOn:
+    id: "overflow-button"
+- tapOn:
+    id: "report-observation-button"
+- tapOn: "Spam or not a bird observation"
+- extendedWaitUntil:
+    visible: "Report sent"
+    timeout: 10000
+# The card goes back to the list by itself, without the record.
+- extendedWaitUntil:
+    notVisible:
+      id: community-card-${output.feed.a}
+    timeout: 15000
+- assertVisible:
+    id: community-card-${output.feed.b}
+- runScript:
+    file: common/moderation-feed-state.js
+    env:
+      ACTION: "check"
+      EXPECTED_FEED: "BC"
+      EXPECTED_BLOCKED: "false"
+
+# ---- Block the author from B ----
+- tapOn:
+    id: community-card-${output.feed.b}
+- extendedWaitUntil:
+    visible:
+      id: "overflow-button"
+    timeout: 15000
+- tapOn:
+    id: "overflow-button"
+- tapOn:
+    id: "block-author-button"
+- tapOn:
+    id: "bottom-sheet-confirm-button"
+- extendedWaitUntil:
+    notVisible:
+      id: community-card-${output.feed.b}
+    timeout: 15000
+- extendedWaitUntil:
+    notVisible:
+      id: community-card-${output.feed.c}
+    timeout: 15000
+- runScript:
+    file: common/moderation-feed-state.js
+    env:
+      ACTION: "check"
+      EXPECTED_FEED: ""
+      EXPECTED_BLOCKED: "true"
+
+# ---- Undo the block from Settings ----
+- runFlow: common/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: "burger-menu-button"
+    timeout: 10000
+- tapOn:
+    id: "burger-menu-button"
+- tapOn: ".*Settings.*"
+- scrollUntilVisible:
+    element:
+      text: ".*Blocked users.*"
+    direction: DOWN
+- tapOn: ".*Blocked users.*"
+- extendedWaitUntil:
+    visible:
+      id: unblock-${output.feed.author}
+    timeout: 10000
+- tapOn:
+    id: unblock-${output.feed.author}
+- extendedWaitUntil:
+    notVisible:
+      id: unblock-${output.feed.author}
+    timeout: 10000
+- runScript:
+    file: common/moderation-feed-state.js
+    env:
+      ACTION: "check"
+      EXPECTED_FEED: "BC"
+      EXPECTED_BLOCKED: "false"
+
+# ---- The feed gives back B and C, and A stays reported ----
+- openLink: dibird://my/community/${output.feed.b}/
+- tapOn:
+    text: "Open"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "overflow-button"
+    timeout: 15000
+- runFlow: common/back.yaml
+- tapOn:
+    id: "tab-all"
+- extendedWaitUntil:
+    visible:
+      id: community-card-${output.feed.b}
+    timeout: 15000
+- assertVisible:
+    id: community-card-${output.feed.c}
+- assertNotVisible:
+    id: community-card-${output.feed.a}

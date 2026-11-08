@@ -1,0 +1,130 @@
+# Device-level offline test: "mark all read" pressed in airplane mode stays
+# applied across a force-quit, and reaches the backend once back online.
+#
+# The pieces are unit-tested (notificationRepository's overlay and the
+# sentinel id, notificationSync's push), but nothing drove the real path
+# screen → offline mark-all → relaunch → reconnect → server before this flow
+# (RELEASE_CHECKLIST.md §6, queue item 2).
+#
+# The relaunch while still offline is the point: leaving the screen would keep
+# the same in-memory react-query state, and only a fresh process shows that the
+# read state and the zero badge come back from SQLite (the overlay and
+# applyPendingUnreadAdjustment) rather than from memory.
+#
+# The two unread notifications come from
+# common/offline-notifications-mark-all.pre.sh, which run.sh calls before this
+# flow — so run it through `npm run e2e:android`, not bare `maestro test`.
+#
+# Server-side checks go through common/unread-notifications.js; see its header
+# for why the UI cannot answer them.
+#
+# After reconnecting, the app is restarted before the push is checked: on the
+# AVD an airplane cycle leaves the process's HTTP stack dead (RELEASE_CHECKLIST.md
+# §1 "Эмулятор и сеть"; offline-profile-edit.yaml does the same). The fresh
+# process drains the queue from useNotificationSync on start.
+#
+# appId is the single Android package for every build variant.
+# tags: android — toggleAirplaneMode is Android-only, see login.yaml.
+appId: com.dibird.app
+tags:
+  - android
+---
+- runScript:
+    file: common/unread-notifications.js
+    env:
+      EXPECTED: "2"
+
+# No clearState: session reuse — see offline-create-observation.yaml.
+- launchApp
+- runFlow: common/android-bootstrap.yaml
+
+- extendedWaitUntil:
+    visible:
+      id: "navbar-notifications-badge"
+      text: "2"
+    timeout: 15000
+- tapOn:
+    id: "navbar-notifications-button"
+- extendedWaitUntil:
+    visible: "E2E mark-all 2"
+    timeout: 10000
+- assertVisible:
+    id: "notification-unread-dot"
+    index: 1
+
+# ---- Mark all read while offline ----
+- toggleAirplaneMode
+
+- tapOn:
+    id: "overflow-button"
+- tapOn:
+    id: "mark-all-read-button"
+- extendedWaitUntil:
+    notVisible:
+      id: "notification-unread-dot"
+    timeout: 15000
+- assertVisible: "E2E mark-all 2"
+
+# The change must still be local only.
+- runScript:
+    file: common/unread-notifications.js
+    env:
+      EXPECTED: "2"
+
+# ---- Still offline, fresh process: the read state is durable ----
+- stopApp
+- launchApp
+- runFlow: common/android-bootstrap.yaml
+
+- tapOn:
+    id: "navbar-notifications-button"
+- extendedWaitUntil:
+    visible: "E2E mark-all 2"
+    timeout: 10000
+- assertNotVisible:
+    id: "notification-unread-dot"
+# Checked on the way back, not right after launch: assertNotVisible passes at
+# once on a badge whose count query simply has not resolved yet.
+- back
+- extendedWaitUntil:
+    visible:
+      id: "quick-action-observation"
+    timeout: 5000
+- assertNotVisible:
+    id: "navbar-notifications-badge"
+- runScript:
+    file: common/unread-notifications.js
+    env:
+      EXPECTED: "2"
+
+# ---- Back online, fresh process: the queued mark-all is pushed ----
+- toggleAirplaneMode
+- stopApp
+- launchApp
+- runFlow: common/android-bootstrap.yaml
+
+# The push runs in the background of the launch; give it a few attempts
+# rather than one fixed sleep. The optional wait on an element that never
+# exists is the pause between attempts.
+- retry:
+    maxRetries: 3
+    commands:
+      - extendedWaitUntil:
+          visible: "__never_rendered__"
+          timeout: 3000
+          optional: true
+      - runScript:
+          file: common/unread-notifications.js
+          env:
+            EXPECTED: "0"
+
+# And the app's own view agrees after the round-trip.
+- assertNotVisible:
+    id: "navbar-notifications-badge"
+- tapOn:
+    id: "navbar-notifications-button"
+- extendedWaitUntil:
+    visible: "E2E mark-all 2"
+    timeout: 10000
+- assertNotVisible:
+    id: "notification-unread-dot"

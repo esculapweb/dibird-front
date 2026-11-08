@@ -60,7 +60,9 @@ const NotificationCard = ({ item, onPress }: Props) => {
         <Text style={styles.time}>{formatDateTime(item.created_at)}</Text>
       </View>
 
-      {!item.is_read && <View style={styles.dot} />}
+      {!item.is_read && (
+        <View style={styles.dot} testID="notification-unread-dot" />
+      )}
     </TouchableOpacity>
   );
 };

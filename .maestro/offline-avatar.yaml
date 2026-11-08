@@ -1,0 +1,167 @@
+# Device-level offline test: an avatar picked and later removed in airplane mode
+# survives a force-quit and reaches the backend once back online
+# (RELEASE_CHECKLIST.md §6, queue item 1).
+#
+# avatarSync's two operations are unit-tested; only this flow drives the real
+# path: system picker → cropper → file copied out of the cache → pending op in
+# the profile mirror → relaunch → upload. Removal is covered too, because it is
+# the other branch of the same single-slot queue.
+#
+# Goes through the real Android photo picker and expo-image-picker's cropper
+# (allowsEditing is Android-only, see components/Profile/Avatar.tsx).
+# common/offline-avatar.pre.sh guarantees the gallery is not empty, so run this
+# through `npm run e2e:android`, not bare `maestro test`.
+#
+# Server-side checks go through common/profile-avatar.js; see its header for why
+# the header on screen cannot answer them. The avatar is cleared at the start
+# and from onFlowComplete, on failure too: the flow owns this field of the test
+# account and does not preserve what was there.
+#
+# After each reconnect the app is restarted before the push is checked: on the
+# AVD an airplane cycle leaves the process's HTTP stack dead (RELEASE_CHECKLIST.md
+# §1 "Эмулятор и сеть"; offline-profile-edit.yaml does the same).
+#
+# appId is the single Android package for every build variant.
+# tags: android — toggleAirplaneMode is Android-only, see login.yaml.
+appId: com.dibird.app
+tags:
+  - android
+onFlowComplete:
+  - runScript:
+      file: common/profile-avatar.js
+      env:
+        ACTION: "clear"
+---
+- runScript:
+    file: common/profile-avatar.js
+    env:
+      ACTION: "clear"
+
+# No clearState: session reuse — see offline-create-observation.yaml.
+- launchApp
+- runFlow: common/android-bootstrap.yaml
+
+# The avatar lives in the drawer header, not on the Profile screen.
+- tapOn:
+    id: "burger-menu-button"
+- extendedWaitUntil:
+    visible: ".*Tap to add photo.*"
+    timeout: 15000
+
+# ---- Pick an avatar while offline ----
+- toggleAirplaneMode
+
+- tapOn:
+    id: "profile-avatar-button"
+- extendedWaitUntil:
+    visible: "Photo taken on .*"
+    timeout: 15000
+- tapOn:
+    text: "Photo taken on .*"
+    index: 0
+- tapOn: "Done"
+# expo-image-picker's own cropper, a separate activity after the system picker.
+- extendedWaitUntil:
+    visible: "CROP"
+    timeout: 15000
+- tapOn: "CROP"
+
+# The hint is only there while there is no avatar.
+- extendedWaitUntil:
+    notVisible: ".*Tap to add photo.*"
+    timeout: 15000
+- runScript:
+    file: common/profile-avatar.js
+    env:
+      ACTION: "none"
+
+# ---- Still offline, fresh process: the pending avatar is durable ----
+- stopApp
+- launchApp
+- runFlow: common/android-bootstrap.yaml
+- tapOn:
+    id: "burger-menu-button"
+- extendedWaitUntil:
+    visible:
+      id: "profile-avatar-button"
+    timeout: 10000
+- assertNotVisible: ".*Tap to add photo.*"
+- runScript:
+    file: common/profile-avatar.js
+    env:
+      ACTION: "none"
+
+# ---- Back online, fresh process: the upload goes out ----
+- toggleAirplaneMode
+- stopApp
+- launchApp
+- runFlow: common/android-bootstrap.yaml
+
+# The push runs in the background of the launch; give it a few attempts
+# rather than one fixed sleep. The optional wait on an element that never
+# exists is the pause between attempts.
+- retry:
+    maxRetries: 3
+    commands:
+      - extendedWaitUntil:
+          visible: "__never_rendered__"
+          timeout: 5000
+          optional: true
+      - runScript:
+          file: common/profile-avatar.js
+          env:
+            ACTION: "present"
+
+# ---- Remove it while offline ----
+- tapOn:
+    id: "burger-menu-button"
+- extendedWaitUntil:
+    visible:
+      id: "profile-avatar-button"
+    timeout: 10000
+- toggleAirplaneMode
+- tapOn:
+    id: "profile-avatar-button"
+- extendedWaitUntil:
+    visible:
+      id: "avatar-remove-button"
+    timeout: 6000
+- tapOn:
+    id: "avatar-remove-button"
+- extendedWaitUntil:
+    visible:
+      id: "bottom-sheet-confirm-button"
+    timeout: 6000
+- tapOn:
+    id: "bottom-sheet-confirm-button"
+- extendedWaitUntil:
+    visible: ".*Tap to add photo.*"
+    timeout: 10000
+- runScript:
+    file: common/profile-avatar.js
+    env:
+      ACTION: "present"
+
+# ---- Back online, fresh process: the removal goes out ----
+- toggleAirplaneMode
+- stopApp
+- launchApp
+- runFlow: common/android-bootstrap.yaml
+
+- retry:
+    maxRetries: 3
+    commands:
+      - extendedWaitUntil:
+          visible: "__never_rendered__"
+          timeout: 5000
+          optional: true
+      - runScript:
+          file: common/profile-avatar.js
+          env:
+            ACTION: "none"
+
+- tapOn:
+    id: "burger-menu-button"
+- extendedWaitUntil:
+    visible: ".*Tap to add photo.*"
+    timeout: 15000

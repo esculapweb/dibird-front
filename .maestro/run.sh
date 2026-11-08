@@ -261,6 +261,14 @@ run_maestro() {
   local flow="$1"
   local status=0
 
+  # Backend state a flow needs and neither the API nor Maestro's runScript can
+  # create: `common/<flow>.pre.sh`, if there is one. A seed that failed fails
+  # the flow here, instead of a step later on with a misleading selector error.
+  local pre=".maestro/common/$(basename "$flow" .yaml).pre.sh"
+  if [ -f "$pre" ]; then
+    TARGET="$TARGET" bash "$pre" || return 1
+  fi
+
   if [ "$PLATFORM" = "android" ]; then
     adb -s "$TARGET" logcat -c >/dev/null 2>&1 || true
   fi

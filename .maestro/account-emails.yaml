@@ -7,14 +7,10 @@
 # offers exactly the actions the server would accept — the primary address has
 # none, an unconfirmed one can only be re-sent and removed.
 #
-# Android only. The per-row actions live in a `BottomSheet.showMenu`, and on
-# iOS that sheet's contents do not reach Maestro at all — not by testID, not by
-# the text of its rows (measured 2026-08-26, see §1 of RELEASE_CHECKLIST). This
-# flow cannot merely skip those legs on iOS: without the menu there is no way
-# to remove the address it added, and it would leave the shared account dirtier
-# on every run. Worth re-measuring, though — that finding was made on a menu
-# with no `title`, and this one passes the address as a title, which is the
-# very difference the checklist blames for the filter sheet being reachable.
+# Row text is matched as `(X|.*, X,.*)`: Android exposes each Text of a row on its
+# own, iOS folds the row into one element labelled "<icon glyph>, address, Primary, Verified, ".
+# Not `.*X.*`: matching ignores case, so `.*Primary.*` also hits the screen's
+# "The primary address receives..." hint and would check nothing.
 #
 # Cleans up after itself, and after a previous run that died: the extra address
 # is a fixed string, and the flow removes it up front if it is still there. The
@@ -22,8 +18,9 @@
 # server would refuse, and the whole batch logs in with it.
 #
 # appId comes from run.sh (--env APP_ID).
-appId: com.dibird.app
+appId: ${APP_ID}
 tags:
+  - ios
   - android
 ---
 # No clearState: session reuse, like every other signed-in flow.
@@ -50,26 +47,26 @@ tags:
 # animation. The account's own address is primary and confirmed, so both
 # badges have to be on screen.
 - extendedWaitUntil:
-    visible: "Primary"
+    visible: "(Primary|.*, Primary,.*)"
     timeout: 15000
-- assertVisible: "Verified"
+- assertVisible: "(Verified|.*, Verified,.*)"
 
 # ---- leftovers from a run that died before its cleanup ----
 # Optional by construction: on a clean account there is no such row and the
 # whole block is skipped.
 - runFlow:
     when:
-      visible: "e2e-extra@example.com"
+      visible: "(e2e-extra@example.com|.*, e2e-extra@example.com,.*)"
     commands:
-      - tapOn: "e2e-extra@example.com"
+      - tapOn: "(e2e-extra@example.com|.*, e2e-extra@example.com,.*)"
       - extendedWaitUntil:
-          visible: "Remove"
+          visible: ".*Remove.*"
           timeout: 6000
-      - tapOn: "Remove"
+      - tapOn: ".*Remove.*"
       - tapOn:
           id: "bottom-sheet-confirm-button"
       - extendedWaitUntil:
-          notVisible: "e2e-extra@example.com"
+          notVisible: "(e2e-extra@example.com|.*, e2e-extra@example.com,.*)"
           timeout: 15000
 
 # ---- the primary address offers nothing ----
@@ -80,7 +77,7 @@ tags:
 # The address goes into a text selector, which Maestro reads as a regex — fine
 # for the dots in a domain, which match themselves, but an account address
 # containing a `+` would need escaping here.
-- tapOn: "${TEST_EMAIL}"
+- tapOn: "(${TEST_EMAIL}|.*, ${TEST_EMAIL},.*)"
 - extendedWaitUntil:
     visible: ".*Nothing to do with this address.*"
     timeout: 6000
@@ -105,21 +102,21 @@ tags:
 
 # It lands unconfirmed and not primary — the server sends a letter and waits.
 - extendedWaitUntil:
-    visible: "e2e-extra@example.com"
+    visible: "(e2e-extra@example.com|.*, e2e-extra@example.com,.*)"
     timeout: 20000
-- assertVisible: "Not verified"
+- assertVisible: "(Not verified|.*, Not verified,.*)"
 
 # ---- what an unconfirmed address may do ----
 # "Make primary" must NOT be here: allauth would refuse to make an unverified
 # address primary, and the app mirrors that rule rather than discovering it
 # through an error toast.
-- tapOn: "e2e-extra@example.com"
+- tapOn: "(e2e-extra@example.com|.*, e2e-extra@example.com,.*)"
 - extendedWaitUntil:
-    visible: "Resend confirmation"
+    visible: ".*Resend confirmation.*"
     timeout: 6000
-- assertNotVisible: "Make primary"
-- assertVisible: "Remove"
-- tapOn: "Resend confirmation"
+- assertNotVisible: ".*Make primary.*"
+- assertVisible: ".*Remove.*"
+- tapOn: ".*Resend confirmation.*"
 # The second letter went out. Asserted on the toast, not on the row: the row
 # is on screen either way, so it would pass whether the request happened or
 # not.
@@ -128,11 +125,11 @@ tags:
     timeout: 20000
 
 # ---- and remove it again ----
-- tapOn: "e2e-extra@example.com"
+- tapOn: "(e2e-extra@example.com|.*, e2e-extra@example.com,.*)"
 - extendedWaitUntil:
-    visible: "Remove"
+    visible: ".*Remove.*"
     timeout: 6000
-- tapOn: "Remove"
+- tapOn: ".*Remove.*"
 # Removal is not undoable, so it goes through the confirm sheet rather than
 # straight off the menu row — the same UniversalBottomSheet every delete uses.
 - extendedWaitUntil:
@@ -145,10 +142,10 @@ tags:
 # Gone from the server's answer, not just from local state: the list is
 # refetched after the delete.
 - extendedWaitUntil:
-    notVisible: "e2e-extra@example.com"
+    notVisible: "(e2e-extra@example.com|.*, e2e-extra@example.com,.*)"
     timeout: 20000
 # The account's own address survived it all.
-- assertVisible: "Primary"
+- assertVisible: "(Primary|.*, Primary,.*)"
 
 # ---- back to where the batch expects to find the app ----
 - runFlow: common/back.yaml

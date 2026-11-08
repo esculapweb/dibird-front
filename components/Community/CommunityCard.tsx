@@ -46,6 +46,7 @@ const CommunityCard = memo(
       <Pressable
         style={({ pressed }) => [styles.card, pressed && styles.pressedCard, highlightObsIds?.includes(item.id) && styles.highlighted]}
         onPress={handlePress}
+        testID={`community-card-${item.id}`}
       >
         <View style={styles.row}>
           <SpeciesThumb

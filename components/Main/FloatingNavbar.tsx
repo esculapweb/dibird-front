@@ -70,6 +70,7 @@ const FloatingNavbar = ({
           style={styles.bell}
           onPress={() => navigation.navigate("Notifications")}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          testID="navbar-notifications-button"
         >
           <Ionicons
             name="notifications-outline"
@@ -78,7 +79,7 @@ const FloatingNavbar = ({
           />
           {unreadCount > 0 && (
             <View style={styles.badge}>
-              <Text style={styles.badgeText}>
+              <Text style={styles.badgeText} testID="navbar-notifications-badge">
                 {unreadCount > 99 ? "99+" : unreadCount}
               </Text>
             </View>
