@@ -1,0 +1,124 @@
+# Device-level offline test: a profile edit made in airplane mode is kept
+# locally, queued, and reaches the backend once the device is back online.
+#
+# The pieces are unit-tested (profileRepository's applyLocalPatch and the
+# mutation queue, profileSync's push/pull), but nothing drove the real path
+# screen → offline save → reconnect → server before this flow
+# (RELEASE_CHECKLIST.md §6, queue item 1). Text field only: the country picker
+# drives the global territory filter that the Place flows depend on, and the
+# avatar needs the system image picker — both are deliberately left out.
+#
+# Every server-side check goes through common/profile-first-name.js, not the
+# UI: the profile is a Drizzle mirror, so the form shows the local edit after
+# a relaunch whether it was pushed or is still sitting in the queue. The
+# script runs on the host, which keeps its network in airplane mode — so it
+# can also prove the edit did NOT reach the server while offline (the guard
+# against a stray wifi radio making this flow test nothing, see
+# RELEASE_CHECKLIST.md §1 "Эмулятор и сеть").
+#
+# After reconnecting, the app is restarted before the push is checked: on the
+# AVD an airplane cycle leaves the process's HTTP stack dead (same section of
+# the checklist; offline-diary-survives-relogin.yaml does the same). The fresh
+# process pushes the queue from refreshProfile on start.
+#
+# The original name fields are read at the start and put back from
+# onFlowComplete, on failure too. The edited value is unique per run
+# (Date.now()), so a leftover from a failed run can never satisfy a check.
+#
+# appId is the single Android package for every build variant.
+# tags: android — toggleAirplaneMode is Android-only, see login.yaml.
+appId: com.dibird.app
+tags:
+  - android
+onFlowComplete:
+  - runScript:
+      file: common/profile-first-name.js
+      env:
+        ACTION: "restore"
+---
+- runScript:
+    file: common/profile-first-name.js
+    env:
+      ACTION: "read"
+- evalScript: ${output.offlineFirstName = "Offline" + Date.now()}
+
+# No clearState: session reuse — see offline-create-observation.yaml.
+- launchApp
+- runFlow: common/android-bootstrap.yaml
+
+- tapOn:
+    id: "burger-menu-button"
+- tapOn: "Profile"
+- extendedWaitUntil:
+    visible:
+      id: "profile-first-name-input"
+    timeout: 10000
+
+# ---- Edit and save while offline ----
+- toggleAirplaneMode
+
+- tapOn:
+    id: "profile-first-name-input"
+- runFlow: common/dismiss-autofill.yaml
+# eraseText only deletes left of the cursor, and the tap drops the cursor
+# wherever it lands in the old value — the tail of it then survives and gets
+# glued to the new name (seen on the first run). A double tap selects the
+# whole (space-free) value, so the erase takes all of it. Not Dpad Down to
+# jump to the end: when the cursor cannot move, it moves focus to Username
+# below, and the flow renamed the account (2026-11-07).
+- doubleTapOn:
+    id: "profile-first-name-input"
+- eraseText: 60
+# `text: ""` is no filter at all (Maestro ignores it, checked) — empty is
+# "no text matching .+".
+- assertNotVisible:
+    id: "profile-first-name-input"
+    text: ".+"
+- inputText: ${output.offlineFirstName}
+# Saved with the keyboard still open on purpose: on Android the toast used to
+# land under it and "Profile saved" was never visible (Notion #488).
+- tapOn:
+    id: "profile-save-button"
+# updateProfile() writes the local mirror and returns once the push is
+# skipped for lack of network — the success toast is shown offline too.
+- extendedWaitUntil:
+    visible: "Profile saved"
+    timeout: 5000
+- assertVisible: ${output.offlineFirstName}
+
+# The edit must still be local only.
+- runScript:
+    file: common/profile-first-name.js
+    env:
+      ACTION: "reject"
+      EXPECTED: ${output.offlineFirstName}
+
+# ---- Back online, fresh process: the queued edit is pushed ----
+- toggleAirplaneMode
+- stopApp
+- launchApp
+- runFlow: common/android-bootstrap.yaml
+
+# The push runs in the background of the launch; give it a few attempts
+# rather than one fixed sleep. The optional wait on an element that never
+# exists is the pause between attempts.
+- retry:
+    maxRetries: 3
+    commands:
+      - extendedWaitUntil:
+          visible: "__never_rendered__"
+          timeout: 3000
+          optional: true
+      - runScript:
+          file: common/profile-first-name.js
+          env:
+            ACTION: "expect"
+            EXPECTED: ${output.offlineFirstName}
+
+# And the app's own view agrees after the round-trip.
+- tapOn:
+    id: "burger-menu-button"
+- tapOn: "Profile"
+- extendedWaitUntil:
+    visible: ${output.offlineFirstName}
+    timeout: 10000

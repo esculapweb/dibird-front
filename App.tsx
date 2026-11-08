@@ -4,7 +4,6 @@ import "react-native-reanimated";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Navigation from "./navigation/Navigation";
-import Toast from "react-native-toast-message";
 import "./services/i18n";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
@@ -25,7 +24,7 @@ import { FiltersProvider } from "./store/filters-context";
 import { LocationProvider } from "./store/location-context";
 import { LanguageProvider } from "./store/language-context";
 import { ThemeProvider, useTheme } from "./store/theme-context";
-import ThemedToast from "./components/ui/ThemedToast";
+import KeyboardAwareToast from "./components/ui/KeyboardAwareToast";
 import { initGoogleSignIn } from "./util/auth";
 import { runMigrations } from "./services/db/client";
 import GlobalBottomSheet from "./components/Providers/GlobalBottomSheet";
@@ -215,7 +214,7 @@ const Root = () => {
     <>
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
       <Navigation />
-      <Toast config={ThemedToast} position="bottom" />
+      <KeyboardAwareToast />
       <GlobalBottomSheet />
     </>
   );

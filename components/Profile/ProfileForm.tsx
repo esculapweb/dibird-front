@@ -137,6 +137,7 @@ const ProfileForm = ({
             value={firstName}
             onUpdateValue={setFirstName}
             isInvalid={invalid.firstName}
+            testID="profile-first-name-input"
           />
         </View>
         <View style={styles.rowItem}>
