@@ -49,6 +49,10 @@ jest.mock("../../util/exportDownload", () => ({
   downloadExportFromNotification: jest.fn(),
 }));
 jest.mock("react-native-toast-message", () => ({ show: jest.fn() }));
+const mockShowErrorToast = jest.fn();
+jest.mock("../../hooks/useApiError", () => ({
+  useApiError: () => ({ showErrorToast: mockShowErrorToast }),
+}));
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import * as Updates from "expo-updates";
@@ -132,7 +136,7 @@ it("mark-all-read posts, then invalidates both the notifications and unread-coun
     "mark_all_read",
   ).onPress();
 
-  expect(markNotificationsRead).toHaveBeenCalledWith();
+  expect(markNotificationsRead).toHaveBeenCalledWith(undefined);
   // The invalidations sit behind an await inside the handler, and a menu row
   // is pressed synchronously — unlike the tap on a rendered button before.
   await waitFor(() =>
@@ -162,6 +166,51 @@ it("marks an unread item read and invalidates on tap, but no-ops for an already-
   await fireEvent.press(screen.getByText("Unread"));
   expect(markNotificationsRead).toHaveBeenCalledWith([1]);
   expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ["notifications"] });
+});
+
+// #489: markNotificationsRead rethrows anything that isn't a network error or
+// a timeout, and both handlers run from a press — so without a catch a 500
+// was an unhandled rejection with no toast.
+describe("a server error while marking read", () => {
+  const serverError = { status: 500, isNetworkError: false, isTimeout: false };
+
+  beforeEach(() => {
+    (markNotificationsRead as jest.Mock).mockRejectedValue(serverError);
+  });
+
+  it("mark-all-read shows the error toast and skips the invalidations", async () => {
+    await render(<NotificationsScreen />);
+    const headerRight = (mockNavigation.setOptions as jest.Mock).mock.calls[0][0].headerRight;
+
+    overflowRow(
+      openOverflow(headerRight().props.headerRightEnd, mockShowMenu),
+      "mark_all_read",
+    ).onPress();
+
+    await waitFor(() => expect(mockShowErrorToast).toHaveBeenCalledWith(serverError, "markNotificationsRead"));
+    expect(mockInvalidateQueries).not.toHaveBeenCalled();
+  });
+
+  it("a tap shows the error toast and still opens the notification", async () => {
+    mockQuery({
+      data: {
+        pages: [
+          {
+            results: [
+              notification({ id: 1, title: "Item", is_read: false, data: { screen: "Checklist" } }),
+            ],
+          },
+        ],
+      },
+    });
+    await render(<NotificationsScreen />);
+
+    await fireEvent.press(screen.getByText("Item"));
+
+    await waitFor(() => expect(mockShowErrorToast).toHaveBeenCalledWith(serverError, "markNotificationsRead"));
+    expect(mockInvalidateQueries).not.toHaveBeenCalled();
+    expect(mockNavigation.navigate).toHaveBeenCalledWith("Checklist", undefined);
+  });
 });
 
 describe("tap routing", () => {

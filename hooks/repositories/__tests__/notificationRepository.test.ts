@@ -2,7 +2,11 @@ import { eq } from "drizzle-orm";
 import { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 
 import { createTestDb, loadRepos } from "../testDb";
-import { mutationQueueTable, notificationReadOverlayTable } from "../../../services/db/schema";
+import {
+  mutationQueueTable,
+  notificationReadOverlayTable,
+  notificationsListCacheTable,
+} from "../../../services/db/schema";
 import * as schema from "../../../services/db/schema";
 import { PaginatedResponse, AppNotification } from "../../../types";
 
@@ -38,6 +42,12 @@ const page = (results: AppNotification[]): PaginatedResponse<AppNotification> =>
   pagination: { count: results.length, per_page: 20, current: 1, final: 1, next: null, previous: null },
 });
 
+// What fetchNotifications leaves behind: a raw server page per cache key.
+const cachePage = (key: string, results: AppNotification[]) =>
+  db.insert(notificationsListCacheTable)
+    .values({ key, response: page(results), updatedAt: Date.now() })
+    .run();
+
 describe("markIdsReadLocal", () => {
   it("upserts an overlay row per id and enqueues a single markIds mutation", () => {
     notificationRepository.markIdsReadLocal([1, 2]);
@@ -64,6 +74,7 @@ describe("markIdsReadLocal", () => {
 
 describe("markAllReadLocal", () => {
   it("writes the mark-all sentinel row and enqueues a markAll mutation", () => {
+    cachePage("p1", [notification({ id: 1 })]);
     notificationRepository.markAllReadLocal();
 
     const rows = overlayRows();
@@ -71,6 +82,39 @@ describe("markAllReadLocal", () => {
     expect(rows[0].id).toBe(-1);
     const [m] = mutations();
     expect(m.payload).toEqual({ op: "markAll" });
+  });
+
+  it("takes the cutoff from the newest cached created_at across pages, not the device clock", () => {
+    // #490: a clock running a day ahead must not leak into the cutoff.
+    jest.spyOn(Date, "now").mockReturnValue(Date.parse("2026-01-10T00:00:00Z"));
+    cachePage("p1", [
+      notification({ id: 3, created_at: "2026-01-03T00:00:00Z" }),
+      notification({ id: 2, created_at: "2026-01-02T00:00:00Z" }),
+    ]);
+    cachePage("p2", [notification({ id: 1, created_at: "2026-01-01T00:00:00Z" })]);
+
+    notificationRepository.markAllReadLocal();
+
+    expect(overlayRows()[0].readAt).toBe(Date.parse("2026-01-03T00:00:00Z"));
+    jest.restoreAllMocks();
+  });
+
+  it("still enqueues the mutation but writes no cutoff when nothing is cached", () => {
+    notificationRepository.markAllReadLocal();
+
+    expect(overlayRows()).toHaveLength(0);
+    expect(mutations()).toHaveLength(1);
+  });
+
+  it("never moves an earlier cutoff backwards", () => {
+    cachePage("p1", [notification({ id: 2, created_at: "2026-01-02T00:00:00Z" })]);
+    notificationRepository.markAllReadLocal();
+
+    db.delete(notificationsListCacheTable).run();
+    cachePage("p1", [notification({ id: 1, created_at: "2026-01-01T00:00:00Z" })]);
+    notificationRepository.markAllReadLocal();
+
+    expect(overlayRows()[0].readAt).toBe(Date.parse("2026-01-02T00:00:00Z"));
   });
 });
 
@@ -102,18 +146,29 @@ describe("applyOverlay", () => {
   });
 
   it("flips is_read for items created at or before the mark-all cutoff", () => {
-    const before = Date.parse("2026-01-01T00:00:00Z");
-    jest.spyOn(Date, "now").mockReturnValue(before);
+    cachePage("p1", [notification({ id: 1, created_at: "2026-01-01T00:00:00Z" })]);
     notificationRepository.markAllReadLocal();
 
     const response = page([
-      notification({ id: 1, is_read: false, created_at: "2025-12-31T23:59:59Z" }),
+      notification({ id: 1, is_read: false, created_at: "2026-01-01T00:00:00Z" }),
       notification({ id: 2, is_read: false, created_at: "2026-01-02T00:00:00Z" }),
     ]);
 
     const result = notificationRepository.applyOverlay(response);
     expect(result.results.find((n) => n.id === 1)?.is_read).toBe(true);
     expect(result.results.find((n) => n.id === 2)?.is_read).toBe(false);
+  });
+
+  it("keeps a notification arriving after mark-all unread even with the device clock ahead (#490)", () => {
+    jest.spyOn(Date, "now").mockReturnValue(Date.parse("2026-01-01T01:00:00Z"));
+    cachePage("p1", [notification({ id: 1, created_at: "2026-01-01T00:00:00Z" })]);
+    notificationRepository.markAllReadLocal();
+
+    // Server time is 00:10 when it arrives — behind the device's 01:00.
+    const result = notificationRepository.applyOverlay(
+      page([notification({ id: 2, is_read: false, created_at: "2026-01-01T00:10:00Z" })]),
+    );
+    expect(result.results[0].is_read).toBe(false);
     jest.restoreAllMocks();
   });
 });

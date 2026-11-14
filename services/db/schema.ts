@@ -148,9 +148,11 @@ export const territoryDetailCacheTable = cacheTable("territory_detail_cache");
 // is_read flag would otherwise stay stale forever once marked read locally
 // until that exact page is re-fetched from the server.
 // id: a real notification id for an explicitly marked-read item, or the
-// sentinel -1 for "mark all read" — its readAt is then a "read before this
-// timestamp" cutoff compared against each item's created_at, so notifications
-// that arrive after a mark-all correctly stay unread.
+// sentinel -1 for "mark all read" — its readAt is then a "read at or before
+// this timestamp" cutoff compared against each item's created_at, so
+// notifications that arrive after a mark-all correctly stay unread. For the
+// sentinel, readAt is the server created_at of the newest cached notification,
+// not the device clock (#490, see markAllReadLocal).
 export const notificationReadOverlayTable = sqliteTable(
   "notification_read_overlay",
   {

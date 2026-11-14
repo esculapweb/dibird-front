@@ -1,9 +1,10 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 
 import { db } from "../../services/db/client";
 import {
   mutationQueueTable,
   notificationReadOverlayTable,
+  notificationsListCacheTable,
 } from "../../services/db/schema";
 import { AppNotification, PaginatedResponse } from "../../types";
 
@@ -42,17 +43,55 @@ export const markIdsReadLocal = (ids: number[]): void => {
   });
 };
 
+// The newest server-side created_at among the cached notification pages, in
+// ms — or null when nothing is cached (then there's nothing on screen to flip
+// either).
+const newestCachedCreatedAt = (
+  tx: Pick<typeof db, "select">,
+): number | null => {
+  const rows = tx
+    .select({ response: notificationsListCacheTable.response })
+    .from(notificationsListCacheTable)
+    .all();
+
+  let newest: number | null = null;
+  for (const row of rows) {
+    const results =
+      (row.response as Partial<PaginatedResponse<AppNotification>> | null)
+        ?.results ?? [];
+    for (const item of results) {
+      const createdAt = Date.parse(item?.created_at ?? "");
+      if (!Number.isNaN(createdAt) && (newest == null || createdAt > newest)) {
+        newest = createdAt;
+      }
+    }
+  }
+  return newest;
+};
+
 export const markAllReadLocal = (): void => {
   const now = Date.now();
 
   db.transaction((tx) => {
-    tx.insert(notificationReadOverlayTable)
-      .values({ id: MARK_ALL_SENTINEL_ID, readAt: now })
-      .onConflictDoUpdate({
-        target: notificationReadOverlayTable.id,
-        set: { readAt: now },
-      })
-      .run();
+    // The cutoff is a server timestamp, not Date.now(): applyOverlay compares
+    // it with the server's created_at, and the sentinel outlives the sync. A
+    // device clock running ahead used to make every notification arriving
+    // within that skew look read for good, though the server had it unread
+    // (#490). "All" here means all the user could see — anything newer than
+    // the newest cached item is the server's to mark, which it does on sync.
+    const cutoff = newestCachedCreatedAt(tx);
+    if (cutoff != null) {
+      tx.insert(notificationReadOverlayTable)
+        .values({ id: MARK_ALL_SENTINEL_ID, readAt: cutoff })
+        .onConflictDoUpdate({
+          target: notificationReadOverlayTable.id,
+          // Never move an earlier mark-all's cutoff backwards.
+          set: {
+            readAt: sql`max(${notificationReadOverlayTable.readAt}, excluded.read_at)`,
+          },
+        })
+        .run();
+    }
 
     tx.insert(mutationQueueTable)
       .values({

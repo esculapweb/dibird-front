@@ -21,6 +21,7 @@ import {
 import { routeNotification } from "../util/notificationRoute";
 import { downloadExportFromNotification } from "../util/exportDownload";
 import { UNREAD_COUNT_KEY } from "../hooks/useUnreadCount";
+import { useApiError } from "../hooks/useApiError";
 import { AppStackNavigationProp } from "../types";
 
 // Screens whose unsaved form state a reload would silently drop.
@@ -30,6 +31,7 @@ export default function NotificationsScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation<AppStackNavigationProp>();
   const queryClient = useQueryClient();
+  const { showErrorToast } = useApiError();
 
   const {
     data,
@@ -47,11 +49,26 @@ export default function NotificationsScreen() {
     initialPageParam: 1,
   });
 
+  // markNotificationsRead absorbs network errors and timeouts into the offline
+  // queue, but rethrows anything else (a 500, say). Both callers run from a
+  // press handler, so an uncaught rejection here would vanish without a word.
+  const markRead = useCallback(
+    async (ids?: number[]) => {
+      try {
+        await markNotificationsRead(ids);
+      } catch (e) {
+        showErrorToast(e, "markNotificationsRead");
+        return;
+      }
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: UNREAD_COUNT_KEY });
+    },
+    [queryClient, showErrorToast],
+  );
+
   const handleMarkAllRead = useCallback(async () => {
-    await markNotificationsRead();
-    queryClient.invalidateQueries({ queryKey: ["notifications"] });
-    queryClient.invalidateQueries({ queryKey: UNREAD_COUNT_KEY });
-  }, [queryClient]);
+    await markRead();
+  }, [markRead]);
 
   // In the menu rather than as a header button of its own: the label is long
   // in Russian and used to crowd the title, and this is a rare, sweeping
@@ -80,11 +97,9 @@ export default function NotificationsScreen() {
 
   const handlePress = useCallback(
     async (item: AppNotification) => {
-      if (!item.is_read) {
-        await markNotificationsRead([item.id]);
-        queryClient.invalidateQueries({ queryKey: ["notifications"] });
-        queryClient.invalidateQueries({ queryKey: UNREAD_COUNT_KEY });
-      }
+      // A failed mark-read still opens the notification: the toast says what
+      // went wrong, and the tap is mostly about getting to its target.
+      if (!item.is_read) await markRead([item.id]);
 
       // "Update ready" applies the update instead of navigating — that tap is
       // the whole point of the notification (hooks/useAppUpdateNotifications).
@@ -132,7 +147,7 @@ export default function NotificationsScreen() {
       ) => void;
       routeNotification(item.data, (screen, params) => navigate(screen, params));
     },
-    [navigation, queryClient, t],
+    [navigation, markRead, t],
   );
 
   const items = data?.pages.flatMap((p) => p.results) ?? [];
