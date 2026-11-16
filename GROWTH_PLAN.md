@@ -39,7 +39,7 @@
 - [screens/AchievementsScreen.tsx](screens/AchievementsScreen.tsx) — заглушка `<Text>AchievementsScreen</Text>`, хотя роут ([navigation/AppStack.tsx:380](navigation/AppStack.tsx#L380)) и push на него уже есть.
 - Нет запроса оценки в сторе (`expo-store-review` не установлен).
 - Нет шеринга: `expo-sharing` используется только для GDPR-экспорта ([hooks/Profile/useExportProfile.ts](hooks/Profile/useExportProfile.ts)).
-- Нет фото в наблюдениях — ни на фронте ([components/Observation/ObservationForm.tsx](components/Observation/ObservationForm.tsx)), ни в модели `Observation`.
+- ~~Нет фото в наблюдениях — ни на фронте ([components/Observation/ObservationForm.tsx](components/Observation/ObservationForm.tsx)), ни в модели `Observation`.~~ — сделано: фото в наблюдениях + модерация, см. [MODERATION_PLAN.md](MODERATION_PLAN.md). Рейтинг по сфотографированным видам — [PHOTO_YEAR_PLAN.md](PHOTO_YEAR_PLAN.md).
 - Нет ID по фото/звуку (killer-фича Merlin) — сознательно **не делаем** в этом плане, см. «Что не делаем».
 
 **Целевой результат за 6 месяцев:** измеримая воронка; install→signup ≥ 25%,
@@ -413,6 +413,9 @@ e2e онбординг не покрывается по той же причин
 2. **Стрики и годовой челлендж** — «Year list 2026», «месяц миграции», прогресс
    на главной рядом с `ChecklistHero`. Сезонность birdwatching (весна/осень) —
    бесплатный повод для пушей.
+   - **Фотогод** → [Notion #75](https://app.notion.com/p/3355501934238099b4b4edb472c22cf7) —
+     отдельный рейтинг по числу сфотографированных видов + фотоколлекция и
+     «видел, но не снял». Подробности — [PHOTO_YEAR_PLAN.md](PHOTO_YEAR_PLAN.md).
 3. **Weekly digest push** (celery, воскресенье вечером): «за неделю вы отметили
    12 видов, 2 новых; в вашем радиусе видели 5 редких». Уважать
    `active_hours_utc` и `max_alerts_per_day` из `AlertSettings`.
@@ -907,9 +910,10 @@ Analytics видно, с какого блока пришли на карточ�
 - **ID по фото/звуку** (Merlin/BirdNET) — требует GPU-инференса и датасетов;
   для соло без бюджета это поглотит все 6 месяцев и всё равно проиграет
   Cornell. Вместо этого — тренажёр голосов (2.3) и импорт из eBird (2.1).
-- **Фото в наблюдениях** — нужны модель, S3-хранилище, модерация и деньги за
+- ~~**Фото в наблюдениях** — нужны модель, S3-хранилище, модерация и деньги за
   трафик. Отложить до момента, когда появится монетизация; сейчас это не
-  причина установки.
+  причина установки.~~ — сделано: фото в наблюдениях + модерация, см.
+  [MODERATION_PLAN.md](MODERATION_PLAN.md).
 - **Новости/глобальный поиск** ([Notion #481](https://app.notion.com/p/40e55019342381b584d6e057040bae15), Icebox; Приоритет 3 из
   [TAXONOMY_CATALOG_STATUS.md](TAXONOMY_CATALOG_STATUS.md)) — полезно, но
   на воронку не влияет; делать после фазы 2. Поиск по названию видов в
