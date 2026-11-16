@@ -49,8 +49,10 @@ const ModalWrapper = ({
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={56}
       >
+        {/* Left/right too: in landscape the modal runs to the screen edges and
+            the camera cutout sits at one side, over the list rows. */}
         <SafeAreaView
-          edges={["top"]}
+          edges={["top", "left", "right"]}
           style={{ flex: 1, backgroundColor: Colors.backgroundMain }}
         >
           <View style={styles.header}>

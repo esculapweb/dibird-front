@@ -103,6 +103,9 @@ const MapSheetLayout = ({
         {...mapProps}
         bottomInset={coveredHeight}
         centerBottomPadding={coveredHeight}
+        // Edge-to-edge map: in landscape the camera cutout covers a side.
+        leftInset={insets.left}
+        rightInset={insets.right}
       />
       <BottomSheet
         ref={sheetRef}
@@ -118,7 +121,13 @@ const MapSheetLayout = ({
       >
         <BottomSheetScrollView
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+          // The sheet spans the full width, so in landscape its content needs
+          // the side insets too, or the cutout covers its edge.
+          contentContainerStyle={{
+            paddingBottom: insets.bottom + 24,
+            paddingLeft: insets.left,
+            paddingRight: insets.right,
+          }}
           onContentSizeChange={
             fitContent ? (_w, h) => setContentHeight(h) : undefined
           }

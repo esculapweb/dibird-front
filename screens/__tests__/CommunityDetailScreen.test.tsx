@@ -111,7 +111,7 @@ jest.mock("../../components/ui/IconsHeader", () => {
   };
 });
 
-import { Share, Platform } from "react-native";
+import { Share, Platform, Dimensions } from "react-native";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { useItem } from "../../hooks/useItem";
 import { createNavigationMock, createRouteMock } from "../test-utils";
@@ -342,6 +342,43 @@ describe("map", () => {
     expect(mockMapCapture).toHaveBeenCalledWith(
       expect.objectContaining({ currentCoords: [3, 4], currentZoom: 10, polygon }),
     );
+  });
+
+  // Regression: mapHeight was window height minus 460, which in landscape
+  // (phone window ~400 tall) went negative and the map vanished.
+  describe("map height", () => {
+    const withPoint = {
+      ...OBSERVATION,
+      place_data: {
+        ...OBSERVATION.place_data,
+        location: { type: "Point", coordinates: [1, 2] },
+      },
+    };
+    const mockWindow = (height: number) =>
+      // useWindowDimensions takes its initial value from Dimensions.get.
+      jest
+        .spyOn(Dimensions, "get")
+        .mockReturnValue({ width: 400, height, scale: 2, fontScale: 1 });
+
+    afterEach(() => jest.restoreAllMocks());
+
+    it("fills the space under the card in portrait", async () => {
+      mockWindow(932);
+      mockItem({ data: withPoint });
+      await render(<CommunityDetailScreen />);
+      expect(mockMapCapture).toHaveBeenLastCalledWith(
+        expect.objectContaining({ mapHeight: 472 }),
+      );
+    });
+
+    it("falls back to the minimum height in landscape", async () => {
+      mockWindow(402);
+      mockItem({ data: withPoint });
+      await render(<CommunityDetailScreen />);
+      expect(mockMapCapture).toHaveBeenLastCalledWith(
+        expect.objectContaining({ mapHeight: 250 }),
+      );
+    });
   });
 });
 

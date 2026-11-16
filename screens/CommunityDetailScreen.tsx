@@ -6,7 +6,7 @@ import {
   Pressable,
   Share,
   Platform,
-  Dimensions,
+  useWindowDimensions,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Image } from "expo-image";
@@ -40,6 +40,9 @@ import {
   ObservationPhoto,
 } from "../types";
 import MapL from "../components/Map/MapL";
+
+// Same as ObservationDetailScreen's map.
+const MIN_MAP_HEIGHT = 250;
 
 const CommunityDetailScreen = () => {
   const navigation = useNavigation<AppStackNavigationProp>();
@@ -100,7 +103,12 @@ const CommunityDetailScreen = () => {
       returnMode: "back",
     });
   };
-  const mapHeight = Dimensions.get("window").height - 460;
+  // Portrait: the map fills what is left under the card. Landscape: window
+  // height minus the card goes negative, so fall back to a fixed height — the
+  // screen scrolls, the map stays reachable below the card. The hook (unlike
+  // Dimensions.get) re-renders on rotation.
+  const { height: windowHeight } = useWindowDimensions();
+  const mapHeight = Math.max(MIN_MAP_HEIGHT, windowHeight - 460);
 
   const handleShare = useCallback(async () => {
     const url = buildShareUrl(`my/community/${observationId}/`);

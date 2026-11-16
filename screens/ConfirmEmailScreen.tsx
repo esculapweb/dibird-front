@@ -96,7 +96,9 @@ const ConfirmEmailScreen = () => {
   }, [key]);
 
   return (
-    <Layout>
+    // Scrolls only when the content doesn't fit (landscape, large font);
+    // flexGrow keeps it centred otherwise.
+    <Layout withScroll contentContainerStyle={{ flexGrow: 1 }}>
       <View style={styles.container}>
         {loading ? (
           <>

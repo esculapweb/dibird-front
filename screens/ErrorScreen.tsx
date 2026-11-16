@@ -9,7 +9,9 @@ const ErrorScreen = () => {
   const { title, message } = toUIError(error);
 
   return (
-    <Layout>
+    // Scrolls only when the content doesn't fit (landscape, large font);
+    // flexGrow keeps it centred otherwise.
+    <Layout withScroll contentContainerStyle={{ flexGrow: 1 }}>
       <ErrorOverlay
         title={title}
         message={message}

@@ -77,6 +77,13 @@ export interface MapProps {
    * read from the insets here.
    */
   bottomInset?: number;
+  /**
+   * Safe-area insets to move the side overlays by — same reasoning as
+   * bottomInset: only an edge-to-edge map needs them. In landscape the camera
+   * cutout sits at the left or right edge and would cover the controls.
+   */
+  leftInset?: number;
+  rightInset?: number;
   polygon?: PolygonGeometry;
   // Own sources/layers, drawn over the tiles instead of the single marker this
   // component plots by default (see PlacesMap). Everything around the
@@ -110,6 +117,8 @@ const MapL = ({
   myLocationRightOffset = 0,
   myLocationCompact = false,
   bottomInset = 0,
+  leftInset = 0,
+  rightInset = 0,
   showCoords,
   polygon,
   children,
@@ -120,7 +129,14 @@ const MapL = ({
   centerBottomPadding,
 }: MapProps) => {
   const { Colors } = useTheme();
-  const styles = stylesFn(Colors, mapHeight, bottomInset, myLocationRightOffset);
+  const styles = stylesFn(
+    Colors,
+    mapHeight,
+    bottomInset,
+    myLocationRightOffset,
+    leftInset,
+    rightInset,
+  );
   const { t } = useTranslation();
 
   const lng = currentCoords?.[0];
@@ -459,6 +475,8 @@ const stylesFn = (
   mapHeight: number | undefined,
   bottomInset: number,
   myLocationRightOffset: number,
+  leftInset: number,
+  rightInset: number,
 ) =>
   StyleSheet.create({
     mapSection:
@@ -471,7 +489,7 @@ const stylesFn = (
       justifyContent: "center",
       position: "absolute",
       bottom: 12 + bottomInset,
-      right: 12 + myLocationRightOffset,
+      right: 12 + rightInset + myLocationRightOffset,
       width: 28,
       height: 28,
       borderRadius: 14,
@@ -482,7 +500,7 @@ const stylesFn = (
       alignItems: "center",
       position: "absolute",
       bottom: 12 + bottomInset,
-      right: 12 + myLocationRightOffset,
+      right: 12 + rightInset + myLocationRightOffset,
       paddingVertical: 3,
       paddingHorizontal: 6,
       backgroundColor: Colors.overlayBg,
@@ -500,7 +518,7 @@ const stylesFn = (
       justifyContent: "center",
       position: "absolute",
       bottom: 12 + bottomInset,
-      right: 12,
+      right: 12 + rightInset,
       paddingVertical: 3,
       paddingHorizontal: 6,
       backgroundColor: Colors.overlayBg,
@@ -513,7 +531,7 @@ const stylesFn = (
     },
     attribution: {
       position: "absolute",
-      left: 12,
+      left: 12 + leftInset,
       bottom: 12 + bottomInset,
       paddingHorizontal: 6,
       paddingVertical: 3,
@@ -549,7 +567,7 @@ const stylesFn = (
       alignItems: "center",
       position: "absolute",
       top: 12,
-      right: 12,
+      right: 12 + rightInset,
       paddingVertical: 3,
       paddingHorizontal: 6,
       backgroundColor: Colors.overlayBg,

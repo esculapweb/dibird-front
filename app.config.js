@@ -74,8 +74,11 @@ export default {
     name: variant.name,
     slug: "dibird",
     owner: "esculapweb",
-    version: "26.08.0",
-    orientation: "portrait",
+    version: "26.11.0",
+    // Explicit "default" instead of omitting the key: without it the Android
+    // config plugin leaves android:screenOrientation untouched, so a stale
+    // "portrait" from an earlier prebuild would survive `prebuild --no-clean`.
+    orientation: "default",
     scheme: "dibird",
     userInterfaceStyle: "automatic",
     icon: variant.icon,
@@ -136,11 +139,10 @@ export default {
           android: {
             enableMinifyInReleaseBuilds: true,
             enableShrinkResourcesInReleaseBuilds: true,
-            // Expo 56 defaults to 35; Play stops accepting updates below 36
-            // from the end of August 2026. Raised ahead of time — needs a run
-            // on Android 16 (permissions, notifications, file picker).
-            compileSdkVersion: 36,
-            targetSdkVersion: 36,
+            // compileSdk/targetSdk are not pinned: since SDK 57 (RN 0.86) the
+            // default is 36, which Play requires for updates from the end of
+            // August 2026. Expo's root project plugin reads it from RN's
+            // version catalog (react-native/gradle/libs.versions.toml).
           },
         },
       ],

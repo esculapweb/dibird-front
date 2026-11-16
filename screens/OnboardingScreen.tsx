@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -200,7 +206,16 @@ const OnboardingScreen = () => {
         )}
       </View>
 
-      {renderStep()}
+      {/* In landscape a step is taller than the space between header and
+          footer. flexGrow keeps the steps' own `flex: 1` centring in portrait,
+          and the scroll only kicks in when the step doesn't fit. */}
+      <ScrollView
+        style={styles.stepScroll}
+        contentContainerStyle={styles.stepContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        {renderStep()}
+      </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
         <View style={styles.dots}>
@@ -245,6 +260,8 @@ const stylesFn = (Colors: ThemeColors) =>
       fontSize: 15,
       color: Colors.textSecondary,
     },
+    stepScroll: { flex: 1 },
+    stepContent: { flexGrow: 1 },
     footer: {
       paddingHorizontal: 28,
       paddingTop: 12,
