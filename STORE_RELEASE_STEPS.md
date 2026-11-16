@@ -15,7 +15,8 @@
 наблюдение публичное ([CommunityScreen.tsx](screens/CommunityScreen.tsx)).
 Разрешений в билде от этого не прибавилось — фото берутся только из галереи
 ([ObservationPhotoPicker.tsx](components/Observation/ObservationPhotoPicker.tsx)),
-камера и микрофон по-прежнему выключены плагинами в `app.config.js`, — но
+камера по-прежнему выключена плагином в `app.config.js` (микрофон с 26.11
+вернулся под голосовой ввод — см. §1 п.1), — но
 анкеты в обеих консолях меняются, и добавляется **Guideline 1.2** у Apple и
 **UGC policy** у Google. По ним отказ получают независимо от того, загрузил ли
 кто-нибудь что-нибудь запрещённое: проверяют не контент, а наличие механизмов.
@@ -47,9 +48,16 @@
    collected, linked to identity, purpose «App Functionality», **не** used for
    tracking. Это отдельная категория, и заведённый в прошлом релизе
    `Other User Content` (импорт eBird) её не покрывает — нужны оба пункта.
-   Камера и микрофон по-прежнему должны быть сняты: этих разрешений в билде
-   нет (`expo-image-picker` и `expo-audio` с `cameraPermission: false` /
-   `microphonePermission: false` в `app.config.js`).
+   Камера по-прежнему должна быть снята: `cameraPermission: false` у
+   `expo-image-picker` в `app.config.js`.
+   **Микрофон — с 26.11 в билде снова есть** (16.11.2026, под голосовой ввод
+   видов, [Notion #291](https://app.notion.com/p/371550193423800fb9cdf2e02027ebbf)):
+   `expo-speech-recognition` добавляет `NSMicrophoneUsageDescription` и
+   `NSSpeechRecognitionUsageDescription`, `expo-image-picker`/`expo-audio`
+   больше не удаляют ключ. Распознавание на устройстве, аудио на наш сервер
+   не уходит — тогда `Audio Data` в App Privacy не заявляется. Перед
+   сабмитом сверить с тем, как #291 реализован на самом деле (включён ли
+   `requiresOnDeviceRecognition`; без него iOS может отправлять звук в Apple).
 2. **Точную геолокацию из фотографий заявлять не нужно.** Каждый снимок перед
    отправкой пересобирается в JPEG
    ([ObservationPhotoPicker.tsx](components/Observation/ObservationPhotoPicker.tsx#L78-L83)),
@@ -155,9 +163,12 @@
    не должен — **проверить фактическую категорию в консоли**: если там стоит
    Social, без заполненной декларации и опубликованной политики релиз не
    уедет.
-5. **App content → Permissions**: декларировать нечего — `RECORD_AUDIO` и
-   foreground service из манифеста ушли ещё в прошлом релизе. Если декларация
-   подавалась раньше, свериться, что она не противоречит новому манифесту.
+5. **App content → Permissions**: foreground service из манифеста ушёл ещё
+   в прошлом релизе. **`RECORD_AUDIO` с 26.11 вернулся** (16.11.2026,
+   голосовой ввод, Notion #291) — отдельной декларации он не требует, но в
+   **Data safety** нужно решить про «Audio»: при распознавании только на
+   устройстве аудио не «collected», при отправке на сервер — заявлять.
+   Сверить с фактической реализацией #291.
 6. Проверить, что **SHA-256 из App Signing** не менялся: от него зависит
    верификация App Links. Файл на сайте —
    `https://dibird.com/.well-known/assetlinks.json`.
@@ -171,7 +182,11 @@
    учётные данные интерактивно, либо AAB грузится в консоль руками.
 9. Сначала **Internal testing**, а не сразу production: это единственный
    способ получить Pre-launch report, а он важен из-за R8 (minify + shrink) и
-   `targetSdk 36`. В этом релизе к нему добавился повод посерьёзнее: выбор
+   `targetSdk 36`. **С 26.11 включена и фаза оптимизации R8**
+   (`plugins/withAndroidR8Optimization.js`, PLAY_INSIGHTS_PLAN.md §1): она
+   единственная ломает рефлексию, а у MapLibre нет consumer-правил — поэтому
+   до production обязателен smoke-прогон preview-APK (`eas build -p android
+   --profile preview`, это тот же release buildType с minify/shrink). В этом релизе к нему добавился повод посерьёзнее: выбор
    фотографий идёт через системный пикер, а это ровно тот код, который
    ломается от версии Android и от вендорских оболочек.
 

@@ -56,6 +56,14 @@ includes `-dontoptimize`, which should be avoided»*
 
 ## Часть 1. Включить оптимизацию R8 → [Notion #470](https://app.notion.com/p/40e5501934238119a786d1cf47996f6b)
 
+**СДЕЛАНО (16.11.2026):** `plugins/withAndroidR8Optimization.js` подключён в
+`app.config.js`. Проверено prebuild'ом в копии проекта на SDK 57 (шаблон всё ещё
+`proguard-android.txt`, AGP 8.12): в `app/build.gradle` стоит
+`proguard-android-optimize.txt`, в `gradle.properties` —
+`android.r8.optimizedResourceShrinking=true`. §1.4 внесён в
+`STORE_RELEASE_STEPS.md` (Google Play, шаг 9). Осталось не кодом: smoke-прогон
+preview-APK до production (§1.3).
+
 ### 1.1 Новый config-плагин `plugins/withAndroidR8Optimization.js`
 
 Папки `android/`/`ios/` не в репозитории, `expo-build-properties@56.0.24` умеет
@@ -231,6 +239,11 @@ unzip -o -q <новый>.aab 'base/dex/classes.dex' -d /tmp/r8 && \
    поэтому применяется только legacy `sentry.gradle` (JS-сорсмапы). Нативные
    Android-стектрейсы в Sentry обфусцированы — и после включения оптимизации
    R8 станут ещё менее читаемыми.
+   **СДЕЛАНО (16.11.2026):** `experimental_android.enableAndroidGradlePlugin`
+   с `autoUploadProguardMapping`; выгрузка нативных символов выключена (вне
+   задачи и шла бы на каждую dev-сборку). `SENTRY_AUTH_TOKEN` есть во всех
+   трёх EAS-окружениях. Проверить на первой preview/production-сборке, что
+   mapping появился в Sentry.
 2. `components/Diary/DiaryCard.tsx:85-92` — единственный `expo-image` без явного
    `cachePolicy="disk"` (дефолт совпадает, но выбивается из стиля остальных 18 мест).
 3. → [Notion #471](https://app.notion.com/p/40e55019342381709687d598fb874058) `components/Profile/Avatar.tsx:117-121` — `manipulateAsync(uri, [], { compress: 0.8 })`
